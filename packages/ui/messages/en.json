@@ -248,37 +248,5 @@
     "errorTitle": "Notifications didn’t load",
     "offlineTitle": "You’re offline.",
     "offlineText": "New notifications show when you’re back online."
-  },
-  "notificationPreferences": {
-    "email": "Email",
-    "main": "Email notifications",
-    "mainText": "Send me an email for the categories I turn on.",
-    "removedNote": "We always email you if you are removed from an organisation.",
-    "offHint": "Turn on email notifications to choose categories.",
-    "save": "Save",
-    "saved": "Notification settings saved.",
-    "notSaved": "Notification settings not saved"
-  },
-  "notificationCategories": {
-    "account_security": {
-      "name": "Account and security",
-      "description": "When something happens to your account or your access to an organisation that you must know about."
-    },
-    "access": {
-      "name": "Your access",
-      "description": "When your role in an organisation changes."
-    },
-    "member_invitations": {
-      "name": "Members",
-      "description": "When someone accepts an invitation you sent."
-    },
-    "tenant_plans": {
-      "name": "Organisation plan",
-      "description": "When the platform changes your organisation’s plan, or one of its limits or features."
-    },
-    "platform_tenants": {
-      "name": "Platform",
-      "description": "When an organisation gets its first Owner, changes status or is deleted."
-    }
   }
 }

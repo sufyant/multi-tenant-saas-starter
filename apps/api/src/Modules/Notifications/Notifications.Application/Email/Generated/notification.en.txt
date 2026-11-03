@@ -8,6 +8,3 @@ Open Starter:
 {{link}}
 
 {{footer}}
-
-Manage email notifications:
-{{preferencesLink}}

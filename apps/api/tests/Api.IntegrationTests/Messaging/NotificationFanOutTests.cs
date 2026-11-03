@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 using Notifications.Application.Notifications.DeliverNotification;
@@ -313,32 +312,90 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         (await _rows.AboutAsync(purged.TenantId, await _testData.UserIdOfAsync(admin))).Length.ShouldBe(1);
     }
 
-    // O4, U4: with the web off no row is written, so a copy of a delivery finds nothing; the email's key, the notification's id, still
-    // keeps it to one email.
+    // U4, U5: delivery takes a type's channels from the catalog only. A new member is team news, so it goes to the bell alone, even to a
+    // recipient with an address.
     [Fact]
-    public async Task DeliverNotification_TwiceWithTheWebOff_WritesNoRowAndSendsOneEmail()
+    public async Task DeliverNotification_ATypeOfTheWebOnly_WritesTheRowAndSendsNoEmail()
     {
         var email = PlatformTenants.Email();
         var owner = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, await _testData.AddUserAsync(email: email), role: "Owner");
         var ownerId = await _testData.UserIdOfAsync(owner);
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).PutAsJsonAsync(
-            "/v1/me/notification-preferences",
-            new { channels = new[] { new { channel = "web", enabled = false } }, categories = new[] { new { category = "tenant_plans", channel = "email", enabled = true } } },
-            Cancellation));
+        var tenantId = Guid.CreateVersion7();
         var deliver = new DeliverNotificationCommand(
             Guid.CreateVersion7(),
-            NotificationCatalog.TenantPlanChanged,
+            NotificationCatalog.MemberJoined,
             ownerId,
+            tenantId,
+            new Dictionary<string, string>
+            {
+                ["tenantName"] = "Acme Ltd",
+                ["memberName"] = Guid.CreateVersion7().ToString(),
+                ["roleName"] = "member",
+                ["roleNameBuiltIn"] = "true",
+            },
+            DateTimeOffset.UtcNow,
+            email,
+            Language.En);
+
+        await SendAsync(deliver);
+
+        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "member.joined", tenantId, "Tenant")]);
+        _api.Email.Sent.Where(sent => sent.To == email).ShouldBeEmpty();
+    }
+
+    // U4, U5: a changed role is a change of the member's access, so it goes to the bell and by email, as the catalog says.
+    [Fact]
+    public async Task DeliverNotification_AChangedRole_WritesTheRowAndSendsOneEmail()
+    {
+        var email = PlatformTenants.Email();
+        var member = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, await _testData.AddUserAsync(email: email));
+        var memberId = await _testData.UserIdOfAsync(member);
+        var tenantId = Guid.CreateVersion7();
+        var deliver = new DeliverNotificationCommand(
             Guid.CreateVersion7(),
-            new Dictionary<string, string> { ["tenantName"] = "Acme Ltd", ["oldPlanName"] = "Free", ["newPlanName"] = "Pro" },
+            NotificationCatalog.MemberRoleChanged,
+            memberId,
+            tenantId,
+            new Dictionary<string, string>
+            {
+                ["tenantName"] = "Acme Ltd",
+                ["oldRoleName"] = "member",
+                ["oldRoleNameBuiltIn"] = "true",
+                ["newRoleName"] = "admin",
+                ["newRoleNameBuiltIn"] = "true",
+            },
+            DateTimeOffset.UtcNow,
+            email,
+            Language.En);
+
+        await SendAsync(deliver);
+
+        (await _rows.OfAsync(memberId)).ShouldBe([NotificationRows.Row(memberId, "member.role_changed", tenantId, "Tenant")]);
+        _api.Email.Sent.Where(sent => sent.To == email).Select(sent => sent.Subject).ShouldBe(["Your role in Acme Ltd changed"]);
+    }
+
+    // U4, O4: a removed member's notification goes to the bell and by email, as the catalog says. A copy of the delivery finds the row,
+    // so it writes no second row and sends no second email.
+    [Fact]
+    public async Task DeliverNotification_TwiceForATypeOfTheWebAndTheEmail_WritesOneRowAndSendsOneEmail()
+    {
+        var email = PlatformTenants.Email();
+        var member = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, await _testData.AddUserAsync(email: email));
+        var memberId = await _testData.UserIdOfAsync(member);
+        var deliver = new DeliverNotificationCommand(
+            Guid.CreateVersion7(),
+            NotificationCatalog.MemberRemoved,
+            memberId,
+            null,
+            new Dictionary<string, string> { ["tenantName"] = "Acme Ltd", ["actorName"] = Guid.CreateVersion7().ToString() },
             DateTimeOffset.UtcNow,
             email,
             Language.En);
 
         await SendAsync(deliver, deliver);
 
-        (await _rows.OfAsync(ownerId)).ShouldBeEmpty();
-        _api.Email.Sent.Where(sent => sent.To == email).Select(sent => sent.Subject).ShouldBe(["Acme Ltd is now on Pro"]);
+        (await _rows.OfAsync(memberId)).ShouldBe([NotificationRows.Row(memberId, "member.removed", null, "Personal")]);
+        _api.Email.Sent.Where(sent => sent.To == email).Select(sent => sent.Subject).ShouldBe(["You were removed from Acme Ltd"]);
     }
 
     // The events, as ControlPlane publishes them, and every message they cause.

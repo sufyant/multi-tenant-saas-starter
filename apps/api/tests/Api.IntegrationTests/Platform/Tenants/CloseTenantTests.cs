@@ -78,7 +78,8 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     }
 
     // K4: a reopening cancels no scheduled message. The first closure's warning and purge find the tenant closed at another moment and do
-    // nothing; the second closure schedules its own, and its warning reaches the Owner.
+    // nothing; the second closure schedules its own, and its warning reaches the Owner. The closure and the reopening also email the other
+    // system admins (U5), so only the Owner's emails count.
     [Fact]
     public async Task CloseTenant_ReopenedAndClosedAgain_SchedulesItsOwnAndTheFirstClosuresDoNothing()
     {
@@ -91,15 +92,16 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant.Id));
         _time.Advance(TimeSpan.FromMinutes(1));
         var second = await ScheduledByTheClosureAsync(tenant.Id, admin);
+        var ownerEmail = (await _testData.UserOfAsync(owner)).Email;
 
         await DeliverAsync(tenant.Id, first.Select(message => message.Message));
-        var firstsWarnedNobody = (_api.Email.Sent.Count, await PurgeWarningsAsync(tenant.Id), await _testData.TenantStatusOfAsync(tenant.Id));
+        var firstsWarnedNobody = (_api.Email.Sent.Count(sent => sent.To == ownerEmail), await PurgeWarningsAsync(tenant.Id), await _testData.TenantStatusOfAsync(tenant.Id));
         await DeliverAsync(tenant.Id, second.Select(message => message.Message).OfType<WarnTenantPurgeCommand>());
 
         second.Select(message => message.Message).ShouldBe(
             [new WarnTenantPurgeCommand(tenant.Id, _time.GetUtcNow()), new StartTenantPurgeCommand(tenant.Id, _time.GetUtcNow())], ignoreOrder: true);
         firstsWarnedNobody.ShouldBe((0, 0L, "Closed"));
-        _api.Email.Sent.ShouldHaveSingleItem().To.ShouldBe((await _testData.UserOfAsync(owner)).Email);
+        _api.Email.Sent.Where(sent => sent.To == ownerEmail).ShouldHaveSingleItem();
         (await PurgeWarningsAsync(tenant.Id)).ShouldBe(1L);
     }
 

@@ -6,7 +6,6 @@ import {
   AuditTargetResponseKind,
   BuiltInRole,
   type ChangeMemberRoleRequest,
-  type ChangeNotificationPreferencesRequest,
   type ChangePreferencesRequest,
   type CursorPageOfAuditEntryResponse,
   ErrorCode,
@@ -21,8 +20,6 @@ import {
   type MyTenantDetailResponse,
   type MyTenantResponse,
   type MyTenantResponseStatus,
-  NotificationCategory,
-  NotificationChannelKind,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
@@ -585,7 +582,6 @@ export async function mockRename(
 export const roleChanged: NotificationResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000a1",
   type: NotificationType.MemberRoleChanged,
-  category: NotificationCategory.Access,
   title: "Your role in Northwind Traders changed",
   body: "Mehmet Kaya changed your role from Member to Admin.",
   link: {
@@ -596,46 +592,20 @@ export const roleChanged: NotificationResponse = {
   readAt: null,
 };
 
-/** A table of the notification preferences: the required row, then each category with its web on and its email off. */
-function preferencesTable(categories: NotificationCategory[]) {
-  const channels = (email: boolean) => [
-    { channel: NotificationChannelKind.Web, enabled: true },
-    { channel: NotificationChannelKind.Email, enabled: email },
-  ];
-  return {
-    channels: channels(true),
-    categories: [
-      {
-        category: NotificationCategory.AccountSecurity,
-        required: true,
-        types: [],
-        channels: channels(true),
-      },
-      ...categories.map((category) => ({
-        category,
-        required: false,
-        types: [],
-        channels: channels(false),
-      })),
-    ],
-  };
-}
-
-/** What the notification answers recorded: the notifications opened, the bells marked read and the preferences saved. */
+/** What the notification answers recorded: the notifications opened and the bells marked read. */
 export type NotificationCalls = {
   opened: string[];
   markedAll: number;
-  saved: ChangeNotificationPreferencesRequest[];
 };
 
 /**
- * Northwind's bell, its live stream and the email preferences. The count answers `unread.count`; the stream holds its answer until
+ * Northwind's bell and its live stream. The count answers `unread.count`; the stream holds its answer until
  * the test calls `signal`, then sends one `notifications` event for Northwind's bell and ends, with a long retry so the browser
  * does not open it again during the test.
  */
 export async function mockNotifications(page: Page) {
   const unread = { count: 1 };
-  const calls: NotificationCalls = { opened: [], markedAll: 0, saved: [] };
+  const calls: NotificationCalls = { opened: [], markedAll: 0 };
   let signal = () => {};
   const sent = new Promise<void>((resolve) => {
     signal = resolve;
@@ -670,18 +640,6 @@ export async function mockNotifications(page: Page) {
       headers: { "Content-Type": "text/event-stream" },
       body: `retry: 600000\nevent: notifications\ndata: {"scope":"tenant","tenantId":"${northwind.id}"}\n\n`,
     });
-  });
-  const table = preferencesTable([
-    NotificationCategory.Access,
-    NotificationCategory.MemberInvitations,
-    NotificationCategory.TenantPlans,
-  ]);
-  await page.route("**/api/v1/me/notification-preferences", (route) => {
-    if (route.request().method() === "PUT")
-      calls.saved.push(
-        route.request().postDataJSON() as ChangeNotificationPreferencesRequest,
-      );
-    return route.fulfill({ json: table });
   });
   return {
     calls,

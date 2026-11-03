@@ -44,8 +44,8 @@ public sealed class ListNotificationsTests(Database database) : IAsyncLifetime
 
         page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([personal, own]);
         var item = page.GetProperty("items")[1];
-        (item.GetProperty("type").GetString(), item.GetProperty("category").GetString(), item.GetProperty("title").GetString(), item.GetProperty("body").GetString())
-            .ShouldBe(("tenant.plan_changed", "tenant_plans", "Acme Ltd is now on Pro", "The platform moved your organisation from Free to Pro. Its features and limits follow the new plan."));
+        (item.GetProperty("type").GetString(), item.GetProperty("title").GetString(), item.GetProperty("body").GetString())
+            .ShouldBe(("tenant.plan_changed", "Acme Ltd is now on Pro", "The platform moved your organisation from Free to Pro. Its features and limits follow the new plan."));
         item.GetProperty("link").GetRawText().ShouldBe($$"""{"kind":"tenant_settings","tenantId":"{{tenant.Id}}"}""");
         (item.GetProperty("createdAt").GetDateTimeOffset(), item.GetProperty("readAt").ValueKind).ShouldBe((at, JsonValueKind.Null));
     }

@@ -2,7 +2,7 @@ using Npgsql;
 
 namespace Api.IntegrationTests.Me;
 
-// R11, U3: a notification and a notification preference belong to a user. A transaction that declares a user reads and writes that user's rows
+// R11, U3: a notification belongs to a user. A transaction that declares a user reads and writes that user's rows
 // only; one that declares a tenant, or nobody, sees none. Plain SQL as the application account, so only the database decides.
 public sealed class OwnNotificationsPolicyTests(Database database)
 {
@@ -50,20 +50,6 @@ public sealed class OwnNotificationsPolicyTests(Database database)
 
         (updated, deleted).ShouldBe((0, 0));
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE user_id = '{other}'")).ShouldBe(1);
-    }
-
-    [Fact]
-    public async Task WritePreferences_OfAnotherUser_IsRefusedAndReadsNone()
-    {
-        var (user, other) = (Guid.CreateVersion7(), Guid.CreateVersion7());
-        await database.ExecuteAsUserAsync(other, $"INSERT INTO notifications.notification_preferences (user_id, channels, categories) VALUES ('{other}', '{{\"Email\": false}}', '{{}}')");
-
-        var insert = () => database.ExecuteAsUserAsync(
-            user, $"INSERT INTO notifications.notification_preferences (user_id, channels, categories) VALUES ('{other}', '{{\"Web\": false}}', '{{}}')");
-        var read = await database.ScalarAsUserAsync<long>(user, "SELECT count(*) FROM notifications.notification_preferences");
-
-        (await insert.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
-        read.ShouldBe(0);
     }
 
     private static string InsertSql(Guid userId, Guid tenantId) =>

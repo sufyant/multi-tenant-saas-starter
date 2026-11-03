@@ -1,7 +1,6 @@
 import {
   BuiltInRole,
   ErrorCode,
-  NotificationCategory,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
@@ -39,7 +38,6 @@ afterAll(() => server.close());
 const joined: NotificationResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000a1",
   type: NotificationType.MemberJoined,
-  category: NotificationCategory.MemberInvitations,
   title: "Deniz Arslan joined Northwind Traders",
   body: "Deniz Arslan accepted your invitation and joined as Admin.",
   link: {
@@ -54,7 +52,6 @@ const removed: NotificationResponse = {
   ...joined,
   id: "0198f0a2-0000-7000-8000-0000000000a2",
   type: NotificationType.MemberRemoved,
-  category: NotificationCategory.Access,
   title: "You were removed from Atlas Logistics",
   body: "Ayşe Yılmaz removed you from Atlas Logistics.",
   link: { kind: NotificationLinkResponseKind.Start, tenantId: null },

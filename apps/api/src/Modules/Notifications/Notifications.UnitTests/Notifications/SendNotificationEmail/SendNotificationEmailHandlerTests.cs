@@ -10,7 +10,7 @@ namespace Notifications.UnitTests.Notifications.SendNotificationEmail;
 
 // U2, U4: the generic notification email carries the title and the body that the bell shows, in the recipient's language, and one button
 // to the web app, or to the platform app for the platform's notifications. It names the people with the names it carries, from the moment of
-// the event. A copy of the message sends one email. The footer of a category's email links to the notifications page of the app of its bell.
+// the event. A copy of the message sends one email. The footer of its type says only why the email came: nobody chooses the channels (U4, U5).
 public sealed class SendNotificationEmailHandlerTests
 {
     private static readonly IOptions<NotificationLinkOptions> Links = Options.Create(
@@ -37,7 +37,7 @@ public sealed class SendNotificationEmailHandlerTests
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@example.com", "You were removed from Acme", $"notification/{notificationId}"));
         email.Text.ShouldBe(
             "Starter\n\nYou were removed from Acme\n\nAda Lovelace removed you from Acme. You can no longer open it or see its notifications.\n\nOpen Starter:\nhttps://app.example/\n\n"
-            + "We always send this email when you are removed from an organisation, so you know you no longer have access. It can’t be turned off.");
+            + "You got this email because your access to an organisation changed.");
         email.Html.ShouldContain("href=\"https://app.example/\"");
     }
 
@@ -69,9 +69,10 @@ public sealed class SendNotificationEmailHandlerTests
         _channel.Sent.ShouldHaveSingleItem().Html.ShouldContain("&lt;b&gt;Acme&lt;/b&gt;");
     }
 
-    // A type that is not required says which category's emails are on, by the category's name in the language.
+    // U5: every email says why it came, in its type's own footer, and none links to a settings page. A system admin hears of an
+    // organisation's status because they are a system admin.
     [Fact]
-    public async Task SendNotificationEmail_ATypeOfACategory_NamesTheCategoryInTheFooter()
+    public async Task SendNotificationEmail_APlatformNotification_SaysWhyItCameWithoutALinkToSettings()
     {
         var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["actorName"] = Ada.ToString() };
 
@@ -81,12 +82,14 @@ public sealed class SendNotificationEmailHandlerTests
             Links,
             TestContext.Current.CancellationToken);
 
-        _channel.Sent.ShouldHaveSingleItem().Text.ShouldContain(
-            "You got this email because email notifications for “Platform” are on.");
+        var email = _channel.Sent.ShouldHaveSingleItem();
+        (email.Text.EndsWith("https://platform.example/\n\nYou got this email because you are a system admin and an organisation’s status changed.", StringComparison.Ordinal),
+            email.Html.Contains("settings", StringComparison.Ordinal)).ShouldBe((true, false));
     }
 
+    // U5: an Owner hears of the plan because they are an Owner.
     [Fact]
-    public async Task SendNotificationEmail_ATenantTypeOfACategory_LinksTheFooterToTheWebsNotificationsPage()
+    public async Task SendNotificationEmail_APlanChange_SaysItCameToAnOwner()
     {
         var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["oldPlanName"] = "Free", ["newPlanName"] = "Pro" };
 
@@ -96,41 +99,7 @@ public sealed class SendNotificationEmailHandlerTests
             Links,
             TestContext.Current.CancellationToken);
 
-        var email = _channel.Sent.ShouldHaveSingleItem();
-        email.Text.ShouldEndWith(
-            "You got this email because email notifications for “Organisation plan” are on.\n\nManage email notifications:\nhttps://app.example/settings/notifications");
-        email.Html.ShouldContain("href=\"https://app.example/settings/notifications\"");
-    }
-
-    [Fact]
-    public async Task SendNotificationEmail_APlatformTypeOfACategory_LinksTheFooterToThePlatformsNotificationsPage()
-    {
-        var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["actorName"] = Ada.ToString() };
-
-        await SendNotificationEmailHandler.HandleAsync(
-            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantSuspended, values, "ada@example.com", Language.En, People: People),
-            _channel,
-            Links,
-            TestContext.Current.CancellationToken);
-
-        var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Text.EndsWith("Manage email notifications:\nhttps://platform.example/settings/notifications", StringComparison.Ordinal),
-            email.Html.Contains("href=\"https://platform.example/settings/notifications\"", StringComparison.Ordinal)).ShouldBe((true, true));
-    }
-
-    // A required type cannot be turned off and is not in the preferences (U4), so its footer has no link to them.
-    [Fact]
-    public async Task SendNotificationEmail_ARequiredType_HasNoLinkToTheNotificationsPage()
-    {
-        await SendNotificationEmailHandler.HandleAsync(
-            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.MemberRemoved, Removal("Acme"), "ada@example.com", Language.En, People: People),
-            _channel,
-            Links,
-            TestContext.Current.CancellationToken);
-
-        var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Text.Contains("settings/notifications", StringComparison.Ordinal), email.Html.Contains("settings/notifications", StringComparison.Ordinal))
-            .ShouldBe((false, false));
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldEndWith("https://app.example/\n\nYou got this email because you are an Owner of this organisation.");
     }
 
     // The email writes a date in the recipient's time zone: noon in UTC on 29 November is 30 November in Auckland.

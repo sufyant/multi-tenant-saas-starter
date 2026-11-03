@@ -913,7 +913,7 @@ After the next deploy, check:
 
 - **Push, phone and SMS alerts** come with production (step 47), with a responder seat and an escalation policy in `.betterstack/config.json`.
 - **Errors alerts by environment** come with production (step 47). The Errors integration that calls or pushes gets "Only when tags match" set to the tag `environment` matching `production`, so a staging error never pages the owner.
-- **A status page** is a later step (1.1).
+- **A status page** comes in Template 1.1.
 
 ## 17. The cache
 

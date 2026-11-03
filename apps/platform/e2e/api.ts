@@ -5,7 +5,6 @@ import {
   AuditOperation,
   AuditTargetResponseKind,
   BuiltInRole,
-  type ChangeNotificationPreferencesRequest,
   type CreateTenantRequest,
   type CursorPageOfAuditEntryResponse,
   EntitlementOverrideResponseState,
@@ -17,8 +16,6 @@ import {
   LimitKey,
   type MakeOwnerRequest,
   type MeResponse,
-  NotificationCategory,
-  NotificationChannelKind,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
@@ -706,7 +703,6 @@ export async function mockOverride(
 export const shannonSuspended: NotificationResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000b1",
   type: NotificationType.TenantSuspended,
-  category: NotificationCategory.PlatformTenants,
   title: "Shannon Studio was suspended",
   body: "Ciara Byrne suspended Shannon Studio. Its members can’t open it until it is reactivated.",
   link: {
@@ -717,45 +713,19 @@ export const shannonSuspended: NotificationResponse = {
   readAt: null,
 };
 
-/** A table of the notification preferences: the required row, then each category with its web on and its email off. */
-function preferencesTable(categories: NotificationCategory[]) {
-  const channels = (email: boolean) => [
-    { channel: NotificationChannelKind.Web, enabled: true },
-    { channel: NotificationChannelKind.Email, enabled: email },
-  ];
-  return {
-    channels: channels(true),
-    categories: [
-      {
-        category: NotificationCategory.AccountSecurity,
-        required: true,
-        types: [],
-        channels: channels(true),
-      },
-      ...categories.map((category) => ({
-        category,
-        required: false,
-        types: [],
-        channels: channels(false),
-      })),
-    ],
-  };
-}
-
-/** What the notification answers recorded: the notifications opened, the bell marked read and the preferences saved. */
+/** What the notification answers recorded: the notifications opened and the bell marked read. */
 export type NotificationCalls = {
   opened: string[];
   markedAll: number;
-  saved: ChangeNotificationPreferencesRequest[];
 };
 
 /**
- * The platform's bell, its live stream and the email preferences. The stream holds its answer until the test calls `arrive`, then
+ * The platform's bell and its live stream. The stream holds its answer until the test calls `arrive`, then
  * sends one `notifications` event for the platform's bell and ends, with a long retry so the browser does not open it again.
  */
 export async function mockNotifications(page: Page) {
   const unread = { count: 1 };
-  const calls: NotificationCalls = { opened: [], markedAll: 0, saved: [] };
+  const calls: NotificationCalls = { opened: [], markedAll: 0 };
   let signal = () => {};
   const sent = new Promise<void>((resolve) => {
     signal = resolve;
@@ -781,14 +751,6 @@ export async function mockNotifications(page: Page) {
       headers: { "Content-Type": "text/event-stream" },
       body: 'retry: 600000\nevent: notifications\ndata: {"scope":"platform"}\n\n',
     });
-  });
-  const table = preferencesTable([NotificationCategory.PlatformTenants]);
-  await page.route("**/api/v1/me/notification-preferences", (route) => {
-    if (route.request().method() === "PUT")
-      calls.saved.push(
-        route.request().postDataJSON() as ChangeNotificationPreferencesRequest,
-      );
-    return route.fulfill({ json: table });
   });
   return {
     calls,

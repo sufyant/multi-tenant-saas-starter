@@ -58,6 +58,10 @@ public static class AuditOperations
 
     public const string UserDeleted = "user.deleted";
 
+    /// <summary>
+    /// Retired in step 35: the notification preferences are gone, so no command writes it. Stored entries keep it, and the read names their
+    /// operation from this list (K3).
+    /// </summary>
     public const string UserEmailPreferencesChanged = "user.email_preferences_changed";
 
     public const string UserPreferencesChanged = "user.preferences_changed";

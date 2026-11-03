@@ -248,37 +248,5 @@
     "errorTitle": "Bildirimler yüklenemedi",
     "offlineTitle": "Çevrimdışısınız.",
     "offlineText": "Yeni bildirimler, yeniden çevrimiçi olduğunuzda görünür."
-  },
-  "notificationPreferences": {
-    "email": "E-posta",
-    "main": "E-posta bildirimleri",
-    "mainText": "Açtığım kategoriler için bana e-posta gönder.",
-    "removedNote": "Bir kuruluştan çıkarılırsanız size her zaman e-posta göndeririz.",
-    "offHint": "Kategori seçmek için e-posta bildirimlerini açın.",
-    "save": "Kaydet",
-    "saved": "Bildirim ayarları kaydedildi.",
-    "notSaved": "Bildirim ayarları kaydedilmedi"
-  },
-  "notificationCategories": {
-    "account_security": {
-      "name": "Hesap ve güvenlik",
-      "description": "Hesabınızda ya da bir kuruluşa erişiminizde bilmeniz gereken bir şey olduğunda."
-    },
-    "access": {
-      "name": "Erişiminiz",
-      "description": "Bir kuruluştaki rolünüz değiştiğinde."
-    },
-    "member_invitations": {
-      "name": "Üyeler",
-      "description": "Gönderdiğiniz bir daveti biri kabul ettiğinde."
-    },
-    "tenant_plans": {
-      "name": "Kuruluş planı",
-      "description": "Platform, kuruluşunuzun planını ya da planın bir sınırını veya özelliğini değiştirdiğinde."
-    },
-    "platform_tenants": {
-      "name": "Platform",
-      "description": "Bir kuruluşun ilk Sahibi katıldığında, kuruluşun durumu değiştiğinde ya da kuruluş silindiğinde."
-    }
   }
 }

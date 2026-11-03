@@ -123,18 +123,3 @@ test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
     path: `${folder}/notifications-en-light-desktop.png`,
   });
 });
-
-test("Screenshot_NotificationSettings_ArabicDarkDesktop", async ({ page }) => {
-  await setupClerkTestingToken({ page });
-  await page.emulateMedia({ colorScheme: "dark" });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await mockPlatform(page, Language.Ar);
-  await mockNotifications(page);
-
-  await page.goto("/settings/notifications");
-  await page.getByRole("switch", { name: "المنصة" }).waitFor();
-
-  await page.screenshot({
-    path: `${folder}/notification-settings-ar-dark-desktop.png`,
-  });
-});

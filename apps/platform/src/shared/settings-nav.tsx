@@ -7,19 +7,18 @@ import { useTranslations } from "next-intl";
 /** The addresses of the Settings pages. */
 export const settingsPages = {
   preferences: "/settings/preferences",
-  notifications: "/settings/notifications",
   systemAdmins: "/settings/system-admins",
   plans: "/settings/plans",
 } as const;
 
 /**
- * The Settings SubNav of the platform (the Preferences, SystemAdmins and Plans boards): You › Preferences and Notifications, Platform › System admins
+ * The Settings SubNav of the platform (the Preferences, SystemAdmins and Plans boards): You › Preferences, Platform › System admins
  * and Plans.
  */
 export function SettingsNav({
   current,
 }: {
-  current: "preferences" | "notifications" | "system-admins" | "plans";
+  current: "preferences" | "system-admins" | "plans";
 }) {
   const t = useTranslations("shell");
   return (
@@ -34,11 +33,6 @@ export function SettingsNav({
               id: "preferences",
               label: t("preferences"),
               href: settingsPages.preferences,
-            },
-            {
-              id: "notifications",
-              label: t("notifications"),
-              href: settingsPages.notifications,
             },
           ],
         },

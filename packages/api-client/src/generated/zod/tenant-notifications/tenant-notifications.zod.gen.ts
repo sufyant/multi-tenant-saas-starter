@@ -37,13 +37,6 @@ export const ListNotificationsResponse = zod.object({
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
 }).describe('The type of a notification, area.event.'),
-  "category": zod.enum({
-  AccountSecurity: 'account_security',
-  Access: 'access',
-  MemberInvitations: 'member_invitations',
-  TenantPlans: 'tenant_plans',
-  PlatformTenants: 'platform_tenants',
-}).describe('The category of a notification, which the email preferences name.'),
   "title": zod.string().describe('The title, in the reader\'s language.'),
   "body": zod.string().describe('The body, in the reader\'s language.'),
   "link": zod.object({

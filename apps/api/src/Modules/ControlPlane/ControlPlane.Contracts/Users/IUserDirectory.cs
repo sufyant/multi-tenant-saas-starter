@@ -31,9 +31,4 @@ public interface IUserDirectory
 
     /// <summary>The user ids of every system admin (A4).</summary>
     Task<IReadOnlyList<Guid>> ListSystemAdminIdsAsync(CancellationToken cancellationToken);
-
-    /// <summary>
-    /// The ids of the tenants where the user is a member. The caller's transaction declares no tenant: the read declares the user (R11).
-    /// </summary>
-    Task<IReadOnlyList<Guid>> ListTenantIdsAsync(Guid userId, CancellationToken cancellationToken);
 }

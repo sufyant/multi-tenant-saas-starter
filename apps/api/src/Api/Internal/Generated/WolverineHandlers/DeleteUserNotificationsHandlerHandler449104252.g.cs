@@ -21,7 +21,6 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var notificationsDbContext = new Notifications.Infrastructure.Persistence.NotificationsDbContext(_dbContextOptionsOfNotificationsDbContext, context);
-            var notificationPreferenceRepository = new Notifications.Infrastructure.Persistence.NotificationPreferences.NotificationPreferenceRepository(notificationsDbContext);
             var notificationRepository = new Notifications.Infrastructure.Persistence.Notifications.NotificationRepository(notificationsDbContext);
             // The actual message body
             var userDeletedEvent = (ControlPlane.Contracts.Users.UserDeletedEvent)context.Envelope.Message;
@@ -42,7 +41,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler");
                 
                 // The actual message execution
-                await Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler.HandleAsync(userDeletedEvent, notificationRepository, notificationPreferenceRepository, cancellation).ConfigureAwait(false);
+                await Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler.HandleAsync(userDeletedEvent, notificationRepository, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

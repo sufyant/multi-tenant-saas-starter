@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Notifications.Application.Notifications;
-using Notifications.Domain.NotificationPreferences;
 using Notifications.Domain.Notifications;
-using Notifications.Infrastructure.Persistence.NotificationPreferences;
 using Notifications.Infrastructure.Persistence.Notifications;
 using Tenancy;
 using Wolverine;
@@ -10,9 +8,9 @@ using Wolverine;
 namespace Notifications.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>notifications</c> schema: each user's notifications and email preferences (U1 to U8). Both tables belong to a user, not to a
-/// tenant (R6): row level security, forced, shows a transaction only the rows of the user it declares (R4, R11). The tenant purge and the
-/// retention delete across users through two narrow functions (U8).
+/// The <c>notifications</c> schema: each user's notifications (U1 to U8). The table belongs to a user, not to a tenant (R6): row level
+/// security, forced, shows a transaction only the rows of the user it declares (R4, R11). The tenant purge and the retention delete across
+/// users through two narrow functions (U8).
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbContext> options, IMessageContext? messaging = null)
@@ -27,8 +25,6 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     private Guid? _userId;
 
     internal DbSet<Notification> Notifications => Set<Notification>();
-
-    internal DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -65,6 +61,5 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfiguration(new NotificationConfiguration());
-        modelBuilder.ApplyConfiguration(new NotificationPreferenceConfiguration());
     }
 }

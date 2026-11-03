@@ -21,7 +21,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
   - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
   - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
   - `plans-and-entitlements.md`: a system admin manages the plans, a tenant's plan and its overrides; a tenant endpoint checks its feature and a tenant's method its limit.
-  - `notifications.md`: an event reaches its recipients in the bell, live, and by email by their preferences; the bells, their read state and the retention.
+  - `notifications.md`: an event reaches its recipients in the bell, live, and by email, on the channels that the catalog fixes for its type; the bells, their read state and the retention.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands
@@ -68,19 +68,15 @@ These were decided with the maintainer, with their sources. Do not reopen one, a
 
 ## A new notification
 
-A notification type is a template (U1 to U4). A type tells of one event, and has the name of that event's audit operation in `AuditOperations` (U9). Only where one event tells other people with other texts does a type keep a name of its own; it then goes into `NotificationCatalog.NamedApart` with its reason. A new one needs these things, and the module that raises the event changes only to add an optional field:
+A notification type is a template (U1 to U5). A type tells of one event, and has the name of that event's audit operation in `AuditOperations` (U9). Only where one event tells other people with other texts does a type keep a name of its own; it then goes into `NotificationCatalog.NamedApart` with its reason. A new one needs these things, and the module that raises the event changes only to add an optional field:
 
-1. One entry in `Notifications.Domain/NotificationCatalog.cs`: the type, its category, its bell, its link kind, whether it is required, and the values its texts use. A person is a `Person` value, which stores the user id; never store a person's name or address (K3, U2). A value that may be missing is optional.
-2. Its category (U1, U5). A category is one switch for each channel: its types cannot be chosen one by one, so a type that needs a switch of its own gets a category of its own. Take an existing category in `NotificationCatalog.CategoryKinds`, or add one there with:
-   - who can receive it, its audience: everyone, the holders of a tenant permission in some tenant, or the system admins (`NotificationAudience`; `NotificationReach` reads a tenant permission's name from ControlPlane's list);
-   - whether it is required. A required type goes into a required category, today `account_security`, and a required category holds only required types;
-   - each channel's default. Today the web is on and the email off, but in the required category, which is on in every channel.
-   A new category also needs its name and description under `notificationCategories` in the texts.
-3. Its texts in `packages/emails/messages/{en,tr,ar}.json`, under `notifications`: a short name (`name`), which the preferences list under the category, a title and a body with the values as `{name}`, a text under `without` for each optional value, and the words of a closed list under `notificationWords`. Run `pnpm generate`.
-4. A migration of Notifications: the CHECK of the types reads the catalog, and so does the CHECK of the preferences' categories (`dotnet ef migrations add`; `PendingModelChangesTests` asks for it). A new link kind also needs its value in `NotificationLinkResponseKind` and `Statuses/ResponseStatus.cs`.
+1. Decide whether it is transactional or activity (U5). A notification about the person's account or access is transactional: the product fixes its channels. Any other is activity: the person chooses its channels. The template has only transactional types. An activity type needs the notification settings, which are deferred (`ARCHITECTURE.md`, section 12): stop and ask the maintainer.
+2. One entry in `Notifications.Domain/NotificationCatalog.cs`: the type, its bell, its link kind, its channels, and the values its texts use. Name the channels in the entry: the web, the email, or both. When a person's access or the organisation's status changes, the email goes too; team news goes to the web only (U5). A type of the email needs a `footer` in its texts in every language: why the email came. A person is a `Person` value, which stores the user id; never store a person's name or address (K3, U2). A value that may be missing is optional.
+3. Its texts in `packages/emails/messages/{en,tr,ar}.json`, under `notifications`: a title and a body with the values as `{name}`, a text under `without` for each optional value, and the words of a closed list under `notificationWords`. Run `pnpm generate`.
+4. A migration of Notifications: the CHECK of the types reads the catalog (`dotnet ef migrations add`; `PendingModelChangesTests` asks for it). A new link kind also needs its value in `NotificationLinkResponseKind` and `Statuses/ResponseStatus.cs`.
 5. One handler, `Notify{Type}Handler`, in the resource folder of its event in `Notifications.Application`, with `public const string Type`. It hears the event, names the recipients through ControlPlane's contracts and the values, and returns `NotificationFanOut.ToAsync(...)`. It never names a channel. If the event lacks a value, add it to the event as an optional field.
 
-`NotificationCatalogTests` fails for a type without its texts or its short name in every language, without a text for each optional value, without its handler, without a category of the catalog, or without the name of an audit operation or a reason to be named apart; for a required type outside a required category, or a type that is not required in one; and for a category without its audience or a default for every channel. "Which category?" is a plan question of every feature step (E7).
+`NotificationCatalogTests` fails for a type without its texts in every language with exactly its values, without a text for each optional value, without every word of a closed list, without its handler, without at least one channel, without a footer in every language when it goes by email, or without the name of an audit operation or a reason to be named apart. "Transactional or activity?" is a plan question of every feature step (E7).
 
 ## How we design
 
