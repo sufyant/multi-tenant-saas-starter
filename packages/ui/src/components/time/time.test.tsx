@@ -15,13 +15,14 @@ describe("Time", () => {
     );
   });
 
-  it("Time_Focus_ShowsTheZoneAndUtcInTheTooltip", async () => {
+  it("Time_Focus_ShowsTheDateTheZoneAndItsOffsetOnOneLine", async () => {
     render(<Time at={at} locale="en-IE" timeZone="Europe/Dublin" />);
 
     await userEvent.tab();
 
-    expect(await screen.findByText("13:32 UTC")).toBeInTheDocument();
-    expect(screen.getByText(/\(UTC\+1\)$/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/^16 Oct 2026, 14:32 · .+ \(UTC\+1\)$/),
+    ).toBeInTheDocument();
   });
 
   it("Time_Relative_SaysHowLongAgo", () => {

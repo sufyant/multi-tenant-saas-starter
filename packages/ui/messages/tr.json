@@ -248,5 +248,9 @@
     "errorTitle": "Bildirimler yüklenemedi",
     "offlineTitle": "Çevrimdışısınız.",
     "offlineText": "Yeni bildirimler, yeniden çevrimiçi olduğunuzda görünür."
+  },
+  "patterns": {
+    "copied": "Kopyalandı",
+    "deletedUser": "Silinmiş kullanıcı"
   }
 }

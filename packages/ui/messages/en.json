@@ -248,5 +248,9 @@
     "errorTitle": "Notifications didn’t load",
     "offlineTitle": "You’re offline.",
     "offlineText": "New notifications show when you’re back online."
+  },
+  "patterns": {
+    "copied": "Copied",
+    "deletedUser": "Deleted user"
   }
 }

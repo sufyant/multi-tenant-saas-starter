@@ -6,7 +6,6 @@ import {
   formatDateTime,
   formatRelative,
   formatTime,
-  formatUtc,
   type Instant,
   zoneLabel,
 } from "../../lib/format-date-time";
@@ -34,8 +33,8 @@ const shown = {
 };
 
 /**
- * Every date and time on screen (the Time README): local time only, and on hover or focus, after 300ms, the full local date and
- * time, the zone with its UTC offset and the same moment in UTC. Only `format-date-time.ts` formats (F18).
+ * Every date and time on screen (the Dates and times pattern): local time only, and on hover or focus, after 300ms, one line with
+ * the full local date and time, the zone and its UTC offset: "1 Nov 2026, 14:32 · Irish Standard Time (UTC+0)". Only `format-date-time.ts` formats (F18).
  */
 export function Time({
   at,
@@ -59,12 +58,8 @@ export function Time({
       >
         <time dateTime={iso}>{shown[show](at, { ...options, now })}</time>
       </TooltipTrigger>
-      <TooltipContent className="flex-col items-start gap-0.5">
-        <span>{formatDateTime(at, options)}</span>
-        <span>{zoneLabel(at, options)}</span>
-        <span dir="ltr" className="font-mono">
-          {formatUtc(at, options)}
-        </span>
+      <TooltipContent>
+        {formatDateTime(at, options)} · {zoneLabel(at, options)}
       </TooltipContent>
     </Tooltip>
   );
