@@ -189,6 +189,40 @@ describe("TenantShell", () => {
     );
   });
 
+  it("TenantShell_InSettings_CountsTheMembersAndTheRoles", async () => {
+    route.pathname = "/northwind/settings/members";
+    server.use(
+      // The first handler of a path answers: this role reads members and roles.
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [
+            Permission.TenantMembersRead,
+            Permission.TenantRolesRead,
+          ],
+        }),
+      ),
+      ...answers(1),
+      http.get(`*/v1/tenants/${northwind.id}/members`, () =>
+        HttpResponse.json({ items: [], page: 1, pageSize: 1, total: 11 }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/roles`, () =>
+        HttpResponse.json({ items: [], page: 1, pageSize: 100, total: 8 }),
+      ),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: /^Members ?11$/ }),
+    ).toBeInTheDocument();
+    expect(
+      await within(menu).findByRole("link", { name: /^Roles ?8$/ }),
+    ).toBeInTheDocument();
+  });
+
   it("TenantShell_TabTitle_IsTheUnreadCountThePageAndTheProduct", async () => {
     server.use(...answers(1));
 

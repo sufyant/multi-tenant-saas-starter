@@ -335,7 +335,7 @@ export function AppShell({
                   {crumbs.map((crumb, index) => {
                     const last = index === crumbs.length - 1;
                     return (
-                      <Fragment key={crumb.href ?? crumb.label}>
+                      <Fragment key={`${index}-${crumb.label}`}>
                         {index > 0 && (
                           <li
                             aria-hidden="true"

@@ -3,6 +3,7 @@
 import { useClerk } from "@clerk/nextjs";
 import {
   getGetMeQueryOptions,
+  getListMembersQueryOptions,
   getListMyTenantsQueryOptions,
   type MyTenantResponse,
   MyTenantResponseStatus,
@@ -40,6 +41,7 @@ import { TenantBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
 import { useTenant } from "@/shared/tenant-context";
+import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
 
 /**
@@ -54,6 +56,18 @@ export function TenantShell({ children }: { children: ReactNode }) {
   const { tenant, detail } = useTenant();
   const permissions = detail.permissions;
   const role = roleName(detail.role);
+  const can = (permission: Permission) => permissions.includes(permission);
+  // The settings menu's counts come from the lists' totals, which the API answers already: the members of one page of one, and the
+  // roles of the tenant's one page that the screens read (F51). Only inside Settings, where the menu shows them.
+  const inSettings = pathname.startsWith(`/${tenant.slug}/settings`);
+  const members = useQuery(
+    getListMembersQueryOptions(
+      tenant.id,
+      { pageSize: 1 },
+      { query: { enabled: inSettings && can(Permission.TenantMembersRead) } },
+    ),
+  );
+  const roles = useTenantRoles();
   // The role changed while a page is open (GetMyTenant read again): the page says so until the person opens another page.
   const shownRole = useRef(detail.role.id);
   const [changed, setChanged] = useState<{ role: string; on: string }>();
@@ -68,7 +82,11 @@ export function TenantShell({ children }: { children: ReactNode }) {
       known={{
         tenant,
         role,
-        can: (permission) => permissions.includes(permission),
+        can,
+        counts: {
+          members: members.data?.total,
+          roles: inSettings ? roles.data?.total : undefined,
+        },
       }}
     >
       {changed && changed.on === pathname && (
@@ -107,6 +125,8 @@ type Known = {
   tenant: MyTenantResponse;
   role: string;
   can: (permission: Permission) => boolean;
+  /** The counts after a page of the settings menu: the members and the roles (F59). */
+  counts: Partial<Record<"members" | "roles", number>>;
 };
 
 /** The AppShell with what is known. Without the tenant, the name waits in place and the settings menu shows no page yet. */
@@ -165,6 +185,7 @@ function TenantFrame({
       label: t(`shell.${label}`),
       icon,
       href: `${settings}/${id}`,
+      count: known?.counts[id as keyof Known["counts"]],
     }));
   const home: NavItem = {
     id: "home",
