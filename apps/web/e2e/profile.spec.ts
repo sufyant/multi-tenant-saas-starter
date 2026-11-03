@@ -70,5 +70,5 @@ test("Profile_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await expectAccessible(page);
   expect(bodies).toEqual([{ firstName: "Ayla", lastName: "Kaya" }]);
   await page.getByRole("button", { name: /Ayla Kaya/ }).click();
-  await expect(page.getByText("Ayla Kaya")).toBeVisible();
+  await expect(page.getByRole("menu").getByText("Ayla Kaya")).toBeVisible();
 });
