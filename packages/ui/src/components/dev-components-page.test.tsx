@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { DevComponentGroup, devComponentGroups } from "./dev-components-page";
 
 // The 20 components of the design system's components/index.d.ts, the sign-in parts of step 21b, the preferences form of step 22e,
-// the activity log of step 22g and the shared parts and controls of step 22k.
+// the activity log of step 22g, the shared parts and controls of step 22k and the shell and patterns of step 35.
 const names = [
+  "AccountMenu",
   "ActivityLog",
   "AppShell",
   "Avatar",
@@ -14,13 +15,16 @@ const names = [
   "Checkbox",
   "CodeInput",
   "Combobox",
+  "ConnectionBar",
   "Dialog",
   "EmptyState",
+  "EnvironmentStrip",
   "Freshness",
   "Icon",
   "Input",
   "ListError",
-  "OrgMenu",
+  "OrgSwitcher",
+  "Patterns",
   "PreferencesForm",
   "ProviderButtons",
   "RadioGroup",
@@ -35,7 +39,6 @@ const names = [
   "Tag",
   "Time",
   "Toast",
-  "UserMenu",
 ];
 
 describe("DevComponentsPage", () => {
@@ -48,19 +51,6 @@ describe("DevComponentsPage", () => {
     render(<DevComponentGroup name={name} />);
 
     expect(screen.getByRole("region", { name })).toBeInTheDocument();
-  });
-
-  it("DevComponentGroup_AppShellRailWithLabels_ShowsTheExpandedRail", async () => {
-    render(<DevComponentGroup name="AppShell" />);
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Rail with labels" }),
-    );
-
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
   });
 
   it("DevComponentGroup_Checkbox_ShowsEachState", () => {

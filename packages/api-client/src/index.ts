@@ -1,4 +1,9 @@
 export { type BffOptions, createBff } from "./bff";
+export {
+  isServerUnreachable,
+  type ServerReach,
+  serverReach,
+} from "./connection";
 export * from "./generated/endpoints.schemas.gen";
 export * from "./generated/index.gen";
 export * as schemas from "./generated/zod/index.zod.gen";

@@ -208,7 +208,9 @@
       "invitationLinkExpired": "Bu davet bağlantısının süresi doldu. Yeni bir davet isteyin.",
       "signInAgain": "Güvenliğiniz için çıkış yapıp yeniden giriş yapın, sonra bir kez daha deneyin.",
       "generic": "Giriş yapılamadı. Yeniden deneyin."
-    }
+    },
+    "sessionEndedTitle": "Oturumunuz sona erdi",
+    "sessionEndedText": "Bu cihazda oturumunuz kapatıldı. Bulunduğunuz sayfaya dönmek için yeniden giriş yapın."
   },
   "preferencesForm": {
     "yourName": "Adınız",
@@ -252,5 +254,45 @@
   "patterns": {
     "copied": "Kopyalandı",
     "deletedUser": "Silinmiş kullanıcı"
+  },
+  "appShell": {
+    "navigation": "Ana menü",
+    "settingsNavigation": "Ayarlar menüsü",
+    "openMenu": "Menüyü aç",
+    "search": "Ara veya bir sayfaya git",
+    "searchShortcutMac": "⌘K",
+    "searchShortcutOther": "Ctrl K",
+    "breadcrumb": "Sayfa yolu",
+    "commandTitle": "Komut menüsü",
+    "commandPlaceholder": "Bir komut yazın veya arayın",
+    "commandEmpty": "Eşleşen bir şey yok.",
+    "goTo": "Git",
+    "actions": "Eylemler",
+    "profile": "Profil",
+    "accountAndSecurity": "Hesap ve güvenlik",
+    "version": "Sürüm {version}",
+    "copyVersion": "{version} sürümünü kopyala",
+    "tabTitle": "{page} · {product}",
+    "tabTitleUnread": "({count}) {page} · {product}",
+    "environment": {
+      "staging": "Test ortamı · yalnızca deneme verisi",
+      "preview": "Önizleme · #{number}",
+      "local": "Yerel",
+      "tabStaging": "[Test]",
+      "tabPreview": "[Önizleme #{number}]",
+      "tabLocal": "[Yerel]"
+    },
+    "connection": {
+      "offline": "Çevrimdışısınız. {seconds} sn sonra yeniden deneniyor",
+      "server": "{product} yanıt vermiyor. {seconds} sn sonra yeniden deneniyor",
+      "tryNow": "Şimdi dene",
+      "backOnline": "Yeniden çevrimiçi",
+      "statusPage": "Durum sayfasına bakın"
+    },
+    "authFooter": {
+      "label": "Dil ve yasal bilgiler",
+      "privacy": "Gizlilik"
+    },
+    "supportBody": "Sürüm: {version}"
   }
 }

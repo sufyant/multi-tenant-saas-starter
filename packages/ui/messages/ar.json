@@ -208,7 +208,9 @@
       "invitationLinkExpired": "انتهت صلاحية رابط الدعوة هذا. اطلب دعوة جديدة.",
       "signInAgain": "حفاظًا على أمانك، سجّل الخروج ثم سجّل الدخول مرة أخرى، وبعدها حاول من جديد.",
       "generic": "لم ينجح تسجيل الدخول. حاول مرة أخرى."
-    }
+    },
+    "sessionEndedTitle": "انتهت جلستك",
+    "sessionEndedText": "تم تسجيل خروجك على هذا الجهاز. سجّل الدخول مرة أخرى للعودة إلى الصفحة التي كنت عليها."
   },
   "preferencesForm": {
     "yourName": "اسمك",
@@ -252,5 +254,45 @@
   "patterns": {
     "copied": "تم النسخ",
     "deletedUser": "مستخدم محذوف"
+  },
+  "appShell": {
+    "navigation": "القائمة الرئيسية",
+    "settingsNavigation": "قائمة الإعدادات",
+    "openMenu": "فتح القائمة",
+    "search": "ابحث أو انتقل إلى",
+    "searchShortcutMac": "⌘K",
+    "searchShortcutOther": "Ctrl K",
+    "breadcrumb": "مسار الصفحة",
+    "commandTitle": "قائمة الأوامر",
+    "commandPlaceholder": "اكتب أمرًا أو ابحث",
+    "commandEmpty": "لا توجد نتائج.",
+    "goTo": "انتقل إلى",
+    "actions": "إجراءات",
+    "profile": "الملف الشخصي",
+    "accountAndSecurity": "الحساب والأمان",
+    "version": "الإصدار {version}",
+    "copyVersion": "نسخ الإصدار {version}",
+    "tabTitle": "{page} · {product}",
+    "tabTitleUnread": "({count}) {page} · {product}",
+    "environment": {
+      "staging": "بيئة الاختبار · بيانات تجريبية فقط",
+      "preview": "معاينة · #{number}",
+      "local": "محلي",
+      "tabStaging": "[اختبار]",
+      "tabPreview": "[معاينة #{number}]",
+      "tabLocal": "[محلي]"
+    },
+    "connection": {
+      "offline": "أنت غير متصل. إعادة المحاولة خلال {seconds} ث",
+      "server": "{product} لا يستجيب. إعادة المحاولة خلال {seconds} ث",
+      "tryNow": "حاول الآن",
+      "backOnline": "عاد الاتصال",
+      "statusPage": "اطّلع على صفحة الحالة"
+    },
+    "authFooter": {
+      "label": "اللغة والمعلومات القانونية",
+      "privacy": "الخصوصية"
+    },
+    "supportBody": "الإصدار: {version}"
   }
 }

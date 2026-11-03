@@ -4,7 +4,8 @@ import { useSignIn } from "@clerk/nextjs";
 import type { Language } from "@repo/api-client";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { AuthLayout } from "../auth-layout";
+import { AuthFooter, AuthLayout } from "../auth-layout";
+import { Banner } from "../banner";
 import type { Provider } from "../provider-buttons";
 import {
   type SignInErrorKey,
@@ -13,8 +14,12 @@ import {
 } from "./clerk-errors";
 import { CodeStep } from "./code-step";
 import { EmailStep } from "./email-step";
-import { LanguageSwitcher } from "./language-switcher";
-import { redirectParameter, safeRedirect } from "./safe-redirect";
+import {
+  reasonParameter,
+  redirectParameter,
+  safeRedirect,
+  sessionEnded,
+} from "./safe-redirect";
 import { type SecondFactor, SecondFactorStep } from "./second-factor-step";
 import { TextButton } from "./text-button";
 
@@ -27,6 +32,8 @@ export type SignInProps = {
   platformLabel?: string;
   /** The app's `setLocale` server action (F13). */
   onLanguageChange: (language: Language) => Promise<void>;
+  /** The brand's privacy policy, which the footer links as "Privacy". */
+  privacyUrl: string;
   /** The app's error tracking: a Clerk error code without a message, once per code (F41, F55). */
   onUnexpectedError?: (error: Error) => void;
 };
@@ -52,6 +59,7 @@ export function SignIn({
   brand,
   platformLabel,
   onLanguageChange,
+  privacyUrl,
   onUnexpectedError,
 }: SignInProps) {
   const t = useTranslations("signIn");
@@ -60,6 +68,7 @@ export function SignIn({
   const [email, setEmail] = useState("");
   const [error, setError] = useState<SignInErrorKey>();
   const [resent, setResent] = useState(false);
+  const [ended, setEnded] = useState(false);
   const pending = fetchStatus === "fetching";
   const keyOf = (error: unknown, step: SignInStep) =>
     signInErrorKey(error, step, onUnexpectedError);
@@ -70,6 +79,7 @@ export function SignIn({
   }, [signIn.status]);
   useEffect(() => {
     if (query().has(ssoFailedParameter)) setError("cannotSignIn");
+    setEnded(query().get(reasonParameter) === sessionEnded);
   }, []);
 
   const finish = async () => {
@@ -149,8 +159,16 @@ export function SignIn({
     <AuthLayout
       brand={brand}
       platformLabel={platformLabel}
-      footer={<LanguageSwitcher onChange={onLanguageChange} />}
+      footer={
+        <AuthFooter
+          onLanguageChange={onLanguageChange}
+          privacyUrl={privacyUrl}
+        />
+      }
     >
+      {step === "email" && ended && (
+        <Banner title={t("sessionEndedTitle")}>{t("sessionEndedText")}</Banner>
+      )}
       {step === "email" && (
         <EmailStep
           title={title}

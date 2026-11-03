@@ -94,6 +94,7 @@ function renderSignIn(
         title="Sign in to Starter"
         brand="Starter"
         onLanguageChange={async () => {}}
+        privacyUrl="https://starter.example/privacy"
         onUnexpectedError={onUnexpectedError}
       />
     </NextIntlClientProvider>,
@@ -122,6 +123,27 @@ afterEach(() => {
 });
 
 describe("SignIn", () => {
+  it("SignIn_FirstStep_LinksThePrivacyPolicyInTheFooter", () => {
+    renderSignIn();
+
+    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "https://starter.example/privacy",
+    );
+  });
+
+  it("SignIn_SessionEnded_SaysSoAboveTheFirstStep", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/sign-in?reason=session-ended&redirect_url=${encodeURIComponent("/northwind/settings/members")}`,
+    );
+    renderSignIn();
+
+    expect(await screen.findByText("Your session ended")).toBeInTheDocument();
+    window.history.replaceState(null, "", "/");
+  });
+
   it("SignIn_FirstStep_ShowsTheProvidersThenTheEmailCode", () => {
     fakeSignIn();
 

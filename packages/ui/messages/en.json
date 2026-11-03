@@ -208,7 +208,9 @@
       "invitationLinkExpired": "This invitation link has expired. Ask for a new invitation.",
       "signInAgain": "For your safety, sign out and sign in again, then try once more.",
       "generic": "Sign-in did not work. Try again."
-    }
+    },
+    "sessionEndedTitle": "Your session ended",
+    "sessionEndedText": "You were signed out on this device. Sign in again to go back to the page you were on."
   },
   "preferencesForm": {
     "yourName": "Your name",
@@ -252,5 +254,45 @@
   "patterns": {
     "copied": "Copied",
     "deletedUser": "Deleted user"
+  },
+  "appShell": {
+    "navigation": "Main menu",
+    "settingsNavigation": "Settings menu",
+    "openMenu": "Open menu",
+    "search": "Search or jump to",
+    "searchShortcutMac": "⌘K",
+    "searchShortcutOther": "Ctrl K",
+    "breadcrumb": "Breadcrumb",
+    "commandTitle": "Command menu",
+    "commandPlaceholder": "Type a command or search",
+    "commandEmpty": "Nothing matches.",
+    "goTo": "Go to",
+    "actions": "Actions",
+    "profile": "Profile",
+    "accountAndSecurity": "Account and security",
+    "version": "Version {version}",
+    "copyVersion": "Copy version {version}",
+    "tabTitle": "{page} · {product}",
+    "tabTitleUnread": "({count}) {page} · {product}",
+    "environment": {
+      "staging": "Staging environment · test data only",
+      "preview": "Preview · #{number}",
+      "local": "Local",
+      "tabStaging": "[Staging]",
+      "tabPreview": "[Preview #{number}]",
+      "tabLocal": "[Local]"
+    },
+    "connection": {
+      "offline": "You’re offline. Trying again in {seconds} s",
+      "server": "{product} isn’t answering. Trying again in {seconds} s",
+      "tryNow": "Try now",
+      "backOnline": "Back online",
+      "statusPage": "Check the status page"
+    },
+    "authFooter": {
+      "label": "Language and legal",
+      "privacy": "Privacy"
+    },
+    "supportBody": "Version: {version}"
   }
 }
