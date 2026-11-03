@@ -94,7 +94,7 @@ test("Members_RoleFilter_IsAsHighAsTheSearchField", async ({
   await expectAccessible(browser);
 });
 
-test("Members_OpenADialog_PutsItsBackdropOverTheTopBar", async ({
+test("Members_OpenADialog_PutsItsBackdropOverTheEnvironmentStrip", async ({
   page: browser,
 }) => {
   await open(browser);
@@ -104,14 +104,16 @@ test("Members_OpenADialog_PutsItsBackdropOverTheTopBar", async ({
     browser.getByRole("alertdialog", { name: "Invite a member" }),
   ).toBeVisible();
 
-  // The element on top at the top bar's start is the backdrop, not the bar (F53). The bar's centre is under the dialog itself,
-  // which is centred. The open dialog hides the bar from the accessibility tree, so no role finds it.
-  const onTop = await browser.locator("header").evaluate((bar) => {
-    const box = bar.getBoundingClientRect();
-    return document
-      .elementFromPoint(box.x + 8, box.y + box.height / 2)
-      ?.getAttribute("data-slot");
-  });
+  // The element on top at the environment strip's start is the backdrop, not the strip, which is a sticky layer too (F53). The
+  // tests run as APP_ENVIRONMENT=local, so the strip shows.
+  const onTop = await browser
+    .locator("[data-slot=environment-strip]")
+    .evaluate((bar) => {
+      const box = bar.getBoundingClientRect();
+      return document
+        .elementFromPoint(box.x + 8, box.y + box.height / 2)
+        ?.getAttribute("data-slot");
+    });
   expect(onTop).toBe("alert-dialog-overlay");
   await expectAccessible(browser);
 });

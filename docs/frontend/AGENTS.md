@@ -56,7 +56,9 @@ These were decided with the maintainer in step 21a, with their sources. Do not r
 - `/dev/components` is a `page.dev.tsx`. `next.config.ts` adds the page extension `dev.tsx` only outside production, so `next build` has no such route and `next dev` has it.
 - A value of a contract enum is never a literal, even when it is a word of our own: the action of a suspended user is `account-suspended`, not `suspended`, which `TenantResponseStatus` holds.
 - A command palette in shadcn on Base UI puts `Command` inside `CommandDialog`; without it, cmdk throws.
-- The apps read their variables at start (`instrumentation.ts`), so an image needs every variable of `.env.example` to start.
+- The apps read their variables at start (`instrumentation.ts`), so an image needs every variable of `.env.example` to start. `APP_ENVIRONMENT` is required since step 35: an old `.env.local` without it stops the app at start; add `APP_ENVIRONMENT=local` to each app's `.env.local`.
+- The shell's Playwright tests use a test locale: the web server starts with `E2E_PSEUDO_LOCALE=1` (each `playwright.config.ts`), and a request with the `pseudo-locale` cookie gets every text 40% longer with accents (F60). A dev server that was already running without the variable serves the plain texts, and those tests fail.
+- Only ⌘K or Ctrl K is a shortcut (F28). Do not add a key of one letter or another chord.
 - The publishable key is `CLERK_PUBLISHABLE_KEY`, read at run time, and the sign-in page is the constant `/sign-in` (F7). An old `.env.local` with `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` stops the app at start; rename the line.
 
 ## How we design
