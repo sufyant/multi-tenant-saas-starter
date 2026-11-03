@@ -6,6 +6,7 @@ import {
   Fragment,
   type ReactNode,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -21,7 +22,7 @@ import {
   MenuIcon,
   SearchIcon,
 } from "../icon";
-import { Truncate } from "../truncate";
+import { Truncate, useCut } from "../truncate";
 import {
   Command,
   CommandDialog,
@@ -163,53 +164,16 @@ export function AppShell({
 
   const shortcut = apple ? t("searchShortcutMac") : t("searchShortcutOther");
 
-  /** One item of a menu. On the rail its label is a tooltip; in the drawer and the expanded sidebar it shows. */
-  const item = (entry: NavItem, place: Place | "drawer") => {
-    const active = entry.id === current;
-    const link = (
-      <Link
-        href={entry.href}
-        aria-current={active ? "page" : undefined}
-        onClick={place === "drawer" ? () => setDrawer(false) : undefined}
-        className={cn(
-          rowBase,
-          "text-muted-foreground",
-          place === "rail" &&
-            "max-desktop:size-10 max-desktop:justify-center max-desktop:px-0",
-          active && "bg-accent font-medium text-foreground",
-        )}
-      >
-        <Icon icon={entry.icon} size={16} className="shrink-0" />
-        <span
-          className={cn(
-            "min-w-0 flex-1",
-            place === "rail" && "max-desktop:sr-only",
-          )}
-        >
-          <Truncate>{entry.label}</Truncate>
-        </span>
-        {entry.count !== undefined && (
-          <span
-            className={cn(
-              "text-small font-medium tabular-nums text-muted-foreground",
-              place === "rail" && "max-desktop:hidden",
-            )}
-          >
-            {entry.count}
-          </span>
-        )}
-      </Link>
-    );
-    if (place !== "rail") return <Fragment key={entry.id}>{link}</Fragment>;
-    return (
-      <Tooltip key={entry.id}>
-        <TooltipTrigger render={link} />
-        <TooltipContent side="inline-end" className="desktop:hidden">
-          {entry.label}
-        </TooltipContent>
-      </Tooltip>
-    );
-  };
+  const item = (entry: NavItem, place: Place | "drawer") => (
+    <MenuLink
+      key={entry.id}
+      entry={entry}
+      place={place}
+      active={entry.id === current}
+      linkComponent={Link}
+      onFollow={place === "drawer" ? () => setDrawer(false) : undefined}
+    />
+  );
 
   const search = (place: Place | "drawer") => {
     const button = (
@@ -392,12 +356,16 @@ export function AppShell({
                           )}
                         >
                           {crumb.href && !last ? (
-                            <Link
-                              href={crumb.href}
-                              className="hover:text-foreground"
+                            <Truncate
+                              render={
+                                <Link
+                                  href={crumb.href}
+                                  className="block min-w-0 hover:text-foreground"
+                                />
+                              }
                             >
-                              <Truncate>{crumb.label}</Truncate>
-                            </Link>
+                              {crumb.label}
+                            </Truncate>
                           ) : (
                             <Truncate>{crumb.label}</Truncate>
                           )}
@@ -446,5 +414,73 @@ export function AppShell({
         </Command>
       </CommandDialog>
     </div>
+  );
+}
+
+/**
+ * One item of a menu. On the rail its label is the link's tooltip (the Screen sizes rules); in the expanded sidebar and the
+ * drawer the label shows, and a label cut with "…" gets the same tooltip with its full text (the Long text pattern). The tooltip
+ * opens from the link, so no control sits inside it.
+ */
+function MenuLink({
+  entry,
+  place,
+  active,
+  linkComponent: Link,
+  onFollow,
+}: {
+  entry: NavItem;
+  place: Place | "drawer";
+  active: boolean;
+  linkComponent: ElementType;
+  onFollow?: () => void;
+}) {
+  const label = useRef<HTMLSpanElement>(null);
+  const cut = useCut(label);
+  const rail = place === "rail";
+  const link = (
+    <Link
+      href={entry.href}
+      aria-current={active ? "page" : undefined}
+      onClick={onFollow}
+      className={cn(
+        rowBase,
+        "text-muted-foreground",
+        rail &&
+          "max-desktop:size-10 max-desktop:justify-center max-desktop:px-0",
+        active && "bg-accent font-medium text-foreground",
+      )}
+    >
+      <Icon icon={entry.icon} size={16} className="shrink-0" />
+      <span
+        ref={label}
+        className={cn("min-w-0 flex-1 truncate", rail && "max-desktop:sr-only")}
+      >
+        {entry.label}
+      </span>
+      {entry.count !== undefined && (
+        <span
+          className={cn(
+            "text-small font-medium tabular-nums text-muted-foreground",
+            rail && "max-desktop:hidden",
+          )}
+        >
+          {entry.count}
+        </span>
+      )}
+    </Link>
+  );
+  if (!rail && !cut) return link;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={link} />
+      <TooltipContent
+        side="inline-end"
+        // On the rail of a desktop the label shows: the tooltip stays only for a cut label.
+        className={cn(rail && !cut && "desktop:hidden")}
+      >
+        {entry.label}
+      </TooltipContent>
+    </Tooltip>
   );
 }

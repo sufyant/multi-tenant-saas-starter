@@ -9,7 +9,7 @@ import { z } from "zod";
 // layout gives both to the browser at run time (F55). APP_ENVIRONMENT names the environment for the environment strip and the tab
 // title: production, staging, local or preview-<pull request>. SOURCE_REVISION is the image's commit, which the Dockerfile writes
 // into the image, the same in every environment; the account menu shows its first seven characters, and a run without it shows
-// none. An empty value counts as missing, as Railway gives it for a missing shared one.
+// none. E2E_PSEUDO_LOCALE=1 is for Playwright only: it lets a request ask for the test locale (F60). An empty value counts as missing, as Railway gives it for a missing shared one.
 const optional = <T extends z.ZodType>(type: T) =>
   z.preprocess((value) => (value === "" ? undefined : value), type.optional());
 
@@ -22,6 +22,7 @@ const schema = z
     ERROR_TRACKING_ENVIRONMENT: optional(z.enum(["staging", "production"])),
     APP_ENVIRONMENT: z.string().regex(environmentPattern),
     SOURCE_REVISION: optional(z.string().min(1)),
+    E2E_PSEUDO_LOCALE: optional(z.literal("1")),
   })
   .refine(
     (variables) =>

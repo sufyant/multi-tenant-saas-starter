@@ -144,6 +144,23 @@ describe("AppShell", () => {
     ).toBeInTheDocument();
   });
 
+  // A cut label opens its tooltip from the link itself (WCAG 2.2, 4.1.2): no tab stop sits inside a link.
+  it("AppShell_CutLabels_PutNoTabStopInsideALink", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
+    renderShell({
+      settingsMenu,
+      current: "members",
+      crumbs: [
+        { label: "Settings", href: "/northwind/settings/profile" },
+        { label: "Members" },
+      ],
+    });
+
+    expect(document.querySelectorAll("a [tabindex], a a")).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
+
   it("AppShell_Breadcrumb_EndsWithThePage", () => {
     renderShell();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });

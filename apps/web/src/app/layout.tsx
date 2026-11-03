@@ -1,6 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
-import { environmentOf } from "@repo/ui/lib/environment";
+import { environmentOf, environmentTexts } from "@repo/ui/lib/environment";
 import { directionOf } from "@repo/ui/lib/locale";
 import { shortRevision } from "@repo/ui/lib/support-link";
 import type { Metadata, Viewport } from "next";
@@ -31,15 +31,10 @@ const plexArabic = IBM_Plex_Sans_Arabic({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
   const environment = environmentOf(env().APP_ENVIRONMENT);
-  const mark = {
-    production: "",
-    staging: `${t("appShell.environment.tabStaging")} `,
-    local: `${t("appShell.environment.tabLocal")} `,
-    preview:
-      environment.kind === "preview"
-        ? `${t("appShell.environment.tabPreview", { number: environment.number })} `
-        : "",
-  }[environment.kind];
+  const texts = environmentTexts(environment);
+  const mark = texts
+    ? `${t(`appShell.environment.${texts.tab}`, texts.values)} `
+    : "";
   return {
     title: {
       default: `${mark}${t("meta.title")}`,

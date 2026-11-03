@@ -53,6 +53,19 @@ describe("env", () => {
     },
   );
 
+  // Playwright's server only (F60); any other value is no test locale.
+  it("ReadEnv_PseudoLocale_ReturnsIt", () => {
+    expect(
+      readEnv({ ...valid, E2E_PSEUDO_LOCALE: "1" }).E2E_PSEUDO_LOCALE,
+    ).toBe("1");
+  });
+
+  it("ReadEnv_PseudoLocaleNotOne_FailsWithItsName", () => {
+    expect(() => readEnv({ ...valid, E2E_PSEUDO_LOCALE: "yes" })).toThrow(
+      "E2E_PSEUDO_LOCALE",
+    );
+  });
+
   it("ReadEnv_SourceRevision_ReturnsIt", () => {
     expect(
       readEnv({ ...valid, SOURCE_REVISION: "a1b2c3d4e5" }).SOURCE_REVISION,

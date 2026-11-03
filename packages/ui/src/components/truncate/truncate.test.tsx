@@ -32,4 +32,27 @@ describe("Truncate", () => {
     // The text itself and the tooltip's copy of it.
     expect(await screen.findAllByText(name)).toHaveLength(2);
   });
+
+  // A link holds the text: the link opens the tooltip, and no second tab stop sits inside it.
+  it("Truncate_CutInsideALink_ShowsTheTooltipFromTheLinkWithNoSecondStop", async () => {
+    widths(400, 120);
+    render(<Truncate render={<a href="/settings" />}>{name}</Truncate>);
+
+    await userEvent.tab();
+
+    const link = screen.getByRole("link");
+    expect(link).toHaveFocus();
+    expect(link.querySelector("[tabindex]")).toBeNull();
+    expect(await screen.findAllByText(name)).toHaveLength(2);
+  });
+
+  it("Truncate_FitsInsideALink_RendersTheLinkWithTheText", () => {
+    widths(100, 100);
+    render(<Truncate render={<a href="/settings" />}>Members</Truncate>);
+
+    expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute(
+      "href",
+      "/settings",
+    );
+  });
 });

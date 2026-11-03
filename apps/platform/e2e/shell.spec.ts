@@ -24,6 +24,15 @@ const texts = {
 } as const;
 
 type Size = keyof typeof sizes;
+
+/** Shows the menu: a desktop has it open; a phone opens the drawer with its menu button. */
+const showMenu: Record<
+  Size,
+  (page: Page, button: string | RegExp) => Promise<void>
+> = {
+  desktop: async () => {},
+  phone: (page, button) => page.getByRole("button", { name: button }).click(),
+};
 type Shown = keyof typeof texts;
 
 const open = async (
@@ -63,8 +72,7 @@ for (const size of Object.keys(sizes) as Size[])
         const text = texts[language];
 
         await expect(page.getByText(text.strip, { exact: true })).toBeVisible();
-        if (size === "phone")
-          await page.getByRole("button", { name: text.open }).click();
+        await showMenu[size](page, text.open);
         await expect(
           page.getByRole("navigation", { name: text.menu }),
         ).toBeVisible();
@@ -144,19 +152,15 @@ for (const size of Object.keys(sizes) as Size[])
       path: "/settings/system-admins",
       cookies: [{ name: pseudoCookie, value: "1" }],
     });
-    if (size === "phone")
-      await page.getByRole("button", { name: /^\[Øþéñ/ }).click();
+    await showMenu[size](page, /^\[Øþéñ/);
     await expect(page.getByText(/^\[Ɓåçǩ ţø/).first()).toBeVisible();
 
-    const overflow = await page.evaluate(() => {
-      const page = document.scrollingElement;
-      const cut = [...document.querySelectorAll("main button")]
+    const overflow = await page.evaluate(() => ({
+      sideways: document.documentElement.scrollWidth > window.innerWidth,
+      cut: [...document.querySelectorAll("main button")]
         .filter((button) => button.scrollWidth > button.clientWidth + 1)
-        .map((button) => button.textContent);
-      return {
-        sideways: (page?.scrollWidth ?? 0) > window.innerWidth,
-        cut,
-      };
-    });
+        .map((button) => button.textContent),
+    }));
     expect(overflow).toEqual({ sideways: false, cut: [] });
+    await expectAccessible(page);
   });

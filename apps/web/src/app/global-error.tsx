@@ -49,6 +49,12 @@ export default function GlobalError({
         >
           {text.problems.reload}
         </button>
+        <a
+          href={brand.supportUrl}
+          className="text-body text-primary underline underline-offset-4"
+        >
+          {text.problems.contactSupport}
+        </a>
       </body>
     </html>
   );

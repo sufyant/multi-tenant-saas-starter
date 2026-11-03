@@ -1,1 +1,1 @@
-export { Truncate, type TruncateProps } from "./truncate";
+export { Truncate, type TruncateProps, useCut } from "./truncate";

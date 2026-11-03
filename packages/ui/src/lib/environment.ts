@@ -20,3 +20,25 @@ export function environmentOf(value: string): Environment {
   if (value === "staging" || value === "local") return { kind: value };
   return { kind: "production" };
 }
+
+/** The message keys of an environment's strip and tab mark, under `appShell.environment`, with their values; none in production. */
+export function environmentTexts(environment: Environment): {
+  strip: "staging" | "local" | "preview";
+  tab: "tabStaging" | "tabLocal" | "tabPreview";
+  values: Record<string, number>;
+} | null {
+  switch (environment.kind) {
+    case "production":
+      return null;
+    case "staging":
+      return { strip: "staging", tab: "tabStaging", values: {} };
+    case "local":
+      return { strip: "local", tab: "tabLocal", values: {} };
+    case "preview":
+      return {
+        strip: "preview",
+        tab: "tabPreview",
+        values: { number: environment.number },
+      };
+  }
+}

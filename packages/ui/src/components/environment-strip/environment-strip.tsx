@@ -1,26 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Environment } from "../../lib/environment";
+import { type Environment, environmentTexts } from "../../lib/environment";
 import { FlaskConicalIcon, Icon } from "../icon";
 
-/** The strip's text for each environment but production. */
+/** The strip's text and the tab's mark of each environment but production. */
 export function useEnvironmentText() {
   const t = useTranslations("appShell.environment");
   return (environment: Environment) => {
-    switch (environment.kind) {
-      case "production":
-        return null;
-      case "staging":
-        return { strip: t("staging"), tab: t("tabStaging") };
-      case "local":
-        return { strip: t("local"), tab: t("tabLocal") };
-      case "preview":
-        return {
-          strip: t("preview", { number: environment.number }),
-          tab: t("tabPreview", { number: environment.number }),
-        };
-    }
+    const texts = environmentTexts(environment);
+    return (
+      texts && {
+        strip: t(texts.strip, texts.values),
+        tab: t(texts.tab, texts.values),
+      }
+    );
   };
 }
 
