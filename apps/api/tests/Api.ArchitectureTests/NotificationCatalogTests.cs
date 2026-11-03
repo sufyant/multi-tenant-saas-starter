@@ -8,7 +8,7 @@ using SharedKernel;
 
 namespace Api.ArchitectureTests;
 
-// U1, U2: a notification type is a template. A type of the catalog has its channels, its texts in every language with exactly
+// U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email (U5), its texts in every language with exactly
 // the values it declares, a text without each optional value, every word of a closed list in every language, and one handler that names it
 // (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
 // shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. U9: a type has the name of its event's audit operation, or is named apart with its reason.
@@ -81,6 +81,25 @@ public sealed class NotificationCatalogTests
         ]);
     }
 
+    // U5: an email says why it came, so a type of the email needs its footer in every language.
+    [Fact]
+    public void DeclareNotificationTypes_APlantedTypeOfTheEmailWithoutAFooter_IsFound()
+    {
+        var kind = NotificationCatalog.Of(NotificationCatalog.MemberJoined) with
+        {
+            Channels = [NotificationChannel.Web, NotificationChannel.Email],
+        };
+
+        var gaps = Gaps([kind], HandlerTypes(typeof(NotificationText).Assembly), TextsOf);
+
+        gaps.ShouldBe(
+        [
+            "member.joined: no footer in en",
+            "member.joined: no footer in tr",
+            "member.joined: no footer in ar",
+        ]);
+    }
+
     // U4, U5: the product fixes each type's channels in the catalog, and delivery reads them from there only (the maintainer's decision of
     // 2026-11-01). When a person's access or the organisation's status changes, the email goes too: that person may not be able to open
     // the app and see the bell. Team news goes to the bell only.
@@ -137,7 +156,10 @@ public sealed class NotificationCatalogTests
     // the words of each closed list; none when it has no texts.
     private static Texts? TextsOf(string type, Language language) =>
         NotificationText.TypesOf(language).Contains(type)
-            ? new Texts(without => NotificationText.PlaceholdersOf(language, type, without), list => NotificationText.WordsOf(language, list))
+            ? new Texts(
+                without => NotificationText.PlaceholdersOf(language, type, without),
+                list => NotificationText.WordsOf(language, list),
+                NotificationText.HasFooter(language, type))
             : null;
 
     private static List<string> Gaps(
@@ -185,7 +207,8 @@ public sealed class NotificationCatalogTests
             .SelectMany(value => WordsOf(value).Select(word => (value.Kind == NotificationValueKind.Word ? value.Name : ListOf(value.Kind), word)))
             .Where(word => !found.Words(word.Item1).Contains(word.word))
             .Select(word => $"{kind.Type}: no word {word.word} of {word.Item1} in {tag}");
-        return placeholderGaps.Concat(withoutGaps).Concat(wordGaps).Distinct();
+        var footerGaps = kind.Channels.Contains(NotificationChannel.Email) && !found.HasFooter ? [$"{kind.Type}: no footer in {tag}"] : Array.Empty<string>();
+        return placeholderGaps.Concat(withoutGaps).Concat(wordGaps).Concat(footerGaps).Distinct();
     }
 
     private static IEnumerable<string> PlaceholderGaps(string what, string tag, IEnumerable<string> declared, IReadOnlySet<string>? used)
@@ -215,5 +238,5 @@ public sealed class NotificationCatalogTests
         _ => NotificationText.PersonWords,
     };
 
-    private sealed record Texts(Func<string?, IReadOnlySet<string>?> Placeholders, Func<string, IReadOnlyCollection<string>> Words);
+    private sealed record Texts(Func<string?, IReadOnlySet<string>?> Placeholders, Func<string, IReadOnlyCollection<string>> Words, bool HasFooter);
 }

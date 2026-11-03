@@ -10,7 +10,7 @@ namespace Notifications.UnitTests.Notifications.SendNotificationEmail;
 
 // U2, U4: the generic notification email carries the title and the body that the bell shows, in the recipient's language, and one button
 // to the web app, or to the platform app for the platform's notifications. It names the people with the names it carries, from the moment of
-// the event. A copy of the message sends one email. The footer says only why the email came: nobody chooses the channels (U4).
+// the event. A copy of the message sends one email. The footer of its type says only why the email came: nobody chooses the channels (U4, U5).
 public sealed class SendNotificationEmailHandlerTests
 {
     private static readonly IOptions<NotificationLinkOptions> Links = Options.Create(
@@ -37,7 +37,7 @@ public sealed class SendNotificationEmailHandlerTests
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@example.com", "You were removed from Acme", $"notification/{notificationId}"));
         email.Text.ShouldBe(
             "Starter\n\nYou were removed from Acme\n\nAda Lovelace removed you from Acme. You can no longer open it or see its notifications.\n\nOpen Starter:\nhttps://app.example/\n\n"
-            + "You got this email because it is about your account or your access.");
+            + "You got this email because your access to an organisation changed.");
         email.Html.ShouldContain("href=\"https://app.example/\"");
     }
 
@@ -69,7 +69,8 @@ public sealed class SendNotificationEmailHandlerTests
         _channel.Sent.ShouldHaveSingleItem().Html.ShouldContain("&lt;b&gt;Acme&lt;/b&gt;");
     }
 
-    // Every type is about the person's account or access, so every email says so, and none links to a settings page.
+    // U5: every email says why it came, in its type's own footer, and none links to a settings page. A system admin hears of an
+    // organisation's status because they are a system admin.
     [Fact]
     public async Task SendNotificationEmail_APlatformNotification_SaysWhyItCameWithoutALinkToSettings()
     {
@@ -82,8 +83,23 @@ public sealed class SendNotificationEmailHandlerTests
             TestContext.Current.CancellationToken);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Text.EndsWith("https://platform.example/\n\nYou got this email because it is about your account or your access.", StringComparison.Ordinal),
+        (email.Text.EndsWith("https://platform.example/\n\nYou got this email because you are a system admin and an organisation's status changed.", StringComparison.Ordinal),
             email.Html.Contains("settings", StringComparison.Ordinal)).ShouldBe((true, false));
+    }
+
+    // U5: an Owner hears of the plan because they are an Owner.
+    [Fact]
+    public async Task SendNotificationEmail_APlanChange_SaysItCameToAnOwner()
+    {
+        var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["oldPlanName"] = "Free", ["newPlanName"] = "Pro" };
+
+        await SendNotificationEmailHandler.HandleAsync(
+            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantPlanChanged, values, "ada@example.com", Language.En),
+            _channel,
+            Links,
+            TestContext.Current.CancellationToken);
+
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldEndWith("https://app.example/\n\nYou got this email because you are an Owner of this organisation.");
     }
 
     // The email writes a date in the recipient's time zone: noon in UTC on 29 November is 30 November in Auckland.
