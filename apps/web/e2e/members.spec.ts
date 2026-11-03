@@ -174,8 +174,9 @@ test("Members_Arabic_IsMirrored", async ({ page: browser }) => {
   await expect(browser.locator("html")).toHaveAttribute("dir", "rtl");
   const left = (element: HTMLElement | SVGElement) =>
     element.getBoundingClientRect().left;
+  // Members is a Settings page, so the sidebar holds the settings menu (F59).
   const rail = await browser
-    .getByRole("navigation", { name: "القائمة الرئيسية" })
+    .getByRole("navigation", { name: "قائمة الإعدادات" })
     .evaluate(left);
   expect(rail).toBeGreaterThan(await browser.getByRole("main").evaluate(left));
   await expectAccessible(browser);
