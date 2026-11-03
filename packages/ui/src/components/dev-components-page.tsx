@@ -1223,7 +1223,6 @@ function AppShellPreview({ sample }: { sample: Sample }) {
         pageName={sample.overview}
         crumbs={[{ label: "Northwind Traders" }, { label: sample.overview }]}
         commands={[]}
-        environment={{ kind: "staging" }}
         account={(place) => (
           <AccountMenu
             name="Ayşe Yılmaz"

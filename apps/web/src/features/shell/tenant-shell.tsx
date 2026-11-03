@@ -123,7 +123,7 @@ function TenantFrame({
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  const { environment, version } = useAppFrame();
+  const { version } = useAppFrame();
   const me = useQuery(getGetMeQueryOptions());
   // The bell reads the same list, so the switcher costs no request of its own.
   const tenants = useQuery(
@@ -316,7 +316,6 @@ function TenantFrame({
         }
         commands={commands}
         bar={<ServerBar />}
-        environment={environment}
         tabTitle={tabTitle(pageName, unread.data?.unread)}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}

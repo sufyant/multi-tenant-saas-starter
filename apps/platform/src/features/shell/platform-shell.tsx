@@ -69,7 +69,7 @@ export function PlatformShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  const { environment, version } = useAppFrame();
+  const { version } = useAppFrame();
   const tabTitle = useTabTitleText(t("meta.title"));
   const me = useQuery(getGetMeQueryOptions());
   // One ask of the door per page load, then one more read of GetMe when it lets the person in (F42).
@@ -261,7 +261,6 @@ export function PlatformShell({ children }: { children: ReactNode }) {
         crumbs={crumbs}
         commands={commands}
         bar={<ServerBar />}
-        environment={environment}
         tabTitle={tabTitle(detail ?? pageName, unread.data?.unread)}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}

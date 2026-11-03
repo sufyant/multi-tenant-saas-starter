@@ -31,7 +31,6 @@ const base = {
       items: [{ id: "home", label: "Home", href: "/northwind" }],
     },
   ],
-  environment: { kind: "production" } as const,
 };
 
 const settingsMenu = {
@@ -208,22 +207,6 @@ describe("AppShell", () => {
     fireEvent.keyDown(window, event);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
-
-  it("AppShell_Production_ShowsNoEnvironmentStrip", () => {
-    renderShell();
-
-    expect(
-      document.querySelector("[data-slot=environment-strip]"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("AppShell_Staging_ShowsTheStripAboveEverything", () => {
-    renderShell({ environment: { kind: "staging" } });
-
-    expect(
-      screen.getByText("Staging environment · test data only"),
-    ).toBeInTheDocument();
   });
 
   it("AppShell_TabTitle_SetsTheDocumentTitle", () => {

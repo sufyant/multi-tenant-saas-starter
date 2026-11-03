@@ -9,12 +9,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import type { Environment } from "../../lib/environment";
 import { usePhone } from "../../lib/use-phone";
 import { useTabTitle } from "../../lib/use-tab-title";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
-import { EnvironmentStrip } from "../environment-strip";
 import {
   ArrowLeftIcon,
   ChevronRightIcon,
@@ -95,7 +93,6 @@ export type AppShellProps = {
   commands: CommandSection[];
   /** The one bar of the highest priority, such as the connection bar; the app chooses it (the Billing bar priority pattern). */
   bar?: ReactNode;
-  environment: Environment;
   /** The browser tab's title (`useTabTitle`). */
   tabTitle?: string;
   /** The link element: Next.js's Link in the apps. */
@@ -124,7 +121,7 @@ const rowBase =
  * labels: the head, search (⌘K), Notifications, the main menu, then Settings and the account at its foot; inside Settings the
  * settings layout takes its place. On a tablet it is an icon rail, each label a tooltip. Under bp-tablet a top bar holds the menu
  * button, the page's name and the bell, and the menu opens as a drawer. The content sits in a card with the breadcrumb above it.
- * Outside production the environment strip sits above everything. Only ⌘K or Ctrl K is a shortcut. The whole shell mirrors in
+ * The environment strip above it belongs to the root (`AppFrameProvider`). Only ⌘K or Ctrl K is a shortcut. The whole shell mirrors in
  * right-to-left.
  */
 export function AppShell({
@@ -140,7 +137,6 @@ export function AppShell({
   crumbs,
   commands,
   bar,
-  environment,
   tabTitle,
   linkComponent: Link = "a",
   onNavigate,
@@ -166,7 +162,6 @@ export function AppShell({
   }, []);
 
   const shortcut = apple ? t("searchShortcutMac") : t("searchShortcutOther");
-  const strip = environment.kind !== "production";
 
   /** One item of a menu. On the rail its label is a tooltip; in the drawer and the expanded sidebar it shows. */
   const item = (entry: NavItem, place: Place | "drawer") => {
@@ -310,15 +305,7 @@ export function AppShell({
   };
 
   return (
-    <div
-      className={cn(
-        "flex min-h-dvh flex-col bg-sidebar text-foreground",
-        strip
-          ? "[--strip-height:calc(28px+env(safe-area-inset-top))] tablet:[--strip-height:24px]"
-          : "[--strip-height:0px]",
-      )}
-    >
-      <EnvironmentStrip environment={environment} />
+    <div className="flex min-h-[calc(100dvh-var(--strip-height,0px))] flex-1 flex-col bg-sidebar text-foreground">
       <div className="flex flex-1">
         {!phone && (
           <nav

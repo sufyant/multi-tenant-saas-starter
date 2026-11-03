@@ -123,3 +123,14 @@ test("NotFound_SignedOut_OffersSignIn", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Privacy" })).toBeVisible();
   await expectAccessible(page);
 });
+
+// The environment strip sits above every page outside production, sign-in too. The tests run as APP_ENVIRONMENT=local.
+test("SignIn_LocalEnvironment_ShowsTheStripAndTheTabMark", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await page.goto("/sign-in");
+
+  await expect(
+    page.locator("[data-slot=environment-strip]").getByText("Local"),
+  ).toBeVisible();
+  await expect(page).toHaveTitle(/^\[Local\] /);
+});
