@@ -1,4 +1,5 @@
 import { BuiltInRole } from "@repo/api-client";
+import { getGetMyTenantResponseMock } from "@repo/api-client/msw";
 import { FakeEventSource } from "@repo/ui/test/event-source";
 import { act, screen } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
@@ -69,6 +70,22 @@ describe("NotificationStream", () => {
     expect(FakeEventSource.latest().url).toMatch(
       /\/api\/v1\/me\/notifications\/stream$/,
     );
+  });
+
+  // member.role_changed or tenant.suspended: the stream names no type, so the signal reads the organisation again (F59).
+  it("NotificationStream_ThisTenantsSignal_ReadsTheOrganisationAgain", async () => {
+    await tenantBellWithStream();
+    const tenantReads = { count: 0 };
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}`, () => {
+        tenantReads.count += 1;
+        return HttpResponse.json(getGetMyTenantResponseMock(northwind));
+      }),
+    );
+
+    signal({ scope: "tenant", tenantId: northwind.id });
+
+    await vi.waitFor(() => expect(tenantReads.count).toBe(1));
   });
 
   it("NotificationStream_ThisTenantsSignal_ReadsTheBellAgain", async () => {

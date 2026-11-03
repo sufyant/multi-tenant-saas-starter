@@ -29,6 +29,7 @@ import {
   getListNotificationsInfiniteQueryOptions,
   markAllNotificationsRead,
 } from "./generated/tenant-notifications/tenant-notifications.gen";
+import { getGetMyTenantQueryKey } from "./generated/tenant-tenants/tenant-tenants.gen";
 import type { ProblemDetailsError } from "./mutator";
 
 /**
@@ -82,6 +83,22 @@ export function bellKeysOf(signal: BellSignal): QueryKey[] {
         getListPlatformNotificationsInfiniteQueryKey(),
         getGetPlatformUnreadNotificationCountQueryKey(),
       ];
+  }
+}
+
+/**
+ * The organisation's keys that a signal changes: the stream names no notification type, and a notification may say that the
+ * member's role changed or the organisation stopped (`member.role_changed`, `tenant.suspended`). So a tenant's signal reads that
+ * organisation again (GetMyTenant), and a personal signal every organisation, and the shell shows the change at once (F59).
+ */
+export function accessKeysOf(signal: BellSignal): QueryKey[] {
+  switch (signal.scope) {
+    case "tenant":
+      return [getGetMyTenantQueryKey(signal.tenantId)];
+    case "personal":
+      return [getGetMyTenantQueryKey(everyTenant)];
+    case "platform":
+      return [];
   }
 }
 

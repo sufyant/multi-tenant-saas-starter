@@ -17,6 +17,7 @@ export {
   ProblemDetailsError,
 } from "./mutator";
 export {
+  accessKeysOf,
   type Bell,
   type BellSignal,
   bellKeysOf,
