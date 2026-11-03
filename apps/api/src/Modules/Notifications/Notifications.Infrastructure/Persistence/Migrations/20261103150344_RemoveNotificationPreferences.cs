@@ -13,7 +13,8 @@ namespace Notifications.Infrastructure.Persistence.Migrations
         {
             // Step 35: every notification type is about the person's account or access, so the catalog fixes its channels and nobody
             // chooses them (U4). Both preference tables go, with their rows, policies and CHECKs. The template is not in production, so
-            // this is no expansion: no version reads them any more. The model never mapped email_preferences, so plain SQL drops it.
+            // this is no expansion: the version before fails on them during the deploy (ARCHITECTURE.md, section 13). The model never
+            // mapped email_preferences, so plain SQL drops it.
             migrationBuilder.DropTable(
                 name: "notification_preferences",
                 schema: "notifications");

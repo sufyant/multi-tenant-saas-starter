@@ -8,7 +8,4 @@ public interface IMemberDirectory
 {
     /// <summary>The user ids of the tenant's Owners at this moment: the members whose role holds <c>tenant.owners.manage</c> (A1).</summary>
     Task<IReadOnlyList<Guid>> ListOwnerIdsAsync(CancellationToken cancellationToken);
-
-    /// <summary>The permissions the user's role holds in the tenant, or none when the user is no member.</summary>
-    Task<IReadOnlySet<string>?> FindPermissionsAsync(Guid userId, CancellationToken cancellationToken);
 }

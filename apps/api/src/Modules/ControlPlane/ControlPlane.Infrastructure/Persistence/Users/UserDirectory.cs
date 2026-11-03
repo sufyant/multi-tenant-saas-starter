@@ -66,17 +66,6 @@ public sealed class UserDirectory(ControlPlaneDbContext controlPlane, ReadCache 
     public async Task<IReadOnlyList<Guid>> ListSystemAdminIdsAsync(CancellationToken cancellationToken) =>
         await controlPlane.SystemAdmins.Select(admin => admin.UserId).Order().ToListAsync(cancellationToken);
 
-    // R11: the user's own memberships, in the caller's transaction, which this read declares the user in.
-    public async Task<IReadOnlyList<Guid>> ListTenantIdsAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        await controlPlane.DeclareUserAsync(userId, cancellationToken);
-        return await controlPlane.Memberships
-            .Where(membership => membership.UserId == userId)
-            .Select(membership => membership.TenantId)
-            .Order()
-            .ToListAsync(cancellationToken);
-    }
-
     // The full name, else none: the identity provider may hold a user without a name, and the email address is not a name. A deleted
     // user's name is erased (A8).
     private static string? DisplayName(string? firstName, string? lastName) =>
