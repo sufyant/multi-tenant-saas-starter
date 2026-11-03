@@ -277,7 +277,7 @@ describe("OrganisationPage", () => {
     ).toBeNull();
   });
 
-  it("OrganisationPage_UnknownTenant_ShowsPageNotFound", async () => {
+  it("OrganisationPage_UnknownTenant_ShowsOrganisationNotFound", async () => {
     server.use(
       meAnswer(),
       http.get(`*/v1/platform/tenants/${northwind.id}`, () =>
@@ -287,15 +287,15 @@ describe("OrganisationPage", () => {
 
     renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
 
-    expect(await screen.findByText("Page not found")).toBeVisible();
+    expect(await screen.findByText("Organisation not found")).toBeVisible();
   });
 
-  it("OrganisationPage_IdThatIsNoUuid_ShowsPageNotFoundWithoutACall", async () => {
+  it("OrganisationPage_IdThatIsNoUuid_ShowsOrganisationNotFoundWithoutACall", async () => {
     server.use(meAnswer());
 
     renderWithProviders(<OrganisationPage tenantId="northwind" />);
 
-    expect(await screen.findByText("Page not found")).toBeVisible();
+    expect(await screen.findByText("Organisation not found")).toBeVisible();
   });
 
   it("OrganisationPage_ActivityTab_ReadsThePlatformsEntriesAboutTheOrganisation", async () => {
