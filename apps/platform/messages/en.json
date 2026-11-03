@@ -17,9 +17,7 @@
     "myAccount": "My account",
     "systemAdmins": "System admins",
     "settingsMyAccount": "Settings · My account",
-    "settingsPlatform": "Settings · Platform",
-    "you": "You",
-    "preferences": "Preferences"
+    "settingsPlatform": "Settings · Platform"
   },
   "profile": {
     "title": "Profile",

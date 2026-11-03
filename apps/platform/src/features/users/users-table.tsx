@@ -20,7 +20,7 @@ import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { userNameOf } from "@/shared/name-of";
-import { settingsPages } from "@/shared/settings-nav";
+import { systemAdminsPage } from "@/shared/system-admins";
 import type { useUserActions } from "./use-user-actions";
 import { actionsOf, statuses } from "./user";
 
@@ -43,10 +43,7 @@ export function AdminTags({
   const t = useTranslations("users");
   const tag = (label: string, icon?: LucideIcon) =>
     linked ? (
-      <Link
-        href={settingsPages.systemAdmins}
-        className="rounded-full hover:underline"
-      >
+      <Link href={systemAdminsPage} className="rounded-full hover:underline">
         <Tag icon={icon}>{label}</Tag>
       </Link>
     ) : (

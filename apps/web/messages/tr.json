@@ -23,9 +23,6 @@
     "switchOrganisation": "Kuruluş değiştir",
     "suspended": "Askıya alındı",
     "closed": "Kapatıldı",
-    "you": "Siz",
-    "preferences": "Tercihler",
-    "notifications": "Bildirimler",
     "roleNames": {
       "owner": "Sahip",
       "admin": "Yönetici",

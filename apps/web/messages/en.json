@@ -23,9 +23,6 @@
     "switchOrganisation": "Switch organisation",
     "suspended": "Suspended",
     "closed": "Closed",
-    "you": "You",
-    "preferences": "Preferences",
-    "notifications": "Notifications",
     "roleNames": {
       "owner": "Owner",
       "admin": "Admin",
