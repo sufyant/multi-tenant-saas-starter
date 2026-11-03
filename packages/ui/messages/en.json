@@ -18,7 +18,8 @@
     "label": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "system": "System"
+    "system": "System",
+    "hint": "Saved on this device."
   },
   "languages": {
     "en": "English",
@@ -44,7 +45,24 @@
     "errorTitle": "Something went wrong",
     "errorText": "The page could not load. Your data is safe. Try again.",
     "notFoundTitle": "Page not found",
-    "notFoundText": "This page does not exist."
+    "notFoundText": "This link is old, or the page has moved. Go to Home and find it from there.",
+    "notFoundSignedOut": "This page does not exist, or you need to sign in to see it.",
+    "goHome": "Go to Home",
+    "signIn": "Sign in",
+    "orgNotFoundTitle": "Organisation not found",
+    "orgNotFoundText": "No organisation has the address <address></address>. Check the address, or go to Home.",
+    "sectionText": "This part of the page didn’t load. The rest of the page still works.",
+    "startTitle": "{product} couldn’t start",
+    "startText": "Check your connection and reload the page. If it keeps happening, contact support.",
+    "reload": "Reload",
+    "contactSupport": "Contact support",
+    "suspendedOpenTitle": "{organisation} was suspended",
+    "suspendedOpenText": "You can’t open it until it is reactivated. Nothing you did is lost.",
+    "closedOpenTitle": "{organisation} was closed",
+    "closedOpenText": "You can’t open it any more. Nothing you did is lost.",
+    "roleChangedTitle": "Your role changed to {role}",
+    "roleChangedText": "This page now shows what a {role} can do.",
+    "orgNotFoundLink": "No organisation has this address. Check the link, or go to Home."
   },
   "errors": {
     "auth": {
@@ -208,7 +226,9 @@
       "invitationLinkExpired": "This invitation link has expired. Ask for a new invitation.",
       "signInAgain": "For your safety, sign out and sign in again, then try once more.",
       "generic": "Sign-in did not work. Try again."
-    }
+    },
+    "sessionEndedTitle": "Your session ended",
+    "sessionEndedText": "You were signed out on this device. Sign in again to go back to the page you were on."
   },
   "preferencesForm": {
     "yourName": "Your name",
@@ -248,5 +268,49 @@
     "errorTitle": "Notifications didn’t load",
     "offlineTitle": "You’re offline.",
     "offlineText": "New notifications show when you’re back online."
+  },
+  "patterns": {
+    "copied": "Copied",
+    "deletedUser": "Deleted user"
+  },
+  "appShell": {
+    "navigation": "Main menu",
+    "settingsNavigation": "Settings menu",
+    "openMenu": "Open menu",
+    "search": "Search or jump to",
+    "searchShortcutMac": "⌘K",
+    "searchShortcutOther": "Ctrl K",
+    "breadcrumb": "Breadcrumb",
+    "commandTitle": "Command menu",
+    "commandPlaceholder": "Type a command or search",
+    "commandEmpty": "Nothing matches.",
+    "goTo": "Go to",
+    "actions": "Actions",
+    "profile": "Profile",
+    "accountAndSecurity": "Account and security",
+    "version": "Version {version}",
+    "copyVersion": "Copy version {version}",
+    "tabTitle": "{page} · {product}",
+    "tabTitleUnread": "({count}) {page} · {product}",
+    "environment": {
+      "staging": "Staging environment · test data only",
+      "preview": "Preview · #{number}",
+      "local": "Local",
+      "tabStaging": "[Staging]",
+      "tabPreview": "[Preview #{number}]",
+      "tabLocal": "[Local]"
+    },
+    "connection": {
+      "offline": "You’re offline. Trying again in {seconds} s",
+      "server": "{product} isn’t answering. Trying again in {seconds} s",
+      "tryNow": "Try now",
+      "backOnline": "Back online",
+      "statusPage": "Check the status page"
+    },
+    "authFooter": {
+      "label": "Language and legal",
+      "privacy": "Privacy"
+    },
+    "supportBody": "Version: {version}"
   }
 }

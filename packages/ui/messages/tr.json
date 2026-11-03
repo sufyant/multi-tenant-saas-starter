@@ -18,7 +18,8 @@
     "label": "Tema",
     "light": "Açık",
     "dark": "Koyu",
-    "system": "Sistem"
+    "system": "Sistem",
+    "hint": "Bu cihazda saklanır."
   },
   "languages": {
     "en": "English",
@@ -44,7 +45,24 @@
     "errorTitle": "Bir sorun oluştu",
     "errorText": "Sayfa yüklenemedi. Verileriniz güvende. Yeniden deneyin.",
     "notFoundTitle": "Sayfa bulunamadı",
-    "notFoundText": "Bu sayfa yok."
+    "notFoundText": "Bu bağlantı eski ya da sayfa taşındı. Ana sayfaya gidip oradan bulun.",
+    "notFoundSignedOut": "Bu sayfa yok ya da görmek için giriş yapmanız gerekiyor.",
+    "goHome": "Ana sayfaya git",
+    "signIn": "Giriş yap",
+    "orgNotFoundTitle": "Kuruluş bulunamadı",
+    "orgNotFoundText": "<address></address> adresinde bir kuruluş yok. Adresi kontrol edin ya da ana sayfaya gidin.",
+    "sectionText": "Sayfanın bu bölümü yüklenmedi. Sayfanın geri kalanı çalışıyor.",
+    "startTitle": "{product} başlatılamadı",
+    "startText": "Bağlantınızı kontrol edip sayfayı yeniden yükleyin. Sorun sürerse destekle iletişime geçin.",
+    "reload": "Yeniden yükle",
+    "contactSupport": "Destekle iletişime geç",
+    "suspendedOpenTitle": "{organisation} askıya alındı",
+    "suspendedOpenText": "Yeniden etkinleştirilene kadar açamazsınız. Yaptığınız hiçbir şey kaybolmadı.",
+    "closedOpenTitle": "{organisation} kapatıldı",
+    "closedOpenText": "Artık açamazsınız. Yaptığınız hiçbir şey kaybolmadı.",
+    "roleChangedTitle": "Rolünüz {role} olarak değişti",
+    "roleChangedText": "Bu sayfa artık bir {role} rolünün yapabileceklerini gösteriyor.",
+    "orgNotFoundLink": "Bu adreste bir kuruluş yok. Bağlantıyı kontrol edin ya da ana sayfaya gidin."
   },
   "errors": {
     "auth": {
@@ -208,7 +226,9 @@
       "invitationLinkExpired": "Bu davet bağlantısının süresi doldu. Yeni bir davet isteyin.",
       "signInAgain": "Güvenliğiniz için çıkış yapıp yeniden giriş yapın, sonra bir kez daha deneyin.",
       "generic": "Giriş yapılamadı. Yeniden deneyin."
-    }
+    },
+    "sessionEndedTitle": "Oturumunuz sona erdi",
+    "sessionEndedText": "Bu cihazda oturumunuz kapatıldı. Bulunduğunuz sayfaya dönmek için yeniden giriş yapın."
   },
   "preferencesForm": {
     "yourName": "Adınız",
@@ -248,5 +268,49 @@
     "errorTitle": "Bildirimler yüklenemedi",
     "offlineTitle": "Çevrimdışısınız.",
     "offlineText": "Yeni bildirimler, yeniden çevrimiçi olduğunuzda görünür."
+  },
+  "patterns": {
+    "copied": "Kopyalandı",
+    "deletedUser": "Silinmiş kullanıcı"
+  },
+  "appShell": {
+    "navigation": "Ana menü",
+    "settingsNavigation": "Ayarlar menüsü",
+    "openMenu": "Menüyü aç",
+    "search": "Ara veya bir sayfaya git",
+    "searchShortcutMac": "⌘K",
+    "searchShortcutOther": "Ctrl K",
+    "breadcrumb": "Sayfa yolu",
+    "commandTitle": "Komut menüsü",
+    "commandPlaceholder": "Bir komut yazın veya arayın",
+    "commandEmpty": "Eşleşen bir şey yok.",
+    "goTo": "Git",
+    "actions": "Eylemler",
+    "profile": "Profil",
+    "accountAndSecurity": "Hesap ve güvenlik",
+    "version": "Sürüm {version}",
+    "copyVersion": "{version} sürümünü kopyala",
+    "tabTitle": "{page} · {product}",
+    "tabTitleUnread": "({count}) {page} · {product}",
+    "environment": {
+      "staging": "Test ortamı · yalnızca deneme verisi",
+      "preview": "Önizleme · #{number}",
+      "local": "Yerel",
+      "tabStaging": "[Test]",
+      "tabPreview": "[Önizleme #{number}]",
+      "tabLocal": "[Yerel]"
+    },
+    "connection": {
+      "offline": "Çevrimdışısınız. {seconds} sn sonra yeniden deneniyor",
+      "server": "{product} yanıt vermiyor. {seconds} sn sonra yeniden deneniyor",
+      "tryNow": "Şimdi dene",
+      "backOnline": "Yeniden çevrimiçi",
+      "statusPage": "Durum sayfasına bakın"
+    },
+    "authFooter": {
+      "label": "Dil ve yasal bilgiler",
+      "privacy": "Gizlilik"
+    },
+    "supportBody": "Sürüm: {version}"
   }
 }

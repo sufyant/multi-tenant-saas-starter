@@ -7,30 +7,27 @@
     "format": "ar-SA"
   },
   "shell": {
-    "navigation": "القائمة الرئيسية",
-    "menu": "فتح القائمة",
-    "search": "بحث",
-    "searchShortcut": "⌘K",
-    "railToggle": "تسميات القائمة",
-    "railShortcut": "⌘B",
-    "breadcrumb": "المسار",
-    "commandTitle": "انتقال إلى",
-    "commandPlaceholder": "ابحث عن صفحة",
-    "commandEmpty": "لم يتم العثور على صفحة",
     "home": "الرئيسية",
-    "overview": "نظرة عامة",
     "settings": "الإعدادات",
-    "preferences": "التفضيلات",
+    "yourOrganisations": "مؤسساتك",
+    "backTo": "العودة إلى {organisation}",
+    "myAccount": "حسابي",
+    "organisation": "المؤسسة",
+    "general": "عام",
     "members": "الأعضاء",
-    "you": "أنت",
+    "roles": "الأدوار",
+    "activityLog": "سجل النشاط",
+    "settingsMyAccount": "الإعدادات · حسابي",
+    "settingsOrganisation": "الإعدادات · المؤسسة",
+    "inviteMember": "دعوة عضو",
     "switchOrganisation": "تبديل المؤسسة",
-    "language": "اللغة",
-    "roles": {
+    "suspended": "معلّقة",
+    "closed": "مغلقة",
+    "roleNames": {
       "owner": "مالك",
       "admin": "مشرف",
       "member": "عضو"
-    },
-    "notifications": "الإشعارات"
+    }
   },
   "organisations": {
     "chooseTitle": "اختر مؤسسة",
@@ -47,8 +44,8 @@
     "organisation": "المؤسسة",
     "text": "تظهر أقسام المنتج في القائمة عند إضافتها. لا يوجد شيء آخر لتفعله هنا الآن."
   },
-  "preferences": {
-    "title": "التفضيلات",
+  "profile": {
+    "title": "الملف الشخصي",
     "text": "تتبعك هذه الإعدادات في كل مؤسسة وعلى كل جهاز.",
     "nameNote": "يظهر اسمك لأعضاء كل مؤسسة تنتمي إليها."
   },
@@ -107,9 +104,9 @@
     "roles": "الأدوار"
   },
   "permissionDenied": {
-    "title": "لا يمكنك فتح {page}",
-    "text": "دورك في {organisation} هو {role}. يمكن للمالكين والمشرفين قراءة {page}. اطلب من أحدهم إذا احتجت إلى شيء منها.",
-    "back": "العودة إلى نظرة عامة"
+    "title": "لا يمكنك فتح هذه الصفحة",
+    "text": "لا يشمل دورك في {organisation} صفحة {page}. اطلب من مالك أو مسؤول إذا احتجت إليها.",
+    "back": "العودة إلى الرئيسية"
   },
   "members": {
     "title": "الأعضاء",

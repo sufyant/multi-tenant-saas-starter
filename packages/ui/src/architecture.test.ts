@@ -109,4 +109,17 @@ describe("architecture of packages/ui", () => {
       );
     },
   );
+
+  // Each app holds the same connection bar, the same error pages and the same root layout, because they read the client's caches,
+  // the app's error tracking and its variables (F59, F27, and the deviations table).
+  it.each([
+    "src/shared/server-bar.tsx",
+    "src/shared/error-page.tsx",
+    "src/app/layout.tsx",
+    "src/app/global-error.tsx",
+  ])("F59_%s_IsTheSameInBothApps", (file) => {
+    expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
+      readFileSync(join(packages, "../apps/platform", file), "utf8"),
+    );
+  });
 });

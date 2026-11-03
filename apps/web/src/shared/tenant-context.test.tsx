@@ -12,7 +12,7 @@ import {
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -167,7 +167,7 @@ describe("TenantProvider", () => {
     ).toBeInTheDocument();
   });
 
-  it("TenantProvider_SlugNotInTheList_SaysNoAccessYet", async () => {
+  it("TenantProvider_SlugNotInTheListOfAPersonWithoutOrganisations_SaysNoAccessYet", async () => {
     server.use(tenants([]));
 
     renderWithProviders(
@@ -178,6 +178,32 @@ describe("TenantProvider", () => {
 
     expect(
       await screen.findByRole("heading", { name: "No access yet" }),
+    ).toBeInTheDocument();
+  });
+
+  it("TenantProvider_SlugNotInTheListOfAMember_SaysOrganisationNotFoundWithTheAddress", async () => {
+    server.use(
+      http.get("*/v1/me/tenants", ({ request }) =>
+        HttpResponse.json({
+          items: new URL(request.url).searchParams.has("q") ? [] : [northwind],
+          page: 1,
+          pageSize: 100,
+          total: new URL(request.url).searchParams.has("q") ? 0 : 1,
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <TenantProvider slug="northwnd">
+        <Probe />
+      </TenantProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Organisation not found" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(`${window.location.host}/northwnd`),
     ).toBeInTheDocument();
   });
 
@@ -309,6 +335,16 @@ describe("TenantProvider", () => {
       await screen.findByRole("button", { name: "Remove" }),
     );
 
+    // The page stays under a dialog that says so; Close shows the organisation's page (the Suspended while open screen).
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Northwind Traders was suspended",
+    });
+    expect(dialog).toHaveTextContent(
+      "You can’t open it until it is reactivated. Nothing you did is lost.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Close" }),
+    );
     expect(
       await screen.findByRole("heading", {
         name: "Northwind Traders is suspended",
@@ -336,6 +372,7 @@ describe("TenantProvider", () => {
       </TenantProvider>,
     );
 
+    await userEvent.click(await screen.findByRole("button", { name: "Close" }));
     expect(
       await screen.findByRole("heading", {
         name: "Northwind Traders is suspended",

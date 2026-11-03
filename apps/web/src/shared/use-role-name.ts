@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 
 /** The name of a role in the user's language: a built-in role from the messages, a custom role by its own name. */
 export function useRoleName() {
-  const t = useTranslations("shell.roles");
+  const t = useTranslations("shell.roleNames");
   return (role: Pick<RoleResponse, "name" | "builtIn">): string => {
     const builtIn = builtInRoleOf(role);
     return builtIn ? t(builtIn) : role.name;

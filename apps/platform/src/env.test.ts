@@ -11,6 +11,7 @@ const valid = {
   API_URL: "https://api.example.test",
   CLERK_PUBLISHABLE_KEY: "pk_test_x",
   CLERK_SECRET_KEY: "sk_test_x",
+  APP_ENVIRONMENT: "local",
 };
 
 describe("env", () => {
@@ -31,6 +32,44 @@ describe("env", () => {
         NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_x",
       }),
     ).toThrow("CLERK_PUBLISHABLE_KEY");
+  });
+
+  it.each(["production", "staging", "local", "preview-182"])(
+    "ReadEnv_AppEnvironment_%s_ReturnsIt",
+    (environment) => {
+      expect(
+        readEnv({ ...valid, APP_ENVIRONMENT: environment }).APP_ENVIRONMENT,
+      ).toBe(environment);
+    },
+  );
+
+  // A missing name would show production's frame in a test environment, or the other way round: the app does not start.
+  it.each([undefined, "", "Staging", "preview"])(
+    "ReadEnv_AppEnvironment_%s_FailsWithItsName",
+    (environment) => {
+      expect(() => readEnv({ ...valid, APP_ENVIRONMENT: environment })).toThrow(
+        "APP_ENVIRONMENT",
+      );
+    },
+  );
+
+  // Playwright's server only (F60); any other value is no test locale.
+  it("ReadEnv_PseudoLocale_ReturnsIt", () => {
+    expect(
+      readEnv({ ...valid, E2E_PSEUDO_LOCALE: "1" }).E2E_PSEUDO_LOCALE,
+    ).toBe("1");
+  });
+
+  it("ReadEnv_PseudoLocaleNotOne_FailsWithItsName", () => {
+    expect(() => readEnv({ ...valid, E2E_PSEUDO_LOCALE: "yes" })).toThrow(
+      "E2E_PSEUDO_LOCALE",
+    );
+  });
+
+  it("ReadEnv_SourceRevision_ReturnsIt", () => {
+    expect(
+      readEnv({ ...valid, SOURCE_REVISION: "a1b2c3d4e5" }).SOURCE_REVISION,
+    ).toBe("a1b2c3d4e5");
   });
 
   // Error tracking is optional: without a DSN it does not start, so local runs, CI and the tests send nothing (F55).
@@ -166,6 +205,16 @@ describe("env in railway.ts", () => {
       shared("PLATFORM_ERROR_TRACKING_DSN"),
     );
   });
+
+  // The environment strip names the Railway environment; production shows none.
+  it.each(["staging", "production"])(
+    "DefineService_InRailwayEnvironment_%s_NamesItsEnvironment",
+    async (environment) => {
+      expect((await serviceIn(environment)).variables.APP_ENVIRONMENT).toEqual(
+        literal(environment),
+      );
+    },
+  );
 
   // The environment tag of each event is set from the Railway environment, as the API's (F55).
   it.each([

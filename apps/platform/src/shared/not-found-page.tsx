@@ -1,22 +1,16 @@
-import { EmptyState } from "@repo/ui/components/empty-state";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+"use client";
 
-/** "Page not found": the root's not-found page, and an organisation the API does not know (404 `tenant.not_found`). */
-export function NotFoundPage() {
-  const t = useTranslations();
-  return (
-    <EmptyState
-      title={t("problems.notFoundTitle")}
-      description={t("problems.notFoundText")}
-      action={
-        <Link
-          href="/"
-          className="text-primary underline-offset-4 hover:underline"
-        >
-          {t("common.goHome")}
-        </Link>
-      }
-    />
-  );
+import { NotFound } from "@repo/ui/components/not-found";
+import Link from "next/link";
+
+/**
+ * "Page not found" inside the shell for a record the API does not know (404): a plan or a user; "Organisation not found" for an
+ * organisation (`tenant.not_found`). Organisations is the way on.
+ */
+export function NotFoundPage({
+  of = "page",
+}: {
+  of?: "page" | "organisation";
+}) {
+  return <NotFound kind={of} href="/" linkComponent={Link} />;
 }

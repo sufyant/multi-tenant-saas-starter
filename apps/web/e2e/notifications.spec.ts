@@ -13,7 +13,7 @@ const open = async (page: Page, path = `/${northwind.slug}`) => {
 
 const bell = (page: Page, unread: number) =>
   page
-    .getByRole("banner")
+    .getByRole("navigation", { name: "Main menu" })
     .getByRole("button", { name: `Notifications, ${unread} unread` });
 
 test("Bell_Opened_ListsTheNotificationsAndOpensOnesPage", async ({ page }) => {
@@ -40,7 +40,7 @@ test("Bell_MarkAll_MarksTheBellRead", async ({ page }) => {
 
   await expect(
     page
-      .getByRole("banner")
+      .getByRole("navigation", { name: "Main menu" })
       .getByRole("button", { name: "Notifications", exact: true }),
   ).toBeVisible();
   expect(calls.markedAll).toBe(1);

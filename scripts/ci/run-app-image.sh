@@ -38,6 +38,7 @@ run() {
     -e CLERK_PUBLISHABLE_KEY="$key" \
     -e CLERK_SECRET_KEY=sk_test_fake_not_a_secret \
     -e CLERK_TELEMETRY_DISABLED=1 \
+    -e APP_ENVIRONMENT=local \
     "$app"
   status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 \
     --retry 30 --retry-delay 1 --retry-all-errors --retry-max-time 30 \

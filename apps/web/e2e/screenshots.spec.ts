@@ -6,7 +6,6 @@ import {
   MyTenantResponseStatus,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
-import { railCookieName } from "@repo/ui/lib/rail-state";
 import {
   roles as builtInRoles,
   customRoles,
@@ -66,7 +65,7 @@ test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
   await page.setViewportSize({ width: 834, height: 1112 });
   await mockApi(page, Language.Tr);
 
-  await page.goto(`/${northwind.slug}/settings/preferences`);
+  await page.goto(`/${northwind.slug}/settings/profile`);
   await page.getByRole("heading", { level: 1, name: "Tercihler" }).waitFor();
 
   await page.screenshot({ path: `${folder}/preferences-tr-light-tablet.png` });
@@ -80,8 +79,10 @@ const rowAction = (menu: string, item: string) => async (page: Page) => {
   await page.getByRole("menuitem", { name: item }).click();
   await page.getByRole("alertdialog").waitFor();
 };
-/** Opens the user menu and waits until it shows. */
-const openUserMenu = (name: string) => async (page: Page) => {
+/** Opens the account menu, from the phone's drawer on a phone, and waits until it shows. */
+const openUserMenu = (name: RegExp) => async (page: Page) => {
+  const drawer = page.getByRole("button", { name: "Open menu" });
+  if (await drawer.isVisible()) await drawer.click();
   await page.getByRole("button", { name }).click();
   await expect(page.getByRole("menu")).toBeVisible();
 };
@@ -94,7 +95,6 @@ const shots: {
   width: number;
   height: number;
   query: string;
-  rail: boolean;
   /** A step after the page loads: open a dialog or a menu. */
   open?: (page: Page) => Promise<void>;
 }[] = [
@@ -107,18 +107,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
-  },
-  {
-    name: "Members_OwnerEnglishLightDesktopRailExpanded",
-    file: "members-owner-en-light-desktop-rail",
-    role: BuiltInRole.Owner,
-    language: Language.En,
-    scheme: "light",
-    width: 1440,
-    height: 900,
-    rail: true,
-    query: "",
   },
   {
     name: "Members_AdminEnglishDarkDesktop",
@@ -129,7 +117,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
   },
   {
     name: "Members_MemberTurkishLightTablet",
@@ -139,18 +126,6 @@ const shots: {
     scheme: "light",
     width: 834,
     height: 1112,
-    query: "",
-    rail: false,
-  },
-  {
-    name: "Members_OwnerArabicDarkDesktopRailExpanded",
-    file: "members-owner-ar-dark-desktop-rail",
-    role: BuiltInRole.Owner,
-    language: Language.Ar,
-    scheme: "dark",
-    width: 1440,
-    height: 900,
-    rail: true,
     query: "",
   },
   {
@@ -162,7 +137,6 @@ const shots: {
     width: 390,
     height: 844,
     query: "",
-    rail: false,
   },
   {
     name: "Invitations_OwnerEnglishLightDesktop",
@@ -173,7 +147,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "?tab=invitations",
-    rail: false,
   },
   {
     name: "Invitations_OwnerTurkishDarkPhone",
@@ -184,7 +157,6 @@ const shots: {
     width: 390,
     height: 844,
     query: "?tab=invitations",
-    rail: false,
   },
   {
     name: "ChangeRole_AdminEnglishLightDesktop",
@@ -195,7 +167,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
     open: rowAction("Actions for John Byrne", "Change role"),
   },
   {
@@ -207,7 +178,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
     open: rowAction("إجراءات John Byrne", "تغيير الدور"),
   },
   {
@@ -219,7 +189,6 @@ const shots: {
     width: 390,
     height: 844,
     query: "",
-    rail: false,
     open: rowAction("Actions for John Byrne", "Change role"),
   },
   {
@@ -231,7 +200,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
     open: (page) =>
       page.getByRole("button", { name: "Actions for Dara Quinn" }).click(),
   },
@@ -244,7 +212,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "?tab=invitations",
-    rail: false,
     open: (page) => page.getByRole("button", { name: "Invite member" }).click(),
   },
   {
@@ -256,7 +223,6 @@ const shots: {
     width: 390,
     height: 844,
     query: "?tab=invitations",
-    rail: false,
     open: (page) => page.getByRole("button", { name: "Üye davet et" }).click(),
   },
   {
@@ -268,7 +234,6 @@ const shots: {
     width: 1440,
     height: 900,
     query: "?tab=invitations",
-    rail: false,
     open: (page) =>
       page.getByRole("button", { name: "إجراءات niall@northwind.io" }).click(),
   },
@@ -281,8 +246,7 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
-    open: openUserMenu("AY Account"),
+    open: openUserMenu(/Ayşe Yılmaz/),
   },
   {
     name: "UserMenu_OwnerArabicDarkDesktop",
@@ -293,8 +257,7 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    rail: false,
-    open: openUserMenu("AY الحساب"),
+    open: openUserMenu(/Ayşe Yılmaz/),
   },
   {
     name: "UserMenu_OwnerEnglishLightPhone",
@@ -305,8 +268,7 @@ const shots: {
     width: 390,
     height: 844,
     query: "",
-    rail: false,
-    open: openUserMenu("AY Account"),
+    open: openUserMenu(/Ayşe Yılmaz/),
   },
   {
     name: "MembersByRole_OwnerEnglishLightDesktop",
@@ -317,18 +279,14 @@ const shots: {
     width: 1440,
     height: 900,
     query: "?roleId=0198f0a2-0000-7000-8000-0000000000c1",
-    rail: false,
   },
 ];
 
 for (const shot of shots) {
-  test(`Screenshot_${shot.name}`, async ({ page, context, baseURL }) => {
+  test(`Screenshot_${shot.name}`, async ({ page }) => {
     await setupClerkTestingToken({ page });
     await page.emulateMedia({ colorScheme: shot.scheme });
     await page.setViewportSize({ width: shot.width, height: shot.height });
-    await context.addCookies([
-      { name: railCookieName, value: String(shot.rail), url: baseURL },
-    ]);
     await mockMembers(page, { role: shot.role, language: shot.language });
 
     await page.goto(`${members}${shot.query}`);

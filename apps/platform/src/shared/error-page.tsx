@@ -1,33 +1,38 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
-import { EmptyState } from "@repo/ui/components/empty-state";
-import { useTranslations } from "next-intl";
+import { AppError } from "@repo/ui/components/app-error";
+import { useAppFrame } from "@repo/ui/components/app-frame";
 import { useEffect } from "react";
 import { reportBrowserError } from "@/error-tracking/report-error";
 
-/** The body of every route group's error.tsx (F27): what happened, that data is safe, and a retry. */
-export function ErrorPage({
-  error,
-  retry,
-}: {
-  error: Error & { digest?: string };
-  retry: () => void;
-}) {
-  const t = useTranslations();
+type ErrorProps = { error: Error & { digest?: string }; retry: () => void };
+
+/** Sends the error once to error tracking (F55). */
+function useReport(error: Error) {
   useEffect(() => {
     console.error(error);
     reportBrowserError(error);
   }, [error]);
+}
+
+/** The error.tsx of a route inside the shell (F27): the error stays in the content, and the shell and its menu stay. */
+export function SectionErrorPage({ error, retry }: ErrorProps) {
+  useReport(error);
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
-      <EmptyState
-        kind="error"
-        title={t("problems.errorTitle")}
-        description={t("problems.errorText")}
-        code={error.digest}
-        action={<Button onClick={() => retry()}>{t("common.tryAgain")}</Button>}
-      />
-    </main>
+    <AppError kind="section" code={error.digest} onRetry={() => retry()} />
+  );
+}
+
+/** The error.tsx of a route outside the shell (F27): the app could not start, the only full-page error. */
+export function StartErrorPage({ error }: ErrorProps) {
+  useReport(error);
+  const { version } = useAppFrame();
+  return (
+    <AppError
+      kind="start"
+      code={error.digest}
+      version={version}
+      onRetry={() => window.location.reload()}
+    />
   );
 }

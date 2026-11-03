@@ -7,6 +7,7 @@ import {
   ProblemDetailsError,
   problemOf,
 } from "@repo/api-client";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import type { QueryClient } from "@tanstack/react-query";
 
 /** The API asks for a fresh second factor before a grant or a revoke (A6a): the dialog asks for the code, then sends again. */
@@ -43,7 +44,8 @@ export function afterRefusal(
 ): void {
   if (!(error instanceof ProblemDetailsError)) return;
   const { kind } = actionFor(error.status, error.problem);
-  if (kind === "sign-in") window.location.assign("/sign-in");
+  if (kind === "sign-in")
+    window.location.assign(signInAgainUrl(window.location));
   if (kind === "account-suspended" || kind === "account-deleted") {
     void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
     return;

@@ -7,7 +7,13 @@ import {
   getListNotificationsInfiniteQueryKey,
   getListPlatformNotificationsInfiniteQueryKey,
 } from "./generated/index.gen";
-import { bellKeysOf, bellOf, everyBellKey } from "./notifications";
+import { getGetMyTenantQueryKey } from "./generated/tenant-tenants/tenant-tenants.gen";
+import {
+  accessKeysOf,
+  bellKeysOf,
+  bellOf,
+  everyBellKey,
+} from "./notifications";
 
 const tenantId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f";
 
@@ -62,5 +68,25 @@ describe("bellKeysOf", () => {
       ...bellKeysOf({ scope: "personal" }),
       ...bellKeysOf({ scope: "platform" }),
     ]);
+  });
+});
+
+// A notification may say the member's role or the organisation changed (member.role_changed, tenant.suspended), and the stream
+// names no type: a signal reads the organisation again, so the shell shows the change at once (F59).
+describe("accessKeysOf", () => {
+  it("AccessKeysOf_TenantSignal_ReadsThatOrganisationAgain", () => {
+    expect(accessKeysOf({ scope: "tenant", tenantId })).toEqual([
+      getGetMyTenantQueryKey(tenantId),
+    ]);
+  });
+
+  it("AccessKeysOf_PersonalSignal_ReadsEveryOrganisationAgain", () => {
+    expect(accessKeysOf({ scope: "personal" })).toEqual([
+      getGetMyTenantQueryKey(""),
+    ]);
+  });
+
+  it("AccessKeysOf_PlatformSignal_ReadsNoOrganisation", () => {
+    expect(accessKeysOf({ scope: "platform" })).toEqual([]);
   });
 });

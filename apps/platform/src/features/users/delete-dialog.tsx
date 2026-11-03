@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 import { Initial } from "@/shared/initial";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
-import { settingsPages } from "@/shared/settings-nav";
+import { systemAdminsPage } from "@/shared/system-admins";
 import { afterRefusal, refreshUser, type User } from "./user";
 
 const organisationPage = (tenantId: string) => `/organisations/${tenantId}`;
@@ -102,7 +102,7 @@ export function DeleteDialog({
         title: t.rich("isSystemAdmin", { name, ...isolated }),
         text: t("isSystemAdminText"),
         link: {
-          href: settingsPages.systemAdmins,
+          href: systemAdminsPage,
           label: t("openSystemAdmins"),
         },
       };

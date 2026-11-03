@@ -7,35 +7,23 @@
     "format": "tr-TR"
   },
   "shell": {
-    "navigation": "Ana menü",
-    "menu": "Menüyü aç",
-    "search": "Ara",
-    "searchShortcut": "⌘K",
-    "railToggle": "Menü etiketleri",
-    "railShortcut": "⌘B",
-    "breadcrumb": "Konum",
-    "commandTitle": "Git",
-    "commandPlaceholder": "Sayfa ara",
-    "commandEmpty": "Sayfa bulunamadı",
-    "home": "Ana sayfa",
     "organisations": "Kuruluşlar",
     "users": "Kullanıcılar",
+    "plans": "Planlar",
+    "activityLog": "Etkinlik kaydı",
     "settings": "Ayarlar",
-    "preferences": "Tercihler",
-    "you": "Siz",
-    "language": "Dil",
     "platform": "Platform",
+    "backToPlatform": "Platforma dön",
+    "myAccount": "Hesabım",
     "systemAdmins": "Sistem yöneticileri",
-    "activity": "Etkinlik",
-    "plans": "Planlar"
+    "settingsMyAccount": "Ayarlar · Hesabım",
+    "settingsPlatform": "Ayarlar · Platform"
   },
-  "preferences": {
-    "title": "Tercihler",
+  "profile": {
+    "title": "Profil",
     "text": "Bunlar sizi her cihazda izler.",
     "nameNote": "Adınız platformun Etkinliğinde görünür.",
-    "email": "E-posta",
-    "theme": "Tema",
-    "themeHint": "Bu cihazda saklanır."
+    "email": "E-posta"
   },
   "access": {
     "noAccessTitle": "Erişiminiz yok",

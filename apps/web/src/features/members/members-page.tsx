@@ -21,13 +21,13 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs } from "@repo/ui/components/tabs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useCallback, useId, useState } from "react";
+import { useQueryState } from "nuqs";
+import { type ReactNode, useCallback, useEffect, useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
-import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
@@ -52,6 +52,14 @@ export function MembersPage() {
   const { tenant } = useTenant();
   const [params, setParams] = useListParams();
   const [inviting, setInviting] = useState(false);
+  // The command menu's "Invite member" opens the page with `?invite=1`: the dialog opens once, and the address forgets it, as the
+  // dialog's state is the page's own (F8).
+  const [invite, setInvite] = useQueryState("invite", { history: "replace" });
+  useEffect(() => {
+    if (invite !== "1") return;
+    setInviting(true);
+    void setInvite(null);
+  }, [invite, setInvite]);
   const me = useQuery(getGetMeQueryOptions());
   const plan = usePlan();
   const planReason = usePlanReason();
@@ -339,12 +347,5 @@ export function MembersPage() {
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="members" />
-      <section className="flex min-w-0 flex-1 flex-col gap-4">
-        {children}
-      </section>
-    </div>
-  );
+  return <section className="flex min-w-0 flex-col gap-4">{children}</section>;
 }

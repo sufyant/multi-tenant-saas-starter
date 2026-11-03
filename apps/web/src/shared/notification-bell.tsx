@@ -17,8 +17,13 @@ import {
 } from "@repo/api-client";
 import {
   NotificationBell,
+  type NotificationBellProps,
   type NotificationListState,
 } from "@repo/ui/components/notification-bell";
+
+type BellPlace = NotificationBellProps["place"];
+
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import {
@@ -36,8 +41,15 @@ import { useState } from "react";
 import { notificationHref } from "./notification-link";
 
 /** The bell inside an organisation: that tenant's notifications and the personal ones (`GET /v1/tenants/{tenantId}/notifications`). */
-export function TenantBell({ tenantId }: { tenantId: string }) {
-  return <BellOf bell={tenantBell(tenantId)} />;
+export function TenantBell({
+  tenantId,
+  place,
+}: {
+  tenantId: string;
+  /** Where the shell draws it: a sidebar row, a rail icon or the phone's top bar. */
+  place?: BellPlace;
+}) {
+  return <BellOf bell={tenantBell(tenantId)} place={place} />;
 }
 
 /** The bell of "No access yet" and Choose an organisation: the personal notifications only (`GET /v1/me/notifications`). */
@@ -50,7 +62,7 @@ export function PersonalBell() {
  * opens. Opening an item marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for
  * the answer, then reads the bell again, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
  */
-function BellOf({ bell }: { bell: Bell }) {
+function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations();
@@ -79,7 +91,8 @@ function BellOf({ bell }: { bell: Bell }) {
           ? actionFor(error.status, error.problem)
           : null;
       // A 401 goes to sign-in; a suspended or deleted user reads GetMe again, and the shell shows its screen (F4, F47).
-      if (action?.kind === "sign-in") return window.location.assign("/sign-in");
+      if (action?.kind === "sign-in")
+        return window.location.assign(signInAgainUrl(window.location));
       if (
         action?.kind === "account-suspended" ||
         action?.kind === "account-deleted"
@@ -119,6 +132,7 @@ function BellOf({ bell }: { bell: Bell }) {
       markingAll={markAll.isPending}
       timeZone={me.data?.timeZone}
       linkComponent={Link}
+      place={place}
     />
   );
 }

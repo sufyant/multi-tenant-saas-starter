@@ -12,7 +12,6 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { DetailList } from "@/shared/detail-list";
 import { PermissionDenied } from "@/shared/permission-denied";
-import { SettingsNav } from "@/shared/settings-nav";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
 
@@ -78,12 +77,5 @@ export function GeneralPage() {
 }
 
 function Frame({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="general" />
-      <section className="flex min-w-0 flex-1 flex-col gap-4">
-        {children}
-      </section>
-    </div>
-  );
+  return <section className="flex min-w-0 flex-col gap-4">{children}</section>;
 }

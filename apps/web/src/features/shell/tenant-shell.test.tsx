@@ -1,11 +1,18 @@
-import { ErrorCode, type MyTenantResponse, Permission } from "@repo/api-client";
+import {
+  ErrorCode,
+  getGetMyTenantQueryKey,
+  type MyTenantResponse,
+  Permission,
+} from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
   getGetMyTenantMockHandler,
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
-import { screen, within } from "@testing-library/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { fireEvent, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
@@ -22,9 +29,10 @@ import { renderWithProviders } from "../../../test/render";
 import { problem, roleOf } from "../../../test/tenant";
 import { PendingTenantShell, TenantShell } from "./tenant-shell";
 
+const route = vi.hoisted(() => ({ pathname: "/northwind" }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-  usePathname: () => "/northwind/settings/preferences",
+  usePathname: () => route.pathname,
 }));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({ signOut: vi.fn() }),
@@ -36,7 +44,10 @@ vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  route.pathname = "/northwind";
+});
 afterAll(() => server.close());
 
 const northwind: MyTenantResponse = {
@@ -47,9 +58,23 @@ const northwind: MyTenantResponse = {
   role: roleOf.owner,
 };
 
+const harbour: MyTenantResponse = {
+  ...northwind,
+  id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e30",
+  name: "Blue Harbour Logistics",
+  slug: "blue-harbour",
+  status: "suspended",
+  role: roleOf.member,
+};
+
 const tenantsOf = (total: number) =>
   http.get("*/v1/me/tenants", () =>
-    HttpResponse.json({ items: [northwind], page: 1, pageSize: 100, total }),
+    HttpResponse.json({
+      items: [northwind, harbour].slice(0, total),
+      page: 1,
+      pageSize: 100,
+      total,
+    }),
   );
 
 const answers = (total: number) => [
@@ -72,71 +97,225 @@ const answers = (total: number) => [
   ),
 ];
 
+/** GetMyTenant read again, as after a focus or a signal: the page's view of the role follows. */
+function ReadTheTenantAgain() {
+  const queryClient = useQueryClient();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void queryClient.invalidateQueries({
+          queryKey: getGetMyTenantQueryKey(northwind.id),
+        })
+      }
+    >
+      Read again
+    </button>
+  );
+}
+
 const shell = () => (
   <TenantProvider
     slug="northwind"
-    pending={<PendingTenantShell slug="northwind" railExpanded={false} />}
+    pending={<PendingTenantShell slug="northwind" />}
   >
-    <TenantShell railExpanded={false}>Content</TenantShell>
+    <TenantShell>Content</TenantShell>
   </TenantProvider>
 );
 
 describe("TenantShell", () => {
-  it("TenantShell_TopBar_ShowsTheOrganisationsBell", async () => {
+  it("TenantShell_MainMenu_ShowsTheOrganisationsBellHomeAndSettings", async () => {
     server.use(...answers(1));
 
     renderWithProviders(shell());
 
-    // The pending shell's top bar gives way to the shell's, so the test finds the bell first.
-    const bell = await screen.findByRole("button", {
-      name: "Notifications, 4 unread",
-    });
-    expect(screen.getByRole("banner")).toContainElement(bell);
-  });
-
-  it("TenantShell_RailSettings_OpensGeneral", async () => {
-    server.use(...answers(1));
-
-    renderWithProviders(shell());
-
-    const rail = await screen.findByRole("navigation", { name: "Main" });
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Main menu" });
     expect(
-      within(rail).getByRole("link", { name: "Settings" }),
-    ).toHaveAttribute("href", "/northwind/settings/general");
+      await within(menu).findByRole("button", {
+        name: "Notifications, 4 unread",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Home", "Settings"]);
   });
 
-  it("TenantShell_Breadcrumb_StartsWithTheOrganisation", async () => {
+  it("TenantShell_Settings_OpensProfile", async () => {
     server.use(...answers(1));
 
     renderWithProviders(shell());
 
-    await screen.findByText("Northwind Traders");
+    const menu = await screen.findByRole("navigation", { name: "Main menu" });
+    expect(
+      within(menu).getByRole("link", { name: "Settings" }),
+    ).toHaveAttribute("href", "/northwind/settings/profile");
+  });
+
+  it("TenantShell_Breadcrumb_IsTheOrganisationThenTheHome", async () => {
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
     const crumbs = within(
       screen.getByRole("navigation", { name: "Breadcrumb" }),
     ).getAllByRole("listitem");
-    expect(crumbs[0]).toHaveTextContent("Northwind Traders");
-    expect(screen.getAllByText("Preferences").length).toBeGreaterThan(0);
+    expect(crumbs.map((crumb) => crumb.textContent)).toEqual([
+      "Northwind Traders",
+      "Home",
+    ]);
   });
 
-  it("TenantShell_OneOrganisation_ShowsNoOrgMenu", async () => {
+  it("TenantShell_InSettings_ShowsBackMyAccountAndThePagesTheRoleCanOpen", async () => {
+    route.pathname = "/northwind/settings/members";
     server.use(...answers(1));
 
     renderWithProviders(shell());
 
-    await screen.findByText("Northwind Traders");
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    // The role reads members only: General, Roles and Activity log are not in its menu.
     expect(
-      screen.queryByRole("button", { name: "Northwind Traders" }),
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Back to Northwind Traders", "Profile", "Members"]);
+    expect(within(menu).getByRole("link", { name: "Members" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("TenantShell_InSettings_CountsTheMembersAndTheRoles", async () => {
+    route.pathname = "/northwind/settings/members";
+    server.use(
+      // The first handler of a path answers: this role reads members and roles.
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [
+            Permission.TenantMembersRead,
+            Permission.TenantRolesRead,
+          ],
+        }),
+      ),
+      ...answers(1),
+      http.get(`*/v1/tenants/${northwind.id}/members`, () =>
+        HttpResponse.json({ items: [], page: 1, pageSize: 1, total: 11 }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/roles`, () =>
+        HttpResponse.json({ items: [], page: 1, pageSize: 100, total: 8 }),
+      ),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: /^Members ?11$/ }),
+    ).toBeInTheDocument();
+    expect(
+      await within(menu).findByRole("link", { name: /^Roles ?8$/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("TenantShell_TabTitle_IsTheUnreadCountThePageAndTheProduct", async () => {
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await vi.waitFor(() => expect(document.title).toBe("(4) Home · Starter"));
+  });
+
+  it("TenantShell_CommandMenu_GroupsGoToAndSettingsWithoutAnInviteTheRoleCannotSend", async () => {
+    server.use(...answers(1));
+    renderWithProviders(shell());
+    await screen.findByText("Content");
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Command menu" });
+
+    expect(within(dialog).getByText("Go to")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Settings · My account"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Settings · Organisation"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("option", { name: "Invite member" }),
     ).not.toBeInTheDocument();
   });
 
-  it("TenantShell_ManyOrganisations_OpensTheOrgMenuFromTheName", async () => {
+  it("TenantShell_RoleChangesWhileOpen_SaysSoOnThePage", async () => {
+    let reads = 0;
+    server.use(
+      tenantsOf(1),
+      http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () =>
+        HttpResponse.json({ unread: 0 }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}`, () => {
+        reads += 1;
+        return HttpResponse.json(
+          getGetMyTenantResponseMock({
+            ...northwind,
+            role: reads === 1 ? roleOf.owner : roleOf.member,
+            permissions: [Permission.TenantMembersRead],
+          }),
+        );
+      }),
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+    );
+    renderWithProviders(
+      <TenantProvider slug="northwind">
+        <TenantShell>
+          <ReadTheTenantAgain />
+        </TenantShell>
+      </TenantProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Read again" }),
+    );
+
+    expect(
+      await screen.findByText("Your role changed to Member"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("This page now shows what a Member can do."),
+    ).toBeInTheDocument();
+  });
+
+  it("TenantShell_OneOrganisation_ShowsNoSwitcherMenu", async () => {
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    expect(
+      screen.queryByRole("button", { name: /Northwind Traders/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("TenantShell_ManyOrganisations_OpensTheSwitcherFromTheName", async () => {
     server.use(...answers(2));
 
     renderWithProviders(shell());
 
-    expect(
-      await screen.findByRole("button", { name: "Northwind Traders" }),
-    ).toBeInTheDocument();
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Northwind Traders/ }),
+    );
+
+    const item = await screen.findByRole("menuitem", {
+      name: /Blue Harbour Logistics/,
+    });
+    expect(item).toHaveAttribute("href", "/blue-harbour");
+    expect(within(item).getByText("Suspended")).toBeInTheDocument();
+    expect(within(item).getByText("Member")).toBeInTheDocument();
   });
 
   it.each([
@@ -181,19 +360,18 @@ describe("TenantShell", () => {
     const waiting = () => http.get("*/v1/me/tenants", held);
     const meWaits = () => http.get("*/v1/me", held);
 
-    it("TenantShell_ListMyTenantsWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
+    it("TenantShell_ListMyTenantsWaits_ShowsTheMenuAndTheBreadcrumbAtOnce", () => {
       server.use(waiting(), meWaits());
 
       renderWithProviders(shell());
 
-      const rail = screen.getByRole("navigation", { name: "Main" });
+      const menu = screen.getByRole("navigation", { name: "Main menu" });
       expect(
-        within(rail).getByRole("link", { name: "Settings" }),
-      ).toHaveAttribute("href", "/northwind/settings/general");
-      expect(screen.getByRole("banner")).toBeInTheDocument();
+        within(menu).getByRole("link", { name: "Settings" }),
+      ).toHaveAttribute("href", "/northwind/settings/profile");
       expect(
         screen.getByRole("navigation", { name: "Breadcrumb" }),
-      ).toHaveTextContent("Preferences");
+      ).toHaveTextContent("Home");
       expect(screen.queryByText("Content")).not.toBeInTheDocument();
     });
 
@@ -216,12 +394,12 @@ describe("TenantShell", () => {
 
       renderWithProviders(shell());
 
-      const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-      const before = crumbs.querySelectorAll("[data-slot='skeleton']");
+      const menu = screen.getByRole("navigation", { name: "Main menu" });
+      const before = menu.querySelectorAll("[data-slot='skeleton']");
       await screen.findByRole("status", { name: "Loading" });
 
       expect(before).toHaveLength(0);
-      expect(crumbs.querySelector("[data-slot='skeleton']")).toHaveAttribute(
+      expect(menu.querySelector("[data-slot='skeleton']")).toHaveAttribute(
         "aria-hidden",
         "true",
       );
@@ -240,7 +418,7 @@ describe("TenantShell", () => {
         await screen.findByRole("status", { name: "Loading" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("navigation", { name: "Main" }),
+        screen.getByRole("navigation", { name: "Main menu" }),
       ).toBeInTheDocument();
       expect(screen.queryByText("Content")).not.toBeInTheDocument();
     });
@@ -259,7 +437,7 @@ describe("TenantShell", () => {
         await screen.findByRole("heading", { name: "No access yet" }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("navigation", { name: "Main" }),
+        screen.queryByRole("navigation", { name: "Main menu" }),
       ).not.toBeInTheDocument();
     });
 
@@ -284,7 +462,7 @@ describe("TenantShell", () => {
         }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("navigation", { name: "Main" }),
+        screen.queryByRole("navigation", { name: "Main menu" }),
       ).not.toBeInTheDocument();
     });
 
@@ -305,7 +483,7 @@ describe("TenantShell", () => {
         }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("navigation", { name: "Main" }),
+        screen.queryByRole("navigation", { name: "Main menu" }),
       ).not.toBeInTheDocument();
     });
 
@@ -325,7 +503,7 @@ describe("TenantShell", () => {
         }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("navigation", { name: "Main" }),
+        screen.queryByRole("navigation", { name: "Main menu" }),
       ).not.toBeInTheDocument();
     });
   });

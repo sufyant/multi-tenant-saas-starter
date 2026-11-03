@@ -12,6 +12,7 @@ import {
 import { ActivityLog } from "@repo/ui/components/activity-log";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { ListError } from "@repo/ui/components/list-error";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
@@ -70,7 +71,8 @@ export function PlatformActivity({
       result.error instanceof ProblemDetailsError
         ? actionFor(result.error.status, result.error.problem).kind
         : null;
-    if (action === "sign-in") return window.location.assign("/sign-in");
+    if (action === "sign-in")
+      return window.location.assign(signInAgainUrl(window.location));
     if (action === "account-suspended" || action === "account-deleted") {
       await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       return;

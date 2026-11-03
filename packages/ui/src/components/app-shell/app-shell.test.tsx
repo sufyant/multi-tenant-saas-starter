@@ -1,241 +1,298 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-import { HomeIcon, SettingsIcon } from "../icon";
-import { AppShell } from "./app-shell";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "../../../messages/en.json";
+import {
+  ActivityIcon,
+  HomeIcon,
+  SettingsIcon,
+  UserIcon,
+  UsersIcon,
+} from "../icon";
+import { AppShell, type AppShellProps } from "./app-shell";
 
-const nav = [
-  { id: "overview", label: "Overview", icon: HomeIcon, href: "/northwind" },
-  {
+const base = {
+  head: () => <span>Northwind Traders</span>,
+  main: [{ id: "home", label: "Home", icon: HomeIcon, href: "/northwind" }],
+  settings: {
     id: "settings",
     label: "Settings",
     icon: SettingsIcon,
-    href: "/northwind/settings",
-    placement: "bottom" as const,
+    href: "/northwind/settings/general",
   },
-];
-
-const labels = {
-  navigation: "Main",
-  menu: "Open menu",
-  search: "Search",
-  searchShortcut: "⌘K",
-  breadcrumb: "Breadcrumb",
-  commandTitle: "Go to",
-  commandPlaceholder: "Search pages",
-  commandEmpty: "No page found",
-  close: "Close",
-  railToggle: "Menu labels",
-  railShortcut: "⌘B",
-};
-
-const props = {
-  nav,
-  current: "settings",
-  logo: "S",
-  logoLabel: "Home",
-  logoHref: "/northwind",
-  crumbs: [
-    { label: "Northwind Traders" },
-    { label: "Settings" },
-    { label: "Preferences" },
+  current: "home",
+  pageName: "Home",
+  crumbs: [{ label: "Northwind Traders" }, { label: "Home" }],
+  commands: [
+    {
+      id: "go-to",
+      label: "Go to",
+      items: [{ id: "home", label: "Home", href: "/northwind" }],
+    },
   ],
-  userMenu: <span>AY</span>,
-  labels,
 };
+
+const settingsMenu = {
+  back: { label: "Back to Northwind Traders", href: "/northwind" },
+  groups: [
+    {
+      id: "my-account",
+      label: "My account",
+      items: [
+        {
+          id: "profile",
+          label: "Profile",
+          icon: UserIcon,
+          href: "/northwind/settings/profile",
+        },
+      ],
+    },
+    {
+      id: "organisation",
+      label: "Organisation",
+      items: [
+        {
+          id: "members",
+          label: "Members",
+          icon: UsersIcon,
+          href: "/northwind/settings/members",
+          count: 11,
+        },
+        {
+          id: "activity",
+          label: "Activity log",
+          icon: ActivityIcon,
+          href: "/northwind/settings/activity",
+        },
+      ],
+    },
+  ],
+};
+
+function renderShell(props: Partial<AppShellProps> = {}) {
+  const onNavigate = vi.fn();
+  render(
+    <NextIntlClientProvider locale="en" messages={en}>
+      <AppShell {...base} onNavigate={onNavigate} {...props}>
+        Page
+      </AppShell>
+    </NextIntlClientProvider>,
+  );
+  return onNavigate;
+}
+
+/** jsdom has no layout: the phone layout follows the breakpoint token, which the test sets and a matchMedia that never matches. */
+function onAPhone() {
+  document.documentElement.style.setProperty("--bp-tablet", "768px");
+}
 
 describe("AppShell", () => {
-  it("AppShell_Bell_SitsBeforeTheUserMenuInTheTopBar", () => {
-    render(
-      <AppShell
-        {...props}
-        bell={<button type="button">Notifications</button>}
-        onNavigate={vi.fn()}
-      >
-        Content
-      </AppShell>,
-    );
+  afterEach(() => {
+    document.documentElement.style.removeProperty("--bp-tablet");
+    document.title = "";
+  });
 
-    const bar = screen.getByRole("banner");
-    const bell = within(bar).getByRole("button", { name: "Notifications" });
+  it("AppShell_MainMenu_ShowsTheHeadSearchHomeAndSettingsAtTheFoot", () => {
+    renderShell();
+    const menu = screen.getByRole("navigation", { name: "Main menu" });
+
+    expect(within(menu).getByText("Northwind Traders")).toBeInTheDocument();
     expect(
-      bell.compareDocumentPosition(within(bar).getByText("AY")) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it("AppShell_CurrentSection_IsThePageInTheRail", () => {
-    render(
-      <AppShell {...props} onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
-
-    const rail = screen.getByRole("navigation", { name: "Main" });
+      within(menu).getByRole("button", { name: "Search or jump to" }),
+    ).toBeInTheDocument();
     expect(
-      within(rail).getByRole("link", { name: "Settings" }),
-    ).toHaveAttribute("aria-current", "page");
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Home", "Settings"]);
+    expect(within(menu).getByRole("link", { name: "Home" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
-  it("AppShell_Breadcrumb_StartsWithTheOrganisation", () => {
-    render(
-      <AppShell {...props} onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
+  it("AppShell_SettingsMenu_ShowsBackAndItsGroupsInPlaceOfTheMainMenu", () => {
+    renderShell({ settingsMenu, current: "members" });
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
 
-    const crumbs = within(
-      screen.getByRole("navigation", { name: "Breadcrumb" }),
-    ).getAllByRole("listitem");
-    expect(crumbs[0]).toHaveTextContent("Northwind Traders");
+    expect(
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual([
+      "Back to Northwind Traders",
+      "Profile",
+      "Members11",
+      "Activity log",
+    ]);
+    expect(within(menu).getByText("My account")).toBeInTheDocument();
+    expect(within(menu).getByText("Organisation")).toBeInTheDocument();
+    expect(within(menu).queryByRole("link", { name: "Home" })).toBeNull();
   });
 
-  it("AppShell_CommandK_OpensThePaletteWithTheNavigation", async () => {
-    const onNavigate = vi.fn();
-    render(
-      <AppShell {...props} onNavigate={onNavigate}>
-        Content
-      </AppShell>,
-    );
+  it("AppShell_Bell_SitsInTheSidebarFromTablet", () => {
+    renderShell({
+      bell: (place) => <button type="button">{`bell ${place}`}</button>,
+    });
 
-    await userEvent.keyboard("{Meta>}k{/Meta}");
-    await userEvent.click(
-      await screen.findByRole("option", { name: "Overview" }),
+    expect(
+      within(screen.getByRole("navigation", { name: "Main menu" })).getByRole(
+        "button",
+        { name: "bell rail" },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // A cut label opens its tooltip from the link itself (WCAG 2.2, 4.1.2): no tab stop sits inside a link.
+  it("AppShell_CutLabels_PutNoTabStopInsideALink", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
+    renderShell({
+      settingsMenu,
+      current: "members",
+      crumbs: [
+        { label: "Settings", href: "/northwind/settings/profile" },
+        { label: "Members" },
+      ],
+    });
+
+    expect(document.querySelectorAll("a [tabindex], a a")).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
+
+  it("AppShell_Breadcrumb_EndsWithThePage", () => {
+    renderShell();
+    const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+
+    expect(within(crumbs).getByText("Home").closest("li")).toHaveAttribute(
+      "aria-current",
+      "page",
     );
+  });
+
+  it("AppShell_CommandK_OpensTheCommandMenuWithItsGroups", async () => {
+    const onNavigate = renderShell();
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Command menu" });
+    expect(within(dialog).getByText("Go to")).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("option", { name: "Home" }));
 
     expect(onNavigate).toHaveBeenCalledWith("/northwind");
   });
 
-  it("AppShell_PlatformLabel_StartsTheTopBar", () => {
-    render(
-      <AppShell
-        {...props}
-        crumbs={[{ label: "Organisations" }]}
-        platformLabel="Platform"
-        onNavigate={vi.fn()}
-      >
-        Content
-      </AppShell>,
-    );
+  it("AppShell_CtrlK_OpensTheCommandMenu", async () => {
+    renderShell();
 
-    expect(screen.getByRole("banner")).toHaveTextContent(/^Platform/);
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+
+    expect(
+      await screen.findByRole("dialog", { name: "Command menu" }),
+    ).toBeInTheDocument();
   });
 
-  it("AppShell_NoCookie_ShowsTheIconRail", () => {
-    render(
-      <AppShell {...props} onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
+  it("AppShell_CommandAction_RunsIt", async () => {
+    const onSelect = vi.fn();
+    renderShell({
+      commands: [
+        {
+          id: "actions",
+          label: "Actions",
+          items: [{ id: "invite", label: "Invite member", onSelect }],
+        },
+      ],
+    });
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Invite member" }),
     );
 
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it("AppShell_ExpandedFromTheServer_StartsExpanded", () => {
-    render(
-      <AppShell {...props} railExpanded onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
+  // Only ⌘K and Ctrl K: no single key and no other chord opens or moves anything.
+  it.each([
+    { key: "k" },
+    { key: "b", metaKey: true },
+    { key: "b", ctrlKey: true },
+    { key: "/" },
+  ])("AppShell_OtherKey_%o_DoesNothing", (event) => {
+    renderShell();
 
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    fireEvent.keyDown(window, event);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("AppShell_Toggle_ExpandsTheRailAndSavesTheCookie", async () => {
-    render(
-      <AppShell {...props} onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
+  it("AppShell_TabTitle_SetsTheDocumentTitle", () => {
+    renderShell({ tabTitle: "(2) Members · Starter" });
 
-    await userEvent.click(screen.getByRole("button", { name: "Menu labels" }));
-
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(document.cookie).toContain("sidebar_state=true");
+    expect(document.title).toBe("(2) Members · Starter");
   });
 
-  it("AppShell_CommandB_TogglesTheRail", async () => {
-    render(
-      <AppShell {...props} railExpanded onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
+  it("AppShell_Bar_ShowsAboveTheContent", () => {
+    renderShell({ bar: <div role="status">You’re offline.</div> });
 
-    await userEvent.keyboard("{Meta>}b{/Meta}");
-
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    expect(document.cookie).toContain("sidebar_state=false");
+    expect(screen.getByRole("status")).toHaveTextContent("You’re offline.");
   });
 
-  it("AppShell_ControlB_TogglesTheRail", async () => {
-    render(
-      <AppShell {...props} onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
+  it("AppShell_Phone_ShowsTheMenuButtonThePageNameAndTheBell", () => {
+    onAPhone();
+    renderShell({
+      bell: (place) => <button type="button">{`bell ${place}`}</button>,
+    });
 
-    await userEvent.keyboard("{Control>}b{/Control}");
-
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "bell icon" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Breadcrumb" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("AppShell_CommandBInATextField_LeavesTheRail", async () => {
-    render(
-      <AppShell {...props} onNavigate={vi.fn()}>
-        <input aria-label="Notes" />
-      </AppShell>,
-    );
+  it("AppShell_PhoneMenu_OpensTheDrawerWithTheMenuAndTheVersion", async () => {
+    onAPhone();
+    renderShell({ version: "a1b2c3d" });
 
-    await userEvent.click(screen.getByRole("textbox", { name: "Notes" }));
-    await userEvent.keyboard("{Meta>}b{/Meta}");
+    await userEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const menu = await screen.findByRole("navigation", { name: "Main menu" });
 
-    expect(screen.getByRole("button", { name: "Menu labels" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    expect(
+      within(menu).getByRole("link", { name: "Home" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Version a1b2c3d")).toBeInTheDocument();
   });
 
-  it("AppShell_Expanded_ShowsTheLabelsInTheRail", () => {
-    render(
-      <AppShell {...props} railExpanded onNavigate={vi.fn()}>
-        Content
-      </AppShell>,
-    );
+  it("AppShell_PhoneMenuInSettings_ShowsTheSettingsMenuWithBack", async () => {
+    onAPhone();
+    renderShell({ settingsMenu, current: "members" });
 
-    const rail = screen.getByRole("navigation", { name: "Main" });
-    expect(within(rail).getByText("Overview")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const menu = await screen.findByRole("navigation", {
+      name: "Settings menu",
+    });
+
+    expect(
+      within(menu).getByRole("link", { name: "Back to Northwind Traders" }),
+    ).toBeInTheDocument();
   });
 
-  it("AppShell_InRtl_Renders", () => {
+  it("AppShell_InRtl_KeepsTheMenu", () => {
     render(
       <div dir="rtl">
-        <AppShell
-          {...props}
-          labels={{ ...labels, navigation: "الرئيسية" }}
-          onNavigate={vi.fn()}
-        >
-          المحتوى
-        </AppShell>
+        <NextIntlClientProvider locale="en" messages={en}>
+          <AppShell {...base} onNavigate={vi.fn()}>
+            Page
+          </AppShell>
+        </NextIntlClientProvider>
       </div>,
     );
 
     expect(
-      screen.getByRole("navigation", { name: "الرئيسية" }),
+      screen.getByRole("navigation", { name: "Main menu" }),
     ).toBeInTheDocument();
   });
 });

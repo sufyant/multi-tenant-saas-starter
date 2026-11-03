@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { brand } from "@repo/brand";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { SignInScreen } from "@/features/sign-in/sign-in-screen";
@@ -15,6 +16,7 @@ export default async function SignInPage() {
       brand={t("meta.title")}
       platformLabel={t("shell.platform")}
       onLanguageChange={setLocale}
+      privacyUrl={brand.privacyUrl}
     />
   );
 }

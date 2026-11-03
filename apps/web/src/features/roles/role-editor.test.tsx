@@ -81,10 +81,17 @@ const openNew = async () => {
   return screen.findByRole("textbox", { name: "Name" });
 };
 
+// A link of the shell's menu, which sits outside the page: the leave guard holds every link of the app (F11).
 const openReviewer = async () => {
-  renderInTenant(<RolePage roleId={reviewer.id} />, {
-    url: `${list}/${reviewer.id}`,
-  });
+  renderInTenant(
+    <>
+      <a href="/northwind/settings/members">Members</a>
+      <RolePage roleId={reviewer.id} />
+    </>,
+    {
+      url: `${list}/${reviewer.id}`,
+    },
+  );
   return screen.findByRole("textbox", { name: "Name" });
 };
 
@@ -692,7 +699,7 @@ describe("Editor pages", () => {
     renderInTenant(<NewRolePage />, { url: `${list}/new` });
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open New role" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });

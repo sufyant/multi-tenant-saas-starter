@@ -1,7 +1,9 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
+import { environmentOf, environmentTexts } from "@repo/ui/lib/environment";
 import { directionOf } from "@repo/ui/lib/locale";
-import type { Metadata } from "next";
+import { shortRevision } from "@repo/ui/lib/support-link";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -24,18 +26,43 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "500", "600"],
 });
 
+// The tab's title and icon (the Browser tab screens): "Sign in · Starter"; outside production its environment comes first and the
+// icon is amber. A signed-in page then writes its own title in the browser, with the unread count (useTabTitle).
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("meta");
+  const t = await getTranslations();
+  const environment = environmentOf(env().APP_ENVIRONMENT);
+  const texts = environmentTexts(environment);
+  const mark = texts
+    ? `${t(`appShell.environment.${texts.tab}`, texts.values)} `
+    : "";
   return {
-    title: { default: t("title"), template: `%s | ${t("title")}` },
-    description: t("description"),
+    title: {
+      default: `${mark}${t("meta.title")}`,
+      template: `${mark}%s · ${t("meta.title")}`,
+    },
+    description: t("meta.description"),
+    icons: {
+      icon:
+        environment.kind === "production"
+          ? "/favicon.ico"
+          : "/favicon-test.svg",
+    },
   };
 }
+
+// The viewport shrinks with the phone's keyboard, so a full-screen form keeps its main button above it (the Dialogs on a phone
+// pattern).
+export const viewport: Viewport = { interactiveWidget: "resizes-content" };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const dir = directionOf(locale);
-  const { ERROR_TRACKING_DSN, ERROR_TRACKING_ENVIRONMENT } = env();
+  const {
+    ERROR_TRACKING_DSN,
+    ERROR_TRACKING_ENVIRONMENT,
+    APP_ENVIRONMENT,
+    SOURCE_REVISION,
+  } = env();
   return (
     <html
       lang={locale}
@@ -55,7 +82,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           afterSignOutUrl="/sign-in"
         >
           <NextIntlClientProvider>
-            <Providers dir={dir}>{children}</Providers>
+            <Providers
+              dir={dir}
+              frame={{
+                environment: environmentOf(APP_ENVIRONMENT),
+                version: shortRevision(SOURCE_REVISION),
+              }}
+            >
+              {children}
+            </Providers>
           </NextIntlClientProvider>
         </ClerkProvider>
       </body>

@@ -21,6 +21,8 @@ for name in CLERK_PUBLISHABLE_KEY CLERK_SECRET_KEY E2E_CLERK_USER_EMAIL; do
 done
 
 export API_URL=https://api.example.invalid
+# The tests run as a local environment, so the environment strip shows (the Environment strip).
+export APP_ENVIRONMENT=local
 export CLERK_TELEMETRY_DISABLED=1
 export PLAYWRIGHT_HTML_OPEN=never
 

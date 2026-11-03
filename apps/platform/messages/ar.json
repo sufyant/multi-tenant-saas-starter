@@ -7,35 +7,23 @@
     "format": "ar-SA"
   },
   "shell": {
-    "navigation": "القائمة الرئيسية",
-    "menu": "فتح القائمة",
-    "search": "بحث",
-    "searchShortcut": "⌘K",
-    "railToggle": "تسميات القائمة",
-    "railShortcut": "⌘B",
-    "breadcrumb": "المسار",
-    "commandTitle": "انتقال إلى",
-    "commandPlaceholder": "ابحث عن صفحة",
-    "commandEmpty": "لم يتم العثور على صفحة",
-    "home": "الرئيسية",
     "organisations": "المؤسسات",
     "users": "المستخدمون",
+    "plans": "الخطط",
+    "activityLog": "سجل النشاط",
     "settings": "الإعدادات",
-    "preferences": "التفضيلات",
-    "you": "أنت",
-    "language": "اللغة",
     "platform": "Platform",
+    "backToPlatform": "العودة إلى المنصة",
+    "myAccount": "حسابي",
     "systemAdmins": "مسؤولو النظام",
-    "activity": "النشاط",
-    "plans": "الخطط"
+    "settingsMyAccount": "الإعدادات · حسابي",
+    "settingsPlatform": "الإعدادات · المنصة"
   },
-  "preferences": {
-    "title": "التفضيلات",
+  "profile": {
+    "title": "الملف الشخصي",
     "text": "تتبعك هذه الإعدادات إلى كل جهاز.",
     "nameNote": "يظهر اسمك في نشاط المنصة.",
-    "email": "البريد الإلكتروني",
-    "theme": "المظهر",
-    "themeHint": "يُحفظ على هذا الجهاز."
+    "email": "البريد الإلكتروني"
   },
   "access": {
     "noAccessTitle": "ليس لديك صلاحية الوصول",

@@ -7,30 +7,27 @@
     "format": "tr-TR"
   },
   "shell": {
-    "navigation": "Ana menü",
-    "menu": "Menüyü aç",
-    "search": "Ara",
-    "searchShortcut": "⌘K",
-    "railToggle": "Menü etiketleri",
-    "railShortcut": "⌘B",
-    "breadcrumb": "Konum",
-    "commandTitle": "Git",
-    "commandPlaceholder": "Sayfa ara",
-    "commandEmpty": "Sayfa bulunamadı",
     "home": "Ana sayfa",
-    "overview": "Genel bakış",
     "settings": "Ayarlar",
-    "preferences": "Tercihler",
+    "yourOrganisations": "Kuruluşlarınız",
+    "backTo": "{organisation} kuruluşuna dön",
+    "myAccount": "Hesabım",
+    "organisation": "Kuruluş",
+    "general": "Genel",
     "members": "Üyeler",
-    "you": "Siz",
+    "roles": "Roller",
+    "activityLog": "Etkinlik kaydı",
+    "settingsMyAccount": "Ayarlar · Hesabım",
+    "settingsOrganisation": "Ayarlar · Kuruluş",
+    "inviteMember": "Üye davet et",
     "switchOrganisation": "Kuruluş değiştir",
-    "language": "Dil",
-    "roles": {
+    "suspended": "Askıya alındı",
+    "closed": "Kapatıldı",
+    "roleNames": {
       "owner": "Sahip",
       "admin": "Yönetici",
       "member": "Üye"
-    },
-    "notifications": "Bildirimler"
+    }
   },
   "organisations": {
     "chooseTitle": "Bir kuruluş seçin",
@@ -47,8 +44,8 @@
     "organisation": "Kuruluş",
     "text": "Ürün bölümleri eklendikçe menüde görünür. Şu anda burada yapılacak başka bir şey yok."
   },
-  "preferences": {
-    "title": "Tercihler",
+  "profile": {
+    "title": "Profil",
     "text": "Bunlar sizi her kuruluşta ve her cihazda izler.",
     "nameNote": "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür."
   },
@@ -107,9 +104,9 @@
     "roles": "Roller"
   },
   "permissionDenied": {
-    "title": "{page} sayfasını açamazsınız",
-    "text": "{organisation} kuruluşundaki rolünüz: {role}. {page} sayfasını Sahipler ve Yöneticiler okuyabilir. Buradan bir şeye ihtiyacınız varsa onlardan birine başvurun.",
-    "back": "Genel bakışa dön"
+    "title": "Bu sayfayı açamazsınız",
+    "text": "{organisation} kuruluşundaki rolünüz {page} sayfasını içermiyor. Gerekirse bir Sahip veya Yöneticiye sorun.",
+    "back": "Ana sayfaya dön"
   },
   "members": {
     "title": "Üyeler",

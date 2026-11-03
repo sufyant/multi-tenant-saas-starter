@@ -15,9 +15,8 @@ import { buttonVariants } from "@repo/ui/components/ui/button";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { planPage, plansQuery } from "@/shared/plans";
+import { planPage, plansPage, plansQuery } from "@/shared/plans";
 import { leaveOf } from "@/shared/problem-screen";
-import { SettingsNav, settingsPages } from "@/shared/settings-nav";
 import { TextLink } from "@/shared/text-link";
 import { useDates } from "@/shared/use-dates";
 
@@ -89,35 +88,32 @@ export function PlansPage() {
   })();
 
   return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="plans" />
-      <section className="flex min-w-0 max-w-[1160px] flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-page-title">{t("plans.title")}</h1>
-            {list.dataUpdatedAt > 0 && (
-              <Freshness
-                at={new Date(list.dataUpdatedAt)}
-                locale={locale}
-                timeZone={timeZone}
-                label={t("common.updated")}
-              />
-            )}
-          </div>
-          {/* A link to a page, drawn as the primary button: a link, not a button, because it navigates. */}
-          <Link
-            href={`${settingsPages.plans}/new`}
-            className={buttonVariants({ variant: "default" })}
-          >
-            <Icon icon={PlusIcon} />
-            {t("plans.newPlan")}
-          </Link>
+    <section className="flex min-w-0 max-w-[1160px] flex-1 flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-page-title">{t("plans.title")}</h1>
+          {list.dataUpdatedAt > 0 && (
+            <Freshness
+              at={new Date(list.dataUpdatedAt)}
+              locale={locale}
+              timeZone={timeZone}
+              label={t("common.updated")}
+            />
+          )}
         </div>
-        <p className="max-w-[720px] text-body text-muted-foreground">
-          {t("plans.intro")}
-        </p>
-        {body}
-      </section>
-    </div>
+        {/* A link to a page, drawn as the primary button: a link, not a button, because it navigates. */}
+        <Link
+          href={`${plansPage}/new`}
+          className={buttonVariants({ variant: "default" })}
+        >
+          <Icon icon={PlusIcon} />
+          {t("plans.newPlan")}
+        </Link>
+      </div>
+      <p className="max-w-[720px] text-body text-muted-foreground">
+        {t("plans.intro")}
+      </p>
+      {body}
+    </section>
   );
 }

@@ -9,6 +9,7 @@ import { z } from "zod";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 import tr from "../../messages/tr.json";
+import { AccountMenu } from "./account-menu";
 import { ActivityLog } from "./activity-log";
 import { AppShell } from "./app-shell";
 import { Avatar } from "./avatar";
@@ -16,8 +17,13 @@ import { Banner } from "./banner";
 import { Button } from "./button";
 import { CodeInput } from "./code-input";
 import { Combobox } from "./combobox";
+import { ConnectionBar } from "./connection-bar";
+import { CopyButton } from "./copy-button";
+import { DeletedUser } from "./deleted-user";
 import { Dialog } from "./dialog";
 import { EmptyState } from "./empty-state";
+import { EmptyValue } from "./empty-value";
+import { EnvironmentStrip } from "./environment-strip";
 import { Freshness } from "./freshness";
 import {
   BuildingIcon,
@@ -31,8 +37,10 @@ import {
   UsersIcon,
 } from "./icon";
 import { Input } from "./input";
+import { Label } from "./label";
 import { ListError } from "./list-error";
-import { OrgMenu } from "./org-menu";
+import { OrgSwitcher } from "./org-switcher";
+import { Pill } from "./pill";
 import { PreferencesForm } from "./preferences-form";
 import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
@@ -46,9 +54,9 @@ import { Tabs } from "./tabs";
 import { Tag } from "./tag";
 import { Time } from "./time";
 import { showToast } from "./toast";
+import { Truncate } from "./truncate";
 import { Checkbox } from "./ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { UserMenu } from "./user-menu";
 
 const at = "2026-10-16T13:32:00Z";
 const messages = { en, tr, ar };
@@ -889,46 +897,84 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       ),
     },
     {
-      name: "OrgMenu",
+      name: "OrgSwitcher",
       render: () => (
         <>
-          <OrgMenu
-            name="Northwind Traders"
-            slug="northwind"
-            initials="N"
-            memberRole="Owner"
-            switchLabel="Switch organisation"
-            switchHref="#choose"
+          <OrgSwitcher
+            current={northwindPreview}
+            organisations={previewOrganisations}
+            title="Your organisations"
+          />
+          <OrgSwitcher
+            current={northwindPreview}
+            organisations={previewOrganisations.slice(0, 1)}
+            title="Your organisations"
           />
         </>
       ),
     },
     {
-      name: "UserMenu",
-      render: ({ sample, theme, setTheme }) => (
+      name: "AccountMenu",
+      render: () => (
         <>
-          <UserMenu
+          <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
             person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
-            label="Account"
-            languageName={
-              languages.find((option) => option.id === sample.locale)?.label ??
-              sample.locale
-            }
-            languageLabel="Language"
-            preferencesHref="#preferences"
-            theme={theme}
-            themes={[
-              { id: "light", label: "Light" },
-              { id: "dark", label: "Dark" },
-              { id: "system", label: "System" },
-            ]}
-            themeLabel="Theme"
-            onThemeChange={setTheme}
-            signOutLabel="Sign out"
+            profileHref="#profile"
             onSignOut={() => {}}
+            version="a1b2c3d"
           />
+        </>
+      ),
+    },
+    {
+      name: "EnvironmentStrip",
+      render: () => (
+        <>
+          <EnvironmentStrip environment={{ kind: "staging" }} />
+          <EnvironmentStrip environment={{ kind: "preview", number: 182 }} />
+          <EnvironmentStrip environment={{ kind: "local" }} />
+        </>
+      ),
+    },
+    {
+      name: "ConnectionBar",
+      render: () => (
+        <>
+          <ConnectionBar
+            serverDown
+            onRetry={() => {}}
+            product="Starter"
+            statusUrl="https://status.starter.example"
+          />
+        </>
+      ),
+    },
+    {
+      name: "Patterns",
+      render: () => (
+        <>
+          <Pill tone="success">Active</Pill>
+          <Pill tone="warning">Suspended</Pill>
+          <Pill tone="info">Scheduled</Pill>
+          <Pill tone="destructive">Being deleted</Pill>
+          <Pill tone="neutral">Closed</Pill>
+          <Label>Owner</Label>
+          <EmptyValue />
+          <DeletedUser />
+          <span className="inline-flex items-center gap-1 font-mono text-mono">
+            app.starter.example/northwind
+            <CopyButton
+              value="app.starter.example/northwind"
+              label="Copy the address"
+            />
+          </span>
+          <span className="w-40">
+            <Truncate>
+              Maximiliane Alexandra von Hohenzollern-Sigmaringen
+            </Truncate>
+          </span>
         </>
       ),
     },
@@ -959,7 +1005,19 @@ export function DevComponentGroup({
   return (
     <div lang={language} dir={samples[language].dir}>
       <Section name={group.name}>
-        {group.render({ sample: samples[language], language, theme, setTheme })}
+        {/* The shell and the patterns read the shared messages, as in the apps. */}
+        <NextIntlClientProvider
+          locale={language}
+          messages={messages[language]}
+          timeZone={samples[language].timeZone}
+        >
+          {group.render({
+            sample: samples[language],
+            language,
+            theme,
+            setTheme,
+          })}
+        </NextIntlClientProvider>
       </Section>
     </div>
   );
@@ -1015,11 +1073,17 @@ export function DevComponentsPage({
         </fieldset>
       </header>
 
-      {groups.map((group) => (
-        <Section key={group.name} name={group.name}>
-          {group.render({ sample, language, theme, setTheme })}
-        </Section>
-      ))}
+      <NextIntlClientProvider
+        locale={language}
+        messages={messages[language]}
+        timeZone={sample.timeZone}
+      >
+        {groups.map((group) => (
+          <Section key={group.name} name={group.name}>
+            {group.render({ sample, language, theme, setTheme })}
+          </Section>
+        ))}
+      </NextIntlClientProvider>
     </div>
   );
 }
@@ -1116,99 +1180,70 @@ function RadioGroupPreview() {
   );
 }
 
-/** The AppShell with its two rail states. The switch lives here, so it renders only this preview, not the whole page. */
+const northwindPreview = {
+  id: "1",
+  name: "Northwind Traders",
+  role: "Owner",
+  href: "#northwind",
+};
+const previewOrganisations = [
+  northwindPreview,
+  {
+    id: "2",
+    name: "Blue Harbour Logistics",
+    role: "Member",
+    href: "#blue-harbour",
+    status: <Pill tone="warning">Suspended</Pill>,
+  },
+];
+
+/** The AppShell in its main layout. A desktop shows the sidebar with labels, a tablet the icon rail, a phone the top bar. */
 function AppShellPreview({ sample }: { sample: Sample }) {
-  const [rail, setRail] = useState(false);
   return (
-    <>
-      <fieldset className="flex gap-1">
-        <legend className="sr-only">Rail</legend>
-        <Button
-          variant={rail ? "secondary" : "primary"}
-          aria-pressed={!rail}
-          onClick={() => setRail(false)}
-        >
-          Icon rail
-        </Button>
-        <Button
-          variant={rail ? "primary" : "secondary"}
-          aria-pressed={rail}
-          onClick={() => setRail(true)}
-        >
-          Rail with labels
-        </Button>
-      </fieldset>
-      <p className="text-small text-muted-foreground">
-        The rail shows its labels from bp-desktop only. A tablet keeps the icon
-        rail.
-      </p>
-      <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
-        <AppShell
-          key={String(rail)}
-          railExpanded={rail}
-          nav={[
-            {
-              id: "overview",
-              label: sample.overview,
-              icon: HomeIcon,
-              href: "#overview",
-            },
-            {
-              id: "settings",
-              label: sample.settings,
-              icon: SettingsIcon,
-              href: "#settings",
-              placement: "bottom",
-            },
-          ]}
-          current="settings"
-          logo="S"
-          logoLabel="Home"
-          logoHref="#home"
-          crumbs={[
-            { label: "Northwind Traders" },
-            { label: sample.settings },
-            { label: sample.members },
-          ]}
-          orgMenu={
-            <OrgMenu
-              name="Northwind Traders"
-              slug="northwind"
-              initials="N"
-              memberRole="Owner"
-              switchLabel="Switch organisation"
-              switchHref="#choose"
-            />
-          }
-          userMenu={
-            <span className="flex size-8 items-center justify-center rounded-full bg-muted text-small font-semibold">
-              AY
-            </span>
-          }
-          labels={{
-            navigation: "Main",
-            menu: "Open menu",
-            search: "Search",
-            searchShortcut: "⌘K",
-            breadcrumb: "Breadcrumb",
-            commandTitle: "Go to",
-            commandPlaceholder: "Search pages",
-            commandEmpty: "No page found",
-            close: "Close",
-            railToggle: "Menu labels",
-            railShortcut: "⌘B",
-          }}
-          onNavigate={() => {}}
-        >
-          <h1 className="text-page-title">{sample.members}</h1>
-          <Freshness
-            at={at}
-            locale={sample.locale}
-            timeZone={sample.timeZone}
-            label={sample.updated}
+    <div className="h-[420px] w-full overflow-hidden rounded-lg border border-border">
+      <AppShell
+        head={(place) => (
+          <OrgSwitcher
+            current={northwindPreview}
+            organisations={previewOrganisations}
+            title="Your organisations"
+            variant={place}
           />
-        </AppShell>
-      </div>
-    </>
+        )}
+        main={[
+          { id: "home", label: sample.overview, icon: HomeIcon, href: "#home" },
+        ]}
+        settings={{
+          id: "settings",
+          label: sample.settings,
+          icon: SettingsIcon,
+          href: "#settings",
+        }}
+        current="home"
+        pageName={sample.overview}
+        crumbs={[{ label: "Northwind Traders" }, { label: sample.overview }]}
+        commands={[]}
+        account={(place) => (
+          <AccountMenu
+            name="Ayşe Yılmaz"
+            email="ayse@northwind.io"
+            person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
+            profileHref="#profile"
+            onSignOut={() => {}}
+            version="a1b2c3d"
+            variant={place}
+          />
+        )}
+        onNavigate={() => {}}
+      >
+        <h1 className="text-page-title">{sample.members}</h1>
+        <Freshness
+          at={at}
+          locale={sample.locale}
+          timeZone={sample.timeZone}
+          label={sample.updated}
+        />
+      </AppShell>
+    </div>
   );
 }

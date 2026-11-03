@@ -69,7 +69,7 @@ describe("GeneralPage", () => {
     renderInTenant(<GeneralPage />, { url });
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open General" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
   });
 

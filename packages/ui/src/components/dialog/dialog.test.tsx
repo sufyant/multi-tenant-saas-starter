@@ -138,4 +138,75 @@ describe("Dialog", () => {
       await screen.findByRole("alertdialog", { name: "إزالة عائشة يلماز؟" }),
     ).toBeInTheDocument();
   });
+
+  // The Dialogs on a phone pattern: a form you type into is a full-screen page with × and the title at the top.
+  it("Dialog_FieldInsideOnAPhone_IsAFormWithACloseButtonAtTheTop", async () => {
+    // jsdom has no layout: the phone follows the breakpoint token and a matchMedia that never matches.
+    document.documentElement.style.setProperty("--bp-tablet", "768px");
+    const onOpenChange = vi.fn();
+    render(
+      <Dialog
+        defaultOpen
+        onOpenChange={onOpenChange}
+        title="Invite member"
+        actionLabel="Send invitation"
+        cancelLabel="Cancel"
+      >
+        <label>
+          Email
+          <input type="email" />
+        </label>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Invite member",
+    });
+
+    expect(dialog).toHaveAttribute("data-kind", "form");
+    // The × of the top bar comes first; the footer's Cancel hides under bp-tablet.
+    const [close] = screen.getAllByRole("button", { name: "Cancel" });
+    expect(close).toHaveAttribute("data-slot", "dialog-close");
+    await userEvent.click(close as HTMLElement);
+    expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything());
+    document.documentElement.style.removeProperty("--bp-tablet");
+  });
+
+  it("Dialog_TypeToConfirm_IsAForm", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        tone="destructive"
+        title="Close Northwind Traders?"
+        actionLabel="Close organisation"
+        cancelLabel="Cancel"
+        confirmText="northwind"
+        confirmLabel="Type northwind to confirm"
+      />,
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Close Northwind Traders?",
+      }),
+    ).toHaveAttribute("data-kind", "form");
+  });
+
+  // A short choice or a confirmation is a bottom sheet with a drag handle, the page dimmed behind it.
+  it("Dialog_NoField_IsASheetWithAHandle", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        title="Remove Omar Haddad?"
+        actionLabel="Remove member"
+        cancelLabel="Cancel"
+      />,
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Remove Omar Haddad?",
+    });
+
+    expect(dialog).toHaveAttribute("data-kind", "sheet");
+    expect(dialog.querySelector("[data-slot=sheet-handle]")).not.toBeNull();
+    expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(1);
+  });
 });

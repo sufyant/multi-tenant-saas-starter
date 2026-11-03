@@ -1,156 +1,335 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
-import { getGetMeQueryOptions, type MyTenantResponse } from "@repo/api-client";
-import { AppShell } from "@repo/ui/components/app-shell";
-import { HomeIcon, SettingsIcon } from "@repo/ui/components/icon";
-import { OrgMenu } from "@repo/ui/components/org-menu";
+import {
+  getGetMeQueryOptions,
+  getListMembersQueryOptions,
+  getListMyTenantsQueryOptions,
+  type MyTenantResponse,
+  MyTenantResponseStatus,
+  Permission,
+  schemas,
+  tenantBell,
+} from "@repo/api-client";
+import { AccountMenu } from "@repo/ui/components/account-menu";
+import { useAppFrame } from "@repo/ui/components/app-frame";
+import {
+  AppShell,
+  type CommandSection,
+  type NavItem,
+  useTabTitleText,
+} from "@repo/ui/components/app-shell";
+import { Banner } from "@repo/ui/components/banner";
+import {
+  ActivityIcon,
+  HomeIcon,
+  SettingsIcon,
+  ShieldIcon,
+  UserIcon,
+  UsersIcon,
+} from "@repo/ui/components/icon";
+import { OrgSwitcher } from "@repo/ui/components/org-switcher";
+import { Pill } from "@repo/ui/components/pill";
 import { InlineSkeleton, Skeleton } from "@repo/ui/components/skeleton";
-import { UserMenu } from "@repo/ui/components/user-menu";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useTheme } from "next-themes";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
-import { useTenant } from "@/shared/tenant-context";
+import { ServerBar } from "@/shared/server-bar";
+import { TenantProvider, useTenant } from "@/shared/tenant-context";
+import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
 
 /**
- * The tenant web's AppShell (F28, F30): Overview and Settings in the rail, the breadcrumb that starts with the organisation, the
- * OrgMenu when the user has more than one organisation, the organisation's notification bell, the UserMenu from GetMe, and ⌘K.
+ * The tenant web's shell (F28, F30, the Shell screens): the organisation switcher, search, the organisation's bell, Home and the
+ * product's sections, Settings and the account menu; inside Settings the settings menu with My account and Organisation. A page
+ * the person cannot open is not in their menu (F5).
  */
-export function TenantShell({
-  railExpanded,
-  children,
-}: {
-  /** The rail shows its labels on desktop: the layout read the cookie (F49). */
-  railExpanded: boolean;
-  children: ReactNode;
-}) {
+export function TenantShell({ children }: { children: ReactNode }) {
+  const t = useTranslations("problems");
   const roleName = useRoleName();
-  const { tenant, detail, hasOthers } = useTenant();
+  const pathname = usePathname();
+  const { tenant, detail } = useTenant();
+  const permissions = detail.permissions;
+  const role = roleName(detail.role);
+  const can = (permission: Permission) => permissions.includes(permission);
+  // The settings menu's counts come from the lists' totals, which the API answers already: the members of one page of one, and the
+  // roles of the tenant's one page that the screens read (F51). Only inside Settings, where the menu shows them.
+  const inSettings = pathname.startsWith(`/${tenant.slug}/settings`);
+  const members = useQuery(
+    getListMembersQueryOptions(
+      tenant.id,
+      { pageSize: 1 },
+      { query: { enabled: inSettings && can(Permission.TenantMembersRead) } },
+    ),
+  );
+  const roles = useTenantRoles();
+  // The role changed while a page is open (GetMyTenant read again): the page says so until the person opens another page.
+  const shownRole = useRef(detail.role.id);
+  const [changed, setChanged] = useState<{ role: string; on: string }>();
+  useEffect(() => {
+    if (shownRole.current === detail.role.id) return;
+    shownRole.current = detail.role.id;
+    setChanged({ role, on: pathname });
+  }, [detail.role.id, role, pathname]);
   return (
     <TenantFrame
       slug={tenant.slug}
-      known={{ tenant, role: roleName(detail.role), hasOthers }}
-      railExpanded={railExpanded}
+      known={{
+        tenant,
+        role,
+        can,
+        counts: {
+          members: members.data?.total,
+          roles: inSettings ? roles.data?.total : undefined,
+        },
+      }}
     >
+      {changed && changed.on === pathname && (
+        <div className="mb-6">
+          <Banner title={t("roleChangedTitle", { role: changed.role })}>
+            {t("roleChangedText", { role: changed.role })}
+          </Banner>
+        </div>
+      )}
       {children}
     </TenantFrame>
   );
 }
 
 /**
- * The shell while the first reads of the organisation come (the ListStates boards): the rail and the top bar from what the route
- * knows, a short skeleton where the organisation's name will be, and the page's skeleton in the content. `TenantProvider` renders
- * it until the organisation is known, or gives way to a page that replaces the shell.
+ * An organisation's page in its shell: the tenant layout's (shell) group, and "Page not found" of an address under the
+ * organisation that no page has, which stays outside that group so its 404 is decided on the server (F59).
  */
-export function PendingTenantShell({
+export function OrganisationShell({
   slug,
-  railExpanded,
+  children,
 }: {
   slug: string;
-  railExpanded: boolean;
+  children: ReactNode;
 }) {
+  return (
+    <TenantProvider slug={slug} pending={<PendingTenantShell slug={slug} />}>
+      <TenantShell>{children}</TenantShell>
+    </TenantProvider>
+  );
+}
+
+/**
+ * The shell while the first reads of the organisation come (the ListStates boards): the frame from what the route knows, a short
+ * skeleton where the organisation's name will be, and the page's skeleton in the content. `TenantProvider` renders it until the
+ * organisation is known, or gives way to a page that replaces the shell.
+ */
+export function PendingTenantShell({ slug }: { slug: string }) {
   const t = useTranslations("common");
   return (
-    <TenantFrame slug={slug} railExpanded={railExpanded}>
+    <TenantFrame slug={slug}>
       <Skeleton delayed label={t("loading")} />
     </TenantFrame>
   );
 }
 
-/** The AppShell with what is known. Without the tenant, the name waits in place and there is no OrgMenu yet. */
+/**
+ * The product's own sections, after Home (the Sidebar's description). The template has none; a product adds its items here, each
+ * with its permission, and the command menu lists them under Go to.
+ */
+export const productSections = (_base: string): NavItem[] => [];
+
+type Known = {
+  tenant: MyTenantResponse;
+  role: string;
+  can: (permission: Permission) => boolean;
+  /** The counts after a page of the settings menu: the members and the roles (F59). */
+  counts: Partial<Record<"members" | "roles", number>>;
+};
+
+/** The AppShell with what is known. Without the tenant, the name waits in place and the settings menu shows no page yet. */
 function TenantFrame({
   slug,
   known,
-  railExpanded,
   children,
 }: {
   slug: string;
-  known?: { tenant: MyTenantResponse; role: string; hasOthers: boolean };
-  railExpanded: boolean;
+  known?: Known;
   children: ReactNode;
 }) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  const { theme = "system", setTheme } = useTheme();
+  const { version } = useAppFrame();
   const me = useQuery(getGetMeQueryOptions());
+  // The bell reads the same list, so the switcher costs no request of its own.
+  const tenants = useQuery(
+    getListMyTenantsQueryOptions({
+      pageSize: schemas.listMyTenantsQueryPageSizeMax,
+    }),
+  );
+  const unread = useQuery({
+    ...tenantBell(known?.tenant.id ?? "").count,
+    enabled: known !== undefined,
+  });
+  const roleName = useRoleName();
+  const tabTitle = useTabTitleText(t("meta.title"));
   if (me.error) return <ProblemScreen error={me.error} />;
 
   const base = `/${slug}`;
-  const sections = {
-    settings: "shell.settings",
-    general: "settings.general",
-    members: "shell.members",
-    roles: "settings.roles",
-    activity: "settings.activity",
-    preferences: "shell.preferences",
-    notifications: "shell.notifications",
-  } as const;
-  const crumbs = [
-    { label: known?.tenant.name ?? "" },
-    ...pathname
-      .slice(base.length)
-      .split("/")
-      .filter(
-        (segment): segment is keyof typeof sections => segment in sections,
-      )
-      .map((segment) => ({ label: t(sections[segment]) })),
+  const settings = `${base}/settings`;
+  const can = known?.can ?? (() => false);
+  const myAccount: NavItem[] = [
+    {
+      id: "profile",
+      label: t("appShell.profile"),
+      icon: UserIcon,
+      href: `${settings}/profile`,
+    },
   ];
+  // Billing and Usage join in step 40, with their permission (the Billing is for billing managers pattern).
+  const organisation: NavItem[] = (
+    [
+      ["general", "general", SettingsIcon, Permission.TenantProfileRead],
+      ["members", "members", UsersIcon, Permission.TenantMembersRead],
+      ["roles", "roles", ShieldIcon, Permission.TenantRolesRead],
+      ["activity", "activityLog", ActivityIcon, Permission.TenantAuditRead],
+    ] as const
+  )
+    .filter(([, , , permission]) => can(permission))
+    .map(([id, label, icon]) => ({
+      id,
+      label: t(`shell.${label}`),
+      icon,
+      href: `${settings}/${id}`,
+      count: known?.counts[id as keyof Known["counts"]],
+    }));
+  const home: NavItem = {
+    id: "home",
+    label: t("shell.home"),
+    icon: HomeIcon,
+    href: base,
+  };
+  const main = [home, ...productSections(base)];
+  const inSettings = pathname.startsWith(settings);
+  const page = pathname.slice(settings.length + 1).split("/")[0] ?? "";
+  const current = inSettings ? page : home.id;
+  const currentItem = [...main, ...myAccount, ...organisation].find(
+    (item) => item.id === current,
+  );
+  const pageName = currentItem?.label ?? t("shell.settings");
+  const name = known?.tenant.name;
+
+  const others = (tenants.data?.items ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    role: roleName(item.role),
+    href: `/${item.slug}`,
+    status:
+      item.status === MyTenantResponseStatus.Suspended ? (
+        <Pill tone="warning">{t("shell.suspended")}</Pill>
+      ) : item.status === MyTenantResponseStatus.Active ? undefined : (
+        <Pill tone="neutral">{t("shell.closed")}</Pill>
+      ),
+  }));
+  const several = (tenants.data?.total ?? 0) > 1;
+
+  const commands: CommandSection[] = [
+    { id: "go-to", label: t("appShell.goTo"), items: main },
+    {
+      id: "my-account",
+      label: t("shell.settingsMyAccount"),
+      items: myAccount,
+    },
+    {
+      id: "organisation",
+      label: t("shell.settingsOrganisation"),
+      items: organisation,
+    },
+    {
+      id: "actions",
+      label: t("appShell.actions"),
+      items: [
+        ...(can(Permission.TenantInvitationsCreate) &&
+        can(Permission.TenantMembersRead)
+          ? [
+              {
+                id: "invite",
+                label: t("shell.inviteMember"),
+                href: `${settings}/members?invite=1`,
+              },
+            ]
+          : []),
+        ...(several
+          ? [{ id: "switch", label: t("shell.switchOrganisation"), href: "/" }]
+          : []),
+      ],
+    },
+  ].filter((section) => section.items.length > 0);
+
   return (
     <>
       {me.data && <LocaleSync language={me.data.language} />}
       <AppShell
-        nav={[
-          {
-            id: "overview",
-            label: t("shell.overview"),
-            icon: HomeIcon,
-            href: base,
-          },
-          {
-            id: "settings",
-            label: t("shell.settings"),
-            icon: SettingsIcon,
-            // General: the first SubNav item that every role can read (F5).
-            href: `${base}/settings/general`,
-            placement: "bottom",
-          },
-        ]}
-        current={
-          pathname.startsWith(`${base}/settings`) ? "settings" : "overview"
-        }
-        logo={known?.tenant.name.charAt(0)}
-        logoLabel={t("shell.home")}
-        logoHref={base}
-        crumbs={crumbs}
-        orgMenu={
-          // The organisation's name is the first crumb; until it is known, a short skeleton holds its place.
-          !known ? (
-            <InlineSkeleton />
-          ) : known.hasOthers ? (
-            <OrgMenu
-              name={known.tenant.name}
-              slug={known.tenant.slug}
-              initials={known.tenant.name.charAt(0)}
-              memberRole={known.role}
-              switchLabel={t("shell.switchOrganisation")}
-              switchHref="/"
+        head={(place) =>
+          known ? (
+            <OrgSwitcher
+              current={{
+                id: known.tenant.id,
+                name: known.tenant.name,
+                role: known.role,
+                href: base,
+              }}
+              organisations={several ? others : []}
+              title={t("shell.yourOrganisations")}
+              variant={place}
               linkComponent={Link}
             />
-          ) : undefined
+          ) : (
+            // The organisation's name is the head; until it is known, a short skeleton holds its place.
+            <div className="flex h-11 items-center px-1.5">
+              <InlineSkeleton />
+            </div>
+          )
         }
-        bell={known && <TenantBell tenantId={known.tenant.id} />}
-        userMenu={
+        main={main}
+        settings={{
+          id: "settings",
+          label: t("shell.settings"),
+          icon: SettingsIcon,
+          // Profile: the first page of Settings that every person can open (F5).
+          href: `${settings}/profile`,
+        }}
+        settingsMenu={
+          inSettings
+            ? {
+                back: {
+                  label: t("shell.backTo", { organisation: name ?? "" }),
+                  href: base,
+                },
+                groups: [
+                  {
+                    id: "my-account",
+                    label: t("shell.myAccount"),
+                    items: myAccount,
+                  },
+                  {
+                    id: "organisation",
+                    label: t("shell.organisation"),
+                    items: organisation,
+                  },
+                ].filter((group) => group.items.length > 0),
+              }
+            : undefined
+        }
+        current={current}
+        bell={(place) =>
+          known && <TenantBell tenantId={known.tenant.id} place={place} />
+        }
+        account={(place) =>
           me.data && (
-            <UserMenu
+            <AccountMenu
               name={[me.data.firstName, me.data.lastName]
                 .filter(Boolean)
                 .join(" ")}
@@ -159,38 +338,24 @@ function TenantFrame({
                 firstName: me.data.firstName,
                 lastName: me.data.lastName,
               }}
-              label={t("common.account")}
-              languageName={t(`languages.${me.data.language}`)}
-              languageLabel={t("shell.language")}
-              preferencesHref={`${base}/settings/preferences`}
-              theme={theme}
-              themes={[
-                { id: "light", label: t("theme.light") },
-                { id: "dark", label: t("theme.dark") },
-                { id: "system", label: t("theme.system") },
-              ]}
-              themeLabel={t("theme.label")}
-              onThemeChange={setTheme}
-              signOutLabel={t("common.signOut")}
+              profileHref={`${settings}/profile`}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
+              version={version}
+              variant={place}
               linkComponent={Link}
             />
           )
         }
-        labels={{
-          navigation: t("shell.navigation"),
-          menu: t("shell.menu"),
-          search: t("shell.search"),
-          searchShortcut: t("shell.searchShortcut"),
-          breadcrumb: t("shell.breadcrumb"),
-          commandTitle: t("shell.commandTitle"),
-          commandPlaceholder: t("shell.commandPlaceholder"),
-          commandEmpty: t("shell.commandEmpty"),
-          close: t("common.close"),
-          railToggle: t("shell.railToggle"),
-          railShortcut: t("shell.railShortcut"),
-        }}
-        railExpanded={railExpanded}
+        version={version}
+        pageName={pageName}
+        crumbs={
+          inSettings
+            ? [{ label: t("shell.settings") }, { label: pageName }]
+            : [{ label: name ?? "" }, { label: pageName }]
+        }
+        commands={commands}
+        bar={<ServerBar />}
+        tabTitle={tabTitle(pageName, unread.data?.unread)}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}
       >

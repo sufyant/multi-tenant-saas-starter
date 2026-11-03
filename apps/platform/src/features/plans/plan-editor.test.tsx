@@ -37,7 +37,7 @@ import { PlanEditor } from "./plan-editor";
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
-  usePathname: () => "/settings/plans",
+  usePathname: () => "/plans",
 }));
 
 const server = setupServer();
@@ -200,7 +200,7 @@ describe("PlanEditor", () => {
         },
       },
     ]);
-    expect(router.push).toHaveBeenCalledWith("/settings/plans");
+    expect(router.push).toHaveBeenCalledWith("/plans");
   });
 
   it("Save_KeyLeftUnset_SendsEveryOtherKeyAndLeavesItClosed", async () => {
@@ -800,7 +800,7 @@ describe("PlanEditor", () => {
       },
     ]);
     expect(creates[0]?.key).toMatch(/^[0-9a-f-]{36}$/);
-    expect(router.push).toHaveBeenCalledWith("/settings/plans");
+    expect(router.push).toHaveBeenCalledWith("/plans");
   });
 
   it("Create_Refused_RetriesWithANewKey", async () => {
@@ -890,7 +890,7 @@ describe("PlanEditor", () => {
 
     expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute(
       "href",
-      "/settings/plans",
+      "/plans",
     );
   });
 

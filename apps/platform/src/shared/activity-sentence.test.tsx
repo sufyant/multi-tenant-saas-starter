@@ -884,7 +884,7 @@ describe("ActivitySentence of the plans", () => {
 
     expect(
       await screen.findByRole("link", { name: "Partner" }),
-    ).toHaveAttribute("href", `/settings/plans/${partner.id}`);
+    ).toHaveAttribute("href", `/plans/${partner.id}`);
   });
 
   it("ActivitySentence_PlanChanged_LinksTheOrganisationAndBothPlansByTheirNamesThen", async () => {
@@ -908,8 +908,8 @@ describe("ActivitySentence of the plans", () => {
         .map((link) => [link.textContent, link.getAttribute("href")]),
     ).toEqual([
       ["Northwind Traders", `/organisations/${northwind.id}`],
-      ["Starter", `/settings/plans/${free.id}`],
-      ["Pro", `/settings/plans/${pro.id}`],
+      ["Starter", `/plans/${free.id}`],
+      ["Pro", `/plans/${pro.id}`],
     ]);
   });
 

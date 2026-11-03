@@ -115,6 +115,7 @@ The table holds names only. A value never goes into the repository.
 | `VALKEY_PASSWORD` | Railway shared variable, sealed. A random value the maintainer creates (section 17, step 1). `valkey` reads it, and `ConnectionStrings__Cache` references it | own value | own value |
 | `Host__Heartbeat__Url` | Railway shared variable, sealed: its token is in the path. Copied from the heartbeat `<environment> api-worker` (section 16, step 5). `.railway/railway.ts` gives it to `api-worker` only. Optional: without it, the worker sends no heartbeat | the URL of `staging api-worker` | the URL of `production api-worker` |
 | `ERROR_TRACKING_ENVIRONMENT` of `web` and `platform` | Repository: `.railway/railway.ts`, from the linked Railway environment (`ctx.environment`), as it sets the API's `ASPNETCORE_ENVIRONMENT` | `staging` | `production` |
+| `APP_ENVIRONMENT` of `web` and `platform` | Repository: `.railway/railway.ts`, from the linked Railway environment, the same as `ERROR_TRACKING_ENVIRONMENT`. Every environment but production shows the environment strip | `staging` | `production` |
 | The Errors integrations "Incidents" and "Slack": the Slack channel and the alerts | Better Stack, by hand (section 16, step 6) | shared | shared |
 | `BETTERSTACK_UPTIME_TOKEN`, `BETTERSTACK_TELEMETRY_TOKEN` | The maintainer's password manager only (section 16, step 2) | shared | shared |
 
@@ -356,7 +357,7 @@ pnpm railway:apply
 pnpm railway:apply --confirm-destructive
 ```
 
-Only the environment names differ between the environments: the API's `ASPNETCORE_ENVIRONMENT` and the web apps' `ERROR_TRACKING_ENVIRONMENT`, which the file reads from `ctx.environment`. Any other setting that must differ can read it too.
+Only the environment names differ between the environments: the API's `ASPNETCORE_ENVIRONMENT` and the web apps' `ERROR_TRACKING_ENVIRONMENT` and `APP_ENVIRONMENT`, which the file reads from `ctx.environment`. Any other setting that must differ can read it too.
 
 Rules:
 

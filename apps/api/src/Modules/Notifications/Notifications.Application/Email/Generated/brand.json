@@ -1,4 +1,5 @@
 {
   "name": "Starter",
-  "supportUrl": "mailto:support@starter.example"
+  "supportUrl": "mailto:support@starter.example",
+  "privacyUrl": "https://starter.example/privacy"
 }

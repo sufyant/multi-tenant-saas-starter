@@ -20,7 +20,7 @@ const open = async (page: Page, path: string) => {
 };
 
 test("Plans_List_ShowsEachPlanAndTheDefault", async ({ page }) => {
-  await open(page, "/settings/plans");
+  await open(page, "/plans");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Plans" }),
@@ -34,7 +34,7 @@ test("Plans_List_ShowsEachPlanAndTheDefault", async ({ page }) => {
 });
 
 test("PlanEditor_Pro_ShowsEveryKeyByArea", async ({ page }) => {
-  await open(page, `/settings/plans/${plans.pro.id}`);
+  await open(page, `/plans/${plans.pro.id}`);
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Pro" }),
@@ -56,7 +56,7 @@ test("PlanEditor_Pro_ShowsEveryKeyByArea", async ({ page }) => {
 });
 
 test("PlanEditor_DefaultPlan_KeepsItsMark", async ({ page }) => {
-  await open(page, `/settings/plans/${plans.free.id}`);
+  await open(page, `/plans/${plans.free.id}`);
 
   const mark = page.getByRole("checkbox", { name: "Default plan" });
   await expect(mark).toBeChecked();
@@ -68,7 +68,7 @@ test("PlanEditor_LowerALimit_ShowsTheImpactAndSavesAnyway", async ({
   page,
 }) => {
   const bodies: unknown[] = [];
-  await open(page, `/settings/plans/${plans.pro.id}`);
+  await open(page, `/plans/${plans.pro.id}`);
   await mockPlanEdit(page, bodies);
 
   await page
@@ -88,7 +88,7 @@ test("PlanEditor_LowerALimit_ShowsTheImpactAndSavesAnyway", async ({
   await expectAccessible(page);
   await dialog.getByRole("button", { name: "Save anyway" }).click();
 
-  await expect(page).toHaveURL("/settings/plans");
+  await expect(page).toHaveURL("/plans");
   expect(bodies).toEqual([
     {
       name: "Pro",

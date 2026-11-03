@@ -24,7 +24,7 @@ export function AuthLayout({
   children,
 }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+    <div className="flex min-h-[calc(100dvh-var(--strip-height,0px))] flex-col bg-background text-foreground">
       <header className="flex flex-wrap items-center justify-between gap-4 px-6 py-5">
         <div className="flex items-center gap-2.5 font-semibold">
           <span

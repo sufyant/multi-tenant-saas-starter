@@ -7,30 +7,27 @@
     "format": "en-IE"
   },
   "shell": {
-    "navigation": "Main",
-    "menu": "Open menu",
-    "search": "Search",
-    "searchShortcut": "⌘K",
-    "railToggle": "Menu labels",
-    "railShortcut": "⌘B",
-    "breadcrumb": "Breadcrumb",
-    "commandTitle": "Go to",
-    "commandPlaceholder": "Search pages",
-    "commandEmpty": "No page found",
     "home": "Home",
-    "overview": "Overview",
     "settings": "Settings",
-    "preferences": "Preferences",
+    "yourOrganisations": "Your organisations",
+    "backTo": "Back to {organisation}",
+    "myAccount": "My account",
+    "organisation": "Organisation",
+    "general": "General",
     "members": "Members",
-    "you": "You",
+    "roles": "Roles",
+    "activityLog": "Activity log",
+    "settingsMyAccount": "Settings · My account",
+    "settingsOrganisation": "Settings · Organisation",
+    "inviteMember": "Invite member",
     "switchOrganisation": "Switch organisation",
-    "language": "Language",
-    "roles": {
+    "suspended": "Suspended",
+    "closed": "Closed",
+    "roleNames": {
       "owner": "Owner",
       "admin": "Admin",
       "member": "Member"
-    },
-    "notifications": "Notifications"
+    }
   },
   "organisations": {
     "chooseTitle": "Choose an organisation",
@@ -47,8 +44,8 @@
     "organisation": "Organisation",
     "text": "Product sections appear in the rail as they are added. There is nothing else to do here right now."
   },
-  "preferences": {
-    "title": "Preferences",
+  "profile": {
+    "title": "Profile",
     "text": "These follow you to every organisation and device.",
     "nameNote": "Your name shows to the members of every organisation you belong to."
   },
@@ -107,9 +104,9 @@
     "roles": "Roles"
   },
   "permissionDenied": {
-    "title": "You can’t open {page}",
-    "text": "Your role in {organisation} is {role}. Owners and Admins can read {page}. Ask one of them if you need something from it.",
-    "back": "Back to Overview"
+    "title": "You can’t open this page",
+    "text": "Your role in {organisation} doesn’t include {page}. Ask an Owner or Admin if you need it.",
+    "back": "Back to Home"
   },
   "members": {
     "title": "Members",

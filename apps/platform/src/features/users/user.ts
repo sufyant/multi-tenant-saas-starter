@@ -8,6 +8,7 @@ import {
   type UserResponse,
   UserResponseStatus,
 } from "@repo/api-client";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import type { StatusTone } from "@repo/ui/components/status";
 import type { QueryClient } from "@tanstack/react-query";
 
@@ -84,7 +85,8 @@ export function afterRefusal(
 ): void {
   if (!(error instanceof ProblemDetailsError)) return;
   const { kind } = actionFor(error.status, error.problem);
-  if (kind === "sign-in") window.location.assign("/sign-in");
+  if (kind === "sign-in")
+    window.location.assign(signInAgainUrl(window.location));
   if (kind === "account-suspended" || kind === "account-deleted") {
     void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
     return;

@@ -8,11 +8,11 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import type { Instant } from "../../lib/format-date-time";
 import type { Problem } from "../../lib/use-failure-text";
 import { useOnline } from "../../lib/use-online";
+import { usePhone } from "../../lib/use-phone";
 import { cn } from "../../lib/utils";
 import { Banner } from "../banner";
 import { Button } from "../button";
@@ -71,24 +71,16 @@ export type NotificationBellProps = {
   linkComponent?: ElementType;
   /** Tests and previews only: the "now" of the relative times. */
   now?: Instant;
+  /**
+   * Where the bell sits (the Shell screens): a row of the expanded sidebar, "Notifications" and the count; an icon of a tablet's
+   * rail; or an icon of the phone's top bar, the default.
+   */
+  place?: "row" | "rail" | "icon";
 };
 
 /** Above 99 the badge says 99+ (the Notifications boards). */
 const countText = (unread: number) => (unread > 99 ? "99+" : String(unread));
 const highlightMs = 2000;
-
-// A media query takes no variable, so the bell reads the breakpoint from its token at run time (F20). Without it, as in jsdom, the
-// screen counts as wide.
-const subscribeToWidth = (changed: () => void) => {
-  window.addEventListener("resize", changed);
-  return () => window.removeEventListener("resize", changed);
-};
-const isPhone = () => {
-  const tablet = getComputedStyle(document.documentElement)
-    .getPropertyValue("--bp-tablet")
-    .trim();
-  return tablet !== "" && !window.matchMedia(`(min-width: ${tablet})`).matches;
-};
 
 /**
  * The bell before the avatar and its list (the Notifications boards, `.st-bell` and `.st-notifs`): the unread count as a neutral
@@ -98,12 +90,32 @@ const isPhone = () => {
  */
 export function NotificationBell(props: NotificationBellProps) {
   const t = useTranslations();
-  const phone = useSyncExternalStore(subscribeToWidth, isPhone, () => false);
-  const { unread, open, onOpenChange } = props;
+  const phone = usePhone();
+  const { unread, open, onOpenChange, place = "icon" } = props;
   const label = unread
     ? t("notifications.bellUnread", { count: countText(unread) })
     : t("notifications.bell");
-  const button = (
+  const row = place === "row";
+  const button = row ? (
+    <>
+      <Icon icon={BellIcon} size={16} className="shrink-0" />
+      <span
+        aria-hidden="true"
+        className="min-w-0 flex-1 truncate text-start max-desktop:sr-only"
+      >
+        {t("notifications.bell")}
+      </span>
+      {unread ? (
+        <span
+          aria-hidden="true"
+          data-slot="bell-count"
+          className="rounded-full bg-primary px-1.5 text-small leading-4 font-medium text-primary-foreground tabular-nums max-desktop:absolute max-desktop:end-0.5 max-desktop:top-1 max-desktop:px-1 max-desktop:text-[10px]"
+        >
+          {countText(unread)}
+        </span>
+      ) : null}
+    </>
+  ) : (
     <>
       <Icon icon={BellIcon} size={18} />
       {unread ? (
@@ -117,8 +129,12 @@ export function NotificationBell(props: NotificationBellProps) {
       ) : null}
     </>
   );
-  const buttonClass =
-    "relative inline-flex size-control-lg shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-accent aria-expanded:text-foreground";
+  const buttonClass = cn(
+    "relative inline-flex shrink-0 items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-accent aria-expanded:text-foreground",
+    row
+      ? "h-control-md gap-2.5 px-2 text-body max-desktop:size-10 max-desktop:justify-center max-desktop:px-0"
+      : "size-control-lg justify-center max-tablet:size-touch-target",
+  );
 
   if (phone)
     return (
@@ -168,7 +184,8 @@ export function NotificationBell(props: NotificationBellProps) {
         {button}
       </PopoverTrigger>
       <PopoverContent
-        align="end"
+        side={row ? "inline-end" : "bottom"}
+        align={row ? "start" : "end"}
         sideOffset={6}
         className="max-h-[560px] w-[400px] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0"
       >

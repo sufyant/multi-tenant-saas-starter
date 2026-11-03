@@ -9,6 +9,7 @@ import {
   getListRolesQueryKey,
   ProblemDetailsError,
 } from "@repo/api-client";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import type { QueryClient } from "@tanstack/react-query";
 
 // After a change the screen waits for the server and then reads again (F47): it invalidates the lists by their generated keys.
@@ -87,7 +88,8 @@ export function afterRefusal(
 ): void {
   if (!(error instanceof ProblemDetailsError)) return;
   const action = actionFor(error.status, error.problem);
-  if (action.kind === "sign-in") window.location.assign("/sign-in");
+  if (action.kind === "sign-in")
+    window.location.assign(signInAgainUrl(window.location));
   if (action.kind === "account-suspended")
     void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
   if (error.problem && tenantGone.has(error.problem.code))

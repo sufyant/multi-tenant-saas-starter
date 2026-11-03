@@ -56,7 +56,9 @@ FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:10747a1323be68f206aed893
 # The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
 USER 0:0
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+# The image's commit, the same in every environment: the account menu shows its first seven characters (the App version pattern).
+ARG SOURCE_REVISION
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000 SOURCE_REVISION=$SOURCE_REVISION
 # The standalone output holds server.js and the traced node_modules. outputFileTracingRoot is the
 # repository root, so it keeps the workspace layout. The build does not copy public/ and .next/static/
 # into it; without a CDN, the server serves them.

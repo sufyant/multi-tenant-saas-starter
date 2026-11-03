@@ -80,6 +80,20 @@ describe("MembersPage", () => {
     ).not.toHaveAttribute("aria-disabled");
   });
 
+  // The command menu's "Invite member" (F28): the page opens the dialog once and drops the parameter from the address.
+  it("MembersPage_InviteInTheAddress_OpensTheInviteDialogOnce", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />, {
+      url: "/northwind/settings/members?invite=1",
+    });
+
+    expect(
+      await screen.findByRole("alertdialog", { name: "Invite a member" }),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(window.location.search).toBe(""));
+  });
+
   it("MembersPage_Owner_CannotRemoveThemselvesAndSaysWhy", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
@@ -319,10 +333,10 @@ describe("MembersPage", () => {
     renderInTenant(<MembersPage />);
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open Members" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Back to Overview" }),
+      screen.getByRole("button", { name: "Back to Home" }),
     ).toHaveAttribute("href", "/northwind");
   });
 

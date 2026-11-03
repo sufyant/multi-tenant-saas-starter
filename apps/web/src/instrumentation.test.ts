@@ -13,6 +13,7 @@ const variables = {
   API_URL: "https://api.example.test",
   CLERK_PUBLISHABLE_KEY: "pk_test_x",
   CLERK_SECRET_KEY: "sk_test_x",
+  APP_ENVIRONMENT: "local",
 };
 
 beforeEach(() => {

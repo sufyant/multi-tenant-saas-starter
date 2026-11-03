@@ -343,11 +343,11 @@ describe("ActivityPage", () => {
     renderInTenant(<ActivityPage />, { url });
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open Activity" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        `Your role in ${northwind.name} is Member. Owners and Admins can read Activity. Ask one of them if you need something from it.`,
+        `Your role in ${northwind.name} doesn’t include Activity log. Ask an Owner or Admin if you need it.`,
       ),
     ).toBeInTheDocument();
     expect(cursors).toEqual([]);
@@ -395,7 +395,11 @@ describe("ActivityPage", () => {
       await screen.findByRole("button", { name: "Show older activity" }),
     );
 
-    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/sign-in"));
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/sign-in\?reason=session-ended&redirect_url=/),
+      ),
+    );
     vi.unstubAllGlobals();
   });
 });
