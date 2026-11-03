@@ -8,7 +8,7 @@ test("Preferences_English_StartsWithThePlatformLabel", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
 
-  await page.goto("/settings/preferences");
+  await page.goto("/settings/profile");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Preferences" }),
@@ -21,7 +21,7 @@ test("Preferences_Arabic_IsRightToLeft", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.Ar);
 
-  await page.goto("/settings/preferences");
+  await page.goto("/settings/profile");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "التفضيلات" }),
@@ -35,7 +35,7 @@ test("Preferences_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockRename(page, Language.En, bodies);
 
-  await page.goto("/settings/preferences");
+  await page.goto("/settings/profile");
   await expect(page.getByRole("button", { name: "SK Account" })).toBeVisible();
   await expect(page.getByText("admin@starter.example")).toBeVisible();
   await page.getByRole("textbox", { name: "First name" }).fill("Sasha");

@@ -8,21 +8,31 @@ import {
   getGetUserQueryOptions,
   getListTenantsQueryOptions,
   ProblemDetailsError,
+  platformBell,
 } from "@repo/api-client";
-import { AppShell } from "@repo/ui/components/app-shell";
+import { brand } from "@repo/brand";
+import { AccountMenu } from "@repo/ui/components/account-menu";
+import { useAppFrame } from "@repo/ui/components/app-frame";
 import {
+  AppShell,
+  type CommandSection,
+  type NavItem,
+  useTabTitleText,
+} from "@repo/ui/components/app-shell";
+import {
+  ActivityIcon,
   BuildingIcon,
-  HistoryIcon,
+  CreditCardIcon,
   SettingsIcon,
+  ShieldCheckIcon,
+  UserIcon,
   UsersIcon,
 } from "@repo/ui/components/icon";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { UserMenu } from "@repo/ui/components/user-menu";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useTheme } from "next-themes";
 import { type ReactNode, useEffect, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { userNameOf } from "@/shared/name-of";
@@ -30,6 +40,7 @@ import { NoAccess } from "@/shared/no-access";
 import { PlatformBell } from "@/shared/notification-bell";
 import { NotificationStream } from "@/shared/notification-stream";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { ServerBar } from "@/shared/server-bar";
 
 /** The tenant of an organisation's page, `/organisations/<id>`, or null on any other page. */
 const tenantIdOf = (pathname: string) =>
@@ -44,27 +55,22 @@ const notAUserYet = (error: Error | null) =>
   error.problem?.code === ErrorCode.UserNotFound;
 
 /**
- * The platform's AppShell: the ink "Platform" label starts the top bar, and there is no organisation and no OrgMenu. A
- * signed-in user who is no system admin sees "You don't have access"; the API refuses them anyway.
+ * The platform's shell (the platform's Shell screens): the product and "Platform" at the top, with no switcher, search, the
+ * platform's bell, Organisations, Users, Plans and Activity log, Settings and the account menu; inside Settings the settings menu
+ * with My account and Platform. A signed-in user who is no system admin sees "You don't have access"; the API refuses them anyway.
  *
  * A root system admin has no grant until their first request to the platform door with a verified second factor: the door
  * writes their grant then, and their user too when they are no user yet (`SystemAdminDirectory`,
  * `apps/api/docs/flows/system-admins.md`). So when GetMe answers 404 or a user who is no system admin, the shell asks the door
  * once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
  */
-export function PlatformShell({
-  railExpanded,
-  children,
-}: {
-  /** The rail shows its labels on desktop: the layout read the cookie (F49). */
-  railExpanded: boolean;
-  children: ReactNode;
-}) {
+export function PlatformShell({ children }: { children: ReactNode }) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  const { theme = "system", setTheme } = useTheme();
+  const { environment, version } = useAppFrame();
+  const tabTitle = useTabTitleText(t("meta.title"));
   const me = useQuery(getGetMeQueryOptions());
   // One ask of the door per page load, then one more read of GetMe when it lets the person in (F42).
   const [doorAsked, setDoorAsked] = useState(false);
@@ -90,6 +96,10 @@ export function PlatformShell({
       query: { enabled: userId !== null && me.data?.isSystemAdmin === true },
     }),
   );
+  const unread = useQuery({
+    ...platformBell().count,
+    enabled: me.data?.isSystemAdmin === true,
+  });
   const { refetch } = me;
   useEffect(() => {
     if (doorAsked) return;
@@ -101,34 +111,78 @@ export function PlatformShell({
   const admin = askTheDoor ? undefined : me.data;
   if (admin && !admin.isSystemAdmin) return <NoAccess />;
 
-  const sections = {
-    settings: "shell.settings",
-    preferences: "shell.preferences",
-    "system-admins": "shell.systemAdmins",
-    plans: "shell.plans",
-  } as const;
+  const main: NavItem[] = [
+    {
+      id: "organisations",
+      label: t("shell.organisations"),
+      icon: BuildingIcon,
+      href: "/",
+    },
+    { id: "users", label: t("shell.users"), icon: UsersIcon, href: "/users" },
+    {
+      id: "plans",
+      label: t("shell.plans"),
+      icon: CreditCardIcon,
+      href: "/plans",
+    },
+    {
+      id: "activity",
+      label: t("shell.activityLog"),
+      icon: ActivityIcon,
+      href: "/activity",
+    },
+  ];
+  const myAccount: NavItem[] = [
+    {
+      id: "profile",
+      label: t("appShell.profile"),
+      icon: UserIcon,
+      href: "/settings/profile",
+    },
+  ];
+  // Terms of use and Feature flags join in steps 38 and 39.
+  const platform: NavItem[] = [
+    {
+      id: "system-admins",
+      label: t("shell.systemAdmins"),
+      icon: ShieldCheckIcon,
+      href: "/settings/system-admins",
+    },
+  ];
   const inSettings = pathname.startsWith("/settings");
-  const inUsers = pathname === "/users" || pathname.startsWith("/users/");
-  const inActivity = pathname === "/activity";
+  const first = pathname.split("/")[1] ?? "";
+  const current = inSettings
+    ? (pathname.split("/")[2] ?? "")
+    : first === ""
+      ? "organisations"
+      : first === "organisations"
+        ? "organisations"
+        : first;
+  const item = [...main, ...myAccount, ...platform].find(
+    (entry) => entry.id === current,
+  );
+  const pageName = item?.label ?? t("shell.settings");
   const userName = user.data && userNameOf(user.data, t("users.deletedUser"));
-  const crumbs = inSettings
-    ? pathname
-        .split("/")
-        .filter(
-          (segment): segment is keyof typeof sections => segment in sections,
-        )
-        .map((segment) => ({ label: t(sections[segment]) }))
-    : inActivity
-      ? [{ label: t("shell.activity") }]
-      : inUsers
-        ? [
-            { label: t("shell.users") },
-            ...(userId && userName ? [{ label: userName }] : []),
-          ]
-        : [
-            { label: t("shell.organisations") },
-            ...(tenantId && tenant.data ? [{ label: tenant.data.name }] : []),
-          ];
+  const detail =
+    current === "users" && userId
+      ? userName
+      : current === "organisations" && tenantId
+        ? tenant.data?.name
+        : undefined;
+  const crumbs = [
+    { label: inSettings ? t("shell.settings") : t("shell.platform") },
+    { label: pageName, href: detail ? item?.href : undefined },
+    ...(detail ? [{ label: detail }] : []),
+  ];
+  const commands: CommandSection[] = [
+    { id: "go-to", label: t("appShell.goTo"), items: main },
+    {
+      id: "my-account",
+      label: t("shell.settingsMyAccount"),
+      items: myAccount,
+    },
+    { id: "platform", label: t("shell.settingsPlatform"), items: platform },
+  ];
 
   return (
     <>
@@ -136,86 +190,79 @@ export function PlatformShell({
       {/* One live stream for the tab, once the door has made the person a system admin (F42, F57). */}
       {admin && <NotificationStream />}
       <AppShell
-        nav={[
-          {
-            id: "organisations",
-            label: t("shell.organisations"),
-            icon: BuildingIcon,
-            href: "/",
-          },
-          {
-            id: "users",
-            label: t("shell.users"),
-            icon: UsersIcon,
-            href: "/users",
-          },
-          {
-            id: "activity",
-            label: t("shell.activity"),
-            icon: HistoryIcon,
-            href: "/activity",
-          },
-          {
-            id: "settings",
-            label: t("shell.settings"),
-            icon: SettingsIcon,
-            href: "/settings/preferences",
-            placement: "bottom",
-          },
-        ]}
-        current={
+        head={(place) => (
+          <div className="flex h-11 min-w-0 items-center gap-2.5 px-1.5">
+            <span
+              aria-hidden="true"
+              className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-small font-medium text-primary-foreground"
+            >
+              {brand.name.charAt(0)}
+            </span>
+            <span
+              className={
+                place === "rail"
+                  ? "sr-only desktop:not-sr-only desktop:flex desktop:min-w-0 desktop:flex-col"
+                  : "flex min-w-0 flex-col"
+              }
+            >
+              <span className="truncate text-body font-medium">
+                {brand.name}
+              </span>
+              <span className="truncate text-small font-medium text-muted-foreground">
+                {t("shell.platform")}
+              </span>
+            </span>
+          </div>
+        )}
+        main={main}
+        settings={{
+          id: "settings",
+          label: t("shell.settings"),
+          icon: SettingsIcon,
+          href: "/settings/profile",
+        }}
+        settingsMenu={
           inSettings
-            ? "settings"
-            : inActivity
-              ? "activity"
-              : inUsers
-                ? "users"
-                : "organisations"
+            ? {
+                back: { label: t("shell.backToPlatform"), href: "/" },
+                groups: [
+                  {
+                    id: "my-account",
+                    label: t("shell.myAccount"),
+                    items: myAccount,
+                  },
+                  {
+                    id: "platform",
+                    label: t("shell.platform"),
+                    items: platform,
+                  },
+                ],
+              }
+            : undefined
         }
-        logo={t("shell.platform").charAt(0)}
-        logoLabel={t("shell.home")}
-        logoHref="/"
-        platformLabel={t("shell.platform")}
-        crumbs={crumbs}
-        bell={admin && <PlatformBell />}
-        userMenu={
+        current={current}
+        bell={(place) => admin && <PlatformBell place={place} />}
+        account={(place) =>
           admin && (
-            <UserMenu
+            <AccountMenu
               name={[admin.firstName, admin.lastName].filter(Boolean).join(" ")}
               email={admin.email ?? ""}
               person={{ firstName: admin.firstName, lastName: admin.lastName }}
-              label={t("common.account")}
-              languageName={t(`languages.${admin.language}`)}
-              languageLabel={t("shell.language")}
-              preferencesHref="/settings/preferences"
-              theme={theme}
-              themes={[
-                { id: "light", label: t("theme.light") },
-                { id: "dark", label: t("theme.dark") },
-                { id: "system", label: t("theme.system") },
-              ]}
-              themeLabel={t("theme.label")}
-              onThemeChange={setTheme}
-              signOutLabel={t("common.signOut")}
+              profileHref="/settings/profile"
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
+              version={version}
+              variant={place}
               linkComponent={Link}
             />
           )
         }
-        labels={{
-          navigation: t("shell.navigation"),
-          menu: t("shell.menu"),
-          search: t("shell.search"),
-          searchShortcut: t("shell.searchShortcut"),
-          breadcrumb: t("shell.breadcrumb"),
-          commandTitle: t("shell.commandTitle"),
-          commandPlaceholder: t("shell.commandPlaceholder"),
-          commandEmpty: t("shell.commandEmpty"),
-          close: t("common.close"),
-          railToggle: t("shell.railToggle"),
-          railShortcut: t("shell.railShortcut"),
-        }}
-        railExpanded={railExpanded}
+        version={version}
+        pageName={detail ?? pageName}
+        crumbs={crumbs}
+        commands={commands}
+        bar={<ServerBar />}
+        environment={environment}
+        tabTitle={tabTitle(detail ?? pageName, unread.data?.unread)}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}
       >

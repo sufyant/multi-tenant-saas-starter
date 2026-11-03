@@ -58,7 +58,7 @@ afterEach(() => {
 afterAll(() => server.close());
 
 describe("PlatformShell", () => {
-  it("PlatformShell_TopBar_ShowsThePlatformsBell", async () => {
+  it("PlatformShell_MainMenu_ShowsThePlatformsBell", async () => {
     server.use(
       getGetMeMockHandler(
         getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
@@ -68,54 +68,54 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
-      await within(screen.getByRole("banner")).findByRole("button", {
-        name: "Notifications, 5 unread",
-      }),
+      await within(
+        screen.getByRole("navigation", { name: "Main menu" }),
+      ).findByRole("button", { name: "Notifications, 5 unread" }),
     ).toBeInTheDocument();
   });
 
-  it("PlatformShell_SystemAdmin_StartsTheTopBarWithPlatform", async () => {
+  it("PlatformShell_SystemAdmin_StartsTheMenuWithTheProductAndPlatform", async () => {
     server.use(
       getGetMeMockHandler(
         getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
-    expect(await screen.findByRole("banner")).toHaveTextContent(/^Platform/);
+    expect(
+      await screen.findByRole("navigation", { name: "Main menu" }),
+    ).toHaveTextContent(/^SStarterPlatform/);
   });
 
-  it("PlatformShell_Rail_ShowsOnlyThePagesThatExist", async () => {
+  it("PlatformShell_MainMenu_ShowsOnlyThePagesThatExist", async () => {
     server.use(
       getGetMeMockHandler(
         getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const rail = within(
-      await screen.findByRole("navigation", { name: "Main" }),
+      await screen.findByRole("navigation", { name: "Main menu" }),
     );
     expect(rail.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
-      "/settings/preferences",
+      "/settings/profile",
     );
     expect(rail.getByRole("link", { name: "Users" })).toHaveAttribute(
       "href",
       "/users",
     );
-    expect(rail.getByRole("link", { name: "Activity" })).toHaveAttribute(
+    expect(rail.getByRole("link", { name: "Plans" })).toHaveAttribute(
+      "href",
+      "/plans",
+    );
+    expect(rail.getByRole("link", { name: "Activity log" })).toHaveAttribute(
       "href",
       "/activity",
     );
@@ -125,26 +125,24 @@ describe("PlatformShell", () => {
     );
   });
 
-  it("PlatformShell_Rail_PutsActivityBetweenUsersAndSettings", async () => {
+  it("PlatformShell_MainMenu_IsOrganisationsUsersPlansActivityLogThenSettings", async () => {
     server.use(
       getGetMeMockHandler(
         getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const rail = within(
-      await screen.findByRole("navigation", { name: "Main" }),
+      await screen.findByRole("navigation", { name: "Main menu" }),
     );
     expect(
       rail.getAllByRole("link").map((link) => link.getAttribute("href")),
-    ).toEqual(["/", "/", "/users", "/activity", "/settings/preferences"]);
+    ).toEqual(["/", "/users", "/plans", "/activity", "/settings/profile"]);
   });
 
-  it("PlatformShell_ActivityPage_MarksActivityCurrent", async () => {
+  it("PlatformShell_ActivityPage_MarksActivityLogCurrent", async () => {
     navigation.pathname = "/activity";
     server.use(
       getGetMeMockHandler(
@@ -152,21 +150,19 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const rail = within(
-      await screen.findByRole("navigation", { name: "Main" }),
+      await screen.findByRole("navigation", { name: "Main menu" }),
     );
-    expect(rail.getByRole("link", { name: "Activity" })).toHaveAttribute(
+    expect(rail.getByRole("link", { name: "Activity log" })).toHaveAttribute(
       "aria-current",
       "page",
     );
     const crumbs = within(
       screen.getByRole("navigation", { name: "Breadcrumb" }),
     );
-    expect(crumbs.getByText("Activity")).toBeInTheDocument();
+    expect(crumbs.getByText("Activity log")).toBeInTheDocument();
   });
 
   it("PlatformShell_UsersPage_MarksUsersCurrent", async () => {
@@ -177,12 +173,10 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const rail = within(
-      await screen.findByRole("navigation", { name: "Main" }),
+      await screen.findByRole("navigation", { name: "Main menu" }),
     );
     expect(rail.getByRole("link", { name: "Users" })).toHaveAttribute(
       "aria-current",
@@ -194,7 +188,7 @@ describe("PlatformShell", () => {
     expect(crumbs.getByText("Users")).toBeInTheDocument();
   });
 
-  it("PlatformShell_SystemAdminsPage_ShowsSettingsAndSystemAdminsInTheBreadcrumb", async () => {
+  it("PlatformShell_SystemAdminsPage_ShowsTheSettingsMenuAndTheBreadcrumb", async () => {
     navigation.pathname = "/settings/system-admins";
     server.use(
       getGetMeMockHandler(
@@ -202,15 +196,21 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const crumbs = within(
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
     );
     expect(crumbs.getByText("Settings")).toBeInTheDocument();
     expect(crumbs.getByText("System admins")).toBeInTheDocument();
+    const menu = within(
+      screen.getByRole("navigation", { name: "Settings menu" }),
+    );
+    expect(menu.getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "Back to the platform",
+      "Profile",
+      "System admins",
+    ]);
   });
 
   it("PlatformShell_UserPage_NamesTheUserInTheBreadcrumb", async () => {
@@ -239,9 +239,7 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const crumbs = within(
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
@@ -268,9 +266,7 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const crumbs = within(
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
@@ -296,9 +292,7 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const crumbs = within(
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
@@ -333,9 +327,7 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     const crumbs = within(
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
@@ -356,9 +348,7 @@ describe("PlatformShell", () => {
       }),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(await screen.findByText("Content")).toBeInTheDocument();
     expect(doorCalls).not.toHaveBeenCalled();
@@ -379,9 +369,7 @@ describe("PlatformShell", () => {
       }),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
@@ -411,9 +399,7 @@ describe("PlatformShell", () => {
       getListTenantsMockHandler(),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(await screen.findByText("Content")).toBeInTheDocument();
   });
@@ -432,9 +418,7 @@ describe("PlatformShell", () => {
       }),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
@@ -456,9 +440,7 @@ describe("PlatformShell", () => {
       getListTenantsMockHandler(),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(await screen.findByText("Content")).toBeInTheDocument();
   });
@@ -469,9 +451,7 @@ describe("PlatformShell", () => {
       getListTenantsMockHandler(),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
@@ -486,9 +466,7 @@ describe("PlatformShell", () => {
       ),
     );
 
-    renderWithProviders(
-      <PlatformShell railExpanded={false}>Content</PlatformShell>,
-    );
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
       await screen.findByRole("heading", { name: "You don’t have access" }),
@@ -509,20 +487,17 @@ describe("PlatformShell", () => {
     };
     const meWaits = () => http.get("*/v1/me", held);
 
-    it("PlatformShell_GetMeWaits_ShowsTheRailAndTheTopBarAtOnce", () => {
+    it("PlatformShell_GetMeWaits_ShowsTheMenuAndTheBreadcrumbAtOnce", () => {
       navigation.pathname = "/users";
       server.use(meWaits());
 
-      renderWithProviders(
-        <PlatformShell railExpanded={false}>Content</PlatformShell>,
-      );
+      renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
-      const rail = screen.getByRole("navigation", { name: "Main" });
+      const rail = screen.getByRole("navigation", { name: "Main menu" });
       expect(within(rail).getByRole("link", { name: "Users" })).toHaveAttribute(
         "href",
         "/users",
       );
-      expect(screen.getByRole("banner")).toHaveTextContent(/^Platform/);
       expect(
         screen.getByRole("navigation", { name: "Breadcrumb" }),
       ).toHaveTextContent("Users");
@@ -532,9 +507,7 @@ describe("PlatformShell", () => {
     it("PlatformShell_GetMeWaits_ShowsNoSkeletonBeforeTheDelayAndTheSkeletonAfterIt", async () => {
       server.use(meWaits());
 
-      renderWithProviders(
-        <PlatformShell railExpanded={false}>Content</PlatformShell>,
-      );
+      renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
       expect(
@@ -553,15 +526,13 @@ describe("PlatformShell", () => {
         http.get("*/v1/platform/tenants", held),
       );
 
-      renderWithProviders(
-        <PlatformShell railExpanded={false}>Content</PlatformShell>,
-      );
+      renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
       expect(
         await screen.findByRole("status", { name: "Loading" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("navigation", { name: "Main" }),
+        screen.getByRole("navigation", { name: "Main menu" }),
       ).toBeInTheDocument();
       expect(screen.queryByText("Content")).not.toBeInTheDocument();
     });
@@ -576,15 +547,13 @@ describe("PlatformShell", () => {
         ),
       );
 
-      renderWithProviders(
-        <PlatformShell railExpanded={false}>Content</PlatformShell>,
-      );
+      renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
       expect(
         await screen.findByRole("heading", { name: "You don’t have access" }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("navigation", { name: "Main" }),
+        screen.queryByRole("navigation", { name: "Main menu" }),
       ).not.toBeInTheDocument();
     });
 
@@ -603,9 +572,7 @@ describe("PlatformShell", () => {
         ),
       );
 
-      renderWithProviders(
-        <PlatformShell railExpanded={false}>Content</PlatformShell>,
-      );
+      renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
       expect(
         await screen.findByRole("heading", {
@@ -613,7 +580,7 @@ describe("PlatformShell", () => {
         }),
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole("navigation", { name: "Main" }),
+        screen.queryByRole("navigation", { name: "Main menu" }),
       ).not.toBeInTheDocument();
     });
   });

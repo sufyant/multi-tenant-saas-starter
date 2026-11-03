@@ -114,22 +114,4 @@ describe("SystemAdminsPage", () => {
       await screen.findByRole("menuitem", { name: "Remove system admin" }),
     ).not.toHaveAttribute("aria-disabled");
   });
-
-  it("SystemAdmins_SettingsNav_HasPreferencesAndSystemAdmins", async () => {
-    server.use(meAs(ciara), usersAnswer(usersPageOf(systemAdmins)));
-
-    renderWithProviders(<SystemAdminsPage />);
-
-    const nav = within(
-      await screen.findByRole("navigation", { name: "Settings" }),
-    );
-    expect(nav.getByRole("link", { name: "Preferences" })).toHaveAttribute(
-      "href",
-      "/settings/preferences",
-    );
-    expect(nav.getByRole("link", { name: "System admins" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  });
 });

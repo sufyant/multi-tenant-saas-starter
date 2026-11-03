@@ -6,9 +6,8 @@ import { useTranslations } from "next-intl";
 
 /** The addresses of the Settings pages. */
 export const settingsPages = {
-  preferences: "/settings/preferences",
+  preferences: "/settings/profile",
   systemAdmins: "/settings/system-admins",
-  plans: "/settings/plans",
 } as const;
 
 /**
@@ -18,7 +17,7 @@ export const settingsPages = {
 export function SettingsNav({
   current,
 }: {
-  current: "preferences" | "system-admins" | "plans";
+  current: "preferences" | "system-admins";
 }) {
   const t = useTranslations("shell");
   return (
@@ -43,11 +42,6 @@ export function SettingsNav({
               id: "system-admins",
               label: t("systemAdmins"),
               href: settingsPages.systemAdmins,
-            },
-            {
-              id: "plans",
-              label: t("plans"),
-              href: settingsPages.plans,
             },
           ],
         },

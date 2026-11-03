@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useCallback, useId, useState } from "react";
+import { usePhone } from "../../lib/use-phone";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
 import { Icon, LoaderCircleIcon, XIcon } from "../icon";
@@ -97,6 +98,7 @@ export function Dialog({
   const [typed, setTyped] = useState("");
   const fieldId = useId();
   const [kind, kindRef] = useKind();
+  const phone = usePhone();
   const blocked =
     actionDisabled || (confirmText !== undefined && typed !== confirmText);
   return (
@@ -124,12 +126,12 @@ export function Dialog({
         />
         <AlertDialogHeader className="place-items-start text-start">
           <div className="flex w-full items-center gap-2">
-            {kind === "form" && (
+            {kind === "form" && phone && (
               <AlertDialogCancel
                 data-slot="dialog-close"
                 aria-label={cancelLabel}
                 render={<Button variant="ghost" icon={<Icon icon={XIcon} />} />}
-                className="-ms-2 hidden size-touch-target max-tablet:inline-flex"
+                className="-ms-2 size-touch-target"
               />
             )}
             <AlertDialogTitle className="line-clamp-2 text-section-title">

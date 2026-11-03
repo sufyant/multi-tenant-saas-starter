@@ -140,7 +140,9 @@ describe("Dialog", () => {
   });
 
   // The Dialogs on a phone pattern: a form you type into is a full-screen page with × and the title at the top.
-  it("Dialog_FieldInside_IsAFormWithACloseButtonAtTheTop", async () => {
+  it("Dialog_FieldInsideOnAPhone_IsAFormWithACloseButtonAtTheTop", async () => {
+    // jsdom has no layout: the phone follows the breakpoint token and a matchMedia that never matches.
+    document.documentElement.style.setProperty("--bp-tablet", "768px");
     const onOpenChange = vi.fn();
     render(
       <Dialog
@@ -161,11 +163,12 @@ describe("Dialog", () => {
     });
 
     expect(dialog).toHaveAttribute("data-kind", "form");
-    // The × of the top bar comes first; the footer's Cancel shows only from bp-tablet.
+    // The × of the top bar comes first; the footer's Cancel hides under bp-tablet.
     const [close] = screen.getAllByRole("button", { name: "Cancel" });
     expect(close).toHaveAttribute("data-slot", "dialog-close");
     await userEvent.click(close as HTMLElement);
     expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything());
+    document.documentElement.style.removeProperty("--bp-tablet");
   });
 
   it("Dialog_TypeToConfirm_IsAForm", async () => {

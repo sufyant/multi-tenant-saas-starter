@@ -45,11 +45,10 @@ import {
 } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { NotFoundPage } from "@/shared/not-found-page";
-import { plansQuery, refreshPlans } from "@/shared/plans";
+import { plansPage, plansQuery, refreshPlans } from "@/shared/plans";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { afterAccountRefusal } from "@/shared/refusal";
 import { savedUnderKey } from "@/shared/saved-under-key";
-import { SettingsNav, settingsPages } from "@/shared/settings-nav";
 import { ValueField } from "@/shared/value-field";
 import { ImpactDialog } from "./impact-dialog";
 
@@ -135,12 +134,9 @@ export function PlanEditor({ planId }: { planId: string | null }) {
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="plans" />
-      <section className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-5">
-        {children}
-      </section>
-    </div>
+    <section className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-5">
+      {children}
+    </section>
   );
 }
 
@@ -185,7 +181,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
         ...isolated,
       }),
     });
-    router.push(settingsPages.plans);
+    router.push(plansPage);
   };
 
   const refused = (error: unknown) => {
@@ -403,7 +399,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
           {plan ? t("plans.save") : t("plans.create")}
         </Button>
         <Link
-          href={settingsPages.plans}
+          href={plansPage}
           className={buttonVariants({ variant: "outline" })}
         >
           {t("common.cancel")}

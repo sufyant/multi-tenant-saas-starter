@@ -16,7 +16,10 @@ export const plansQuery: ListPlansParams = {
 };
 
 /** The page of a plan: its editor. */
-export const planPage = (id: string) => `/settings/plans/${id}`;
+/** The Plans list, in the main menu. */
+export const plansPage = "/plans";
+
+export const planPage = (id: string) => `${plansPage}/${id}`;
 
 /** After a plan command, or a refusal that says a plan changed meanwhile, the screen reads again (F47): the plan and the list. */
 export const refreshPlans = (queryClient: QueryClient, id?: string) =>

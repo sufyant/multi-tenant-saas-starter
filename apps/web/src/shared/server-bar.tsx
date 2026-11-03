@@ -4,7 +4,6 @@ import { serverReach } from "@repo/api-client";
 import { brand } from "@repo/brand";
 import { ConnectionBar } from "@repo/ui/components/connection-bar";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { useMemo, useSyncExternalStore } from "react";
 
 /**
@@ -12,7 +11,6 @@ import { useMemo, useSyncExternalStore } from "react";
  * it sends no request of its own. A try reads the page's queries again and sends the commands that waited for the connection.
  */
 export function ServerBar() {
-  const t = useTranslations("meta");
   const queryClient = useQueryClient();
   const reach = useMemo(() => serverReach(queryClient), [queryClient]);
   const serverDown = useSyncExternalStore(
@@ -23,7 +21,7 @@ export function ServerBar() {
   return (
     <ConnectionBar
       serverDown={serverDown}
-      product={t("title")}
+      product={brand.name}
       statusUrl={brand.statusUrl}
       onRetry={() => {
         void queryClient.invalidateQueries();

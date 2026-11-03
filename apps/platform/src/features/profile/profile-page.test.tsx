@@ -22,7 +22,7 @@ import {
 } from "vitest";
 import { setLocale } from "@/i18n/set-locale";
 import { renderWithProviders } from "../../../test/render";
-import { PreferencesPage } from "./preferences-page";
+import { ProfilePage } from "./profile-page";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -138,10 +138,10 @@ const save = async () =>
   );
 
 const renderPage = (locale: "en" | "ar" = "en") =>
-  renderWithProviders(<PreferencesPage />, locale);
+  renderWithProviders(<ProfilePage />, locale);
 
-describe("PreferencesPage", () => {
-  it("PreferencesPage_GetMe_ShowsTheNameTheLanguageAndTheTimeZoneToChange", async () => {
+describe("ProfilePage", () => {
+  it("ProfilePage_GetMe_ShowsTheNameTheLanguageAndTheTimeZoneToChange", async () => {
     server.use(...preferencesAnswers(me));
 
     renderPage();
@@ -161,26 +161,7 @@ describe("PreferencesPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_SettingsNav_LinksToSystemAdminsUnderPlatform", async () => {
-    server.use(...preferencesAnswers(me));
-
-    renderPage();
-
-    const nav = within(
-      await screen.findByRole("navigation", { name: "Settings" }),
-    );
-    expect(nav.getByText("Platform")).toBeInTheDocument();
-    expect(nav.getByRole("link", { name: "System admins" })).toHaveAttribute(
-      "href",
-      "/settings/system-admins",
-    );
-    expect(nav.getByRole("link", { name: "Preferences" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-  });
-
-  it("PreferencesPage_Email_IsReadOnly", async () => {
+  it("ProfilePage_Email_IsReadOnly", async () => {
     server.use(...preferencesAnswers(me));
 
     renderPage();
@@ -192,7 +173,7 @@ describe("PreferencesPage", () => {
     expect(screen.getAllByRole("textbox")).toHaveLength(2);
   });
 
-  it("PreferencesPage_Theme_StaysOnThePage", async () => {
+  it("ProfilePage_Theme_StaysOnThePage", async () => {
     server.use(...preferencesAnswers(me));
 
     renderPage();
@@ -200,7 +181,7 @@ describe("PreferencesPage", () => {
     expect(await screen.findByRole("group", { name: "Theme" })).toBeVisible();
   });
 
-  it("PreferencesPage_NameChanged_SendsRenameMeOnlyReadsGetMeAgainAndSaysSaved", async () => {
+  it("ProfilePage_NameChanged_SendsRenameMeOnlyReadsGetMeAgainAndSaysSaved", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
     renderPage();
@@ -214,7 +195,7 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
-  it("PreferencesPage_TimeZoneChanged_SendsChangePreferencesOnlyAndSaysSaved", async () => {
+  it("ProfilePage_TimeZoneChanged_SendsChangePreferencesOnlyAndSaysSaved", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
     renderPage();
@@ -230,7 +211,7 @@ describe("PreferencesPage", () => {
     expect(setLocale).not.toHaveBeenCalled();
   });
 
-  it("PreferencesPage_NameAndTimeZoneChanged_SendsBothAndSaysSavedOnce", async () => {
+  it("ProfilePage_NameAndTimeZoneChanged_SendsBothAndSaysSavedOnce", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
     renderPage();
@@ -247,7 +228,7 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
-  it("PreferencesPage_NothingChanged_SendsNothing", async () => {
+  it("ProfilePage_NothingChanged_SendsNothing", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
     renderPage();
@@ -265,7 +246,7 @@ describe("PreferencesPage", () => {
     ["firstName", "First name", "Enter your first name."],
     ["lastName", "Last name", "Enter your last name."],
   ])(
-    "PreferencesPage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
+    "ProfilePage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
     async (_json, name, message) => {
       const sent = nothingSent();
       server.use(...preferencesAnswers(me, sent));
@@ -287,7 +268,7 @@ describe("PreferencesPage", () => {
     ["firstName", "too_long", "First name", "Use 1 to 100 characters."],
     ["lastName", "too_long", "Last name", "Use 1 to 100 characters."],
   ])(
-    "PreferencesPage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
+    "ProfilePage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
     async (json, code, name, message) => {
       server.use(renameRefuses({ [json]: [code] }), ...preferencesAnswers(me));
       renderPage();
@@ -301,7 +282,7 @@ describe("PreferencesPage", () => {
     },
   );
 
-  it("PreferencesPage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
+  it("ProfilePage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
     const sent = nothingSent();
     server.use(
       renameRefuses({ firstName: ["required"] }),
@@ -324,7 +305,7 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
+  it("ProfilePage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
     const sent = nothingSent();
     server.use(
       changeRefuses({ timeZone: ["time_zone_invalid"] }),
@@ -346,7 +327,7 @@ describe("PreferencesPage", () => {
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
-  it("PreferencesPage_LanguageChanged_SetsTheLocaleCookieAndRefreshes", async () => {
+  it("ProfilePage_LanguageChanged_SetsTheLocaleCookieAndRefreshes", async () => {
     const sent = nothingSent();
     server.use(...preferencesAnswers(me, sent));
     renderPage();
@@ -361,7 +342,7 @@ describe("PreferencesPage", () => {
     ]);
   });
 
-  it("PreferencesPage_UserSuspended_ReadsGetMeAgain", async () => {
+  it("ProfilePage_UserSuspended_ReadsGetMeAgain", async () => {
     const sent = nothingSent();
     server.use(
       renameFails(403, ErrorCode.UserSuspended),
@@ -376,7 +357,7 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
+  it("ProfilePage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
     const sent = nothingSent();
     server.use(
       renameFails(403, ErrorCode.UserDeleted),
@@ -391,7 +372,7 @@ describe("PreferencesPage", () => {
     expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
   });
 
-  it("PreferencesPage_SignedOut_GoesToSignIn", async () => {
+  it("ProfilePage_SignedOut_GoesToSignIn", async () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });
     server.use(
@@ -403,11 +384,15 @@ describe("PreferencesPage", () => {
     await retype("First name", "Ciarán");
     await save();
 
-    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/sign-in"));
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/sign-in\?reason=session-ended&redirect_url=/),
+      ),
+    );
     vi.unstubAllGlobals();
   });
 
-  it("PreferencesPage_ServerError_SaysNotSaved", async () => {
+  it("ProfilePage_ServerError_SaysNotSaved", async () => {
     server.use(
       renameFails(500, ErrorCode.ServerError),
       ...preferencesAnswers(me),
@@ -422,13 +407,13 @@ describe("PreferencesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("PreferencesPage_InArabic_ShowsArabicTexts", async () => {
+  it("ProfilePage_InArabic_ShowsArabicTexts", async () => {
     server.use(...preferencesAnswers({ ...me, language: Language.Ar }));
 
     renderPage("ar");
 
     expect(
-      await screen.findByRole("heading", { name: "التفضيلات" }),
+      await screen.findByRole("heading", { name: "الملف الشخصي" }),
     ).toBeInTheDocument();
     expect(await textbox("الاسم الأول")).toHaveValue("Ciara");
     expect(screen.getByText("يظهر اسمك في نشاط المنصة.")).toBeInTheDocument();

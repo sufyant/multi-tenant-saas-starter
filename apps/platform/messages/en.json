@@ -7,35 +7,25 @@
     "format": "en-IE"
   },
   "shell": {
-    "navigation": "Main",
-    "menu": "Open menu",
-    "search": "Search",
-    "searchShortcut": "⌘K",
-    "railToggle": "Menu labels",
-    "railShortcut": "⌘B",
-    "breadcrumb": "Breadcrumb",
-    "commandTitle": "Go to",
-    "commandPlaceholder": "Search pages",
-    "commandEmpty": "No page found",
-    "home": "Home",
     "organisations": "Organisations",
     "users": "Users",
+    "plans": "Plans",
+    "activityLog": "Activity log",
     "settings": "Settings",
-    "preferences": "Preferences",
-    "you": "You",
-    "language": "Language",
     "platform": "Platform",
+    "backToPlatform": "Back to the platform",
+    "myAccount": "My account",
     "systemAdmins": "System admins",
-    "activity": "Activity",
-    "plans": "Plans"
+    "settingsMyAccount": "Settings · My account",
+    "settingsPlatform": "Settings · Platform",
+    "you": "You",
+    "preferences": "Preferences"
   },
-  "preferences": {
-    "title": "Preferences",
+  "profile": {
+    "title": "Profile",
     "text": "These follow you to every device.",
     "nameNote": "Your name shows in the platform’s Activity.",
-    "email": "Email",
-    "theme": "Theme",
-    "themeHint": "Saved on this device."
+    "email": "Email"
   },
   "access": {
     "noAccessTitle": "You don’t have access",

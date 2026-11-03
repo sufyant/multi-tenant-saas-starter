@@ -42,11 +42,11 @@ describe("PlansPage", () => {
     expect(within(proRow).getByText("6")).toBeVisible();
     expect(within(table).getByRole("link", { name: "Pro" })).toHaveAttribute(
       "href",
-      `/settings/plans/${pro.id}`,
+      `/plans/${pro.id}`,
     );
     expect(within(table).getByRole("link", { name: "Free" })).toHaveAttribute(
       "href",
-      `/settings/plans/${free.id}`,
+      `/plans/${free.id}`,
     );
   });
 
@@ -65,7 +65,7 @@ describe("PlansPage", () => {
     ).toBeVisible();
     expect(screen.getByRole("link", { name: "New plan" })).toHaveAttribute(
       "href",
-      "/settings/plans/new",
+      "/plans/new",
     );
   });
 
@@ -100,17 +100,5 @@ describe("PlansPage", () => {
     expect(await screen.findByText("Couldn’t load plans")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("table", { name: "Plans" })).toBeVisible();
-  });
-
-  it("PlansPage_Nav_MarksPlansInSettings", async () => {
-    server.use(plansAnswer());
-
-    renderWithProviders(<PlansPage />);
-
-    const nav = await screen.findByRole("navigation", { name: "Settings" });
-    expect(within(nav).getByRole("link", { name: "Plans" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
   });
 });

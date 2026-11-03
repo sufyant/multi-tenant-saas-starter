@@ -3,6 +3,7 @@ import {
   getGetMeQueryKey,
   ProblemDetailsError,
 } from "@repo/api-client";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import type { QueryClient } from "@tanstack/react-query";
 
 /**
@@ -15,7 +16,8 @@ export function afterAccountRefusal(
 ): string | null {
   if (!(error instanceof ProblemDetailsError)) return null;
   const { kind } = actionFor(error.status, error.problem);
-  if (kind === "sign-in") window.location.assign("/sign-in");
+  if (kind === "sign-in")
+    window.location.assign(signInAgainUrl(window.location));
   if (kind === "account-suspended" || kind === "account-deleted")
     void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
   return error.problem?.code ?? null;

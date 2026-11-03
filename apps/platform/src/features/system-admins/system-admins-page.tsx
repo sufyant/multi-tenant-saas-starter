@@ -22,7 +22,6 @@ import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
 import { userNameOf } from "@/shared/name-of";
 import { leaveOf } from "@/shared/problem-screen";
-import { SettingsNav } from "@/shared/settings-nav";
 import { useDates } from "@/shared/use-dates";
 import { AddDialog } from "./add-dialog";
 import { RemoveDialog } from "./remove-dialog";
@@ -169,34 +168,31 @@ export function SystemAdminsPage() {
   })();
 
   return (
-    <div className="flex flex-col gap-6 tablet:flex-row">
-      <SettingsNav current="system-admins" />
-      <section className="flex min-w-0 max-w-[1160px] flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-page-title">{t("systemAdmins.title")}</h1>
-            {list.dataUpdatedAt > 0 && (
-              <Freshness
-                at={new Date(list.dataUpdatedAt)}
-                locale={locale}
-                timeZone={timeZone}
-                label={t("common.updated")}
-              />
-            )}
-          </div>
-          <Button variant="primary" onClick={() => setAdding(true)}>
-            {t("systemAdmins.add")}
-          </Button>
+    <section className="flex min-w-0 max-w-[1160px] flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-page-title">{t("systemAdmins.title")}</h1>
+          {list.dataUpdatedAt > 0 && (
+            <Freshness
+              at={new Date(list.dataUpdatedAt)}
+              locale={locale}
+              timeZone={timeZone}
+              label={t("common.updated")}
+            />
+          )}
         </div>
-        <p className="max-w-[720px] text-body text-muted-foreground">
-          {t("systemAdmins.text")}
-        </p>
-        {body}
-      </section>
+        <Button variant="primary" onClick={() => setAdding(true)}>
+          {t("systemAdmins.add")}
+        </Button>
+      </div>
+      <p className="max-w-[720px] text-body text-muted-foreground">
+        {t("systemAdmins.text")}
+      </p>
+      {body}
       {adding && <AddDialog onClose={() => setAdding(false)} />}
       {removing && (
         <RemoveDialog user={removing} onClose={() => setRemoving(null)} />
       )}
-    </div>
+    </section>
   );
 }

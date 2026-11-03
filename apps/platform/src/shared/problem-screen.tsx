@@ -2,6 +2,7 @@
 
 import { actionFor, ProblemDetailsError } from "@repo/api-client";
 import { EmptyState } from "@repo/ui/components/empty-state";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect } from "react";
 import { NoAccess } from "./no-access";
@@ -15,7 +16,8 @@ export function ProblemScreen({ error }: { error: Error }) {
     error instanceof ProblemDetailsError ? error.problem : null,
   );
   useEffect(() => {
-    if (action.kind === "sign-in") window.location.assign("/sign-in");
+    if (action.kind === "sign-in")
+      window.location.assign(signInAgainUrl(window.location));
   }, [action.kind]);
   if (status === 404) return <NoAccess />;
   if (action.kind === "account-suspended") {
