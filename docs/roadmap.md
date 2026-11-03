@@ -37,6 +37,8 @@ Status: in progress.
 35-backend:
 
 - The notification preferences are removed. Every notification type of the template is transactional: it is about the person's account or access. The product fixes each type's channels in the catalog (the maintainer's decision of 2026-11-01).
+- The channel rule: when a person's access or the organisation's status changes, the email goes too, because that person may not be able to open the app. Team news goes to the bell only. `member.removed`, `member.role_changed`, `tenant.plan_changed`, `tenant.suspended`, `tenant.reactivated`, `tenant.closed`, `tenant.reopened` and `tenant.purged` go by bell and email; `member.joined`, `tenant.owner_joined`, `tenant.entitlement_override_set` and `tenant.entitlement_override_removed` by bell only (the maintainer's decision of 2026-11-03).
+- Each email type has its own footer that says why the email came, in three languages.
 - This roadmap goes into the repository.
 - The documents use the step numbers of this roadmap.
 
@@ -68,6 +70,7 @@ Status: todo.
 - A CSV export of Members and of the Activity log. There is no import.
 - HTML emails in three languages, from "Starter <no-reply@starter.example>".
 - The words: "Address" (never "slug"), "Seats", "Activity log" and "See the activity log".
+- The organisation's Owners also receive tenant.suspended, tenant.reactivated, tenant.closed, tenant.reopened and tenant.purged, by bell and email, with their own texts in three languages.
 
 ## 6. Step 38: Terms of use
 
