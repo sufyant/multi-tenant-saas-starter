@@ -2,7 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import { brand } from "@repo/brand";
 import { AuthFooter, AuthLayout } from "@repo/ui/components/auth-layout";
 import { NotFound } from "@repo/ui/components/not-found";
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { setLocale } from "@/i18n/set-locale";
 
@@ -22,13 +21,13 @@ export default async function NotFoundPage() {
           />
         }
       >
-        <NotFound kind="signed-out" href="/sign-in" linkComponent={Link} />
+        <NotFound kind="signed-out" href="/sign-in" />
       </AuthLayout>
     );
   }
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
-      <NotFound kind="page" href="/" linkComponent={Link} />
+      <NotFound kind="page" href="/" />
     </main>
   );
 }
