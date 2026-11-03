@@ -107,9 +107,9 @@
     "roles": "Roller"
   },
   "permissionDenied": {
-    "title": "{page} sayfasını açamazsınız",
-    "text": "{organisation} kuruluşundaki rolünüz: {role}. {page} sayfasını Sahipler ve Yöneticiler okuyabilir. Buradan bir şeye ihtiyacınız varsa onlardan birine başvurun.",
-    "back": "Genel bakışa dön"
+    "title": "Bu sayfayı açamazsınız",
+    "text": "{organisation} kuruluşundaki rolünüz {page} sayfasını içermiyor. Gerekirse bir Sahip veya Yöneticiye sorun.",
+    "back": "Ana sayfaya dön"
   },
   "members": {
     "title": "Üyeler",

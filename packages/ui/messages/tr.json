@@ -45,7 +45,24 @@
     "errorTitle": "Bir sorun oluştu",
     "errorText": "Sayfa yüklenemedi. Verileriniz güvende. Yeniden deneyin.",
     "notFoundTitle": "Sayfa bulunamadı",
-    "notFoundText": "Bu sayfa yok."
+    "notFoundText": "Bu bağlantı eski ya da sayfa taşındı. Ana sayfaya gidip oradan bulun.",
+    "notFoundSignedOut": "Bu sayfa yok ya da görmek için giriş yapmanız gerekiyor.",
+    "goHome": "Ana sayfaya git",
+    "signIn": "Giriş yap",
+    "orgNotFoundTitle": "Kuruluş bulunamadı",
+    "orgNotFoundText": "<address></address> adresinde bir kuruluş yok. Adresi kontrol edin ya da ana sayfaya gidin.",
+    "sectionText": "Sayfanın bu bölümü yüklenmedi. Sayfanın geri kalanı çalışıyor.",
+    "startTitle": "{product} başlatılamadı",
+    "startText": "Bağlantınızı kontrol edip sayfayı yeniden yükleyin. Sorun sürerse destekle iletişime geçin.",
+    "reload": "Yeniden yükle",
+    "contactSupport": "Destekle iletişime geç",
+    "suspendedOpenTitle": "{organisation} askıya alındı",
+    "suspendedOpenText": "Yeniden etkinleştirilene kadar açamazsınız. Yaptığınız hiçbir şey kaybolmadı.",
+    "closedOpenTitle": "{organisation} kapatıldı",
+    "closedOpenText": "Artık açamazsınız. Yaptığınız hiçbir şey kaybolmadı.",
+    "roleChangedTitle": "Rolünüz {role} olarak değişti",
+    "roleChangedText": "Bu sayfa artık bir {role} rolünün yapabileceklerini gösteriyor.",
+    "orgNotFoundLink": "Bu adreste bir kuruluş yok. Bağlantıyı kontrol edin ya da ana sayfaya gidin."
   },
   "errors": {
     "auth": {

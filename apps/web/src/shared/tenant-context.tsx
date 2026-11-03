@@ -13,8 +13,20 @@ import {
   ProblemDetailsError,
   schemas,
 } from "@repo/api-client";
+import { Dialog } from "@repo/ui/components/dialog";
+import { NotFound } from "@repo/ui/components/not-found";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, use, useEffect, useState } from "react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
+import {
+  createContext,
+  type ReactNode,
+  use,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   BlockedOrganisation,
   type BlockedStatus,
@@ -62,7 +74,8 @@ function holds(value: unknown, id: string): boolean {
 
 /**
  * Turns the route's slug into the tenant (F30), through the cached ListMyTenants: the API path keeps the id. A slug that is not
- * in the user's list shows "No access yet". A suspended or closed organisation shows its page in place of the shell. When a call
+ * in the user's list shows "Organisation not found", or "No access yet" to a user without any organisation. A suspended or closed
+ * organisation shows its page in place of the shell; when it stops while its page is open, a dialog says so first. When a call
  * of this organisation answers that it stopped, the list is read again, so the page follows (F47). When a read answers that the
  * user is suspended or deleted (A9), the account's page shows in place of the shell; a refused command reads GetMe again first.
  */
@@ -93,6 +106,9 @@ export function TenantProvider({
   );
 
   const [accountError, setAccountError] = useState<Error | null>(null);
+  // The last organisation this provider showed: when it stops while open, its page stays under the dialog until Close.
+  const shown = useRef<TenantContext | null>(null);
+  const [closedDialog, setClosedDialog] = useState(false);
   const tenantId = tenant?.id;
   useEffect(() => {
     // Only a call of this organisation counts for the organisation: its query key or its command's variables hold the tenant's id.
@@ -128,7 +144,12 @@ export function TenantProvider({
   if (accountError) return <ProblemScreen error={accountError} />;
   const error = matching.error ?? all.error;
   if (error) return <ProblemScreen error={error} />;
-  if (matching.data && !tenant) return <NoAccess />;
+  if (matching.data && !tenant)
+    return all.data?.total === 0 ? (
+      <NoAccess />
+    ) : (
+      <OrganisationNotFound slug={slug} />
+    );
   if (!tenant || !all.data) return pending;
   // The API refuses a member of an organisation whose deletion has started as it refuses a closed one's (403 `tenant.closed`).
   const blocked =
@@ -137,6 +158,17 @@ export function TenantProvider({
       : tenant.status === MyTenantResponseStatus.Purging
         ? MyTenantResponseStatus.Closed
         : tenant.status;
+  if (blocked && shown.current && !closedDialog)
+    return (
+      <Context value={shown.current}>
+        {children}
+        <StoppedWhileOpen
+          name={tenant.name}
+          status={blocked}
+          onClose={() => setClosedDialog(true)}
+        />
+      </Context>
+    );
   if (blocked)
     return (
       <BlockedOrganisation
@@ -147,11 +179,60 @@ export function TenantProvider({
     );
   if (detail.error) return <ProblemScreen error={detail.error} />;
   if (!detail.data) return pending;
+  shown.current = {
+    tenant,
+    detail: detail.data,
+    hasOthers: all.data.total > 1,
+  };
+  return <Context value={shown.current}>{children}</Context>;
+}
+
+/** The dialog of an organisation that stopped while its page was open (the Suspended while open screen). Close shows its page. */
+function StoppedWhileOpen({
+  name,
+  status,
+  onClose,
+}: {
+  name: string;
+  status: BlockedStatus;
+  onClose: () => void;
+}) {
+  const t = useTranslations();
+  const suspended = status === MyTenantResponseStatus.Suspended;
   return (
-    <Context
-      value={{ tenant, detail: detail.data, hasOthers: all.data.total > 1 }}
-    >
-      {children}
-    </Context>
+    <Dialog
+      defaultOpen
+      title={t(
+        suspended ? "problems.suspendedOpenTitle" : "problems.closedOpenTitle",
+        { organisation: name },
+      )}
+      description={t(
+        suspended ? "problems.suspendedOpenText" : "problems.closedOpenText",
+      )}
+      actionLabel={t("common.close")}
+      onConfirm={onClose}
+      onOpenChange={(open) => !open && onClose()}
+    />
+  );
+}
+
+const subscribeToNothing = () => () => {};
+
+/** "Organisation not found": an address that no organisation of the person has (the Organisation not found screen). */
+function OrganisationNotFound({ slug }: { slug: string }) {
+  const host = useSyncExternalStore(
+    subscribeToNothing,
+    () => window.location.host,
+    () => "",
+  );
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
+      <NotFound
+        kind="organisation"
+        address={host ? `${host}/${slug}` : undefined}
+        href="/"
+        linkComponent={Link}
+      />
+    </main>
   );
 }

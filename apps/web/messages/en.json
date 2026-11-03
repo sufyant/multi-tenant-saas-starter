@@ -107,9 +107,9 @@
     "roles": "Roles"
   },
   "permissionDenied": {
-    "title": "You can’t open {page}",
-    "text": "Your role in {organisation} is {role}. Owners and Admins can read {page}. Ask one of them if you need something from it.",
-    "back": "Back to Overview"
+    "title": "You can’t open this page",
+    "text": "Your role in {organisation} doesn’t include {page}. Ask an Owner or Admin if you need it.",
+    "back": "Back to Home"
   },
   "members": {
     "title": "Members",

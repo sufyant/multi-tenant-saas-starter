@@ -64,7 +64,7 @@ export function OrganisationPage({ tenantId }: { tenantId: string }) {
     getGetTenantQueryOptions(tenantId, { query: { enabled: known } }),
   );
   if (!known || problemOf(tenant.error)?.code === ErrorCode.TenantNotFound)
-    return <NotFoundPage />;
+    return <NotFoundPage of="organisation" />;
   if (tenant.error) return <ProblemScreen error={tenant.error} />;
   if (!tenant.data) return <Loading />;
   return <Overview organisation={tenant.data} />;

@@ -18,6 +18,7 @@ import {
   type NavItem,
   useTabTitleText,
 } from "@repo/ui/components/app-shell";
+import { Banner } from "@repo/ui/components/banner";
 import {
   ActivityIcon,
   HomeIcon,
@@ -33,7 +34,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
@@ -47,18 +48,36 @@ import { useRoleName } from "@/shared/use-role-name";
  * the person cannot open is not in their menu (F5).
  */
 export function TenantShell({ children }: { children: ReactNode }) {
+  const t = useTranslations("problems");
   const roleName = useRoleName();
+  const pathname = usePathname();
   const { tenant, detail } = useTenant();
   const permissions = detail.permissions;
+  const role = roleName(detail.role);
+  // The role changed while a page is open (GetMyTenant read again): the page says so until the person opens another page.
+  const shownRole = useRef(detail.role.id);
+  const [changed, setChanged] = useState<{ role: string; on: string }>();
+  useEffect(() => {
+    if (shownRole.current === detail.role.id) return;
+    shownRole.current = detail.role.id;
+    setChanged({ role, on: pathname });
+  }, [detail.role.id, role, pathname]);
   return (
     <TenantFrame
       slug={tenant.slug}
       known={{
         tenant,
-        role: roleName(detail.role),
+        role,
         can: (permission) => permissions.includes(permission),
       }}
     >
+      {changed && changed.on === pathname && (
+        <div className="mb-6">
+          <Banner title={t("roleChangedTitle", { role: changed.role })}>
+            {t("roleChangedText", { role: changed.role })}
+          </Banner>
+        </div>
+      )}
       {children}
     </TenantFrame>
   );

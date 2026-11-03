@@ -60,7 +60,7 @@ export function ActivityPage() {
   if (!readsLog)
     return (
       <Frame>
-        <PermissionDenied page={t("settings.activity")} />
+        <PermissionDenied page={t("shell.activityLog")} />
       </Frame>
     );
 

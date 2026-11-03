@@ -31,7 +31,8 @@ export type DialogProps = {
   back?: { label: string; onBack: () => void };
   /** The confirm button repeats the verb: "Remove member". */
   actionLabel: string;
-  cancelLabel: string;
+  /** Without it the dialog only informs: its one button closes it, and Escape and the scrim close it too. */
+  cancelLabel?: string;
   /** High-risk actions: the text the user types, usually the slug, to enable the button. */
   confirmText?: string;
   /** The label of the type-to-confirm field: "Type northwind to confirm". */
@@ -126,7 +127,7 @@ export function Dialog({
         />
         <AlertDialogHeader className="place-items-start text-start">
           <div className="flex w-full items-center gap-2">
-            {kind === "form" && phone && (
+            {kind === "form" && phone && cancelLabel && (
               <AlertDialogCancel
                 data-slot="dialog-close"
                 aria-label={cancelLabel}
@@ -166,12 +167,14 @@ export function Dialog({
               {back.label}
             </Button>
           ) : (
-            <AlertDialogCancel
-              render={<Button />}
-              className="max-tablet:group-data-[kind=form]/dialog:hidden"
-            >
-              {cancelLabel}
-            </AlertDialogCancel>
+            cancelLabel && (
+              <AlertDialogCancel
+                render={<Button />}
+                className="max-tablet:group-data-[kind=form]/dialog:hidden"
+              >
+                {cancelLabel}
+              </AlertDialogCancel>
+            )
           )}
           <Button
             variant={tone === "destructive" ? "destructive" : action}

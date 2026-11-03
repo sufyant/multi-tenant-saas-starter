@@ -601,7 +601,7 @@ describe("RolesPage", () => {
     renderInTenant(<RolesPage />, { url });
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open Roles" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
   });
 });

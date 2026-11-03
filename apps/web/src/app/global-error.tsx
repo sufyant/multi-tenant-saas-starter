@@ -1,5 +1,6 @@
 "use client";
 
+import { brand } from "@repo/brand";
 import { useEffect } from "react";
 import { reportBrowserError } from "@/error-tracking/report-error";
 import { messages } from "@/i18n/messages";
@@ -8,7 +9,6 @@ import "./globals.css";
 // The root layout itself failed, so no provider runs. The page reads the messages of the document's language directly (F14).
 export default function GlobalError({
   error,
-  retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
@@ -25,6 +25,8 @@ export default function GlobalError({
         ? language
         : Object.keys(messages)[0]) as keyof typeof messages
     ];
+  // The app could not start: the only full-page error (the App couldn't start screen).
+  const title = text.problems.startTitle.replace("{product}", brand.name);
   return (
     <html
       lang={language}
@@ -35,17 +37,17 @@ export default function GlobalError({
       }
     >
       <body className="flex min-h-dvh flex-col items-center justify-center gap-2 bg-background p-6 text-center text-foreground">
-        <title>{text.problems.errorTitle}</title>
-        <h1 className="text-page-title">{text.problems.errorTitle}</h1>
+        <title>{title}</title>
+        <h1 className="text-page-title">{title}</h1>
         <p className="text-body text-muted-foreground">
-          {text.problems.errorText}
+          {text.problems.startText}
         </p>
         <button
           type="button"
-          onClick={() => retry()}
+          onClick={() => window.location.reload()}
           className="mt-4 h-control-md rounded-md bg-primary px-3 text-body font-medium text-primary-foreground"
         >
-          {text.common.tryAgain}
+          {text.problems.reload}
         </button>
       </body>
     </html>

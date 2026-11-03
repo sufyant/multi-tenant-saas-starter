@@ -45,7 +45,24 @@
     "errorTitle": "Something went wrong",
     "errorText": "The page could not load. Your data is safe. Try again.",
     "notFoundTitle": "Page not found",
-    "notFoundText": "This page does not exist."
+    "notFoundText": "This link is old, or the page has moved. Go to Home and find it from there.",
+    "notFoundSignedOut": "This page does not exist, or you need to sign in to see it.",
+    "goHome": "Go to Home",
+    "signIn": "Sign in",
+    "orgNotFoundTitle": "Organisation not found",
+    "orgNotFoundText": "No organisation has the address <address></address>. Check the address, or go to Home.",
+    "sectionText": "This part of the page didn’t load. The rest of the page still works.",
+    "startTitle": "{product} couldn’t start",
+    "startText": "Check your connection and reload the page. If it keeps happening, contact support.",
+    "reload": "Reload",
+    "contactSupport": "Contact support",
+    "suspendedOpenTitle": "{organisation} was suspended",
+    "suspendedOpenText": "You can’t open it until it is reactivated. Nothing you did is lost.",
+    "closedOpenTitle": "{organisation} was closed",
+    "closedOpenText": "You can’t open it any more. Nothing you did is lost.",
+    "roleChangedTitle": "Your role changed to {role}",
+    "roleChangedText": "This page now shows what a {role} can do.",
+    "orgNotFoundLink": "No organisation has this address. Check the link, or go to Home."
   },
   "errors": {
     "auth": {

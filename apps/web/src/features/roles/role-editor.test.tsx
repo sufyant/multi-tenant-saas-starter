@@ -699,7 +699,7 @@ describe("Editor pages", () => {
     renderInTenant(<NewRolePage />, { url: `${list}/new` });
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open New role" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });

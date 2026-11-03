@@ -1,23 +1,33 @@
-import { EmptyState } from "@repo/ui/components/empty-state";
+import { auth } from "@clerk/nextjs/server";
+import { brand } from "@repo/brand";
+import { AuthFooter, AuthLayout } from "@repo/ui/components/auth-layout";
+import { NotFound } from "@repo/ui/components/not-found";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { setLocale } from "@/i18n/set-locale";
 
-export default async function NotFound() {
-  const t = await getTranslations();
+// A page that no route has (the Page not found screens). Signed out, it may be a page that needs a session, so it offers sign-in
+// in the frame before sign-in; signed in, it goes home.
+export default async function NotFoundPage() {
+  if (!(await auth()).isAuthenticated) {
+    const t = await getTranslations();
+    return (
+      <AuthLayout
+        brand={t("meta.title")}
+        footer={
+          <AuthFooter
+            onLanguageChange={setLocale}
+            privacyUrl={brand.privacyUrl}
+          />
+        }
+      >
+        <NotFound kind="signed-out" href="/sign-in" linkComponent={Link} />
+      </AuthLayout>
+    );
+  }
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
-      <EmptyState
-        title={t("problems.notFoundTitle")}
-        description={t("problems.notFoundText")}
-        action={
-          <Link
-            href="/"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            {t("common.goHome")}
-          </Link>
-        }
-      />
+      <NotFound kind="page" href="/" linkComponent={Link} />
     </main>
   );
 }

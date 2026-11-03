@@ -1,10 +1,16 @@
-import { ErrorCode, type MyTenantResponse, Permission } from "@repo/api-client";
+import {
+  ErrorCode,
+  getGetMyTenantQueryKey,
+  type MyTenantResponse,
+  Permission,
+} from "@repo/api-client";
 import {
   getGetMeMockHandler,
   getGetMeResponseMock,
   getGetMyTenantMockHandler,
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
+import { useQueryClient } from "@tanstack/react-query";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -90,6 +96,23 @@ const answers = (total: number) => [
     }),
   ),
 ];
+
+/** GetMyTenant read again, as after a focus or a signal: the page's view of the role follows. */
+function ReadTheTenantAgain() {
+  const queryClient = useQueryClient();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        void queryClient.invalidateQueries({
+          queryKey: getGetMyTenantQueryKey(northwind.id),
+        })
+      }
+    >
+      Read again
+    </button>
+  );
+}
 
 const shell = () => (
   <TenantProvider
@@ -192,6 +215,45 @@ describe("TenantShell", () => {
     expect(
       within(dialog).queryByRole("option", { name: "Invite member" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("TenantShell_RoleChangesWhileOpen_SaysSoOnThePage", async () => {
+    let reads = 0;
+    server.use(
+      tenantsOf(1),
+      http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () =>
+        HttpResponse.json({ unread: 0 }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}`, () => {
+        reads += 1;
+        return HttpResponse.json(
+          getGetMyTenantResponseMock({
+            ...northwind,
+            role: reads === 1 ? roleOf.owner : roleOf.member,
+            permissions: [Permission.TenantMembersRead],
+          }),
+        );
+      }),
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+    );
+    renderWithProviders(
+      <TenantProvider slug="northwind">
+        <TenantShell>
+          <ReadTheTenantAgain />
+        </TenantShell>
+      </TenantProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Read again" }),
+    );
+
+    expect(
+      await screen.findByText("Your role changed to Member"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("This page now shows what a Member can do."),
+    ).toBeInTheDocument();
   });
 
   it("TenantShell_OneOrganisation_ShowsNoSwitcherMenu", async () => {

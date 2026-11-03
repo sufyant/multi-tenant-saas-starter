@@ -319,10 +319,10 @@ describe("MembersPage", () => {
     renderInTenant(<MembersPage />);
 
     expect(
-      await screen.findByRole("heading", { name: "You can’t open Members" }),
+      await screen.findByRole("heading", { name: "You can’t open this page" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Back to Overview" }),
+      screen.getByRole("button", { name: "Back to Home" }),
     ).toHaveAttribute("href", "/northwind");
   });
 
