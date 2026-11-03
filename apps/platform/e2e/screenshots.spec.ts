@@ -71,16 +71,16 @@ for (const { language, scheme, size } of variants)
       });
     });
 
-// The user menu open, as the UserMenu boards draw it: English light, Arabic dark and a phone.
+// The account menu open: English light, Arabic dark and a phone, where it opens from the drawer.
 const menus = [
   {
     language: Language.En,
     scheme: "light",
     size: "desktop",
-    name: "SK Account",
+    name: /Kelly/,
   },
-  { language: Language.Ar, scheme: "dark", size: "desktop", name: "SK الحساب" },
-  { language: Language.En, scheme: "light", size: "phone", name: "SK Account" },
+  { language: Language.Ar, scheme: "dark", size: "desktop", name: /Kelly/ },
+  { language: Language.En, scheme: "light", size: "phone", name: /Kelly/ },
 ] as const;
 
 for (const { language, scheme, size, name } of menus)
@@ -99,6 +99,8 @@ for (const { language, scheme, size, name } of menus)
 
     await page.goto("/users");
     await page.getByRole("heading", { level: 1 }).waitFor();
+    if (size === "phone")
+      await page.getByRole("button", { name: "Open menu" }).click();
     await page.getByRole("button", { name }).click();
     await page.getByRole("menu").waitFor();
 

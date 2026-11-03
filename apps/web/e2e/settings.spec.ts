@@ -24,18 +24,18 @@ test("General_Owner_ShowsTheOrganisationReadOnly", async ({ page }) => {
   await expectAccessible(page);
 });
 
-test("Rail_Settings_OpensGeneral", async ({ page }) => {
+test("MainMenu_Settings_OpensProfile", async ({ page }) => {
   await mockMembers(page, { role: BuiltInRole.Member });
   await open(page, `/${northwind.slug}`);
 
   await page
-    .getByRole("navigation", { name: "Main" })
+    .getByRole("navigation", { name: "Main menu" })
     .getByRole("link", { name: "Settings" })
     .click();
 
-  await expect(page).toHaveURL(`${settings}/general`);
+  await expect(page).toHaveURL(`${settings}/profile`);
   await expect(
-    page.getByRole("heading", { level: 1, name: "General" }),
+    page.getByRole("heading", { level: 1, name: "Profile" }),
   ).toBeVisible();
   await expectAccessible(page);
 });
@@ -67,9 +67,9 @@ test("Activity_Member_SaysPermissionDenied", async ({ page }) => {
   await open(page, `${settings}/activity`);
 
   await expect(
-    page.getByRole("heading", { name: "You can’t open Activity" }),
+    page.getByRole("heading", { name: "You can’t open this page" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Activity" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Activity log" })).toHaveCount(0);
   await expectAccessible(page);
 });
 
@@ -80,7 +80,9 @@ test("Organisation_Suspended_ShowsItsPageWithNoReason", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Northwind Traders is suspended" }),
   ).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Main menu" })).toHaveCount(
+    0,
+  );
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expectAccessible(page);
 });

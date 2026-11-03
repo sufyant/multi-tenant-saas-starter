@@ -3,6 +3,9 @@
  * stands out, and grows by at least 40%, so a box that cannot grow overflows (W3C Internationalization, "Text size in
  * translation"). Brackets mark both ends, so a cut text shows. Only the shell's Playwright tests use it.
  */
+/** The cookie that asks a server started with E2E_PSEUDO_LOCALE=1 for the test locale. */
+export const pseudoCookie = "pseudo-locale";
+
 const accents: Record<string, string> = {
   a: "å",
   b: "ƀ",

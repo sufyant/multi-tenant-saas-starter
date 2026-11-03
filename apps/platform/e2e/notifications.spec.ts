@@ -13,7 +13,7 @@ const open = async (page: Page, path = "/") => {
 
 const bell = (page: Page, unread: number) =>
   page
-    .getByRole("banner")
+    .getByRole("navigation", { name: "Main menu" })
     .getByRole("button", { name: `Notifications, ${unread} unread` });
 
 test("Bell_Opened_ListsTheNotificationsAndOpensTheOrganisation", async ({
@@ -42,7 +42,7 @@ test("Bell_MarkAll_MarksTheBellRead", async ({ page }) => {
 
   await expect(
     page
-      .getByRole("banner")
+      .getByRole("navigation", { name: "Main menu" })
       .getByRole("button", { name: "Notifications", exact: true }),
   ).toBeVisible();
   expect(calls.markedAll).toBe(1);

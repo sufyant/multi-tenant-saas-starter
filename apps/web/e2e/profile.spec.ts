@@ -8,33 +8,33 @@ import {
 import { mockApi, mockPreferences, mockRename, northwind } from "./api";
 import { expectAccessible } from "./axe";
 
-test("Preferences_English_IsLeftToRight", async ({ page }) => {
+test("Profile_English_IsLeftToRight", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
 
   await page.goto(`/${northwind.slug}/settings/profile`);
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Preferences" }),
+    page.getByRole("heading", { level: 1, name: "Profile" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await expectAccessible(page);
 });
 
-test("Preferences_Arabic_IsRightToLeft", async ({ page }) => {
+test("Profile_Arabic_IsRightToLeft", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.Ar);
 
   await page.goto(`/${northwind.slug}/settings/profile`);
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "التفضيلات" }),
+    page.getByRole("heading", { level: 1, name: "الملف الشخصي" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expectAccessible(page);
 });
 
-test("Preferences_ArabicForm_SavesTheTimeZone", async ({ page }) => {
+test("Profile_ArabicForm_SavesTheTimeZone", async ({ page }) => {
   const bodies: ChangePreferencesRequest[] = [];
   await setupClerkTestingToken({ page });
   await mockPreferences(page, Language.Ar, bodies);
@@ -55,13 +55,13 @@ test("Preferences_ArabicForm_SavesTheTimeZone", async ({ page }) => {
   await expectAccessible(page);
 });
 
-test("Preferences_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
+test("Profile_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   const bodies: RenameMeRequest[] = [];
   await setupClerkTestingToken({ page });
   await mockRename(page, Language.En, bodies);
 
   await page.goto(`/${northwind.slug}/settings/profile`);
-  await expect(page.getByRole("button", { name: "AY Account" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Ayşe Yılmaz/ })).toBeVisible();
   await page.getByRole("textbox", { name: "First name" }).fill("Ayla");
   await page.getByRole("textbox", { name: "Last name" }).fill("Kaya");
   await page.getByRole("button", { name: "Save preferences" }).click();
@@ -69,6 +69,6 @@ test("Preferences_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await expect(page.getByText("Preferences saved")).toBeVisible();
   await expectAccessible(page);
   expect(bodies).toEqual([{ firstName: "Ayla", lastName: "Kaya" }]);
-  await page.getByRole("button", { name: "AK Account" }).click();
+  await page.getByRole("button", { name: /Ayla Kaya/ }).click();
   await expect(page.getByText("Ayla Kaya")).toBeVisible();
 });
