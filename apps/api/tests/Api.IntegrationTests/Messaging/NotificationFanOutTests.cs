@@ -312,8 +312,8 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         (await _rows.AboutAsync(purged.TenantId, await _testData.UserIdOfAsync(admin))).Length.ShouldBe(1);
     }
 
-    // U4: delivery takes a type's channels from the catalog only. A plan change goes to the bell alone, even to a recipient with an
-    // address.
+    // U4, U5: delivery takes a type's channels from the catalog only. A new member is team news, so it goes to the bell alone, even to a
+    // recipient with an address.
     [Fact]
     public async Task DeliverNotification_ATypeOfTheWebOnly_WritesTheRowAndSendsNoEmail()
     {
@@ -323,18 +323,55 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         var tenantId = Guid.CreateVersion7();
         var deliver = new DeliverNotificationCommand(
             Guid.CreateVersion7(),
-            NotificationCatalog.TenantPlanChanged,
+            NotificationCatalog.MemberJoined,
             ownerId,
             tenantId,
-            new Dictionary<string, string> { ["tenantName"] = "Acme Ltd", ["oldPlanName"] = "Free", ["newPlanName"] = "Pro" },
+            new Dictionary<string, string>
+            {
+                ["tenantName"] = "Acme Ltd",
+                ["memberName"] = Guid.CreateVersion7().ToString(),
+                ["roleName"] = "Member",
+                ["roleNameBuiltIn"] = "true",
+            },
             DateTimeOffset.UtcNow,
             email,
             Language.En);
 
         await SendAsync(deliver);
 
-        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "tenant.plan_changed", tenantId, "Tenant")]);
+        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "member.joined", tenantId, "Tenant")]);
         _api.Email.Sent.Where(sent => sent.To == email).ShouldBeEmpty();
+    }
+
+    // U4, U5: a changed role is a change of the member's access, so it goes to the bell and by email, as the catalog says.
+    [Fact]
+    public async Task DeliverNotification_AChangedRole_WritesTheRowAndSendsOneEmail()
+    {
+        var email = PlatformTenants.Email();
+        var member = await _testData.AddMemberAsync((await _testData.AddTenantAsync()).Id, await _testData.AddUserAsync(email: email));
+        var memberId = await _testData.UserIdOfAsync(member);
+        var tenantId = Guid.CreateVersion7();
+        var deliver = new DeliverNotificationCommand(
+            Guid.CreateVersion7(),
+            NotificationCatalog.MemberRoleChanged,
+            memberId,
+            tenantId,
+            new Dictionary<string, string>
+            {
+                ["tenantName"] = "Acme Ltd",
+                ["oldRoleName"] = "Member",
+                ["oldRoleNameBuiltIn"] = "true",
+                ["newRoleName"] = "Admin",
+                ["newRoleNameBuiltIn"] = "true",
+            },
+            DateTimeOffset.UtcNow,
+            email,
+            Language.En);
+
+        await SendAsync(deliver);
+
+        (await _rows.OfAsync(memberId)).ShouldBe([NotificationRows.Row(memberId, "member.role_changed", tenantId, "Tenant")]);
+        _api.Email.Sent.Where(sent => sent.To == email).Select(sent => sent.Subject).ShouldBe(["Your role in Acme Ltd changed"]);
     }
 
     // U4, O4: a removed member's notification goes to the bell and by email, as the catalog says. A copy of the delivery finds the row,

@@ -81,28 +81,28 @@ public sealed class NotificationCatalogTests
         ]);
     }
 
-    // U4: the product fixes each type's channels in the catalog, and delivery reads them from there only: every type of the template is
-    // about the person's account or access (the maintainer's decision of 2026-11-01). A removed member may have no bell left, so the
-    // email tells them too.
+    // U4, U5: the product fixes each type's channels in the catalog, and delivery reads them from there only (the maintainer's decision of
+    // 2026-11-01). When a person's access or the organisation's status changes, the email goes too: that person may not be able to open
+    // the app and see the bell. Team news goes to the bell only.
     [Fact]
-    public void DeclareNotificationTypes_TodaysChannels_AreTheWebForEveryTypeAndTheEmailForARemovedMember()
+    public void DeclareNotificationTypes_TheChannels_AreTheEmailForAChangeOfAccessOrStatusAndTheWebOnlyForTeamNews()
     {
         var channels = NotificationCatalog.Kinds.Values.Select(kind => $"{kind.Type} {string.Join(" ", kind.Channels)}");
 
         channels.ShouldBe(
         [
-            "member.role_changed Web",
+            "member.role_changed Web Email",
             "member.removed Web Email",
             "member.joined Web",
-            "tenant.plan_changed Web",
+            "tenant.plan_changed Web Email",
             "tenant.entitlement_override_set Web",
             "tenant.entitlement_override_removed Web",
             "tenant.owner_joined Web",
-            "tenant.suspended Web",
-            "tenant.reactivated Web",
-            "tenant.closed Web",
-            "tenant.reopened Web",
-            "tenant.purged Web",
+            "tenant.suspended Web Email",
+            "tenant.reactivated Web Email",
+            "tenant.closed Web Email",
+            "tenant.reopened Web Email",
+            "tenant.purged Web Email",
         ]);
     }
 
