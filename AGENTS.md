@@ -79,6 +79,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
+## The plan
+
+- The plan is `docs/roadmap.md`. A step's pull request updates its own row.
+
 ## Repository settings
 
 - GitHub settings are code. They live in `docs/github-settings.md`, `.github/rulesets/` and `scripts/github/apply-settings.sh`.

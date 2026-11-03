@@ -12,7 +12,7 @@ A system admin deletes a user (A8). A user's memberships are under row level sec
 | `UserMembershipRemovedEvent` | `RemoveUserMembershipHandler` | Audit, `RecordUserMembershipRemovedHandler` (`member.removed`, tenant log, by the platform) | Yes |
 | `WithdrawSignUpCommand` | `RemoveUserMembershipHandler` and `EraseFormerMemberHandler`, for each pending invitation they cancelled that has an identity provider invitation | ControlPlane, `WithdrawSignUpHandler` (calls the identity provider) | No |
 | `DeleteUserCommand` | the same endpoint, last | ControlPlane, `DeleteUserHandler` | Yes; it declares the user (R11) |
-| `UserDeletedEvent` | `DeleteUserHandler`, only for the first deletion | Audit, `RecordUserDeletedHandler` (`user.deleted`, platform log); Notifications, `DeleteUserNotificationsHandler` (the user's notifications and email preferences, U8) | Yes; Notifications' declares the user |
+| `UserDeletedEvent` | `DeleteUserHandler`, only for the first deletion | Audit, `RecordUserDeletedHandler` (`user.deleted`, platform log); Notifications, `DeleteUserNotificationsHandler` (the user's notifications, U8) | Yes; Notifications' declares the user |
 | `DeleteIdentityAccountCommand` | `DeleteUserHandler` | ControlPlane, `DeleteIdentityAccountHandler` (calls the identity provider) | No |
 | `EraseFormerMemberCommand` | `DeleteUserHandler`, in each tenant where the user accepted an invitation | ControlPlane, `EraseFormerMemberHandler` | Yes, the tenant's |
 
@@ -27,4 +27,4 @@ A deleted user is never a member and never an Owner (`ARCHITECTURE.md`, section 
 
 Source: Kleppmann, Chapter 7, "Write Skew and Phantoms". Vernon, "Effective Aggregate Design". GDPR, Article 17.
 
-- Notifications. `UserDeletedEvent` also deletes the user's notifications, in every bell, and their email preferences, in a transaction of Notifications that declares the user (R4, U8; `notifications.md`, section 6). A copy deletes nothing more. A deleted user is told of nothing (U3). Another person's notification keeps the user by id only, so it needs no change: its read names them "Deleted user" in the reader's language (U2). The user's deletion removes their memberships without `MemberRemovedEvent`, so it sends no `member.removed`.
+- Notifications. `UserDeletedEvent` also deletes the user's notifications, in every bell, in a transaction of Notifications that declares the user (R4, U8; `notifications.md`, section 5). A copy deletes nothing more. A deleted user is told of nothing (U3). Another person's notification keeps the user by id only, so it needs no change: its read names them "Deleted user" in the reader's language (U2). The user's deletion removes their memberships without `MemberRemovedEvent`, so it sends no `member.removed`.

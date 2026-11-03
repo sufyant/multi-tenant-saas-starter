@@ -74,7 +74,7 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 - An edit gives the plan exactly the values it sends: a key left out loses its value and is closed. It applies at once to every tenant on the plan. A plan edit locks the plan row, then the default mark.
 - `CreateTenant` takes an optional `planId`; without one, the tenant gets the default plan.
 - A closed, purging or purged tenant's plan and overrides are read-only (409 `tenant.not_active`). A suspended tenant's can change. The purge deletes the overrides; the tombstone keeps its plan, because a tenant always has one.
-- There is no deletion of a plan, no plan version, no trial and no billing in this step. A trial is an override with an expiry; billing (step 36) will change a tenant's plan through ControlPlane.
+- There is no deletion of a plan, no plan version, no trial and no billing in this step. A trial is an override with an expiry; billing (step 40) will change a tenant's plan through ControlPlane.
 
 ## 6. The previews
 
