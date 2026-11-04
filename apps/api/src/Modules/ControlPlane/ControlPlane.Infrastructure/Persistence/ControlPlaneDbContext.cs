@@ -1,10 +1,13 @@
 using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantPurge;
+using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Domain.VerificationCodes;
+using ControlPlane.Infrastructure.Persistence.StoredFiles;
 using ControlPlane.Infrastructure.Persistence.Invitations;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.Plans;
@@ -12,6 +15,7 @@ using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
 using ControlPlane.Infrastructure.Persistence.Users;
+using ControlPlane.Infrastructure.Persistence.VerificationCodes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SharedKernel;
@@ -23,7 +27,8 @@ namespace ControlPlane.Infrastructure.Persistence;
 
 /// <summary>
 /// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, their summaries and their entitlement overrides, users,
-/// system admins, plans and their values, the default plan), and the roles,
+/// system admins, plans and their values, the default plan), the users' stored files and verification codes, which belong to a user and are
+/// under row level security of their own (R11), and the roles,
 /// their permissions, memberships, invitations and tenant purge sagas, which belong to a tenant and are under row level security.
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
@@ -68,6 +73,10 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     internal DbSet<DefaultPlan> DefaultPlans => Set<DefaultPlan>();
 
     internal DbSet<EntitlementOverride> EntitlementOverrides => Set<EntitlementOverride>();
+
+    internal DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+
+    internal DbSet<VerificationCode> VerificationCodes => Set<VerificationCode>();
 
     /// <summary>
     /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
@@ -161,6 +170,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new PlanEntitlementConfiguration());
         modelBuilder.ApplyConfiguration(new DefaultPlanConfiguration());
         modelBuilder.ApplyConfiguration(new EntitlementOverrideConfiguration());
+        modelBuilder.ApplyConfiguration(new StoredFileConfiguration());
+        modelBuilder.ApplyConfiguration(new VerificationCodeConfiguration());
     }
 
     // Only a change inside a transaction is owed: the transaction is what commits it (W1). Entries() detects the changes first.

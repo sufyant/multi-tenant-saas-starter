@@ -32,14 +32,14 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ChangePreferences_NewValues_AnswersAndKeepsThem()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "tr", timeZone = "Europe/Istanbul" }, Cancellation);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         var preferences = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         preferences.EnumerateObject().Select(field => (field.Name, field.Value.GetString())).ShouldBe([("language", "tr"), ("timeZone", "Europe/Istanbul")]);
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser("ada@example.com", null, null, Deleted: false, "tr", "Europe/Istanbul"));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(TestEmails.Of("ada@example.com"), null, null, Deleted: false, "tr", "Europe/Istanbul"));
     }
 
     // K3: a command that changes state writes one record. A user belongs to no tenant, so it goes to the platform's log, by the user
@@ -197,7 +197,7 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ChangePreferences_ADeletedUser_IsForbiddenAndKeepsNoTimeZone()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         await _testData.DeleteUserAsync(user);
 
         var changed = await _api.CreateClient(user).PatchAsJsonAsync(Path, new { language = "tr", timeZone = "Europe/Istanbul" }, Cancellation);

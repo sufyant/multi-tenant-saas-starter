@@ -26,7 +26,10 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
     // How long a claim holds its key unless its request finishes (section 3, "HTTP idempotency").
     public static readonly TimeSpan ClaimLifetime = TimeSpan.FromMinutes(1);
 
-    public async Task<Result<T>> ExecuteAsync<T>(object command, string? tenantId, CancellationToken cancellationToken)
+    public Task<Result<T>> ExecuteAsync<T>(object command, string? tenantId, CancellationToken cancellationToken) =>
+        ExecuteAsync<T>(_ => Task.FromResult<Error?>(null), command, tenantId, cancellationToken);
+
+    public async Task<Result<T>> ExecuteAsync<T>(Func<CancellationToken, Task<Error?>> check, object command, string? tenantId, CancellationToken cancellationToken)
     {
         var context = accessor.HttpContext ?? throw new InvalidOperationException("Idempotency runs inside an HTTP request.");
         var subject = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -35,6 +38,7 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
         var lease = Guid.NewGuid();
 
         return await ClaimAsync<T>(context, subject, key, lease, cancellationToken)
+            ?? await CheckAsync<T>(check, context, subject, key, lease, cancellationToken)
             ?? await RunAsync<T>(command, tenantId, context, subject, key, lease, cancellationToken);
     }
 
@@ -108,6 +112,40 @@ internal sealed class IdempotencyExecutor(IHttpContextAccessor accessor, ApiDbCo
 
             return Error.Conflict(HostErrorCodes.IdempotencyKeyInProgress, "The first request with this idempotency key is still running.");
         }
+    }
+
+    // Runs the check under the claim, with no transaction open (I4). A refusal is a business rejection, so it is saved before any
+    // business change (I6); an exception releases the claim, so a retry runs again. Null when the check passes.
+    private async Task<Result<T>?> CheckAsync<T>(
+        Func<CancellationToken, Task<Error?>> check, HttpContext context, string subject, string key, Guid lease, CancellationToken cancellationToken)
+    {
+        Error? refused;
+        try
+        {
+            refused = await check(cancellationToken);
+        }
+        catch
+        {
+            await ReleaseAsync(subject, key, lease);
+            throw;
+        }
+
+        if (refused is null)
+        {
+            return null;
+        }
+
+        var traceId = TraceIds.Of(context);
+        context.Items[IdempotencyMiddleware.TraceItem] = traceId;
+        Result<T> result = refused;
+        var saved = SavedCommandResult<T>.Serialize(result, traceId);
+        var written = await api.Database.ExecuteSqlAsync($"""
+            UPDATE api.idempotency_keys SET result = CAST({saved} AS jsonb), locked_until = NULL
+            WHERE subject = {subject} AND key = {key} AND lease = {lease} AND result IS NULL
+            """, cancellationToken);
+        return written == 1
+            ? result
+            : throw new InvalidOperationException("The idempotency claim was lost before the check's refusal was saved.");
     }
 
     // Runs the command under the claim, in the handler's own transaction (I4). A validation failure and an exception release the claim,

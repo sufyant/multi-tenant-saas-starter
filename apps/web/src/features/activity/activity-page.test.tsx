@@ -353,6 +353,20 @@ describe("ActivityPage", () => {
     expect(cursors).toEqual([]);
   });
 
+  // 2.15: the search-x tile over the title, and the way back to Home.
+  it("ActivityPage_Member_ShowsTheTileAndBackToHome", async () => {
+    server.use(
+      ...answer(BuiltInRole.Member),
+      auditLogAnswer({ "": { items: [], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    const back = await screen.findByRole("button", { name: "Back to Home" });
+    expect(back).toHaveAttribute("href", `/${northwind.slug}`);
+    expect(document.querySelector("svg.lucide-search-x")).toBeInTheDocument();
+  });
+
   it("ActivityPage_InTurkish_SaysTodayInTurkish", async () => {
     server.use(
       ...answer(BuiltInRole.Owner),

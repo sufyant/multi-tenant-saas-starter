@@ -1,0 +1,7 @@
+Starter
+
+Your account was deleted
+
+Your account and your access to every organisation were deleted. Your activity stays, under “Deleted user”. To come back, you need a new invitation.
+
+You received this because the account of this address was deleted.

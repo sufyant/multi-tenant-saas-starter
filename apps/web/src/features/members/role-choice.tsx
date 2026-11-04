@@ -56,7 +56,7 @@ export function RoleChoice({
         value={value}
         onValueChange={(roleId) => onChange(String(roleId))}
         aria-labelledby={`${id}-legend`}
-        className="flex max-h-85 flex-col gap-2 overflow-y-auto p-0.5 max-sm:max-h-65"
+        className="flex max-h-85 flex-col gap-2 overflow-y-auto p-0.5 max-tablet:max-h-65"
       >
         {inListOrder(roles).map((role) => {
           const reason =

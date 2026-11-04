@@ -19,7 +19,7 @@ export function initialsOf(person: Person): string {
 }
 
 /**
- * A person's round avatar with their initials (the boards): a filled circle in the neutral text colour, 28px in a list. A class
+ * A person's round avatar with their initials (the design's Avatar): the initials on a soft tint, 28px in a list. A class
  * sets another size; the user menu's button fills it. The name beside it says who it is, so screen readers skip it. An
  * organisation's initial is square and is not this component.
  */
@@ -35,7 +35,7 @@ export function Avatar({
       aria-hidden="true"
       className={cn("size-7 rounded-full after:hidden", className)}
     >
-      <AvatarFallback className="bg-neutral-text text-small font-semibold text-background">
+      <AvatarFallback className="bg-role-owner-subtle text-status text-role-owner-text">
         {initialsOf(person)}
       </AvatarFallback>
     </AvatarPrimitive>

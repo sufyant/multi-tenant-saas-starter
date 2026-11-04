@@ -1,5 +1,5 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { pseudoCookie } from "@repo/ui/lib/pseudo-locale";
@@ -22,6 +22,13 @@ const texts = {
     strip: "محلي",
   },
 } as const;
+
+/** The box of a part of the page; a part with no box fails the test. */
+const boxOf = async (locator: Locator) => {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  return box as NonNullable<typeof box>;
+};
 
 type Size = keyof typeof sizes;
 
@@ -79,6 +86,41 @@ for (const size of Object.keys(sizes) as Size[])
         await expectAccessible(page);
       });
 
+// The expanded sidebar from bp-desktop (the Shell screens, 2.01): the organisation's name and the person's role, search inside the
+// sidebar, and Notifications as a row with its label. A screen reader's text is 1 px wide, so each check reads the width.
+test("Shell_Desktop_SidebarShowsTheOrganisationSearchAndNotificationsRow", async ({
+  page,
+}) => {
+  await open(page);
+
+  const menu = page.getByRole("navigation", { name: "Main menu" });
+  await expect(menu).toBeVisible();
+  const width = async (text: string) =>
+    (await boxOf(menu.getByText(text, { exact: true }))).width;
+  expect(await width("Northwind Traders")).toBeGreaterThan(40);
+  expect(await width("Owner")).toBeGreaterThan(20);
+  expect(await width("Notifications")).toBeGreaterThan(40);
+  const menuBox = await boxOf(menu);
+  const searchBox = await boxOf(
+    menu.getByRole("button", { name: "Search or jump to" }),
+  );
+  expect(searchBox.x).toBeGreaterThanOrEqual(menuBox.x);
+  expect(searchBox.x + searchBox.width).toBeLessThanOrEqual(
+    menuBox.x + menuBox.width,
+  );
+});
+
+// Home (4.01): the welcome with the first name and a card for each page the role can open.
+test("Shell_Home_WelcomesAndOffersThePages", async ({ page }) => {
+  await open(page);
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: /^Welcome, / }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Members/ })).toBeVisible();
+  await expectAccessible(page);
+});
+
 test("Shell_EnvironmentStrip_PushesTheLayoutDown", async ({ page }) => {
   await open(page);
 
@@ -88,6 +130,7 @@ test("Shell_EnvironmentStrip_PushesTheLayoutDown", async ({ page }) => {
   const stripBox = await strip.boundingBox();
   const menuBox = await menu.boundingBox();
   expect(stripBox).toMatchObject({ y: 0, height: 24 });
+  await expect(strip).toHaveText("Local");
   expect(menuBox?.y).toBeGreaterThanOrEqual(24);
 });
 
@@ -106,6 +149,19 @@ test("Shell_MissingPage_IsNotFoundInsideTheShell", async ({ page }) => {
     page.getByRole("navigation", { name: "Main menu" }),
   ).toBeVisible();
   await expectAccessible(page);
+});
+
+// 2.43: on a phone every page's content starts 16 px under the top bar, and the empty state's tile 40 px under that (F59).
+test("Shell_PhoneMissingPage_PutsTheTile56pxUnderTheTopBar", async ({
+  page,
+}) => {
+  await open(page, { size: "phone", path: `/${northwind.slug}/no-such-page` });
+
+  const bar = await boxOf(page.locator("header").first());
+  const tile = await boxOf(
+    page.locator("main svg.lucide-search-x").locator(".."),
+  );
+  expect(tile.y - (bar.y + bar.height)).toBe(56);
 });
 
 test("Shell_TabTitle_StartsWithTheEnvironment", async ({ page }) => {

@@ -8,7 +8,7 @@ A notification about the person's account or access is transactional: the produc
 
 ## 1. The types
 
-A type tells of one event and has the name of its event's audit operation, so the same event carries one label in the audit log and in the bell (U9). The one exception, `tenant.owner_joined`, says why in `NotificationCatalog.NamedApart`.
+A type tells of one event and has the name of its event's audit operation, so the same event carries one label in the audit log and in the bell (U9). The two exceptions, `tenant.owner_joined` and `user.data_export_ready`, say why in `NotificationCatalog.NamedApart`.
 
 | Type | Event | Recipients | Bell | Channels | Values | Link |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -22,8 +22,19 @@ A type tells of one event and has the name of its event's audit operation, so th
 | `tenant.suspended`, `tenant.reactivated`, `tenant.reopened` | `TenantSuspendedEvent`, `TenantReactivatedEvent`, `TenantReopenedEvent` | every system admin but the actor | the platform's | web and email | the actor | `platform_tenant` |
 | `tenant.closed` | `TenantClosedEvent` | every system admin but the actor | the platform's | web and email | the actor and the date the purge deletes the data (`ReopenableUntil`) | `platform_tenant` |
 | `tenant.purged` | `TenantPurgedEvent` | every system admin: the platform acted | the platform's | web and email | none beyond the tenant | `platform_tenant` |
+| `user.data_export_ready` | `DataExportReadyEvent` | the person who asked for the export: the worker completed it, so the person is told | personal | web and email | the date until which the file can be downloaded (`flows/personal-data-export.md`) | `account_security` |
 
-Every type also keeps the tenant's name as it was at that moment.
+Every type about a tenant also keeps the tenant's name as it was at that moment.
+
+Each type also has an area and an actor in the catalog (U1). The list shows them beside an item; they are display labels only.
+
+| Area | Words in English, Turkish, Arabic | Types | Actor |
+| --- | --- | --- | --- |
+| `members` | Members, Üyeler, الأعضاء | `member.joined` | the new member, who accepted the invitation |
+| `your_access` | Your access, Erişiminiz, وصولك | `member.role_changed`, `member.removed` | the one who changed the role or removed the member; none when the platform made an Owner |
+| `organisation_plan` | Organisation plan, Kuruluş planı, خطة المؤسسة | `tenant.plan_changed`, `tenant.entitlement_override_set`, `tenant.entitlement_override_removed` | none: the platform acted |
+| `organisations` | Organisations, Kuruluşlar, المؤسسات | `tenant.owner_joined` and every status type | the new Owner, who accepted; the system admin who changed the status; none for `tenant.purged` |
+| `your_account` | Your account, Hesabınız, حسابك | `user.data_export_ready` | none: the worker completed the export |
 
 - An override leads to the page of its key: `members.max` to the members (`tenant_members`), `roles.custom` and `roles.custom.max` to the roles (`tenant_roles`), any other key to the tenant's general settings (`tenant_settings`).
 - A value keeps a person by user id only (K3). The read names them now, so a deleted user reads as "Deleted user" in the reader's language, and a renamed one by the new name (U2). A tenant's, a plan's and a role's name stay as they were at that moment.
@@ -61,8 +72,8 @@ A notification reaches an open bell within about one to two seconds of the commi
 
 - A read declares the reader, never the tenant (U7). The tenant door proved the membership, and the route's tenant only selects the reader's own rows. A person removed from a tenant fails the tenant door, so they no longer see that tenant's notifications. A personal one stays in every tenant's bell.
 - Each bell has its unread count (`.../unread-count`) and marks everything it shows read (`POST .../read`), and nothing of another tenant. `POST /v1/me/notifications/{notificationId}/read` opens one notification of any bell; another user's answers 404 `notification.not_found`. There is no "mark unread", no archive and no single delete.
-- A list pages by a cursor, newest first, as the audit logs do (K5).
-- An item is `{ id, type, title, body, link: { kind, tenantId }, createdAt, readAt }`. The title and the body are rendered at the read, in the reader's language and time zone, from the type and the stored values (U2). The read is two queries, as an audit log's (K3): Notifications lists the page as stored, then `GetNotificationNamesQuery` names every person of the page in one call to `IUserDirectory.FindNamesAsync` and renders it. The link is a kind (`start`, `tenant_members`, `tenant_roles`, `tenant_settings`, `platform_tenant`) and the tenant, none for `start`; the web builds the URL.
+- A list pages by a cursor, newest first, as the audit logs do (K5). `?unread=true` reads only the unread ones, by the same cursor: the Unread tab. `?unread=false` reads only the read ones, and no filter the whole bell. A value that is no boolean answers 400 `request.invalid`.
+- An item is `{ id, type, title, body, area, actorName, tenantName, link: { kind, tenantId }, createdAt, readAt, unread }`. `unread` is true while `readAt` is none; the read derives it and stores nothing more, as GitHub's notifications answer both `unread` and `last_read_at`. The title and the body are rendered at the read, in the reader's language and time zone, from the type and the stored values (U2). The area is the type's word in the reader's language. The actor is named now, as every person of the values: a deleted one reads as "Deleted user" in the reader's language; none when the platform acted. The tenant's name is the stored one, as it was at that moment, so the platform's list needs no read of the tenant for each item; a personal notification also names the organisation it tells of. The web keeps no word of these. The read is two queries, as an audit log's (K3): Notifications lists the page as stored, then `GetNotificationNamesQuery` names every person of the page in one call to `IUserDirectory.FindNamesAsync` and renders it. The link is a kind (`start`, `tenant_members`, `tenant_roles`, `tenant_settings`, `platform_tenant`) and the tenant, none for `start`; the web builds the URL.
 - Marking read writes no audit entry: it is the reader's own view (K3). Its commit signals the reader's bell, so their other tabs read again.
 
 ## 4. The live stream
@@ -87,6 +98,6 @@ The live channel is `ILiveChannel` (U6). The worker writes the notification, and
 - The tenant purge deletes every notification about the tenant, in every recipient's list, the platform's included. A personal notification is about no tenant and stays.
 - A user's deletion deletes their notifications.
 
-Tests: `NotificationFanOutTests` (each type, its recipients and its values, a person by user id, none for the actor, a later Owner, no `member.joined` of the platform's Owner invitation, no `member.removed` of a user's deletion, a copy of an event, a type of the web only, a type of the web and the email, a changed role by email), `StreamNotificationsTests`, `LiveChannelTests`, `HostRoleTests` (`StreamNotifications_OnAWebAndAWorkerHostWithValkey_TheWorkersNotificationReachesTheWebStream`), `ListNotificationsTests`, `MarkAllNotificationsReadTests`, `MarkNotificationReadTests`, `ListPlatformNotificationsTests`, `NotificationRetentionTests`, `TenantPurgeTests`, `DeleteUserTests`, `OwnNotificationsPolicyTests`, `NotificationCatalogTests`, `NotificationTextTests`, `SendNotificationEmailHandlerTests`, `MigrationStepTests` (`Migrate_OneNotificationTypePerEvent_DeletesEveryNotificationAndRefusesAnOldType`, `Migrate_RemoveNotificationPreferences_DropsBothPreferenceTablesAndKeepsTheNotifications`).
+Tests: `NotificationFanOutTests` (each type, its recipients and its values, a person by user id, none for the actor, a later Owner, no `member.joined` of the platform's Owner invitation, no `member.removed` of a user's deletion, a copy of an event, a type of the web only, a type of the web and the email, a changed role by email), `StreamNotificationsTests`, `LiveChannelTests`, `HostRoleTests` (`StreamNotifications_OnAWebAndAWorkerHostWithValkey_TheWorkersNotificationReachesTheWebStream`), `ListNotificationsTests`, `ListMyNotificationsTests`, `MarkAllNotificationsReadTests`, `MarkNotificationReadTests`, `ListPlatformNotificationsTests`, `NotificationRetentionTests`, `TenantPurgeTests`, `DeleteUserTests`, `OwnNotificationsPolicyTests`, `NotificationCatalogTests`, `NotificationTextTests`, `SendNotificationEmailHandlerTests`, `MigrationStepTests` (`Migrate_OneNotificationTypePerEvent_DeletesEveryNotificationAndRefusesAnOldType`, `Migrate_RemoveNotificationPreferences_DropsBothPreferenceTablesAndKeepsTheNotifications`).
 
 Sources: Hohpe and Woolf, *Enterprise Integration Patterns*, "Publish-Subscribe Channel". Vernon, *Implementing Domain-Driven Design*, Chapter 8. Kleppmann, *Designing Data-Intensive Applications*, Chapter 1 (fan-out on write). Freeman and Pryce, *GOOS*, Chapter 8 (adapters). HTML Living Standard, "Server-sent events".

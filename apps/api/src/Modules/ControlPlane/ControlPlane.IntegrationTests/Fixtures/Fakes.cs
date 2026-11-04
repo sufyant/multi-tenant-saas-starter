@@ -13,6 +13,9 @@ public sealed class FakeIdentityProvider : IIdentityProvider
 
     public ConcurrentQueue<string> Withdrawn { get; } = [];
 
+    // Every change of a user's address the application asked for.
+    public ConcurrentQueue<(string ExternalUserId, string Email)> Replaced { get; } = [];
+
     public void AddAccount(string externalUserId, params string[] verifiedEmails) => _accounts[externalUserId] = verifiedEmails;
 
     // Like Clerk, an address that belongs to an account needs no invitation; any other gets one, whose link leads to the accept link.
@@ -38,6 +41,15 @@ public sealed class FakeIdentityProvider : IIdentityProvider
 
     public Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<string>>(_accounts.GetValueOrDefault(externalUserId, []));
+
+    public Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken)
+    {
+        Replaced.Enqueue((externalUserId, email));
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> IsEmailTakenByAnotherAccountAsync(string email, string externalUserId, CancellationToken cancellationToken) =>
+        Task.FromResult(_accounts.Any(account => account.Key != externalUserId && account.Value.Contains(email, StringComparer.OrdinalIgnoreCase)));
 
     public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken) => Task.CompletedTask;
 }

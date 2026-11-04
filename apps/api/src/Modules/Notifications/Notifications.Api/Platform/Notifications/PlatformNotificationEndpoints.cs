@@ -19,8 +19,8 @@ public static class PlatformNotificationEndpoints
     }
 
     private static Task<Result<CursorPage<NotificationResponse>>> ListPlatformNotifications(
-        string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
-        NotificationEndpoints.ListAsync(http, bus, Inbox.Platform, cursor, limit, cancellationToken);
+        bool? unread, string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
+        NotificationEndpoints.ListAsync(http, bus, Inbox.Platform, unread, cursor, limit, cancellationToken);
 
     private static Task<Result<UnreadNotificationCountResponse>> GetPlatformUnreadNotificationCount(HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
         NotificationEndpoints.CountAsync(http, bus, Inbox.Platform, cancellationToken);

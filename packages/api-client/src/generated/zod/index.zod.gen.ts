@@ -1,3 +1,4 @@
+export * from './me-dataexports/me-dataexports.zod.gen';
 export * from './me-invitations/me-invitations.zod.gen';
 export * from './me-notifications/me-notifications.zod.gen';
 export * from './me-tenants/me-tenants.zod.gen';

@@ -2,10 +2,11 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
-// shadcn/ui's Button on Base UI, restyled with the Starter tokens (the Button README): one action colour, a hairline secondary, a
-// red destructive, 32px on desktop, 44px on a coarse pointer and 48px on a coarse pointer from bp-tablet, pressed at 0.97.
+// shadcn/ui's Button on Base UI, restyled with the Starter tokens (the design's Button): one action colour, a hairline secondary, a
+// red destructive, 13px medium text, a 2px ring on focus, 45% when disabled; 32px on desktop, 44px on a coarse pointer and 48px on
+// a coarse pointer from bp-tablet, pressed at 0.97.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-transparent text-sm font-medium whitespace-nowrap outline-none select-none transition-[background-color,border-color,transform] duration-[120ms] ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.97] motion-reduce:active:scale-100 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-transparent text-small font-medium whitespace-nowrap outline-none select-none transition-[background-color,border-color,transform] duration-[120ms] ease-out focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:active:scale-100 disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

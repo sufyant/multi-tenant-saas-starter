@@ -6,7 +6,9 @@
 # Inputs, from the environment: CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY of a Clerk development instance, and
 # E2E_CLERK_USER_EMAIL, a user of that instance with +clerk_test in the address. Exit codes: 0 when both apps pass; 1 when a
 # variable is missing or an app's tests fail; the build's exit code when a build fails. Both apps run, also when the first fails.
-# Each app writes its HTML report to apps/<app>/playwright-report.
+# Each app writes its HTML report to apps/<app>/playwright-report. Then each app takes its screenshots (e2e/screenshots.spec.ts)
+# into apps/<app>/test-results/screenshots, which ci.yml uploads as the workflow artifact "screenshots" for the review against the
+# design. A screenshot that cannot be taken fails the run too.
 #
 # Run it locally, with the keys of the development instance:
 #   CI=1 CLERK_PUBLISHABLE_KEY=pk_test_... CLERK_SECRET_KEY=sk_test_... \
@@ -33,6 +35,15 @@ failed=0
 for app in web platform; do
   echo "::group::Playwright: $app"
   if ! pnpm --filter "@repo/$app" test:e2e --reporter=list,html; then
+    failed=1
+  fi
+  echo "::endgroup::"
+done
+
+for app in web platform; do
+  echo "::group::Screenshots: $app"
+  if ! E2E_SCREENSHOTS=1 pnpm --filter "@repo/$app" exec playwright test e2e/screenshots.spec.ts \
+    --project=signed-in --reporter=list; then
     failed=1
   fi
   echo "::endgroup::"

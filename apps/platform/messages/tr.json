@@ -13,6 +13,7 @@
     "activityLog": "Etkinlik kaydı",
     "settings": "Ayarlar",
     "platform": "Platform",
+    "productPlatform": "{product} Platform",
     "backToPlatform": "Platforma dön",
     "myAccount": "Hesabım",
     "systemAdmins": "Sistem yöneticileri",

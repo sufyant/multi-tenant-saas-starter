@@ -13,6 +13,9 @@ import {
   bellKeysOf,
   bellOf,
   everyBellKey,
+  personalBell,
+  platformBell,
+  tenantBell,
 } from "./notifications";
 
 const tenantId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f";
@@ -88,5 +91,21 @@ describe("accessKeysOf", () => {
 
   it("AccessKeysOf_PlatformSignal_ReadsNoOrganisation", () => {
     expect(accessKeysOf({ scope: "platform" })).toEqual([]);
+  });
+});
+
+// The Unread tab reads the list with the filter unread (the API's K5). Its key starts with the bell's list key, which the bell's
+// keys name, so a signal and Mark all as read read it again too (F57).
+describe("unreadList", () => {
+  it.each([
+    ["tenant", tenantBell(tenantId)],
+    ["personal", personalBell()],
+    ["platform", platformBell()],
+  ])("UnreadList_%sBell_FiltersTheUnreadOnes", (_, bell) => {
+    expect(bell.unreadList.queryKey).toEqual([
+      ...bell.list.queryKey,
+      { unread: true },
+    ]);
+    expect(bell.keys).toContainEqual(bell.list.queryKey);
   });
 });

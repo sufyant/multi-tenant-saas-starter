@@ -14,7 +14,7 @@ public static class ListNotificationsHandler
         }
 
         await notifications.DeclareUserAsync(userId, cancellationToken);
-        var found = await notifications.ListAsync(query.Inbox, query.Page, cancellationToken);
+        var found = await notifications.ListAsync(query.Inbox, query.Unread, query.Page, cancellationToken);
         return CursorPage.Of(found, query.Page, notification => new CursorPosition(notification.CreatedAt, notification.Id));
     }
 }

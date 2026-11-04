@@ -1,14 +1,19 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, test } from "@playwright/test";
-import { Language } from "@repo/api-client";
+import { expect, type Page, test } from "@playwright/test";
+import { Language, NotificationType } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
   mockNotifications,
   mockPlatform,
   organisations,
   plans,
+  shannonSuspended,
   users,
 } from "./api";
+
+/** The bell's tabs; a page may have tabs of its own. */
+const bellTabs = (page: Page) =>
+  page.getByRole("tablist", { name: "Which notifications" });
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/platform/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
@@ -62,7 +67,7 @@ for (const { language, scheme, size } of variants)
       await mockPlatform(page, language);
 
       await page.goto(path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
       await page.screenshot({
@@ -77,10 +82,10 @@ const menus = [
     language: Language.En,
     scheme: "light",
     size: "desktop",
-    name: /Kelly/,
+    name: "Sam Kelly",
   },
-  { language: Language.Ar, scheme: "dark", size: "desktop", name: /Kelly/ },
-  { language: Language.En, scheme: "light", size: "phone", name: /Kelly/ },
+  { language: Language.Ar, scheme: "dark", size: "desktop", name: "Sam Kelly" },
+  { language: Language.En, scheme: "light", size: "phone", name: "Sam Kelly" },
 ] as const;
 
 for (const { language, scheme, size, name } of menus)
@@ -98,10 +103,10 @@ for (const { language, scheme, size, name } of menus)
     await mockPlatform(page, language);
 
     await page.goto("/users");
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     if (size === "phone")
       await page.getByRole("button", { name: "Open menu" }).click();
-    await page.getByRole("button", { name }).click();
+    await page.getByRole("button", { name, exact: true }).click();
     await page.getByRole("menu").waitFor();
 
     await page.screenshot({
@@ -125,3 +130,177 @@ test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
     path: `${folder}/notifications-en-light-desktop.png`,
   });
 });
+
+// The shell at the sizes of the design's frames (the platform's Shell and Notifications screens), for the comparison in each pull
+// request: CI uploads them as the workflow artifact "screenshots" (scripts/ci/test-e2e.sh). The name gives the frame.
+const frames = {
+  desktop: { width: 1280, height: 800 },
+  tablet: { width: 1024, height: 768 },
+  phone: { width: 375, height: 812 },
+};
+/** The platform's Notifications frames: two unread items and one read item, each with its area and the person who acted. */
+const ago = (minutes: number) =>
+  new Date(Date.now() - minutes * 60_000).toISOString();
+const bellList = {
+  unread: 2,
+  items: [
+    { ...shannonSuspended, createdAt: ago(20) },
+    {
+      ...shannonSuspended,
+      id: "0198f0a2-0000-7000-8000-0000000000b2",
+      type: NotificationType.TenantOwnerJoined,
+      title: "Northwind Traders has its Owner",
+      actorName: "Ayşe Demir",
+      tenantName: "Northwind Traders",
+      createdAt: ago(24 * 60),
+    },
+    {
+      ...shannonSuspended,
+      id: "0198f0a2-0000-7000-8000-0000000000b3",
+      type: NotificationType.TenantClosed,
+      title: "Fernwood Studio was closed",
+      actorName: null,
+      tenantName: "Fernwood Studio",
+      createdAt: ago(3 * 24 * 60),
+      readAt: ago(2 * 24 * 60),
+      unread: false,
+    },
+  ],
+};
+const shellShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  path?: string;
+  mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
+  open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+  /** What the page shows once it has loaded, when it is not a heading of the content. */
+  ready?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+}[] = [
+  { file: "2.01-organisations-en-light-desktop", size: "desktop" },
+  {
+    file: "2.13-organisations-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+  },
+  {
+    file: "2.01-organisations-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+  },
+  { file: "2.01-organisations-en-light-tablet", size: "tablet" },
+  {
+    file: "2.14-drawer-en-light-phone",
+    size: "phone",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "2.02-command-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.keyboard.press("ControlOrMeta+k"),
+  },
+  {
+    file: "2.03-account-menu-en-light-desktop",
+    size: "desktop",
+    open: (page) =>
+      page.getByRole("button", { name: "Sam Kelly", exact: true }).click(),
+  },
+  {
+    file: "3.01-notifications-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "3.03-notifications-empty-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "3.02-notifications-all-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
+    open: async (page) => {
+      await page.getByRole("button", { name: /^Notifications/ }).click();
+      await bellTabs(page).getByRole("tab", { name: "All" }).click();
+      await page.getByRole("link", { name: /was suspended/ }).waitFor();
+    },
+  },
+  // On a phone the bell opens the page of notifications under the top bar (3.08).
+  {
+    file: "3.08-notifications-en-light-phone",
+    size: "phone",
+    path: "/notifications",
+    mock: (page) => mockNotifications(page, bellList),
+    // The top bar names the page; the content has no heading of its own (3.08).
+    ready: (page) =>
+      page
+        .getByRole("main")
+        .getByRole("link", { name: /suspended/ })
+        .waitFor(),
+  },
+  {
+    file: "2.22-not-found-en-light-desktop",
+    size: "desktop",
+    path: "/no-such-page",
+  },
+  {
+    file: "2.25-not-found-en-light-phone",
+    size: "phone",
+    path: "/no-such-page",
+  },
+  {
+    file: "10-settings-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+  },
+  {
+    file: "2.15-settings-drawer-en-light-phone",
+    size: "phone",
+    path: "/settings/system-admins",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+];
+
+/** A shot's language, theme and page when it names none: English, light, the start page. */
+const withDefaults = (shot: (typeof shellShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  path: shot.path ?? "/",
+});
+
+for (const shot of shellShots.map(withDefaults))
+  test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme });
+    await page.setViewportSize(frames[shot.size]);
+    await context.addCookies([
+      { name: localeCookie, value: shot.language, url: baseURL },
+    ]);
+    await mockPlatform(page, shot.language);
+    await shot.mock?.(page);
+
+    await page.goto(shot.path);
+    await (shot.ready?.(page) ??
+      page.getByRole("main").getByRole("heading").first().waitFor());
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
+    // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
+    // animation starts only then.
+    await page.evaluate(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(done)),
+        ),
+    );
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((each) => each.finished)),
+    );
+
+    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+  });

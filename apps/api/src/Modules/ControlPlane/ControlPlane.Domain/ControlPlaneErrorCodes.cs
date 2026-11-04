@@ -7,6 +7,12 @@ namespace ControlPlane.Domain;
 /// </summary>
 public static class ControlPlaneErrorCodes
 {
+    public static readonly ErrorCode DataExportInProgress = ErrorCode.Declare("data_export.in_progress");
+
+    public static readonly ErrorCode DataExportNotFound = ErrorCode.Declare("data_export.not_found");
+
+    public static readonly ErrorCode DataExportNotReady = ErrorCode.Declare("data_export.not_ready");
+
     public static readonly ErrorCode InvitationCodeRequired = ErrorCode.Declare("invitation.code_required");
 
     public static readonly ErrorCode InvitationDailyLimitReached = ErrorCode.Declare("invitation.daily_limit_reached");
@@ -109,6 +115,10 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode UserDeleted = ErrorCode.Declare("user.deleted");
 
+    public static readonly ErrorCode UserEmailTaken = ErrorCode.Declare("user.email_taken");
+
+    public static readonly ErrorCode UserEmailUnchanged = ErrorCode.Declare("user.email_unchanged");
+
     public static readonly ErrorCode UserHasMemberships = ErrorCode.Declare("user.has_memberships");
 
     public static readonly ErrorCode UserIsSystemAdmin = ErrorCode.Declare("user.is_system_admin");
@@ -118,4 +128,12 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode UserNotFound = ErrorCode.Declare("user.not_found");
 
     public static readonly ErrorCode UserSuspended = ErrorCode.Declare("user.suspended");
+
+    public static readonly ErrorCode VerificationCodeExpired = ErrorCode.Declare("verification_code.expired");
+
+    public static readonly ErrorCode VerificationCodeInvalid = ErrorCode.Declare("verification_code.invalid");
+
+    public static readonly ErrorCode VerificationCodeTooManyAttempts = ErrorCode.Declare("verification_code.too_many_attempts");
+
+    public static readonly ErrorCode VerificationCodeTooManySends = ErrorCode.Declare("verification_code.too_many_sends");
 }
