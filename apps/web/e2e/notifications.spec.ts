@@ -67,3 +67,25 @@ test("Bell_Phone_OpensAFullScreen", async ({ page }) => {
     .poll(async () => await screen.boundingBox())
     .toMatchObject({ y: 0, height: 812 });
 });
+
+// 3.01 and 3.02: the bell opens on Unread, which reads the unread items, and All reads every item.
+test("Bell_Tabs_ShowTheUnreadOnesThenEveryOne", async ({ page }) => {
+  await open(page);
+
+  await bell(page, 1).click();
+  await expect(
+    page.getByRole("tab", { name: "Unread 1", selected: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "All" }).click();
+
+  await expect(
+    page.getByRole("tab", { name: "All", selected: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Your role in Northwind Traders changed/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/^Northwind Traders · Your access · /),
+  ).toBeVisible();
+  await expectAccessible(page);
+});

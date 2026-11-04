@@ -568,7 +568,10 @@ const blueHarbour = {
   status: MyTenantResponseStatus.Suspended,
 };
 
-/** The Notifications frames' list: two unread items of the last hour and one read item of yesterday. */
+/**
+ * The Notifications frames' list: two unread items of the last hour, one read item of yesterday and a personal one about no
+ * organisation, each with its area.
+ */
 const ago = (minutes: number) =>
   new Date(Date.now() - minutes * 60_000).toISOString();
 const bellList = {
@@ -578,6 +581,8 @@ const bellList = {
       ...roleChanged,
       id: "0198f0a2-0000-7000-8000-0000000000a3",
       title: "Omar Haddad accepted your invitation",
+      area: "Members",
+      actorName: "Omar Haddad",
       createdAt: ago(2),
     },
     { ...roleChanged, createdAt: ago(60) },
@@ -585,8 +590,20 @@ const bellList = {
       ...roleChanged,
       id: "0198f0a2-0000-7000-8000-0000000000a4",
       title: "The plan of Northwind Traders changed to Team",
+      area: "Organisation plan",
       createdAt: ago(24 * 60),
       readAt: ago(60),
+      unread: false,
+    },
+    {
+      ...roleChanged,
+      id: "0198f0a2-0000-7000-8000-0000000000a5",
+      title: "You were removed from Atlas Logistics",
+      area: "Your access",
+      tenantName: null,
+      createdAt: ago(3 * 24 * 60),
+      readAt: ago(2 * 24 * 60),
+      unread: false,
     },
   ],
 };
@@ -671,10 +688,20 @@ const shellShots: {
       page.getByRole("button", { name: /^Notifications/ }).click(),
   },
   {
-    file: "3.08-notifications-en-light-desktop",
+    file: "3.01-notifications-unread-en-light-desktop",
     size: "desktop",
     mock: (page) => mockNotifications(page, bellList),
     open: openBell,
+  },
+  {
+    file: "3.02-notifications-all-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
+    open: async (page) => {
+      await openBell(page);
+      await page.getByRole("tab", { name: "All" }).click();
+      await page.getByRole("link", { name: /You were removed/ }).waitFor();
+    },
   },
   {
     file: "3.03-notifications-empty-en-light-desktop",

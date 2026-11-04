@@ -56,3 +56,37 @@ test("Bell_LiveSignal_ChangesTheCountWithoutAReload", async ({ page }) => {
 
   await expect(bell(page, 2)).toBeVisible();
 });
+
+// 3.01 and 3.02 of the platform: the tabs, and the line of the area and the person who acted.
+test("Bell_Tabs_ShowTheAreaAndTheActor", async ({ page }) => {
+  await open(page);
+
+  await bell(page, 1).click();
+  await expect(
+    page.getByRole("tab", { name: "Unread 1", selected: true }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "All" }).click();
+
+  await expect(
+    page.getByRole("tab", { name: "All", selected: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/^Organisations · Ciara Byrne · /)).toBeVisible();
+  await expectAccessible(page);
+});
+
+// 3.08 of the platform: on a phone the bell opens the page of notifications under the top bar.
+test("Bell_Phone_OpensThePageOfNotifications", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await open(page);
+
+  await page.getByRole("link", { name: "Notifications, 1 unread" }).click();
+
+  await expect(page).toHaveURL("/notifications");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Notifications" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Shannon Studio was suspended/ }),
+  ).toBeVisible();
+  await expectAccessible(page);
+});

@@ -1,12 +1,13 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
-import { Language } from "@repo/api-client";
+import { Language, NotificationType } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
   mockNotifications,
   mockPlatform,
   organisations,
   plans,
+  shannonSuspended,
   users,
 } from "./api";
 
@@ -133,6 +134,35 @@ const frames = {
   tablet: { width: 1024, height: 768 },
   phone: { width: 375, height: 812 },
 };
+/** The platform's Notifications frames: two unread items and one read item, each with its area and the person who acted. */
+const ago = (minutes: number) =>
+  new Date(Date.now() - minutes * 60_000).toISOString();
+const bellList = {
+  unread: 2,
+  items: [
+    { ...shannonSuspended, createdAt: ago(20) },
+    {
+      ...shannonSuspended,
+      id: "0198f0a2-0000-7000-8000-0000000000b2",
+      type: NotificationType.TenantOwnerJoined,
+      title: "Northwind Traders has its Owner",
+      actorName: "Ayşe Demir",
+      tenantName: "Northwind Traders",
+      createdAt: ago(24 * 60),
+    },
+    {
+      ...shannonSuspended,
+      id: "0198f0a2-0000-7000-8000-0000000000b3",
+      type: NotificationType.TenantClosed,
+      title: "Fernwood Studio was closed",
+      actorName: null,
+      tenantName: "Fernwood Studio",
+      createdAt: ago(3 * 24 * 60),
+      readAt: ago(2 * 24 * 60),
+      unread: false,
+    },
+  ],
+};
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -173,7 +203,7 @@ const shellShots: {
   {
     file: "3.01-notifications-en-light-desktop",
     size: "desktop",
-    mock: mockNotifications,
+    mock: (page) => mockNotifications(page, bellList),
     open: (page) =>
       page.getByRole("button", { name: /^Notifications/ }).click(),
   },
@@ -185,16 +215,21 @@ const shellShots: {
       page.getByRole("button", { name: /^Notifications/ }).click(),
   },
   {
-    file: "3.08-notifications-en-light-phone",
-    size: "phone",
-    mock: mockNotifications,
-    // The full screen slides up after the frames the shot waits for: wait until it reaches the top.
+    file: "3.02-notifications-all-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
     open: async (page) => {
       await page.getByRole("button", { name: /^Notifications/ }).click();
-      await expect
-        .poll(async () => (await page.getByRole("dialog").boundingBox())?.y)
-        .toBeLessThanOrEqual(0);
+      await page.getByRole("tab", { name: "All" }).click();
+      await page.getByRole("link", { name: /was suspended/ }).waitFor();
     },
+  },
+  // On a phone the bell opens the page of notifications under the top bar (3.08).
+  {
+    file: "3.08-notifications-en-light-phone",
+    size: "phone",
+    path: "/notifications",
+    mock: (page) => mockNotifications(page, bellList),
   },
   {
     file: "2.22-not-found-en-light-desktop",

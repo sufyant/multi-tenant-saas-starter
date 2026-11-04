@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import {
   AuditActorResponseKind,
   type AuditEntryResponse,
@@ -717,6 +717,12 @@ export const shannonSuspended: NotificationResponse = {
   unread: true,
 };
 
+/** The items a list read answers: with the filter unread, only the unread ones, as the API does. */
+export const listed = (route: Route, items: NotificationResponse[]) =>
+  new URL(route.request().url()).searchParams.get("unread") === "true"
+    ? items.filter((item) => item.unread)
+    : items;
+
 /** What the notification answers recorded: the notifications opened and the bell marked read. */
 export type NotificationCalls = {
   opened: string[];
@@ -741,9 +747,11 @@ export async function mockNotifications(
   await page.route("**/api/v1/platform/notifications/unread-count", (route) =>
     route.fulfill({ json: { unread: unread.count } }),
   );
-  await page.route("**/api/v1/platform/notifications", (route) =>
-    route.fulfill({ json: { items, nextCursor: null } }),
-  );
+  // The Unread tab reads with the filter unread (F57).
+  const answerList = (route: Route) =>
+    route.fulfill({ json: { items: listed(route, items), nextCursor: null } });
+  await page.route("**/api/v1/platform/notifications?*", answerList);
+  await page.route("**/api/v1/platform/notifications", answerList);
   await page.route("**/api/v1/platform/notifications/read", (route) => {
     calls.markedAll += 1;
     unread.count = 0;
