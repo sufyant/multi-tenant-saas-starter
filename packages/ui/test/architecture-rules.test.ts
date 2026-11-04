@@ -8,6 +8,7 @@ import {
   crossFeatureImports,
   dateFormattingOutsideFormatter,
   declarationsOf,
+  defaultBreakpointClasses,
   differingFiles,
   duplicateRuleIds,
   enumLiterals,
@@ -95,6 +96,28 @@ describe("architecture rules", () => {
     });
 
     expect(numericLayerClasses(root)).toEqual([]);
+  });
+
+  it("DefaultBreakpointClasses_SmMdAndMaxLg_AreFindings", () => {
+    const root = folder({
+      "a.tsx":
+        'export const A = () => <div className="sm:flex md:text-pretty max-lg:hidden" />;',
+    });
+
+    expect(defaultBreakpointClasses(root)).toEqual([
+      'a.tsx:1: Tailwind breakpoint "sm:"; use tablet: or desktop: (F49)',
+      'a.tsx:1: Tailwind breakpoint "md:"; use tablet: or desktop: (F49)',
+      'a.tsx:1: Tailwind breakpoint "max-lg:"; use tablet: or desktop: (F49)',
+    ]);
+  });
+
+  it("DefaultBreakpointClasses_DesignBreakpointsAndSizeKeys_AreNoFinding", () => {
+    const root = folder({
+      "a.tsx":
+        'const sizes = { sm: "h-7", lg: "h-9", xl: "h-10" };\nexport const A = () => <div className="tablet:flex max-tablet:hidden desktop:p-4 text-sm" />;',
+    });
+
+    expect(defaultBreakpointClasses(root)).toEqual([]);
   });
 
   it("UserFacingLiterals_JsxTextAndAriaLabel_AreFindings", () => {

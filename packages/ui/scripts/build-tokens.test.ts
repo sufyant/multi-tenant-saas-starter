@@ -189,14 +189,14 @@ describe("buildTokensCss", () => {
     expect(css).toContain("--font-mono:");
   });
 
-  it("BuildTokensCss_Breakpoint_GoesIntoTheTailwindThemeAsAValue", () => {
+  it("BuildTokensCss_Breakpoint_ReplacesTailwindsDefaultBreakpoints", () => {
     const source = {
       ...tokens([]),
       breakpoint: { tokens: [{ name: "bp-tablet", value: "768px" }] },
     };
 
     expect(buildTokensCss(source)).toContain(
-      "@theme {\n  --breakpoint-tablet: 768px;\n}",
+      "@theme {\n  --breakpoint-*: initial;\n  --breakpoint-tablet: 768px;\n}",
     );
   });
 
