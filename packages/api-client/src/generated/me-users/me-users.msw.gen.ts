@@ -21,7 +21,8 @@ import {
 } from '../endpoints.schemas.gen';
 import type {
   MeResponse,
-  PreferencesResponse
+  PreferencesResponse,
+  VerificationCodeResponse
 } from '../endpoints.schemas.gen';
 
 
@@ -30,6 +31,12 @@ export const getGetMeResponseMock = (overrideResponse: Partial<Extract<MeRespons
 export const getRenameMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 export const getChangePreferencesResponseMock = (overrideResponse: Partial<Extract<PreferencesResponse, object>> = {}): PreferencesResponse => ({language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getRequestEmailChangeResponseMock = (overrideResponse: Partial<Extract<VerificationCodeResponse, object>> = {}): VerificationCodeResponse => ({expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getChangeEmailResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), firstName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), lastName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+
+export const getRequestAccountDeletionResponseMock = (overrideResponse: Partial<Extract<VerificationCodeResponse, object>> = {}): VerificationCodeResponse => ({expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
 export const getGetMeMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
@@ -67,8 +74,58 @@ export const getChangePreferencesMockHandler = (overrideResponse?: PreferencesRe
       })
   }, options)
 }
+
+export const getRequestEmailChangeMockHandler = (overrideResponse?: VerificationCodeResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<VerificationCodeResponse> | VerificationCodeResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/email-change', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRequestEmailChangeResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getChangeEmailMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/email-change/confirm', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getChangeEmailResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRequestAccountDeletionMockHandler = (overrideResponse?: VerificationCodeResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<VerificationCodeResponse> | VerificationCodeResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/account-deletion', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRequestAccountDeletionResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getConfirmAccountDeletionMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/account-deletion/confirm', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
 export const getMeUsersMock = () => [
   getGetMeMockHandler(),
   getRenameMeMockHandler(),
-  getChangePreferencesMockHandler()
+  getChangePreferencesMockHandler(),
+  getRequestEmailChangeMockHandler(),
+  getChangeEmailMockHandler(),
+  getRequestAccountDeletionMockHandler(),
+  getConfirmAccountDeletionMockHandler()
 ]

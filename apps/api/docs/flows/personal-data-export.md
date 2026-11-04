@@ -1,0 +1,37 @@
+# Personal data export
+
+This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
+
+A person asks for a copy of their data (GDPR, Articles 15 and 20). The worker prepares it in the background, and the person downloads it from Account and security for 7 days (the maintainer's decisions of 2026-11-03). One export is in progress at a time. This is no saga (S1): the steps are messages of ControlPlane alone, and the export's status tells where it is.
+
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `RequestDataExportCommand` | `POST /v1/me/data-exports` | ControlPlane, `RequestDataExportHandler` | Yes; it declares the user (R11) |
+| `DataExportRequestedEvent` | `RequestDataExportHandler` | Audit, `RecordDataExportRequestedHandler` (`user.data_export_requested`, platform log, by the user) | Yes |
+| `PrepareDataExportCommand` | `RequestDataExportHandler` | ControlPlane, `PrepareDataExportHandler` (each module's exporter, then the file store) | No |
+| `FailDataExportCommand` | `RequestDataExportHandler`, scheduled an hour after the request | ControlPlane, `FailDataExportHandler` | Yes; it declares the user |
+| `CompleteDataExportCommand` | `PrepareDataExportHandler` | ControlPlane, `CompleteDataExportHandler` | Yes; it declares the user |
+| `DataExportReadyEvent` | `CompleteDataExportHandler` | Notifications, `NotifyUserDataExportReadyHandler` (`user.data_export_ready`, personal bell and email) | No; its delivery declares the user (U3) |
+| `ExpireDataExportCommand` | `CompleteDataExportHandler`, scheduled at the export's expiry | ControlPlane, `ExpireDataExportHandler` | Yes; it declares the user |
+| `DeleteStoredFileCommand` | `ExpireDataExportHandler`, and `CompleteDataExportHandler` for an export that has no row or failed | ControlPlane, `DeleteStoredFileHandler` (the file store) | No |
+| `DownloadDataExportCommand` | `POST /v1/me/data-exports/{exportId}/download` | ControlPlane, `DownloadDataExportHandler` | Yes; it declares the user |
+| `DataExportDownloadedEvent` | `DownloadDataExportHandler` | Audit, `RecordDataExportDownloadedHandler` (`user.data_export_downloaded`, platform log, by the user) | Yes |
+| `GetDownloadLinkQuery` | the same endpoint, after the command | ControlPlane, `GetDownloadLinkHandler` (the file store) | No |
+
+1. The request. `RequestDataExport` locks the user row (K6l), so two requests at once run one after the other. An export still in preparation answers 409 `data_export.in_progress`. Otherwise it adds the export, a row of `control_plane.stored_files` in `Preparing`, with the key `exports/users/{userId}/{exportId}.zip` (section 7, "File storage"), and answers 201 with it. In the same transaction it records `user.data_export_requested`, sends `PrepareDataExportCommand` to the worker, and schedules `FailDataExportCommand` an hour later (`StoredFile.DataExportPreparationTimeout`). A request takes an idempotency key (I1).
+2. The preparation. `PrepareDataExportHandler` takes no DbContext, so no transaction is open while it reads and writes (section 3). It asks every module's exporter for its part: each module registers an `IPersonalDataExporter` in its Infrastructure entry point, and each reads in a transaction of its own module that declares the user (W1, R11). A product module's data joins the export with its own exporter, and no other file changes. The parts:
+   - ControlPlane: `profile` (the address, the names, the language, the time zone, when the person became a user), `memberships` (each tenant's id and name, the stored name of the role, when the person joined) and `invitations` (each the person accepted: the tenant, the invited address, when it was made and accepted).
+   - Audit: `activity`, the person's own actions, in the platform's log and in every tenant's log, through the `own_actions` policy (R11): the operation, the moment, the tenant and the target's kind and id. No details: they describe the organisation and its other members.
+   - Notifications: `notifications`, every notification of the person, in every bell: the type, the tenant, the stored values and the read state.
+   No data of a tenant goes in, because it holds other people's personal data. The identity provider's data, the sessions and the linked accounts, stays out; `README.txt` says that Clerk keeps it and that Account and security shows it. The file is a ZIP with `README.txt` and one JSON file for each part, in the order of their names (`DataExportArchive`). It goes to the file store under the export's key, so a second try replaces the first file. A failure retries (W11); one that fails for good waits in the dead letter queue, whose move logs the error.
+3. Ready. `CompleteDataExport` marks the export `Ready`, with its size, until 7 days later (`StoredFile.DataExportLifetime`). In the same transaction it publishes `DataExportReadyEvent` and schedules `ExpireDataExportCommand` at the expiry. Notifications tells the person in the personal bell and by email (`user.data_export_ready`, U5), with a link to Account and security, never to the file. A copy of the command finds the export ready and does nothing. An export whose row is gone, because the user was deleted meanwhile, or that failed by its timeout, keeps no file: it is deleted after the commit.
+4. The timeout. `FailDataExportCommand` comes an hour after the request. An export still in preparation then failed for good, and becomes `Failed`; the person can ask again. A ready or expired export stays as it is.
+5. The download. `DownloadDataExport` finds the person's export through the `own_files` policy, so another user's id is not found (404 `data_export.not_found`, OWASP API1). An export that is not ready answers 409 `data_export.not_ready`. It records `user.data_export_downloaded` for each download. After the commit, `GetDownloadLinkQuery` makes the link, because the file store is an external service: a link that works for 5 minutes, downloads the file as an attachment named `data-export-{day}.zip`, and is never stored.
+6. The expiry. `ExpireDataExportCommand` comes at the export's expiry. A ready export becomes `Expired`, and its file is deleted after the commit (`DeleteStoredFileCommand`). The row stays, with its expiry, so the screen says "Your last file was deleted on {date}". The bucket's lifecycle rule, which deletes `exports/` 7 days after an upload, is the second guard (`.cloudflare/`).
+7. A user's deletion deletes the rows of their exports in its transaction, and their files after its commit (`flows/user-deletion.md`).
+
+What the screens read (Figma, "6 · Settings › Account and security", 6.19 to 6.21 and 6.30 to 6.32): `GET /v1/me/data-exports/latest` answers the status (`preparing`, `ready`, `failed`, `expired`), `requestedAt`, `readyAt`, `expiresAt` and `sizeBytes`; 404 `data_export.not_found` is the state "Export my data". The email says the expiry in the person's language and time zone; its footer says why it came.
+
+Tests: `RequestDataExportTests`, `GetMyDataExportTests`, `DownloadDataExportTests`, `ExpireDataExportTests`, `OwnFilesPolicyTests`, `OwnActionsPolicyTests`, `StoredFileTests`, `S3FileStoreTests`, `RecordDataExportRequestedTests` and `RecordDataExportDownloadedTests` in Audit.
+
+Source: GDPR, Articles 12, 15 and 20. Nygard, *Release It!*, Chapter 5 (Timeouts). Hohpe and Woolf, *Enterprise Integration Patterns*, "Idempotent Receiver".

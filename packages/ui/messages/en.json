@@ -69,6 +69,11 @@
       "forbidden": "You do not have permission to do this.",
       "unauthenticated": "Your session has ended. Sign in again."
     },
+    "data_export": {
+      "in_progress": "An export of your data is being prepared. Wait until it is ready.",
+      "not_found": "You have no export of your data.",
+      "not_ready": "The file is not ready to download."
+    },
     "idempotency": {
       "key_in_progress": "This request is still running. Wait a moment, then check the result.",
       "key_invalid": "The request could not be sent. Reload the page and try again.",
@@ -171,11 +176,19 @@
     },
     "user": {
       "deleted": "This account was deleted.",
+      "email_taken": "Another account uses this email address.",
+      "email_unchanged": "This is your email address already.",
       "has_memberships": "This user is still a member of an organisation.",
       "is_system_admin": "A system admin cannot be deleted.",
       "last_owner": "This user is the last Owner of an organisation. Make another member an Owner first.",
       "not_found": "This user does not exist.",
       "suspended": "Your account is suspended."
+    },
+    "verification_code": {
+      "expired": "The code has expired. Send a new code.",
+      "invalid": "That code is not right. Check the email and try again.",
+      "too_many_attempts": "The code was tried too often. Send a new code.",
+      "too_many_sends": "Too many codes were sent. Try again in an hour."
     }
   },
   "signIn": {

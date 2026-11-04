@@ -1,3 +1,4 @@
+export * from './me-dataexports/me-dataexports.gen';
 export * from './me-invitations/me-invitations.gen';
 export * from './me-notifications/me-notifications.gen';
 export * from './me-tenants/me-tenants.gen';

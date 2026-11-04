@@ -13,6 +13,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ChangeEmail",
+    "method": "POST",
+    "path": "/v1/me/email-change/confirm",
+    "tag": "Me/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ChangeMemberRole",
     "method": "PATCH",
     "path": "/v1/tenants/{tenantId}/members/{userId}",
@@ -47,6 +57,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/close",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "ConfirmAccountDeletion",
+    "method": "POST",
+    "path": "/v1/me/account-deletion/confirm",
+    "tag": "Me/Users",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -114,6 +134,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "DownloadDataExport",
+    "method": "POST",
+    "path": "/v1/me/data-exports/{exportId}/download",
+    "tag": "Me/DataExports",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetInvitationPreview",
     "method": "POST",
     "path": "/v1/me/invitations/preview",
@@ -128,6 +158,16 @@ export const operations = [
     "method": "GET",
     "path": "/v1/me",
     "tag": "Me/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetMyDataExport",
+    "method": "GET",
+    "path": "/v1/me/data-exports/latest",
+    "tag": "Me/DataExports",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -519,6 +559,45 @@ export const operations = [
     "tag": "Platform/Tenants",
     "requestHeaders": [],
     "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "RequestAccountDeletion",
+    "method": "POST",
+    "path": "/v1/me/account-deletion",
+    "tag": "Me/Users",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "RequestDataExport",
+    "method": "POST",
+    "path": "/v1/me/data-exports",
+    "tag": "Me/DataExports",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "RequestEmailChange",
+    "method": "POST",
+    "path": "/v1/me/email-change",
+    "tag": "Me/Users",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
       "Retry-After"
     ]
   },

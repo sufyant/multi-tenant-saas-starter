@@ -8,8 +8,9 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | in progress |
-| 36 | Personal pages | todo |
-| 37 | Organisation pages | todo |
+| 36 | Personal pages | in progress: 36-backend done, 36-frontend todo |
+| 37a | The web's organisation pages | todo |
+| 37b | The platform's pages | todo |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -79,7 +80,7 @@ Status: in progress.
 
 ## 4. Step 36: Personal pages
 
-Status: todo.
+Status: in progress. 36-backend is done; 36-frontend builds the screens on its API.
 
 - Profile: the name, the language and the time zone.
 - Account and security: the email change goes through our API. The API owns the email and updates the identity provider.
@@ -87,16 +88,34 @@ Status: todo.
 - Self-service account deletion.
 - Personal data export: it runs in the background. An email and a notification say when it is ready. The person can download it until a date. The file is in object storage.
 
+36-backend (the maintainer's decisions of 2026-11-03):
+
+- File storage: our own port, `IFileStore`, with an adapter on the S3 API in the host. One private R2 bucket per environment, `starter-staging` and `starter-production`, in the EU jurisdiction. Local runs and CI use SeaweedFS in Docker, because MinIO publishes no image any more. The keys hold ids only: `users/{userId}/`, `exports/users/{userId}/{exportId}.zip` and `tenants/{tenantId}/{module}/{fileId}`. The database keeps the key and never a link; a download link works for 5 minutes. `.cloudflare/` holds the buckets and a lifecycle rule that deletes `exports/` after 7 days.
+- The personal data export: a ZIP with one JSON file for each topic and a README, from each module's exporter. Ready for 7 days, with a notification and an email.
+- Account deletion: immediate, after a 6-digit code to the person's address, through the existing user deletion path, and the user's files with it. Refused for the last Owner of an organisation and for a system admin. A confirmation goes to the address the person had.
+- Email change: a 6-digit code to the new address; our record changes, the identity provider takes the address through the outbox, and the old address is told. A7 changes: we own the email, and the identity provider only signs people in.
+- One verification code mechanism for both, with its numbers in `apps/api/docs/ARCHITECTURE.md`, section 6.
+- The audit operations `user.data_export_requested`, `user.data_export_downloaded`, `user.deletion_requested` and `user.email_changed`.
+
 ## 5. Step 37: Organisation pages
 
-Status: todo.
+Status: todo. It has two parts.
 
+37a, the web's organisation pages:
+
+- The pages before sign-in: choose an organisation, a blocked organisation, a blocked account, a refused join and an ended invitation.
+- The stale mentions of "Settings › Notifications" go.
 - General, Members, Roles and Activity log in the new design.
 - A CSV export of Members and of the Activity log. There is no import.
 - HTML emails in three languages, from "Starter <no-reply@starter.example>".
 - The words: "Address" (never "slug"), "Seats", "Activity log" and "See the activity log".
 - The organisation's Owners also receive tenant.suspended, tenant.reactivated, tenant.closed, tenant.reopened and tenant.purged, by bell and email, with their own texts in three languages.
-- The pages move to Pill and Label, and Status and Tag are deleted.
+- The pages move to Pill and Label.
+
+37b, the platform's pages:
+
+- Organisations, Users, Plans, Activity log and System admins in the new design.
+- At its end, Status, Tag and SubNav are deleted.
 
 ## 6. Step 38: Terms of use
 

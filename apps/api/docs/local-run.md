@@ -28,6 +28,14 @@ psql "postgresql://postgres:<superuser password>@localhost:5432/app" \
   -f apps/api/db/bootstrap.sql
 ```
 
+Start the file store, SeaweedFS's S3 API, in a container, with the local key of `apps/api/storage/s3-identities.json`, which has no secret value (`ARCHITECTURE.md`, section 7, "File storage"). Then create its bucket once:
+
+```sh
+docker run -d --name api-storage -p 8333:8333 -v "$PWD/apps/api/storage/s3-identities.json:/etc/seaweedfs/s3-identities.json:ro" \
+  "$(cat apps/api/storage/seaweedfs-image)" server -s3 -s3.config=/etc/seaweedfs/s3-identities.json -master.volumeSizeLimitMB=64
+AWS_ACCESS_KEY_ID=local-access-key AWS_SECRET_ACCESS_KEY=local-secret-key aws --endpoint-url http://localhost:8333 s3 mb s3://starter-local
+```
+
 ## 3. Build once
 
 ```sh
@@ -73,6 +81,10 @@ ControlPlane__Clerk__SecretKey=<Backend API secret key>
 ControlPlane__Invitations__AcceptUrl=https://app.localhost/invitations/accept
 Notifications__Links__WebUrl=https://app.localhost/
 Notifications__Links__PlatformUrl=https://platform.localhost/
+Host__Storage__Endpoint=http://localhost:8333
+Host__Storage__Bucket=starter-local
+Host__Storage__AccessKeyId=local-access-key
+Host__Storage__SecretAccessKey=local-secret-key
 ASPNETCORE_URLS=http://127.0.0.1:5080   # the public port; each web process on the machine needs its own
 Host__ManagementPort=5180               # the health endpoints; each process on the machine needs its own
 ```

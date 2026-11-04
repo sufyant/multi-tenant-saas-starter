@@ -286,7 +286,11 @@
         "suspended": "<actor></actor> suspended this organisation."
       },
       "user": {
+        "data_export_downloaded": "<actor></actor> downloaded a copy of their data.",
+        "data_export_requested": "<actor></actor> asked for a copy of their data.",
         "deleted": "<actor></actor> deleted the account of <target></target>.",
+        "deletion_requested": "<actor></actor> asked to delete their account.",
+        "email_changed": "<actor></actor> changed their email address.",
         "email_preferences_changed": "<actor></actor> changed their preferences.",
         "preferences_changed": "<actor></actor> changed their preferences.",
         "reactivated": "<actor></actor> reactivated the account of <target></target>.",
