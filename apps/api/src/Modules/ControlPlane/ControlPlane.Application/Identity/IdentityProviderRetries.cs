@@ -1,6 +1,7 @@
 using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
+using ControlPlane.Application.Users.ReplaceIdentityEmail;
 using JasperFx;
 using JasperFx.CodeGeneration;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,7 @@ namespace ControlPlane.Application.Identity;
 // or more is a scheduled retry, so the message holds no worker meanwhile, and a shorter pause is waited out where the handler runs.
 internal sealed class IdentityProviderRetries(IOptions<IdentityProviderOptions> settings) : IWolverineExtension, IHandlerPolicy
 {
-    private static readonly Type[] Calls = [typeof(OpenSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand)];
+    private static readonly Type[] Calls = [typeof(OpenSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand), typeof(ReplaceIdentityEmailCommand)];
 
     public void Configure(WolverineOptions options) => options.Policies.Add(this);
 

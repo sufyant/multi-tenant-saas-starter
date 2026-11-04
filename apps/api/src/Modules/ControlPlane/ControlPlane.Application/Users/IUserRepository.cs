@@ -1,5 +1,7 @@
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Users;
+using ControlPlane.Domain.VerificationCodes;
 
 namespace ControlPlane.Application.Users;
 
@@ -71,6 +73,32 @@ public interface IUserRepository
     /// transaction then declares no tenant (R4).
     /// </summary>
     internal Task<IReadOnlyList<Guid>> ListJoinedTenantsAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Whether another user keeps this address; a deleted user keeps none (A8). It first locks the address for the rest of the transaction,
+    /// so two users who take the same address run one after the other.
+    /// </summary>
+    internal Task<bool> IsEmailTakenAsync(EmailAddress email, Guid exceptUserId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The user's latest verification code of the purpose, locked for the rest of the transaction; none when the user has none. It declares
+    /// the user in the transaction (R11), so the own_verification_codes policy decides what is seen.
+    /// </summary>
+    internal Task<VerificationCode?> FindLatestVerificationCodeForUpdateAsync(Guid userId, VerificationCodePurpose purpose, CancellationToken cancellationToken);
+
+    /// <summary>How many codes of the purpose the user got since the moment. It declares the user in the transaction (R11).</summary>
+    internal Task<int> CountVerificationCodesSinceAsync(Guid userId, VerificationCodePurpose purpose, DateTimeOffset since, CancellationToken cancellationToken);
+
+    /// <summary>Deletes the user's codes older than the moment, of every purpose. It declares the user in the transaction (R11).</summary>
+    internal Task DeleteVerificationCodesBeforeAsync(Guid userId, DateTimeOffset before, CancellationToken cancellationToken);
+
+    internal void AddVerificationCode(VerificationCode code);
+
+    /// <summary>
+    /// Deletes the rows that belong to the user besides the user's own: their verification codes, which keep an address, and the records of
+    /// their stored files, whose files the deletion deletes after the commit (A8). It declares the user in the transaction (R11).
+    /// </summary>
+    internal Task DeleteOwnRecordsAsync(Guid userId, CancellationToken cancellationToken);
 
     internal void Add(User user);
 

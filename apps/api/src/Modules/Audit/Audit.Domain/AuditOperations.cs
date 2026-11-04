@@ -56,7 +56,15 @@ public static class AuditOperations
 
     public const string TenantSuspended = "tenant.suspended";
 
+    public const string UserDataExportDownloaded = "user.data_export_downloaded";
+
+    public const string UserDataExportRequested = "user.data_export_requested";
+
     public const string UserDeleted = "user.deleted";
+
+    public const string UserDeletionRequested = "user.deletion_requested";
+
+    public const string UserEmailChanged = "user.email_changed";
 
     /// <summary>
     /// Retired in step 35: the notification preferences are gone, so no command writes it. Stored entries keep it, and the read names their

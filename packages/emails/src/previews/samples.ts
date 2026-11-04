@@ -1,5 +1,6 @@
 import { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
+import type { AccountEmailProps } from "../templates/account";
 import type { DeletionWarningProps } from "../templates/deletion-warning";
 import type { InvitationProps } from "../templates/invitation";
 import type { NotificationProps } from "../templates/notification";
@@ -75,3 +76,19 @@ export const notification = {
       "You got this email because your access to an organisation changed.",
   },
 } satisfies Record<string, NotificationProps>;
+
+export const account = {
+  emailChangeCode: {
+    language: Language.En,
+    kind: "emailChangeCode",
+    code: "381906",
+  },
+  deletionCode: { language: Language.En, kind: "deletionCode", code: "381906" },
+  emailChanged: {
+    language: Language.En,
+    kind: "emailChanged",
+    newEmail: "a***@northwind-traders.example",
+    supportUrl: brand.supportUrl,
+  },
+  accountDeleted: { language: Language.En, kind: "accountDeleted" },
+} satisfies Record<string, AccountEmailProps>;

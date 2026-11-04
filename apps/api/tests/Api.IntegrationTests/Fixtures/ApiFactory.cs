@@ -150,7 +150,7 @@ internal sealed class ApiFactory(
             configuration[$"Host:Authentication:AuthorizedParties:{index}"] = party;
         }
 
-        foreach (var (key, value) in ShortRetries.Concat(ports?.Settings ?? new Dictionary<string, string?>()).Concat(settings ?? new Dictionary<string, string?>()))
+        foreach (var (key, value) in ShortRetries.Concat(ObjectStorage.Settings).Concat(ports?.Settings ?? new Dictionary<string, string?>()).Concat(settings ?? new Dictionary<string, string?>()))
         {
             configuration[key] = value;
         }

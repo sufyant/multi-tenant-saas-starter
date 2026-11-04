@@ -41,11 +41,11 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
                 
                 // The actual message execution
-                var outgoing2 = await Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, auditLog, cancellation).ConfigureAwait(false);
+                var outgoing3 = await Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
+                await context.EnqueueCascadingAsync(outgoing3).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

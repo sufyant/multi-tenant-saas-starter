@@ -12,6 +12,7 @@ using Api.Observability;
 using Api.Persistence;
 using Api.RateLimiting;
 using Api.Routing;
+using Api.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using SharedKernel;
@@ -54,6 +55,7 @@ internal static class ApiPipeline
         builder.AddObservability();
         builder.AddCaching();
         builder.AddLiveChannel(role);
+        builder.Services.AddFileStorage();
         builder.AddAccess();
         builder.Services.AddErrorHandling();
         builder.AddMessaging(host, role, openApiBuild, handlerAssemblies);

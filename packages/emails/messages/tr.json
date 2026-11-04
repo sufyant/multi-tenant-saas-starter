@@ -16,6 +16,36 @@
     "contact": "Bu tarihten önce yeniden açmak için <link>bize ulaşın</link>.",
     "footer": "Bu e-postayı, {tenantName} kuruluşunun Sahibi olduğunuz için aldınız."
   },
+  "account": {
+    "emailChangeCode": {
+      "subject": "E-posta adresinizi değiştirme kodunuz",
+      "preheader": "10 dakika geçerlidir.",
+      "heading": "Yeni e-posta adresinizi doğrulayın",
+      "body": "Bu kodu Hesap ve güvenlik sayfasına girin. 10 dakika geçerlidir.",
+      "footer": "Bu e-postayı, biri bu adresi hesabında kullanmak istediği için aldınız. Bu siz değilseniz e-postayı yok sayabilirsiniz."
+    },
+    "deletionCode": {
+      "subject": "Hesabınızı silme kodunuz",
+      "preheader": "10 dakika geçerlidir. Bu işlem geri alınamaz.",
+      "heading": "Hesabınızın silinmesini onaylayın",
+      "body": "Hesabınızı silmek için bu kodu Hesap ve güvenlik sayfasına girin. 10 dakika geçerlidir. Bu işlem geri alınamaz.",
+      "footer": "Bu e-postayı, biri bu adresin hesabını silmek istediği için aldınız. Bu siz değilseniz Hesap ve güvenlik sayfasında diğer tüm oturumlardan çıkış yapın."
+    },
+    "emailChanged": {
+      "subject": "E-posta adresiniz değiştirildi",
+      "preheader": "Bu siz değilseniz bize ulaşın.",
+      "heading": "E-posta adresiniz değiştirildi",
+      "body": "E-posta adresiniz {newEmail} olarak değiştirildi. Bu siz değilseniz <link>bize ulaşın</link>.",
+      "footer": "Bu e-postayı, bu adres hesabınızın e-posta adresi olduğu için aldınız."
+    },
+    "accountDeleted": {
+      "subject": "Hesabınız silindi",
+      "preheader": "Geri dönmek için yeni bir davet gerekir.",
+      "heading": "Hesabınız silindi",
+      "body": "Hesabınız ve tüm kuruluşlara erişiminiz silindi. Etkinliğiniz “Silinmiş kullanıcı” adıyla kalır. Geri dönmek için yeni bir davet gerekir.",
+      "footer": "Bu e-postayı, bu adresin hesabı silindiği için aldınız."
+    }
+  },
   "roles": {
     "owner": "Sahip",
     "admin": "Yönetici",
@@ -111,6 +141,11 @@
       "title": "{tenantName} silindi",
       "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
       "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+    },
+    "user.data_export_ready": {
+      "title": "Veri dosyanız hazır",
+      "body": "{expiresAt} tarihine kadar Hesap ve güvenlik sayfasından indirebilirsiniz. İndirmek için oturum açmış olmanız gerekir.",
+      "footer": "Bu e-postayı, verilerinizin bir kopyasını istediğiniz için aldınız."
     }
   },
   "notificationWords": {

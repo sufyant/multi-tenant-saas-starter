@@ -25,4 +25,8 @@ public enum NotificationLinkResponseKind
     /// <summary>The tenant's page in the platform.</summary>
     [JsonStringEnumMemberName("platform_tenant")]
     PlatformTenant,
+
+    /// <summary>The person's Account and security, without a tenant.</summary>
+    [JsonStringEnumMemberName("account_security")]
+    AccountSecurity,
 }

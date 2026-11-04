@@ -19,6 +19,12 @@ public interface IIdentityProvider
     /// <summary>The email addresses the user has verified.</summary>
     Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Replaces the user's addresses with this one, verified and primary, because ControlPlane owns the address (A7). A linked Google or
+    /// Microsoft account stays a sign-in method. An address the user has already is kept, so a second call is done.
+    /// </summary>
+    Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken);
+
     /// <summary>Deletes the user. A user the provider does not know is done.</summary>
     Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken);
 }

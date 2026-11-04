@@ -1,0 +1,9 @@
+Starter
+
+Confirm your new email address
+
+Enter this code in Account and security. It works for 10 minutes.
+
+{{code}}
+
+You received this because someone asked to use this address for their account. If it wasn’t you, you can ignore it.

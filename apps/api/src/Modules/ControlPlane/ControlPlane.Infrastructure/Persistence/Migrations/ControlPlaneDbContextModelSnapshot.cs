@@ -65,6 +65,82 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Files.StoredFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("module");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("object_key");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("purpose");
+
+                    b.Property<DateTimeOffset?>("ReadyAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ready_at");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stored_files");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stored_files_object_key");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("ix_stored_files_user_id_created_at");
+
+                    b.ToTable("stored_files", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_stored_files_purpose", "purpose IN ('DataExport')");
+
+                            t.HasCheckConstraint("ck_stored_files_ready_has_size_and_expiry", "status = 'Preparing' OR status = 'Failed' OR (size_bytes IS NOT NULL AND ready_at IS NOT NULL AND expires_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_stored_files_status", "status IN ('Preparing', 'Ready', 'Failed', 'Expired')");
+                        });
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.Property<bool>("Id")
@@ -696,6 +772,75 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.VerificationCodes.VerificationCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<byte[]>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("NewEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("new_email");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("purpose");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_verification_codes");
+
+                    b.HasIndex("UserId", "Purpose", "CreatedAt")
+                        .HasDatabaseName("ix_verification_codes_user_id_purpose_created_at");
+
+                    b.ToTable("verification_codes", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_verification_codes_attempts", "attempts >= 0");
+
+                            t.HasCheckConstraint("ck_verification_codes_new_email", "(purpose = 'EmailChange') = (new_email IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_verification_codes_purpose", "purpose IN ('EmailChange', 'AccountDeletion')");
+                        });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Files.StoredFile", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stored_files_users_user_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Plans.Plan", null)
@@ -846,6 +991,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SuspendedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_users_users_suspended_by");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.VerificationCodes.VerificationCode", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_verification_codes_users_user_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Plans.Plan", b =>

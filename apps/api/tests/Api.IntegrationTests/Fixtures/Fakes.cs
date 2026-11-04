@@ -26,6 +26,9 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
 
     public ConcurrentQueue<string> Deleted { get; } = [];
 
+    // Every change of a user's address the application asked for: the user and the new address.
+    public ConcurrentQueue<(string ExternalUserId, string Email)> Replaced { get; } = [];
+
     // How many calls the application made; a refused one counts too.
     public int Calls => _calls;
 
@@ -75,6 +78,15 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
         }
 
         return _accounts.GetValueOrDefault(externalUserId, []);
+    }
+
+    // Clerk then knows the account by its new address only, as it verified it.
+    public Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken)
+    {
+        Answer();
+        Replaced.Enqueue((externalUserId, email));
+        _accounts[externalUserId] = [email];
+        return Task.CompletedTask;
     }
 
     public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken)

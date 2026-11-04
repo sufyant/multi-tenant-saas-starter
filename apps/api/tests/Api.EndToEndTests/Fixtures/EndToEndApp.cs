@@ -33,6 +33,12 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
         builder.UseSetting("Notifications:Links:WebUrl", "https://app.test/");
         builder.UseSetting("Notifications:Links:PlatformUrl", "https://platform.test/");
         builder.UseSetting("ControlPlane:Clerk:SecretKey", "sk_test_unused");
+
+        // The scenario keeps no file, so the file store is never called; its settings are required all the same.
+        builder.UseSetting("Host:Storage:Endpoint", "http://storage.test/");
+        builder.UseSetting("Host:Storage:Bucket", "starter-test");
+        builder.UseSetting("Host:Storage:AccessKeyId", "unused");
+        builder.UseSetting("Host:Storage:SecretAccessKey", "unused");
         builder.UseSetting("ControlPlane:SystemAdmins:RootEmails:0", RootEmail);
         builder.UseSetting("Host:Authentication:Issuer", TestTokens.Issuer);
         builder.UseSetting("Host:Authentication:AuthorizedParties:0", TestTokens.AuthorizedParty);

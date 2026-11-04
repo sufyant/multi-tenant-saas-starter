@@ -51,6 +51,34 @@ internal sealed class ClerkIdentityProvider(HttpClient http, TimeProvider time) 
         return user!.VerifiedEmails;
     }
 
+    // Clerk's addresses of the user become the one address ControlPlane keeps (A7): it is added verified and primary, or made so when a
+    // retried call added it already, and every other address is deleted. A linked Google or Microsoft account is an external account, not
+    // an address, so it stays a sign-in method. An address already gone answers 404, which is done.
+    public async Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken)
+    {
+        var user = await http.GetFromJsonAsync<ClerkUser>($"users/{Uri.EscapeDataString(externalUserId)}", cancellationToken);
+        var existing = user!.EmailAddresses.FirstOrDefault(address => string.Equals(address.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
+        if (existing is { Id: { } id })
+        {
+            using var made = await http.PatchAsJsonAsync($"email_addresses/{Uri.EscapeDataString(id)}", new ClerkPrimaryRequest(true, true), cancellationToken);
+            made.EnsureSuccessStatusCode();
+        }
+        else
+        {
+            using var added = await http.PostAsJsonAsync("email_addresses", new ClerkEmailAddressRequest(externalUserId, email, true, true), cancellationToken);
+            added.EnsureSuccessStatusCode();
+        }
+
+        foreach (var other in user.EmailAddresses.Where(address => address != existing && address.Id is not null))
+        {
+            using var deleted = await http.DeleteAsync($"email_addresses/{Uri.EscapeDataString(other.Id!)}", cancellationToken);
+            if (deleted.StatusCode != HttpStatusCode.NotFound)
+            {
+                deleted.EnsureSuccessStatusCode();
+            }
+        }
+    }
+
     // A user already gone answers 404: a retried deletion is done.
     public async Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken)
     {
@@ -67,6 +95,16 @@ internal sealed class ClerkIdentityProvider(HttpClient http, TimeProvider time) 
         [property: JsonPropertyName("notify")] bool Notify,
         [property: JsonPropertyName("ignore_existing")] bool IgnoreExisting,
         [property: JsonPropertyName("expires_in_days")] int ExpiresInDays);
+
+    private sealed record ClerkEmailAddressRequest(
+        [property: JsonPropertyName("user_id")] string UserId,
+        [property: JsonPropertyName("email_address")] string EmailAddress,
+        [property: JsonPropertyName("verified")] bool Verified,
+        [property: JsonPropertyName("primary")] bool Primary);
+
+    private sealed record ClerkPrimaryRequest(
+        [property: JsonPropertyName("verified")] bool Verified,
+        [property: JsonPropertyName("primary")] bool Primary);
 
     private sealed record ClerkInvitation([property: JsonPropertyName("id")] string Id, [property: JsonPropertyName("url")] string Url);
 }

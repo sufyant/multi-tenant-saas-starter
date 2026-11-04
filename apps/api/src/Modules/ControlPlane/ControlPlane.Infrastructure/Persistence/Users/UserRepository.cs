@@ -3,7 +3,9 @@ using ControlPlane.Domain;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Users;
+using ControlPlane.Domain.VerificationCodes;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.Users;
@@ -114,6 +116,47 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
             .Distinct()
             .Order()
             .ToListAsync(cancellationToken);
+    }
+
+    // The lock of the address, for the rest of the transaction, orders two changes to the same address by two users: the second waits for
+    // the first to commit, then finds the address taken (Kleppmann, Chapter 7, "Write Skew and Phantoms"). A user's own lock orders only
+    // that user's changes.
+    async Task<bool> IUserRepository.IsEmailTakenAsync(EmailAddress email, Guid exceptUserId, CancellationToken cancellationToken)
+    {
+        await controlPlane.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({"email:" + email.Value}, 0))", cancellationToken);
+        return await controlPlane.Users.AnyAsync(user => user.Email == email.Value && user.Id != exceptUserId, cancellationToken);
+    }
+
+    async Task<VerificationCode?> IUserRepository.FindLatestVerificationCodeForUpdateAsync(
+        Guid userId, VerificationCodePurpose purpose, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        var found = await controlPlane.VerificationCodes
+            .FromSql($"SELECT * FROM control_plane.verification_codes WHERE user_id = {userId} AND purpose = {purpose.ToString()} ORDER BY created_at DESC, id DESC LIMIT 1 FOR UPDATE")
+            .ToListAsync(cancellationToken);
+        return found.SingleOrDefault();
+    }
+
+    async Task<int> IUserRepository.CountVerificationCodesSinceAsync(
+        Guid userId, VerificationCodePurpose purpose, DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        return await controlPlane.VerificationCodes.CountAsync(code => code.UserId == userId && code.Purpose == purpose && code.CreatedAt >= since, cancellationToken);
+    }
+
+    async Task IUserRepository.DeleteVerificationCodesBeforeAsync(Guid userId, DateTimeOffset before, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        await controlPlane.VerificationCodes.Where(code => code.UserId == userId && code.CreatedAt < before).ExecuteDeleteAsync(cancellationToken);
+    }
+
+    void IUserRepository.AddVerificationCode(VerificationCode code) => controlPlane.VerificationCodes.Add(code);
+
+    async Task IUserRepository.DeleteOwnRecordsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        await controlPlane.VerificationCodes.Where(code => code.UserId == userId).ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.StoredFiles.Where(file => file.UserId == userId).ExecuteDeleteAsync(cancellationToken);
     }
 
     void IUserRepository.Add(User user) => controlPlane.Users.Add(user);

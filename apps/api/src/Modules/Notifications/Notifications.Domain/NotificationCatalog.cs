@@ -38,10 +38,17 @@ public static class NotificationCatalog
 
     public const string TenantSuspended = "tenant.suspended";
 
+    /// <summary>
+    /// The second exception of U9: the export's completion is the worker's, not a command, so it writes no audit entry and has no operation
+    /// to take its name from.
+    /// </summary>
+    public const string UserDataExportReady = "user.data_export_ready";
+
     /// <summary>The types whose name is no audit operation, each with its reason (U9).</summary>
     public static readonly IReadOnlyDictionary<string, string> NamedApart = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
+        [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
     };
 
     /// <summary>Every type, by its name.</summary>
@@ -124,6 +131,15 @@ public static class NotificationCatalog
             Organisations,
             WebAndEmail(),
             [Tenant()]),
+
+        // A person's data is ready to download: the person may not open the app soon, so the email tells them too (U5). It leads to Account
+        // and security, never to the file.
+        new(
+            UserDataExportReady,
+            NotificationBell.Personal,
+            NotificationLinkKind.AccountSecurity,
+            WebAndEmail(),
+            [new("expiresAt", NotificationValueKind.Date)]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
     // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
