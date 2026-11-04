@@ -26,7 +26,7 @@ pnpm --filter @repo/web build
 | `nuqs` | Filters, tabs, paging and sort in the URL (F9) | MIT |
 | `react-hook-form`, `@hookform/resolvers` | The new person's names on the accept page and the invite dialog, with the generated Zod schemas (F11). The maintainer's decision in step 21b | MIT |
 | `next-themes` | Light, dark and system (F24) | MIT |
-| Instrument Sans, JetBrains Mono, Noto Sans Arabic | The design's fonts, which `next/font/google` downloads at build time and serves from this origin; no package (F19) | OFL-1.1 |
+| `@fontsource-variable/instrument-sans`, `@fontsource-variable/jetbrains-mono`, `@fontsource-variable/noto-sans-arabic` | The design's fonts. `next/font/local` loads their variable files, and the app serves them from its own origin (F19) | OFL-1.1 |
 | `@sentry/nextjs` | Error tracking: the errors of the browser and the server go to Better Stack, and the build uploads the source maps (F55). It brings `sentry`, the uploader, which runs in the build only | MIT; `sentry` is FSL-1.1-Apache-2.0, allowed by name in `.github/dependency-review-config.yml` (F38) |
 | `zod` | `src/env.ts` and the Zod error map (F7, F12) | MIT |
 | `vitest`, `jsdom`, `@vitejs/plugin-react`, `vite-tsconfig-paths` | The unit tests (development only) | MIT |
