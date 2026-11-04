@@ -11,7 +11,12 @@ export default function TenantNotFound() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   return (
     <OrganisationShell slug={tenantSlug} notFound>
-      <NotFound kind="page" href={`/${tenantSlug}`} linkComponent={Link} />
+      <NotFound
+        kind="page"
+        size="page"
+        href={`/${tenantSlug}`}
+        linkComponent={Link}
+      />
     </OrganisationShell>
   );
 }
