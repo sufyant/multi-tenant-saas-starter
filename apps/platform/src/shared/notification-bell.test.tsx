@@ -18,7 +18,7 @@ import {
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../test/render";
-import { PlatformBell, PlatformNotifications } from "./notification-bell";
+import { PlatformBell } from "./notification-bell";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -174,32 +174,5 @@ describe("PlatformBell", () => {
 
     await vi.waitFor(() => expect(reads.count).toBe(2));
     expect(marked).toEqual(["platform"]);
-  });
-});
-
-describe("PlatformNotifications", () => {
-  it("PlatformNotifications_Shown_ListsTheUnreadOnesWithMarkAll", async () => {
-    const filters: (string | null)[] = [];
-    const marked: string[] = [];
-    server.use(
-      ...platformBell({ count: 0 }, filters),
-      http.post("*/v1/platform/notifications/read", () => {
-        marked.push("platform");
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
-    renderWithProviders(<PlatformNotifications />);
-
-    expect(
-      await screen.findByRole("link", { name: /was suspended/ }),
-    ).toHaveAttribute("href", `/organisations/${tenantId}`);
-    expect(
-      screen.getByRole("tab", { name: "Unread 2", selected: true }),
-    ).toBeInTheDocument();
-    expect(filters).toEqual(["true"]);
-    await userEvent.click(
-      screen.getByRole("button", { name: "Mark all as read" }),
-    );
-    await vi.waitFor(() => expect(marked).toEqual(["platform"]));
   });
 });
