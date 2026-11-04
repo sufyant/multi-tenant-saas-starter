@@ -65,7 +65,14 @@ const notAUserYet = (error: Error | null) =>
  * `apps/api/docs/flows/system-admins.md`). So when GetMe answers 404 or a user who is no system admin, the shell asks the door
  * once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
  */
-export function PlatformShell({ children }: { children: ReactNode }) {
+export function PlatformShell({
+  notFound = false,
+  children,
+}: {
+  /** "Page not found" of an address that no page has: its own crumb, and no row of the menu is the current one (2.40). */
+  notFound?: boolean;
+  children: ReactNode;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -152,17 +159,21 @@ export function PlatformShell({ children }: { children: ReactNode }) {
   ];
   const inSettings = pathname.startsWith("/settings");
   const first = pathname.split("/")[1] ?? "";
-  const current = inSettings
-    ? (pathname.split("/")[2] ?? "")
-    : first === ""
-      ? "organisations"
-      : first === "organisations"
+  const current = notFound
+    ? ""
+    : inSettings
+      ? (pathname.split("/")[2] ?? "")
+      : first === ""
         ? "organisations"
-        : first;
+        : first === "organisations"
+          ? "organisations"
+          : first;
   const item = [...main, ...myAccount, ...platform].find(
     (entry) => entry.id === current,
   );
-  const pageName = item?.label ?? t("shell.settings");
+  const pageName = notFound
+    ? t("problems.notFoundTitle")
+    : (item?.label ?? t("shell.settings"));
   const userName = user.data && userNameOf(user.data, t("users.deletedUser"));
   const detail =
     current === "users" && userId

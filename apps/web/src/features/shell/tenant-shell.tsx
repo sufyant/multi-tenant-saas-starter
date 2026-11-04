@@ -20,7 +20,13 @@ import {
   useTabTitleText,
 } from "@repo/ui/components/app-shell";
 import { Banner } from "@repo/ui/components/banner";
-import { HomeIcon, SettingsIcon, UserIcon } from "@repo/ui/components/icon";
+import {
+  ArrowRightLeftIcon,
+  HomeIcon,
+  PlusIcon,
+  SettingsIcon,
+  UserIcon,
+} from "@repo/ui/components/icon";
 import { OrgSwitcher } from "@repo/ui/components/org-switcher";
 import { Pill } from "@repo/ui/components/pill";
 import { InlineSkeleton, Skeleton } from "@repo/ui/components/skeleton";
@@ -43,7 +49,14 @@ import { useRoleName } from "@/shared/use-role-name";
  * product's sections, Settings and the account menu; inside Settings the settings menu with My account and Organisation. A page
  * the person cannot open is not in their menu (F5).
  */
-export function TenantShell({ children }: { children: ReactNode }) {
+export function TenantShell({
+  notFound = false,
+  children,
+}: {
+  /** "Page not found" of an address under the organisation: its own crumb, and no row of the menu is the current one (2.40). */
+  notFound?: boolean;
+  children: ReactNode;
+}) {
   const t = useTranslations("problems");
   const roleName = useRoleName();
   const pathname = usePathname();
@@ -73,6 +86,7 @@ export function TenantShell({ children }: { children: ReactNode }) {
   return (
     <TenantFrame
       slug={tenant.slug}
+      notFound={notFound}
       known={{
         tenant,
         role,
@@ -101,14 +115,16 @@ export function TenantShell({ children }: { children: ReactNode }) {
  */
 export function OrganisationShell({
   slug,
+  notFound,
   children,
 }: {
   slug: string;
+  notFound?: boolean;
   children: ReactNode;
 }) {
   return (
     <TenantProvider slug={slug} pending={<PendingTenantShell slug={slug} />}>
-      <TenantShell>{children}</TenantShell>
+      <TenantShell notFound={notFound}>{children}</TenantShell>
     </TenantProvider>
   );
 }
@@ -145,10 +161,12 @@ type Known = {
 function TenantFrame({
   slug,
   known,
+  notFound = false,
   children,
 }: {
   slug: string;
   known?: Known;
+  notFound?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -201,11 +219,13 @@ function TenantFrame({
   const main = [home, ...productSections(base)];
   const inSettings = pathname.startsWith(settings);
   const page = pathname.slice(settings.length + 1).split("/")[0] ?? "";
-  const current = inSettings ? page : home.id;
+  const current = notFound ? "" : inSettings ? page : home.id;
   const currentItem = [...main, ...myAccount, ...organisation].find(
     (item) => item.id === current,
   );
-  const pageName = currentItem?.label ?? t("shell.settings");
+  const pageName = notFound
+    ? t("problems.notFoundTitle")
+    : (currentItem?.label ?? t("shell.settings"));
   const name = known?.tenant.name;
 
   const others = (tenants.data?.items ?? []).map((item) => ({
@@ -244,12 +264,20 @@ function TenantFrame({
               {
                 id: "invite",
                 label: t("shell.inviteMember"),
+                icon: PlusIcon,
                 href: `${settings}/members?invite=1`,
               },
             ]
           : []),
         ...(several
-          ? [{ id: "switch", label: t("shell.switchOrganisation"), href: "/" }]
+          ? [
+              {
+                id: "switch",
+                label: t("shell.switchOrganisation"),
+                icon: ArrowRightLeftIcon,
+                href: "/",
+              },
+            ]
           : []),
       ],
     },

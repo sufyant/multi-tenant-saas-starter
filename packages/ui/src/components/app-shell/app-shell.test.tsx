@@ -171,6 +171,15 @@ describe("AppShell", () => {
     );
   });
 
+  it("AppShell_Breadcrumb_SeparatesTheCrumbsWithTheDesignsMark", () => {
+    renderShell();
+    const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+
+    const separator = within(crumbs).getByText("›");
+    expect(separator).toHaveAttribute("aria-hidden", "true");
+    expect(separator.querySelector("svg")).not.toBeInTheDocument();
+  });
+
   it("AppShell_CommandK_OpensTheCommandMenuWithItsGroups", async () => {
     const onNavigate = renderShell();
 

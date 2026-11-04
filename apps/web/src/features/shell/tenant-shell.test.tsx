@@ -169,6 +169,29 @@ describe("TenantShell", () => {
     ]);
   });
 
+  it("TenantShell_NotFound_NamesThePageAndMarksNoRow", async () => {
+    route.pathname = "/northwind/an-old-link";
+    server.use(...answers(1));
+
+    renderWithProviders(
+      <TenantProvider slug="northwind" pending={null}>
+        <TenantShell notFound>Content</TenantShell>
+      </TenantProvider>,
+    );
+
+    await screen.findByText("Content");
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    ).getAllByRole("listitem");
+    expect(crumbs.map((crumb) => crumb.textContent)).toEqual([
+      "Northwind Traders",
+      "Page not found",
+    ]);
+    expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("TenantShell_InSettings_ShowsBackMyAccountAndThePagesTheRoleCanOpen", async () => {
     route.pathname = "/northwind/settings/members";
     server.use(...answers(1));
@@ -249,6 +272,38 @@ describe("TenantShell", () => {
     expect(
       within(dialog).queryByRole("option", { name: "Invite member" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("TenantShell_CommandMenu_DrawsAnIconBeforeEachAction", async () => {
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [
+            Permission.TenantMembersRead,
+            Permission.TenantInvitationsCreate,
+          ],
+        }),
+      ),
+      ...answers(2),
+    );
+    renderWithProviders(shell());
+    await screen.findByText("Content");
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Command menu" });
+
+    // The icon, then the check that every item has.
+    expect(
+      within(dialog)
+        .getByRole("option", { name: "Invite member" })
+        .querySelectorAll("svg"),
+    ).toHaveLength(2);
+    expect(
+      within(dialog)
+        .getByRole("option", { name: "Switch organisation" })
+        .querySelectorAll("svg"),
+    ).toHaveLength(2);
   });
 
   it("TenantShell_RoleChangesWhileOpen_SaysSoOnThePage", async () => {

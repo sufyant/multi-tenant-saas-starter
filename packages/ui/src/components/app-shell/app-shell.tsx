@@ -16,7 +16,6 @@ import { cn } from "../../lib/utils";
 import { Button } from "../button";
 import {
   ArrowLeftIcon,
-  ChevronRightIcon,
   Icon,
   type LucideIcon,
   MenuIcon,
@@ -359,15 +358,12 @@ export function AppShell({
                           .join("/")}
                       >
                         {index > 0 && (
+                          // The design's "›", a character: a right-to-left line draws it mirrored.
                           <li
                             aria-hidden="true"
                             className="text-muted-foreground"
                           >
-                            <Icon
-                              icon={ChevronRightIcon}
-                              size={14}
-                              directional
-                            />
+                            ›
                           </li>
                         )}
                         <li

@@ -48,7 +48,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0 tablet:max-w-130",
+          "top-22.5 translate-y-0 overflow-hidden rounded-xl! p-0 tablet:max-w-130",
           className,
         )}
       >

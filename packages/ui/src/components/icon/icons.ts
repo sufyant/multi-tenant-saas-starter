@@ -3,6 +3,7 @@
 export {
   ActivityIcon,
   ArrowLeftIcon,
+  ArrowRightLeftIcon,
   BellIcon,
   Building2 as BuildingIcon,
   CheckIcon,
@@ -31,6 +32,7 @@ export {
   PanelLeftOpenIcon,
   PlusIcon,
   SearchIcon,
+  SearchXIcon,
   SendIcon,
   SettingsIcon,
   ShieldCheckIcon,

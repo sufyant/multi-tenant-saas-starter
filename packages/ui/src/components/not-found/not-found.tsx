@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ElementType } from "react";
 import { Button } from "../button";
 import { EmptyState } from "../empty-state";
+import { SearchXIcon } from "../icon";
 
 export type NotFoundProps = {
   /**
@@ -28,8 +29,12 @@ export function NotFound({
 }: NotFoundProps) {
   const t = useTranslations("problems");
   const organisation = kind === "organisation";
+  const signedOut = kind === "signed-out";
+  // Inside the shell the screen has the search-x tile and a secondary button; signed out, the sign-in button is the page's one
+  // action (2.40 to 2.44).
   return (
     <EmptyState
+      icon={signedOut ? undefined : SearchXIcon}
       title={organisation ? t("orgNotFoundTitle") : t("notFoundTitle")}
       description={
         organisation
@@ -38,17 +43,17 @@ export function NotFound({
                 address: () => <bdi dir="ltr">{address}</bdi>,
               })
             : t("orgNotFoundLink")
-          : kind === "signed-out"
+          : signedOut
             ? t("notFoundSignedOut")
             : t("notFoundText")
       }
       action={
         <Button
-          variant="primary"
+          variant={signedOut ? "primary" : "secondary"}
           render={<Link href={href} />}
           nativeButton={false}
         >
-          {kind === "signed-out" ? t("signIn") : t("goHome")}
+          {signedOut ? t("signIn") : t("goHome")}
         </Button>
       }
     />
