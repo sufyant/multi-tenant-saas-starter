@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { ElementType } from "react";
 import { Button } from "../button";
-import { EmptyState } from "../empty-state";
+import { EmptyState, type EmptyStateProps } from "../empty-state";
 import { SearchXIcon } from "../icon";
 
 export type NotFoundProps = {
@@ -18,6 +18,8 @@ export type NotFoundProps = {
   href: string;
   /** The link element: Next.js's Link in the apps. */
   linkComponent?: ElementType;
+  /** page: 120 px below the top bar from bp-tablet, as the tenant web's frames draw it (2.40, 2.41); the platform's keep the list's. */
+  size?: EmptyStateProps["size"];
 };
 
 /** "Page not found" and "Organisation not found" in both apps (the Page not found screens): what happened and the one way on. */
@@ -26,6 +28,7 @@ export function NotFound({
   address,
   href,
   linkComponent: Link = "a",
+  size,
 }: NotFoundProps) {
   const t = useTranslations("problems");
   const organisation = kind === "organisation";
@@ -34,6 +37,7 @@ export function NotFound({
   // action (2.40 to 2.44).
   return (
     <EmptyState
+      size={size}
       icon={signedOut ? undefined : SearchXIcon}
       title={organisation ? t("orgNotFoundTitle") : t("notFoundTitle")}
       description={

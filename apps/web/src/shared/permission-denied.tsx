@@ -19,6 +19,7 @@ export function PermissionDenied({ page }: { page: string }) {
   return (
     <EmptyState
       kind="error"
+      size="page"
       title={t("permissionDenied.title", { page })}
       description={t("permissionDenied.text", {
         organisation: tenant.name,

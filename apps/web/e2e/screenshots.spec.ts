@@ -18,6 +18,7 @@ import {
   northwind,
   type Plan,
   pro,
+  roleChanged,
 } from "./api";
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/web/test-results/screenshots,
@@ -567,6 +568,38 @@ const blueHarbour = {
   status: MyTenantResponseStatus.Suspended,
 };
 
+/** The Notifications frames' list: two unread items of the last hour and one read item of yesterday. */
+const ago = (minutes: number) =>
+  new Date(Date.now() - minutes * 60_000).toISOString();
+const bellList = {
+  unread: 2,
+  items: [
+    {
+      ...roleChanged,
+      id: "0198f0a2-0000-7000-8000-0000000000a3",
+      title: "Omar Haddad accepted your invitation",
+      createdAt: ago(2),
+    },
+    { ...roleChanged, createdAt: ago(60) },
+    {
+      ...roleChanged,
+      id: "0198f0a2-0000-7000-8000-0000000000a4",
+      title: "The plan of Northwind Traders changed to Team",
+      createdAt: ago(24 * 60),
+      readAt: ago(60),
+    },
+  ],
+};
+const openBell = (page: Page) =>
+  page.getByRole("button", { name: /^Notifications/ }).click();
+/** On a phone the bell opens its full screen, which slides up after the frames the shot waits for: wait until it reaches the top. */
+const openBellFullScreen = async (page: Page) => {
+  await openBell(page);
+  await expect
+    .poll(async () => (await page.getByRole("dialog").boundingBox())?.y)
+    .toBeLessThanOrEqual(0);
+};
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -638,6 +671,37 @@ const shellShots: {
       page.getByRole("button", { name: /^Notifications/ }).click(),
   },
   {
+    file: "3.08-notifications-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
+    open: openBell,
+  },
+  {
+    file: "3.03-notifications-empty-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    open: openBell,
+  },
+  {
+    file: "3.16-notifications-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    mock: (page) => mockNotifications(page, bellList),
+    open: openBell,
+  },
+  {
+    file: "3.14-notifications-en-light-phone",
+    size: "phone",
+    mock: (page) => mockNotifications(page, bellList),
+    open: openBellFullScreen,
+  },
+  {
+    file: "3.15-notifications-empty-en-light-phone",
+    size: "phone",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    open: openBellFullScreen,
+  },
+  {
     file: "5-settings-members-en-light-desktop",
     size: "desktop",
     path: `${settings}/members`,
@@ -657,6 +721,17 @@ const shellShots: {
     file: "2.40-not-found-en-light-desktop",
     size: "desktop",
     path: `/${northwind.slug}/no-such-page`,
+  },
+  {
+    file: "2.43-not-found-en-light-phone",
+    size: "phone",
+    path: `/${northwind.slug}/no-such-page`,
+  },
+  {
+    file: "2.15-no-permission-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+    path: `${settings}/activity`,
   },
 ];
 

@@ -178,6 +178,35 @@ const shellShots: {
       page.getByRole("button", { name: /^Notifications/ }).click(),
   },
   {
+    file: "3.03-notifications-empty-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "3.08-notifications-en-light-phone",
+    size: "phone",
+    mock: mockNotifications,
+    // The full screen slides up after the frames the shot waits for: wait until it reaches the top.
+    open: async (page) => {
+      await page.getByRole("button", { name: /^Notifications/ }).click();
+      await expect
+        .poll(async () => (await page.getByRole("dialog").boundingBox())?.y)
+        .toBeLessThanOrEqual(0);
+    },
+  },
+  {
+    file: "2.22-not-found-en-light-desktop",
+    size: "desktop",
+    path: "/no-such-page",
+  },
+  {
+    file: "2.25-not-found-en-light-phone",
+    size: "phone",
+    path: "/no-such-page",
+  },
+  {
     file: "10-settings-en-light-desktop",
     size: "desktop",
     path: "/settings/system-admins",

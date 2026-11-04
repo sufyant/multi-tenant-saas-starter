@@ -23,10 +23,10 @@ const entry = (
 ): NotificationEntry => ({
   id,
   title,
-  body: `${title}: the body.`,
   createdAt: "2026-10-16T13:29:00Z",
   readAt,
   href: `/northwind/${id}`,
+  organisation: "Northwind Traders",
 });
 
 const joined = entry("a", "Deniz Arslan joined Northwind Traders");
@@ -70,6 +70,12 @@ function bell(props: Partial<NotificationBellProps> = {}) {
 /** The badge's text, or null without a badge. */
 const countOf = (button: HTMLElement) =>
   button.querySelector("[data-slot='bell-count']")?.textContent ?? null;
+
+/** The paragraph of a row whose whole text is `text`: the meta line, which puts the organisation and the time in one line. */
+const lineOf = (row: HTMLElement, text: string) =>
+  within(row).queryByText(
+    (_, element) => element?.tagName === "P" && element.textContent === text,
+  );
 
 const scrollOf = () =>
   screen
@@ -124,16 +130,22 @@ describe("NotificationBell", () => {
     expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 
-  it("NotificationBell_Items_ShowTheTitleTheBodyAndTheRelativeTime", () => {
+  it("NotificationBell_Items_ShowTheTitleAndOneLineOfOrganisationAndTime", () => {
     render(bell());
 
     const item = screen.getByRole("link", { name: /Deniz Arslan joined/ });
     const row = item.closest("li") as HTMLElement;
     expect(item).toHaveAttribute("href", "/northwind/a");
-    expect(
-      within(row).getByText(`${joined.title}: the body.`),
-    ).toBeInTheDocument();
-    expect(within(row).getByText("3 min ago")).toBeInTheDocument();
+    expect(lineOf(row, "Northwind Traders · 3 min ago")).toBeInTheDocument();
+  });
+
+  it("NotificationBell_ItemWithoutOrganisation_ShowsTheTimeAlone", () => {
+    render(bell({ list: loaded([{ ...joined, organisation: undefined }]) }));
+
+    const row = screen
+      .getByRole("link", { name: /Deniz Arslan joined/ })
+      .closest("li") as HTMLElement;
+    expect(lineOf(row, "3 min ago")).toBeInTheDocument();
   });
 
   it("NotificationBell_UnreadItem_SaysUnreadBesideTheMark", () => {
@@ -181,12 +193,20 @@ describe("NotificationBell", () => {
     expect(onMarkAll).toHaveBeenCalledOnce();
   });
 
-  it("NotificationBell_NothingUnread_HasNoMarkAll", () => {
+  it("NotificationBell_NothingUnread_DisablesMarkAll", () => {
     render(bell({ unread: 0 }));
 
     expect(
-      screen.queryByRole("button", { name: "Mark all as read" }),
-    ).toBeNull();
+      screen.getByRole("button", { name: "Mark all as read" }),
+    ).toBeDisabled();
+  });
+
+  it("NotificationBell_Loading_DisablesMarkAll", () => {
+    render(bell({ list: { status: "loading" } }));
+
+    expect(
+      screen.getByRole("button", { name: "Mark all as read" }),
+    ).toBeDisabled();
   });
 
   it("NotificationBell_MorePages_LoadsMore", async () => {
@@ -290,15 +310,26 @@ describe("NotificationBell", () => {
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
 
-  it("NotificationBell_Phone_OpensAFullScreenWithCloseAtTheStart", async () => {
+  it("NotificationBell_Phone_OpensAFullScreenWithClose", async () => {
     asAPhone();
     const onOpenChange = vi.fn();
     render(bell({ onOpenChange }));
 
     const screenDialog = screen.getByRole("dialog", { name: "Notifications" });
     const close = within(screenDialog).getByRole("button", { name: "Close" });
+    expect(close).toHaveTextContent("Close");
     await userEvent.click(close);
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("NotificationBell_PhoneEmpty_HasNoMarkAll", () => {
+    asAPhone();
+    render(bell({ unread: 0, list: loaded([]) }));
+
+    expect(screen.getByText("No notifications")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
   });
 
   // The full screen is Base UI's Dialog, which has no swipe to dismiss (Base UI's Drawer has one). A drag down the list scrolls it.

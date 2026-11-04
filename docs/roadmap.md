@@ -7,7 +7,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | Step | Name | Status |
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
-| 35 | Cleanup, the shell and the menu | done |
+| 35 | Cleanup, the shell and the menu | in progress |
 | 36 | Personal pages | todo |
 | 37 | Organisation pages | todo |
 | 38 | Terms of use | todo |
@@ -32,7 +32,7 @@ Status: done, but the handoff package is todo.
 
 ## 3. Step 35: Cleanup, the shell and the menu
 
-Status: done.
+Status: in progress.
 
 35-backend:
 
@@ -65,6 +65,12 @@ Status: done.
 - The bell's list for the design's Notifications popover. Each item answers `unread`, derived from `readAt`. The three list reads take the filter `unread`: `true` for the Unread tab, `false` for the read ones, with the same cursor (the maintainer's decision of 2026-11-04, after N7h and K5).
 - Each item answers its area ("Members", "Your access", "Organisation plan", "Organisations") in the reader's language, the person who acted, and the organisation's name. The area is a property of each type in the catalog, with its words in English, Turkish and Arabic. It is a display label only.
 - The platform's item writes the actor's name only, without "accepted" (the maintainer's decision of 2026-11-04).
+
+35-frontend-fix-2:
+
+- The notifications list as the design draws it, in both apps: each item is its title and one line of the organisation and the relative time, without the body. Its states: empty, loading, error, offline and the end of the list, and the phone's full screen. Mark all as read and marking one read on open stay. Done.
+- In the tenant web, "Page not found" and "You can't open this page" sit 120 px below the top bar (2.15, 2.40). The platform keeps its frames' 40 px (2.22). Done.
+- Then the frontend adds the Unread and All tabs, the area and the actor from 35-backend-2. The Unread tab lists only unread items (the maintainer's decision of 2026-11-04). Todo.
 
 ## 4. Step 36: Personal pages
 

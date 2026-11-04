@@ -54,3 +54,16 @@ test("Bell_LiveSignal_ChangesTheCountWithoutAReload", async ({ page }) => {
 
   await expect(bell(page, 2)).toBeVisible();
 });
+
+// 3.14: under bp-tablet the bell opens a full screen, from the top of the screen to its bottom.
+test("Bell_Phone_OpensAFullScreen", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await open(page);
+
+  await page.getByRole("button", { name: "Notifications, 1 unread" }).click();
+  const screen = page.getByRole("dialog", { name: "Notifications" });
+
+  await expect
+    .poll(async () => await screen.boundingBox())
+    .toMatchObject({ y: 0, height: 812 });
+});

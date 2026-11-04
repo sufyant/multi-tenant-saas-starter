@@ -3,7 +3,7 @@ import {
   type NotificationResponse,
   NotificationType,
 } from "@repo/api-client";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -75,6 +75,18 @@ describe("PlatformBell", () => {
     expect(
       await screen.findByRole("link", { name: /was suspended/ }),
     ).toHaveAttribute("href", `/organisations/${tenantId}`);
+  });
+
+  it("PlatformBell_Opened_NamesEachItemsOrganisation", async () => {
+    server.use(...platformBell());
+    renderWithProviders(<PlatformBell />);
+
+    await openBell();
+
+    const item = await screen.findByRole("link", { name: /was suspended/ });
+    expect(
+      within(item.closest("li") as HTMLElement).getByText("Northwind Traders"),
+    ).toBeInTheDocument();
   });
 
   it("PlatformBell_ItemOpened_MarksItReadAndFollowsItsLink", async () => {

@@ -14,10 +14,9 @@ import type { Problem } from "../../lib/use-failure-text";
 import { useOnline } from "../../lib/use-online";
 import { usePhone } from "../../lib/use-phone";
 import { cn } from "../../lib/utils";
-import { Banner } from "../banner";
 import { Button } from "../button";
 import { EmptyState } from "../empty-state";
-import { BellIcon, Icon, XIcon } from "../icon";
+import { BellIcon, CircleXIcon, Icon, WifiOffIcon } from "../icon";
 import { ListError } from "../list-error";
 import { Skeleton } from "../skeleton";
 import { Time } from "../time";
@@ -29,14 +28,17 @@ import {
 } from "../ui/popover";
 import { Sheet, SheetContent, SheetTitle } from "../ui/sheet";
 
-/** One notification as the bell shows it: the API's title and body, and the address that the app built from its link. */
+/**
+ * One notification as the bell shows it: the API's title, the address that the app built from its link, and the name of the
+ * organisation it is about when the app knows it. The body stays on the notification's page and in its email (F57).
+ */
 export type NotificationEntry = {
   id: string;
   title: string;
-  body: string;
   createdAt: string;
   readAt: string | null;
   href: string;
+  organisation?: string;
 };
 
 /** The list's read: waiting, failed, or its pages so far. */
@@ -84,8 +86,8 @@ const highlightMs = 2000;
 
 /**
  * The bell before the avatar and its list (the Notifications boards, `.st-bell` and `.st-notifs`): the unread count as a neutral
- * badge, a popover on a tablet and a desktop, a full screen on a phone. The list shows the API's title and body as they come, with
- * the relative time and an unread mark that is not colour alone. A new item never moves the list under a reader who has scrolled:
+ * badge, a popover on a tablet and a desktop, a full screen on a phone. The list shows the API's title as it comes, one line of the
+ * organisation and the relative time, and an unread mark that is not colour alone. A new item never moves the list under a reader who has scrolled:
  * "1 new" waits at the top; at the top it comes in first, highlighted. Both say so once in a polite live region.
  */
 export function NotificationBell(props: NotificationBellProps) {
@@ -166,23 +168,21 @@ export function NotificationBell(props: NotificationBellProps) {
         <Sheet open={open} onOpenChange={(next) => onOpenChange(next)}>
           <SheetContent
             side="bottom"
-            className="h-dvh gap-0 bg-background p-0 text-foreground"
+            // The sheet's bottom side sets its own height; the bell's full screen takes the whole screen (3.14).
+            className="gap-0 bg-background p-0 text-foreground data-[side=bottom]:h-dvh"
           >
             <NotificationPanel
               {...props}
+              phone
               title={
-                <SheetTitle className="text-body">
+                <SheetTitle className="text-section-title">
                   {t("notifications.title")}
                 </SheetTitle>
               }
               close={
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  aria-label={t("common.close")}
-                  icon={<Icon icon={XIcon} />}
-                  onClick={() => onOpenChange(false)}
-                />
+                <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                  {t("common.close")}
+                </Button>
               }
             />
           </SheetContent>
@@ -202,7 +202,7 @@ export function NotificationBell(props: NotificationBellProps) {
         side={row ? "inline-end" : "bottom"}
         align={row ? "start" : "end"}
         sideOffset={6}
-        className="max-h-[560px] w-95 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[10px] p-0"
+        className="max-h-[560px] w-95 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[10px] p-1"
       >
         <NotificationPanel
           {...props}
@@ -217,7 +217,11 @@ export function NotificationBell(props: NotificationBellProps) {
   );
 }
 
-/** The list's frame: the header, the offline banner, the items or their state, and the foot. */
+/**
+ * The list's frame (3.01 to 3.08, 3.14, 3.15): the header with Mark all as read, the offline row, the items or their state, and
+ * the foot. A popover keeps Mark all in its header, disabled while it has nothing to do; the phone's full screen has Close in its
+ * header and Mark all on a row of its own above the items.
+ */
 function NotificationPanel({
   unread,
   list,
@@ -229,41 +233,61 @@ function NotificationPanel({
   now,
   title,
   close,
-}: NotificationBellProps & { title: ReactNode; close?: ReactNode }) {
+  phone = false,
+}: NotificationBellProps & {
+  title: ReactNode;
+  close?: ReactNode;
+  phone?: boolean;
+}) {
   const t = useTranslations("notifications");
   const online = useOnline();
   const scroll = useRef<HTMLDivElement>(null);
   const items = list.status === "success" ? list.items : undefined;
   const arrivals = useArrivals(items, scroll);
   const shown = items?.filter((entry) => !arrivals.held.includes(entry.id));
+  const markAll = (
+    <Button
+      variant="ghost"
+      disabled={!online || markingAll || !unread || !items}
+      onClick={onMarkAll}
+    >
+      {t("markAll")}
+    </Button>
+  );
 
   return (
     <div className="flex max-h-[inherit] min-h-0 flex-1 flex-col">
-      <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-border ps-4 pe-2">
-        {close}
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-between gap-2 border-b border-border",
+          phone ? "px-4 py-2" : "ps-2.5 pt-1 pb-1.5",
+        )}
+      >
         <div className="min-w-0 flex-1">{title}</div>
-        {unread ? (
-          <Button
-            variant="ghost"
-            disabled={!online || markingAll}
-            onClick={onMarkAll}
-          >
-            {t("markAll")}
-          </Button>
-        ) : null}
+        {phone ? close : markAll}
       </div>
-      {!online && (
-        <div className="mx-3 mt-3 mb-1">
-          <Banner tone="warning" title={t("offlineTitle")}>
-            {t("offlineText")}
-          </Banner>
+      {phone && items && items.length > 0 && (
+        <div className="flex h-11 shrink-0 items-center justify-end ps-4 pe-2">
+          {markAll}
         </div>
       )}
       <div
         ref={scroll}
         data-slot="notification-scroll"
-        className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        className={cn(
+          "relative flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain",
+          phone ? "px-2" : "py-1",
+        )}
       >
+        {!online && (
+          <div className="flex shrink-0 gap-2 rounded-md bg-muted px-2.5 py-2 text-small">
+            <Icon icon={WifiOffIcon} size={16} className="mt-px shrink-0" />
+            <div className="min-w-0">
+              <p className="font-medium">{t("offlineTitle")}</p>
+              <p className="text-muted-foreground">{t("offlineText")}</p>
+            </div>
+          </div>
+        )}
         {arrivals.held.length > 0 && (
           <div className="sticky top-2 z-10 flex h-0 justify-center overflow-visible">
             <Button className="shadow-md" onClick={arrivals.release}>
@@ -272,27 +296,28 @@ function NotificationPanel({
           </div>
         )}
         {list.status === "loading" && (
-          <div className="px-4 pt-2 pb-4">
-            <Skeleton label={t("loading")} />
-          </div>
+          <Skeleton rows={4} shape="lines" label={t("loading")} />
         )}
         {list.status === "error" && (
-          <div className="px-4 pt-2 pb-4">
-            <ListError
-              title={t("errorTitle")}
-              problem={list.problem}
-              at={list.at}
-              onRetry={list.onRetry}
-            />
-          </div>
+          <ListError
+            size="compact"
+            icon={CircleXIcon}
+            title={t("errorTitle")}
+            problem={list.problem}
+            at={list.at}
+            onRetry={list.onRetry}
+          />
         )}
         {shown?.length === 0 && (
-          <div className="px-4 pt-2 pb-4">
-            <EmptyState title={t("emptyTitle")} description={t("emptyText")} />
-          </div>
+          <EmptyState
+            size="compact"
+            icon={BellIcon}
+            title={t("emptyTitle")}
+            description={t("emptyText")}
+          />
         )}
         {shown && shown.length > 0 && (
-          <ul aria-label={t("title")} className="flex flex-col gap-0.5 p-1">
+          <ul aria-label={t("title")} className="flex flex-col gap-0.5">
             {shown.map((entry) => (
               <Item
                 key={entry.id}
@@ -310,21 +335,24 @@ function NotificationPanel({
           {arrivals.announced}
         </p>
       </div>
-      {list.status === "success" && list.items.length > 0 && (
-        <div className="shrink-0 border-t border-border px-4 py-3 text-center">
-          {list.hasMore ? (
-            <Button
-              className="w-full"
-              disabled={list.loadingMore}
-              onClick={list.onLoadMore}
-            >
-              {t("more")}
-            </Button>
-          ) : (
-            <p className="text-small text-muted-foreground">{t("end")}</p>
-          )}
+      {!phone || (items && items.length > 0) ? (
+        <div className="flex min-h-5.5 shrink-0 items-center border-t border-border ps-2.5 pe-1 pt-1">
+          {items && items.length > 0 && list.status === "success" ? (
+            list.hasMore ? (
+              <Button
+                variant="ghost"
+                className="-ms-3"
+                disabled={list.loadingMore}
+                onClick={list.onLoadMore}
+              >
+                {t("more")}
+              </Button>
+            ) : (
+              <p className="text-small text-muted-foreground">{t("end")}</p>
+            )
+          ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -358,7 +386,7 @@ function Item({
     <li
       data-fresh={fresh || undefined}
       className={cn(
-        "relative grid grid-cols-[8px_minmax(0,1fr)] gap-x-2.5 rounded-md px-3 py-2.5 transition-colors hover:bg-accent motion-reduce:transition-none",
+        "relative grid grid-cols-[8px_minmax(0,1fr)] gap-x-2.5 rounded-md px-3 pt-2.5 pb-2 transition-colors hover:bg-accent motion-reduce:transition-none",
         unread && "bg-primary-subtle",
         fresh &&
           "bg-accent motion-safe:animate-in motion-safe:slide-in-from-top-2",
@@ -368,7 +396,8 @@ function Item({
         aria-hidden="true"
         className={cn("mt-[5px] size-2 rounded-full", unread && "bg-primary")}
       />
-      <div className="flex min-w-0 flex-col gap-0.5">
+      {/* 4 px between the title's link and the time's button keep WCAG 2.5.8's spacing for both; the row stays 56 px (3.01). */}
+      <div className="flex min-w-0 flex-col gap-1">
         <Link
           href={entry.href}
           onClick={(event: MouseEvent) => {
@@ -386,17 +415,23 @@ function Item({
           )}
           {entry.title}
         </Link>
-        <p className="text-small [overflow-wrap:anywhere] text-muted-foreground">
-          {entry.body}
+        {/* One line: the organisation and the time (3.01). The time sits above the link's hit area, so its tooltip opens (F18). */}
+        <p className="text-status [overflow-wrap:anywhere] text-muted-foreground">
+          {entry.organisation && (
+            <>
+              <bdi>{entry.organisation}</bdi>
+              {" · "}
+            </>
+          )}
+          <Time
+            at={entry.createdAt}
+            show="relative"
+            now={now}
+            locale={t("locale.format")}
+            timeZone={timeZone ?? undefined}
+            className="relative z-10"
+          />
         </p>
-        <Time
-          at={entry.createdAt}
-          show="relative"
-          now={now}
-          locale={t("locale.format")}
-          timeZone={timeZone ?? undefined}
-          className="relative z-10 mt-0.5 self-start text-status text-muted-foreground"
-        />
       </div>
     </li>
   );

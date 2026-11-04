@@ -41,5 +41,6 @@ export {
   TriangleAlertIcon,
   UserIcon,
   UsersIcon,
+  WifiOffIcon,
   XIcon,
 } from "lucide-react";

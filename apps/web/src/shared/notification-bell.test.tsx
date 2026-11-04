@@ -6,7 +6,7 @@ import {
   NotificationType,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -99,6 +99,32 @@ describe("TenantBell", () => {
     expect(
       await screen.findByRole("link", { name: /Deniz Arslan joined/ }),
     ).toHaveAttribute("href", "/northwind/settings/members");
+  });
+
+  // The name the API gives with the item, as it was at that moment; the list of organisations may name it otherwise now.
+  it("TenantBell_Opened_NamesEachItemsOrganisationAndLeavesTheBody", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () =>
+        HttpResponse.json({ unread: 3 }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/notifications`, () =>
+        page([{ ...joined, tenantName: "Northwind Trading Co." }]),
+      ),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    const item = await screen.findByRole("link", { name: /Deniz Arslan/ });
+    expect(
+      within(item.closest("li") as HTMLElement).getByText(
+        "Northwind Trading Co.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(joined.body)).toBeNull();
   });
 
   it("TenantBell_ItemOpened_FollowsItsLinkBeforeTheReadIsAnswered", async () => {
