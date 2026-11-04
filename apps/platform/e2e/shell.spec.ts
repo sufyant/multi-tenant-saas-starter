@@ -150,6 +150,19 @@ test("Shell_MissingPage_IsNotFoundInsideTheShell", async ({ page }) => {
   await expectAccessible(page);
 });
 
+// 2.25: on a phone every page's content starts 16 px under the top bar, and the empty state's tile 40 px under that (F59).
+test("Shell_PhoneMissingPage_PutsTheTile56pxUnderTheTopBar", async ({
+  page,
+}) => {
+  await open(page, { size: "phone", path: "/no-such-page" });
+
+  const bar = await boxOf(page.locator("header").first());
+  const tile = await boxOf(
+    page.locator("main svg.lucide-search-x").locator(".."),
+  );
+  expect(tile.y - (bar.y + bar.height)).toBe(56);
+});
+
 test("Shell_TabTitle_StartsWithTheEnvironment", async ({ page }) => {
   await open(page);
 

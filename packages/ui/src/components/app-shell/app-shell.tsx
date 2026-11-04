@@ -396,7 +396,7 @@ export function AppShell({
                 </ol>
               </nav>
             )}
-            <main className="mx-auto w-full max-w-content-max flex-1 px-4 py-6 tablet:px-6 tablet:py-5">
+            <main className="mx-auto w-full max-w-content-max flex-1 px-4 pt-4 pb-6 tablet:px-6 tablet:py-5">
               {children}
             </main>
           </div>
