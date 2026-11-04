@@ -86,3 +86,15 @@
     @apply font-sans;
   }
 }
+
+/* Arabic takes Noto Sans Arabic first and the taller lines of the design's Arabic text styles (F19, F20). A style without an Arabic
+   twin keeps its own values. */
+:root:lang(ar) {
+  --font-sans: var(--font-arabic);
+  --font-page-title-size: var(--font-page-title-ar-size);
+  --font-page-title-line-height: var(--font-page-title-ar-line-height);
+  --font-page-title-tracking: var(--font-page-title-ar-tracking);
+  --font-body-line-height: var(--font-body-ar-line-height);
+  --font-small-line-height: var(--font-small-ar-line-height);
+  --font-status-line-height: var(--font-status-ar-line-height);
+}

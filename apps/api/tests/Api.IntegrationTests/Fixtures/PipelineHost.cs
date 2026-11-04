@@ -58,6 +58,7 @@ internal sealed class PipelineHost : IAsyncDisposable
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { EnvironmentName = Environments.Development });
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(DefaultSettings);
+        builder.Configuration.AddInMemoryCollection(ObjectStorage.Settings);
         builder.Configuration.AddInMemoryCollection(TestTokens.Settings);
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {

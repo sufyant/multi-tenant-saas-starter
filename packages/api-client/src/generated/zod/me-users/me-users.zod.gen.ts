@@ -68,3 +68,69 @@ export const ChangePreferencesResponse = zod.object({
   "timeZone": zod.string().nullable()
 }).describe('The user\'s preferences, which follow them to every tenant and device. A null time zone is not set.')
 
+/**
+ * Answers 201 with the code's expiry and without Location: a code is never read back, so the request's target URI identifies it (RFC 9110, section 15.3.2).
+ */
+export const requestEmailChangeHeaderIdempotencyKeyMax = 255;
+
+
+export const requestEmailChangeHeaderIdempotencyKeyRegExp = new RegExp('^[!-~]+$');
+
+
+export const RequestEmailChangeHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(requestEmailChangeHeaderIdempotencyKeyMax).regex(requestEmailChangeHeaderIdempotencyKeyRegExp)
+})
+
+export const requestEmailChangeBodyEmailMax = 320;
+
+
+
+export const RequestEmailChangeBody = zod.object({
+  "email": zod.email().max(requestEmailChangeBodyEmailMax)
+}).describe('The new address, to which the API sends a code.')
+
+export const RequestEmailChangeResponse = zod.object({
+  "expiresAt": zod.iso.datetime({"offset":true})
+}).describe('A code went out: until when it works.')
+
+export const ChangeEmailBody = zod.object({
+  "code": zod.string()
+}).describe('The six digits that went to the new address.')
+
+export const ChangeEmailResponse = zod.object({
+  "id": zod.uuid(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "isSystemAdmin": zod.boolean(),
+  "language": zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.'),
+  "timeZone": zod.string().nullable()
+}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.')
+
+/**
+ * Answers 201 with the code's expiry and without Location: a code is never read back, so the request's target URI identifies it (RFC 9110, section 15.3.2).
+ */
+export const requestAccountDeletionHeaderIdempotencyKeyMax = 255;
+
+
+export const requestAccountDeletionHeaderIdempotencyKeyRegExp = new RegExp('^[!-~]+$');
+
+
+export const RequestAccountDeletionHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(requestAccountDeletionHeaderIdempotencyKeyMax).regex(requestAccountDeletionHeaderIdempotencyKeyRegExp)
+})
+
+export const RequestAccountDeletionResponse = zod.object({
+  "expiresAt": zod.iso.datetime({"offset":true})
+}).describe('A code went out: until when it works.')
+
+export const ConfirmAccountDeletionBody = zod.object({
+  "code": zod.string()
+}).describe('The six digits that went to the person\'s address.')
+
+export const ConfirmAccountDeletionResponse = zod.void()
+

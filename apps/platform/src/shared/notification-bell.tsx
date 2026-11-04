@@ -2,7 +2,6 @@
 
 import {
   actionFor,
-  type Bell,
   type CursorPageOfNotificationResponse,
   getGetMeQueryKey,
   getGetMeQueryOptions,
@@ -15,7 +14,10 @@ import {
 import {
   NotificationBell,
   type NotificationBellProps,
+  type NotificationEntry,
   type NotificationListState,
+  type NotificationPageProps,
+  type NotificationTab,
 } from "@repo/ui/components/notification-bell";
 
 type BellPlace = NotificationBellProps["place"];
@@ -37,38 +39,68 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { notificationHref } from "./notification-link";
 
-/** The platform's bell (`GET /v1/platform/notifications`). */
+/** The platform's bell (`GET /v1/platform/notifications`). On a phone it opens the page of notifications (3.08). */
 export function PlatformBell({
   place,
 }: {
   /** Where the shell draws it: a sidebar row, a rail icon or the phone's top bar. */
   place?: BellPlace;
 }) {
-  return <BellOf bell={platformBell()} place={place} />;
+  const [open, setOpen] = useState(false);
+  const { bell, setTab } = usePlatformBell(open, () => setOpen(false));
+  return (
+    <NotificationBell
+      {...bell}
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setTab(bell.unread ? "unread" : "all");
+        setOpen(next);
+      }}
+      place={place}
+      pageHref="/notifications"
+    />
+  );
 }
 
 /**
- * A bell's reads and commands around the shared `NotificationBell`. The count reads at once; the list reads each time the bell
- * opens. Opening an item marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for
- * the answer, then reads the bell again, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
+ * The platform bell's reads and commands, for the bell and for its page. The count reads at once; the list reads while the bell is
+ * open, on Unread while something is unread and on All otherwise (3.01, 3.03); each tab reads its own list. Opening an item
+ * marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for the answer, then reads
+ * the bell again and shows All, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
  */
-function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
+export function usePlatformBell(
+  open: boolean,
+  close: () => void,
+): { bell: NotificationPageProps; setTab: (tab: NotificationTab) => void } {
+  const bell = platformBell();
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations();
   const failureText = useFailureText();
-  const [open, setOpen] = useState(false);
+  const [chosen, setTab] = useState<NotificationTab>();
   // A page that failed on GetMe may hold the bell ("No access yet"): reading it again on mount would take that page away.
   const me = useQuery({ ...getGetMeQueryOptions(), retryOnMount: false });
   const count = useQuery(bell.count);
-  const list = useInfiniteQuery({ ...bell.list, enabled: open, staleTime: 0 });
+  // The count's first answer chooses the tab, which stays until the reader or Mark all as read changes it (F57).
+  const first = count.data?.unread ? "unread" : "all";
+  if (chosen === undefined && !count.isPending) setTab(first);
+  const tab = chosen ?? first;
+  const list = useInfiniteQuery({
+    ...(tab === "unread" ? bell.unreadList : bell.list),
+    enabled: open && chosen !== undefined,
+    staleTime: 0,
+  });
   const readAgain = () =>
     Promise.all(
       bell.keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     );
   const markAll = useMutation({
     mutationFn: bell.markAll,
-    onSuccess: readAgain,
+    // Nothing is unread now: the bell shows All (3.01 leads to 3.09).
+    onSuccess: () => {
+      setTab("all");
+      return readAgain();
+    },
     onError: (error) => {
       const action =
         error instanceof ProblemDetailsError
@@ -96,44 +128,46 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
     onSettled: readAgain,
   });
 
-  const hrefOf = (item: NotificationResponse) => notificationHref(item.link);
-  const state = stateOf(list, hrefOf);
+  const entryOf = (item: NotificationResponse) => ({
+    ...item,
+    href: notificationHref(item.link),
+    area: item.area,
+    actor: item.actorName ?? undefined,
+  });
 
-  return (
-    <NotificationBell
-      unread={count.data?.unread}
-      open={open}
-      onOpenChange={setOpen}
-      list={state}
-      onOpenItem={(entry, { follow }) => {
+  return {
+    bell: {
+      unread: count.data?.unread,
+      list: stateOf(list, entryOf),
+      tab,
+      onTabChange: setTab,
+      onOpenItem: (entry, { follow }) => {
         markRead.mutate(entry.id);
         if (!follow) return;
-        setOpen(false);
+        close();
         router.push(entry.href);
-      }}
-      onMarkAll={() => markAll.mutate()}
-      markingAll={markAll.isPending}
-      timeZone={me.data?.timeZone}
-      linkComponent={Link}
-      place={place}
-    />
-  );
+      },
+      onMarkAll: () => markAll.mutate(),
+      markingAll: markAll.isPending,
+      timeZone: me.data?.timeZone,
+      linkComponent: Link,
+    },
+    setTab,
+  };
 }
 
-/** The list's read as the bell shows it: its pages with each item's address, its failure, or the wait. */
+/** The list's read as the bell shows it: its pages with each item's address and organisation, its failure, or the wait. */
 function stateOf(
   list: UseInfiniteQueryResult<
     InfiniteData<CursorPageOfNotificationResponse>,
     Error
   >,
-  hrefOf: (item: NotificationResponse) => string,
+  entryOf: (item: NotificationResponse) => NotificationEntry,
 ): NotificationListState {
   if (list.data)
     return {
       status: "success",
-      items: list.data.pages.flatMap((page) =>
-        page.items.map((item) => ({ ...item, href: hrefOf(item) })),
-      ),
+      items: list.data.pages.flatMap((page) => page.items.map(entryOf)),
       hasMore: list.hasNextPage,
       loadingMore: list.isFetchingNextPage,
       onLoadMore: () => void list.fetchNextPage(),

@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
-import { backOnlineMs, ConnectionBar } from "./connection-bar";
+import { ConnectionBar } from "./connection-bar";
 
 function renderBar(serverDown: boolean, statusUrl?: string) {
   const onRetry = vi.fn();
@@ -95,7 +95,7 @@ describe("ConnectionBar", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("ConnectionBar_AnswerComes_SaysBackOnlineInGreenThenHides", () => {
+  it("ConnectionBar_AnswerComes_SaysBackOnlineInGreenForTwoSeconds", () => {
     const { rerender } = renderBar(true);
 
     rerender(false);
@@ -104,7 +104,9 @@ describe("ConnectionBar", () => {
       "bg-success-subtle",
     );
 
-    act(() => vi.advanceTimersByTime(backOnlineMs));
+    act(() => vi.advanceTimersByTime(1999));
+    expect(screen.getByRole("status")).toHaveTextContent("Back online");
+    act(() => vi.advanceTimersByTime(1));
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

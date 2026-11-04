@@ -27,13 +27,13 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMe_AUser_ReturnsTheirUserIdProfileAndThatTheyAreNoSystemAdmin()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace");
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        Me(me).ShouldBe((await _testData.UserIdOfAsync(user), "ada@example.com", "Ada", "Lovelace", false));
+        Me(me).ShouldBe((await _testData.UserIdOfAsync(user), TestEmails.Of("ada@example.com"), "Ada", "Lovelace", false));
         me.EnumerateObject().Select(field => field.Name).ShouldBe(
             ["id", "email", "firstName", "lastName", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
     }
@@ -56,11 +56,11 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMe_ASystemAdmin_SaysTheyAreOne()
     {
-        var admin = await _testData.AddSystemAdminAsync(email: "grace@example.com");
+        var admin = await _testData.AddSystemAdminAsync(email: TestEmails.Of("grace@example.com"));
 
         var me = await _api.CreateClient(admin).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
 
-        Me(me).ShouldBe((await _testData.UserIdOfAsync(admin), "grace@example.com", null, null, true));
+        Me(me).ShouldBe((await _testData.UserIdOfAsync(admin), TestEmails.Of("grace@example.com"), null, null, true));
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMe_ASuspendedUser_IsForbiddenAndToldWhy()
     {
-        var user = await _testData.AddUserAsync(email: "sus@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("sus@example.com"));
         await _testData.SuspendUserAsync(user);
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me", Cancellation);

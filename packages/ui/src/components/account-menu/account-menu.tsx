@@ -68,7 +68,7 @@ export function AccountMenu({
     return () => clearTimeout(timer);
   }, [copied]);
   const rail = variant === "rail";
-  const item = "min-h-9 gap-2.5 px-2 text-body max-tablet:min-h-touch-target";
+  const item = "max-tablet:min-h-touch-target";
   return (
     <>
       {/* A menu holds only its items (WAI-ARIA APG, "Menu Button"), so the live region of "Copied" sits beside the menu. */}
@@ -78,13 +78,19 @@ export function AccountMenu({
       <DropdownMenu defaultOpen={open}>
         <DropdownMenuTrigger
           className={cn(
-            "flex h-control-md min-w-0 items-center gap-2.5 rounded-md text-small font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent max-tablet:h-touch-target",
+            "flex min-w-0 items-center gap-2.5 rounded-md py-1 text-small font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent max-tablet:h-12 max-tablet:px-2",
             "w-full ps-1.5 pe-2",
             rail &&
-              "max-desktop:size-10 max-desktop:justify-center max-desktop:p-0",
+              "max-desktop:size-12 max-desktop:justify-center max-desktop:p-0",
           )}
         >
-          <Avatar person={person} className="size-5.5 shrink-0" />
+          <Avatar
+            person={person}
+            className={cn(
+              "size-5.5 shrink-0 max-tablet:size-7",
+              rail && "max-desktop:size-8",
+            )}
+          />
           {/* WCAG 2.5.3: the visible name stays in the accessible name; on the icon rail the initials and "Account" give it. */}
           <bdi
             className={cn(

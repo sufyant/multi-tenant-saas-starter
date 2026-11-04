@@ -28,6 +28,7 @@ import {
   UserIcon,
   UsersIcon,
 } from "@repo/ui/components/icon";
+import { OrgSwitcher } from "@repo/ui/components/org-switcher";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -64,7 +65,14 @@ const notAUserYet = (error: Error | null) =>
  * `apps/api/docs/flows/system-admins.md`). So when GetMe answers 404 or a user who is no system admin, the shell asks the door
  * once, with the smallest read it has, and reads GetMe again when the door lets the person in (F42).
  */
-export function PlatformShell({ children }: { children: ReactNode }) {
+export function PlatformShell({
+  notFound = false,
+  children,
+}: {
+  /** "Page not found" of an address that no page has: its own crumb, and no row of the menu is the current one (2.40). */
+  notFound?: boolean;
+  children: ReactNode;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -151,17 +159,24 @@ export function PlatformShell({ children }: { children: ReactNode }) {
   ];
   const inSettings = pathname.startsWith("/settings");
   const first = pathname.split("/")[1] ?? "";
-  const current = inSettings
-    ? (pathname.split("/")[2] ?? "")
-    : first === ""
-      ? "organisations"
-      : first === "organisations"
+  const current = notFound
+    ? ""
+    : inSettings
+      ? (pathname.split("/")[2] ?? "")
+      : first === ""
         ? "organisations"
-        : first;
+        : first === "organisations"
+          ? "organisations"
+          : first;
   const item = [...main, ...myAccount, ...platform].find(
     (entry) => entry.id === current,
   );
-  const pageName = item?.label ?? t("shell.settings");
+  // The page of notifications, which the phone's bell opens (F57), is no row of the menu.
+  const pageName = notFound
+    ? t("problems.notFoundTitle")
+    : current === "notifications"
+      ? t("notifications.title")
+      : (item?.label ?? t("shell.settings"));
   const userName = user.data && userNameOf(user.data, t("users.deletedUser"));
   const detail =
     current === "users" && userId
@@ -191,28 +206,22 @@ export function PlatformShell({ children }: { children: ReactNode }) {
       {admin && <NotificationStream />}
       <AppShell
         head={(place) => (
-          <div className="flex h-11 min-w-0 items-center gap-2.5 px-1.5">
-            <span
-              aria-hidden="true"
-              className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-small font-medium text-primary-foreground"
-            >
-              {brand.name.charAt(0)}
-            </span>
-            <span
-              className={
+          // The product and "Platform" in the switcher's face, which opens nothing (the Platform sidebar).
+          <OrgSwitcher
+            current={{
+              id: "platform",
+              // The drawer's heading names both: "Starter Platform" (the Platform phone drawer).
+              name:
                 place === "rail"
-                  ? "sr-only desktop:not-sr-only desktop:flex desktop:min-w-0 desktop:flex-col"
-                  : "flex min-w-0 flex-col"
-              }
-            >
-              <span className="truncate text-body font-medium">
-                {brand.name}
-              </span>
-              <span className="truncate text-small font-medium text-muted-foreground">
-                {t("shell.platform")}
-              </span>
-            </span>
-          </div>
+                  ? brand.name
+                  : t("shell.productPlatform", { product: brand.name }),
+              role: t("shell.platform"),
+              href: "/",
+            }}
+            organisations={[]}
+            title={t("shell.platform")}
+            variant={place === "rail" ? "rail" : "drawer"}
+          />
         )}
         main={main}
         settings={{

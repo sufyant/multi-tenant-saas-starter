@@ -69,7 +69,15 @@ public static class AcceptInvitationHandler
             throw new ValidationException(MissingNames(command));
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, EmailAddress.Create(invitation.Email ?? throw new InvalidOperationException("A pending invitation always has an address.")), command.FirstName!, command.LastName!, invitation.Language, now);
+        // A new user's address is the invited one, which another live user may keep when two accounts of the identity provider verified it:
+        // the unique index of the addresses would refuse it, so the acceptance refuses first, before any change (A7, W7).
+        var invitedEmail = EmailAddress.Create(invitation.Email ?? throw new InvalidOperationException("A pending invitation always has an address."));
+        if (existing is null && await users.IsEmailTakenAsync(invitedEmail, Guid.Empty, cancellationToken))
+        {
+            return (Errors.UserEmailTaken, []);
+        }
+
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitedEmail, command.FirstName!, command.LastName!, invitation.Language, now);
         var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {

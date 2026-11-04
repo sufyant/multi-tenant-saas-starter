@@ -8,8 +8,9 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | done |
-| 36 | Personal pages | todo |
-| 37 | Organisation pages | todo |
+| 36 | Personal pages | in progress: 36-backend done, 36-frontend todo |
+| 37a | The web's organisation pages | todo |
+| 37b | The platform's pages | todo |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -26,7 +27,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 
 Status: done, but the handoff package is todo.
 
-- One Figma file holds the design of the web app and the platform app, on desktop and phone, in light and dark, in English and Arabic.
+- One Figma file holds the design of the web app and the platform app, on desktop and phone, in light and dark, in English and Arabic. Its key is `3Ev111okX8xCBwR9B3hyBM`.
 - The handoff package goes into `docs/design/` before the Figma seat ends, about 29 Nov 2026.
 - The handoff package holds the tokens, the patterns, the components, the sample data, and a spec and an image for each screen.
 
@@ -52,9 +53,41 @@ Status: done.
 - More shared patterns: "+" only on create and add buttons, one bar at a time, the rules for long text, and a pseudo-localization test.
 - The Privacy link, and `privacyUrl` and `statusUrl` in the brand settings.
 
+35-frontend-fix:
+
+- The design foundation from the Figma file: the tokens, the fonts (Instrument Sans, JetBrains Mono, Noto Sans Arabic, from their Fontsource packages, so the build makes no request to Google) and the shared components of the Components page. The pages keep their layouts until steps 36, 37a and 37b (the maintainer's decision of 2026-11-04).
+- The shell as the design draws it: the organisation's name and the role, search inside the sidebar, Notifications as a row, and "Staging" on the strip.
+- Home: "Welcome" with the first name and a card for each page the person can open (4.01, 4.02). Its terms notice (4.03) comes with step 38.
+- CI keeps the screenshots of each pull request for seven days, for the review against the design.
+- Only the design's breakpoints: Tailwind's own are removed, and the architecture test fails on them.
+
+35-backend-2:
+
+- The bell's list for the design's Notifications popover. Each item answers `unread`, derived from `readAt`. The three list reads take the filter `unread`: `true` for the Unread tab, `false` for the read ones, with the same cursor (the maintainer's decision of 2026-11-04, after N7h and K5).
+- Each item answers its area ("Members", "Your access", "Organisation plan", "Organisations") in the reader's language, the person who acted, and the organisation's name. The area is a property of each type in the catalog, with its words in English, Turkish and Arabic. It is a display label only.
+- The platform's item writes the actor's name only, without "accepted" (the maintainer's decision of 2026-11-04).
+
+35-frontend-fix-2:
+
+- The notifications list as the design draws it, in both apps: each item is its title and one line of the organisation and the relative time, without the body. Its states: empty, loading, error, offline and the end of the list, and the phone's full screen. Mark all as read and marking one read on open stay. Done.
+- In the tenant web, "Page not found" and "You can't open this page" sit 120 px below the top bar (2.15, 2.40). The platform keeps its frames' 40 px (2.22). Done.
+- Then the frontend adds the Unread and All tabs, the area and the actor from 35-backend-2. The Unread tab lists only unread items (the maintainer's decision of 2026-11-04). Done.
+
+35-frontend-fix-3:
+
+- The bells' Unread and All tabs in both apps. An item read while the Unread tab is open stays in its place, drawn as read, until the tab changes or the bell closes (the maintainer's decision of 2026-11-04). Done.
+- Each item's line from the API's words: the organisation, the area and the time in the tenant web; the area, the person who acted and the time on the platform. Done.
+- The platform's phone opens its page of notifications under the top bar (3.08). The tenant web keeps its full screen (3.14). Done.
+- "You can't open this page" has its icon tile (2.15). A phone's content starts 16 px under the top bar in both apps (2.43, 2.25). Done.
+
+35-skills:
+
+- The repository's own agent skills, each kept only when its evaluation showed that it changes what an agent does: `building-screens-from-design` and `starting-roadmap-steps` (`docs/agent-skills.md`, `docs/agent-skill-evaluations.md`). Done.
+- The rules for skills hold both kinds, upstream and own: the document, `check-agent-skills.sh` and the comment of `agent-skills.yml`. Done.
+
 ## 4. Step 36: Personal pages
 
-Status: todo.
+Status: in progress. 36-backend is done; 36-frontend builds the screens on its API.
 
 - Profile: the name, the language and the time zone.
 - Account and security: the email change goes through our API. The API owns the email and updates the identity provider.
@@ -62,16 +95,34 @@ Status: todo.
 - Self-service account deletion.
 - Personal data export: it runs in the background. An email and a notification say when it is ready. The person can download it until a date. The file is in object storage.
 
+36-backend (the maintainer's decisions of 2026-11-03):
+
+- File storage: our own port, `IFileStore`, with an adapter on the S3 API in the host. One private R2 bucket per environment, `starter-staging` and `starter-production`, in the EU jurisdiction. Local runs and CI use SeaweedFS in Docker, because MinIO publishes no image any more. The keys hold ids only: `users/{userId}/`, `exports/users/{userId}/{exportId}.zip` and `tenants/{tenantId}/{module}/{fileId}`. The database keeps the key and never a link; a download link works for 5 minutes. `.cloudflare/` holds the buckets and a lifecycle rule that deletes `exports/` after 7 days.
+- The personal data export: a ZIP with one JSON file for each topic and a README, from each module's exporter. Ready for 7 days, with a notification and an email.
+- Account deletion: immediate, after a 6-digit code to the person's address, through the existing user deletion path, and the user's files with it. Refused for the last Owner of an organisation and for a system admin. A confirmation goes to the address the person had.
+- Email change: a 6-digit code to the new address; our record changes, the identity provider takes the address through the outbox, and the old address is told. A7 changes: we own the email, and the identity provider only signs people in.
+- One verification code mechanism for both, with its numbers in `apps/api/docs/ARCHITECTURE.md`, section 6.
+- The audit operations `user.data_export_requested`, `user.data_export_downloaded`, `user.deletion_requested` and `user.email_changed`.
+
 ## 5. Step 37: Organisation pages
 
-Status: todo.
+Status: todo. It has two parts.
 
+37a, the web's organisation pages:
+
+- The pages before sign-in: choose an organisation, a blocked organisation, a blocked account, a refused join and an ended invitation.
+- The stale mentions of "Settings › Notifications" go.
 - General, Members, Roles and Activity log in the new design.
 - A CSV export of Members and of the Activity log. There is no import.
 - HTML emails in three languages, from "Starter <no-reply@starter.example>".
 - The words: "Address" (never "slug"), "Seats", "Activity log" and "See the activity log".
 - The organisation's Owners also receive tenant.suspended, tenant.reactivated, tenant.closed, tenant.reopened and tenant.purged, by bell and email, with their own texts in three languages.
-- The pages move to Pill and Label, and Status and Tag are deleted.
+- The pages move to Pill and Label.
+
+37b, the platform's pages:
+
+- Organisations, Users, Plans, Activity log and System admins in the new design.
+- At its end, Status, Tag and SubNav are deleted.
 
 ## 6. Step 38: Terms of use
 

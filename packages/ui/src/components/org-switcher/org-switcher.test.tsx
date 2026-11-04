@@ -57,4 +57,41 @@ describe("OrgSwitcher", () => {
       within(menu).getByRole("menuitem", { name: /Northwind Traders/ }),
     ).toHaveAttribute("aria-current", "page");
   });
+
+  it("OrgSwitcher_OneOrganisationInTheDrawer_ShowsTheNameAsTheMenusHeading", () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind]}
+        title="Your organisations"
+        variant="drawer"
+      />,
+    );
+
+    expect(screen.getByText("Northwind Traders")).toBeInTheDocument();
+    expect(screen.queryByText("Owner")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    // The line keeps the page's direction, so in Arabic it starts at the right; only the name is isolated.
+    expect(screen.getByText("Northwind Traders").tagName).toBe("BDI");
+    expect(screen.getByText("Northwind Traders").parentElement?.tagName).toBe(
+      "P",
+    );
+  });
+
+  it("OrgSwitcher_SeveralOrganisationsInTheDrawer_OpensTheMenu", async () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind, harbour]}
+        title="Your organisations"
+        variant="drawer"
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Northwind Traders/ }),
+    );
+
+    expect(await screen.findByRole("menu")).toBeInTheDocument();
+  });
 });

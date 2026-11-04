@@ -1,4 +1,5 @@
 using System.Reflection;
+using ControlPlane.Api.Me.DataExports;
 using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Me.Users;
@@ -39,6 +40,7 @@ public static class ControlPlaneModule
         UserEndpoints.Map(platform);
         SystemAdminEndpoints.Map(platform);
         MyProfileEndpoints.Map(me);
+        DataExportEndpoints.Map(me);
         MyTenantEndpoints.Map(me);
         MyInvitationEndpoints.Map(me);
         TenantProfileEndpoints.Map(tenant);

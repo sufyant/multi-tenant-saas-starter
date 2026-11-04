@@ -16,6 +16,7 @@ export const listNotificationsQueryLimitMax = 100;
 
 
 export const ListNotificationsQueryParams = zod.object({
+  "unread": zod.boolean().optional(),
   "cursor": zod.string().optional(),
   "limit": zod.int().min(1).max(listNotificationsQueryLimitMax).optional()
 })
@@ -36,9 +37,13 @@ export const ListNotificationsResponse = zod.object({
   TenantReactivated: 'tenant.reactivated',
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
+  UserDataExportReady: 'user.data_export_ready',
 }).describe('The type of a notification, area.event.'),
   "title": zod.string().describe('The title, in the reader\'s language.'),
   "body": zod.string().describe('The body, in the reader\'s language.'),
+  "area": zod.string().describe('The area it belongs to, such as "Members", in the reader\'s language. A label only.'),
+  "actorName": zod.string().nullable().describe('The person who acted, named now: "Deleted user" in the reader\'s language for a deleted one; none when the platform acted.'),
+  "tenantName": zod.string().nullable().describe('The organisation\'s name as it was at that moment; none for a notification about no organisation.'),
   "link": zod.object({
   "kind": zod.enum({
   Start: 'start',
@@ -46,11 +51,13 @@ export const ListNotificationsResponse = zod.object({
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',
+  AccountSecurity: 'account_security',
 }).describe('Where a notification leads, which the web turns into a URL.'),
   "tenantId": zod.uuid().nullable()
 }).describe('Where it leads.'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('When the event it tells of happened.'),
-  "readAt": zod.iso.datetime({"offset":true}).nullable().describe('When the reader opened it; none while it is unread.')
+  "readAt": zod.iso.datetime({"offset":true}).nullable().describe('When the reader opened it; none while it is unread.'),
+  "unread": zod.boolean().describe('Whether the reader has not opened it yet, from ReadAt; the filter unread compares with it.')
 }).describe('A notification as a bell shows it (U7). Its title and body are rendered in the reader\'s language (U2). The link names where it leads, as a\nkind and the tenant it is about: the web builds the URL.')),
   "nextCursor": zod.string().nullable()
 })

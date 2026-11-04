@@ -415,6 +415,28 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         (await CodeOfAsync(me)).ShouldBe("user.deleted");
     }
 
+    // A8: the files of the user go after the erasure, both prefixes, and the records of their files and their codes in the same
+    // transaction (section 7, "File storage"). A system admin's deletion sends the user no confirmation: only their own does.
+    [Fact]
+    public async Task DeleteUser_AUserWithFiles_DeletesTheirFilesAndTheirRecordsAndSendsNoConfirmation()
+    {
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
+        var id = await _testData.UserIdOfAsync(user);
+        await DataExportRequests.ReadyAsync(_api, user);
+        await ObjectStorage.PutAsync($"{SharedKernel.FileKeys.User(id)}avatar", "a later module's file");
+        var other = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com");
+        await DataExportRequests.ReadyAsync(_api, other);
+        var admin = await _testData.AddSystemAdminAsync();
+
+        (await _api.WaitingForMessagesAsync(() => DeleteAsync(admin, id))).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        (await ObjectStorage.KeysAsync(SharedKernel.FileKeys.User(id))).ShouldBeEmpty();
+        (await ObjectStorage.KeysAsync(SharedKernel.FileKeys.UserExports(id))).ShouldBeEmpty();
+        (await ObjectStorage.KeysAsync(SharedKernel.FileKeys.UserExports(await _testData.UserIdOfAsync(other)))).Count.ShouldBe(1);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.stored_files WHERE user_id = '{id}'")).ShouldBe(0);
+        _api.Email.Sent.ShouldNotContain(sent => sent.IdempotencyKey.StartsWith("account-deleted/", StringComparison.Ordinal));
+    }
+
     private static async Task ExecuteAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, string sql)
     {
         await using var command = new NpgsqlCommand(sql, connection, transaction);

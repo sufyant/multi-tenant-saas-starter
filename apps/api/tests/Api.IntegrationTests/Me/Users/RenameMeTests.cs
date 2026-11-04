@@ -34,7 +34,7 @@ public sealed class RenameMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RenameMe_NewNames_AnswersMeWithThemAndKeepsThemTrimmed()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Byron", language: "tr");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Byron", language: "tr");
 
         var renamed = await RenameAsync(user, " Ada ", "Lovelace ");
 
@@ -45,7 +45,7 @@ public sealed class RenameMeTests(Database database) : IAsyncLifetime
         (me.GetProperty("id").GetGuid(), me.GetProperty("firstName").GetString(), me.GetProperty("lastName").GetString())
             .ShouldBe((await _testData.UserIdOfAsync(user), "Ada", "Lovelace"));
         (me.GetProperty("isSystemAdmin").GetBoolean(), me.GetProperty("language").GetString()).ShouldBe((false, "tr"));
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser("ada@example.com", "Ada", "Lovelace", Deleted: false, "tr"));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(TestEmails.Of("ada@example.com"), "Ada", "Lovelace", Deleted: false, "tr"));
     }
 
     // K3: the platform's log records the change as user.renamed, by the user and about the user, with no name. A user belongs to no tenant.

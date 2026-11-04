@@ -20,4 +20,7 @@ public enum NotificationLinkKind
 
     /// <summary>The tenant's page in the platform.</summary>
     PlatformTenant,
+
+    /// <summary>The person's Account and security, without a tenant.</summary>
+    AccountSecurity,
 }

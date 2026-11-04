@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 export type TimeProps = DateTimeOptions & {
   /** An instant from the API, in UTC. */
   at: Instant;
-  /** datetime (default), date, time, or relative ("12 minutes ago"). */
+  /** datetime (default), date, time, or relative ("12 min ago"). */
   show?: "datetime" | "date" | "time" | "relative";
   /** The reference "now" of a relative time. Defaults to the current time. */
   now?: Instant;

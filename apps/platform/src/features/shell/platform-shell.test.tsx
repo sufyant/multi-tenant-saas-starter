@@ -188,6 +188,57 @@ describe("PlatformShell", () => {
     expect(crumbs.getByText("Users")).toBeInTheDocument();
   });
 
+  it("PlatformShell_NotFound_NamesThePageAndMarksNoRow", async () => {
+    navigation.pathname = "/an-old-link";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell notFound>Content</PlatformShell>);
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main menu" }),
+    );
+    expect(
+      rail.getByRole("link", { name: "Organisations" }),
+    ).not.toHaveAttribute("aria-current");
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    ).getAllByRole("listitem");
+    expect(crumbs.map((crumb) => crumb.textContent)).toEqual([
+      "Platform",
+      "Page not found",
+    ]);
+  });
+
+  // The phone's bell opens this page (3.08 of the platform); the top bar and the breadcrumb name it.
+  it("PlatformShell_NotificationsPage_NamesThePageAndMarksNoRow", async () => {
+    navigation.pathname = "/notifications";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main menu" }),
+    );
+    expect(
+      rail.getByRole("link", { name: "Organisations" }),
+    ).not.toHaveAttribute("aria-current");
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    ).getAllByRole("listitem");
+    expect(crumbs.map((crumb) => crumb.textContent)).toEqual([
+      "Platform",
+      "Notifications",
+    ]);
+  });
+
   it("PlatformShell_SystemAdminsPage_ShowsTheSettingsMenuAndTheBreadcrumb", async () => {
     navigation.pathname = "/settings/system-admins";
     server.use(

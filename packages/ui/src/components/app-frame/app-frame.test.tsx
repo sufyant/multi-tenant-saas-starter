@@ -22,7 +22,7 @@ describe("AppFrameProvider", () => {
   it("AppFrameProvider_Staging_ShowsTheStripAboveThePage", () => {
     renderFrame({ kind: "staging" });
 
-    const strip = screen.getByText("Staging environment · test data only");
+    const strip = screen.getByText("Staging");
     expect(
       strip.compareDocumentPosition(screen.getByText("a1b2c3d")) &
         Node.DOCUMENT_POSITION_FOLLOWING,

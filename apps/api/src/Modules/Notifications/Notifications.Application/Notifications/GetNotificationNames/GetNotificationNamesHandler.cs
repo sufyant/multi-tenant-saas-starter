@@ -1,5 +1,6 @@
 using ControlPlane.Contracts.Users;
 using Notifications.Domain;
+using Notifications.Domain.Notifications;
 using SharedKernel;
 
 namespace Notifications.Application.Notifications.GetNotificationNames;
@@ -25,6 +26,9 @@ public static class GetNotificationNamesHandler
             notification.Type,
             text.Title,
             text.Body,
+            NotificationText.AreaOf(notification.Type, reader.Language),
+            NotificationText.ActorOf(notification.Type, notification.Values, names, reader.Language),
+            notification.Values.GetValueOrDefault(NotificationKind.TenantValue),
             NotificationLinks.Of(kind, notification.Values).ToString(),
             notification.TenantId,
             notification.CreatedAt,

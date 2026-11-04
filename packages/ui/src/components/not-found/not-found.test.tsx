@@ -29,6 +29,33 @@ describe("NotFound", () => {
     );
   });
 
+  it("NotFound_OldLink_ShowsTheSearchIconAndASecondaryButton", () => {
+    const { container } = renderNotFound({ kind: "page", href: "/northwind" });
+
+    expect(container.querySelector("svg.lucide-search-x")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to Home" })).toHaveClass(
+      "border-input",
+      "bg-card",
+    );
+  });
+
+  // The tenant web's frames put it 120 px below the top bar from bp-tablet (2.40, 2.41); the platform's keep 40 px (2.22, 2.23).
+  it("NotFound_PageSize_FillsThePage", () => {
+    renderNotFound({ kind: "page", href: "/northwind", size: "page" });
+
+    expect(
+      screen.getByRole("heading", { name: "Page not found" }).parentElement,
+    ).toHaveClass("tablet:pt-30");
+  });
+
+  it("NotFound_NoSize_KeepsTheListSpacing", () => {
+    renderNotFound({ kind: "page", href: "/" });
+
+    expect(
+      screen.getByRole("heading", { name: "Page not found" }).parentElement,
+    ).not.toHaveClass("tablet:pt-30");
+  });
+
   it("NotFound_Organisation_NamesTheAddress", () => {
     renderNotFound({
       kind: "organisation",
