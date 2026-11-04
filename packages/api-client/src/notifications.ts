@@ -111,18 +111,22 @@ export const everyBellKey: QueryKey[] = [
 type Page = CursorPageOfNotificationResponse;
 type Cursor = string | undefined;
 
+type List = UseInfiniteQueryOptions<
+  Page,
+  ProblemDetailsError,
+  InfiniteData<Page, Cursor>,
+  QueryKey,
+  Cursor
+>;
+
 /**
  * One bell's reads and its one command (`apps/api/docs/flows/notifications.md`, section 3): the list by the API's cursor, newest
- * first, the unread count, Mark all as read, and the keys that the command invalidates (F47).
+ * first, for the All tab and, with the filter unread, for the Unread tab; the unread count, Mark all as read, and the keys that the
+ * command invalidates (F47). Each list's key starts with the first key, so the keys name both lists.
  */
 export type Bell = {
-  list: UseInfiniteQueryOptions<
-    Page,
-    ProblemDetailsError,
-    InfiniteData<Page, Cursor>,
-    QueryKey,
-    Cursor
-  >;
+  list: List;
+  unreadList: List;
   count: UseQueryOptions<
     UnreadNotificationCountResponse,
     ProblemDetailsError,
@@ -137,10 +141,14 @@ const paging = {
   initialPageParam: undefined,
   getNextPageParam: (last: Page) => last.nextCursor ?? undefined,
 };
+const unread = { unread: true };
 
 /** The tenant web's bell inside an organisation: that tenant's notifications and the personal ones. */
 export const tenantBell = (tenantId: string): Bell => ({
   list: getListNotificationsInfiniteQueryOptions(tenantId, undefined, {
+    query: paging,
+  }),
+  unreadList: getListNotificationsInfiniteQueryOptions(tenantId, unread, {
     query: paging,
   }),
   count: getGetUnreadNotificationCountQueryOptions(tenantId),
@@ -153,6 +161,9 @@ export const personalBell = (): Bell => ({
   list: getListMyNotificationsInfiniteQueryOptions(undefined, {
     query: paging,
   }),
+  unreadList: getListMyNotificationsInfiniteQueryOptions(unread, {
+    query: paging,
+  }),
   count: getGetMyUnreadNotificationCountQueryOptions(),
   markAll: () => markAllMyNotificationsRead(),
   keys: bellKeysOf({ scope: "personal" }).slice(0, 2),
@@ -161,6 +172,9 @@ export const personalBell = (): Bell => ({
 /** The platform's bell. */
 export const platformBell = (): Bell => ({
   list: getListPlatformNotificationsInfiniteQueryOptions(undefined, {
+    query: paging,
+  }),
+  unreadList: getListPlatformNotificationsInfiniteQueryOptions(unread, {
     query: paging,
   }),
   count: getGetPlatformUnreadNotificationCountQueryOptions(),
