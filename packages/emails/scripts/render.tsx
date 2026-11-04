@@ -83,8 +83,11 @@ const account =
   });
 
 const accountEmails: [string, (language: Language) => AccountEmailProps][] = [
-  ["email-change-code", account("emailChangeCode", placeholders("code"))],
-  ["deletion-code", account("deletionCode", placeholders("code"))],
+  [
+    "email-change-code",
+    account("emailChangeCode", placeholders("verificationCode")),
+  ],
+  ["deletion-code", account("deletionCode", placeholders("verificationCode"))],
   [
     "email-changed",
     account("emailChanged", placeholders("newEmail", "supportUrl")),

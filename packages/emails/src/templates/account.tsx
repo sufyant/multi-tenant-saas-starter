@@ -21,7 +21,7 @@ export type AccountEmailProps = {
   language: Language;
   kind: AccountEmailKind;
   /** The six digits of a code. */
-  code?: string;
+  verificationCode?: string;
   /** The new address, masked, of the notice to the old address. */
   newEmail?: string;
   /** Where the person asks for help: the brand's support contact. */
@@ -56,7 +56,7 @@ export function accountEmailText(props: AccountEmailProps): string {
     brand.name,
     texts.heading,
     body,
-    ...(props.code === undefined ? [] : [props.code]),
+    ...(props.verificationCode === undefined ? [] : [props.verificationCode]),
     texts.footer,
   ].join("\n\n");
 }
@@ -110,7 +110,7 @@ export function AccountEmail(props: AccountEmailProps) {
         )}
         {after}
       </Text>
-      {props.code === undefined ? null : (
+      {props.verificationCode === undefined ? null : (
         <Text
           className="e-text"
           dir="ltr"
@@ -125,7 +125,7 @@ export function AccountEmail(props: AccountEmailProps) {
             letterSpacing: "8px",
           }}
         >
-          {props.code}
+          {props.verificationCode}
         </Text>
       )}
     </Layout>

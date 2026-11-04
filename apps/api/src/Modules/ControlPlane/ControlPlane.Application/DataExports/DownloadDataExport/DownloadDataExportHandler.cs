@@ -1,7 +1,7 @@
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.DataExports;
 using ControlPlane.Domain;
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using SharedKernel;
 using Wolverine;
 

@@ -106,7 +106,7 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
         await database.ScalarAsSuperuserAsync<object>(
             $"""
             INSERT INTO control_plane.stored_files (id, user_id, module, purpose, object_key, content_type, status, created_at)
-            VALUES ('{Guid.CreateVersion7()}', '{userId}', 'control_plane', 'DataExport', 'users/{userId}/exports/x.zip', 'application/zip', 'Preparing', now())
+            VALUES ('{Guid.CreateVersion7()}', '{userId}', 'control_plane', 'DataExport', 'exports/users/{userId}/x.zip', 'application/zip', 'Preparing', now())
             """);
 
         var requested = await RequestAsync(user);
@@ -114,18 +114,6 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
         requested.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await requested.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString().ShouldBe("data_export.in_progress");
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.stored_files WHERE user_id = '{userId}'")).ShouldBe(1);
-    }
-
-    // A person who never asked has none: the screen offers "Export my data".
-    [Fact]
-    public async Task GetMyDataExport_NeverAsked_IsNotFound()
-    {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
-
-        var latest = await _api.CreateClient(user).GetAsync($"{Path}/latest", Cancellation);
-
-        latest.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await latest.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString().ShouldBe("data_export.not_found");
     }
 
     private static JsonElement Json(ZipArchive zip, string name)

@@ -14,6 +14,8 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 
 | Package | License |
 | --- | --- |
+| AWSSDK.Core | Apache-2.0 |
+| AWSSDK.S3 | Apache-2.0 |
 | BouncyCastle.Cryptography | MIT |
 | Cronos | MIT |
 | DiffEngine | MIT |

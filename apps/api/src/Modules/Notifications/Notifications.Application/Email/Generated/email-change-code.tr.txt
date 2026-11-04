@@ -4,6 +4,6 @@ Yeni e-posta adresinizi doğrulayın
 
 Bu kodu Hesap ve güvenlik sayfasına girin. 10 dakika geçerlidir.
 
-{{code}}
+{{verificationCode}}
 
 Bu e-postayı, biri bu adresi hesabında kullanmak istediği için aldınız. Bu siz değilseniz e-postayı yok sayabilirsiniz.

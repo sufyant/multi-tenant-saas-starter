@@ -32,7 +32,7 @@ public sealed class ExpireDataExportTests(Database database) : IAsyncLifetime
 
         await DataExportRequests.DeliverAsync(_api, new ExpireDataExportCommand(exportId, userId));
 
-        (await ObjectStorage.KeysAsync(FileKeys.User(userId))).ShouldBeEmpty();
+        (await ObjectStorage.KeysAsync(FileKeys.UserExports(userId))).ShouldBeEmpty();
         var latest = await DataExportRequests.LatestAsync(_api, user);
         latest.GetProperty("status").GetString().ShouldBe("expired");
         latest.GetProperty("expiresAt").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.String);
@@ -60,7 +60,7 @@ public sealed class ExpireDataExportTests(Database database) : IAsyncLifetime
         await database.ScalarAsSuperuserAsync<object>(
             $"""
             INSERT INTO control_plane.stored_files (id, user_id, module, purpose, object_key, content_type, status, created_at)
-            VALUES ('{exportId}', '{userId}', 'control_plane', 'DataExport', 'users/{userId}/exports/{exportId}.zip', 'application/zip', 'Preparing', now() - interval '1 hour')
+            VALUES ('{exportId}', '{userId}', 'control_plane', 'DataExport', 'exports/users/{userId}/{exportId}.zip', 'application/zip', 'Preparing', now() - interval '1 hour')
             """);
 
         await DataExportRequests.DeliverAsync(_api, new FailDataExportCommand(exportId, userId));

@@ -1,4 +1,4 @@
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 
 namespace ControlPlane.Application.DataExports;
 
@@ -9,8 +9,8 @@ namespace ControlPlane.Application.DataExports;
 /// <remarks>Public because a public handler takes it (W9).</remarks>
 public interface IStoredFileRepository
 {
-    /// <summary>The user's latest data export, without a lock; none when the user never asked for one.</summary>
-    internal Task<StoredFile?> FindLatestDataExportAsync(Guid userId, CancellationToken cancellationToken);
+    /// <summary>The status of the user's latest data export, without a lock; none when the user never asked for one.</summary>
+    internal Task<StoredFileStatus?> FindLatestDataExportStatusAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>The user's file with this id, locked for the rest of the transaction; none when the user has no such file.</summary>
     internal Task<StoredFile?> FindForUpdateAsync(Guid userId, Guid fileId, CancellationToken cancellationToken);

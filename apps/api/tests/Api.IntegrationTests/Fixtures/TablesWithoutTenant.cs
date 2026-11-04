@@ -21,6 +21,8 @@ internal static class TablesWithoutTenant
         "control_plane.default_plans",
         "control_plane.users",
         "control_plane.system_admins",
+        "control_plane.stored_files",
+        "control_plane.verification_codes",
         "api.idempotency_keys",
         "audit.platform_entries",
         "notifications.notifications",

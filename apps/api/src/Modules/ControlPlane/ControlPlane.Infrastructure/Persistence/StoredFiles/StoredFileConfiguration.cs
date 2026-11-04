@@ -1,10 +1,10 @@
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tenancy;
 
-namespace ControlPlane.Infrastructure.Persistence.Files;
+namespace ControlPlane.Infrastructure.Persistence.StoredFiles;
 
 internal sealed class StoredFileConfiguration : IEntityTypeConfiguration<StoredFile>
 {

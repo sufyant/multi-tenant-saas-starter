@@ -36,7 +36,7 @@ public static class RequestEmailChangeHandler
         }
 
         var now = time.GetUtcNow();
-        var issued = await VerificationCodes.IssueAsync(users, user.Id, VerificationCodePurpose.EmailChange, email.Value, now, cancellationToken);
+        var issued = await VerificationCodeChecks.IssueAsync(users, user.Id, VerificationCodePurpose.EmailChange, email.Value, now, cancellationToken);
         if (!issued.IsSuccess)
         {
             return (issued.Error, []);

@@ -1,0 +1,24 @@
+{
+  "r2": {
+    "jurisdiction": "eu",
+    "bucket_prefix": "starter-",
+    "lifecycle_rules": [
+      {
+        "id": "delete-exports-after-7-days",
+        "enabled": true,
+        "conditions": { "prefix": "exports/" },
+        "deleteObjectsTransition": {
+          "condition": { "type": "Age", "maxAge": 604800 }
+        }
+      },
+      {
+        "id": "abort-multipart-uploads-after-7-days",
+        "enabled": true,
+        "conditions": { "prefix": "" },
+        "abortMultipartUploadsTransition": {
+          "condition": { "type": "Age", "maxAge": 604800 }
+        }
+      }
+    ]
+  }
+}

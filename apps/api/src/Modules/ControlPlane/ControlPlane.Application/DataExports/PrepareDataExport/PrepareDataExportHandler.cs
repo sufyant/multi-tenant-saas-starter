@@ -1,5 +1,5 @@
 using ControlPlane.Application.DataExports.CompleteDataExport;
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using SharedKernel;
 
 namespace ControlPlane.Application.DataExports.PrepareDataExport;

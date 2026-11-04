@@ -68,7 +68,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Files.StoredFile", b =>
+            modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -834,7 +834,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Files.StoredFile", b =>
+            modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithMany()

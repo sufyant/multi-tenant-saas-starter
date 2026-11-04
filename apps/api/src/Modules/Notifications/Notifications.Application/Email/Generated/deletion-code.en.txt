@@ -4,6 +4,6 @@ Confirm the deletion of your account
 
 Enter this code in Account and security to delete your account. It works for 10 minutes. This cannot be undone.
 
-{{code}}
+{{verificationCode}}
 
 You received this because someone asked to delete the account of this address. If it wasn’t you, sign out of all other sessions in Account and security.

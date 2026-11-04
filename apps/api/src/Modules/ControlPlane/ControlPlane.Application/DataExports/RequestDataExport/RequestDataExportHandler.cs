@@ -3,7 +3,7 @@ using ControlPlane.Application.DataExports.PrepareDataExport;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.DataExports;
 using ControlPlane.Domain;
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using SharedKernel;
 using Wolverine;
 
@@ -27,7 +27,7 @@ public static class RequestDataExportHandler
             return (Errors.UserNotFound, []);
         }
 
-        if (await files.FindLatestDataExportAsync(user.Id, cancellationToken) is { Status: StoredFileStatus.Preparing })
+        if (await files.FindLatestDataExportStatusAsync(user.Id, cancellationToken) == StoredFileStatus.Preparing)
         {
             return (Error.Conflict(ControlPlaneErrorCodes.DataExportInProgress, "An export of your data is in preparation."), []);
         }

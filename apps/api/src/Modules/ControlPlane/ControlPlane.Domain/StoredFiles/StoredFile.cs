@@ -1,6 +1,6 @@
 using SharedKernel;
 
-namespace ControlPlane.Domain.Files;
+namespace ControlPlane.Domain.StoredFiles;
 
 /// <summary>
 /// One file that ControlPlane keeps in the file store, and the one record that it exists: the module asks this table which files exist,

@@ -27,7 +27,7 @@ public static class CompleteDataExportHandler
         var now = time.GetUtcNow();
         if (export.Ready(command.SizeBytes, now) == StateChange.Unchanged)
         {
-            return export.Status == Domain.Files.StoredFileStatus.Ready ? [] : [new DeleteStoredFileCommand(key)];
+            return export.Status == Domain.StoredFiles.StoredFileStatus.Ready ? [] : [new DeleteStoredFileCommand(key)];
         }
 
         await files.SaveChangesAsync(cancellationToken);

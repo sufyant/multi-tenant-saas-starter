@@ -1,13 +1,13 @@
 using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantPurge;
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using ControlPlane.Domain.VerificationCodes;
-using ControlPlane.Infrastructure.Persistence.Files;
+using ControlPlane.Infrastructure.Persistence.StoredFiles;
 using ControlPlane.Infrastructure.Persistence.Invitations;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.Plans;

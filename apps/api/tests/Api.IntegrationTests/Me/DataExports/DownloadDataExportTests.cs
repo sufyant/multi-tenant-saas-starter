@@ -71,7 +71,7 @@ public sealed class DownloadDataExportTests(Database database) : IAsyncLifetime
         await database.ScalarAsSuperuserAsync<object>(
             $"""
             INSERT INTO control_plane.stored_files (id, user_id, module, purpose, object_key, content_type, status, created_at)
-            VALUES ('{exportId}', '{userId}', 'control_plane', 'DataExport', 'users/{userId}/exports/{exportId}.zip', 'application/zip', 'Preparing', now())
+            VALUES ('{exportId}', '{userId}', 'control_plane', 'DataExport', 'exports/users/{userId}/{exportId}.zip', 'application/zip', 'Preparing', now())
             """);
 
         var download = await DownloadAsync(user, exportId);

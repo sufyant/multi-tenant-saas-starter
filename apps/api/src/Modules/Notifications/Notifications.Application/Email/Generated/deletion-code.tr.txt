@@ -4,6 +4,6 @@ Hesabınızın silinmesini onaylayın
 
 Hesabınızı silmek için bu kodu Hesap ve güvenlik sayfasına girin. 10 dakika geçerlidir. Bu işlem geri alınamaz.
 
-{{code}}
+{{verificationCode}}
 
 Bu e-postayı, biri bu adresin hesabını silmek istediği için aldınız. Bu siz değilseniz Hesap ve güvenlik sayfasında diğer tüm oturumlardan çıkış yapın.

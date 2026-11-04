@@ -6,7 +6,7 @@ namespace ControlPlane.Application.Users;
 
 // The one way a user gets a verification code and gives it back, for a change of address and for the deletion of their account (section
 // 6, "Verification codes"). Each caller has locked the user row, so two requests of one user run one at a time.
-internal static class VerificationCodes
+internal static class VerificationCodeChecks
 {
     // A new code, unless the user asked for MaxSends codes of the purpose in the window. Codes older than the window are of no use, so
     // they are deleted, and the table keeps a few rows of each user at most.

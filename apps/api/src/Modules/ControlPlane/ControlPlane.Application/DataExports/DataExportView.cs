@@ -1,4 +1,4 @@
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 
 namespace ControlPlane.Application.DataExports;
 

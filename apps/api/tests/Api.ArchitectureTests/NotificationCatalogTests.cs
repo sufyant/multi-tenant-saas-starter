@@ -166,7 +166,7 @@ public sealed class NotificationCatalogTests
             "tenant.reactivated Web Email",
             "tenant.closed Web Email",
             "tenant.reopened Web Email",
-            "tenant.purged Web Email",
+            "tenant.purged Web Email", "user.data_export_ready Web Email",
         ]);
     }
 

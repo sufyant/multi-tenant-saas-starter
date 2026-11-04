@@ -7,6 +7,11 @@ namespace ControlPlane.Application.Users.DeleteUserFiles;
 // not done until the maintainer retries it or a second deletion of the user asks again (GDPR, Article 17). An empty prefix is done.
 public static class DeleteUserFilesHandler
 {
-    public static Task HandleAsync(DeleteUserFilesCommand command, IFileStore files, CancellationToken cancellationToken) =>
-        files.DeletePrefixAsync(FileKeys.User(command.UserId), cancellationToken);
+    public static async Task HandleAsync(DeleteUserFilesCommand command, IFileStore files, CancellationToken cancellationToken)
+    {
+        foreach (var prefix in FileKeys.AllOfUser(command.UserId))
+        {
+            await files.DeletePrefixAsync(prefix, cancellationToken);
+        }
+    }
 }

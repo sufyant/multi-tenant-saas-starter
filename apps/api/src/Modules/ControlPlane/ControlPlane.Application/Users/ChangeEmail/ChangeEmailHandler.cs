@@ -9,7 +9,7 @@ using Wolverine;
 namespace ControlPlane.Application.Users.ChangeEmail;
 
 // The command locks the user row (K6l) and uses the user's latest code of a change of address. A wrong, expired or spent code answers 400,
-// and a wrong try is kept (VerificationCodes). An address that another account took meanwhile answers 409; the lock of the address orders
+// and a wrong try is kept (VerificationCodeChecks). An address that another account took meanwhile answers 409; the lock of the address orders
 // two users who take it at once (IUserRepository.IsEmailTakenAsync). In the same transaction it records user.email_changed, sends the identity provider's change, which the
 // outbox retries, so our record and the provider do not stay apart, and tells the old address (A7).
 public static class ChangeEmailHandler
@@ -26,7 +26,7 @@ public static class ChangeEmailHandler
         }
 
         var now = time.GetUtcNow();
-        var used = await VerificationCodes.UseAsync(users, user.Id, VerificationCodePurpose.EmailChange, command.Code, now, cancellationToken);
+        var used = await VerificationCodeChecks.UseAsync(users, user.Id, VerificationCodePurpose.EmailChange, command.Code, now, cancellationToken);
         if (!used.IsSuccess)
         {
             return (used.Error, []);

@@ -81,9 +81,13 @@ export const account = {
   emailChangeCode: {
     language: Language.En,
     kind: "emailChangeCode",
-    code: "381906",
+    verificationCode: "381906",
   },
-  deletionCode: { language: Language.En, kind: "deletionCode", code: "381906" },
+  deletionCode: {
+    language: Language.En,
+    kind: "deletionCode",
+    verificationCode: "381906",
+  },
   emailChanged: {
     language: Language.En,
     kind: "emailChanged",

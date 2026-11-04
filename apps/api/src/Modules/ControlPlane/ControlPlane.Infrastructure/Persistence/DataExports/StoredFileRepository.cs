@@ -1,5 +1,5 @@
 using ControlPlane.Application.DataExports;
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.DataExports;
@@ -7,13 +7,14 @@ namespace ControlPlane.Infrastructure.Persistence.DataExports;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class StoredFileRepository(ControlPlaneDbContext controlPlane) : IStoredFileRepository
 {
-    async Task<StoredFile?> IStoredFileRepository.FindLatestDataExportAsync(Guid userId, CancellationToken cancellationToken)
+    async Task<StoredFileStatus?> IStoredFileRepository.FindLatestDataExportStatusAsync(Guid userId, CancellationToken cancellationToken)
     {
         await controlPlane.DeclareUserAsync(userId, cancellationToken);
         return await controlPlane.StoredFiles
             .Where(file => file.UserId == userId && file.Purpose == StoredFilePurpose.DataExport)
             .OrderByDescending(file => file.CreatedAt)
             .ThenByDescending(file => file.Id)
+            .Select(file => (StoredFileStatus?)file.Status)
             .FirstOrDefaultAsync(cancellationToken);
     }
 

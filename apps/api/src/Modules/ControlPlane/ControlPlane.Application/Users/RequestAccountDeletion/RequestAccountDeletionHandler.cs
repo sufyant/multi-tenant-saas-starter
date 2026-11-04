@@ -21,7 +21,7 @@ public static class RequestAccountDeletionHandler
         }
 
         var now = time.GetUtcNow();
-        var issued = await VerificationCodes.IssueAsync(users, user.Id, VerificationCodePurpose.AccountDeletion, null, now, cancellationToken);
+        var issued = await VerificationCodeChecks.IssueAsync(users, user.Id, VerificationCodePurpose.AccountDeletion, null, now, cancellationToken);
         if (!issued.IsSuccess)
         {
             return (issued.Error, []);

@@ -12,7 +12,7 @@ public static class SendVerificationCodeEmailHandler
     public static Task HandleAsync(VerificationCodeReadyEvent ready, IEmailChannel channel, CancellationToken cancellationToken)
     {
         var email = EmailTemplate.Of(ready.Kind == VerificationEmailKind.EmailChange ? "email-change-code" : "deletion-code", ready.Language)
-            .Write(ready.Email, $"verification-code/{ready.CodeId}", [EmailValue.Text("code", ready.Code)]);
+            .Write(ready.Email, $"verification-code/{ready.CodeId}", [EmailValue.Text("verificationCode", ready.Code)]);
         return channel.SendAsync(email, cancellationToken);
     }
 }

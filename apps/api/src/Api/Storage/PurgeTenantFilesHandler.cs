@@ -10,8 +10,8 @@ namespace Api.Storage;
 // queue, and the purge's timeout raises the alarm, as for any step (S10). An empty prefix stays empty, so the step may run twice (S7).
 public static class PurgeTenantFilesHandler
 {
-    /// <summary>The name the file store takes part in the purge by, which its replies carry.</summary>
-    public const string Participant = "Storage";
+    /// <summary>The name the host takes part in the purge by, its assembly's (TenantPurgeParticipantTests), which its replies carry.</summary>
+    public const string Participant = "Api";
 
     public static async Task<OutgoingMessages> HandleAsync(PurgeTenantDataCommand purge, IFileStore files, CancellationToken cancellationToken)
     {

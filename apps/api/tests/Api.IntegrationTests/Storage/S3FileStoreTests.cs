@@ -44,10 +44,10 @@ public sealed class S3FileStoreTests(Database database) : IAsyncLifetime
         await ObjectStorage.PutAsync(FileKeys.UserExport(user, Guid.CreateVersion7()), "b");
         await ObjectStorage.PutAsync(FileKeys.UserExport(other, Guid.CreateVersion7()), "c");
 
-        await Files.DeletePrefixAsync(FileKeys.User(user), Cancellation);
+        await Files.DeletePrefixAsync(FileKeys.UserExports(user), Cancellation);
 
-        (await ObjectStorage.KeysAsync(FileKeys.User(user))).ShouldBeEmpty();
-        (await ObjectStorage.KeysAsync(FileKeys.User(other))).Count.ShouldBe(1);
+        (await ObjectStorage.KeysAsync(FileKeys.UserExports(user))).ShouldBeEmpty();
+        (await ObjectStorage.KeysAsync(FileKeys.UserExports(other))).Count.ShouldBe(1);
     }
 
     // A retried step finds nothing to delete, and is done.

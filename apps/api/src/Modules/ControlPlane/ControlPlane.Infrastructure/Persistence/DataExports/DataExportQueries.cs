@@ -1,5 +1,5 @@
 using ControlPlane.Application.DataExports;
-using ControlPlane.Domain.Files;
+using ControlPlane.Domain.StoredFiles;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.DataExports;
