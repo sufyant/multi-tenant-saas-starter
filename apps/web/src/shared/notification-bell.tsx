@@ -113,13 +113,10 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
     onSettled: readAgain,
   });
 
-  // The cached list names each item's organisation too; a tenant the person left has no name there, and its item shows the time alone.
   const entryOf = (item: NotificationResponse) => ({
     ...item,
     href: notificationHref(item.link, tenants.data?.items ?? []),
-    organisation: tenants.data?.items.find(
-      (tenant) => tenant.id === item.link.tenantId,
-    )?.name,
+    organisation: item.tenantName ?? undefined,
   });
   const state = stateOf(list, entryOf);
 

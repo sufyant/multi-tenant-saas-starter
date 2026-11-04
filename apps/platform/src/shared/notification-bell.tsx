@@ -15,6 +15,7 @@ import {
 import {
   NotificationBell,
   type NotificationBellProps,
+  type NotificationEntry,
   type NotificationListState,
 } from "@repo/ui/components/notification-bell";
 
@@ -96,8 +97,12 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
     onSettled: readAgain,
   });
 
-  const hrefOf = (item: NotificationResponse) => notificationHref(item.link);
-  const state = stateOf(list, hrefOf);
+  const entryOf = (item: NotificationResponse) => ({
+    ...item,
+    href: notificationHref(item.link),
+    organisation: item.tenantName ?? undefined,
+  });
+  const state = stateOf(list, entryOf);
 
   return (
     <NotificationBell
@@ -120,20 +125,18 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   );
 }
 
-/** The list's read as the bell shows it: its pages with each item's address, its failure, or the wait. */
+/** The list's read as the bell shows it: its pages with each item's address and organisation, its failure, or the wait. */
 function stateOf(
   list: UseInfiniteQueryResult<
     InfiniteData<CursorPageOfNotificationResponse>,
     Error
   >,
-  hrefOf: (item: NotificationResponse) => string,
+  entryOf: (item: NotificationResponse) => NotificationEntry,
 ): NotificationListState {
   if (list.data)
     return {
       status: "success",
-      items: list.data.pages.flatMap((page) =>
-        page.items.map((item) => ({ ...item, href: hrefOf(item) })),
-      ),
+      items: list.data.pages.flatMap((page) => page.items.map(entryOf)),
       hasMore: list.hasNextPage,
       loadingMore: list.isFetchingNextPage,
       onLoadMore: () => void list.fetchNextPage(),
