@@ -26,7 +26,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 
 Status: done, but the handoff package is todo.
 
-- One Figma file holds the design of the web app and the platform app, on desktop and phone, in light and dark, in English and Arabic.
+- One Figma file holds the design of the web app and the platform app, on desktop and phone, in light and dark, in English and Arabic. Its key is `3Ev111okX8xCBwR9B3hyBM`.
 - The handoff package goes into `docs/design/` before the Figma seat ends, about 29 Nov 2026.
 - The handoff package holds the tokens, the patterns, the components, the sample data, and a spec and an image for each screen.
 
@@ -71,6 +71,11 @@ Status: in progress.
 - The notifications list as the design draws it, in both apps: each item is its title and one line of the organisation and the relative time, without the body. Its states: empty, loading, error, offline and the end of the list, and the phone's full screen. Mark all as read and marking one read on open stay. Done.
 - In the tenant web, "Page not found" and "You can't open this page" sit 120 px below the top bar (2.15, 2.40). The platform keeps its frames' 40 px (2.22). Done.
 - Then the frontend adds the Unread and All tabs, the area and the actor from 35-backend-2. The Unread tab lists only unread items (the maintainer's decision of 2026-11-04). Todo.
+
+35-skills:
+
+- The repository's own agent skills, each kept only when its evaluation showed that it changes what an agent does: `building-screens-from-design` and `starting-roadmap-steps` (`docs/agent-skills.md`, `docs/agent-skill-evaluations.md`). Done.
+- The rules for skills hold both kinds, upstream and own: the document, `check-agent-skills.sh` and the comment of `agent-skills.yml`. Done.
 
 ## 4. Step 36: Personal pages
 

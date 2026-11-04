@@ -83,6 +83,11 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 - The plan is `docs/roadmap.md`. A step's pull request updates its own row.
 
+## Pull requests
+
+- Bring a branch up to date with a rebase on `origin/main`, and push it with `--force-with-lease`. Never merge `main` into a branch.
+- When the maintainer must act, the body has a heading "Maintainer's tasks" that lists each task: an apply, an upload, a setting, a decision.
+
 ## Repository settings
 
 - GitHub settings are code. They live in `docs/github-settings.md`, `.github/rulesets/` and `scripts/github/apply-settings.sh`.
@@ -90,6 +95,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Never run `pnpm github:apply` yourself. You may run `pnpm github:check`.
 - Never turn on auto-merge for a pull request. The maintainer does it.
 - Railway settings are code: `.railway/railway.ts`. Never run `pnpm railway:apply` yourself. You may run `pnpm railway:plan`.
+- Never read the Railway variables (`railway variables`, or a tool that lists them): they hold secrets. Read a deployment's status and logs only.
+- Never connect to a deployed database. The maintainer runs the queries of `docs/deployment.md`.
 - Clerk settings are code: `.clerk/`. Never run `pnpm clerk:apply` yourself. You may run `pnpm clerk:plan`.
 - Never change a user or a setting in the Clerk dashboard.
 - Better Stack settings are code: `.betterstack/`. Never run `pnpm betterstack:apply` yourself. You may run `pnpm betterstack:plan`.
@@ -104,8 +111,9 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Agent skills
 
 - Skills live in `.claude/skills` as real folders. Never commit a symlink or an `.agents/` folder. One exception: the TanStack Table skills ship inside their packages (`docs/agent-skills.md`).
-- Add a skill only for a tool this repository uses or has a planned place for. `docs/agent-skills.md` lists them.
-- Agents never install, update or remove a skill. Report a stale or missing skill to the maintainer.
+- Add an upstream skill only for a tool this repository uses or has a planned place for. Add an own skill only for a way of working that no document gives. `docs/agent-skills.md` lists both kinds.
+- Agents never install, update or remove an upstream skill. Report a stale or missing skill to the maintainer.
+- An own skill changes in a pull request, with its evaluation run before and after the change (`docs/agent-skills.md`, section 5).
 
 ## Generated code
 
