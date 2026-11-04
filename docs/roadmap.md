@@ -58,6 +58,7 @@ Status: done.
 - The shell as the design draws it: the organisation's name and the role, search inside the sidebar, Notifications as a row, and "Staging" on the strip.
 - Home: "Welcome" with the first name and a card for each page the person can open (4.01, 4.02). Its terms notice (4.03) comes with step 38.
 - CI keeps the screenshots of each pull request for seven days, for the review against the design.
+- Only the design's breakpoints: Tailwind's own are removed, and the architecture test fails on them.
 
 ## 4. Step 36: Personal pages
 
