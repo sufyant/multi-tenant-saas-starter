@@ -572,11 +572,17 @@ const shellShots: {
   size: keyof typeof frames;
   language?: Language;
   scheme?: "light" | "dark";
+  role?: BuiltInRole;
   path?: string;
   mock?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<void>;
 }[] = [
   { file: "2.01-home-en-light-desktop", size: "desktop" },
+  {
+    file: "4.02-home-member-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+  },
   { file: "2.28-home-en-dark-desktop", size: "desktop", scheme: "dark" },
   {
     file: "2.01-home-ar-light-desktop",
@@ -648,11 +654,12 @@ const shellShots: {
   },
 ];
 
-/** A shot's language, theme and page when it names none: English, light, the start page. */
+/** A shot's language, theme, role and page when it names none: English, light, the owner, the start page. */
 const withDefaults = (shot: (typeof shellShots)[number]) => ({
   ...shot,
   language: shot.language ?? Language.En,
   scheme: shot.scheme ?? "light",
+  role: shot.role ?? BuiltInRole.Owner,
   path: shot.path ?? `/${northwind.slug}`,
 });
 
@@ -664,7 +671,7 @@ for (const shot of shellShots.map(withDefaults))
     await context.addCookies([
       { name: localeCookie, value: shot.language, url: baseURL },
     ]);
-    await mockMembers(page, { language: shot.language });
+    await mockMembers(page, { language: shot.language, role: shot.role });
     await shot.mock?.(page);
 
     await page.goto(shot.path);
