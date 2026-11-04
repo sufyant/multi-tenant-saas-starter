@@ -25,6 +25,9 @@ public interface IUserRepository
     /// </summary>
     internal Task<UserProfile?> FindProfileAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>The identity provider id and the address of the user with this id, without a lock: the step that gives the address to the identity provider (A7).</summary>
+    internal Task<UserIdentity?> FindIdentityAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>The status of the user with this id, without a lock, or none when no user has it: the member the platform makes an Owner.</summary>
     internal Task<UserStatus?> FindStatusAsync(Guid userId, CancellationToken cancellationToken);
 

@@ -25,6 +25,12 @@ public interface IIdentityProvider
     /// </summary>
     Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Whether an account other than this user's has the address at the identity provider, verified or not, such as a person who signed up
+    /// and never joined. A change of address refuses it, because the provider would refuse it for good (A7).
+    /// </summary>
+    Task<bool> IsEmailTakenByAnotherAccountAsync(string email, string externalUserId, CancellationToken cancellationToken);
+
     /// <summary>Deletes the user. A user the provider does not know is done.</summary>
     Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken);
 }

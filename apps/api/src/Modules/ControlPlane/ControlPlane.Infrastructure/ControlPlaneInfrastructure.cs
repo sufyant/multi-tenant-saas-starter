@@ -79,6 +79,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IPlanQueries, PlanQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
         services.AddScoped<IStoredFileRepository, StoredFileRepository>();
+
         services.AddScoped<IDataExportQueries, DataExportQueries>();
 
         // The module's part of a person's data export (docs/flows/personal-data-export.md). The export takes every exporter from the

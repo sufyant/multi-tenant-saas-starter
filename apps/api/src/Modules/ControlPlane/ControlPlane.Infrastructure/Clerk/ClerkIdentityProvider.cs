@@ -79,6 +79,14 @@ internal sealed class ClerkIdentityProvider(HttpClient http, TimeProvider time) 
         }
     }
 
+    // Clerk finds the users who have the address, verified or not, by the same search as a sign-up (OpenSignUpAsync). The person's own
+    // account does not count.
+    public async Task<bool> IsEmailTakenByAnotherAccountAsync(string email, string externalUserId, CancellationToken cancellationToken)
+    {
+        var accounts = await http.GetFromJsonAsync<IReadOnlyList<ClerkUser>>($"users?email_address={Uri.EscapeDataString(email)}", cancellationToken);
+        return accounts!.Any(account => account.Id != externalUserId);
+    }
+
     // A user already gone answers 404: a retried deletion is done.
     public async Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken)
     {

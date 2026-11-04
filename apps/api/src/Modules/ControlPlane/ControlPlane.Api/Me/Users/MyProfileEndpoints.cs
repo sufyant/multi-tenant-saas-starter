@@ -1,11 +1,14 @@
 using System.Security.Claims;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Api.Platform.Users;
+using ControlPlane.Application;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.ChangeEmail;
 using ControlPlane.Application.Users.ChangePreferences;
+using ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider;
 using ControlPlane.Application.Users.ConfirmAccountDeletion;
 using ControlPlane.Application.Users.GetMe;
+using ControlPlane.Application.Users.GetPendingEmailChange;
 using ControlPlane.Application.Users.RenameMe;
 using ControlPlane.Application.Users.RequestAccountDeletion;
 using ControlPlane.Application.Users.RequestEmailChange;
@@ -65,20 +68,40 @@ public static class MyProfileEndpoints
 
     // A code is sent, so the request takes an idempotency key (I1): a replay sends no second code, and "Send a new code" is a new key. The
     // token names the user, so a user changes only their own address (A7).
+    // The identity provider is asked first, under the key and outside the command's transaction (I4), because it refuses an address
+    // another account of its own has, such as a person who signed up and never joined; then the command refuses one that another user of
+    // ours keeps (A7).
     private static async Task<Result<VerificationCodeResponse>> RequestEmailChange(
         RequestEmailChangeRequest request,
         ClaimsPrincipal user,
+        IMessageBus bus,
         IIdempotencyExecutor idempotency,
-        CancellationToken cancellationToken) =>
-        (await idempotency.ExecuteAsync<VerificationCodeView>(new RequestEmailChangeCommand(user.Id(), request.Email), null, cancellationToken)).Map(ToResponse);
+        CancellationToken cancellationToken)
+    {
+        return (await idempotency.ExecuteAsync<VerificationCodeView>(TakenAtIdentityProviderAsync, new RequestEmailChangeCommand(user.Id(), request.Email), null, cancellationToken))
+            .Map(ToResponse);
 
-    // The change sets a state, so it takes no idempotency key (I1). It answers the user as GetMe reads them, with the new address.
+        async Task<Error?> TakenAtIdentityProviderAsync(CancellationToken checking) =>
+            await bus.InvokeAsync<bool>(new GetEmailTakenAtIdentityProviderQuery(user.Id(), request.Email), checking) ? Errors.UserEmailTaken : null;
+    }
+
+    // The change sets a state, so it takes no idempotency key (I1). The identity provider is asked again, before our record changes, for the
+    // address of the person's latest code: an account there may have taken it since the code went out. It answers the user as GetMe reads
+    // them, with the new address.
     private static async Task<Result<MeResponse>> ChangeEmail(
         ChangeEmailRequest request,
         ClaimsPrincipal user,
         IMessageBus bus,
-        CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<MeView>>(new ChangeEmailCommand(user.Id(), request.Code), cancellationToken)).Map(ToResponse);
+        CancellationToken cancellationToken)
+    {
+        if (await bus.InvokeAsync<string?>(new GetPendingEmailChangeQuery(user.Id()), cancellationToken) is { } pending
+            && await bus.InvokeAsync<bool>(new GetEmailTakenAtIdentityProviderQuery(user.Id(), pending), cancellationToken))
+        {
+            return Errors.UserEmailTaken;
+        }
+
+        return (await bus.InvokeAsync<Result<MeView>>(new ChangeEmailCommand(user.Id(), request.Code), cancellationToken)).Map(ToResponse);
+    }
 
     // The deletion's check runs before the code goes out, so the screen says at once why it cannot run: 409 user.last_owner names the
     // tenants of which the user is the last Owner, and 409 user.is_system_admin a system admin, whose rights go first. A code is sent, so

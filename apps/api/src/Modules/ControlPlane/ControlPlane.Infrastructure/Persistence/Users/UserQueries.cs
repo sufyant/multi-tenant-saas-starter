@@ -10,6 +10,7 @@ using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
+using ControlPlane.Domain.VerificationCodes;
 using ControlPlane.Infrastructure.Persistence.Lists;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -23,6 +24,23 @@ namespace ControlPlane.Infrastructure.Persistence.Users;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminOptions systemAdmins) : IUserQueries
 {
+    async Task<string?> IUserQueries.FindPendingEmailChangeAsync(string externalUserId, CancellationToken cancellationToken)
+    {
+        if (await controlPlane.Users.Where(user => user.ExternalId == externalUserId).Select(user => (Guid?)user.Id).SingleOrDefaultAsync(cancellationToken) is not { } userId)
+        {
+            return null;
+        }
+
+        await controlPlane.DeclareUserAsync(userId, cancellationToken);
+        return await controlPlane.VerificationCodes
+            .AsNoTracking()
+            .Where(code => code.UserId == userId && code.Purpose == VerificationCodePurpose.EmailChange)
+            .OrderByDescending(code => code.CreatedAt)
+            .ThenByDescending(code => code.Id)
+            .Select(code => code.NewEmail)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     async Task<MeView?> IUserQueries.FindMeAsync(string externalUserId, CancellationToken cancellationToken)
     {
         if (await controlPlane.Users.AsNoTracking().SingleOrDefaultAsync(user => user.ExternalId == externalUserId, cancellationToken) is not { } user)

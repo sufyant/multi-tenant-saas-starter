@@ -32,6 +32,12 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
             .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
             .SingleOrDefaultAsync(cancellationToken);
 
+    Task<UserIdentity?> IUserRepository.FindIdentityAsync(Guid userId, CancellationToken cancellationToken) =>
+        controlPlane.Users
+            .Where(user => user.Id == userId)
+            .Select(user => new UserIdentity(user.ExternalId, user.Email, user.DeletedAt != null))
+            .SingleOrDefaultAsync(cancellationToken);
+
     async Task<UserStatus?> IUserRepository.FindStatusAsync(Guid userId, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Users.Where(user => user.Id == userId).Select(User.StatusOf).ToListAsync(cancellationToken);

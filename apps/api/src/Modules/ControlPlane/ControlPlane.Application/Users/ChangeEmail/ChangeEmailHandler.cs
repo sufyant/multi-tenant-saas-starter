@@ -58,7 +58,7 @@ public static class ChangeEmailHandler
         OutgoingMessages messages =
         [
             new UserEmailChangedEvent(Guid.CreateVersion7(now), now, user.Id),
-            new ReplaceIdentityEmailCommand(user.ExternalId, email.Value),
+            new ReplaceIdentityEmailCommand(user.Id, null),
         ];
         if (oldEmail is not null)
         {

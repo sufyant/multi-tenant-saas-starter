@@ -65,82 +65,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("content_type");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTimeOffset?>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("Module")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("module");
-
-                    b.Property<string>("ObjectKey")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("object_key");
-
-                    b.Property<string>("Purpose")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("purpose");
-
-                    b.Property<DateTimeOffset?>("ReadyAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ready_at");
-
-                    b.Property<long?>("SizeBytes")
-                        .HasColumnType("bigint")
-                        .HasColumnName("size_bytes");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_stored_files");
-
-                    b.HasIndex("ObjectKey")
-                        .IsUnique()
-                        .HasDatabaseName("ix_stored_files_object_key");
-
-                    b.HasIndex("UserId", "CreatedAt")
-                        .HasDatabaseName("ix_stored_files_user_id_created_at");
-
-                    b.ToTable("stored_files", "control_plane", t =>
-                        {
-                            t.HasCheckConstraint("ck_stored_files_purpose", "purpose IN ('DataExport')");
-
-                            t.HasCheckConstraint("ck_stored_files_ready_has_size_and_expiry", "status = 'Preparing' OR status = 'Failed' OR (size_bytes IS NOT NULL AND ready_at IS NOT NULL AND expires_at IS NOT NULL)");
-
-                            t.HasCheckConstraint("ck_stored_files_status", "status IN ('Preparing', 'Ready', 'Failed', 'Expired')");
-                        });
-                });
-
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.Property<bool>("Id")
@@ -300,6 +224,82 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasName("pk_role_permissions");
 
                     b.ToTable("role_permissions", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("module");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("object_key");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("purpose");
+
+                    b.Property<DateTimeOffset?>("ReadyAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ready_at");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stored_files");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stored_files_object_key");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("ix_stored_files_user_id_created_at");
+
+                    b.ToTable("stored_files", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_stored_files_purpose", "purpose IN ('DataExport')");
+
+                            t.HasCheckConstraint("ck_stored_files_ready_has_size_and_expiry", "status = 'Preparing' OR status = 'Failed' OR (size_bytes IS NOT NULL AND ready_at IS NOT NULL AND expires_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_stored_files_status", "status IN ('Preparing', 'Ready', 'Failed', 'Expired')");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
@@ -730,7 +730,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasName("pk_users");
 
                     b.HasIndex("Email")
-                        .HasDatabaseName("ix_users_email");
+                        .IsUnique()
+                        .HasDatabaseName("ux_users_email")
+                        .HasFilter("email IS NOT NULL");
 
                     b.HasIndex("ExternalId")
                         .IsUnique()
@@ -831,16 +833,6 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
-                {
-                    b.HasOne("ControlPlane.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_stored_files_users_user_id");
-                });
-
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Plans.Plan", null)
@@ -880,6 +872,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_role_permissions_roles_tenant_id_role_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stored_files_users_user_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
