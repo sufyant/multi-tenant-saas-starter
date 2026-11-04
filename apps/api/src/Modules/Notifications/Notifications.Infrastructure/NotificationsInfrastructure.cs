@@ -37,6 +37,9 @@ public static class NotificationsInfrastructure
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationQueries, NotificationQueries>();
 
+        // The module's part of a person's data export (docs/flows/personal-data-export.md).
+        services.AddScoped<IPersonalDataExporter, NotificationDataExporter>();
+
         // Outside Development email goes only through Resend. Without its settings no email could leave, invitations included, so the
         // application does not start.
         services.AddOptions<ResendOptions>()

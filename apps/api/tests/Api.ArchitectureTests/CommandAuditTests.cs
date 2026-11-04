@@ -21,9 +21,14 @@ public sealed class CommandAuditTests : IAsyncLifetime
     private const string Audit = "Audit.Application";
 
     // K3's exceptions: a change of a user's read state of their notifications is their own view, not a change of the product's data (U7),
-    // and the worker's retention of the notifications is no endpoint's (U8).
+    // the worker's retention of the notifications is no endpoint's (U8), a code for a new address changes no data of the user, whose
+    // change records user.email_changed, and the code of a deletion is a step of the deletion, which records user.deleted (section 6,
+    // "Verification codes").
     private static readonly string[] CommandsWithoutAudit =
-        ["MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand"];
+    [
+        "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
+        "ConfirmAccountDeletionCommand",
+    ];
 
     private readonly ComposedApplication _application = new("worker");
 

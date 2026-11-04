@@ -39,10 +39,13 @@
       "purging": "قيد الحذف"
     }
   },
-  "overview": {
-    "title": "نظرة عامة",
-    "organisation": "المؤسسة",
-    "text": "تظهر أقسام المنتج في القائمة عند إضافتها. لا يوجد شيء آخر لتفعله هنا الآن."
+  "home": {
+    "welcome": "مرحبًا، <name></name>",
+    "welcomeNoName": "مرحبًا",
+    "members": "الأشخاص في <organisation></organisation> وأدوارهم.",
+    "roles": "ما يمكن لكل دور فعله.",
+    "activity": "من غيّر ماذا ومتى.",
+    "settings": "اسم المؤسسة وخطتها وتفاصيلها."
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -283,7 +286,11 @@
         "suspended": "<actor></actor> أوقف هذه المؤسسة."
       },
       "user": {
+        "data_export_downloaded": "نزّل <actor></actor> نسخة من بياناته.",
+        "data_export_requested": "طلب <actor></actor> نسخة من بياناته.",
         "deleted": "<actor></actor> حذف حساب <target></target>.",
+        "deletion_requested": "طلب <actor></actor> حذف حسابه.",
+        "email_changed": "غيّر <actor></actor> عنوان بريده الإلكتروني.",
         "email_preferences_changed": "<actor></actor> غيّر تفضيلاته.",
         "preferences_changed": "<actor></actor> غيّر تفضيلاته.",
         "reactivated": "<actor></actor> أعاد تفعيل حساب <target></target>.",

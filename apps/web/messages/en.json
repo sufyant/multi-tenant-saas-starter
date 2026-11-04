@@ -39,10 +39,13 @@
       "purging": "Being deleted"
     }
   },
-  "overview": {
-    "title": "Overview",
-    "organisation": "Organisation",
-    "text": "Product sections appear in the rail as they are added. There is nothing else to do here right now."
+  "home": {
+    "welcome": "Welcome, <name></name>",
+    "welcomeNoName": "Welcome",
+    "members": "People in <organisation></organisation> and their roles.",
+    "roles": "What each role can do.",
+    "activity": "Who changed what, and when.",
+    "settings": "The organisation’s name, plan and details."
   },
   "profile": {
     "title": "Profile",
@@ -283,7 +286,11 @@
         "suspended": "<actor></actor> suspended this organisation."
       },
       "user": {
+        "data_export_downloaded": "<actor></actor> downloaded a copy of their data.",
+        "data_export_requested": "<actor></actor> asked for a copy of their data.",
         "deleted": "<actor></actor> deleted the account of <target></target>.",
+        "deletion_requested": "<actor></actor> asked to delete their account.",
+        "email_changed": "<actor></actor> changed their email address.",
         "email_preferences_changed": "<actor></actor> changed their preferences.",
         "preferences_changed": "<actor></actor> changed their preferences.",
         "reactivated": "<actor></actor> reactivated the account of <target></target>.",

@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildTokensCss } from "./build-tokens.mjs";
 
-// The @theme inline block that globals.css held by hand before build-tokens.mjs wrote it (F20). The script must write it unchanged,
-// with one exception: the families follow the order of tokens.json (sans, arabic, mono), where the hand-written block had mono before
-// arabic. The order of two declarations does not change the CSS.
-const handWrittenThemeBlock = `@theme inline {
+// The @theme inline block of the real tokens: every colour, size, shadow, family, text style and layer of tokens.json, in its
+// order (F20). The families follow tokens.json: sans, arabic, mono.
+const realThemeBlock = `@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -45,6 +44,18 @@ const handWrittenThemeBlock = `@theme inline {
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
+  --color-row-hover: var(--row-hover);
+  --color-track: var(--track);
+  --color-tooltip: var(--tooltip);
+  --color-tooltip-foreground: var(--tooltip-foreground);
+  --color-tooltip-muted: var(--tooltip-muted);
+  --color-env-staging: var(--env-staging);
+  --color-env-staging-foreground: var(--env-staging-foreground);
+  --color-role-owner-subtle: var(--role-owner-subtle);
+  --color-role-owner-text: var(--role-owner-text);
+  --color-brand-gradient-end: var(--brand-gradient-end);
+  --color-shadow-soft: var(--shadow-soft);
+  --color-shadow-wide: var(--shadow-wide);
   --color-platform: var(--platform);
   --color-platform-foreground: var(--platform-foreground);
   --color-overlay: var(--overlay);
@@ -54,6 +65,11 @@ const handWrittenThemeBlock = `@theme inline {
   --spacing-control-xl: var(--control-xl);
   --spacing-touch-target: var(--touch-target);
   --spacing-touch-target-tablet: var(--touch-target-tablet);
+  --spacing-row-height: var(--row-height);
+  --spacing-row-header: var(--row-header);
+  --spacing-target-min: var(--target-min);
+  --spacing-target-row-action: var(--target-row-action);
+  --spacing-panel-details: var(--panel-details);
   --spacing-rail-width: var(--rail-width);
   --spacing-rail-expanded: var(--rail-expanded);
   --spacing-code-slot-width: var(--code-slot-width);
@@ -75,7 +91,6 @@ const handWrittenThemeBlock = `@theme inline {
   --text-section-title: var(--font-section-title-size);
   --text-section-title--line-height: var(--font-section-title-line-height);
   --text-section-title--font-weight: var(--font-section-title-weight);
-  --text-section-title--letter-spacing: var(--font-section-title-tracking);
   --text-body: var(--font-body-size);
   --text-body--line-height: var(--font-body-line-height);
   --text-small: var(--font-small-size);
@@ -85,6 +100,9 @@ const handWrittenThemeBlock = `@theme inline {
   --text-status--font-weight: var(--font-status-weight);
   --text-mono: var(--font-mono-size);
   --text-mono--line-height: var(--font-mono-line-height);
+  --text-kbd: var(--font-kbd-size);
+  --text-kbd--line-height: var(--font-kbd-line-height);
+  --text-kbd--font-weight: var(--font-kbd-weight);
 
   --z-index-sticky: var(--z-sticky);
   --z-index-drawer: var(--z-drawer);
@@ -101,7 +119,7 @@ const themeBlock = (css: string) => {
 
 const tokens = (colors: { name: string; value: Record<string, string> }[]) => ({
   color: { tokens: colors },
-  type: { families: { sans: '"Geist", sans-serif' }, groups: [] },
+  type: { families: { sans: '"Instrument Sans", sans-serif' }, groups: [] },
   spacing: { tokens: [{ name: "space-1", value: "4px" }] },
   radius: { tokens: [] },
   shadow: { tokens: [] },
@@ -160,25 +178,25 @@ describe("buildTokensCss", () => {
 
     const css = buildTokensCss(source);
 
-    expect(css).toContain("--background: #fbfbfa;");
+    expect(css).toContain("--background: #f7f6f3;");
     expect(css).toContain("--space-4: 16px;");
     expect(css).toContain("--radius-md: 6px;");
     expect(css).toContain("--control-md: 32px;");
     expect(css).toContain("--z-toast: 500;");
     expect(css).toContain("--bp-tablet: 768px;");
-    expect(css).toContain("--font-page-title-size: 22px;");
-    expect(css).toContain("--font-page-title-tracking: -0.02em;");
+    expect(css).toContain("--font-page-title-size: 20px;");
+    expect(css).toContain("--font-page-title-tracking: -0.01em;");
     expect(css).toContain("--font-mono:");
   });
 
-  it("BuildTokensCss_Breakpoint_GoesIntoTheTailwindThemeAsAValue", () => {
+  it("BuildTokensCss_Breakpoint_ReplacesTailwindsDefaultBreakpoints", () => {
     const source = {
       ...tokens([]),
       breakpoint: { tokens: [{ name: "bp-tablet", value: "768px" }] },
     };
 
     expect(buildTokensCss(source)).toContain(
-      "@theme {\n  --breakpoint-tablet: 768px;\n}",
+      "@theme {\n  --breakpoint-*: initial;\n  --breakpoint-tablet: 768px;\n}",
     );
   });
 
@@ -205,7 +223,7 @@ describe("buildTokensCss", () => {
     );
   });
 
-  it("BuildTokensCss_RealTokens_WritesTheThemeBlockThatGlobalsCssHeld", async () => {
+  it("BuildTokensCss_RealTokens_WritesTheThemeBlockOfEveryToken", async () => {
     const { readFile } = await import("node:fs/promises");
     const source = JSON.parse(
       await readFile(`${import.meta.dirname}/../tokens/tokens.json`, "utf8"),
@@ -213,9 +231,7 @@ describe("buildTokensCss", () => {
 
     const css = buildTokensCss(source);
 
-    expect(themeBlock(css).split("\n")).toEqual(
-      handWrittenThemeBlock.split("\n"),
-    );
+    expect(themeBlock(css).split("\n")).toEqual(realThemeBlock.split("\n"));
   });
 
   it("BuildTokensCss_NewColorToken_GoesIntoTheThemeAsAColor", () => {

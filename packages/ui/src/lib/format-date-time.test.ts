@@ -107,7 +107,7 @@ describe("format-date-time", () => {
 
   it("FormatRelative_TwelveMinutesAgo_SaysSo", () => {
     expect(formatRelative(at, { ...dublin, now: "2026-10-16T13:44:00Z" })).toBe(
-      "12 minutes ago",
+      "12 min ago",
     );
   });
 
@@ -132,9 +132,9 @@ describe("format-date-time", () => {
   // F18 at its edges: under a minute the language's word for now, from a minute to 7 days the largest whole unit, then the date.
   it.each([
     ["59Seconds", "now", "2026-10-16T13:32:59Z"],
-    ["1Minute", "1 minute ago", "2026-10-16T13:33:00Z"],
-    ["59Minutes", "59 minutes ago", "2026-10-16T14:31:00Z"],
-    ["1Hour", "1 hour ago", "2026-10-16T14:32:00Z"],
+    ["1Minute", "1 min ago", "2026-10-16T13:33:00Z"],
+    ["59Minutes", "59 min ago", "2026-10-16T14:31:00Z"],
+    ["1Hour", "1 hr ago", "2026-10-16T14:32:00Z"],
     ["7Days", "7 days ago", "2026-10-23T13:32:00Z"],
     ["8Days", "16 Oct 2026", "2026-10-24T13:32:00Z"],
   ])("FormatRelative_%sLaterInEnIe_Says %s", (_, expected, now) => {

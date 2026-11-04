@@ -161,6 +161,13 @@ describe("AppShell", () => {
     vi.restoreAllMocks();
   });
 
+  // F59; the phone frames 2.43, 2.25 and the platform's 8.07.
+  it("AppShell_Phone_StartsTheContent16pxUnderTheTopBar", () => {
+    renderShell();
+
+    expect(screen.getByRole("main")).toHaveClass("pt-4", "pb-6");
+  });
+
   it("AppShell_Breadcrumb_EndsWithThePage", () => {
     renderShell();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
@@ -169,6 +176,15 @@ describe("AppShell", () => {
       "aria-current",
       "page",
     );
+  });
+
+  it("AppShell_Breadcrumb_SeparatesTheCrumbsWithTheDesignsMark", () => {
+    renderShell();
+    const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+
+    const separator = within(crumbs).getByText("›");
+    expect(separator).toHaveAttribute("aria-hidden", "true");
+    expect(separator.querySelector("svg")).not.toBeInTheDocument();
   });
 
   it("AppShell_CommandK_OpensTheCommandMenuWithItsGroups", async () => {

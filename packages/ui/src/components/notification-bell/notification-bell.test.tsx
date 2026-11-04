@@ -9,6 +9,7 @@ import {
   NotificationBell,
   type NotificationBellProps,
   type NotificationEntry,
+  NotificationPage,
 } from "./notification-bell";
 
 // Each app holds the locale's format; the bell reads it as the app's pages do. The popover's positioner stays transparent until
@@ -23,10 +24,11 @@ const entry = (
 ): NotificationEntry => ({
   id,
   title,
-  body: `${title}: the body.`,
   createdAt: "2026-10-16T13:29:00Z",
   readAt,
   href: `/northwind/${id}`,
+  organisation: "Northwind Traders",
+  area: "Members",
 });
 
 const joined = entry("a", "Deniz Arslan joined Northwind Traders");
@@ -59,6 +61,31 @@ function bell(props: Partial<NotificationBellProps> = {}) {
         onOpenItem={vi.fn()}
         onMarkAll={vi.fn()}
         markingAll={false}
+        tab="unread"
+        onTabChange={vi.fn()}
+        timeZone="Europe/Dublin"
+        now={now}
+        {...props}
+      />
+    </NextIntlClientProvider>
+  );
+}
+
+function page(props: Partial<NotificationBellProps> = {}) {
+  return (
+    <NextIntlClientProvider
+      locale="en"
+      messages={messages}
+      timeZone="Europe/Dublin"
+    >
+      <NotificationPage
+        unread={3}
+        list={loaded([joined, plan])}
+        onOpenItem={vi.fn()}
+        onMarkAll={vi.fn()}
+        markingAll={false}
+        tab="unread"
+        onTabChange={vi.fn()}
         timeZone="Europe/Dublin"
         now={now}
         {...props}
@@ -70,6 +97,12 @@ function bell(props: Partial<NotificationBellProps> = {}) {
 /** The badge's text, or null without a badge. */
 const countOf = (button: HTMLElement) =>
   button.querySelector("[data-slot='bell-count']")?.textContent ?? null;
+
+/** The paragraph of a row whose whole text is `text`: the meta line, which puts the organisation and the time in one line. */
+const lineOf = (row: HTMLElement, text: string) =>
+  within(row).queryByText(
+    (_, element) => element?.tagName === "P" && element.textContent === text,
+  );
 
 const scrollOf = () =>
   screen
@@ -104,6 +137,15 @@ describe("NotificationBell", () => {
     expect(countOf(screen.getByRole("button", { name }))).toBe(shown);
   });
 
+  // WCAG 2.5.3 (axe's label-content-name-mismatch): the row's visible words, without punctuation, stay in its accessible name.
+  it("NotificationBell_Row_KeepsItsVisibleWordsInItsName", () => {
+    render(bell({ open: false, place: "row" }));
+
+    expect(
+      screen.getByRole("button", { name: "Notifications, 3 unread" }),
+    ).toHaveTextContent(/^Notifications 3$/);
+  });
+
   it("NotificationBell_Closed_OpensOnPress", async () => {
     const onOpenChange = vi.fn();
     render(bell({ open: false, onOpenChange }));
@@ -115,16 +157,113 @@ describe("NotificationBell", () => {
     expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 
-  it("NotificationBell_Items_ShowTheTitleTheBodyAndTheRelativeTime", () => {
+  it("NotificationBell_Items_ShowTheTitleAndOneLineOfOrganisationAreaAndTime", () => {
     render(bell());
 
     const item = screen.getByRole("link", { name: /Deniz Arslan joined/ });
     const row = item.closest("li") as HTMLElement;
     expect(item).toHaveAttribute("href", "/northwind/a");
     expect(
-      within(row).getByText(`${joined.title}: the body.`),
+      lineOf(row, "Northwind Traders · Members · 3 min ago"),
     ).toBeInTheDocument();
-    expect(within(row).getByText("3 minutes ago")).toBeInTheDocument();
+  });
+
+  it("NotificationBell_ItemWithoutOrganisation_ShowsTheAreaAndTime", () => {
+    render(bell({ list: loaded([{ ...joined, organisation: undefined }]) }));
+
+    const row = screen
+      .getByRole("link", { name: /Deniz Arslan joined/ })
+      .closest("li") as HTMLElement;
+    expect(lineOf(row, "Members · 3 min ago")).toBeInTheDocument();
+  });
+
+  // The platform's line: the area and the person who acted, without a verb (3.01 of the platform).
+  it("NotificationBell_ItemWithActor_ShowsTheAreaActorAndTime", () => {
+    const suspended = {
+      ...joined,
+      organisation: undefined,
+      area: "Organisations",
+      actor: "Deniz Kaya",
+    };
+    render(bell({ list: loaded([suspended]) }));
+
+    const row = screen
+      .getByRole("link", { name: /Deniz Arslan joined/ })
+      .closest("li") as HTMLElement;
+    expect(
+      lineOf(row, "Organisations · Deniz Kaya · 3 min ago"),
+    ).toBeInTheDocument();
+  });
+
+  it("NotificationBell_Tabs_ShowUnreadWithItsCountAndAll", () => {
+    render(bell());
+
+    expect(screen.getByRole("tab", { name: "Unread 3" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+  });
+
+  // 3.03 and 3.09: with nothing unread the tab says "Unread" alone.
+  it("NotificationBell_NothingUnread_ShowsUnreadWithoutACount", () => {
+    render(bell({ unread: 0, tab: "all" }));
+
+    expect(screen.getByRole("tab", { name: "Unread" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("NotificationBell_TabPressed_AsksForThatTab", async () => {
+    const onTabChange = vi.fn();
+    render(bell({ onTabChange }));
+
+    await userEvent.click(screen.getByRole("tab", { name: "All" }));
+
+    expect(onTabChange).toHaveBeenCalledWith("all");
+  });
+
+  // F57: the Unread tab keeps an item read while it is open.
+  it("NotificationBell_UnreadTabItemRead_StaysInItsPlaceAsRead", () => {
+    const { rerender } = render(bell({ list: loaded([fresh, joined]) }));
+
+    rerender(bell({ list: loaded([joined]) }));
+
+    const links = screen.getAllByRole("link");
+    expect(links[0]).toHaveAccessibleName(
+      "Your role in Northwind Traders changed",
+    );
+    expect(links[1]).toHaveAccessibleName(/^Unread.*Deniz Arslan joined/);
+  });
+
+  it("NotificationBell_UnreadTabItemReadThenPressed_GivesItsReadTimeAsTheListGaveIt", async () => {
+    const onOpenItem = vi.fn();
+    const { rerender } = render(
+      bell({ onOpenItem, list: loaded([fresh, joined]) }),
+    );
+    rerender(bell({ onOpenItem, list: loaded([joined]) }));
+
+    await userEvent.click(screen.getByRole("link", { name: /Your role/ }));
+
+    expect(onOpenItem).toHaveBeenCalledWith(
+      { ...fresh, readHere: true },
+      { follow: true },
+    );
+  });
+
+  it("NotificationBell_TabChanged_DropsTheItemsReadThere", () => {
+    const { rerender } = render(bell({ list: loaded([fresh, joined]) }));
+    rerender(bell({ list: loaded([joined]) }));
+
+    rerender(bell({ tab: "all", list: loaded([]) }));
+    rerender(bell({ list: loaded([joined]) }));
+
+    expect(screen.queryByRole("link", { name: /Your role/ })).toBeNull();
   });
 
   it("NotificationBell_UnreadItem_SaysUnreadBesideTheMark", () => {
@@ -172,12 +311,20 @@ describe("NotificationBell", () => {
     expect(onMarkAll).toHaveBeenCalledOnce();
   });
 
-  it("NotificationBell_NothingUnread_HasNoMarkAll", () => {
+  it("NotificationBell_NothingUnread_DisablesMarkAll", () => {
     render(bell({ unread: 0 }));
 
     expect(
-      screen.queryByRole("button", { name: "Mark all as read" }),
-    ).toBeNull();
+      screen.getByRole("button", { name: "Mark all as read" }),
+    ).toBeDisabled();
+  });
+
+  it("NotificationBell_Loading_DisablesMarkAll", () => {
+    render(bell({ list: { status: "loading" } }));
+
+    expect(
+      screen.getByRole("button", { name: "Mark all as read" }),
+    ).toBeDisabled();
   });
 
   it("NotificationBell_MorePages_LoadsMore", async () => {
@@ -281,15 +428,52 @@ describe("NotificationBell", () => {
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
 
-  it("NotificationBell_Phone_OpensAFullScreenWithCloseAtTheStart", async () => {
+  it("NotificationBell_Phone_OpensAFullScreenWithClose", async () => {
     asAPhone();
     const onOpenChange = vi.fn();
     render(bell({ onOpenChange }));
 
     const screenDialog = screen.getByRole("dialog", { name: "Notifications" });
     const close = within(screenDialog).getByRole("button", { name: "Close" });
+    expect(close).toHaveTextContent("Close");
     await userEvent.click(close);
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  // The platform's phone opens its page of notifications under the top bar (3.08 of the platform).
+  it("NotificationBell_PhoneWithAPage_LinksToIt", () => {
+    asAPhone();
+    render(bell({ open: false, pageHref: "/notifications" }));
+
+    expect(
+      screen.getByRole("link", { name: "Notifications, 3 unread" }),
+    ).toHaveAttribute("href", "/notifications");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("NotificationPage_Loaded_ShowsTheTabsMarkAllAndTheItems", async () => {
+    const onMarkAll = vi.fn();
+    render(page({ onMarkAll }));
+
+    expect(screen.getByRole("tab", { name: "Unread 3" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Deniz Arslan joined/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Mark all as read" }),
+    );
+    expect(onMarkAll).toHaveBeenCalledOnce();
+  });
+
+  it("NotificationBell_PhoneEmpty_HasNoMarkAll", () => {
+    asAPhone();
+    render(bell({ unread: 0, list: loaded([]) }));
+
+    expect(screen.getByText("No notifications")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Mark all as read" }),
+    ).toBeNull();
   });
 
   // The full screen is Base UI's Dialog, which has no swipe to dismiss (Base UI's Drawer has one). A drag down the list scrolls it.

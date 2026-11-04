@@ -15,6 +15,12 @@ namespace ControlPlane.Application.Users;
 /// <remarks>Public because a public handler takes it (W9).</remarks>
 public interface IUserQueries
 {
+    /// <summary>
+    /// The address of the latest code of a change of address of the signed-in person with this identity provider id; none without a code.
+    /// It declares the user in the transaction (R11), so the own_verification_codes policy decides what is seen.
+    /// </summary>
+    internal Task<string?> FindPendingEmailChangeAsync(string externalUserId, CancellationToken cancellationToken);
+
     /// <summary>The signed-in person with this identity provider id, as they see themselves; null when they are not a user.</summary>
     internal Task<MeView?> FindMeAsync(string externalUserId, CancellationToken cancellationToken);
 

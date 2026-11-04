@@ -64,6 +64,10 @@ internal sealed class NotificationRows(Database database)
         return id;
     }
 
+    // Marks the notification read, as opening it does.
+    public Task<object?> MarkReadAsync(Guid notificationId) =>
+        database.ScalarAsSuperuserAsync<object>($"UPDATE notifications.notifications SET read_at = now() WHERE id = '{notificationId}'");
+
     public Task<bool> IsReadAsync(Guid notificationId) =>
         database.ScalarAsSuperuserAsync<bool>($"SELECT read_at IS NOT NULL FROM notifications.notifications WHERE id = '{notificationId}'");
 }

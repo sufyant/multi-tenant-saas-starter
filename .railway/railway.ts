@@ -59,6 +59,11 @@ import web from "./web.json" with { type: "json" };
 // Host:ErrorTracking:Dsn is optional: the API sends its errors to the error tracker only with it. A
 // missing shared variable gives an empty value, and an empty DSN turns error tracking off.
 //
+// Host:Storage: the file store is R2, in the account's EU jurisdiction, with one private bucket per environment, which
+// .cloudflare/ creates (apps/api/docs/ARCHITECTURE.md, section 7, "File storage"). The endpoint and the bucket are set below. The
+// endpoint names the account by the shared variable CLOUDFLARE_ACCOUNT_ID. The two keys are a token scoped to the bucket, shared
+// variables that the maintainer enters by hand.
+//
 // ConfigurationDocumentTests in apps/api checks that this file sets every required key, and only
 // keys that configuration.md documents.
 const sharedVariables = [
@@ -72,6 +77,8 @@ const sharedVariables = [
   "Notifications__Resend__ApiKey",
   "Notifications__Resend__From",
   "Host__ErrorTracking__Dsn",
+  "Host__Storage__AccessKeyId",
+  "Host__Storage__SecretAccessKey",
 ];
 
 // ASP.NET Core's name of each environment, capitalised as its standard names are, so that a file such as
@@ -156,6 +163,8 @@ export default defineRailway((ctx) => {
           ctx.shared.Host__Authentication__AuthorizedParties__0,
         Notifications__Links__PlatformUrl:
           ctx.shared.Host__Authentication__AuthorizedParties__1,
+        Host__Storage__Endpoint: `https://${ctx.shared.CLOUDFLARE_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`,
+        Host__Storage__Bucket: `starter-${ctx.environment}`,
         ...own,
       },
     });

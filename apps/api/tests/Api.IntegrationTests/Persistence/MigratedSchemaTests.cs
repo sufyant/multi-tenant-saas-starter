@@ -34,7 +34,9 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.memberships: forced
             control_plane.role_permissions: forced
             control_plane.roles: forced
+            control_plane.stored_files: forced
             control_plane.tenant_purge_sagas: forced
+            control_plane.verification_codes: forced
             notifications.notifications: forced
             """);
     }
@@ -55,6 +57,7 @@ public sealed class MigratedSchemaTests(Database database)
 
         policies.ShouldBe(
             """
+            audit.entries own_actions: PERMISSIVE SELECT {api_application} USING (actor_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK -
             audit.entries tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             audit.platform_entries platform_insert: PERMISSIVE INSERT {public} USING - WITH CHECK true
             audit.platform_entries platform_read: PERMISSIVE SELECT {public} USING ((NULLIF(current_setting('app.tenant_id'::text, true), ''::text) IS NULL) AND (NULLIF(current_setting('app.user_id'::text, true), ''::text) IS NULL)) WITH CHECK -
@@ -67,7 +70,9 @@ public sealed class MigratedSchemaTests(Database database)
                FROM control_plane.memberships
               WHERE ((memberships.tenant_id = roles.tenant_id) AND (memberships.role_id = roles.id) AND (memberships.user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)))) WITH CHECK -
             control_plane.roles tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            control_plane.stored_files own_files: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             control_plane.tenant_purge_sagas tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            control_plane.verification_codes own_verification_codes: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications own_notifications: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications owner_delete: PERMISSIVE DELETE {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
             notifications.notifications owner_read: PERMISSIVE SELECT {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
@@ -135,11 +140,13 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.plans: DELETE, INSERT, SELECT, UPDATE
             table control_plane.role_permissions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.roles: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.stored_files: DELETE, INSERT, SELECT, UPDATE
             table control_plane.system_admins: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenant_purge_sagas: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenant_summaries: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenants: DELETE, INSERT, SELECT, UPDATE
             table control_plane.users: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.verification_codes: DELETE, INSERT, SELECT, UPDATE
             table notifications.__ef_migrations_history: SELECT
             table notifications.notifications: DELETE, INSERT, SELECT, UPDATE
             """);
@@ -165,6 +172,23 @@ public sealed class MigratedSchemaTests(Database database)
             FOREIGN KEY (tenant_id, role_id) REFERENCES control_plane.roles(tenant_id, id) ON DELETE SET NULL (role_id)
             CREATE UNIQUE INDEX ix_roles_tenant_id_lower_name ON control_plane.roles USING btree (tenant_id, lower((name)::text))
             """);
+    }
+
+    // A7: two live users never keep one address. The unique index holds the stored form, the one every comparison reads; a deleted user
+    // keeps no address (A8), so any number of them pass.
+    [Fact]
+    public async Task WriteUser_TheAddressOfAnotherLiveUser_IsRefusedByTheUniqueIndex()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, migrated);
+        await testData.AddUserAsync(email: "ada@example.com");
+        await testData.DeleteUserAsync(await testData.AddUserAsync(email: "grace@example.com"));
+        await testData.DeleteUserAsync(await testData.AddUserAsync(email: "grace+2@example.com"));
+
+        var second = () => testData.AddUserAsync(email: "ada@example.com");
+
+        var refused = await second.ShouldThrowAsync<PostgresException>();
+        (refused.SqlState, refused.ConstraintName).ShouldBe((PostgresErrorCodes.UniqueViolation, "ux_users_email"));
     }
 
     // R15: a single-row rule of the code is a CHECK. Rows of every kind, as the code writes them, are stored: tenants of each kind with
@@ -194,6 +218,16 @@ public sealed class MigratedSchemaTests(Database database)
         await database.ScalarAsSuperuserAsync<object>(
             $"INSERT INTO control_plane.tenant_purge_sagas (id, state, waiting, tenant_id, version) VALUES ('{purged.Id}', 'Completed', ARRAY[]::text[], '{purged.Id}', 3)",
             migrated);
+        var ownerId = await testData.UserIdOfAsync(owner);
+        var (file, code) = (Guid.CreateVersion7(), Guid.CreateVersion7());
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.stored_files (id, user_id, module, purpose, object_key, content_type, status, created_at)
+            VALUES ('{file}', '{ownerId}', 'control_plane', 'DataExport', 'exports/users/{ownerId}/{file}.zip', 'application/zip', 'Preparing', now());
+            INSERT INTO control_plane.verification_codes (id, user_id, purpose, code_hash, new_email, created_at, expires_at, attempts)
+            VALUES ('{code}', '{ownerId}', 'EmailChange', '\x00', 'ada@new.example', now(), now() + interval '10 minutes', 0);
+            """,
+            migrated);
 
         var refusals = await RefusingAsync(
             migrated,
@@ -215,7 +249,13 @@ public sealed class MigratedSchemaTests(Database database)
             $"UPDATE control_plane.invitations SET status = 'Expired' WHERE id = '{cancelled}'",
             $"UPDATE control_plane.invitations SET language = 'de' WHERE id = '{pending}'",
             $"UPDATE control_plane.invitations SET accepted_at = now() WHERE id = '{pending}'",
-            $"UPDATE control_plane.tenant_purge_sagas SET state = 'Failed' WHERE id = '{purged.Id}'");
+            $"UPDATE control_plane.tenant_purge_sagas SET state = 'Failed' WHERE id = '{purged.Id}'",
+            $"UPDATE control_plane.stored_files SET purpose = 'Avatar' WHERE id = '{file}'",
+            $"UPDATE control_plane.stored_files SET status = 'Lost', size_bytes = 1, ready_at = now(), expires_at = now() WHERE id = '{file}'",
+            $"UPDATE control_plane.stored_files SET status = 'Ready' WHERE id = '{file}'",
+            $"UPDATE control_plane.verification_codes SET purpose = 'SignIn', new_email = NULL WHERE id = '{code}'",
+            $"UPDATE control_plane.verification_codes SET new_email = NULL WHERE id = '{code}'",
+            $"UPDATE control_plane.verification_codes SET attempts = -1 WHERE id = '{code}'");
 
         refusals.ShouldBe(
         [
@@ -237,6 +277,12 @@ public sealed class MigratedSchemaTests(Database database)
             "ck_invitations_language",
             "ck_invitations_acceptance",
             "ck_tenant_purge_sagas_state",
+            "ck_stored_files_purpose",
+            "ck_stored_files_status",
+            "ck_stored_files_ready_has_size_and_expiry",
+            "ck_verification_codes_purpose",
+            "ck_verification_codes_new_email",
+            "ck_verification_codes_attempts",
         ]);
     }
 
@@ -353,10 +399,12 @@ public sealed class MigratedSchemaTests(Database database)
             fk_plan_entitlements_plans_plan_id: RESTRICT
             fk_role_permissions_roles_tenant_id_role_id: CASCADE
             fk_roles_tenants_tenant_id: RESTRICT
+            fk_stored_files_users_user_id: RESTRICT
             fk_system_admins_users_user_id: RESTRICT
             fk_tenant_summaries_tenants_tenant_id: RESTRICT
             fk_tenants_plans_plan_id: RESTRICT
             fk_users_users_suspended_by: RESTRICT
+            fk_verification_codes_users_user_id: RESTRICT
             """);
         refusals.ShouldBe(["fk_roles_tenants_tenant_id", "fk_memberships_users_user_id", "fk_system_admins_users_user_id", "taken"]);
     }

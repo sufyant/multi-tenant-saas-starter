@@ -8,7 +8,7 @@ import { cn } from "../../lib/utils";
 /** The waits between two tries (the Connection bar): 5, 10, then 30 seconds for every later try. */
 export const retryDelays = [5, 10, 30] as const;
 /** How long "Back online" stays. */
-export const backOnlineMs = 3000;
+export const backOnlineMs = 2000;
 
 export type ConnectionBarProps = {
   /** The server did not answer the app's last call: a network error, 502, 503 or 504 (`serverReach` of the client). */
@@ -91,7 +91,7 @@ export function ConnectionBar({
       data-slot="connection-bar"
       data-state={problem ?? "back-online"}
       className={cn(
-        "flex min-h-8 shrink-0 flex-wrap items-center justify-center gap-x-2 px-4 py-1 text-center text-body font-medium",
+        "flex min-h-8 shrink-0 flex-wrap items-center justify-center gap-x-2 px-4 py-1 text-center text-small font-medium",
         problem
           ? "bg-warning-subtle text-warning-text"
           : "bg-success-subtle text-success-text",

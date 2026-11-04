@@ -39,10 +39,13 @@
       "purging": "Siliniyor"
     }
   },
-  "overview": {
-    "title": "Genel bakış",
-    "organisation": "Kuruluş",
-    "text": "Ürün bölümleri eklendikçe menüde görünür. Şu anda burada yapılacak başka bir şey yok."
+  "home": {
+    "welcome": "Hoş geldiniz, <name></name>",
+    "welcomeNoName": "Hoş geldiniz",
+    "members": "<organisation></organisation> kuruluşundaki kişiler ve rolleri.",
+    "roles": "Her rolün neler yapabildiği.",
+    "activity": "Kim neyi ne zaman değiştirdi.",
+    "settings": "Kuruluşun adı, planı ve bilgileri."
   },
   "profile": {
     "title": "Profil",
@@ -283,7 +286,11 @@
         "suspended": "<actor></actor> bu kuruluşu askıya aldı."
       },
       "user": {
+        "data_export_downloaded": "<actor></actor> verilerinin bir kopyasını indirdi.",
+        "data_export_requested": "<actor></actor> verilerinin bir kopyasını istedi.",
         "deleted": "<actor></actor>, <target></target> adlı kullanıcının hesabını sildi.",
+        "deletion_requested": "<actor></actor> hesabını silmek istedi.",
+        "email_changed": "<actor></actor> e-posta adresini değiştirdi.",
         "email_preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "reactivated": "<actor></actor>, <target></target> adlı kullanıcının hesabını yeniden etkinleştirdi.",

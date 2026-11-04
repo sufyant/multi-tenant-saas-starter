@@ -9,6 +9,13 @@ import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
 import type { ReactElement } from "react";
 import {
+  AccountEmail,
+  type AccountEmailKind,
+  type AccountEmailProps,
+  accountEmailSubject,
+  accountEmailText,
+} from "../src/templates/account";
+import {
   DeletionWarning,
   type DeletionWarningProps,
   deletionWarningSubject,
@@ -63,6 +70,31 @@ const notification = (language: Language): NotificationProps => ({
   ...placeholders("title", "body", "link", "footer"),
 });
 
+// The emails about the person's own account, each under its own name, with the placeholders its kind uses.
+const account =
+  (
+    kind: AccountEmailKind,
+    values: Partial<AccountEmailProps>,
+  ): ((language: Language) => AccountEmailProps) =>
+  (language) => ({
+    language,
+    kind,
+    ...values,
+  });
+
+const accountEmails: [string, (language: Language) => AccountEmailProps][] = [
+  [
+    "email-change-code",
+    account("emailChangeCode", placeholders("verificationCode")),
+  ],
+  ["deletion-code", account("deletionCode", placeholders("verificationCode"))],
+  [
+    "email-changed",
+    account("emailChanged", placeholders("newEmail", "supportUrl")),
+  ],
+  ["account-deleted", account("accountDeleted", {})],
+];
+
 const emails: Email[] = [
   {
     name: "invitation",
@@ -82,6 +114,12 @@ const emails: Email[] = [
     text: (language) => notificationText(notification(language)),
     subject: (language) => notificationSubject(notification(language)),
   },
+  ...accountEmails.map(([name, props]) => ({
+    name,
+    html: (language: Language) => <AccountEmail {...props(language)} />,
+    text: (language: Language) => accountEmailText(props(language)),
+    subject: (language: Language) => accountEmailSubject(props(language)),
+  })),
 ];
 
 // A notification's texts name a value as {name}; the API fills {{name}}, as in every email.

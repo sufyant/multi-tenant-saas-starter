@@ -38,7 +38,7 @@ describe("Avatar", () => {
   });
 
   // jsdom draws nothing, so the look is the classes of the tokens; Playwright reads the top bar's drawn avatar.
-  it("Avatar_InAList_IsTheSmallFilledCircle", () => {
+  it("Avatar_InAList_IsTheSmallTintedCircle", () => {
     const { container } = render(
       <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />,
     );
@@ -49,7 +49,7 @@ describe("Avatar", () => {
     );
     expect(
       container.querySelector('[data-slot="avatar-fallback"]'),
-    ).toHaveClass("bg-neutral-text", "text-background", "font-semibold");
+    ).toHaveClass("bg-role-owner-subtle", "text-role-owner-text");
   });
 
   it("Avatar_Size_TakesTheClass", () => {

@@ -573,6 +573,24 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         (await _testData.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.RootEmail, null, null, Deleted: false, "en", null));
     }
 
+    // The unique index of the addresses (A7): another live user keeps the listed address, so the door writes no second user with it and
+    // grants nothing; the door stays closed to this account.
+    [Fact]
+    public async Task CreateTenant_RootSystemAdminsFirstVisitWithAnAddressAnotherUserKeeps_IsForbiddenAndAddsNoUser()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
+        await new TestData(database, name).AddUserAsync(email: ApiFactory.RootEmail);
+        var admin = $"user_{Guid.NewGuid():N}";
+        api.Identity.AddAccount(admin, ApiFactory.RootEmail);
+
+        var created = await api.WaitingForMessagesAsync(
+            () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.users WHERE email = '{ApiFactory.RootEmail}'", name)).ShouldBe(1);
+    }
+
     [Fact]
     public async Task CreateTenant_EveryMessageSucceeds_InvitesTheOwnerOnceAndRecordsIt()
     {

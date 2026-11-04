@@ -13,6 +13,7 @@
     "activityLog": "سجل النشاط",
     "settings": "الإعدادات",
     "platform": "Platform",
+    "productPlatform": "{product} Platform",
     "backToPlatform": "العودة إلى المنصة",
     "myAccount": "حسابي",
     "systemAdmins": "مسؤولو النظام",

@@ -15,6 +15,8 @@ public static class Errors
 
     public static readonly Error UserNotFound = Error.NotFound(ControlPlaneErrorCodes.UserNotFound, "The user was not found.");
 
+    public static readonly Error UserEmailTaken = Error.Conflict(ControlPlaneErrorCodes.UserEmailTaken, "Another account uses this address.");
+
     public static readonly Error UserIsSystemAdmin = Error.Conflict(ControlPlaneErrorCodes.UserIsSystemAdmin, "A system admin cannot be suspended or deleted.");
 
     /// <summary>The user is the last Owner of these tenants: a tenant always has at least one Owner (K1).</summary>

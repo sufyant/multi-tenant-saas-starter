@@ -7,7 +7,7 @@ describe("Label", () => {
     render(<Label>Owner</Label>);
 
     expect(screen.getByText("Owner")).toHaveClass(
-      "inset-ring-border",
+      "border-border",
       "text-foreground",
       "whitespace-nowrap",
     );

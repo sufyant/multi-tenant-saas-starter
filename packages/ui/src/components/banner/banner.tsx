@@ -1,13 +1,30 @@
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
+import {
+  CircleCheckIcon,
+  CircleXIcon,
+  Icon,
+  InfoIcon,
+  type LucideIcon,
+  TriangleAlertIcon,
+} from "../icon";
 
 export type BannerTone = "warning" | "destructive" | "info" | "success";
 
-const tones: Record<BannerTone, string> = {
-  warning: "bg-warning-subtle border-warning",
-  destructive: "bg-destructive-subtle border-destructive",
-  info: "bg-info-subtle border-info",
-  success: "bg-success-subtle border-success",
+const tones: Record<BannerTone, { box: string; icon: LucideIcon }> = {
+  warning: {
+    box: "bg-warning-subtle text-warning-text",
+    icon: TriangleAlertIcon,
+  },
+  destructive: {
+    box: "bg-destructive-subtle text-destructive-text",
+    icon: CircleXIcon,
+  },
+  info: { box: "bg-info-subtle text-info-text", icon: InfoIcon },
+  success: {
+    box: "bg-success-subtle text-success-text",
+    icon: CircleCheckIcon,
+  },
 };
 
 export type BannerProps = {
@@ -20,7 +37,7 @@ export type BannerProps = {
   children?: ReactNode;
 };
 
-/** A persistent strip that states the condition of the whole page (the Banner README). It does not dismiss. */
+/** A persistent strip that states the condition of the whole page (the design's Banner): the tone's icon, the title over the text. */
 export function Banner({
   title,
   tone = "info",
@@ -31,13 +48,17 @@ export function Banner({
     <div
       role="status"
       className={cn(
-        "flex items-start gap-3 rounded-lg border-s-4 px-4 py-3 text-body",
-        tones[tone],
+        "flex items-center gap-2.5 rounded-lg py-2.5 ps-3.5 pe-2 text-small",
+        tones[tone].box,
       )}
     >
-      <p className="flex-1">
-        <strong className="font-semibold">{title}</strong> {children}
-      </p>
+      <Icon icon={tones[tone].icon} size={16} className="shrink-0" />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="font-medium">{title}</p>
+        {/* A flex column draws no space between its items; the space keeps the sentences apart in the text. */}
+        {children && " "}
+        {children && <p>{children}</p>}
+      </div>
       {action}
     </div>
   );

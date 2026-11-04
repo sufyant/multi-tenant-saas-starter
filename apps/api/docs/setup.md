@@ -38,7 +38,7 @@ The API needs these from an identity provider:
 - Session tokens that carry `sub` (the user) and `sid` (the session). A token without `sid` is refused (API2).
 - `fva` in the session token for the second factor: the minutes since the first and the second factor were verified, `-1` for never. The system door requires a verified second factor (A6).
 - Invite-only sign-up with email verification. Only an invitation of the identity provider lets a person sign up. The API asks for one when it invites an address that has no account (A7). The person signs up through its link and then accepts our invitation with the invited address verified.
-- A Backend API, called only from the API's server. Its URL and secret key are `ControlPlane:Clerk:BackendApiUrl` and `ControlPlane:Clerk:SecretKey`. The API uses four calls and nothing else: let an address sign up, withdraw that permission, read a user's verified email addresses, and delete a user (`IIdentityProvider`).
+- A Backend API, called only from the API's server. Its URL and secret key are `ControlPlane:Clerk:BackendApiUrl` and `ControlPlane:Clerk:SecretKey`. The API uses six calls and nothing else: let an address sign up, withdraw that permission, read a user's verified email addresses, ask whether an address belongs to another account, replace a user's email address, and delete a user (`IIdentityProvider`, A7).
 - No webhooks. Nobody edits a user at the identity provider, so nothing flows back.
 
 On Clerk:

@@ -29,6 +29,9 @@ public sealed partial record NotificationText(string Title, string Body)
     /// <summary>The name of each entitlement key, under <c>notificationWords</c>.</summary>
     public const string EntitlementKeyWords = "entitlementKey";
 
+    /// <summary>The name of each area of the list, under <c>notificationWords</c>.</summary>
+    public const string AreaWords = "area";
+
     private static readonly Dictionary<Language, Texts> ByLanguage = Read();
 
     /// <summary>The types the texts of the language have, for the architecture test of the catalog (U1).</summary>
@@ -86,6 +89,19 @@ public sealed partial record NotificationText(string Title, string Body)
         return new(Fill(text.Title!, written), Fill(text.Body, written));
     }
 
+    /// <summary>The area of a type in the language, as the list shows it beside the item.</summary>
+    public static string AreaOf(string type, Language language) =>
+        WordOf(ByLanguage[language], language, AreaWords, NotificationCatalog.Of(type).Area);
+
+    /// <summary>
+    /// The name of the person who acted, named now as a value's person is; none when the type has no actor or its optional actor is
+    /// missing.
+    /// </summary>
+    public static string? ActorOf(string type, IReadOnlyDictionary<string, string> values, IReadOnlyDictionary<Guid, UserName> people, Language language) =>
+        NotificationCatalog.Of(type).Actor is { } actor && values.TryGetValue(actor, out var stored)
+            ? NameOf(stored, people, ByLanguage[language], language)
+            : null;
+
     private static string Write(
         NotificationValue value,
         IReadOnlyDictionary<string, string> values,
@@ -97,9 +113,7 @@ public sealed partial record NotificationText(string Title, string Body)
         var stored = values[value.Name];
         return value.Kind switch
         {
-            NotificationValueKind.Person => people.TryGetValue(Guid.Parse(stored), out var person) && !person.Deleted
-                ? person.DisplayName ?? WordOf(texts, language, PersonWords, "unnamed")
-                : WordOf(texts, language, PersonWords, "deleted"),
+            NotificationValueKind.Person => NameOf(stored, people, texts, language),
             NotificationValueKind.Role => EmailLanguage.Of(language).RoleName(stored, bool.Parse(values[$"{value.Name}BuiltIn"])),
             NotificationValueKind.Word => WordOf(texts, language, value.Name, stored),
             NotificationValueKind.EntitlementKey => WordOf(texts, language, EntitlementKeyWords, stored),
@@ -110,6 +124,11 @@ public sealed partial record NotificationText(string Title, string Body)
             _ => stored,
         };
     }
+
+    private static string NameOf(string stored, IReadOnlyDictionary<Guid, UserName> people, Texts texts, Language language) =>
+        people.TryGetValue(Guid.Parse(stored), out var person) && !person.Deleted
+            ? person.DisplayName ?? WordOf(texts, language, PersonWords, "unnamed")
+            : WordOf(texts, language, PersonWords, "deleted");
 
     private static string WordOf(Texts texts, Language language, string list, string word) =>
         texts.Words.TryGetValue(list, out var words) && words.TryGetValue(word, out var found)

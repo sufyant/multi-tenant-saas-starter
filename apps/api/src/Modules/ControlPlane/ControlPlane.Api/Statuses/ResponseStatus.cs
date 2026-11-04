@@ -1,3 +1,4 @@
+using ControlPlane.Api.Me.DataExports;
 using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Platform.Tenants;
@@ -32,6 +33,15 @@ internal static class ResponseStatus
         "Suspended" => MyTenantResponseStatus.Suspended,
         "Closed" => MyTenantResponseStatus.Closed,
         "Purging" => MyTenantResponseStatus.Purging,
+        _ => throw Unknown(status),
+    };
+
+    public static DataExportResponseStatus OfDataExport(string status) => status switch
+    {
+        "Preparing" => DataExportResponseStatus.Preparing,
+        "Ready" => DataExportResponseStatus.Ready,
+        "Failed" => DataExportResponseStatus.Failed,
+        "Expired" => DataExportResponseStatus.Expired,
         _ => throw Unknown(status),
     };
 

@@ -18,7 +18,9 @@ import {
 import {
   NotificationBell,
   type NotificationBellProps,
+  type NotificationEntry,
   type NotificationListState,
+  type NotificationTab,
 } from "@repo/ui/components/notification-bell";
 
 type BellPlace = NotificationBellProps["place"];
@@ -59,8 +61,9 @@ export function PersonalBell() {
 
 /**
  * A bell's reads and commands around the shared `NotificationBell`. The count reads at once; the list reads each time the bell
- * opens. Opening an item marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for
- * the answer, then reads the bell again, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
+ * opens, on Unread while something is unread and on All otherwise (3.01, 3.03); each tab reads its own list. Opening an item
+ * marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for the answer, then reads
+ * the bell again and shows All, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
  */
 function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   const router = useRouter();
@@ -68,6 +71,7 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   const t = useTranslations();
   const failureText = useFailureText();
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<NotificationTab>("all");
   // A page that failed on GetMe may hold the bell ("No access yet"): reading it again on mount would take that page away.
   const me = useQuery({ ...getGetMeQueryOptions(), retryOnMount: false });
   // The cached list of the tenant layout gives each link its organisation's slug (F30).
@@ -77,14 +81,22 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
     }),
   );
   const count = useQuery(bell.count);
-  const list = useInfiniteQuery({ ...bell.list, enabled: open, staleTime: 0 });
+  const list = useInfiniteQuery({
+    ...(tab === "unread" ? bell.unreadList : bell.list),
+    enabled: open,
+    staleTime: 0,
+  });
   const readAgain = () =>
     Promise.all(
       bell.keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     );
   const markAll = useMutation({
     mutationFn: bell.markAll,
-    onSuccess: readAgain,
+    // Nothing is unread now: the bell shows All (3.01 leads to 3.09).
+    onSuccess: () => {
+      setTab("all");
+      return readAgain();
+    },
     onError: (error) => {
       const action =
         error instanceof ProblemDetailsError
@@ -112,15 +124,24 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
     onSettled: readAgain,
   });
 
-  const hrefOf = (item: NotificationResponse) =>
-    notificationHref(item.link, tenants.data?.items ?? []);
-  const state = stateOf(list, hrefOf);
+  const entryOf = (item: NotificationResponse) => ({
+    ...item,
+    href: notificationHref(item.link, tenants.data?.items ?? []),
+    organisation: item.tenantName ?? undefined,
+    area: item.area,
+  });
+  const state = stateOf(list, entryOf);
 
   return (
     <NotificationBell
       unread={count.data?.unread}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        if (next) setTab(count.data?.unread ? "unread" : "all");
+        setOpen(next);
+      }}
+      tab={tab}
+      onTabChange={setTab}
       list={state}
       onOpenItem={(entry, { follow }) => {
         markRead.mutate(entry.id);
@@ -137,20 +158,18 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   );
 }
 
-/** The list's read as the bell shows it: its pages with each item's address, its failure, or the wait. */
+/** The list's read as the bell shows it: its pages with each item's address and organisation, its failure, or the wait. */
 function stateOf(
   list: UseInfiniteQueryResult<
     InfiniteData<CursorPageOfNotificationResponse>,
     Error
   >,
-  hrefOf: (item: NotificationResponse) => string,
+  entryOf: (item: NotificationResponse) => NotificationEntry,
 ): NotificationListState {
   if (list.data)
     return {
       status: "success",
-      items: list.data.pages.flatMap((page) =>
-        page.items.map((item) => ({ ...item, href: hrefOf(item) })),
-      ),
+      items: list.data.pages.flatMap((page) => page.items.map(entryOf)),
       hasMore: list.hasNextPage,
       loadingMore: list.isFetchingNextPage,
       onLoadMore: () => void list.fetchNextPage(),

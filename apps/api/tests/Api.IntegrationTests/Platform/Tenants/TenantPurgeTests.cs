@@ -52,6 +52,23 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
     }
 
+    // The file store takes part in the purge: every file under the tenant's prefix goes, and another tenant's stays (section 7, "File
+    // storage"). No module keeps a tenant's file yet, so the test puts them in the bucket as a later module would.
+    [Fact]
+    public async Task PurgeTenant_FilesOfTheTenant_DeletesThemAndKeepsAnotherTenantsFiles()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var kept = await ClosedTenantWithDataAsync("Kept Ltd");
+        await ObjectStorage.PutAsync($"{SharedKernel.FileKeys.Tenant(tenant.Id)}documents/{Guid.CreateVersion7()}", "a");
+        await ObjectStorage.PutAsync($"{SharedKernel.FileKeys.Tenant(kept.Id)}documents/{Guid.CreateVersion7()}", "b");
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await ObjectStorage.KeysAsync(SharedKernel.FileKeys.Tenant(tenant.Id))).ShouldBeEmpty();
+        (await ObjectStorage.KeysAsync(SharedKernel.FileKeys.Tenant(kept.Id))).Count.ShouldBe(1);
+        (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
+    }
+
     // A user whose only membership was in the purged tenant is deleted through the user deletion path, by the platform: masked, deleted
     // at the identity provider, recorded. A user with another membership stays, and so does a system admin.
     [Fact]
