@@ -163,7 +163,9 @@ export default defineRailway((ctx) => {
           ctx.shared.Host__Authentication__AuthorizedParties__0,
         Notifications__Links__PlatformUrl:
           ctx.shared.Host__Authentication__AuthorizedParties__1,
-        Host__Storage__Endpoint: `https://${ctx.shared.CLOUDFLARE_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`,
+        // `ctx.shared.X` is a reference object, not its value, so a string references the shared variable in Railway's syntax.
+        Host__Storage__Endpoint:
+          `https://\${{shared.CLOUDFLARE_ACCOUNT_ID}}.eu.r2.cloudflarestorage.com`,
         Host__Storage__Bucket: `starter-${ctx.environment}`,
         ...own,
       },
