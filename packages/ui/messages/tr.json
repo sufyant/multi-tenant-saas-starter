@@ -280,7 +280,11 @@
     "emptyText": "Sizi ilgilendiren bir şey değiştiğinde burada görünür.",
     "errorTitle": "Bildirimler yüklenemedi",
     "offlineTitle": "Çevrimdışısınız.",
-    "offlineText": "Yeni bildirimler, yeniden çevrimiçi olduğunuzda görünür."
+    "offlineText": "Yeni bildirimler, yeniden çevrimiçi olduğunuzda görünür.",
+    "tabs": "Göster",
+    "tabUnread": "Okunmamış",
+    "tabUnreadCount": "Okunmamış {count}",
+    "tabAll": "Tümü"
   },
   "patterns": {
     "copied": "Kopyalandı",

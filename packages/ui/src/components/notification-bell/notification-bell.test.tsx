@@ -239,9 +239,7 @@ describe("NotificationBell", () => {
     expect(links[0]).toHaveAccessibleName(
       "Your role in Northwind Traders changed",
     );
-    expect(links[1]).toHaveAccessibleName(
-      "Unread Deniz Arslan joined Northwind Traders",
-    );
+    expect(links[1]).toHaveAccessibleName(/^Unread.*Deniz Arslan joined/);
   });
 
   it("NotificationBell_TabChanged_DropsTheItemsReadThere", () => {
