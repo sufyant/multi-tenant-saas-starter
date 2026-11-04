@@ -18,7 +18,12 @@ import {
   northwind,
   type Plan,
   pro,
+  roleChanged,
 } from "./api";
+
+/** The bell's tabs; a page may have tabs of its own. */
+const bellTabs = (page: Page) =>
+  page.getByRole("tablist", { name: "Which notifications" });
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/web/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
@@ -28,8 +33,11 @@ test.skip(
 );
 
 const folder = "test-results/screenshots";
+// CI runs the production build, which has no /dev/components (F33): its shots run on a development server only.
+const productionBuild = Boolean(process.env.CI);
 
 test("Screenshot_DevComponents_EnglishLightDesktop", async ({ page }) => {
+  test.skip(productionBuild, "A production build has no /dev/components.");
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -44,6 +52,7 @@ test("Screenshot_DevComponents_EnglishLightDesktop", async ({ page }) => {
 });
 
 test("Screenshot_DevComponents_ArabicDarkPhone", async ({ page }) => {
+  test.skip(productionBuild, "A production build has no /dev/components.");
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "dark" });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -59,16 +68,19 @@ test("Screenshot_DevComponents_ArabicDarkPhone", async ({ page }) => {
   });
 });
 
-test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
+test("Screenshot_Profile_TurkishLightTablet", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 834, height: 1112 });
   await mockApi(page, Language.Tr);
 
   await page.goto(`/${northwind.slug}/settings/profile`);
-  await page.getByRole("heading", { level: 1, name: "Tercihler" }).waitFor();
+  await page
+    .getByRole("main")
+    .getByRole("heading", { level: 1, name: "Profil" })
+    .waitFor();
 
-  await page.screenshot({ path: `${folder}/preferences-tr-light-tablet.png` });
+  await page.screenshot({ path: `${folder}/profile-tr-light-tablet.png` });
 });
 
 const members = `/${northwind.slug}/settings/members`;
@@ -80,10 +92,10 @@ const rowAction = (menu: string, item: string) => async (page: Page) => {
   await page.getByRole("alertdialog").waitFor();
 };
 /** Opens the account menu, from the phone's drawer on a phone, and waits until it shows. */
-const openUserMenu = (name: RegExp) => async (page: Page) => {
+const openUserMenu = (name: string) => async (page: Page) => {
   const drawer = page.getByRole("button", { name: "Open menu" });
   if (await drawer.isVisible()) await drawer.click();
-  await page.getByRole("button", { name }).click();
+  await page.getByRole("button", { name, exact: true }).click();
   await expect(page.getByRole("menu")).toBeVisible();
 };
 const shots: {
@@ -246,7 +258,7 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    open: openUserMenu(/Ayşe Yılmaz/),
+    open: openUserMenu("Ayşe Yılmaz"),
   },
   {
     name: "UserMenu_OwnerArabicDarkDesktop",
@@ -257,7 +269,7 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    open: openUserMenu(/Ayşe Yılmaz/),
+    open: openUserMenu("Ayşe Yılmaz"),
   },
   {
     name: "UserMenu_OwnerEnglishLightPhone",
@@ -268,7 +280,7 @@ const shots: {
     width: 390,
     height: 844,
     query: "",
-    open: openUserMenu(/Ayşe Yılmaz/),
+    open: openUserMenu("Ayşe Yılmaz"),
   },
   {
     name: "MembersByRole_OwnerEnglishLightDesktop",
@@ -290,7 +302,7 @@ for (const shot of shots) {
     await mockMembers(page, { role: shot.role, language: shot.language });
 
     await page.goto(`${members}${shot.query}`);
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
 
@@ -333,12 +345,8 @@ const pages = variants.flatMap(({ language, scheme, size }) =>
       `${settings}/activity`,
       viewer(language, BuiltInRole.Member),
     ],
-    [
-      "preferences",
-      `${settings}/preferences`,
-      (page: Page) => mockApi(page, language),
-    ],
-    ["overview", `/${northwind.slug}`, (page: Page) => mockApi(page, language)],
+    ["profile", `${settings}/profile`, (page: Page) => mockApi(page, language)],
+    ["home", `/${northwind.slug}`, (page: Page) => mockApi(page, language)],
     [
       "suspended",
       `/${northwind.slug}`,
@@ -371,7 +379,7 @@ for (const shot of pages) {
     await shot.mock(page);
 
     await page.goto(shot.path);
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
     await page.screenshot({
@@ -413,7 +421,7 @@ for (const { language, scheme, size } of reviewVariants)
       await mockMembers(page, { language });
 
       await page.goto(path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
       await page.screenshot({
@@ -468,11 +476,12 @@ const planPages: {
     name: "change-role-plan-off",
     path: members,
     plan: customRolesOff,
-    // In every language: John Byrne's ⋯ menu, then its first item, Change role.
+    // In every language: John Byrne's ⋯ menu, then its first item, Change role. The menu is in the table, or in his card on a
+    // phone, where the table is hidden.
     open: async (page) => {
       await page
-        .getByRole("table")
         .getByRole("button", { name: /John Byrne/ })
+        .filter({ visible: true })
         .click();
       await page.getByRole("menuitem").first().click();
       await page.getByRole("alertdialog").waitFor();
@@ -483,7 +492,7 @@ const planPages: {
     path: members,
     plan: customRolesOff,
     open: async (page) => {
-      await page.getByRole("button", { name: /Invite|Davet|دعوة/ }).click();
+      await page.getByRole("button", { name: /invite|davet|دعوة/i }).click();
       await page.getByRole("alertdialog").waitFor();
     },
   },
@@ -506,7 +515,7 @@ for (const { language, scheme, size } of reviewVariants)
       await mockMembers(page, { language, role: shot.role, plan: shot.plan });
 
       await page.goto(shot.path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
       await shot.open?.(page);
 
@@ -547,3 +556,251 @@ test("Screenshot_Notifications_ArabicDarkPhone", async ({ page }) => {
 
   await page.screenshot({ path: `${folder}/notifications-ar-dark-phone.png` });
 });
+
+// The shell at the sizes of the design's frames (the Shell, Notifications and Home screens), for the comparison in each pull
+// request: CI uploads them as the workflow artifact "screenshots" (scripts/ci/test-e2e.sh). The name gives the frame.
+const frames = {
+  desktop: { width: 1280, height: 800 },
+  tablet: { width: 1024, height: 768 },
+  phone: { width: 375, height: 812 },
+};
+const blueHarbour = {
+  ...northwind,
+  id: "0198f0a2-0000-7000-8000-0000000000b2",
+  slug: "blue-harbour",
+  name: "Blue Harbour Logistics",
+  status: MyTenantResponseStatus.Suspended,
+};
+
+/**
+ * The Notifications frames' list: two unread items of the last hour, one read item of yesterday and a personal one about no
+ * organisation, each with its area.
+ */
+const ago = (minutes: number) =>
+  new Date(Date.now() - minutes * 60_000).toISOString();
+const bellList = {
+  unread: 2,
+  items: [
+    {
+      ...roleChanged,
+      id: "0198f0a2-0000-7000-8000-0000000000a3",
+      title: "Omar Haddad accepted your invitation",
+      area: "Members",
+      actorName: "Omar Haddad",
+      createdAt: ago(2),
+    },
+    { ...roleChanged, createdAt: ago(60) },
+    {
+      ...roleChanged,
+      id: "0198f0a2-0000-7000-8000-0000000000a4",
+      title: "The plan of Northwind Traders changed to Team",
+      area: "Organisation plan",
+      createdAt: ago(24 * 60),
+      readAt: ago(60),
+      unread: false,
+    },
+    {
+      ...roleChanged,
+      id: "0198f0a2-0000-7000-8000-0000000000a5",
+      title: "You were removed from Atlas Logistics",
+      area: "Your access",
+      tenantName: null,
+      createdAt: ago(3 * 24 * 60),
+      readAt: ago(2 * 24 * 60),
+      unread: false,
+    },
+  ],
+};
+const openBell = (page: Page) =>
+  page.getByRole("button", { name: /^Notifications/ }).click();
+/** On a phone the bell opens its full screen, which slides up after the frames the shot waits for: wait until it reaches the top. */
+const openBellFullScreen = async (page: Page) => {
+  await openBell(page);
+  await expect
+    .poll(async () => (await page.getByRole("dialog").boundingBox())?.y)
+    .toBeLessThanOrEqual(0);
+};
+
+const shellShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  role?: BuiltInRole;
+  path?: string;
+  mock?: (page: Page) => Promise<unknown>;
+  open?: (page: Page) => Promise<void>;
+}[] = [
+  { file: "2.01-home-en-light-desktop", size: "desktop" },
+  {
+    file: "4.02-home-member-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+  },
+  { file: "2.28-home-en-dark-desktop", size: "desktop", scheme: "dark" },
+  {
+    file: "2.01-home-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+  },
+  { file: "3.13-home-en-light-tablet", size: "tablet" },
+  { file: "2.29-home-en-light-phone", size: "phone" },
+  {
+    file: "2.29-drawer-en-light-phone",
+    size: "phone",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "2.29-drawer-ar-light-phone",
+    size: "phone",
+    language: Language.Ar,
+    open: (page) => page.getByRole("button", { name: "فتح القائمة" }).click(),
+  },
+  {
+    file: "2.03-switcher-en-light-desktop",
+    size: "desktop",
+    mock: (page) =>
+      page.route("**/api/v1/me/tenants*", (route) =>
+        route.fulfill({
+          json: {
+            items: [northwind, blueHarbour],
+            page: 1,
+            pageSize: 100,
+            total: 2,
+          },
+        }),
+      ),
+    open: (page) =>
+      page.getByRole("button", { name: /Northwind Traders/ }).click(),
+  },
+  {
+    file: "2.05-command-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.keyboard.press("ControlOrMeta+k"),
+  },
+  {
+    file: "2.06-account-menu-en-light-desktop",
+    size: "desktop",
+    open: (page) =>
+      page.getByRole("button", { name: "Ayşe Yılmaz", exact: true }).click(),
+  },
+  {
+    file: "2.07-notifications-en-light-desktop",
+    size: "desktop",
+    mock: mockNotifications,
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "3.01-notifications-unread-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
+    open: openBell,
+  },
+  {
+    file: "3.02-notifications-all-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, bellList),
+    open: async (page) => {
+      await openBell(page);
+      await bellTabs(page).getByRole("tab", { name: "All" }).click();
+      await page.getByRole("link", { name: /You were removed/ }).waitFor();
+    },
+  },
+  {
+    file: "3.03-notifications-empty-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    open: openBell,
+  },
+  {
+    file: "3.16-notifications-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    mock: (page) => mockNotifications(page, bellList),
+    open: openBell,
+  },
+  {
+    file: "3.14-notifications-en-light-phone",
+    size: "phone",
+    mock: (page) => mockNotifications(page, bellList),
+    open: openBellFullScreen,
+  },
+  {
+    file: "3.15-notifications-empty-en-light-phone",
+    size: "phone",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    open: openBellFullScreen,
+  },
+  {
+    file: "5-settings-members-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/members`,
+  },
+  {
+    file: "5-settings-members-en-light-tablet",
+    size: "tablet",
+    path: `${settings}/members`,
+  },
+  {
+    file: "2.30-settings-drawer-en-light-phone",
+    size: "phone",
+    path: `${settings}/members`,
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "2.40-not-found-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}/no-such-page`,
+  },
+  {
+    file: "2.43-not-found-en-light-phone",
+    size: "phone",
+    path: `/${northwind.slug}/no-such-page`,
+  },
+  {
+    file: "2.15-no-permission-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+    path: `${settings}/activity`,
+  },
+];
+
+/** A shot's language, theme, role and page when it names none: English, light, the owner, the start page. */
+const withDefaults = (shot: (typeof shellShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  role: shot.role ?? BuiltInRole.Owner,
+  path: shot.path ?? `/${northwind.slug}`,
+});
+
+for (const shot of shellShots.map(withDefaults))
+  test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme });
+    await page.setViewportSize(frames[shot.size]);
+    await context.addCookies([
+      { name: localeCookie, value: shot.language, url: baseURL },
+    ]);
+    await mockMembers(page, { language: shot.language, role: shot.role });
+    await shot.mock?.(page);
+
+    await page.goto(shot.path);
+    await page.getByRole("main").getByRole("heading").first().waitFor();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
+    // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
+    // animation starts only then.
+    await page.evaluate(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(done)),
+        ),
+    );
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((each) => each.finished)),
+    );
+
+    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+  });

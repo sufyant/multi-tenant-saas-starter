@@ -14,4 +14,18 @@ describe("CommandDialog", () => {
 
     expect(screen.getByRole("dialog")).toHaveClass("z-dialog");
   });
+
+  it("CommandDialog_Open_Is520WideAnd90FromTheTop", () => {
+    render(
+      <CommandDialog open title="Go to">
+        <Command>
+          <CommandInput placeholder="Search pages" />
+        </Command>
+      </CommandDialog>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("top-22.5", "tablet:max-w-130");
+    expect(dialog).not.toHaveClass("tablet:max-w-sm");
+  });
 });

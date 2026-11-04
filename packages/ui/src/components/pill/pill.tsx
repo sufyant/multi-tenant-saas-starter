@@ -13,7 +13,7 @@ const tones: Record<PillTone, string> = {
   warning: "bg-warning-subtle text-warning-text",
   info: "bg-info-subtle text-info-text",
   destructive: "bg-destructive-subtle text-destructive-text",
-  neutral: "bg-neutral/16 text-neutral-text",
+  neutral: "bg-neutral text-neutral-text",
 };
 
 export type PillProps = {
@@ -27,17 +27,24 @@ export type PillProps = {
   className?: string;
 };
 
-/** A status as a filled pill (the Pill tones pattern). One line, never cut: its words stay short. A role or a plain fact is a Label. */
+/**
+ * A status as a filled pill with its dot (the design's Pill and the Pill tones pattern). One line, never cut: its words stay short. A
+ * role or a plain fact is a Label.
+ */
 export function Pill({ tone, children, className }: PillProps) {
   return (
     <span
       data-tone={tone}
       className={cn(
-        "inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-full px-2 align-middle text-small font-medium",
+        "inline-flex shrink-0 items-center gap-[5px] whitespace-nowrap rounded-md py-0.5 ps-1.5 pe-[7px] align-middle text-status",
         tones[tone],
         className,
       )}
     >
+      <span
+        aria-hidden="true"
+        className="size-1.5 shrink-0 rounded-full bg-current"
+      />
       {children}
     </span>
   );

@@ -14,13 +14,14 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
   - `owner-recovery.md`: the platform makes an existing member of a tenant an Owner.
   - `tenant-summary.md`: the summary row that the platform's tenant list reads across tenants.
   - `what-the-screens-read.md`: the fields and the endpoints that the tenant web and the platform app read.
-  - `user-deletion.md`: a system admin deletes a user, in steps across the user's tenants.
+  - `user-deletion.md`: a system admin deletes a user, or the user their own account after a code, in steps across the user's tenants.
   - `system-admins.md`: the root system admins from configuration, the system door, and the grant and revocation of system admins.
   - `member-management.md`: an Owner or an Admin changes a member's role and removes a member.
   - `custom-roles.md`: a tenant creates, updates and deletes its own roles.
   - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
   - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
   - `plans-and-entitlements.md`: a system admin manages the plans, a tenant's plan and its overrides; a tenant endpoint checks its feature and a tenant's method its limit.
+  - `personal-data-export.md`: a person asks for a copy of their data, the worker prepares it, and they download it for 7 days.
   - `notifications.md`: an event reaches its recipients in the bell, live, and by email, on the channels that the catalog fixes for its type; the bells, their read state and the retention.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 

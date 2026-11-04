@@ -12,7 +12,7 @@ export function Label({ children, className }: LabelProps) {
   return (
     <span
       className={cn(
-        "inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-sm px-1.5 align-middle text-small font-medium text-foreground inset-ring inset-ring-border",
+        "inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-border px-1.5 py-px align-middle text-status text-foreground",
         className,
       )}
     >

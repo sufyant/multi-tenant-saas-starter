@@ -424,7 +424,11 @@ export const AuditOperation = {
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
+  UserDataExportDownloaded: 'user.data_export_downloaded',
+  UserDataExportRequested: 'user.data_export_requested',
   UserDeleted: 'user.deleted',
+  UserDeletionRequested: 'user.deletion_requested',
+  UserEmailChanged: 'user.email_changed',
   UserEmailPreferencesChanged: 'user.email_preferences_changed',
   UserPreferencesChanged: 'user.preferences_changed',
   UserReactivated: 'user.reactivated',
@@ -474,6 +478,13 @@ export interface AuditEntryResponse {
 }
 
 /**
+ * The six digits that went to the new address.
+ */
+export interface ChangeEmailRequest {
+  code: string;
+}
+
+/**
  * The id of the tenant's role to give the member. The role is required: a request without one is refused, so it never falls back to
  * an empty id.
  */
@@ -511,6 +522,13 @@ export interface ChangePreferencesRequest {
  */
 export interface ChangeTenantPlanRequest {
   planId: string;
+}
+
+/**
+ * The six digits that went to the person's address.
+ */
+export interface ConfirmAccountDeletionRequest {
+  code: string;
 }
 
 /**
@@ -594,6 +612,7 @@ export const NotificationType = {
   TenantReactivated: 'tenant.reactivated',
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
+  UserDataExportReady: 'user.data_export_ready',
 } as const;
 
 /**
@@ -608,6 +627,7 @@ export const NotificationLinkResponseKind = {
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',
+  AccountSecurity: 'account_security',
 } as const;
 
 /**
@@ -631,6 +651,18 @@ export interface NotificationResponse {
   title: string;
   /** The body, in the reader's language. */
   body: string;
+  /** The area it belongs to, such as "Members", in the reader's language. A label only. */
+  area: string;
+  /**
+     * The person who acted, named now: "Deleted user" in the reader's language for a deleted one; none when the platform acted.
+     * @nullable
+     */
+  actorName: string | null;
+  /**
+     * The organisation's name as it was at that moment; none for a notification about no organisation.
+     * @nullable
+     */
+  tenantName: string | null;
   /** Where it leads. */
   link: NotificationLinkResponse;
   /** When the event it tells of happened. */
@@ -640,12 +672,52 @@ export interface NotificationResponse {
      * @nullable
      */
   readAt: string | null;
+  /** Whether the reader has not opened it yet, from ReadAt; the filter unread compares with it. */
+  unread: boolean;
 }
 
 export interface CursorPageOfNotificationResponse {
   items: NotificationResponse[];
   /** @nullable */
   nextCursor: string | null;
+}
+
+/**
+ * Where a data export is: being prepared, ready to download until its expiry, failed, so the person can ask again, or expired, its file
+ * deleted.
+ */
+export type DataExportResponseStatus = typeof DataExportResponseStatus[keyof typeof DataExportResponseStatus];
+
+
+export const DataExportResponseStatus = {
+  Preparing: 'preparing',
+  Ready: 'ready',
+  Failed: 'failed',
+  Expired: 'expired',
+} as const;
+
+/**
+ * The person's latest data export: where it is, when they asked, when it was ready, and until when they can download it, which stays after
+ * it expired, so the screen says when the file was deleted.
+ */
+export interface DataExportResponse {
+  id: string;
+  status: DataExportResponseStatus;
+  requestedAt: string;
+  /** @nullable */
+  readyAt: string | null;
+  /** @nullable */
+  expiresAt: string | null;
+  /** @nullable */
+  sizeBytes: number | null;
+}
+
+/**
+ * A link that downloads the person's export, and when it stops working. The link is made for this answer and never stored.
+ */
+export interface DownloadLinkResponse {
+  url: string;
+  expiresAt: string;
 }
 
 /**
@@ -708,6 +780,9 @@ export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
 export const ErrorCode = {
   AuthForbidden: 'auth.forbidden',
   AuthUnauthenticated: 'auth.unauthenticated',
+  DataExportInProgress: 'data_export.in_progress',
+  DataExportNotFound: 'data_export.not_found',
+  DataExportNotReady: 'data_export.not_ready',
   IdempotencyKeyInProgress: 'idempotency.key_in_progress',
   IdempotencyKeyInvalid: 'idempotency.key_invalid',
   IdempotencyKeyReused: 'idempotency.key_reused',
@@ -779,11 +854,17 @@ export const ErrorCode = {
   TenantSlugTaken: 'tenant.slug_taken',
   TenantSuspended: 'tenant.suspended',
   UserDeleted: 'user.deleted',
+  UserEmailTaken: 'user.email_taken',
+  UserEmailUnchanged: 'user.email_unchanged',
   UserHasMemberships: 'user.has_memberships',
   UserIsSystemAdmin: 'user.is_system_admin',
   UserLastOwner: 'user.last_owner',
   UserNotFound: 'user.not_found',
   UserSuspended: 'user.suspended',
+  VerificationCodeExpired: 'verification_code.expired',
+  VerificationCodeInvalid: 'verification_code.invalid',
+  VerificationCodeTooManyAttempts: 'verification_code.too_many_attempts',
+  VerificationCodeTooManySends: 'verification_code.too_many_sends',
 } as const;
 
 /**
@@ -1327,6 +1408,14 @@ export interface RenameUserRequest {
 }
 
 /**
+ * The new address, to which the API sends a code.
+ */
+export interface RequestEmailChangeRequest {
+  /** @maxLength 320 */
+  email: string;
+}
+
+/**
  * A slug that no tenant may take, because the tenant web has or may add a route of that name.
  */
 export type ReservedSlug = typeof ReservedSlug[keyof typeof ReservedSlug];
@@ -1571,6 +1660,13 @@ export interface UserDetailResponse {
   memberships: UserMembershipResponse[];
 }
 
+/**
+ * A code went out: until when it works.
+ */
+export interface VerificationCodeResponse {
+  expiresAt: string;
+}
+
 export type CreateTenantHeaders = {
 /**
  * @minLength 1
@@ -1725,6 +1821,7 @@ export type GrantSystemAdminHeaders = {
 };
 
 export type ListPlatformNotificationsParams = {
+unread?: boolean;
 cursor?: string;
 /**
  * @minimum 1
@@ -1848,6 +1945,7 @@ export type CreateRoleHeaders = {
 };
 
 export type ListNotificationsParams = {
+unread?: boolean;
 cursor?: string;
 /**
  * @minimum 1
@@ -1863,6 +1961,33 @@ cursor?: string;
  * @maximum 100
  */
 limit?: number;
+};
+
+export type RequestEmailChangeHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
+
+export type RequestAccountDeletionHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
+};
+
+export type RequestDataExportHeaders = {
+/**
+ * @minLength 1
+ * @maxLength 255
+ * @pattern ^[!-~]+$
+ */
+'Idempotency-Key': string;
 };
 
 export type ListMyTenantsParams = {
@@ -1892,6 +2017,7 @@ export const ListMyTenantsSort = {
 } as const;
 
 export type ListMyNotificationsParams = {
+unread?: boolean;
 cursor?: string;
 /**
  * @minimum 1

@@ -1,0 +1,8 @@
+Starter
+
+E-posta adresiniz değiştirildi
+
+E-posta adresiniz {{newEmail}} olarak değiştirildi. Bu siz değilseniz bize ulaşın.
+{{supportUrl}}
+
+Bu e-postayı, bu adres hesabınızın e-posta adresi olduğu için aldınız.

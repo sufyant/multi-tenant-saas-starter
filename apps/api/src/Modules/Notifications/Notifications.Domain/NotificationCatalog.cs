@@ -38,10 +38,17 @@ public static class NotificationCatalog
 
     public const string TenantSuspended = "tenant.suspended";
 
+    /// <summary>
+    /// The second exception of U9: the export's completion is the worker's, not a command, so it writes no audit entry and has no operation
+    /// to take its name from.
+    /// </summary>
+    public const string UserDataExportReady = "user.data_export_ready";
+
     /// <summary>The types whose name is no audit operation, each with its reason (U9).</summary>
     public static readonly IReadOnlyDictionary<string, string> NamedApart = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
+        [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
     };
 
     /// <summary>Every type, by its name.</summary>
@@ -53,8 +60,10 @@ public static class NotificationCatalog
             MemberRoleChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            YourAccess,
             WebAndEmail(),
-            [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")]),
+            [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")],
+            Actor: "actorName"),
 
         // The removed person may have no other tenant and so never see a bell, so the email tells them too (U5). Only a member
         // removes a member: the platform does so only in the user's own deletion, which tells nobody. It leads to the start page, which
@@ -63,19 +72,24 @@ public static class NotificationCatalog
             MemberRemoved,
             NotificationBell.Personal,
             NotificationLinkKind.Start,
+            YourAccess,
             WebAndEmail(),
-            [Tenant(), Person("actorName")]),
+            [Tenant(), Person("actorName")],
+            Actor: "actorName"),
         new(
             MemberJoined,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantMembers,
+            Members,
             WebOnly(),
-            [Tenant(), Person("memberName"), Role("roleName")]),
+            [Tenant(), Person("memberName"), Role("roleName")],
+            Actor: "memberName"),
         // The plan sets what the organisation may do, so the email tells its Owners too (U5).
         new(
             TenantPlanChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            OrganisationPlan,
             WebAndEmail(),
             [Tenant(), new("oldPlanName", NotificationValueKind.Text), new("newPlanName", NotificationValueKind.Text)]),
 
@@ -84,6 +98,7 @@ public static class NotificationCatalog
             TenantEntitlementOverrideSet,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            OrganisationPlan,
             WebOnly(),
             [Tenant(), Key(), new("value", NotificationValueKind.Entitlement), new("expiresAt", NotificationValueKind.Date, Optional: true)],
             LinkByKey: true),
@@ -93,6 +108,7 @@ public static class NotificationCatalog
             TenantEntitlementOverrideRemoved,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            OrganisationPlan,
             WebOnly(),
             [Tenant(), Key(), new("value", NotificationValueKind.Entitlement)],
             LinkByKey: true),
@@ -100,8 +116,10 @@ public static class NotificationCatalog
             TenantOwnerJoined,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
+            Organisations,
             WebOnly(),
-            [Tenant(), Person("ownerName")]),
+            [Tenant(), Person("ownerName")],
+            Actor: "ownerName"),
         Status(TenantSuspended),
         Status(TenantReactivated),
         Status(TenantClosed, new NotificationValue("reopenableUntil", NotificationValueKind.Date)),
@@ -110,9 +128,32 @@ public static class NotificationCatalog
             TenantPurged,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
+            Organisations,
             WebAndEmail(),
             [Tenant()]),
+
+        // A person's data is ready to download: the person may not open the app soon, so the email tells them too (U5). It leads to Account
+        // and security, never to the file.
+        new(
+            UserDataExportReady,
+            NotificationBell.Personal,
+            NotificationLinkKind.AccountSecurity,
+            YourAccount,
+            WebAndEmail(),
+            [new("expiresAt", NotificationValueKind.Date)]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
+
+    // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
+    // plan and its values, the platform's news of an organisation, and the reader's own account.
+    private const string Members = "members";
+
+    private const string YourAccess = "your_access";
+
+    private const string OrganisationPlan = "organisation_plan";
+
+    private const string Organisations = "organisations";
+
+    private const string YourAccount = "your_account";
 
     /// <summary>The entry of a stored or a sent type. A type the catalog does not know is a mistake of ours.</summary>
     public static NotificationKind Of(string type) =>
@@ -123,10 +164,12 @@ public static class NotificationCatalog
         type,
         NotificationBell.Platform,
         NotificationLinkKind.PlatformTenant,
+        Organisations,
         WebAndEmail(),
-        [Tenant(), Person("actorName"), .. more]);
+        [Tenant(), Person("actorName"), .. more],
+        Actor: "actorName");
 
-    private static NotificationValue Tenant() => new("tenantName", NotificationValueKind.Text);
+    private static NotificationValue Tenant() => new(NotificationKind.TenantValue, NotificationValueKind.Text);
 
     private static NotificationValue Person(string name, bool optional = false) => new(name, NotificationValueKind.Person, Optional: optional);
 

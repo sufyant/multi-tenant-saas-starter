@@ -13,6 +13,7 @@
     "activityLog": "Activity log",
     "settings": "Settings",
     "platform": "Platform",
+    "productPlatform": "{product} Platform",
     "backToPlatform": "Back to the platform",
     "myAccount": "My account",
     "systemAdmins": "System admins",

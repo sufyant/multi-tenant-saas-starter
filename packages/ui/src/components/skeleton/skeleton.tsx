@@ -28,13 +28,20 @@ export type SkeletonProps = {
   label: string;
   /** Show nothing until the skeleton delay has passed, so a fast answer shows no flash. */
   delayed?: boolean;
+  /** row: a list row with an avatar and a status; lines: two lines of text, as the bell's items (3.04). */
+  shape?: "row" | "lines";
 };
 
 /**
  * Placeholder rows shaped like a list row: an avatar circle, two lines, a status at the end (the Skeleton README). It shows only
  * for the first load; it stays still with reduced motion.
  */
-export function Skeleton({ rows = 3, label, delayed = false }: SkeletonProps) {
+export function Skeleton({
+  rows = 3,
+  label,
+  delayed = false,
+  shape = "row",
+}: SkeletonProps) {
   const passed = useDelayPassed(delayed);
   if (!passed) return null;
   return (
@@ -44,21 +51,32 @@ export function Skeleton({ rows = 3, label, delayed = false }: SkeletonProps) {
       aria-busy="true"
       className="flex flex-col"
     >
-      {Array.from({ length: rows }, (_, row) => (
-        <div
-          // The rows are identical placeholders that never reorder, so their index is a stable key.
-          // biome-ignore lint/suspicious/noArrayIndexKey: see above
-          key={row}
-          className="flex h-14 items-center gap-3 border-b border-border"
-        >
-          <SkeletonBlock className="size-8 rounded-full [animation-duration:1.4s] motion-reduce:animate-none" />
-          <div className="flex flex-1 flex-col gap-2">
-            <SkeletonBlock className="h-3 w-2/5 [animation-duration:1.4s] motion-reduce:animate-none" />
-            <SkeletonBlock className="h-3 w-3/5 [animation-duration:1.4s] motion-reduce:animate-none" />
+      {Array.from({ length: rows }, (_, row) =>
+        shape === "lines" ? (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: identical placeholders, as below
+            key={row}
+            className="flex flex-col gap-1.5 ps-7.5 py-2.5"
+          >
+            <SkeletonBlock className="h-2.5 w-65 max-w-full rounded-sm [animation-duration:1.4s] motion-reduce:animate-none" />
+            <SkeletonBlock className="h-2 w-40 max-w-full rounded-sm [animation-duration:1.4s] motion-reduce:animate-none" />
           </div>
-          <SkeletonBlock className="h-3 w-16 [animation-duration:1.4s] motion-reduce:animate-none" />
-        </div>
-      ))}
+        ) : (
+          <div
+            // The rows are identical placeholders that never reorder, so their index is a stable key.
+            // biome-ignore lint/suspicious/noArrayIndexKey: see above
+            key={row}
+            className="flex h-14 items-center gap-3 border-b border-border"
+          >
+            <SkeletonBlock className="size-8 rounded-full [animation-duration:1.4s] motion-reduce:animate-none" />
+            <div className="flex flex-1 flex-col gap-2">
+              <SkeletonBlock className="h-3 w-2/5 [animation-duration:1.4s] motion-reduce:animate-none" />
+              <SkeletonBlock className="h-3 w-3/5 [animation-duration:1.4s] motion-reduce:animate-none" />
+            </div>
+            <SkeletonBlock className="h-3 w-16 [animation-duration:1.4s] motion-reduce:animate-none" />
+          </div>
+        ),
+      )}
     </div>
   );
 }

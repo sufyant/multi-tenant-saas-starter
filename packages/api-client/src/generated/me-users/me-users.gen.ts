@@ -20,11 +20,17 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ChangeEmailRequest,
   ChangePreferencesRequest,
+  ConfirmAccountDeletionRequest,
   MeResponse,
   PreferencesResponse,
   ProblemDetails,
-  RenameMeRequest
+  RenameMeRequest,
+  RequestAccountDeletionHeaders,
+  RequestEmailChangeHeaders,
+  RequestEmailChangeRequest,
+  VerificationCodeResponse
 } from '../endpoints.schemas.gen';
 
 import { apiFetch } from '../../mutator';
@@ -209,6 +215,153 @@ return apiFetch<PreferencesResponse>(getChangePreferencesUrl(),
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(changePreferencesRequest)
+  }
+);}
+
+
+
+export const getRequestEmailChangeUrl = () => {
+
+
+
+
+  return `/v1/me/email-change`
+}
+
+/**
+ * Answers 201 with the code's expiry and without Location: a code is never read back, so the request's target URI identifies it (RFC 9110, section 15.3.2).
+ */
+export const requestEmailChange = async (requestEmailChangeRequest: RequestEmailChangeRequest,
+    headers: RequestEmailChangeHeaders, options?: Parameters<typeof apiFetch>[1]): Promise<VerificationCodeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VerificationCodeResponse>(getRequestEmailChangeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json',...headers, ...getHeaders(options?.headers) },
+    body: JSON.stringify(requestEmailChangeRequest)
+  }
+);}
+
+
+
+export const getChangeEmailUrl = () => {
+
+
+
+
+  return `/v1/me/email-change/confirm`
+}
+
+export const changeEmail = async (changeEmailRequest: ChangeEmailRequest, options?: Parameters<typeof apiFetch>[1]): Promise<MeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<MeResponse>(getChangeEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(changeEmailRequest)
+  }
+);}
+
+
+
+export const getRequestAccountDeletionUrl = () => {
+
+
+
+
+  return `/v1/me/account-deletion`
+}
+
+/**
+ * Answers 201 with the code's expiry and without Location: a code is never read back, so the request's target URI identifies it (RFC 9110, section 15.3.2).
+ */
+export const requestAccountDeletion = async (headers: RequestAccountDeletionHeaders, options?: Parameters<typeof apiFetch>[1]): Promise<VerificationCodeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<VerificationCodeResponse>(getRequestAccountDeletionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { ...headers, ...getHeaders(options?.headers) }
+
+  }
+);}
+
+
+
+export const getConfirmAccountDeletionUrl = () => {
+
+
+
+
+  return `/v1/me/account-deletion/confirm`
+}
+
+export const confirmAccountDeletion = async (confirmAccountDeletionRequest: ConfirmAccountDeletionRequest, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<void>(getConfirmAccountDeletionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(confirmAccountDeletionRequest)
   }
 );}
 

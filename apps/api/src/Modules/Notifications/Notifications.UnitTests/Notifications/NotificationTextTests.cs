@@ -17,6 +17,12 @@ public sealed class NotificationTextTests
     public static TheoryData<string, Language> EveryTypeInEveryLanguage =>
         [.. NotificationCatalog.Kinds.Keys.SelectMany(type => Enum.GetValues<Language>().Select(language => (type, language)))];
 
+    // A type about a person's own account, such as user.data_export_ready, names no tenant.
+    public static TheoryData<string, Language> EveryTypeAboutATenantInEveryLanguage =>
+        [.. NotificationCatalog.Kinds.Values
+            .Where(kind => kind.Values.Any(value => value.Name == "tenantName"))
+            .SelectMany(kind => Enum.GetValues<Language>().Select(language => (kind.Type, language)))];
+
     [Theory]
     [MemberData(nameof(EveryTypeInEveryLanguage))]
     public void Render_EveryTypeInEveryLanguage_FillsEveryPlaceholder(string type, Language language)
@@ -24,8 +30,13 @@ public sealed class NotificationTextTests
         var text = NotificationText.Render(type, SampleValues(type), People, language, timeZone: null);
 
         $"{text.Title} {text.Body}".ShouldNotContain("{");
-        $"{text.Title} {text.Body}".ShouldContain("Acme");
+        text.Body.ShouldNotBeNullOrWhiteSpace();
     }
+
+    [Theory]
+    [MemberData(nameof(EveryTypeAboutATenantInEveryLanguage))]
+    public void Render_EveryTypeAboutATenant_NamesTheTenant(string type, Language language) =>
+        $"{NotificationText.Render(type, SampleValues(type), People, language, timeZone: null)}".ShouldContain("Acme");
 
     [Theory]
     [InlineData(Language.En, "Your role in Acme changed", "Ada Lovelace changed your role from Member to Admin.")]

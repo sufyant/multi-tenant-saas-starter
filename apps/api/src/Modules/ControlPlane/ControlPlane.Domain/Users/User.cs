@@ -137,6 +137,22 @@ internal sealed class User(Guid id, string externalId)
         DeletedAt is null ? SetNames(firstName, lastName) : Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
 
     /// <summary>
+    /// The user changes their own address to one whose code they gave (A7): ControlPlane owns the address, and the identity provider takes
+    /// it after the commit. Changed when it changed. A deleted user is refused, as on every me endpoint (A9).
+    /// </summary>
+    public Result<StateChange> ChangeEmail(EmailAddress email)
+    {
+        if (DeletedAt is not null)
+        {
+            return Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
+        }
+
+        var changed = Email != email.Value;
+        Email = email.Value;
+        return changed ? StateChange.Changed : StateChange.Unchanged;
+    }
+
+    /// <summary>
     /// Erases the email address, the names and the time zone, which tells where the person lives, and marks the user deleted. A second
     /// deletion keeps the first time. Changed for the first deletion.
     /// </summary>

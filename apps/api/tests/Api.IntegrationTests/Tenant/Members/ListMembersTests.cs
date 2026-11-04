@@ -193,16 +193,16 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     public async Task ListMembers_AsAMember_ReturnsEachMemberWithTheirEmailAndNames()
     {
         var tenant = await _testData.AddTenantAsync();
-        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "ada@math.org", firstName: "Ada", lastName: "Lovelace"), role: "Owner");
-        var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "grace@navy.mil", firstName: "Grace"));
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("ada@math.org"), firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("grace@navy.mil"), firstName: "Grace"));
 
         var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Profiles(page).ShouldBe(
         [
-            (await _testData.UserIdOfAsync(owner), "ada@math.org", "Ada", "Lovelace", RoleAnswers.BuiltIn("owner")),
-            (await _testData.UserIdOfAsync(member), "grace@navy.mil", "Grace", null, RoleAnswers.BuiltIn("member")),
+            (await _testData.UserIdOfAsync(owner), TestEmails.Of("ada@math.org"), "Ada", "Lovelace", RoleAnswers.BuiltIn("owner")),
+            (await _testData.UserIdOfAsync(member), TestEmails.Of("grace@navy.mil"), "Grace", null, RoleAnswers.BuiltIn("member")),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
             .ShouldBe(["userId", "email", "firstName", "lastName", "role", "deleted", "joinedAt"], ignoreOrder: true);
@@ -249,7 +249,7 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var deleted = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "gone@example.com", firstName: "Gone", lastName: "Away"));
+        var deleted = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("gone@example.com"), firstName: "Gone", lastName: "Away"));
         await _testData.DeleteUserAsync(deleted);
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?roleId={await _testData.RoleIdOfAsync(tenant.Id, "Member")}", Cancellation);
@@ -283,12 +283,12 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "m1@math.org", firstName: "Ada", lastName: "Lovelace"));
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "m2@navy.mil", firstName: "Grace", lastName: "Hopper"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("m1@math.org"), firstName: "Ada", lastName: "Lovelace"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("m2@navy.mil"), firstName: "Grace", lastName: "Hopper"));
 
         var page = await _api.CreateClient(caller).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?q={Uri.EscapeDataString(q)}", Cancellation);
 
-        Profiles(page).Select(member => member.Email).ShouldBe([found]);
+        Profiles(page).Select(member => member.Email).ShouldBe([TestEmails.Of(found)]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
@@ -336,20 +336,19 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
     public async Task ListMembers_ASortField_OrdersByItInItsDirection(string sort, string emails)
     {
         var tenant = await _testData.AddTenantAsync();
-        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "c@t.org", lastName: "Young"), role: "Owner");
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "a@t.org"), role: "Admin");
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "b@t.org", lastName: "Zed"), role: "Member");
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("c@t.org"), lastName: "Young"), role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("a@t.org")), role: "Admin");
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("b@t.org"), lastName: "Zed"), role: "Member");
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/members?sort={sort}", Cancellation);
 
-        string.Join(", ", Profiles(page).Select(member => member.Email)).ShouldBe(emails);
+        string.Join(", ", Profiles(page).Select(member => member.Email)).ShouldBe(string.Join(", ", emails.Split(", ").Select(TestEmails.Of)));
     }
 
+    // Two live users never keep one address (A7), so the role and the last name can tie, the address cannot.
     [Theory]
     [InlineData("role")]
     [InlineData("-role")]
-    [InlineData("email")]
-    [InlineData("-email")]
     [InlineData("lastName")]
     [InlineData("-lastName")]
     public async Task ListMembers_TwoMembersWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
@@ -358,8 +357,8 @@ public sealed class ListMembersTests(Database database) : IAsyncLifetime
         var random = Guid.NewGuid().ToString();
         var (lower, higher) = (Guid.Parse($"0{random[1..]}"), Guid.Parse($"f{random[1..]}"));
         var caller = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(higher, email: "same@t.org", lastName: "Same"));
-        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(lower, email: "same@t.org", lastName: "Same"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(higher, email: TestEmails.Of("same1@t.org"), lastName: "Same"));
+        await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(lower, email: TestEmails.Of("same2@t.org"), lastName: "Same"));
         var client = _api.CreateClient(caller);
         var member = await _testData.RoleIdOfAsync(tenant.Id, "Member");
 

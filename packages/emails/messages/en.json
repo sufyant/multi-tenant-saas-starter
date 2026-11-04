@@ -16,6 +16,36 @@
     "contact": "<link>Contact us</link> to reopen it before that date.",
     "footer": "You received this because you are an Owner of {tenantName}."
   },
+  "account": {
+    "emailChangeCode": {
+      "subject": "Your code to change your email address",
+      "preheader": "It works for 10 minutes.",
+      "heading": "Confirm your new email address",
+      "body": "Enter this code in Account and security. It works for 10 minutes.",
+      "footer": "You received this because someone asked to use this address for their account. If it wasn’t you, you can ignore it."
+    },
+    "deletionCode": {
+      "subject": "Your code to delete your account",
+      "preheader": "It works for 10 minutes. This cannot be undone.",
+      "heading": "Confirm the deletion of your account",
+      "body": "Enter this code in Account and security to delete your account. It works for 10 minutes. This cannot be undone.",
+      "footer": "You received this because someone asked to delete the account of this address. If it wasn’t you, sign out of all other sessions in Account and security."
+    },
+    "emailChanged": {
+      "subject": "Your email address was changed",
+      "preheader": "If this wasn’t you, contact us.",
+      "heading": "Your email address was changed",
+      "body": "Your email address was changed to {newEmail}. If this wasn’t you, <link>contact us</link>.",
+      "footer": "You received this because this was the email address of your account."
+    },
+    "accountDeleted": {
+      "subject": "Your account was deleted",
+      "preheader": "To come back, you need a new invitation.",
+      "heading": "Your account was deleted",
+      "body": "Your account and your access to every organisation were deleted. Your activity stays, under “Deleted user”. To come back, you need a new invitation.",
+      "footer": "You received this because the account of this address was deleted."
+    }
+  },
   "roles": {
     "owner": "Owner",
     "admin": "Admin",
@@ -111,6 +141,11 @@
       "title": "{tenantName} was deleted",
       "body": "The platform finished deleting {tenantName} and its data. Its name and slug stay in the list.",
       "footer": "You got this email because you are a system admin and an organisation’s status changed."
+    },
+    "user.data_export_ready": {
+      "title": "Your data file is ready",
+      "body": "Download it from Account and security until {expiresAt}. You need to be signed in to download it.",
+      "footer": "You got this email because you asked for a copy of your data."
     }
   },
   "notificationWords": {
@@ -128,6 +163,13 @@
       "members.max": "Members limit",
       "roles.custom": "Custom roles",
       "roles.custom.max": "Custom roles limit"
+    },
+    "area": {
+      "members": "Members",
+      "your_access": "Your access",
+      "organisation_plan": "Organisation plan",
+      "organisations": "Organisations",
+      "your_account": "Your account"
     }
   }
 }

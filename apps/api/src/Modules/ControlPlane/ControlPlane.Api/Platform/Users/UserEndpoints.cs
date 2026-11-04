@@ -59,6 +59,46 @@ public static class UserEndpoints
         membership.JoinedAt,
         membership.LastOwner);
 
+    // The check: a system admin is refused, and a tenant always has at least one Owner (K1), so the user's tenants where they are the last
+    // Owner answer 409 and nothing changes. It answers the user's memberships.
+    internal static async Task<Result<UserMembership[]>> CheckDeletionAsync(IMessageBus bus, Guid userId, CancellationToken cancellationToken)
+    {
+        var memberships = await bus.InvokeAsync<Result<UserMembership[]>>(new ListUserMembershipsQuery(userId), cancellationToken);
+        if (!memberships.IsSuccess)
+        {
+            return memberships.Error;
+        }
+
+        var lastOwner = new List<Guid>();
+        foreach (var owned in memberships.Value.Where(membership => membership.OwnsATenantPastCreation))
+        {
+            if (await bus.InvokeForTenantAsync<bool>(owned.TenantId.ToString(), new GetLastOwnershipQuery(userId), cancellationToken))
+            {
+                lastOwner.Add(owned.TenantId);
+            }
+        }
+
+        return lastOwner.Count > 0 ? Errors.UserLastOwner(lastOwner) : memberships.Value;
+    }
+
+    // The user leaves each tenant, under that tenant's lock, which checks again; a tenant whose last Owner the user became meanwhile stops
+    // the deletion with the same 409, and the tenants the user already left stay left. Last, with no membership left, ControlPlane erases
+    // the user, and the identity provider deletes its user and the file store the user's files after that commit.
+    internal static async Task<Result> RemoveAndDeleteAsync(
+        IMessageBus bus, string actorId, Guid userId, UserMembership[] memberships, CancellationToken cancellationToken)
+    {
+        foreach (var membership in memberships)
+        {
+            var removed = await bus.InvokeForTenantAsync<Result>(membership.TenantId.ToString(), new RemoveUserMembershipCommand(userId), cancellationToken);
+            if (!removed.IsSuccess)
+            {
+                return removed;
+            }
+        }
+
+        return await bus.InvokeAsync<Result>(new DeleteUserCommand(actorId, userId), cancellationToken);
+    }
+
     // An empty email filter is no filter, as an empty status or q is (K5 in api-catalog). A given address is checked as the other email
     // inputs are, and takes its one form in the handler.
     private static async Task<Result<ListPage<UserResponse>>> ListUsers(
@@ -115,43 +155,12 @@ public static class UserEndpoints
         (await bus.InvokeAsync<Result<UserView>>(new RenameUserCommand(user.Id(), userId, request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
 
     // A user's memberships are under row level security, and a transaction declares one tenant (R4), so the deletion runs in steps, each
-    // in a transaction of its own. First the check: a tenant always has at least one Owner (K1), so the user's tenants where they are the
-    // last Owner answer 409 and nothing changes. Then the user leaves each tenant, under that tenant's lock, which checks again; a tenant
-    // whose last Owner the user became meanwhile stops the deletion with the same 409, and the tenants the user already left stay left.
-    // Last, with no membership left, ControlPlane erases the user, and the identity provider deletes its user after that commit. A
-    // deletion sets a state, so it takes no idempotency key (I1); a second one answers 204 again.
+    // in a transaction of its own (docs/flows/user-deletion.md). A deletion sets a state, so it takes no idempotency key (I1); a second one
+    // answers 204 again. The user's own deletion of their account takes the same steps (MyProfileEndpoints.ConfirmAccountDeletion).
     private static async Task<Result> DeleteUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken)
     {
-        var memberships = await bus.InvokeAsync<Result<UserMembership[]>>(new ListUserMembershipsQuery(userId), cancellationToken);
-        if (!memberships.IsSuccess)
-        {
-            return memberships.Error;
-        }
-
-        var lastOwner = new List<Guid>();
-        foreach (var owned in memberships.Value.Where(membership => membership.OwnsATenantPastCreation))
-        {
-            if (await bus.InvokeForTenantAsync<bool>(owned.TenantId.ToString(), new GetLastOwnershipQuery(userId), cancellationToken))
-            {
-                lastOwner.Add(owned.TenantId);
-            }
-        }
-
-        if (lastOwner.Count > 0)
-        {
-            return Errors.UserLastOwner(lastOwner);
-        }
-
-        foreach (var membership in memberships.Value)
-        {
-            var removed = await bus.InvokeForTenantAsync<Result>(membership.TenantId.ToString(), new RemoveUserMembershipCommand(userId), cancellationToken);
-            if (!removed.IsSuccess)
-            {
-                return removed;
-            }
-        }
-
-        return await bus.InvokeAsync<Result>(new DeleteUserCommand(user.Id(), userId), cancellationToken);
+        var memberships = await CheckDeletionAsync(bus, userId, cancellationToken);
+        return memberships.IsSuccess ? await RemoveAndDeleteAsync(bus, user.Id(), userId, memberships.Value, cancellationToken) : memberships.Error;
     }
 
     private static UserDetailResponse ToResponse(UserDetailView user) => new(

@@ -11,7 +11,8 @@ namespace Api.ArchitectureTests;
 // U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email
 // (U5), its texts in every language with exactly the values it declares, a text without each optional value, every word of a closed
 // list in every language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
-// shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. U9: a type has the name of its event's audit operation, or is named apart with its reason.
+// shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. A type's area has its word in every
+// language, and its actor is a person of its values. U9: a type has the name of its event's audit operation, or is named apart with its reason.
 public sealed class NotificationCatalogTests
 {
     [Fact]
@@ -30,6 +31,7 @@ public sealed class NotificationCatalogTests
             "tenant.renamed",
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            "organisation_plan",
             [],
             [new("status", NotificationValueKind.Word, ["archived"]), new("actorName", NotificationValueKind.Person, Optional: true)]);
 
@@ -81,6 +83,50 @@ public sealed class NotificationCatalogTests
         ]);
     }
 
+    // The list names each item's area in the reader's language, so a type's area needs its word in every language. Its actor is one of
+    // its people.
+    [Fact]
+    public void DeclareNotificationTypes_APlantedAreaWithoutItsWordsAndAnActorWhoIsNoPerson_IsFound()
+    {
+        var kind = NotificationCatalog.Of(NotificationCatalog.TenantPurged) with { Area = "billing", Actor = "tenantName" };
+
+        var gaps = Gaps([kind], HandlerTypes(typeof(NotificationText).Assembly), TextsOf);
+
+        gaps.ShouldBe(
+        [
+            "tenant.purged: the actor tenantName is no person of its values",
+            "tenant.purged: no word billing of area in en",
+            "tenant.purged: no word billing of area in tr",
+            "tenant.purged: no word billing of area in ar",
+        ]);
+    }
+
+    // The area and the actor of each type, as the list shows them: a member's news is Members, a change of the reader's own role or
+    // membership Your access, the plan and its values Organisation plan, the platform's news Organisations, and the reader's own account,
+    // such as a ready data export, Your account, with no actor: the worker did it. The actor is the person who acted: the one who changed or removed, the one who accepted an invitation, the system admin who changed a status.
+    [Fact]
+    public void DeclareNotificationTypes_TheAreasAndActors_FollowWhatEachTypeTellsOf()
+    {
+        var areas = NotificationCatalog.Kinds.Values.Select(kind => $"{kind.Type} {kind.Area} {kind.Actor}".TrimEnd());
+
+        areas.ShouldBe(
+        [
+            "member.role_changed your_access actorName",
+            "member.removed your_access actorName",
+            "member.joined members memberName",
+            "tenant.plan_changed organisation_plan",
+            "tenant.entitlement_override_set organisation_plan",
+            "tenant.entitlement_override_removed organisation_plan",
+            "tenant.owner_joined organisations ownerName",
+            "tenant.suspended organisations actorName",
+            "tenant.reactivated organisations actorName",
+            "tenant.closed organisations actorName",
+            "tenant.reopened organisations actorName",
+            "tenant.purged organisations",
+            "user.data_export_ready your_account",
+        ]);
+    }
+
     // U5: an email says why it came, so a type of the email needs its footer in every language.
     [Fact]
     public void DeclareNotificationTypes_APlantedTypeOfTheEmailWithoutAFooter_IsFound()
@@ -121,7 +167,7 @@ public sealed class NotificationCatalogTests
             "tenant.reactivated Web Email",
             "tenant.closed Web Email",
             "tenant.reopened Web Email",
-            "tenant.purged Web Email",
+            "tenant.purged Web Email", "user.data_export_ready Web Email",
         ]);
     }
 
@@ -175,6 +221,11 @@ public sealed class NotificationCatalogTests
                 gaps.Add($"{kind.Type}: no channel");
             }
 
+            if (kind.Actor is { } actor && !kind.Values.Any(value => value.Name == actor && value.Kind == NotificationValueKind.Person))
+            {
+                gaps.Add($"{kind.Type}: the actor {actor} is no person of its values");
+            }
+
             var named = handlers.Count(handler => handler.Type == kind.Type);
             if (named != 1)
             {
@@ -208,7 +259,8 @@ public sealed class NotificationCatalogTests
             .Where(word => !found.Words(word.Item1).Contains(word.word))
             .Select(word => $"{kind.Type}: no word {word.word} of {word.Item1} in {tag}");
         var footerGaps = kind.Channels.Contains(NotificationChannel.Email) && !found.HasFooter ? [$"{kind.Type}: no footer in {tag}"] : Array.Empty<string>();
-        return placeholderGaps.Concat(withoutGaps).Concat(wordGaps).Concat(footerGaps).Distinct();
+        var areaGaps = found.Words(NotificationText.AreaWords).Contains(kind.Area) ? [] : new[] { $"{kind.Type}: no word {kind.Area} of area in {tag}" };
+        return placeholderGaps.Concat(withoutGaps).Concat(wordGaps).Concat(footerGaps).Concat(areaGaps).Distinct();
     }
 
     private static IEnumerable<string> PlaceholderGaps(string what, string tag, IEnumerable<string> declared, IReadOnlySet<string>? used)

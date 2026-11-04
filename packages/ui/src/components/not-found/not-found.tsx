@@ -3,7 +3,8 @@
 import { useTranslations } from "next-intl";
 import type { ElementType } from "react";
 import { Button } from "../button";
-import { EmptyState } from "../empty-state";
+import { EmptyState, type EmptyStateProps } from "../empty-state";
+import { SearchXIcon } from "../icon";
 
 export type NotFoundProps = {
   /**
@@ -17,6 +18,8 @@ export type NotFoundProps = {
   href: string;
   /** The link element: Next.js's Link in the apps. */
   linkComponent?: ElementType;
+  /** page: 120 px below the top bar from bp-tablet, as the tenant web's frames draw it (2.40, 2.41); the platform's keep the list's. */
+  size?: EmptyStateProps["size"];
 };
 
 /** "Page not found" and "Organisation not found" in both apps (the Page not found screens): what happened and the one way on. */
@@ -25,11 +28,17 @@ export function NotFound({
   address,
   href,
   linkComponent: Link = "a",
+  size,
 }: NotFoundProps) {
   const t = useTranslations("problems");
   const organisation = kind === "organisation";
+  const signedOut = kind === "signed-out";
+  // Inside the shell the screen has the search-x tile and a secondary button; signed out, the sign-in button is the page's one
+  // action (2.40 to 2.44).
   return (
     <EmptyState
+      size={size}
+      icon={signedOut ? undefined : SearchXIcon}
       title={organisation ? t("orgNotFoundTitle") : t("notFoundTitle")}
       description={
         organisation
@@ -38,17 +47,17 @@ export function NotFound({
                 address: () => <bdi dir="ltr">{address}</bdi>,
               })
             : t("orgNotFoundLink")
-          : kind === "signed-out"
+          : signedOut
             ? t("notFoundSignedOut")
             : t("notFoundText")
       }
       action={
         <Button
-          variant="primary"
+          variant={signedOut ? "primary" : "secondary"}
           render={<Link href={href} />}
           nativeButton={false}
         >
-          {kind === "signed-out" ? t("signIn") : t("goHome")}
+          {signedOut ? t("signIn") : t("goHome")}
         </Button>
       }
     />

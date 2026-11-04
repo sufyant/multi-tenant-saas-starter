@@ -30,12 +30,12 @@ export function Tabs({ items, current, label, onValueChange }: TabsProps) {
           <TabsTrigger
             key={item.id}
             value={item.id}
-            className="h-control-md flex-none rounded-none px-0 pointer-coarse:h-control-lg data-active:after:bg-primary"
+            className="h-control-md flex-none rounded-none px-0 text-body font-normal text-muted-foreground pointer-coarse:h-control-lg data-active:font-medium data-active:text-foreground"
           >
             {item.label}
             {item.count !== undefined && " "}
             {item.count !== undefined && (
-              <span className="text-muted-foreground tabular-nums">
+              <span className="text-status text-muted-foreground tabular-nums">
                 {item.count}
               </span>
             )}

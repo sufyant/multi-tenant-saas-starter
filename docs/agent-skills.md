@@ -2,28 +2,48 @@
 
 ## 1. Purpose
 
-An agent skill is a folder with a `SKILL.md` file. It gives a coding agent (Claude Code) the instructions for one tool, for example Clerk or Resend.
+An agent skill is a folder with a `SKILL.md` file. It gives a coding agent (Claude Code) instructions that load only when a task needs them.
+
+The repository holds two kinds:
+
+- An upstream skill gives the instructions for one tool, for example Clerk or Resend. Its owner writes it in another repository, and we copy it here unchanged.
+- An own skill gives a way of working of this repository that no document gives, for example how to build a screen from its Figma frames. We write and edit it here.
 
 The skills of this repository live in `.claude/skills`. Each skill is a real folder, committed to the repository. The TanStack Table skills are the one exception: they ship inside their packages (section 3). A fresh clone, a cloud agent and CI get the same skills as the maintainer.
 
-A cloud thread of Claude Code Projects is different: it does not load `.claude/skills` from the repository. The skills a cloud thread needs are uploaded to the maintainer's account. A new skill in the repository is also uploaded there (section 4).
+A cloud thread of Claude Code Projects is different: it does not load `.claude/skills` from the repository. The skills a cloud thread needs are uploaded to the maintainer's account. A new skill in the repository is also uploaded there (sections 4 and 5).
 
-`skills-lock.json` records the source, the path and the hash of each skill.
+`skills-lock.json` records the source, the path and the hash of each upstream skill. An own skill is not in it.
 
 ## 2. Rules
 
 - Keep a skill when the repository uses its tool today or has a planned place for it (an app folder, a written plan). Remove it when neither is true.
 - Never add a skill that contradicts a closed decision. Example: `clerk-orgs` is not here, because tenants, roles and permissions live in our tables, not in Clerk organizations (`apps/api/AGENTS.md`, closed decisions; rule T6).
 - Never commit a symlink or an `.agents/` folder. A symlink points at a folder outside the repository, so a fresh clone gets nothing.
-- Never edit the content of a skill. The next update replaces the whole folder, so a local change is lost.
+- Never edit the content of an upstream skill. The next update replaces the whole folder, so a local change is lost.
 - The license of a skill must be MIT, Apache-2.0, BSD or ISC. The repository is public, so it redistributes these files.
 - A skill whose sample files fail dependency review is not committed. Dependency review in `ci.yml` reads every manifest in the repository, a sample `package.json` in a skill too.
 
 Why so few skills: the name and the description of every skill load into every agent session. A skill for a tool we do not use or plan fills the context, and it can trigger on the wrong task (Claude Code docs, "Agent Skills": progressive disclosure).
 
-CI checks the symlink rule. The step "Check the agent skills" in the `node` job of `ci.yml` runs `scripts/ci/check-agent-skills.sh`. It fails when `.claude/skills` holds a symlink, a folder without `SKILL.md`, or folders that differ from the skills in `skills-lock.json`.
+An own skill carries a mark in the frontmatter of its `SKILL.md`:
+
+```yaml
+metadata:
+  origin: repository
+```
+
+The mark tells the two kinds apart. We chose it from three options, because it keeps the list of skills in one place (D1) and changes the least:
+
+- The mark in the frontmatter (chosen). The folder itself says what it is. `scripts/agent-skills/update.sh` reads only `skills-lock.json`, so it never touches an own skill, and `agent-skills.yml` needs no change. `metadata` is a field of the Agent Skills format, so the skill still uploads to the account.
+- An entry in `skills-lock.json` with a local source. `update.sh` would try to install it from upstream, and skills@1.7.2 has no local source type.
+- A second list of own skills, in a file or in the script. It is a second list to keep in step with the folders.
+
+CI checks the rules. The step "Check the agent skills" in the `node` job of `ci.yml` runs `scripts/ci/check-agent-skills.sh`. It fails when `.claude/skills` holds a symlink, a folder without `SKILL.md`, or upstream folders that differ from the skills in `skills-lock.json`. An upstream folder is a folder without the mark.
 
 ## 3. The skills
+
+The upstream skills:
 
 | Skill | Source | License | Why we keep it |
 | --- | --- | --- | --- |
@@ -69,9 +89,18 @@ Not kept:
 
 A removed skill is one command away if a need appears (section 4).
 
-## 4. Add, update or remove a skill
+The own skills:
 
-The list of skills lives once, in `skills-lock.json` (D1). No document or script repeats the list of skills. Agents never install, update or remove a skill. They report a stale or missing skill to the maintainer.
+| Skill | Why we keep it |
+| --- | --- |
+| `building-screens-from-design` | Builds a screen from its Figma frames: every value has a source, and each frame gets a screenshot that is compared in the same pull request. |
+| `starting-roadmap-steps` | Prepares a roadmap step: every frame has one pull request, every value an API field, every question is asked first. |
+
+Not written, each for its evaluation (`docs/agent-skill-evaluations.md`): writing tests, adding an endpoint, opening and watching a pull request, and reading logs. Without a skill, the agent already did what the documents ask. The rules that no document held went into `AGENTS.md`: the rebase, the heading "Maintainer's tasks", the Railway variables and the deployed database.
+
+## 4. Add, update or remove an upstream skill
+
+The list of upstream skills lives once, in `skills-lock.json` (D1). No document or script repeats it. Agents never install, update or remove an upstream skill. They report a stale or missing skill to the maintainer.
 
 To add one skill, run the command from the repository root. `--copy` writes a real folder. `-a claude-code` installs for Claude Code only. Without `--copy`, the tool creates a store in `.agents/` and symlinks to it.
 
@@ -100,3 +129,20 @@ After the command:
 5. The maintainer uploads a new skill to the account too, so a cloud thread of Claude Code Projects gets it (section 1).
 
 To remove a skill, delete its folder and its entry in `skills-lock.json`, and remove its row from section 3.
+
+## 5. Write or change an own skill
+
+An own skill is written only for a way of working that no document gives. A skill that repeats `AGENTS.md` or an `ARCHITECTURE.md` costs context in every session: its name and description load into each one (section 2).
+
+Follow Anthropic's "Skill authoring best practices". In this repository:
+
+- The evaluation comes first. Run its scenario once without the skill, with a subagent, and write what the agent did. Write the skill. Run the scenario again with the skill. Keep the skill only if it changed the result. A change to a skill runs its evaluation again. The scenarios and the results are in `docs/agent-skill-evaluations.md`.
+- A skill points to a rule in its document. It never copies the rule (D1).
+- The freedom fits the risk. Exact instructions only where a mistake is costly; elsewhere the usual path and when to stop. A skill does not forbid what the documents allow.
+- The name is a lowercase gerund with hyphens (`building-screens-from-design`). The description is in the third person and says what the skill does and when to use it.
+- A long workflow has a checklist that the agent copies into its work.
+- Nothing that goes stale: no pull request numbers, no dates, no stories of past mistakes.
+- `SKILL.md` stays under 500 lines. A longer part goes into a file that `SKILL.md` links to directly.
+- The frontmatter carries the mark of section 2.
+
+After the merge, the maintainer uploads a new or changed own skill to the account, so a cloud thread gets it (section 1).

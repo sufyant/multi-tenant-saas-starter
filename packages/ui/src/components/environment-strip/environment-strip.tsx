@@ -33,7 +33,7 @@ export function EnvironmentStrip({
   return (
     <div
       data-slot="environment-strip"
-      className="sticky top-0 z-sticky flex h-[calc(28px+env(safe-area-inset-top))] shrink-0 items-end justify-center gap-1.5 border-b border-warning bg-warning-subtle px-4 pb-1.5 text-body font-medium text-warning-text tablet:h-6 tablet:items-center tablet:pb-0 tablet:text-small"
+      className="sticky top-0 z-sticky flex h-[calc(28px+env(safe-area-inset-top))] shrink-0 items-end justify-center gap-1.5 border-b border-warning bg-warning-subtle px-4 pb-1.5 text-body font-medium text-warning-text tablet:h-6 tablet:items-center tablet:pb-0 tablet:text-status"
     >
       <Icon icon={FlaskConicalIcon} size={14} className="tablet:size-3" />
       <span className="truncate">{text.strip}</span>

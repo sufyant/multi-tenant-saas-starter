@@ -17,7 +17,9 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         user.Property(u => u.FirstName).HasMaxLength(User.NameMaxLength);
         user.Property(u => u.LastName).HasMaxLength(User.NameMaxLength);
         user.HasIndex(u => u.ExternalId).IsUnique();
-        user.HasIndex(u => u.Email);
+        // A7: two live users never keep one address. The index holds the stored form, the one every comparison reads (section 6, "The one
+        // form of an email address"); a deleted user keeps none (A8), so it holds only live users.
+        user.HasIndex(u => u.Email).IsUnique().HasFilter("email IS NOT NULL").HasDatabaseName("ux_users_email");
         user.HasIndex(u => u.LastName);
         user.HasIndex(u => u.Email, "ix_users_email_trgm").HasDatabaseName("ix_users_email_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
         user.HasIndex(u => u.FirstName, "ix_users_first_name_trgm").HasDatabaseName("ix_users_first_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");

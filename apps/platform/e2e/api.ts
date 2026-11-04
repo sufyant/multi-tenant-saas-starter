@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import {
   AuditActorResponseKind,
   type AuditEntryResponse,
@@ -705,13 +705,23 @@ export const shannonSuspended: NotificationResponse = {
   type: NotificationType.TenantSuspended,
   title: "Shannon Studio was suspended",
   body: "Ciara Byrne suspended Shannon Studio. Its members can’t open it until it is reactivated.",
+  area: "Organisations",
+  actorName: "Ciara Byrne",
+  tenantName: "Shannon Studio",
   link: {
     kind: NotificationLinkResponseKind.PlatformTenant,
     tenantId: organisations.shannon.id,
   },
   createdAt: "2026-10-16T13:29:00Z",
   readAt: null,
+  unread: true,
 };
+
+/** The items a list read answers: with the filter unread, only the unread ones, as the API does. */
+export const listed = (route: Route, items: NotificationResponse[]) =>
+  new URL(route.request().url()).searchParams.get("unread") === "true"
+    ? items.filter((item) => item.unread)
+    : items;
 
 /** What the notification answers recorded: the notifications opened and the bell marked read. */
 export type NotificationCalls = {
@@ -720,11 +730,15 @@ export type NotificationCalls = {
 };
 
 /**
- * The platform's bell and its live stream. The stream holds its answer until the test calls `arrive`, then
+ * The platform's bell and its live stream: one notification and one unread, or the list and the count a shot names. The stream holds its answer until the test calls `arrive`, then
  * sends one `notifications` event for the platform's bell and ends, with a long retry so the browser does not open it again.
  */
-export async function mockNotifications(page: Page) {
-  const unread = { count: 1 };
+export async function mockNotifications(
+  page: Page,
+  list: { items?: NotificationResponse[]; unread?: number } = {},
+) {
+  const items = list.items ?? [shannonSuspended];
+  const unread = { count: list.unread ?? 1 };
   const calls: NotificationCalls = { opened: [], markedAll: 0 };
   let signal = () => {};
   const sent = new Promise<void>((resolve) => {
@@ -733,9 +747,11 @@ export async function mockNotifications(page: Page) {
   await page.route("**/api/v1/platform/notifications/unread-count", (route) =>
     route.fulfill({ json: { unread: unread.count } }),
   );
-  await page.route("**/api/v1/platform/notifications", (route) =>
-    route.fulfill({ json: { items: [shannonSuspended], nextCursor: null } }),
-  );
+  // The Unread tab reads with the filter unread (F57).
+  const answerList = (route: Route) =>
+    route.fulfill({ json: { items: listed(route, items), nextCursor: null } });
+  await page.route("**/api/v1/platform/notifications?*", answerList);
+  await page.route("**/api/v1/platform/notifications", answerList);
   await page.route("**/api/v1/platform/notifications/read", (route) => {
     calls.markedAll += 1;
     unread.count = 0;
