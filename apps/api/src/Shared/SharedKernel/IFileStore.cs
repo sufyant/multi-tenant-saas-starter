@@ -2,7 +2,7 @@ namespace SharedKernel;
 
 /// <summary>
 /// The object storage of the files the modules keep, such as a person's data export (section 7, "File storage"). The host implements it:
-/// the S3 API of Cloudflare R2, MinIO or AWS S3. A module names a file only by its key (<see cref="FileKeys"/>), which holds ids and no
+/// the S3 API of Cloudflare R2, AWS S3 or SeaweedFS. A module names a file only by its key (<see cref="FileKeys"/>), which holds ids and no
 /// name or address, and keeps a row of each file in its own schema: it asks its database which files exist, never the bucket.
 /// </summary>
 public interface IFileStore

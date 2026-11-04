@@ -20,7 +20,7 @@ internal static class StorageExtensions
             .Validate(settings => settings.Timeout > TimeSpan.Zero, $"{StorageOptions.Section}:Timeout must be positive.")
             .ValidateOnStart();
 
-        // R2 asks for the region "auto" and for addresses by path; MinIO accepts both. The SDK's own retries are bounded and within the time
+        // R2 asks for the region "auto" and for addresses by path; SeaweedFS accepts both. The SDK's own retries are bounded and within the time
         // limit of each call. R2 does not take the checksums the SDK adds by default, so the SDK sends and checks one only where the API
         // requires it (Cloudflare R2 documentation, "aws-sdk-net").
         services.AddSingleton<IAmazonS3>(provider =>

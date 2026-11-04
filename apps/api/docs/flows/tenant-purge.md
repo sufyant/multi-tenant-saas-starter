@@ -34,7 +34,7 @@ sequenceDiagram
 | `TenantPurgeWarningReadyEvent` | `WarnTenantPurgeHandler`, one for each Owner | Notifications, `SendTenantPurgeWarningEmailHandler` (calls the email service) | No |
 | `StartTenantPurgeCommand` | `CloseTenantHandler`, scheduled at the closure plus the reopen period | ControlPlane, `StartTenantPurgeHandler` (the pivot) | Yes, the tenant's |
 | `PurgeTenantDataCommand` | `TenantPurgeSaga` | Audit, `PurgeTenantDataHandler`; Notifications, `PurgeTenantDataHandler`; the host, `PurgeTenantFilesHandler` (the file store) | Yes, the tenant's, in Audit and Notifications; none in the host, which calls the file store |
-| `PurgeTenantDataReply` | each module's `PurgeTenantDataHandler` | ControlPlane, `TenantPurgeSaga` | Yes |
+| `PurgeTenantDataReply` | each module's `PurgeTenantDataHandler`, and the host's `PurgeTenantFilesHandler` | ControlPlane, `TenantPurgeSaga` | Yes |
 | `CompleteTenantPurgeCommand` | `TenantPurgeSaga`, after the last module's reply | ControlPlane, `CompleteTenantPurgeHandler` | Yes, the tenant's |
 | `CompleteTenantPurgeReply` | `CompleteTenantPurgeHandler` | ControlPlane, `TenantPurgeSaga` | Yes |
 | `PurgeTimedOut` | `TenantPurgeSaga`, at its start, after `ControlPlane:Tenants:PurgeTimeout` | ControlPlane, `TenantPurgeSaga` | Yes |

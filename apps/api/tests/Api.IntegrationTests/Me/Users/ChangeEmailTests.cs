@@ -112,7 +112,7 @@ public sealed class ChangeEmailTests(Database database) : IAsyncLifetime
         (again.StatusCode, await AccountRequests.CodeOfAsync(again)).ShouldBe((HttpStatusCode.BadRequest, "verification_code.invalid"));
     }
 
-    // An address that another account took after the code went out is refused, and the person keeps theirs.
+    // An address that another account took after the code went out is refused before the code is used, and the person keeps theirs.
     [Fact]
     public async Task ChangeEmail_AnotherAccountTookTheAddressMeanwhile_IsAConflict()
     {
@@ -123,6 +123,7 @@ public sealed class ChangeEmailTests(Database database) : IAsyncLifetime
 
         (changed.StatusCode, await AccountRequests.CodeOfAsync(changed)).ShouldBe((HttpStatusCode.Conflict, "user.email_taken"));
         (await _testData.UserOfAsync(user)).Email.ShouldBe("ada@example.com");
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.verification_codes WHERE new_email = '{newEmail}' AND used_at IS NULL AND attempts = 0")).ShouldBe(1);
     }
 
     private async Task<(string User, string NewEmail)> UserWithACodeAsync()

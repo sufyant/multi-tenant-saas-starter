@@ -61,6 +61,12 @@ using ControlPlane.Application.Users.ListUserMemberships;
 using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
+using Audit.Application.DataExports.RecordDataExportRequested;
+using ControlPlane.Application.DataExports.CompleteDataExport;
+using ControlPlane.Application.DataExports.PrepareDataExport;
+using ControlPlane.Application.DataExports.RequestDataExport;
+using ControlPlane.Application.Users.DeleteUserFiles;
+using ControlPlane.Contracts.DataExports;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Plans;
@@ -110,6 +116,7 @@ public sealed class HostRoleTests(Database database)
         new(typeof(StartTenantPurgeCommand), typeof(StartTenantPurgeHandler)),
         new(typeof(PurgeTenantDataCommand), typeof(Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
         new(typeof(PurgeTenantDataCommand), typeof(Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
+        new(typeof(PurgeTenantDataCommand), typeof(Api.Storage.PurgeTenantFilesHandler)),
         new(typeof(PurgeTenantDataReply), typeof(TenantPurgeSaga)),
         new(typeof(CompleteTenantPurgeCommand), typeof(CompleteTenantPurgeHandler)),
         new(typeof(CompleteTenantPurgeReply), typeof(TenantPurgeSaga)),
@@ -117,6 +124,16 @@ public sealed class HostRoleTests(Database database)
         new(typeof(DeleteUserWithoutTenantCommand), typeof(DeleteUserWithoutTenantHandler)),
         new(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
         new(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+        new(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler)),
+    ];
+
+    // The handlers of every message a person's data export sends after its request, as docs/flows/personal-data-export.md lists them,
+    // but the notification's, which WithoutNotificationsIn leaves out; the email that the test waits for is its last step.
+    private static readonly HandlerRun[] HandlersOfTheExport =
+    [
+        new(typeof(DataExportRequestedEvent), typeof(RecordDataExportRequestedHandler)),
+        new(typeof(PrepareDataExportCommand), typeof(PrepareDataExportHandler)),
+        new(typeof(CompleteDataExportCommand), typeof(CompleteDataExportHandler)),
     ];
 
     // A reopen period of seconds: the warning comes 2 s after the closure and the purge 10 s after it, by Wolverine's clock.
@@ -304,7 +321,8 @@ public sealed class HostRoleTests(Database database)
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var closed = await admin.CloseTenantAsync(tenant.Id);
-        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, ownerId, "user.deleted") > 0 && worker.Identity.Deleted.Contains(owner));
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, ownerId, "user.deleted") > 0 && worker.Identity.Deleted.Contains(owner)
+            && runs.In("worker").Contains(new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler))));
 
         closed.StatusCode.ShouldBe(HttpStatusCode.OK);
         runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
@@ -313,6 +331,30 @@ public sealed class HostRoleTests(Database database)
         (await testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Purged");
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.purged")).ShouldBe(1L);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}'", name)).ShouldBe(0L);
+    }
+
+    // The web host takes the request; the worker prepares the file with every module's exporter, which it takes from the message's scope,
+    // marks the export ready and tells the person (docs/flows/personal-data-export.md).
+    [Fact]
+    public async Task RequestDataExport_OnAWebAndAWorkerHost_PreparesTheFileInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var user = await testData.AddUserAsync(email: "ada@acme.test");
+        var userId = await testData.UserIdOfAsync(user);
+
+        var requested = await DataExportRequests.RequestAsync(web, user);
+        await Waiting.UntilAsync(() => Task.FromResult(worker.Email.Sent.Any(email => email.To == "ada@acme.test")));
+
+        requested.StatusCode.ShouldBe(HttpStatusCode.Created);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(RequestDataExportCommand), typeof(RequestDataExportHandler))]);
+        runs.WithoutNotificationsIn("worker").Distinct().ShouldBe(HandlersOfTheExport, ignoreOrder: true);
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT status FROM control_plane.stored_files WHERE user_id = '{userId}'", name)).ShouldBe("Ready");
+        (await ObjectStorage.KeysAsync(SharedKernel.FileKeys.UserExports(userId))).Count.ShouldBe(1);
     }
 
     // O3: a new name is announced from the web host, and its Audit handler runs in the worker, once, in both logs.
@@ -452,6 +494,7 @@ public sealed class HostRoleTests(Database database)
         var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
         await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && await PlatformEntriesAsync(name, userId, "user.deleted") > 0
             && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0 && await PlatformEntriesAsync(name, userId, "user.renamed") > 0);
+        await Waiting.UntilAsync(() => runs.In("worker").Contains(new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler))));
 
         (renamed.StatusCode, deleted.StatusCode).ShouldBe((HttpStatusCode.OK, HttpStatusCode.NoContent));
         runs.In("web").ShouldBe(
@@ -468,6 +511,7 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(UserMembershipRemovedEvent), typeof(RecordUserMembershipRemovedHandler)),
                 new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
                 new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+                new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler)),
             ],
             ignoreOrder: true);
         worker.Identity.Deleted.ShouldBe([user]);
@@ -499,6 +543,7 @@ public sealed class HostRoleTests(Database database)
         var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
         await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && !worker.Identity.Withdrawn.IsEmpty
             && await PlatformEntriesAsync(name, userId, "user.deleted") > 0 && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
+        await Waiting.UntilAsync(() => runs.In("worker").Contains(new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler))));
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         runs.WithoutNotificationsIn("worker").ShouldBe(
@@ -507,6 +552,7 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
                 new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
                 new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+                new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler)),
             ],
             ignoreOrder: true);
         worker.Identity.Withdrawn.ShouldBe([signUp]);
@@ -537,6 +583,7 @@ public sealed class HostRoleTests(Database database)
         var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
         await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && !worker.Identity.Withdrawn.IsEmpty
             && await PlatformEntriesAsync(name, userId, "user.deleted") > 0);
+        await Waiting.UntilAsync(() => runs.In("worker").Contains(new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler))));
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         runs.In("web").ShouldBe(
@@ -549,6 +596,7 @@ public sealed class HostRoleTests(Database database)
             [
                 new HandlerRun(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
                 new HandlerRun(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
+                new HandlerRun(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler)),
                 new HandlerRun(typeof(EraseFormerMemberCommand), typeof(EraseFormerMemberHandler)),
                 new HandlerRun(typeof(WithdrawSignUpCommand), typeof(WithdrawSignUpHandler)),
             ],

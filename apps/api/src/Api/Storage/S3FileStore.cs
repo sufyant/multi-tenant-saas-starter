@@ -5,7 +5,7 @@ using SharedKernel;
 
 namespace Api.Storage;
 
-// The file store on the S3 API, which Cloudflare R2, MinIO and AWS S3 all speak (section 7, "File storage"). It knows the bucket; a module
+// The file store on the S3 API, which Cloudflare R2, AWS S3 and SeaweedFS all speak (section 7, "File storage"). It knows the bucket; a module
 // knows only keys. A key without a file is done for a deletion, so a retried step is safe. A prefix is deleted by listing its keys, a page
 // of at most 1000 at a time, the most one request deletes: the S3 API has no deletion of a prefix.
 internal sealed class S3FileStore(IAmazonS3 s3, IOptions<StorageOptions> settings, TimeProvider time) : IFileStore

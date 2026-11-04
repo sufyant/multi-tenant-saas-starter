@@ -6,7 +6,7 @@ internal sealed class StorageOptions
 {
     public const string Section = "Host:Storage";
 
-    /// <summary>The S3 API's address: R2's of the account's jurisdiction, or MinIO's in local runs and tests.</summary>
+    /// <summary>The S3 API's address: R2's of the account's jurisdiction, or SeaweedFS's in local runs and tests.</summary>
     public Uri? Endpoint { get; set; }
 
     public string? Bucket { get; set; }

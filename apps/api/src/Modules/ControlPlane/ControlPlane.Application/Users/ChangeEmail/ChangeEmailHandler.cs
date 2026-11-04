@@ -8,9 +8,10 @@ using Wolverine;
 
 namespace ControlPlane.Application.Users.ChangeEmail;
 
-// The command locks the user row (K6l) and uses the user's latest code of a change of address. A wrong, expired or spent code answers 400,
-// and a wrong try is kept (VerificationCodeChecks). An address that another account took meanwhile answers 409; the lock of the address orders
-// two users who take it at once (IUserRepository.IsEmailTakenAsync). In the same transaction it records user.email_changed, sends the identity provider's change, which the
+// The command locks the user row (K6l). An address that another account took meanwhile answers 409 before the code is used, so the code
+// stays; the lock of the address orders two users who take it at once (IUserRepository.IsEmailTakenAsync). Then it uses the user's latest
+// code of a change of address: a wrong, expired or spent code answers 400, and a wrong try is kept (VerificationCodeChecks). A deleted
+// user is refused at the door (A9); one deleted while the request waited for the row is refused after the code was used. In the same transaction it records user.email_changed, sends the identity provider's change, which the
 // outbox retries, so our record and the provider do not stay apart, and tells the old address (A7).
 public static class ChangeEmailHandler
 {
@@ -25,6 +26,13 @@ public static class ChangeEmailHandler
             return (Errors.UserNotFound, []);
         }
 
+        // The refusals that keep the code come before the code is used: an address another user took meanwhile (W7).
+        if (await users.FindLatestVerificationCodeForUpdateAsync(user.Id, VerificationCodePurpose.EmailChange, cancellationToken) is { NewEmail: { } pending }
+            && await users.IsEmailTakenAsync(EmailAddress.Create(pending), user.Id, cancellationToken))
+        {
+            return (Errors.UserEmailTaken, []);
+        }
+
         var now = time.GetUtcNow();
         var used = await VerificationCodeChecks.UseAsync(users, user.Id, VerificationCodePurpose.EmailChange, command.Code, now, cancellationToken);
         if (!used.IsSuccess)
@@ -32,13 +40,8 @@ public static class ChangeEmailHandler
             return (used.Error, []);
         }
 
-        var email = EmailAddress.Create(used.Value.NewEmail!);
-        if (await users.IsEmailTakenAsync(email, user.Id, cancellationToken))
-        {
-            return (Errors.UserEmailTaken, []);
-        }
-
         var oldEmail = user.Email;
+        var email = EmailAddress.Create(used.Value.NewEmail!);
         var changed = user.ChangeEmail(email);
         if (!changed.IsSuccess)
         {
