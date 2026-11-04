@@ -724,11 +724,15 @@ export type NotificationCalls = {
 };
 
 /**
- * The platform's bell and its live stream. The stream holds its answer until the test calls `arrive`, then
+ * The platform's bell and its live stream: one notification and one unread, or the list and the count a shot names. The stream holds its answer until the test calls `arrive`, then
  * sends one `notifications` event for the platform's bell and ends, with a long retry so the browser does not open it again.
  */
-export async function mockNotifications(page: Page) {
-  const unread = { count: 1 };
+export async function mockNotifications(
+  page: Page,
+  list: { items?: NotificationResponse[]; unread?: number } = {},
+) {
+  const items = list.items ?? [shannonSuspended];
+  const unread = { count: list.unread ?? 1 };
   const calls: NotificationCalls = { opened: [], markedAll: 0 };
   let signal = () => {};
   const sent = new Promise<void>((resolve) => {
@@ -738,7 +742,7 @@ export async function mockNotifications(page: Page) {
     route.fulfill({ json: { unread: unread.count } }),
   );
   await page.route("**/api/v1/platform/notifications", (route) =>
-    route.fulfill({ json: { items: [shannonSuspended], nextCursor: null } }),
+    route.fulfill({ json: { items, nextCursor: null } }),
   );
   await page.route("**/api/v1/platform/notifications/read", (route) => {
     calls.markedAll += 1;

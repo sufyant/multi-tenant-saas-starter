@@ -603,12 +603,16 @@ export type NotificationCalls = {
 };
 
 /**
- * Northwind's bell and its live stream. The count answers `unread.count`; the stream holds its answer until
+ * Northwind's bell and its live stream: one notification and one unread, or the list and the count a shot names. The count answers `unread.count`; the stream holds its answer until
  * the test calls `signal`, then sends one `notifications` event for Northwind's bell and ends, with a long retry so the browser
  * does not open it again during the test.
  */
-export async function mockNotifications(page: Page) {
-  const unread = { count: 1 };
+export async function mockNotifications(
+  page: Page,
+  list: { items?: NotificationResponse[]; unread?: number } = {},
+) {
+  const items = list.items ?? [roleChanged];
+  const unread = { count: list.unread ?? 1 };
   const calls: NotificationCalls = { opened: [], markedAll: 0 };
   let signal = () => {};
   const sent = new Promise<void>((resolve) => {
@@ -620,11 +624,10 @@ export async function mockNotifications(page: Page) {
   );
   await page.route(
     `**/api/v1/tenants/${northwind.id}/notifications?*`,
-    (route) =>
-      route.fulfill({ json: { items: [roleChanged], nextCursor: null } }),
+    (route) => route.fulfill({ json: { items, nextCursor: null } }),
   );
   await page.route(`**/api/v1/tenants/${northwind.id}/notifications`, (route) =>
-    route.fulfill({ json: { items: [roleChanged], nextCursor: null } }),
+    route.fulfill({ json: { items, nextCursor: null } }),
   );
   await page.route(
     `**/api/v1/tenants/${northwind.id}/notifications/read`,
