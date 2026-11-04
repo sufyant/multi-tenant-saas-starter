@@ -81,10 +81,7 @@ function CommandInput({
         {...props}
       />
       {hint && (
-        <kbd
-          aria-hidden="true"
-          className="rounded-sm border border-border bg-secondary px-[5px] py-px font-mono text-kbd text-muted-foreground max-tablet:hidden"
-        >
+        <kbd className="rounded-sm border border-border bg-secondary px-[5px] py-px font-mono text-kbd text-muted-foreground max-tablet:hidden">
           {hint}
         </kbd>
       )}
