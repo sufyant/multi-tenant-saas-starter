@@ -93,9 +93,9 @@ export function OrgSwitcher({
   );
   if (!several && variant === "drawer")
     return (
-      <bdi className="block truncate ps-2 pt-3.5 pb-1 text-status text-muted-foreground">
-        {current.name}
-      </bdi>
+      <p className="truncate ps-2 pt-3.5 pb-1 text-status text-muted-foreground">
+        <bdi>{current.name}</bdi>
+      </p>
     );
   if (!several) return <div className={box}>{face}</div>;
   return (

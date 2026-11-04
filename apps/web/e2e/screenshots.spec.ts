@@ -597,6 +597,12 @@ const shellShots: {
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
   {
+    file: "2.29-drawer-ar-light-phone",
+    size: "phone",
+    language: Language.Ar,
+    open: (page) => page.getByRole("button", { name: "فتح القائمة" }).click(),
+  },
+  {
     file: "2.03-switcher-en-light-desktop",
     size: "desktop",
     mock: (page) =>

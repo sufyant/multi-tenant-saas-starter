@@ -35,7 +35,9 @@ export function HomePage() {
             ? t.rich("home.welcome", { name: () => <bdi>{firstName}</bdi> })
             : t("home.welcomeNoName")}
         </h1>
-        <bdi className="text-body text-muted-foreground">{detail.name}</bdi>
+        <p className="text-body text-muted-foreground">
+          <bdi>{detail.name}</bdi>
+        </p>
       </div>
       <ul className="grid max-w-190 gap-4 tablet:grid-cols-2">
         {cards

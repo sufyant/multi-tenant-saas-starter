@@ -28,6 +28,12 @@ describe("HomePage", () => {
     expect(
       screen.getByRole("heading", { level: 1 }).nextElementSibling,
     ).toHaveTextContent("Northwind Traders");
+    // A paragraph in the page's direction, so in Arabic the line starts at the right; only the name is isolated.
+    expect(
+      screen.getByRole("heading", { level: 1 }).nextElementSibling,
+    ).toContainHTML(
+      '<p class="text-body text-muted-foreground"><bdi>Northwind Traders</bdi></p>',
+    );
     expect(cards()).toEqual(["Members", "Roles", "Activity log", "Settings"]);
     expect(screen.getByRole("link", { name: /^Members/ })).toHaveAttribute(
       "href",

@@ -71,6 +71,11 @@ describe("OrgSwitcher", () => {
     expect(screen.getByText("Northwind Traders")).toBeInTheDocument();
     expect(screen.queryByText("Owner")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    // The line keeps the page's direction, so in Arabic it starts at the right; only the name is isolated.
+    expect(screen.getByText("Northwind Traders").tagName).toBe("BDI");
+    expect(screen.getByText("Northwind Traders").parentElement?.tagName).toBe(
+      "P",
+    );
   });
 
   it("OrgSwitcher_SeveralOrganisationsInTheDrawer_OpensTheMenu", async () => {
