@@ -584,12 +584,16 @@ export const roleChanged: NotificationResponse = {
   type: NotificationType.MemberRoleChanged,
   title: "Your role in Northwind Traders changed",
   body: "Mehmet Kaya changed your role from Member to Admin.",
+  area: "Your access",
+  actorName: "Mehmet Kaya",
+  tenantName: "Northwind Traders",
   link: {
     kind: NotificationLinkResponseKind.TenantSettings,
     tenantId: northwind.id,
   },
   createdAt: "2026-10-16T13:29:00Z",
   readAt: null,
+  unread: true,
 };
 
 /** What the notification answers recorded: the notifications opened and the bells marked read. */

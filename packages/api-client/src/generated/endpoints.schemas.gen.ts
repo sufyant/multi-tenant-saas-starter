@@ -631,6 +631,18 @@ export interface NotificationResponse {
   title: string;
   /** The body, in the reader's language. */
   body: string;
+  /** The area it belongs to, such as "Members", in the reader's language. A label only. */
+  area: string;
+  /**
+     * The person who acted, named now: "Deleted user" in the reader's language for a deleted one; none when the platform acted.
+     * @nullable
+     */
+  actorName: string | null;
+  /**
+     * The organisation's name as it was at that moment; none for a notification about no organisation.
+     * @nullable
+     */
+  tenantName: string | null;
   /** Where it leads. */
   link: NotificationLinkResponse;
   /** When the event it tells of happened. */
@@ -640,6 +652,8 @@ export interface NotificationResponse {
      * @nullable
      */
   readAt: string | null;
+  /** Whether the reader has not opened it yet, from ReadAt; the filter unread compares with it. */
+  unread: boolean;
 }
 
 export interface CursorPageOfNotificationResponse {
@@ -1725,6 +1739,7 @@ export type GrantSystemAdminHeaders = {
 };
 
 export type ListPlatformNotificationsParams = {
+unread?: boolean;
 cursor?: string;
 /**
  * @minimum 1
@@ -1848,6 +1863,7 @@ export type CreateRoleHeaders = {
 };
 
 export type ListNotificationsParams = {
+unread?: boolean;
 cursor?: string;
 /**
  * @minimum 1
@@ -1892,6 +1908,7 @@ export const ListMyTenantsSort = {
 } as const;
 
 export type ListMyNotificationsParams = {
+unread?: boolean;
 cursor?: string;
 /**
  * @minimum 1

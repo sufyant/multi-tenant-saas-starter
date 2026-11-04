@@ -705,12 +705,16 @@ export const shannonSuspended: NotificationResponse = {
   type: NotificationType.TenantSuspended,
   title: "Shannon Studio was suspended",
   body: "Ciara Byrne suspended Shannon Studio. Its members can’t open it until it is reactivated.",
+  area: "Organisations",
+  actorName: "Ciara Byrne",
+  tenantName: "Shannon Studio",
   link: {
     kind: NotificationLinkResponseKind.PlatformTenant,
     tenantId: organisations.shannon.id,
   },
   createdAt: "2026-10-16T13:29:00Z",
   readAt: null,
+  unread: true,
 };
 
 /** What the notification answers recorded: the notifications opened and the bell marked read. */

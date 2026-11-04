@@ -8,14 +8,22 @@ namespace Notifications.Api.Tenant.Notifications;
 /// <param name="Type">The notification's type, from the enum NotificationType.</param>
 /// <param name="Title">The title, in the reader's language.</param>
 /// <param name="Body">The body, in the reader's language.</param>
+/// <param name="Area">The area it belongs to, such as "Members", in the reader's language. A label only.</param>
+/// <param name="ActorName">The person who acted, named now: "Deleted user" in the reader's language for a deleted one; none when the platform acted.</param>
+/// <param name="TenantName">The organisation's name as it was at that moment; none for a notification about no organisation.</param>
 /// <param name="Link">Where it leads.</param>
 /// <param name="CreatedAt">When the event it tells of happened.</param>
 /// <param name="ReadAt">When the reader opened it; none while it is unread.</param>
+/// <param name="Unread">Whether the reader has not opened it yet, from <paramref name="ReadAt"/>; the filter unread compares with it.</param>
 public sealed record NotificationResponse(
     Guid Id,
     string Type,
     string Title,
     string Body,
+    string Area,
+    string? ActorName,
+    string? TenantName,
     NotificationLinkResponse Link,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? ReadAt);
+    DateTimeOffset? ReadAt,
+    bool Unread);

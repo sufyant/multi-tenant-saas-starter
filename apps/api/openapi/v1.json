@@ -4029,6 +4029,13 @@
         "operationId": "ListPlatformNotifications",
         "parameters": [
           {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": {
@@ -6234,6 +6241,13 @@
             }
           },
           {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": {
@@ -7468,6 +7482,13 @@
         ],
         "operationId": "ListMyNotifications",
         "parameters": [
+          {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
           {
             "name": "cursor",
             "in": "query",
@@ -9673,9 +9694,13 @@
           "type",
           "title",
           "body",
+          "area",
+          "actorName",
+          "tenantName",
           "link",
           "createdAt",
-          "readAt"
+          "readAt",
+          "unread"
         ],
         "type": "object",
         "properties": {
@@ -9695,6 +9720,24 @@
             "type": "string",
             "description": "The body, in the reader's language."
           },
+          "area": {
+            "type": "string",
+            "description": "The area it belongs to, such as \"Members\", in the reader's language. A label only."
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The person who acted, named now: \"Deleted user\" in the reader's language for a deleted one; none when the platform acted."
+          },
+          "tenantName": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The organisation's name as it was at that moment; none for a notification about no organisation."
+          },
           "link": {
             "description": "Where it leads.",
             "$ref": "#/components/schemas/NotificationLinkResponse"
@@ -9711,6 +9754,10 @@
             ],
             "description": "When the reader opened it; none while it is unread.",
             "format": "date-time"
+          },
+          "unread": {
+            "type": "boolean",
+            "description": "Whether the reader has not opened it yet, from ReadAt; the filter unread compares with it."
           }
         },
         "description": "A notification as a bell shows it (U7). Its title and body are rendered in the reader's language (U2). The link names where it leads, as a\nkind and the tenant it is about: the web builds the URL."

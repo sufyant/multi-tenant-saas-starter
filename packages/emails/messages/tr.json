@@ -128,6 +128,12 @@
       "members.max": "Üye sınırı",
       "roles.custom": "Özel roller",
       "roles.custom.max": "Özel rol sınırı"
+    },
+    "area": {
+      "members": "Üyeler",
+      "your_access": "Erişiminiz",
+      "organisation_plan": "Kuruluş planı",
+      "organisations": "Kuruluşlar"
     }
   }
 }

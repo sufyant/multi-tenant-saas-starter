@@ -60,6 +60,12 @@ Status: done.
 - CI keeps the screenshots of each pull request for seven days, for the review against the design.
 - Only the design's breakpoints: Tailwind's own are removed, and the architecture test fails on them.
 
+35-backend-2:
+
+- The bell's list for the design's Notifications popover. Each item answers `unread`, derived from `readAt`. The three list reads take the filter `unread`: `true` for the Unread tab, `false` for the read ones, with the same cursor (the maintainer's decision of 2026-11-04, after N7h and K5).
+- Each item answers its area ("Members", "Your access", "Organisation plan", "Organisations") in the reader's language, the person who acted, and the organisation's name. The area is a property of each type in the catalog, with its words in English, Turkish and Arabic. It is a display label only.
+- The platform's item writes the actor's name only, without "accepted" (the maintainer's decision of 2026-11-04).
+
 ## 4. Step 36: Personal pages
 
 Status: todo.
