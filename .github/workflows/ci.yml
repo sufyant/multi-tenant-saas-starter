@@ -94,8 +94,10 @@ jobs:
   api:
     name: "API: build and test"
     runs-on: ubuntu-latest
-    # The tests take about 6.5 minutes, in two parts one after the other (scripts/ci/test-api.sh).
-    timeout-minutes: 15
+    # The tests run in two parts one after the other (scripts/ci/test-api.sh). On 2026-11-04 the test step took 9 to 12.5 minutes on
+    # other branches, and 13.5 minutes and more with step 36's tests, which passed a limit of 15 minutes for the whole job. 20 minutes
+    # keeps a margin; a hang still ends sooner, at the hang dump's 3 minutes (apps/api/docs/ARCHITECTURE.md, section 9, rule 8).
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: apps/api
