@@ -49,6 +49,7 @@ const joined: NotificationResponse = {
   },
   createdAt: "2026-10-16T13:29:00Z",
   readAt: null,
+  unread: true,
 };
 
 const removed: NotificationResponse = {

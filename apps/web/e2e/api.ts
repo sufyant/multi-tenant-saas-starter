@@ -593,6 +593,7 @@ export const roleChanged: NotificationResponse = {
   },
   createdAt: "2026-10-16T13:29:00Z",
   readAt: null,
+  unread: true,
 };
 
 /** What the notification answers recorded: the notifications opened and the bells marked read. */

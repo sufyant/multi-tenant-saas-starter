@@ -43,6 +43,7 @@ const suspended: NotificationResponse = {
   link: { kind: NotificationLinkResponseKind.PlatformTenant, tenantId },
   createdAt: "2026-10-16T13:29:00Z",
   readAt: null,
+  unread: true,
 };
 
 /** The platform bell's reads: its count, which counts its reads, and its list. */

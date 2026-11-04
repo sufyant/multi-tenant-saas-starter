@@ -54,7 +54,8 @@ export const ListNotificationsResponse = zod.object({
   "tenantId": zod.uuid().nullable()
 }).describe('Where it leads.'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('When the event it tells of happened.'),
-  "readAt": zod.iso.datetime({"offset":true}).nullable().describe('When the reader opened it; none while it is unread.')
+  "readAt": zod.iso.datetime({"offset":true}).nullable().describe('When the reader opened it; none while it is unread.'),
+  "unread": zod.boolean().describe('Whether the reader has not opened it yet, from ReadAt; the filter unread compares with it.')
 }).describe('A notification as a bell shows it (U7). Its title and body are rendered in the reader\'s language (U2). The link names where it leads, as a\nkind and the tenant it is about: the web builds the URL.')),
   "nextCursor": zod.string().nullable()
 })

@@ -14,6 +14,7 @@ namespace Notifications.Api.Tenant.Notifications;
 /// <param name="Link">Where it leads.</param>
 /// <param name="CreatedAt">When the event it tells of happened.</param>
 /// <param name="ReadAt">When the reader opened it; none while it is unread.</param>
+/// <param name="Unread">Whether the reader has not opened it yet, from <paramref name="ReadAt"/>; the filter unread compares with it.</param>
 public sealed record NotificationResponse(
     Guid Id,
     string Type,
@@ -24,4 +25,5 @@ public sealed record NotificationResponse(
     string? TenantName,
     NotificationLinkResponse Link,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? ReadAt);
+    DateTimeOffset? ReadAt,
+    bool Unread);

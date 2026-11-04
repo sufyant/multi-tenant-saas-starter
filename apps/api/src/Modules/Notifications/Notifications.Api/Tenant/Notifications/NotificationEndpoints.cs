@@ -46,10 +46,11 @@ public static class NotificationEndpoints
         notification.TenantName,
         new NotificationLinkResponse(ResponseStatus.OfLink(notification.Link), notification.TenantId),
         notification.CreatedAt,
-        notification.ReadAt);
+        notification.ReadAt,
+        notification.Unread);
 
     // The reader's notifications, as the reader's own transaction reads them: the endpoint sends its queries with no tenant (U7). The
-    // Unread tab asks for the unread ones alone.
+    // filter unread, of the field of the same name (N7h), reads the unread or the read ones alone.
     internal static async Task<Result<CursorPage<NotificationResponse>>> ListAsync(
         HttpContext http, IMessageBus bus, Inbox inbox, bool? unread, string? cursor, int? limit, CancellationToken cancellationToken)
     {
@@ -61,7 +62,7 @@ public static class NotificationEndpoints
 
         var reader = await ReaderAsync(http, bus, cancellationToken);
         var found = await bus.InvokeForTenantAsync<Result<CursorPage<StoredNotification>>>(
-            WithoutTenant, new ListNotificationsQuery(reader, inbox, page.Value, unread == true), cancellationToken);
+            WithoutTenant, new ListNotificationsQuery(reader, inbox, page.Value, unread), cancellationToken);
         if (!found.IsSuccess)
         {
             return found.Error;

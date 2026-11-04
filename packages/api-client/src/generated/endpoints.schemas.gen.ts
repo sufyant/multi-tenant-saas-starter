@@ -652,6 +652,8 @@ export interface NotificationResponse {
      * @nullable
      */
   readAt: string | null;
+  /** Whether the reader has not opened it yet, from ReadAt; the filter unread compares with it. */
+  unread: boolean;
 }
 
 export interface CursorPageOfNotificationResponse {
