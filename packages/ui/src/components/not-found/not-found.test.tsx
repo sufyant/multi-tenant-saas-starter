@@ -39,6 +39,23 @@ describe("NotFound", () => {
     );
   });
 
+  // 2.40 and 2.43: the whole content of the page, 120 px below the top bar from bp-tablet.
+  it("NotFound_OldLink_FillsThePage", () => {
+    renderNotFound({ kind: "page", href: "/northwind" });
+
+    expect(
+      screen.getByRole("heading", { name: "Page not found" }).parentElement,
+    ).toHaveClass("tablet:pt-30");
+  });
+
+  it("NotFound_SignedOut_KeepsTheFramesSpacing", () => {
+    renderNotFound({ kind: "signed-out", href: "/sign-in" });
+
+    expect(
+      screen.getByRole("heading", { name: "Page not found" }).parentElement,
+    ).not.toHaveClass("tablet:pt-30");
+  });
+
   it("NotFound_Organisation_NamesTheAddress", () => {
     renderNotFound({
       kind: "organisation",
