@@ -61,8 +61,9 @@ export function PersonalBell() {
 
 /**
  * A bell's reads and commands around the shared `NotificationBell`. The count reads at once; the list reads each time the bell
- * opens, on Unread while something is unread and on All otherwise (3.01, 3.03); each tab reads its own list. Opening an item marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for
- * the answer, then reads the bell again, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
+ * opens, on Unread while something is unread and on All otherwise (3.01, 3.03); each tab reads its own list. Opening an item
+ * marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for the answer, then reads
+ * the bell again and shows All, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
  */
 function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   const router = useRouter();

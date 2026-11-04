@@ -47,10 +47,7 @@ const suspended: NotificationResponse = {
 };
 
 /** The platform bell's reads: its count, which counts its reads, and its list, which keeps the filter of each read. */
-function platformBell(
-  reads = { count: 0 },
-  filters: (string | null)[] = [],
-) {
+function platformBell(reads = { count: 0 }, filters: (string | null)[] = []) {
   return [
     http.get("*/v1/me", () => HttpResponse.json({ timeZone: null })),
     http.get("*/v1/platform/notifications/unread-count", () => {

@@ -171,9 +171,12 @@ export function PlatformShell({
   const item = [...main, ...myAccount, ...platform].find(
     (entry) => entry.id === current,
   );
+  // The page of notifications, which the phone's bell opens (F57), is no row of the menu.
   const pageName = notFound
     ? t("problems.notFoundTitle")
-    : (item?.label ?? t("shell.settings"));
+    : current === "notifications"
+      ? t("notifications.title")
+      : (item?.label ?? t("shell.settings"));
   const userName = user.data && userNameOf(user.data, t("users.deletedUser"));
   const detail =
     current === "users" && userId
