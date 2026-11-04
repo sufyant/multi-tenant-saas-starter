@@ -29,7 +29,7 @@ public sealed class GetMyDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMyDataExport_NeverAsked_IsNotFound()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
 
         var latest = await _api.CreateClient(user).GetAsync($"{Path}/latest", Cancellation);
 

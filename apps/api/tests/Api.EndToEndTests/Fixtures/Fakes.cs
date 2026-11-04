@@ -42,6 +42,8 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
 
     public Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken) => Task.CompletedTask;
 
+    public Task<bool> IsEmailTakenByAnotherAccountAsync(string email, string externalUserId, CancellationToken cancellationToken) => Task.FromResult(false);
+
     public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 

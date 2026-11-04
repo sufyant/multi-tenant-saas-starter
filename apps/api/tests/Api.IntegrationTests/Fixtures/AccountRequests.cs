@@ -10,14 +10,14 @@ internal static partial class AccountRequests
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
-    public static Task<HttpResponseMessage> RequestEmailChangeAsync(ApiFactory api, string user, string email) =>
-        PostWithKeyAsync(api, user, "/v1/me/email-change", new { email });
+    public static Task<HttpResponseMessage> RequestEmailChangeAsync(ApiFactory api, string user, string email, string? key = null) =>
+        PostWithKeyAsync(api, user, "/v1/me/email-change", new { email }, key);
 
     public static Task<HttpResponseMessage> ChangeEmailAsync(ApiFactory api, string user, string code) =>
         api.CreateClient(user).PostAsJsonAsync("/v1/me/email-change/confirm", new { code }, Cancellation);
 
     public static Task<HttpResponseMessage> RequestAccountDeletionAsync(ApiFactory api, string user) =>
-        PostWithKeyAsync(api, user, "/v1/me/account-deletion", null);
+        PostWithKeyAsync(api, user, "/v1/me/account-deletion", null, null);
 
     public static Task<HttpResponseMessage> ConfirmAccountDeletionAsync(ApiFactory api, string user, string code) =>
         api.CreateClient(user).PostAsJsonAsync("/v1/me/account-deletion/confirm", new { code }, Cancellation);
@@ -29,10 +29,10 @@ internal static partial class AccountRequests
     public static async Task<string?> CodeOfAsync(HttpResponseMessage answer) =>
         (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString();
 
-    private static Task<HttpResponseMessage> PostWithKeyAsync(ApiFactory api, string user, string path, object? body)
+    private static Task<HttpResponseMessage> PostWithKeyAsync(ApiFactory api, string user, string path, object? body, string? key)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = body is null ? null : JsonContent.Create(body) };
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        request.Headers.Add("Idempotency-Key", key ?? Guid.NewGuid().ToString());
         return api.CreateClient(user).SendAsync(request, Cancellation);
     }
 

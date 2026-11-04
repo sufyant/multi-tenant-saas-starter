@@ -58,6 +58,23 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
             """)).ShouldBe(1);
     }
 
+    // The unique index of the addresses (A7): a person who is not a user yet joins with the invited address, which another live user keeps.
+    // Two accounts of the identity provider then verified one address; the acceptance changes nothing and says why.
+    [Fact]
+    public async Task AcceptInvitation_ANewUserWithTheAddressOfAnotherUser_IsAConflictAndAddsNothing()
+    {
+        var (slug, invitee, code) = await InviteSomeoneWithAnAccountAsync();
+        var email = (await _api.Identity.FindVerifiedEmailsAsync(invitee, Cancellation))[0];
+        await _testData.AddUserAsync(email: email);
+
+        var accepted = await AcceptAsync(invitee, code);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(accepted)).ShouldBe("user.email_taken");
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
+        (await MembersAsync(slug)).ShouldBe(0);
+    }
+
     // K3: the new member acted, and the record names only their user id.
     [Fact]
     public async Task AcceptInvitation_InvitedPerson_IsRecordedInTheTenantLogAsJoined()

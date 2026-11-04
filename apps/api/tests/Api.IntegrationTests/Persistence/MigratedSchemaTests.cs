@@ -174,6 +174,23 @@ public sealed class MigratedSchemaTests(Database database)
             """);
     }
 
+    // A7: two live users never keep one address. The unique index holds the stored form, the one every comparison reads; a deleted user
+    // keeps no address (A8), so any number of them pass.
+    [Fact]
+    public async Task WriteUser_TheAddressOfAnotherLiveUser_IsRefusedByTheUniqueIndex()
+    {
+        var migrated = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, migrated);
+        await testData.AddUserAsync(email: "ada@example.com");
+        await testData.DeleteUserAsync(await testData.AddUserAsync(email: "grace@example.com"));
+        await testData.DeleteUserAsync(await testData.AddUserAsync(email: "grace+2@example.com"));
+
+        var second = () => testData.AddUserAsync(email: "ada@example.com");
+
+        var refused = await second.ShouldThrowAsync<PostgresException>();
+        (refused.SqlState, refused.ConstraintName).ShouldBe((PostgresErrorCodes.UniqueViolation, "ux_users_email"));
+    }
+
     // R15: a single-row rule of the code is a CHECK. Rows of every kind, as the code writes them, are stored: tenants of each kind with
     // their summaries, one with an Owner invitation, users suspended and deleted, invitations of each status, a purge's record. Each
     // statement then breaks one rule, and the database refuses it and names the rule.

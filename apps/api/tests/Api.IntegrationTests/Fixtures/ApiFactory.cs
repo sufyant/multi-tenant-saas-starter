@@ -38,10 +38,6 @@ internal sealed class ApiFactory(
 
     public const string PlatformUrl = "https://platform.test/";
 
-    // The one root system admin of the list. No account of the fake identity provider has this address, so nobody becomes a system
-    // admin by accident.
-    public const string RootEmail = "root-admin@app.test";
-
     public static readonly IReadOnlyDictionary<string, string?> ShortRetries = new Dictionary<string, string?>
     {
         ["Notifications:InvitationEmails:RetryDelays:0"] = "00:00:00.010",
@@ -64,6 +60,10 @@ internal sealed class ApiFactory(
     // the services first, and the factory then reports the disposed services instead of the start's error. So the application starts
     // only once the factory waits for it, and every failed start reaches the test with its own error.
     private readonly TaskCompletionSource _factoryWaits = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // The one root system admin of the list. No account of the fake identity provider has this address, so nobody becomes a system
+    // admin by accident. It is the test's own (TestEmails), because two live users never keep one address (A7).
+    public static string RootEmail => TestEmails.Of("root-admin@app.test");
 
     public FakeIdentityProvider Identity { get; } = new();
 

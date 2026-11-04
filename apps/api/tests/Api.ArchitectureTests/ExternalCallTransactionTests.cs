@@ -6,7 +6,8 @@ using ControlPlane.Application.Invitations.OpenSignUp;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUserFiles;
-using ControlPlane.Application.Users.ReplaceIdentityEmail;
+using ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider;
+using ControlPlane.Application.Users.SendIdentityEmail;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
@@ -47,7 +48,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
 
         calling.Select(chain => chain.MessageType).ShouldBe(
             [
-                typeof(OpenSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand), typeof(ReplaceIdentityEmailCommand),
+                typeof(OpenSignUpCommand), typeof(WithdrawSignUpCommand), typeof(DeleteIdentityAccountCommand), typeof(SendIdentityEmailCommand), typeof(GetEmailTakenAtIdentityProviderQuery),
                 typeof(InvitationReadyEvent),
                 typeof(TenantPurgeWarningReadyEvent),
                 typeof(SendNotificationEmailCommand),

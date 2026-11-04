@@ -29,7 +29,7 @@ public sealed class DownloadDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DownloadDataExport_ReadyExport_AnswersALinkToTheFileForFiveMinutesAndRecordsTheDownload()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         var userId = await _testData.UserIdOfAsync(user);
         var exportId = await DataExportRequests.ReadyAsync(_api, user);
 
@@ -51,8 +51,8 @@ public sealed class DownloadDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DownloadDataExport_AnotherUsersExport_IsNotFound()
     {
-        var owner = await _testData.AddUserAsync(email: "ada@example.com");
-        var other = await _testData.AddUserAsync(email: "grace@example.com");
+        var owner = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
+        var other = await _testData.AddUserAsync(email: TestEmails.Of("grace@example.com"));
         var exportId = await DataExportRequests.ReadyAsync(_api, owner);
 
         var download = await DownloadAsync(other, exportId);
@@ -65,7 +65,7 @@ public sealed class DownloadDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DownloadDataExport_AnExportInPreparation_IsAConflict()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         var userId = await _testData.UserIdOfAsync(user);
         var exportId = Guid.CreateVersion7();
         await database.ScalarAsSuperuserAsync<object>(

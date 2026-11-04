@@ -36,7 +36,7 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RequestDataExport_AUser_AnswersItInPreparationThenMakesItReady()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace");
 
         var requested = await _api.WaitingForMessagesAsync(() => RequestAsync(user));
 
@@ -55,8 +55,8 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
     public async Task RequestDataExport_AMemberWhoActed_WritesTheirProfileMembershipsActivityAndNotificationsOnly()
     {
         var tenant = await _testData.AddTenantAsync(name: "Northwind Traders");
-        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace"));
-        var other = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: "grace@example.com", firstName: "Grace", lastName: "Hopper"));
+        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace"));
+        var other = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("grace@example.com"), firstName: "Grace", lastName: "Hopper"));
         var (userId, otherId) = (await _testData.UserIdOfAsync(user), await _testData.UserIdOfAsync(other));
         await _audit.AddTenantEntryAsync(tenant.Id, DateTimeOffset.UtcNow, "User", userId, "member.invited", "Invitation", Guid.CreateVersion7());
         await _audit.AddTenantEntryAsync(tenant.Id, DateTimeOffset.UtcNow, "User", otherId, "member.invited", "Invitation", Guid.CreateVersion7());
@@ -69,7 +69,7 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
         zip.Entries.Select(entry => entry.FullName).ShouldBe(
             ["README.txt", "activity.json", "invitations.json", "memberships.json", "notifications.json", "profile.json"]);
         var profile = Json(zip, "profile.json");
-        (profile.GetProperty("email").GetString(), profile.GetProperty("firstName").GetString()).ShouldBe(("ada@example.com", "Ada"));
+        (profile.GetProperty("email").GetString(), profile.GetProperty("firstName").GetString()).ShouldBe((TestEmails.Of("ada@example.com"), "Ada"));
         Json(zip, "memberships.json").EnumerateArray().Select(membership => membership.GetProperty("organisation").GetString()).ShouldBe(["Northwind Traders"]);
         Json(zip, "activity.json").EnumerateArray()
             .Where(action => action.GetProperty("tenantId").ValueKind == JsonValueKind.String)
@@ -77,7 +77,7 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
             .ShouldBe([(tenant.Id, "member.invited")]);
         Json(zip, "notifications.json").GetArrayLength().ShouldBe(1);
         Text(zip, "README.txt").ShouldContain("Clerk");
-        Text(zip).ShouldNotContain("grace@example.com");
+        Text(zip).ShouldNotContain(TestEmails.Of("grace@example.com"));
     }
 
     // The person learns that it is ready in the personal bell and by email, with a link to Account and security, never to the file; the
@@ -85,14 +85,14 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RequestDataExport_Ready_TellsThePersonByBellAndEmailAndRecordsTheRequest()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace");
         var userId = await _testData.UserIdOfAsync(user);
 
         await _api.WaitingForMessagesAsync(() => RequestAsync(user));
 
         (await _notifications.OfAsync(userId)).ShouldBe([NotificationRows.Row(userId, "user.data_export_ready", null, "Personal")]);
         var email = _api.Email.Sent.ShouldHaveSingleItem();
-        (email.To, email.Subject).ShouldBe(("ada@example.com", "Your data file is ready"));
+        (email.To, email.Subject).ShouldBe((TestEmails.Of("ada@example.com"), "Your data file is ready"));
         email.Text.ShouldNotContain("exports/");
         (await _audit.PlatformLogAsync(userId)).ShouldBe($"user.data_export_requested|User|{userId}|User|{userId}|-");
     }
@@ -101,7 +101,7 @@ public sealed class RequestDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task RequestDataExport_OneInPreparation_IsAConflict()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         var userId = await _testData.UserIdOfAsync(user);
         await database.ScalarAsSuperuserAsync<object>(
             $"""

@@ -18,6 +18,9 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
     // Lets a test look at the database at the moment the application asks for a user's verified addresses.
     public Func<Task>? WhileReadingVerifiedEmails { get; set; }
 
+    // Lets a test hold a change of an address at the identity provider, given the address, before the provider keeps it.
+    public Func<string, Task>? WhileReplacingEmail { get; set; }
+
     // Every invitation Clerk created, with what it was given.
     public ConcurrentQueue<(string Email, Uri AcceptLink, DateTimeOffset ExpiresAt, string InvitationId)> SignUps { get; } = [];
 
@@ -81,12 +84,31 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
     }
 
     // Clerk then knows the account by its new address only, as it verified it.
-    public Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken)
+    public async Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken)
     {
         Answer();
+        if (WhileReplacingEmail is { } hold)
+        {
+            await hold(email);
+        }
+
         Replaced.Enqueue((externalUserId, email));
         _accounts[externalUserId] = [email];
-        return Task.CompletedTask;
+    }
+
+    // The address that Clerk keeps for the account now; none for an account it does not know.
+    public string? EmailOf(string externalUserId) => _accounts.GetValueOrDefault(externalUserId)?.FirstOrDefault();
+
+    // Clerk's account of another person keeps the address: as Clerk finds users by an address, in any case.
+    // Only "down" stops it: a test that makes the next calls fail aims them at the calls of a message (FailNext).
+    public Task<bool> IsEmailTakenByAnotherAccountAsync(string email, string externalUserId, CancellationToken cancellationToken)
+    {
+        if (IsDown)
+        {
+            throw new HttpRequestException("Clerk is down.");
+        }
+
+        return Task.FromResult(_accounts.Any(account => account.Key != externalUserId && account.Value.Contains(email, StringComparer.OrdinalIgnoreCase)));
     }
 
     public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken)

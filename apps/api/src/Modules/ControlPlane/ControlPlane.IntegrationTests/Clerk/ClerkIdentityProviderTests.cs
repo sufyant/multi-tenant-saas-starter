@@ -198,6 +198,29 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
         JsonNode.DeepEquals(JsonNode.Parse(_clerk.Requests[1].Body!), JsonNode.Parse("""{"verified":true,"primary":true}""")).ShouldBeTrue(_clerk.Requests[1].Body);
     }
 
+    // Clerk finds the users who have the address, verified or not. Another one's account takes it; the person's own does not.
+    [Fact]
+    public async Task IsEmailTakenByAnotherAccount_AnotherUserHasTheAddress_IsTrue()
+    {
+        _clerk.Respond("""[{"id":"user_other","email_addresses":[{"id":"idn_1","email_address":"ayse@example.com","verification":{"status":"verified"}}]}]""");
+
+        var taken = await Identity().IsEmailTakenByAnotherAccountAsync("ayse@example.com", "user_1", Cancellation);
+
+        taken.ShouldBeTrue();
+        var request = _clerk.Requests.ShouldHaveSingleItem();
+        (request.Method, request.Uri).ShouldBe((HttpMethod.Get, new Uri("https://api.clerk.test/v1/users?email_address=ayse%40example.com")));
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("""[{"id":"user_1","email_addresses":[]}]""")]
+    public async Task IsEmailTakenByAnotherAccount_NoOtherUserHasTheAddress_IsFalse(string answer)
+    {
+        _clerk.Respond(answer);
+
+        (await Identity().IsEmailTakenByAnotherAccountAsync("ada@new.example", "user_1", Cancellation)).ShouldBeFalse();
+    }
+
     [Fact]
     public async Task CallClerk_KeepsFailing_IsAnError()
     {

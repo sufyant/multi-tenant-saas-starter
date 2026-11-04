@@ -26,7 +26,7 @@ public sealed class ExpireDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ExpireDataExport_AReadyExport_DeletesTheFileAndSaysExpired()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         var userId = await _testData.UserIdOfAsync(user);
         var exportId = await DataExportRequests.ReadyAsync(_api, user);
 
@@ -42,7 +42,7 @@ public sealed class ExpireDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task FailDataExport_AReadyExport_ChangesNothing()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         var exportId = await DataExportRequests.ReadyAsync(_api, user);
 
         await DataExportRequests.DeliverAsync(_api, new FailDataExportCommand(exportId, await _testData.UserIdOfAsync(user)));
@@ -54,7 +54,7 @@ public sealed class ExpireDataExportTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task FailDataExport_AnExportStillInPreparation_FailsItAndLetsThePersonAskAgain()
     {
-        var user = await _testData.AddUserAsync(email: "ada@example.com");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
         var userId = await _testData.UserIdOfAsync(user);
         var exportId = Guid.CreateVersion7();
         await database.ScalarAsSuperuserAsync<object>(
