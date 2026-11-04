@@ -213,7 +213,14 @@ for (const shot of shellShots.map(withDefaults))
     await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
-    // The screen as it rests: every opening animation has finished.
+    // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
+    // animation starts only then.
+    await page.evaluate(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(done)),
+        ),
+    );
     await page.evaluate(() =>
       Promise.all(document.getAnimations().map((each) => each.finished)),
     );
