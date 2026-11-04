@@ -2,7 +2,6 @@
 
 import {
   actionFor,
-  type Bell,
   type CursorPageOfNotificationResponse,
   getGetMeQueryKey,
   getGetMeQueryOptions,
@@ -17,7 +16,6 @@ import {
   type NotificationBellProps,
   type NotificationEntry,
   type NotificationListState,
-  NotificationPage,
   type NotificationPageProps,
   type NotificationTab,
 } from "@repo/ui/components/notification-bell";
@@ -49,7 +47,7 @@ export function PlatformBell({
   place?: BellPlace;
 }) {
   const [open, setOpen] = useState(false);
-  const { bell, setTab } = useBell(platformBell(), open, () => setOpen(false));
+  const { bell, setTab } = usePlatformBell(open, () => setOpen(false));
   return (
     <NotificationBell
       {...bell}
@@ -64,36 +62,32 @@ export function PlatformBell({
   );
 }
 
-/** The page of notifications, which the bell opens on a phone (3.08): on Unread while something is unread, else on All. */
-export function PlatformNotifications() {
-  const { bell } = useBell(platformBell(), true, () => {});
-  return <NotificationPage {...bell} />;
-}
-
 /**
- * A bell's reads and commands around the shared `NotificationBell`. The count reads at once; the list reads while the bell is
+ * The platform bell's reads and commands, for the bell and for its page. The count reads at once; the list reads while the bell is
  * open, on Unread while something is unread and on All otherwise (3.01, 3.03); each tab reads its own list. Opening an item
  * marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for the answer, then reads
  * the bell again and shows All, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
  */
-function useBell(
-  bell: Bell,
+export function usePlatformBell(
   open: boolean,
   close: () => void,
 ): { bell: NotificationPageProps; setTab: (tab: NotificationTab) => void } {
+  const bell = platformBell();
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations();
   const failureText = useFailureText();
-  // Until the reader or the bell chooses, the tab follows the count.
   const [chosen, setTab] = useState<NotificationTab>();
   // A page that failed on GetMe may hold the bell ("No access yet"): reading it again on mount would take that page away.
   const me = useQuery({ ...getGetMeQueryOptions(), retryOnMount: false });
   const count = useQuery(bell.count);
-  const tab = chosen ?? (count.data?.unread ? "unread" : "all");
+  // The count's first answer chooses the tab, which stays until the reader or Mark all as read changes it (F57).
+  const first = count.data?.unread ? "unread" : "all";
+  if (chosen === undefined && !count.isPending) setTab(first);
+  const tab = chosen ?? first;
   const list = useInfiniteQuery({
     ...(tab === "unread" ? bell.unreadList : bell.list),
-    enabled: open && (chosen !== undefined || !count.isPending),
+    enabled: open && chosen !== undefined,
     staleTime: 0,
   });
   const readAgain = () =>
