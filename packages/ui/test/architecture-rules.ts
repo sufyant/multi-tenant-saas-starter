@@ -182,6 +182,34 @@ export function numericLayerClasses(
     );
 }
 
+// A variant of Tailwind's own breakpoints, `sm:` to `2xl:` and their `max-` forms. A size key such as `sm: "h-7"` has a space after
+// the colon, so it is no finding.
+const defaultBreakpointClass =
+  /(?<=^|[\s"'`{(!])(?:max-)?(?:sm|md|lg|xl|2xl):(?=[^\s"'`])/g;
+
+/** Rule F49: no class with Tailwind's own breakpoints. The theme removes them; the code uses the design's `tablet:` and `desktop:`. */
+export function defaultBreakpointClasses(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  return filesUnder(root)
+    .filter(
+      (path) =>
+        /\.(ts|tsx|css)$/.test(path) &&
+        !isGenerated(path) &&
+        !ignored(root, path, options),
+    )
+    .flatMap((path) =>
+      linesMatching(
+        root,
+        path,
+        defaultBreakpointClass,
+        (match) =>
+          `Tailwind breakpoint "${match}"; use tablet: or desktop: (F49)`,
+      ),
+    );
+}
+
 const userFacingAttributes = new Set([
   "title",
   "placeholder",

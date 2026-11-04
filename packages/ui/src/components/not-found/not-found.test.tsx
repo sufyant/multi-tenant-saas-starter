@@ -29,6 +29,16 @@ describe("NotFound", () => {
     );
   });
 
+  it("NotFound_OldLink_ShowsTheSearchIconAndASecondaryButton", () => {
+    const { container } = renderNotFound({ kind: "page", href: "/northwind" });
+
+    expect(container.querySelector("svg.lucide-search-x")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to Home" })).toHaveClass(
+      "border-input",
+      "bg-card",
+    );
+  });
+
   it("NotFound_Organisation_NamesTheAddress", () => {
     renderNotFound({
       kind: "organisation",

@@ -188,6 +188,31 @@ describe("PlatformShell", () => {
     expect(crumbs.getByText("Users")).toBeInTheDocument();
   });
 
+  it("PlatformShell_NotFound_NamesThePageAndMarksNoRow", async () => {
+    navigation.pathname = "/an-old-link";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell notFound>Content</PlatformShell>);
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main menu" }),
+    );
+    expect(
+      rail.getByRole("link", { name: "Organisations" }),
+    ).not.toHaveAttribute("aria-current");
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    ).getAllByRole("listitem");
+    expect(crumbs.map((crumb) => crumb.textContent)).toEqual([
+      "Platform",
+      "Page not found",
+    ]);
+  });
+
   it("PlatformShell_SystemAdminsPage_ShowsTheSettingsMenuAndTheBreadcrumb", async () => {
     navigation.pathname = "/settings/system-admins";
     server.use(

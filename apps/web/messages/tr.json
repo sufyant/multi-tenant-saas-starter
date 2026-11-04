@@ -39,10 +39,13 @@
       "purging": "Siliniyor"
     }
   },
-  "overview": {
-    "title": "Genel bakış",
-    "organisation": "Kuruluş",
-    "text": "Ürün bölümleri eklendikçe menüde görünür. Şu anda burada yapılacak başka bir şey yok."
+  "home": {
+    "welcome": "Hoş geldiniz, <name></name>",
+    "welcomeNoName": "Hoş geldiniz",
+    "members": "<organisation></organisation> kuruluşundaki kişiler ve rolleri.",
+    "roles": "Her rolün neler yapabildiği.",
+    "activity": "Kim neyi ne zaman değiştirdi.",
+    "settings": "Kuruluşun adı, planı ve bilgileri."
   },
   "profile": {
     "title": "Profil",

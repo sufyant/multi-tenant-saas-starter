@@ -3,7 +3,7 @@
 import { useTheme } from "next-themes";
 import type { ReactNode } from "react";
 import { Toaster as Sonner, toast } from "sonner";
-import { CircleCheckIcon, Icon, InfoIcon, OctagonXIcon } from "../icon";
+import { CircleCheckIcon, CircleXIcon, Icon, InfoIcon } from "../icon";
 
 export type ToastTone = "success" | "info" | "destructive";
 
@@ -66,14 +66,15 @@ export function Toaster({ dir, closeLabel, regionLabel }: ToasterProps) {
       icons={{
         success: <Icon icon={CircleCheckIcon} className="text-success" />,
         info: <Icon icon={InfoIcon} className="text-info" />,
-        error: <Icon icon={OctagonXIcon} className="text-destructive" />,
+        error: <Icon icon={CircleXIcon} className="text-destructive" />,
       }}
       toastOptions={{
         closeButtonAriaLabel: closeLabel,
         classNames: {
           toast:
-            "!bg-popover !text-popover-foreground !border-border !shadow-md !rounded-lg !font-sans",
-          description: "!text-muted-foreground",
+            "!bg-popover !text-popover-foreground !border-border !shadow-lg !rounded-lg !font-sans !gap-2.5 !px-3.5 !py-3",
+          title: "!text-small !font-medium",
+          description: "!text-small !text-muted-foreground",
           actionButton: "!bg-transparent !text-primary !font-medium",
         },
       }}

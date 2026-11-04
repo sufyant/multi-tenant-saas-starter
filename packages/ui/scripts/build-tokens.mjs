@@ -10,7 +10,8 @@ const outputPath = "packages/ui/src/styles/tokens.gen.css";
 /**
  * The CSS of the tokens: light colours and shadows on :root, dark ones on .dark, and every other token on :root. A colour value
  * `{name}` names another token and becomes `var(--name)`. The breakpoints also go into a Tailwind `@theme` block, because a media
- * query cannot read a variable. The `@theme inline` block maps the tokens into Tailwind's theme (themeLines).
+ * query cannot read a variable. That block first removes Tailwind's own breakpoints (sm to 2xl): they are in rem and ours in px, so
+ * Tailwind cannot sort them and wrote `sm:` after `tablet:`, and the code uses only the design's (F49). The `@theme inline` block maps the tokens into Tailwind's theme (themeLines).
  * @param {any} tokens The content of tokens.json.
  * @returns {string}
  */
@@ -76,6 +77,7 @@ ${dark.join("\n")}
 }
 
 @theme {
+  --breakpoint-*: initial;
 ${breakpoints.join("\n")}
 }
 

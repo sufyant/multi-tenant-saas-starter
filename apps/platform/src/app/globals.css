@@ -7,11 +7,11 @@
    fallbacks are the ones of tokens.json (F19, F20). */
 :root {
   --font-sans:
-    var(--font-geist), var(--font-plex-arabic), system-ui, -apple-system,
-    "Segoe UI", sans-serif;
+    var(--font-instrument-sans), var(--font-noto-arabic), system-ui,
+    -apple-system, "Segoe UI", sans-serif;
   --font-arabic:
-    var(--font-plex-arabic), var(--font-geist), system-ui, sans-serif;
+    var(--font-noto-arabic), var(--font-instrument-sans), system-ui, sans-serif;
   --font-mono:
-    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas,
+    var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Consolas,
     monospace;
 }

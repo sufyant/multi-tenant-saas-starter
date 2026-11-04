@@ -283,6 +283,7 @@
     "breadcrumb": "مسار الصفحة",
     "commandTitle": "قائمة الأوامر",
     "commandPlaceholder": "اكتب أمرًا أو ابحث",
+    "commandClose": "Esc",
     "commandEmpty": "لا توجد نتائج.",
     "goTo": "انتقل إلى",
     "actions": "إجراءات",
@@ -293,7 +294,7 @@
     "tabTitle": "{page} · {product}",
     "tabTitleUnread": "({count}) {page} · {product}",
     "environment": {
-      "staging": "بيئة الاختبار · بيانات تجريبية فقط",
+      "staging": "اختبار",
       "preview": "معاينة · #{number}",
       "local": "محلي",
       "tabStaging": "[اختبار]",

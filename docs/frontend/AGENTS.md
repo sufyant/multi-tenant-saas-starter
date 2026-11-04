@@ -87,7 +87,7 @@ If a task needs a decision that `docs/frontend/ARCHITECTURE.md` does not cover, 
 - Branch from `main`: `feat/<name>`, `fix/<name>` or `docs/<name>`. Small commits: the test, then the change, then the documents. Open a pull request; do not merge it.
 - The pull request description is a report: what changed for each item, the red run of each new test, the test count before and after by package, every package installed or raised with its version, and every choice a reviewer could question.
 - Before you open the pull request, run the `architecture-reviewer` subagent and fix what it finds.
-- Never commit a screenshot. Save screenshots under `apps/web/test-results/screenshots` or `apps/platform/test-results/screenshots`. Git ignores both folders. Take them with `E2E_SCREENSHOTS=1 pnpm --filter @repo/web exec playwright test e2e/screenshots.spec.ts --project=signed-in`, and the same with `@repo/platform`. Name the folder in the pull request. The maintainer attaches the screenshots to the pull request.
+- Never commit a screenshot. Save screenshots under `apps/web/test-results/screenshots` or `apps/platform/test-results/screenshots`. Git ignores both folders. Take them with `E2E_SCREENSHOTS=1 pnpm --filter @repo/web exec playwright test e2e/screenshots.spec.ts --project=signed-in`, and the same with `@repo/platform`. CI takes them too, after the Playwright tests, and keeps them for seven days as the workflow artifact "screenshots" (`scripts/ci/test-e2e.sh`). Before you report, download your pull request's artifact (`gh run download <run> -n screenshots`) and compare each screen with its frame in the design. A shell screenshot is named after its frame (`shell-2.01-home-en-light-desktop.png`).
 
 ## How we test
 

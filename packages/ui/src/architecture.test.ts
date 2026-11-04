@@ -5,6 +5,7 @@ import {
   colorLiterals,
   contractEnumValues,
   dateFormattingOutsideFormatter,
+  defaultBreakpointClasses,
   differingFiles,
   duplicateRuleIds,
   enumLiterals,
@@ -36,6 +37,10 @@ describe("architecture of packages/ui", () => {
 
   it("F21_PackagesUi_UsesNoColourLiteral", () => {
     expect(colorLiterals(src)).toEqual([]);
+  });
+
+  it("F49_PackagesUi_UsesOnlyTheDesignsBreakpoints", () => {
+    expect(defaultBreakpointClasses(src)).toEqual([]);
   });
 
   it("F53_PackagesUi_UsesNoNumericLayerClass", () => {

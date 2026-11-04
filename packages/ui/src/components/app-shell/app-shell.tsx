@@ -16,7 +16,6 @@ import { cn } from "../../lib/utils";
 import { Button } from "../button";
 import {
   ArrowLeftIcon,
-  ChevronRightIcon,
   Icon,
   type LucideIcon,
   MenuIcon,
@@ -115,7 +114,12 @@ const useAppleKeys = () =>
   );
 
 const rowBase =
-  "group/row flex h-control-md items-center gap-2.5 rounded-md px-2 text-body outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring max-tablet:h-touch-target";
+  "group/row flex h-7.5 items-center gap-2.5 rounded-md px-2 text-body outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring";
+/** A tablet's icon rail: 48 px items with 18 px icons (target/touch-tablet). */
+const railItem =
+  "max-desktop:size-12 max-desktop:justify-center max-desktop:px-0";
+/** The phone's drawer: 44 px rows with 18 px icons (target/touch). */
+const drawerRow = "h-touch-target gap-3 px-2.5";
 
 /**
  * The frame of every signed-in page (the Shell screens and the Screen sizes rules). From bp-desktop the sidebar is open with its
@@ -186,12 +190,17 @@ export function AppShell({
           setPalette(true);
         }}
         className={cn(
-          "flex h-control-sm items-center gap-2 rounded-md border border-border bg-card px-2 text-small text-muted-foreground shadow-xs outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring max-tablet:h-touch-target",
+          "flex h-7.5 w-full min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 text-small text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
           place === "rail" &&
-            "max-desktop:size-10 max-desktop:justify-center max-desktop:border-0 max-desktop:bg-transparent max-desktop:px-0 max-desktop:shadow-none",
+            "max-desktop:size-12 max-desktop:justify-center max-desktop:border-0 max-desktop:bg-transparent max-desktop:px-0",
+          place === "drawer" && "h-touch-target",
         )}
       >
-        <Icon icon={SearchIcon} size={14} className="shrink-0" />
+        <Icon
+          icon={SearchIcon}
+          size={14}
+          className={cn("shrink-0", place === "rail" && "max-desktop:size-4.5")}
+        />
         <span
           aria-hidden="true"
           className={cn(
@@ -233,10 +242,16 @@ export function AppShell({
             place,
           )}
           {settingsMenu.groups.map((group) => (
-            <div key={group.id} className="mt-2 flex flex-col gap-0.5">
+            <div key={group.id} className="flex flex-col gap-0.5">
+              {place === "rail" && (
+                <span
+                  aria-hidden="true"
+                  className="mx-auto my-1 h-px w-6 bg-border desktop:hidden"
+                />
+              )}
               <span
                 className={cn(
-                  "px-2 pt-2 pb-1 text-small font-medium text-muted-foreground",
+                  "px-2 pt-3.5 pb-1 text-status text-muted-foreground",
                   place === "rail" && "max-desktop:sr-only",
                 )}
               >
@@ -253,11 +268,11 @@ export function AppShell({
     return (
       <>
         {head(wide)}
-        <div className="mt-2 flex flex-col gap-0.5">
+        <div className="mt-2.5 flex flex-col gap-0.5">
           {search(place)}
           {place !== "drawer" && bell?.(wide)}
         </div>
-        <div className="mt-2 flex flex-col gap-0.5">
+        <div className="mt-2.5 flex flex-col gap-0.5">
           {main.map((entry) => item(entry, place))}
         </div>
         <div className="mt-auto flex flex-col gap-0.5 pt-2">
@@ -276,7 +291,7 @@ export function AppShell({
             aria-label={
               settingsMenu ? t("settingsNavigation") : t("navigation")
             }
-            className="sticky top-(--strip-height) hidden h-[calc(100dvh-var(--strip-height))] w-rail-width shrink-0 flex-col gap-0.5 overflow-y-auto px-2 py-3 tablet:flex desktop:w-rail-expanded desktop:px-2.5"
+            className="sticky top-(--strip-height) hidden h-[calc(100dvh-var(--strip-height))] w-rail-width shrink-0 flex-col gap-0.5 overflow-y-auto px-1 py-3 tablet:flex desktop:w-rail-expanded desktop:px-2.5"
           >
             {menu("rail")}
           </nav>
@@ -286,7 +301,7 @@ export function AppShell({
           <Sheet open={drawer} onOpenChange={setDrawer}>
             <SheetContent
               side="inline-start"
-              className="w-72 gap-0 bg-sidebar px-2.5 pt-[max(var(--space-3),env(safe-area-inset-top))] pb-[max(var(--space-3),env(safe-area-inset-bottom))]"
+              className="w-75 gap-0 bg-sidebar px-3 pt-[max(var(--space-3),env(safe-area-inset-top))] pb-[max(var(--space-4),env(safe-area-inset-bottom))]"
             >
               <SheetTitle className="sr-only">
                 {settingsMenu ? t("settingsNavigation") : t("navigation")}
@@ -300,7 +315,7 @@ export function AppShell({
                 {menu("drawer")}
               </nav>
               {version && (
-                <p className="px-2 pt-2 text-small text-muted-foreground">
+                <p className="flex h-7 items-center px-2 text-status font-normal text-muted-foreground">
                   {t("version", { version })}
                 </p>
               )}
@@ -309,7 +324,7 @@ export function AppShell({
         )}
 
         <div className="flex min-w-0 flex-1 flex-col tablet:py-2 tablet:pe-2">
-          <div className="flex min-w-0 flex-1 flex-col bg-background tablet:overflow-hidden tablet:rounded-lg tablet:border tablet:border-border tablet:shadow-xs">
+          <div className="flex min-w-0 flex-1 flex-col bg-card tablet:overflow-hidden tablet:rounded-lg tablet:border tablet:border-border tablet:shadow-md">
             {phone && (
               <header className="sticky top-(--strip-height) z-sticky flex h-[52px] shrink-0 items-center gap-1 border-b border-border bg-card px-1">
                 <Button
@@ -329,9 +344,9 @@ export function AppShell({
             {!phone && (
               <nav
                 aria-label={t("breadcrumb")}
-                className="flex h-12 shrink-0 items-center border-b border-border px-6"
+                className="flex h-12 shrink-0 items-center border-b border-border px-5"
               >
-                <ol className="flex min-w-0 items-center gap-1.5 text-body">
+                <ol className="flex min-w-0 items-center gap-2 text-body">
                   {crumbs.map((crumb, index) => {
                     const last = index === crumbs.length - 1;
                     return (
@@ -343,22 +358,21 @@ export function AppShell({
                           .join("/")}
                       >
                         {index > 0 && (
+                          // The design's "›", a character: a right-to-left line draws it mirrored.
                           <li
                             aria-hidden="true"
                             className="text-muted-foreground"
                           >
-                            <Icon
-                              icon={ChevronRightIcon}
-                              size={14}
-                              directional
-                            />
+                            ›
                           </li>
                         )}
                         <li
                           aria-current={last ? "page" : undefined}
                           className={cn(
                             "min-w-0",
-                            last ? "text-foreground" : "text-muted-foreground",
+                            last
+                              ? "font-medium text-foreground"
+                              : "text-muted-foreground",
                           )}
                         >
                           {crumb.href && !last ? (
@@ -382,7 +396,7 @@ export function AppShell({
                 </ol>
               </nav>
             )}
-            <main className="mx-auto w-full max-w-content-max flex-1 px-4 py-6 tablet:px-6">
+            <main className="mx-auto w-full max-w-content-max flex-1 px-4 py-6 tablet:px-6 tablet:py-5">
               {children}
             </main>
           </div>
@@ -395,7 +409,10 @@ export function AppShell({
         title={t("commandTitle")}
       >
         <Command>
-          <CommandInput placeholder={t("commandPlaceholder")} />
+          <CommandInput
+            placeholder={t("commandPlaceholder")}
+            hint={t("commandClose")}
+          />
           <CommandList>
             <CommandEmpty>{t("commandEmpty")}</CommandEmpty>
             {commands.map((section) => (
@@ -452,12 +469,20 @@ function MenuLink({
       className={cn(
         rowBase,
         "text-muted-foreground",
-        rail &&
-          "max-desktop:size-10 max-desktop:justify-center max-desktop:px-0",
+        rail && railItem,
+        place === "drawer" && drawerRow,
         active && "bg-accent font-medium text-foreground",
       )}
     >
-      <Icon icon={entry.icon} size={16} className="shrink-0" />
+      <Icon
+        icon={entry.icon}
+        size={16}
+        className={cn(
+          "shrink-0",
+          rail && "max-desktop:size-4.5",
+          place === "drawer" && "size-4.5",
+        )}
+      />
       <span
         ref={label}
         className={cn("min-w-0 flex-1 truncate", rail && "max-desktop:sr-only")}
@@ -467,7 +492,7 @@ function MenuLink({
       {entry.count !== undefined && (
         <span
           className={cn(
-            "text-small font-medium tabular-nums text-muted-foreground",
+            "text-status tabular-nums text-muted-foreground",
             rail && "max-desktop:hidden",
           )}
         >

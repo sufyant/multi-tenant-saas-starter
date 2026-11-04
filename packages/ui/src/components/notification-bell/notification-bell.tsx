@@ -72,8 +72,8 @@ export type NotificationBellProps = {
   /** Tests and previews only: the "now" of the relative times. */
   now?: Instant;
   /**
-   * Where the bell sits (the Shell screens): a row of the expanded sidebar, "Notifications" and the count; an icon of a tablet's
-   * rail; or an icon of the phone's top bar, the default.
+   * Where the bell sits (the Shell screens): a row, "Notifications" and the count; the sidebar's place, an icon on a tablet's rail
+   * and the row from bp-desktop; or an icon of the phone's top bar, the default.
    */
   place?: "row" | "rail" | "icon";
 };
@@ -95,45 +95,60 @@ export function NotificationBell(props: NotificationBellProps) {
   const label = unread
     ? t("notifications.bellUnread", { count: countText(unread) })
     : t("notifications.bell");
-  const row = place === "row";
+  // A sidebar row: "Notifications" and the count. In the sidebar's place (`rail`) a tablet's icon rail shows the bell alone and
+  // the count on its corner.
+  const row = place === "row" || place === "rail";
+  const rail = place === "rail";
+  const count = unread ? (
+    <span
+      aria-hidden="true"
+      data-slot="bell-count"
+      className={cn(
+        "rounded-full bg-primary px-1.5 text-status text-primary-foreground tabular-nums",
+        row
+          ? rail &&
+              "max-desktop:absolute max-desktop:start-6 max-desktop:top-1.5"
+          : "absolute start-6 top-1.5",
+      )}
+    >
+      {countText(unread)}
+    </span>
+  ) : null;
   const button = row ? (
     <>
-      <Icon icon={BellIcon} size={16} className="shrink-0" />
+      <Icon
+        icon={BellIcon}
+        size={16}
+        className={cn("shrink-0", rail && "max-desktop:size-4.5")}
+      />
       <span
         aria-hidden="true"
-        className="min-w-0 flex-1 truncate text-start max-desktop:sr-only"
+        className={cn(
+          "min-w-0 flex-1 truncate text-start",
+          rail && "max-desktop:sr-only",
+        )}
       >
         {t("notifications.bell")}
       </span>
-      {unread ? (
-        <span
-          aria-hidden="true"
-          data-slot="bell-count"
-          className="rounded-full bg-primary px-1.5 text-small leading-4 font-medium text-primary-foreground tabular-nums max-desktop:absolute max-desktop:end-0.5 max-desktop:top-1 max-desktop:px-1 max-desktop:text-[10px]"
-        >
-          {countText(unread)}
-        </span>
-      ) : null}
+      {/* The flex row draws no space; the space keeps "Notifications 2" one phrase of the name (WCAG 2.5.3). */}
+      {count && " "}
+      {count}
     </>
   ) : (
     <>
-      <Icon icon={BellIcon} size={18} />
-      {unread ? (
-        <span
-          aria-hidden="true"
-          data-slot="bell-count"
-          className="absolute end-0.5 top-1 min-w-4 rounded-full bg-neutral-text px-1 text-center text-[10px] leading-4 font-semibold text-background tabular-nums ring-2 ring-background"
-        >
-          {countText(unread)}
-        </span>
-      ) : null}
+      <Icon icon={BellIcon} size={20} />
+      {count}
     </>
   );
   const buttonClass = cn(
     "relative inline-flex shrink-0 items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-accent aria-expanded:text-foreground",
     row
-      ? "h-control-md gap-2.5 px-2 text-body max-desktop:size-10 max-desktop:justify-center max-desktop:px-0"
-      : "size-control-lg justify-center max-tablet:size-touch-target",
+      ? cn(
+          "h-7.5 w-full gap-2.5 px-2 text-body",
+          rail &&
+            "max-desktop:size-12 max-desktop:justify-center max-desktop:px-0",
+        )
+      : "size-touch-target justify-center",
   );
 
   if (phone)
@@ -187,12 +202,12 @@ export function NotificationBell(props: NotificationBellProps) {
         side={row ? "inline-end" : "bottom"}
         align={row ? "start" : "end"}
         sideOffset={6}
-        className="max-h-[560px] w-[400px] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0"
+        className="max-h-[560px] w-95 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[10px] p-0"
       >
         <NotificationPanel
           {...props}
           title={
-            <PopoverTitle className="text-body">
+            <PopoverTitle className="text-section-title">
               {t("notifications.title")}
             </PopoverTitle>
           }
@@ -277,7 +292,7 @@ function NotificationPanel({
           </div>
         )}
         {shown && shown.length > 0 && (
-          <ul aria-label={t("title")}>
+          <ul aria-label={t("title")} className="flex flex-col gap-0.5 p-1">
             {shown.map((entry) => (
               <Item
                 key={entry.id}
@@ -343,14 +358,15 @@ function Item({
     <li
       data-fresh={fresh || undefined}
       className={cn(
-        "relative grid grid-cols-[7px_minmax(0,1fr)] gap-x-2.5 border-t border-border px-4 py-3 transition-colors first:border-t-0 hover:bg-accent motion-reduce:transition-none",
+        "relative grid grid-cols-[8px_minmax(0,1fr)] gap-x-2.5 rounded-md px-3 py-2.5 transition-colors hover:bg-accent motion-reduce:transition-none",
+        unread && "bg-primary-subtle",
         fresh &&
           "bg-accent motion-safe:animate-in motion-safe:slide-in-from-top-2",
       )}
     >
       <span
         aria-hidden="true"
-        className={cn("mt-[7px] size-[7px] rounded-full", unread && "bg-info")}
+        className={cn("mt-[5px] size-2 rounded-full", unread && "bg-primary")}
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <Link
@@ -361,8 +377,8 @@ function Item({
             onOpen(entry, { follow });
           }}
           className={cn(
-            "text-body [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
-            unread && "font-semibold",
+            "text-small [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
+            unread && "font-medium",
           )}
         >
           {unread && (
@@ -379,7 +395,7 @@ function Item({
           now={now}
           locale={t("locale.format")}
           timeZone={timeZone ?? undefined}
-          className="relative z-10 mt-0.5 self-start text-small text-muted-foreground"
+          className="relative z-10 mt-0.5 self-start text-status text-muted-foreground"
         />
       </div>
     </li>
