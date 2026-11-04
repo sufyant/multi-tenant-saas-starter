@@ -228,8 +228,7 @@ describe("NotificationBell", () => {
     expect(onTabChange).toHaveBeenCalledWith("all");
   });
 
-  // The maintainer's decision of 2026-11-04: an item read while the Unread tab is open stays in its place, drawn as read, until
-  // the bell closes or the tab changes.
+  // F57: the Unread tab keeps an item read while it is open.
   it("NotificationBell_UnreadTabItemRead_StaysInItsPlaceAsRead", () => {
     const { rerender } = render(bell({ list: loaded([fresh, joined]) }));
 

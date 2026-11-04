@@ -161,7 +161,7 @@ describe("AppShell", () => {
     vi.restoreAllMocks();
   });
 
-  // The phone's frames put the content 16 px under the top bar and keep 24 px under it (2.43, 2.25, the platform's 8.07).
+  // F59; the phone frames 2.43, 2.25 and the platform's 8.07.
   it("AppShell_Phone_StartsTheContent16pxUnderTheTopBar", () => {
     renderShell();
 

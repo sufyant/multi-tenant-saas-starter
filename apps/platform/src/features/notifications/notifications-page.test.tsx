@@ -86,7 +86,7 @@ describe("PlatformNotifications", () => {
     await vi.waitFor(() => expect(marked).toEqual(["platform"]));
   });
 
-  // The maintainer's decision of 2026-11-04: the last unread item, read in a new tab, stays drawn as read, and the tab stays.
+  // F57: the last unread item, read in a new tab, stays drawn as read, and so does the tab.
   it("PlatformNotifications_LastUnreadReadInANewTab_KeepsTheTabAndTheItem", async () => {
     const read = { done: false };
     server.use(

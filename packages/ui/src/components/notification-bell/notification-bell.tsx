@@ -545,10 +545,7 @@ function Item({
   );
 }
 
-/**
- * The Unread tab's items with those read while it was open: an item that leaves the list stays in its place, after the item it
- * followed, drawn as read, until the tab changes or the bell closes (the maintainer's decision of 2026-11-04).
- */
+/** The Unread tab's items with those read while it was open, each back in its place (F57). */
 function useReadHere(
   items: NotificationEntry[] | undefined,
   tab: NotificationTab,
