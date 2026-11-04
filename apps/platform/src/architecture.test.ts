@@ -5,6 +5,7 @@ import {
   crossFeatureImports,
   dateFormattingOutsideFormatter,
   declarationsOf,
+  defaultBreakpointClasses,
   enumLiterals,
   enumValues,
   messageKeySets,
@@ -45,6 +46,10 @@ describe("architecture of apps/platform", () => {
 
   it("F21_AppsPlatform_UsesNoColourLiteral", () => {
     expect(colorLiterals(src)).toEqual([]);
+  });
+
+  it("F49_AppsPlatform_UsesOnlyTheDesignsBreakpoints", () => {
+    expect(defaultBreakpointClasses(src)).toEqual([]);
   });
 
   it("F53_AppsPlatform_UsesNoNumericLayerClass", () => {

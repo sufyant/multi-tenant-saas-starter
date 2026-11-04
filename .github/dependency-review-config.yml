@@ -37,8 +37,14 @@ comment-summary-in-pr: never
 #   only in the build, to upload the source maps of apps/web and apps/platform (F55 in docs/frontend/ARCHITECTURE.md), and the
 #   Dockerfiles fail when it reaches a runtime image. FSL-1.1 permits it: internal use is a Permitted Purpose, not a Competing
 #   Use. Each release becomes Apache-2.0 two years after it is published. The maintainer's decision in step 30-frontend.
+# - @fontsource-variable/instrument-sans, jetbrains-mono and noto-sans-arabic are OFL-1.1: the design's fonts. The license
+#   permits to bundle and serve them with any software; it forbids only to sell the fonts by themselves. Each package ships its
+#   LICENSE (F19 in docs/frontend/ARCHITECTURE.md). The maintainer's decision in step 35-frontend-fix.
 allow-dependencies-licenses:
   - pkg:npm/axe-core
   - pkg:npm/%40axe-core/playwright
   - pkg:npm/json-schema-typed
   - pkg:npm/sentry
+  - pkg:npm/%40fontsource-variable/instrument-sans
+  - pkg:npm/%40fontsource-variable/jetbrains-mono
+  - pkg:npm/%40fontsource-variable/noto-sans-arabic

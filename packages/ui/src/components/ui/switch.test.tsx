@@ -63,6 +63,6 @@ describe("Switch", () => {
   it("Switch_On_UsesThePrimaryTokenAndItsSize", () => {
     const control = renderSwitch({ defaultChecked: true });
 
-    expect(control).toHaveClass("h-5", "w-9", "data-checked:bg-primary");
+    expect(control).toHaveClass("h-4.5", "w-8", "data-checked:bg-primary");
   });
 });

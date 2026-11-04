@@ -29,7 +29,7 @@ export default async function NotFoundPage() {
     );
   }
   return (
-    <PlatformShell>
+    <PlatformShell notFound>
       <NotFound kind="page" href="/" />
     </PlatformShell>
   );

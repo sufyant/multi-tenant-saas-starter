@@ -49,7 +49,7 @@ export function Input({
           aria-invalid={error ? true : undefined}
           aria-describedby={note ? noteId : undefined}
           className={cn(
-            "h-control-md rounded-md bg-card px-3 text-body pointer-coarse:h-control-lg tablet:pointer-coarse:h-control-xl",
+            "h-control-md pointer-coarse:h-control-lg tablet:pointer-coarse:h-control-xl",
             lockedReason !== undefined && "bg-muted pe-9",
           )}
           {...props}

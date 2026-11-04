@@ -62,7 +62,7 @@ for (const { language, scheme, size } of variants)
       await mockPlatform(page, language);
 
       await page.goto(path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
       await page.screenshot({
@@ -77,10 +77,10 @@ const menus = [
     language: Language.En,
     scheme: "light",
     size: "desktop",
-    name: /Kelly/,
+    name: "Sam Kelly",
   },
-  { language: Language.Ar, scheme: "dark", size: "desktop", name: /Kelly/ },
-  { language: Language.En, scheme: "light", size: "phone", name: /Kelly/ },
+  { language: Language.Ar, scheme: "dark", size: "desktop", name: "Sam Kelly" },
+  { language: Language.En, scheme: "light", size: "phone", name: "Sam Kelly" },
 ] as const;
 
 for (const { language, scheme, size, name } of menus)
@@ -98,10 +98,10 @@ for (const { language, scheme, size, name } of menus)
     await mockPlatform(page, language);
 
     await page.goto("/users");
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     if (size === "phone")
       await page.getByRole("button", { name: "Open menu" }).click();
-    await page.getByRole("button", { name }).click();
+    await page.getByRole("button", { name, exact: true }).click();
     await page.getByRole("menu").waitFor();
 
     await page.screenshot({
@@ -125,3 +125,105 @@ test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
     path: `${folder}/notifications-en-light-desktop.png`,
   });
 });
+
+// The shell at the sizes of the design's frames (the platform's Shell and Notifications screens), for the comparison in each pull
+// request: CI uploads them as the workflow artifact "screenshots" (scripts/ci/test-e2e.sh). The name gives the frame.
+const frames = {
+  desktop: { width: 1280, height: 800 },
+  tablet: { width: 1024, height: 768 },
+  phone: { width: 375, height: 812 },
+};
+const shellShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  path?: string;
+  mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
+  open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+}[] = [
+  { file: "2.01-organisations-en-light-desktop", size: "desktop" },
+  {
+    file: "2.13-organisations-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+  },
+  {
+    file: "2.01-organisations-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+  },
+  { file: "2.01-organisations-en-light-tablet", size: "tablet" },
+  {
+    file: "2.14-drawer-en-light-phone",
+    size: "phone",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "2.02-command-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.keyboard.press("ControlOrMeta+k"),
+  },
+  {
+    file: "2.03-account-menu-en-light-desktop",
+    size: "desktop",
+    open: (page) =>
+      page.getByRole("button", { name: "Sam Kelly", exact: true }).click(),
+  },
+  {
+    file: "3.01-notifications-en-light-desktop",
+    size: "desktop",
+    mock: mockNotifications,
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "10-settings-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+  },
+  {
+    file: "2.15-settings-drawer-en-light-phone",
+    size: "phone",
+    path: "/settings/system-admins",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+];
+
+/** A shot's language, theme and page when it names none: English, light, the start page. */
+const withDefaults = (shot: (typeof shellShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  path: shot.path ?? "/",
+});
+
+for (const shot of shellShots.map(withDefaults))
+  test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme });
+    await page.setViewportSize(frames[shot.size]);
+    await context.addCookies([
+      { name: localeCookie, value: shot.language, url: baseURL },
+    ]);
+    await mockPlatform(page, shot.language);
+    await shot.mock?.(page);
+
+    await page.goto(shot.path);
+    await page.getByRole("main").getByRole("heading").first().waitFor();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
+    // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
+    // animation starts only then.
+    await page.evaluate(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(done)),
+        ),
+    );
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((each) => each.finished)),
+    );
+
+    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+  });

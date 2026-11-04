@@ -217,8 +217,10 @@ export function formatRelative(
   const elapsed =
     toDate(options.now ?? new Date()).getTime() - toDate(at).getTime();
   if (Math.abs(elapsed) > 7 * day) return formatDate(at, options);
+  // The short style of the design's Relative time pattern: "2 min ago", "1 hr ago".
   const relative = new Intl.RelativeTimeFormat(`${options.locale}-u-nu-latn`, {
     numeric: "auto",
+    style: "short",
   });
   if (Math.abs(elapsed) < minute) return relative.format(0, "second");
   const [unit, size] = units.find(

@@ -10,7 +10,7 @@ import { OrganisationShell } from "@/features/shell/tenant-shell";
 export default function TenantNotFound() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   return (
-    <OrganisationShell slug={tenantSlug}>
+    <OrganisationShell slug={tenantSlug} notFound>
       <NotFound kind="page" href={`/${tenantSlug}`} linkComponent={Link} />
     </OrganisationShell>
   );
