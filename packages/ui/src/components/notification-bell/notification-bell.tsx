@@ -168,7 +168,8 @@ export function NotificationBell(props: NotificationBellProps) {
         <Sheet open={open} onOpenChange={(next) => onOpenChange(next)}>
           <SheetContent
             side="bottom"
-            className="h-dvh gap-0 bg-background p-0 text-foreground"
+            // The sheet's bottom side sets its own height; the bell's full screen takes the whole screen (3.14).
+            className="gap-0 bg-background p-0 text-foreground data-[side=bottom]:h-dvh"
           >
             <NotificationPanel
               {...props}
