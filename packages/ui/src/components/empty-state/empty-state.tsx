@@ -14,12 +14,16 @@ export type EmptyStateProps = {
   icon?: LucideIcon;
   /**
    * list: in place of a list's rows; page: the whole content of a page, such as "Page not found" and "You can't open this page",
-   * 120 px below the top bar from bp-tablet (2.15, 2.40) and 40 px on a phone (2.43).
+   * 120 px below the top bar from bp-tablet (2.15, 2.40) and 40 px on a phone (2.43); compact: inside a popover's list, a small
+   * title under the icon without its tile, lower on a phone's full screen (the bell's list, 3.03, 3.05, 3.15).
    */
-  size?: "list" | "page";
+  size?: "list" | "page" | "compact";
 };
 
-/** What a list shows when it has nothing (the design's Empty state): what will appear and how, one action at most, no apology. */
+/**
+ * What a list or a page shows when it has nothing to show (the design's Empty state): what will appear and how, or what went
+ * wrong, one action at most, no apology.
+ */
 export function EmptyState({
   kind = "empty",
   title,
@@ -29,20 +33,27 @@ export function EmptyState({
   icon,
   size = "list",
 }: EmptyStateProps) {
+  const compact = size === "compact";
   return (
     <div
       role={kind === "error" ? "alert" : undefined}
       className={cn(
-        "flex flex-col items-center gap-2 px-6 py-10 text-center",
+        "flex flex-col items-center text-center",
+        compact ? "gap-1.5 px-4 py-7 max-tablet:pt-40" : "gap-2 px-6 py-10",
         size === "page" && "tablet:pt-30",
       )}
     >
-      {icon && (
-        <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
-          <Icon icon={icon} size={20} />
-        </span>
-      )}
-      <h2 className="text-section-title">{title}</h2>
+      {icon &&
+        (compact ? (
+          <Icon icon={icon} size={20} className="max-tablet:size-4" />
+        ) : (
+          <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
+            <Icon icon={icon} size={20} />
+          </span>
+        ))}
+      <h2 className={compact ? "text-small font-medium" : "text-section-title"}>
+        {title}
+      </h2>
       {description && (
         <p className="max-w-prose text-small text-muted-foreground">
           {description}
@@ -53,7 +64,7 @@ export function EmptyState({
           {code}
         </p>
       )}
-      {action && <div className="mt-2">{action}</div>}
+      {action && <div className={compact ? undefined : "mt-2"}>{action}</div>}
     </div>
   );
 }

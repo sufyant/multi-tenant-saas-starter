@@ -9,19 +9,16 @@ import {
   useRef,
   useState,
 } from "react";
-import { formatUtc, type Instant } from "../../lib/format-date-time";
+import type { Instant } from "../../lib/format-date-time";
 import type { Problem } from "../../lib/use-failure-text";
 import { useOnline } from "../../lib/use-online";
 import { usePhone } from "../../lib/use-phone";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
-import {
-  BellIcon,
-  CircleXIcon,
-  Icon,
-  type LucideIcon,
-  WifiOffIcon,
-} from "../icon";
+import { EmptyState } from "../empty-state";
+import { BellIcon, CircleXIcon, Icon, WifiOffIcon } from "../icon";
+import { ListError } from "../list-error";
+import { Skeleton } from "../skeleton";
 import { Time } from "../time";
 import {
   Popover,
@@ -30,7 +27,6 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 import { Sheet, SheetContent, SheetTitle } from "../ui/sheet";
-import { Skeleton as SkeletonBlock } from "../ui/skeleton";
 
 /**
  * One notification as the bell shows it: the API's title, the address that the app built from its link, and the name of the
@@ -90,8 +86,8 @@ const highlightMs = 2000;
 
 /**
  * The bell before the avatar and its list (the Notifications boards, `.st-bell` and `.st-notifs`): the unread count as a neutral
- * badge, a popover on a tablet and a desktop, a full screen on a phone. The list shows the API's title and body as they come, with
- * the relative time and an unread mark that is not colour alone. A new item never moves the list under a reader who has scrolled:
+ * badge, a popover on a tablet and a desktop, a full screen on a phone. The list shows the API's title as it comes, one line of the
+ * organisation and the relative time, and an unread mark that is not colour alone. A new item never moves the list under a reader who has scrolled:
  * "1 new" waits at the top; at the top it comes in first, highlighted. Both say so once in a polite live region.
  */
 export function NotificationBell(props: NotificationBellProps) {
@@ -243,7 +239,6 @@ function NotificationPanel({
   phone?: boolean;
 }) {
   const t = useTranslations("notifications");
-  const tCommon = useTranslations("common");
   const online = useOnline();
   const scroll = useRef<HTMLDivElement>(null);
   const items = list.status === "success" ? list.items : undefined;
@@ -300,32 +295,25 @@ function NotificationPanel({
           </div>
         )}
         {list.status === "loading" && (
-          <div role="status" aria-label={t("loading")} aria-busy="true">
-            {[0, 1, 2, 3].map((row) => (
-              <div key={row} className="flex flex-col gap-1.5 ps-7.5 py-2.5">
-                <SkeletonBlock className="h-2.5 w-65 max-w-full rounded-sm motion-reduce:animate-none" />
-                <SkeletonBlock className="h-2 w-40 max-w-full rounded-sm motion-reduce:animate-none" />
-              </div>
-            ))}
-          </div>
+          <Skeleton rows={4} shape="lines" label={t("loading")} />
         )}
         {list.status === "error" && (
-          <PanelState
+          <ListError
+            size="compact"
             icon={CircleXIcon}
             title={t("errorTitle")}
-            role="alert"
-            phone={phone}
-          >
-            {list.problem && (
-              <ErrorReference problem={list.problem} at={list.at} />
-            )}
-            <Button onClick={list.onRetry}>{tCommon("tryAgain")}</Button>
-          </PanelState>
+            problem={list.problem}
+            at={list.at}
+            onRetry={list.onRetry}
+          />
         )}
         {shown?.length === 0 && (
-          <PanelState icon={BellIcon} title={t("emptyTitle")} phone={phone}>
-            <p className="text-small text-muted-foreground">{t("emptyText")}</p>
-          </PanelState>
+          <EmptyState
+            size="compact"
+            icon={BellIcon}
+            title={t("emptyTitle")}
+            description={t("emptyText")}
+          />
         )}
         {shown && shown.length > 0 && (
           <ul aria-label={t("title")} className="flex flex-col gap-0.5">
@@ -365,54 +353,6 @@ function NotificationPanel({
         </div>
       ) : null}
     </div>
-  );
-}
-
-/** The list's empty and error states (3.03, 3.05, 3.15): a 20 px icon, a short title and what to do; on a phone lower and smaller. */
-function PanelState({
-  icon,
-  title,
-  role,
-  phone,
-  children,
-}: {
-  icon: LucideIcon;
-  title: string;
-  role?: "alert";
-  phone: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      role={role}
-      className={cn(
-        "flex flex-col items-center gap-1.5 px-4 text-center",
-        phone ? "pt-40" : "py-7",
-      )}
-    >
-      <Icon icon={icon} size={phone ? 16 : 20} />
-      <p className="text-small font-medium">{title}</p>
-      {children}
-    </div>
-  );
-}
-
-/** The reference that helps support find the failed read, "Ref 4c19ab · 13:32 UTC" (the ListStates board). */
-function ErrorReference({
-  problem,
-  at,
-}: {
-  problem: NonNullable<Problem>;
-  at: number;
-}) {
-  const t = useTranslations();
-  return (
-    <p dir="ltr" className="font-mono text-mono text-muted-foreground">
-      {t("common.reference", {
-        id: problem.reference,
-        time: formatUtc(new Date(at), { locale: t("locale.format") }),
-      })}
-    </p>
   );
 }
 

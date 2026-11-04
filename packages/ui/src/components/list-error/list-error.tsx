@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { formatUtc } from "../../lib/format-date-time";
 import type { Problem } from "../../lib/use-failure-text";
 import { Button } from "../button";
-import { EmptyState } from "../empty-state";
+import { EmptyState, type EmptyStateProps } from "../empty-state";
 
 export type ListErrorProps = {
   title: string;
@@ -16,6 +16,9 @@ export type ListErrorProps = {
   onRetry: () => void;
   /** What the app shows in place of the list when the answer leaves it: sign-in, or the account's page (F4). */
   leave?: ReactNode;
+  /** compact inside a popover's list, with its icon (the bell's list, 3.05). */
+  size?: EmptyStateProps["size"];
+  icon?: EmptyStateProps["icon"];
 };
 
 /**
@@ -28,12 +31,16 @@ export function ListError({
   at,
   onRetry,
   leave,
+  size,
+  icon,
 }: ListErrorProps) {
   const t = useTranslations();
   if (leave) return leave;
   return (
     <EmptyState
       kind="error"
+      size={size}
+      icon={icon}
       title={title}
       description={
         problem ? t(`errors.${problem.code}`) : t("problems.errorText")
