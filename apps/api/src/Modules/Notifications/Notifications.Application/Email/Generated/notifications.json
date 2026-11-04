@@ -93,7 +93,8 @@
         "members": "Members",
         "your_access": "Your access",
         "organisation_plan": "Organisation plan",
-        "organisations": "Organisations"
+        "organisations": "Organisations",
+        "your_account": "Your account"
       }
     }
   },
@@ -191,7 +192,8 @@
         "members": "Üyeler",
         "your_access": "Erişiminiz",
         "organisation_plan": "Kuruluş planı",
-        "organisations": "Kuruluşlar"
+        "organisations": "Kuruluşlar",
+        "your_account": "Hesabınız"
       }
     }
   },
@@ -289,7 +291,8 @@
         "members": "الأعضاء",
         "your_access": "وصولك",
         "organisation_plan": "خطة المؤسسة",
-        "organisations": "المؤسسات"
+        "organisations": "المؤسسات",
+        "your_account": "حسابك"
       }
     }
   }

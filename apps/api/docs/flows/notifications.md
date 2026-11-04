@@ -34,6 +34,7 @@ Each type also has an area and an actor in the catalog (U1). The list shows them
 | `your_access` | Your access, Erişiminiz, وصولك | `member.role_changed`, `member.removed` | the one who changed the role or removed the member; none when the platform made an Owner |
 | `organisation_plan` | Organisation plan, Kuruluş planı, خطة المؤسسة | `tenant.plan_changed`, `tenant.entitlement_override_set`, `tenant.entitlement_override_removed` | none: the platform acted |
 | `organisations` | Organisations, Kuruluşlar, المؤسسات | `tenant.owner_joined` and every status type | the new Owner, who accepted; the system admin who changed the status; none for `tenant.purged` |
+| `your_account` | Your account, Hesabınız, حسابك | `user.data_export_ready` | none: the worker completed the export |
 
 - An override leads to the page of its key: `members.max` to the members (`tenant_members`), `roles.custom` and `roles.custom.max` to the roles (`tenant_roles`), any other key to the tenant's general settings (`tenant_settings`).
 - A value keeps a person by user id only (K3). The read names them now, so a deleted user reads as "Deleted user" in the reader's language, and a renamed one by the new name (U2). A tenant's, a plan's and a role's name stay as they were at that moment.

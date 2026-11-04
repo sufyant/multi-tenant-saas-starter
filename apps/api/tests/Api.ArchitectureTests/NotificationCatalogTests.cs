@@ -102,8 +102,8 @@ public sealed class NotificationCatalogTests
     }
 
     // The area and the actor of each type, as the list shows them: a member's news is Members, a change of the reader's own role or
-    // membership Your access, the plan and its values Organisation plan, and the platform's news Organisations. The actor is the person who
-    // acted: the one who changed or removed, the one who accepted an invitation, the system admin who changed a status.
+    // membership Your access, the plan and its values Organisation plan, the platform's news Organisations, and the reader's own account,
+    // such as a ready data export, Your account, with no actor: the worker did it. The actor is the person who acted: the one who changed or removed, the one who accepted an invitation, the system admin who changed a status.
     [Fact]
     public void DeclareNotificationTypes_TheAreasAndActors_FollowWhatEachTypeTellsOf()
     {
@@ -123,6 +123,7 @@ public sealed class NotificationCatalogTests
             "tenant.closed organisations actorName",
             "tenant.reopened organisations actorName",
             "tenant.purged organisations",
+            "user.data_export_ready your_account",
         ]);
     }
 
