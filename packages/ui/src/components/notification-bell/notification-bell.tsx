@@ -385,7 +385,7 @@ function Item({
     <li
       data-fresh={fresh || undefined}
       className={cn(
-        "relative grid grid-cols-[8px_minmax(0,1fr)] gap-x-2.5 rounded-md px-3 py-2.5 transition-colors hover:bg-accent motion-reduce:transition-none",
+        "relative grid grid-cols-[8px_minmax(0,1fr)] gap-x-2.5 rounded-md px-3 pt-[7px] pb-[9px] transition-colors hover:bg-accent motion-reduce:transition-none",
         unread && "bg-primary-subtle",
         fresh &&
           "bg-accent motion-safe:animate-in motion-safe:slide-in-from-top-2",
@@ -393,9 +393,10 @@ function Item({
     >
       <span
         aria-hidden="true"
-        className={cn("mt-[5px] size-2 rounded-full", unread && "bg-primary")}
+        className={cn("mt-2 size-2 rounded-full", unread && "bg-primary")}
       />
-      <div className="flex min-w-0 flex-col gap-0.5">
+      {/* The title's box is 24 px tall, so the time's button under it keeps WCAG 2.5.8's spacing; the row stays 56 px (3.01). */}
+      <div className="flex min-w-0 flex-col">
         <Link
           href={entry.href}
           onClick={(event: MouseEvent) => {
@@ -404,7 +405,7 @@ function Item({
             onOpen(entry, { follow });
           }}
           className={cn(
-            "text-small [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
+            "py-[3px] text-small [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
             unread && "font-medium",
           )}
         >
