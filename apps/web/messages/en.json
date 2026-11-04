@@ -40,9 +40,9 @@
     }
   },
   "home": {
-    "welcome": "Welcome, {name}",
+    "welcome": "Welcome, <name></name>",
     "welcomeNoName": "Welcome",
-    "members": "People in {organisation} and their roles.",
+    "members": "People in <organisation></organisation> and their roles.",
     "roles": "What each role can do.",
     "activity": "Who changed what, and when.",
     "settings": "The organisation’s name, plan and details."

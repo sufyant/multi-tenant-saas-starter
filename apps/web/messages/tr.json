@@ -40,9 +40,9 @@
     }
   },
   "home": {
-    "welcome": "Hoş geldiniz, {name}",
+    "welcome": "Hoş geldiniz, <name></name>",
     "welcomeNoName": "Hoş geldiniz",
-    "members": "{organisation} kuruluşundaki kişiler ve rolleri.",
+    "members": "<organisation></organisation> kuruluşundaki kişiler ve rolleri.",
     "roles": "Her rolün neler yapabildiği.",
     "activity": "Kim neyi ne zaman değiştirdi.",
     "settings": "Kuruluşun adı, planı ve bilgileri."

@@ -40,9 +40,9 @@
     }
   },
   "home": {
-    "welcome": "مرحبًا، {name}",
+    "welcome": "مرحبًا، <name></name>",
     "welcomeNoName": "مرحبًا",
-    "members": "الأشخاص في {organisation} وأدوارهم.",
+    "members": "الأشخاص في <organisation></organisation> وأدوارهم.",
     "roles": "ما يمكن لكل دور فعله.",
     "activity": "من غيّر ماذا ومتى.",
     "settings": "اسم المؤسسة وخطتها وتفاصيلها."

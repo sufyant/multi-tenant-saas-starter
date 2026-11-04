@@ -196,7 +196,11 @@ export function PlatformShell({ children }: { children: ReactNode }) {
           <OrgSwitcher
             current={{
               id: "platform",
-              name: brand.name,
+              // The drawer's heading names both: "Starter Platform" (the Platform phone drawer).
+              name:
+                place === "rail"
+                  ? brand.name
+                  : t("shell.productPlatform", { product: brand.name }),
               role: t("shell.platform"),
               href: "/",
             }}

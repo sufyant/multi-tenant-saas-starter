@@ -25,7 +25,9 @@ describe("HomePage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Welcome, Ayşe" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Northwind Traders")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1 }).nextElementSibling,
+    ).toHaveTextContent("Northwind Traders");
     expect(cards()).toEqual(["Members", "Roles", "Activity log", "Settings"]);
     expect(screen.getByRole("link", { name: /^Members/ })).toHaveAttribute(
       "href",
@@ -35,9 +37,9 @@ describe("HomePage", () => {
       "href",
       "/northwind/settings/general",
     );
-    expect(
-      screen.getByText("People in Northwind Traders and their roles."),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Members/ })).toHaveTextContent(
+      "People in Northwind Traders and their roles.",
+    );
   });
 
   it("HomePage_Member_OffersOnlyThePagesTheRoleCanOpen", async () => {

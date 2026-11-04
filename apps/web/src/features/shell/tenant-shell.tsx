@@ -20,14 +20,7 @@ import {
   useTabTitleText,
 } from "@repo/ui/components/app-shell";
 import { Banner } from "@repo/ui/components/banner";
-import {
-  ActivityIcon,
-  HomeIcon,
-  SettingsIcon,
-  ShieldIcon,
-  UserIcon,
-  UsersIcon,
-} from "@repo/ui/components/icon";
+import { HomeIcon, SettingsIcon, UserIcon } from "@repo/ui/components/icon";
 import { OrgSwitcher } from "@repo/ui/components/org-switcher";
 import { Pill } from "@repo/ui/components/pill";
 import { InlineSkeleton, Skeleton } from "@repo/ui/components/skeleton";
@@ -38,6 +31,7 @@ import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
+import { organisationPages } from "@/shared/organisation-pages";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
 import { TenantProvider, useTenant } from "@/shared/tenant-context";
@@ -189,21 +183,14 @@ function TenantFrame({
     },
   ];
   // Billing and Usage join in step 40, with their permission (the Billing is for billing managers pattern).
-  const organisation: NavItem[] = (
-    [
-      ["general", "general", SettingsIcon, Permission.TenantProfileRead],
-      ["members", "members", UsersIcon, Permission.TenantMembersRead],
-      ["roles", "roles", ShieldIcon, Permission.TenantRolesRead],
-      ["activity", "activityLog", ActivityIcon, Permission.TenantAuditRead],
-    ] as const
-  )
-    .filter(([, , , permission]) => can(permission))
-    .map(([id, label, icon]) => ({
-      id,
-      label: t(`shell.${label}`),
-      icon,
-      href: `${settings}/${id}`,
-      count: known?.counts[id as keyof Known["counts"]],
+  const organisation: NavItem[] = organisationPages
+    .filter((page) => can(page.permission))
+    .map((page) => ({
+      id: page.id,
+      label: t(`shell.${page.label}`),
+      icon: page.icon,
+      href: `${settings}/${page.id}`,
+      count: known?.counts[page.id as keyof Known["counts"]],
     }));
   const home: NavItem = {
     id: "home",

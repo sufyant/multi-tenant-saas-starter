@@ -643,23 +643,33 @@ const shellShots: {
   },
 ];
 
-for (const shot of shellShots)
+/** A shot's language, theme and page when it names none: English, light, the start page. */
+const withDefaults = (shot: (typeof shellShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  path: shot.path ?? `/${northwind.slug}`,
+});
+
+for (const shot of shellShots.map(withDefaults))
   test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
-    const language = shot.language ?? Language.En;
     await setupClerkTestingToken({ page });
-    await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+    await page.emulateMedia({ colorScheme: shot.scheme });
     await page.setViewportSize(frames[shot.size]);
     await context.addCookies([
-      { name: localeCookie, value: language, url: baseURL },
+      { name: localeCookie, value: shot.language, url: baseURL },
     ]);
-    await mockMembers(page, { language });
+    await mockMembers(page, { language: shot.language });
     await shot.mock?.(page);
 
-    await page.goto(shot.path ?? `/${northwind.slug}`);
+    await page.goto(shot.path);
     await page.getByRole("heading", { level: 1 }).first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
-    await page.waitForTimeout(400);
+    // The screen as it rests: every opening animation has finished.
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((each) => each.finished)),
+    );
 
     await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
   });

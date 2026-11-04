@@ -142,66 +142,80 @@ const shellShots: {
   mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
   open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
 }[] = [
-  { file: "organisations-en-light-desktop", size: "desktop" },
-  { file: "organisations-en-dark-desktop", size: "desktop", scheme: "dark" },
+  { file: "2.01-organisations-en-light-desktop", size: "desktop" },
   {
-    file: "organisations-ar-light-desktop",
+    file: "2.13-organisations-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+  },
+  {
+    file: "2.01-organisations-ar-light-desktop",
     size: "desktop",
     language: Language.Ar,
   },
-  { file: "organisations-en-light-tablet", size: "tablet" },
+  { file: "2.01-organisations-en-light-tablet", size: "tablet" },
   {
-    file: "drawer-en-light-phone",
+    file: "2.14-drawer-en-light-phone",
     size: "phone",
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
   {
-    file: "command-en-light-desktop",
+    file: "2.02-command-en-light-desktop",
     size: "desktop",
     open: (page) => page.keyboard.press("ControlOrMeta+k"),
   },
   {
-    file: "account-menu-en-light-desktop",
+    file: "2.03-account-menu-en-light-desktop",
     size: "desktop",
     open: (page) => page.getByRole("button", { name: /Sam Kelly/ }).click(),
   },
   {
-    file: "notifications-en-light-desktop",
+    file: "3.01-notifications-en-light-desktop",
     size: "desktop",
     mock: mockNotifications,
     open: (page) =>
       page.getByRole("button", { name: /^Notifications/ }).click(),
   },
   {
-    file: "settings-en-light-desktop",
+    file: "10-settings-en-light-desktop",
     size: "desktop",
     path: "/settings/system-admins",
   },
   {
-    file: "settings-drawer-en-light-phone",
+    file: "2.15-settings-drawer-en-light-phone",
     size: "phone",
     path: "/settings/system-admins",
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
 ];
 
-for (const shot of shellShots)
+/** A shot's language, theme and page when it names none: English, light, the start page. */
+const withDefaults = (shot: (typeof shellShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  path: shot.path ?? "/",
+});
+
+for (const shot of shellShots.map(withDefaults))
   test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
-    const language = shot.language ?? Language.En;
     await setupClerkTestingToken({ page });
-    await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+    await page.emulateMedia({ colorScheme: shot.scheme });
     await page.setViewportSize(frames[shot.size]);
     await context.addCookies([
-      { name: localeCookie, value: language, url: baseURL },
+      { name: localeCookie, value: shot.language, url: baseURL },
     ]);
-    await mockPlatform(page, language);
+    await mockPlatform(page, shot.language);
     await shot.mock?.(page);
 
-    await page.goto(shot.path ?? "/");
+    await page.goto(shot.path);
     await page.getByRole("heading", { level: 1 }).first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
-    await page.waitForTimeout(400);
+    // The screen as it rests: every opening animation has finished.
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((each) => each.finished)),
+    );
 
     await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
   });

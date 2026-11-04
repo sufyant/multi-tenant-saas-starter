@@ -1,5 +1,5 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { pseudoCookie } from "@repo/ui/lib/pseudo-locale";
@@ -22,6 +22,13 @@ const texts = {
     strip: "محلي",
   },
 } as const;
+
+/** The box of a part of the page; a part with no box fails the test. */
+const boxOf = async (locator: Locator) => {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  return box as NonNullable<typeof box>;
+};
 
 type Size = keyof typeof sizes;
 
@@ -89,17 +96,17 @@ test("Shell_Desktop_SidebarShowsTheOrganisationSearchAndNotificationsRow", async
   const menu = page.getByRole("navigation", { name: "Main menu" });
   await expect(menu).toBeVisible();
   const width = async (text: string) =>
-    (await menu.getByText(text, { exact: true }).boundingBox())?.width ?? 0;
+    (await boxOf(menu.getByText(text, { exact: true }))).width;
   expect(await width("Northwind Traders")).toBeGreaterThan(40);
   expect(await width("Owner")).toBeGreaterThan(20);
   expect(await width("Notifications")).toBeGreaterThan(40);
-  const menuBox = await menu.boundingBox();
-  const searchBox = await menu
-    .getByRole("button", { name: "Search or jump to" })
-    .boundingBox();
-  expect(searchBox?.x).toBeGreaterThanOrEqual(menuBox?.x ?? 0);
-  expect((searchBox?.x ?? 0) + (searchBox?.width ?? 0)).toBeLessThanOrEqual(
-    (menuBox?.x ?? 0) + (menuBox?.width ?? 0),
+  const menuBox = await boxOf(menu);
+  const searchBox = await boxOf(
+    menu.getByRole("button", { name: "Search or jump to" }),
+  );
+  expect(searchBox.x).toBeGreaterThanOrEqual(menuBox.x);
+  expect(searchBox.x + searchBox.width).toBeLessThanOrEqual(
+    menuBox.x + menuBox.width,
   );
 });
 
