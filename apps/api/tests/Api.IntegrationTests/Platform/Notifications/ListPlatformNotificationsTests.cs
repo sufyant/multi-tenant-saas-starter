@@ -6,7 +6,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Platform.Notifications;
 
 // GET /v1/platform/notifications (U7): the platform's bell shows a system admin's platform notifications only, and only behind the system
-// door.
+// door. Each item names the area, the person who acted and the organisation, and the Unread tab reads only the unread ones.
 public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -65,6 +65,57 @@ public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLi
 
         page.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == closed).GetProperty("body").GetString()
             .ShouldBe("Silinmiş kullanıcı, Acme Ltd kuruluşunu kapattı. Biri yeniden açmazsa 30 Kas 2026 tarihinde silinecek.");
+    }
+
+    // The person who acted: the actor of a status change, the new Owner who accepted, none for a purge, which the platform did.
+    [Theory]
+    [InlineData("tenant.suspended", "actorName", "Deniz Kaya")]
+    [InlineData("tenant.owner_joined", "ownerName", "Ayşe Demir")]
+    public async Task ListPlatformNotifications_AnEventOfAPerson_NamesTheAreaTheActorAndTheOrganisation(string type, string person, string actor)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
+        var names = actor.Split(' ');
+        var actorId = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: names[0], lastName: names[1]));
+        var notification = await _rows.AddAsync(
+            await _testData.UserIdOfAsync(admin), type, tenant.Id, "Platform", values: $$"""{"tenantName": "Blue Harbour Logistics", "{{person}}": "{{actorId}}"}""");
+
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?limit=100", Cancellation);
+
+        var item = page.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == notification);
+        (item.GetProperty("area").GetString(), item.GetProperty("actorName").GetString(), item.GetProperty("tenantName").GetString())
+            .ShouldBe(("Organisations", actor, "Blue Harbour Logistics"));
+    }
+
+    [Fact]
+    public async Task ListPlatformNotifications_APurge_AnswersNoActorName()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
+        var purged = await _rows.AddAsync(await _testData.UserIdOfAsync(admin), "tenant.purged", tenant.Id, "Platform");
+
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?limit=100", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetGuid() == purged).GetProperty("actorName").ValueKind
+            .ShouldBe(JsonValueKind.Null);
+    }
+
+    // Every system admin hears the platform events of the other tests too, so the test reads its own two rows only.
+    [Fact]
+    public async Task ListPlatformNotifications_UnreadOnly_ShowsOnlyTheUnreadOnes()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
+        var userId = await _testData.UserIdOfAsync(admin);
+        var unread = await _rows.AddAsync(userId, "tenant.purged", tenant.Id, "Platform");
+        var read = await _rows.AddAsync(userId, "tenant.purged", tenant.Id, "Platform");
+        await _rows.MarkReadAsync(read);
+
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?unread=true&limit=100", Cancellation);
+
+        var ids = page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToList();
+        ids.ShouldContain(unread);
+        ids.ShouldNotContain(read);
     }
 
     [Fact]
