@@ -21,6 +21,10 @@ import {
   roleChanged,
 } from "./api";
 
+/** The bell's tabs; a page may have tabs of its own. */
+const bellTabs = (page: Page) =>
+  page.getByRole("tablist", { name: "Which notifications" });
+
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/web/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
 test.skip(
@@ -699,7 +703,7 @@ const shellShots: {
     mock: (page) => mockNotifications(page, bellList),
     open: async (page) => {
       await openBell(page);
-      await page.getByRole("tab", { name: "All" }).click();
+      await bellTabs(page).getByRole("tab", { name: "All" }).click();
       await page.getByRole("link", { name: /You were removed/ }).waitFor();
     },
   },

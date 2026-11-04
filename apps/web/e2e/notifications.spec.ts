@@ -3,6 +3,10 @@ import { expect, type Page, test } from "@playwright/test";
 import { mockApi, mockNotifications, northwind } from "./api";
 import { expectAccessible } from "./axe";
 
+/** The bell's tabs; a page may have tabs of its own. */
+const bellTabs = (page: Page) =>
+  page.getByRole("tablist", { name: "Which notifications" });
+
 const open = async (page: Page, path = `/${northwind.slug}`) => {
   await mockApi(page);
   const notifications = await mockNotifications(page);
@@ -74,12 +78,12 @@ test("Bell_Tabs_ShowTheUnreadOnesThenEveryOne", async ({ page }) => {
 
   await bell(page, 1).click();
   await expect(
-    page.getByRole("tab", { name: "Unread 1", selected: true }),
+    bellTabs(page).getByRole("tab", { name: "Unread 1", selected: true }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "All" }).click();
+  await bellTabs(page).getByRole("tab", { name: "All" }).click();
 
   await expect(
-    page.getByRole("tab", { name: "All", selected: true }),
+    bellTabs(page).getByRole("tab", { name: "All", selected: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: /Your role in Northwind Traders changed/ }),

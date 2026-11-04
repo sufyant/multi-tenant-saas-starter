@@ -281,7 +281,7 @@
     "errorTitle": "Notifications didn’t load",
     "offlineTitle": "You’re offline.",
     "offlineText": "New notifications show when you’re back online.",
-    "tabs": "Show",
+    "tabs": "Which notifications",
     "tabUnread": "Unread",
     "tabUnreadCount": "Unread {count}",
     "tabAll": "All"

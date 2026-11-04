@@ -1,5 +1,5 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { Language, NotificationType } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
@@ -10,6 +10,10 @@ import {
   shannonSuspended,
   users,
 } from "./api";
+
+/** The bell's tabs; a page may have tabs of its own. */
+const bellTabs = (page: Page) =>
+  page.getByRole("tablist", { name: "Which notifications" });
 
 // Screenshots for a pull request. They run only with E2E_SCREENSHOTS=1 and write to apps/platform/test-results/screenshots,
 // which Git ignores and Playwright empties at the start of each run. Attach them to the pull request; never commit them.
@@ -220,7 +224,7 @@ const shellShots: {
     mock: (page) => mockNotifications(page, bellList),
     open: async (page) => {
       await page.getByRole("button", { name: /^Notifications/ }).click();
-      await page.getByRole("tab", { name: "All" }).click();
+      await bellTabs(page).getByRole("tab", { name: "All" }).click();
       await page.getByRole("link", { name: /was suspended/ }).waitFor();
     },
   },
