@@ -283,6 +283,7 @@
     "breadcrumb": "Breadcrumb",
     "commandTitle": "Command menu",
     "commandPlaceholder": "Type a command or search",
+    "commandClose": "Esc",
     "commandEmpty": "Nothing matches.",
     "goTo": "Go to",
     "actions": "Actions",

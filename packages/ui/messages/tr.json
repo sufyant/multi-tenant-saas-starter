@@ -283,6 +283,7 @@
     "breadcrumb": "Sayfa yolu",
     "commandTitle": "Komut menüsü",
     "commandPlaceholder": "Bir komut yazın veya arayın",
+    "commandClose": "Esc",
     "commandEmpty": "Eşleşen bir şey yok.",
     "goTo": "Git",
     "actions": "Eylemler",

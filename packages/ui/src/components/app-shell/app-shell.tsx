@@ -413,7 +413,10 @@ export function AppShell({
         title={t("commandTitle")}
       >
         <Command>
-          <CommandInput placeholder={t("commandPlaceholder")} />
+          <CommandInput
+            placeholder={t("commandPlaceholder")}
+            hint={t("commandClose")}
+          />
           <CommandList>
             <CommandEmpty>{t("commandEmpty")}</CommandEmpty>
             {commands.map((section) => (

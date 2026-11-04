@@ -68,7 +68,7 @@ export function AccountMenu({
     return () => clearTimeout(timer);
   }, [copied]);
   const rail = variant === "rail";
-  const item = "min-h-9 gap-2.5 px-2 text-body max-tablet:min-h-touch-target";
+  const item = "max-tablet:min-h-touch-target";
   return (
     <>
       {/* A menu holds only its items (WAI-ARIA APG, "Menu Button"), so the live region of "Copied" sits beside the menu. */}

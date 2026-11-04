@@ -200,12 +200,12 @@ export function NotificationBell(props: NotificationBellProps) {
         side={row ? "inline-end" : "bottom"}
         align={row ? "start" : "end"}
         sideOffset={6}
-        className="max-h-[560px] w-[400px] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden p-0"
+        className="max-h-[560px] w-95 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[10px] p-0"
       >
         <NotificationPanel
           {...props}
           title={
-            <PopoverTitle className="text-body">
+            <PopoverTitle className="text-section-title">
               {t("notifications.title")}
             </PopoverTitle>
           }
@@ -290,7 +290,7 @@ function NotificationPanel({
           </div>
         )}
         {shown && shown.length > 0 && (
-          <ul aria-label={t("title")}>
+          <ul aria-label={t("title")} className="flex flex-col gap-0.5 p-1">
             {shown.map((entry) => (
               <Item
                 key={entry.id}
@@ -356,14 +356,15 @@ function Item({
     <li
       data-fresh={fresh || undefined}
       className={cn(
-        "relative grid grid-cols-[7px_minmax(0,1fr)] gap-x-2.5 border-t border-border px-4 py-3 transition-colors first:border-t-0 hover:bg-accent motion-reduce:transition-none",
+        "relative grid grid-cols-[8px_minmax(0,1fr)] gap-x-2.5 rounded-md px-3 py-2.5 transition-colors hover:bg-accent motion-reduce:transition-none",
+        unread && "bg-primary-subtle",
         fresh &&
           "bg-accent motion-safe:animate-in motion-safe:slide-in-from-top-2",
       )}
     >
       <span
         aria-hidden="true"
-        className={cn("mt-[7px] size-[7px] rounded-full", unread && "bg-info")}
+        className={cn("mt-[5px] size-2 rounded-full", unread && "bg-primary")}
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <Link
@@ -374,8 +375,8 @@ function Item({
             onOpen(entry, { follow });
           }}
           className={cn(
-            "text-body [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
-            unread && "font-semibold",
+            "text-small [overflow-wrap:anywhere] text-foreground outline-none after:absolute after:inset-0 focus-visible:after:rounded-md focus-visible:after:outline-2 focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
+            unread && "font-medium",
           )}
         >
           {unread && (
@@ -392,7 +393,7 @@ function Item({
           now={now}
           locale={t("locale.format")}
           timeZone={timeZone ?? undefined}
-          className="relative z-10 mt-0.5 self-start text-small text-muted-foreground"
+          className="relative z-10 mt-0.5 self-start text-status text-muted-foreground"
         />
       </div>
     </li>

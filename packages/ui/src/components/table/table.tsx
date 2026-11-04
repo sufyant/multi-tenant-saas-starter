@@ -140,7 +140,7 @@ export function Table<Row extends RowData>({
         className="hidden text-body tabular-nums @min-[640px]:table"
       >
         <TableHeader>
-          <TableRow className="border-border hover:bg-transparent">
+          <TableRow className="border-border bg-muted hover:bg-muted">
             {table.getHeaderGroups()[0]?.headers.map((header, index) => {
               const column = columns[index] as TableColumn<Row>;
               const direction = header.column.getIsSorted();
@@ -155,7 +155,7 @@ export function Table<Row extends RowData>({
                       : undefined
                   }
                   className={cn(
-                    "h-10 px-3 text-small font-normal text-muted-foreground",
+                    "h-row-header px-3 text-status text-muted-foreground",
                     column.align === "end" && "text-end",
                   )}
                 >
@@ -191,7 +191,7 @@ export function Table<Row extends RowData>({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="h-14 border-border">
+            <TableRow key={row.id} className="h-row-height border-border">
               {columns.map((column) => (
                 <TableCell
                   key={column.key}

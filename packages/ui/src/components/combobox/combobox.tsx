@@ -61,8 +61,9 @@ const matches = (option: ComboboxOption, query: string) => {
 const triggers = {
   field:
     "h-control-md w-full justify-between border border-input bg-card px-3 pointer-coarse:h-control-lg tablet:pointer-coarse:h-control-xl",
+  // The Auth footer's language: a thin border, the globe, the name and the chevron.
   compact:
-    "h-control-md px-2 text-muted-foreground hover:bg-accent pointer-coarse:h-control-lg",
+    "h-7.5 gap-1.5 border border-border px-2 text-small text-foreground hover:bg-accent pointer-coarse:h-control-lg",
   // The search field's height and border (search.tsx), so the two line up.
   filter:
     "h-control-md min-w-35 border border-input bg-card ps-3 pe-2.5 pointer-coarse:h-control-lg",
