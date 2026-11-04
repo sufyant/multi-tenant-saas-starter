@@ -471,11 +471,12 @@ const planPages: {
     name: "change-role-plan-off",
     path: members,
     plan: customRolesOff,
-    // In every language: John Byrne's ⋯ menu, then its first item, Change role.
+    // In every language: John Byrne's ⋯ menu, then its first item, Change role. The menu is in the table, or in his card on a
+    // phone, where the table is hidden.
     open: async (page) => {
       await page
-        .getByRole("table")
         .getByRole("button", { name: /John Byrne/ })
+        .filter({ visible: true })
         .click();
       await page.getByRole("menuitem").first().click();
       await page.getByRole("alertdialog").waitFor();
