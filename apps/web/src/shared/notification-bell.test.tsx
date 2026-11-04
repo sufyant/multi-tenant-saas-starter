@@ -64,18 +64,26 @@ const removed: NotificationResponse = {
 const page = (items: NotificationResponse[]) =>
   HttpResponse.json({ items, nextCursor: null });
 
-/** The tenant bell's reads: its count, which counts its reads, and its list. */
-function tenantBell(reads = { count: 0 }) {
+/** The tenant bell's reads: its count, which counts its reads, and its list, which keeps the filter of each read. */
+function tenantBell(
+  reads = { count: 0 },
+  filters: (string | null)[] = [],
+  unread = 3,
+) {
   return [
     http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () => {
       reads.count += 1;
-      return HttpResponse.json({ unread: 3 });
+      return HttpResponse.json({ unread });
     }),
-    http.get(`*/v1/tenants/${northwind.id}/notifications`, () =>
-      page([joined]),
-    ),
+    http.get(`*/v1/tenants/${northwind.id}/notifications`, ({ request }) => {
+      filters.push(new URL(request.url).searchParams.get("unread"));
+      return page([joined]);
+    }),
   ];
 }
+
+/** A row's meta line: the one paragraph under its title. */
+const metaOf = (title: HTMLElement) => title.closest("li")?.querySelector("p");
 
 describe("TenantBell", () => {
   it("TenantBell_Count_ReadsTheTenantsUnreadCount", async () => {
@@ -177,6 +185,104 @@ describe("TenantBell", () => {
 
     await vi.waitFor(() => expect(reads.count).toBe(2));
     expect(marked).toEqual([northwind.id]);
+  });
+});
+
+describe("TenantBell tabs", () => {
+  // 3.01: with unread items the bell opens on Unread, which reads the list with the filter unread.
+  it("TenantBell_OpenedWithUnread_ReadsTheUnreadTab", async () => {
+    const filters: (string | null)[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      ...tenantBell({ count: 0 }, filters),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    expect(
+      await screen.findByRole("tab", { name: "Unread 3", selected: true }),
+    ).toBeInTheDocument();
+    await screen.findByRole("link", { name: /Deniz Arslan joined/ });
+    expect(filters).toEqual(["true"]);
+  });
+
+  // 3.03: with nothing unread the bell opens on All.
+  it("TenantBell_OpenedWithNothingUnread_ReadsTheAllTab", async () => {
+    const filters: (string | null)[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      ...tenantBell({ count: 0 }, filters, 0),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications" }),
+    );
+
+    expect(
+      await screen.findByRole("tab", { name: "All", selected: true }),
+    ).toBeInTheDocument();
+    await screen.findByRole("link", { name: /Deniz Arslan joined/ });
+    expect(filters).toEqual([null]);
+  });
+
+  it("TenantBell_AllPressed_ReadsEveryItem", async () => {
+    const filters: (string | null)[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      ...tenantBell({ count: 0 }, filters),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+    await screen.findByRole("link", { name: /Deniz Arslan joined/ });
+
+    await userEvent.click(screen.getByRole("tab", { name: "All" }));
+
+    await vi.waitFor(() => expect(filters).toEqual(["true", null]));
+  });
+
+  // 3.01 leads to 3.09: Mark all as read shows the All tab.
+  it("TenantBell_MarkAllAnswered_ShowsTheAllTab", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      ...tenantBell(),
+      http.post("*/v1/tenants/:tenantId/notifications/read", () => {
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Mark all as read" }),
+    );
+
+    expect(
+      await screen.findByRole("tab", { name: /^All/, selected: true }),
+    ).toBeInTheDocument();
+  });
+
+  // The tenant web's line: the organisation, the area and the time; the person who acted stays in the title (3.01).
+  it("TenantBell_Opened_ShowsTheOrganisationAndTheAreaWithoutTheActor", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    const meta = metaOf(
+      await screen.findByRole("link", { name: /Deniz Arslan joined/ }),
+    );
+    expect(meta).toHaveTextContent(/^Northwind Traders · Members · /);
+    expect(meta).not.toHaveTextContent("Deniz Arslan");
   });
 });
 
