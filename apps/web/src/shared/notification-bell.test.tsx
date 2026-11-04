@@ -40,6 +40,9 @@ const joined: NotificationResponse = {
   type: NotificationType.MemberJoined,
   title: "Deniz Arslan joined Northwind Traders",
   body: "Deniz Arslan accepted your invitation and joined as Admin.",
+  area: "Members",
+  actorName: "Deniz Arslan",
+  tenantName: "Northwind Traders",
   link: {
     kind: NotificationLinkResponseKind.TenantMembers,
     tenantId: northwind.id,

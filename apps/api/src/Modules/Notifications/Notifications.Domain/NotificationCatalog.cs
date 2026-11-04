@@ -53,8 +53,10 @@ public static class NotificationCatalog
             MemberRoleChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            YourAccess,
             WebAndEmail(),
-            [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")]),
+            [Tenant(), Person("actorName", optional: true), Role("oldRoleName"), Role("newRoleName")],
+            Actor: "actorName"),
 
         // The removed person may have no other tenant and so never see a bell, so the email tells them too (U5). Only a member
         // removes a member: the platform does so only in the user's own deletion, which tells nobody. It leads to the start page, which
@@ -63,19 +65,24 @@ public static class NotificationCatalog
             MemberRemoved,
             NotificationBell.Personal,
             NotificationLinkKind.Start,
+            YourAccess,
             WebAndEmail(),
-            [Tenant(), Person("actorName")]),
+            [Tenant(), Person("actorName")],
+            Actor: "actorName"),
         new(
             MemberJoined,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantMembers,
+            Members,
             WebOnly(),
-            [Tenant(), Person("memberName"), Role("roleName")]),
+            [Tenant(), Person("memberName"), Role("roleName")],
+            Actor: "memberName"),
         // The plan sets what the organisation may do, so the email tells its Owners too (U5).
         new(
             TenantPlanChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            OrganisationPlan,
             WebAndEmail(),
             [Tenant(), new("oldPlanName", NotificationValueKind.Text), new("newPlanName", NotificationValueKind.Text)]),
 
@@ -84,6 +91,7 @@ public static class NotificationCatalog
             TenantEntitlementOverrideSet,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            OrganisationPlan,
             WebOnly(),
             [Tenant(), Key(), new("value", NotificationValueKind.Entitlement), new("expiresAt", NotificationValueKind.Date, Optional: true)],
             LinkByKey: true),
@@ -93,6 +101,7 @@ public static class NotificationCatalog
             TenantEntitlementOverrideRemoved,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
+            OrganisationPlan,
             WebOnly(),
             [Tenant(), Key(), new("value", NotificationValueKind.Entitlement)],
             LinkByKey: true),
@@ -100,8 +109,10 @@ public static class NotificationCatalog
             TenantOwnerJoined,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
+            Organisations,
             WebOnly(),
-            [Tenant(), Person("ownerName")]),
+            [Tenant(), Person("ownerName")],
+            Actor: "ownerName"),
         Status(TenantSuspended),
         Status(TenantReactivated),
         Status(TenantClosed, new NotificationValue("reopenableUntil", NotificationValueKind.Date)),
@@ -110,9 +121,20 @@ public static class NotificationCatalog
             TenantPurged,
             NotificationBell.Platform,
             NotificationLinkKind.PlatformTenant,
+            Organisations,
             WebAndEmail(),
             [Tenant()]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
+
+    // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
+    // plan and its values, and the platform's news of an organisation.
+    private const string Members = "members";
+
+    private const string YourAccess = "your_access";
+
+    private const string OrganisationPlan = "organisation_plan";
+
+    private const string Organisations = "organisations";
 
     /// <summary>The entry of a stored or a sent type. A type the catalog does not know is a mistake of ours.</summary>
     public static NotificationKind Of(string type) =>
@@ -123,10 +145,12 @@ public static class NotificationCatalog
         type,
         NotificationBell.Platform,
         NotificationLinkKind.PlatformTenant,
+        Organisations,
         WebAndEmail(),
-        [Tenant(), Person("actorName"), .. more]);
+        [Tenant(), Person("actorName"), .. more],
+        Actor: "actorName");
 
-    private static NotificationValue Tenant() => new("tenantName", NotificationValueKind.Text);
+    private static NotificationValue Tenant() => new(NotificationKind.TenantValue, NotificationValueKind.Text);
 
     private static NotificationValue Person(string name, bool optional = false) => new(name, NotificationValueKind.Person, Optional: optional);
 

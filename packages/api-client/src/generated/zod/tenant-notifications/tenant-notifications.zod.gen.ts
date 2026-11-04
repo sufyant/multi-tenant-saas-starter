@@ -16,6 +16,7 @@ export const listNotificationsQueryLimitMax = 100;
 
 
 export const ListNotificationsQueryParams = zod.object({
+  "unread": zod.boolean().optional(),
   "cursor": zod.string().optional(),
   "limit": zod.int().min(1).max(listNotificationsQueryLimitMax).optional()
 })
@@ -39,6 +40,9 @@ export const ListNotificationsResponse = zod.object({
 }).describe('The type of a notification, area.event.'),
   "title": zod.string().describe('The title, in the reader\'s language.'),
   "body": zod.string().describe('The body, in the reader\'s language.'),
+  "area": zod.string().describe('The area it belongs to, such as "Members", in the reader\'s language. A label only.'),
+  "actorName": zod.string().nullable().describe('The person who acted, named now: "Deleted user" in the reader\'s language for a deleted one; none when the platform acted.'),
+  "tenantName": zod.string().nullable().describe('The organisation\'s name as it was at that moment; none for a notification about no organisation.'),
   "link": zod.object({
   "kind": zod.enum({
   Start: 'start',

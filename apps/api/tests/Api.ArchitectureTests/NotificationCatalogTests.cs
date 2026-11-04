@@ -107,22 +107,22 @@ public sealed class NotificationCatalogTests
     [Fact]
     public void DeclareNotificationTypes_TheAreasAndActors_FollowWhatEachTypeTellsOf()
     {
-        var areas = NotificationCatalog.Kinds.Values.Select(kind => $"{kind.Type} {kind.Area} {kind.Actor ?? "-"}");
+        var areas = NotificationCatalog.Kinds.Values.Select(kind => $"{kind.Type} {kind.Area} {kind.Actor}".TrimEnd());
 
         areas.ShouldBe(
         [
             "member.role_changed your_access actorName",
             "member.removed your_access actorName",
             "member.joined members memberName",
-            "tenant.plan_changed organisation_plan -",
-            "tenant.entitlement_override_set organisation_plan -",
-            "tenant.entitlement_override_removed organisation_plan -",
+            "tenant.plan_changed organisation_plan",
+            "tenant.entitlement_override_set organisation_plan",
+            "tenant.entitlement_override_removed organisation_plan",
             "tenant.owner_joined organisations ownerName",
             "tenant.suspended organisations actorName",
             "tenant.reactivated organisations actorName",
             "tenant.closed organisations actorName",
             "tenant.reopened organisations actorName",
-            "tenant.purged organisations -",
+            "tenant.purged organisations",
         ]);
     }
 

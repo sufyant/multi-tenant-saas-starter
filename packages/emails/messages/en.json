@@ -128,6 +128,12 @@
       "members.max": "Members limit",
       "roles.custom": "Custom roles",
       "roles.custom.max": "Custom roles limit"
+    },
+    "area": {
+      "members": "Members",
+      "your_access": "Your access",
+      "organisation_plan": "Organisation plan",
+      "organisations": "Organisations"
     }
   }
 }

@@ -15,10 +15,12 @@ public sealed class NotificationQueries(NotificationsDbContext notifications) : 
         notifications.DeclareRecipientAsync(userId, cancellationToken);
 
     // Newest first, by the moment and then the id. The cursor's place is compared as one row value, which the index on the user, the
-    // moment and the id serves (K5).
-    async Task<IReadOnlyList<StoredNotification>> INotificationQueries.ListAsync(Inbox inbox, CursorRequest page, CancellationToken cancellationToken)
+    // moment and the id serves (K5). The unread ones alone page by the same cursor.
+    async Task<IReadOnlyList<StoredNotification>> INotificationQueries.ListAsync(
+        Inbox inbox, bool unreadOnly, CursorRequest page, CancellationToken cancellationToken)
     {
-        var bell = notifications.Notifications.Where(Shows(inbox));
+        var shown = notifications.Notifications.Where(Shows(inbox));
+        var bell = unreadOnly ? shown.Where(n => n.ReadAt == null) : shown;
         var after = page.After is { } place
             ? bell.Where(n => EF.Functions.LessThan(ValueTuple.Create(n.CreatedAt, n.Id), ValueTuple.Create(place.At, place.Id)))
             : bell;

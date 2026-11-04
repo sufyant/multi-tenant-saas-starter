@@ -111,7 +111,8 @@ public sealed class ListContractTests : IAsyncLifetime
         withACursor.ShouldBe(CursorLists, ignoreOrder: true);
     }
 
-    // Step 20k: the platform's log filters by the tenant an entry is about, for the Activity tab of a tenant.
+    // Step 20k: the platform's log filters by the tenant an entry is about, for the Activity tab of a tenant. Step 35: each bell filters its
+    // unread ones, for its Unread tab.
     [Fact]
     public void BuildOpenApiDocument_EveryListWithACursor_TakesExactlyCursorAndLimitAndItsFilters()
     {
@@ -121,9 +122,9 @@ public sealed class ListContractTests : IAsyncLifetime
             [
                 "ListAuditEntries: cursor, limit",
                 "ListPlatformAuditEntries: cursor, limit, tenantId",
-                "ListNotifications: cursor, limit",
-                "ListMyNotifications: cursor, limit",
-                "ListPlatformNotifications: cursor, limit",
+                "ListNotifications: cursor, limit, unread",
+                "ListMyNotifications: cursor, limit, unread",
+                "ListPlatformNotifications: cursor, limit, unread",
             ],
             ignoreOrder: true);
     }

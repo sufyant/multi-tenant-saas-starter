@@ -83,6 +83,12 @@
         "members.max": "Members limit",
         "roles.custom": "Custom roles",
         "roles.custom.max": "Custom roles limit"
+      },
+      "area": {
+        "members": "Members",
+        "your_access": "Your access",
+        "organisation_plan": "Organisation plan",
+        "organisations": "Organisations"
       }
     }
   },
@@ -170,6 +176,12 @@
         "members.max": "Üye sınırı",
         "roles.custom": "Özel roller",
         "roles.custom.max": "Özel rol sınırı"
+      },
+      "area": {
+        "members": "Üyeler",
+        "your_access": "Erişiminiz",
+        "organisation_plan": "Kuruluş planı",
+        "organisations": "Kuruluşlar"
       }
     }
   },
@@ -257,6 +269,12 @@
         "members.max": "حد الأعضاء",
         "roles.custom": "الأدوار المخصصة",
         "roles.custom.max": "حد الأدوار المخصصة"
+      },
+      "area": {
+        "members": "الأعضاء",
+        "your_access": "وصولك",
+        "organisation_plan": "خطة المؤسسة",
+        "organisations": "المؤسسات"
       }
     }
   }

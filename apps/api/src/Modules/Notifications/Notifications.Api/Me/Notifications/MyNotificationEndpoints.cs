@@ -35,8 +35,8 @@ public static class MyNotificationEndpoints
     }
 
     private static Task<Result<CursorPage<NotificationResponse>>> ListMyNotifications(
-        string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
-        NotificationEndpoints.ListAsync(http, bus, Inbox.Personal, cursor, limit, cancellationToken);
+        bool? unread, string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
+        NotificationEndpoints.ListAsync(http, bus, Inbox.Personal, unread, cursor, limit, cancellationToken);
 
     private static Task<Result<UnreadNotificationCountResponse>> GetMyUnreadNotificationCount(HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
         NotificationEndpoints.CountAsync(http, bus, Inbox.Personal, cancellationToken);

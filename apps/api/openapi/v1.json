@@ -4029,6 +4029,13 @@
         "operationId": "ListPlatformNotifications",
         "parameters": [
           {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": {
@@ -6234,6 +6241,13 @@
             }
           },
           {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": {
@@ -7468,6 +7482,13 @@
         ],
         "operationId": "ListMyNotifications",
         "parameters": [
+          {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
           {
             "name": "cursor",
             "in": "query",
@@ -9673,6 +9694,9 @@
           "type",
           "title",
           "body",
+          "area",
+          "actorName",
+          "tenantName",
           "link",
           "createdAt",
           "readAt"
@@ -9694,6 +9718,24 @@
           "body": {
             "type": "string",
             "description": "The body, in the reader's language."
+          },
+          "area": {
+            "type": "string",
+            "description": "The area it belongs to, such as \"Members\", in the reader's language. A label only."
+          },
+          "actorName": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The person who acted, named now: \"Deleted user\" in the reader's language for a deleted one; none when the platform acted."
+          },
+          "tenantName": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The organisation's name as it was at that moment; none for a notification about no organisation."
           },
           "link": {
             "description": "Where it leads.",

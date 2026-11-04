@@ -128,6 +128,12 @@
       "members.max": "حد الأعضاء",
       "roles.custom": "الأدوار المخصصة",
       "roles.custom.max": "حد الأدوار المخصصة"
+    },
+    "area": {
+      "members": "الأعضاء",
+      "your_access": "وصولك",
+      "organisation_plan": "خطة المؤسسة",
+      "organisations": "المؤسسات"
     }
   }
 }

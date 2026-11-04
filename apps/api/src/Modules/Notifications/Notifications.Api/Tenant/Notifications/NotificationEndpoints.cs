@@ -41,13 +41,17 @@ public static class NotificationEndpoints
         notification.Type,
         notification.Title,
         notification.Body,
+        notification.Area,
+        notification.ActorName,
+        notification.TenantName,
         new NotificationLinkResponse(ResponseStatus.OfLink(notification.Link), notification.TenantId),
         notification.CreatedAt,
         notification.ReadAt);
 
-    // The reader's notifications, as the reader's own transaction reads them: the endpoint sends its queries with no tenant (U7).
+    // The reader's notifications, as the reader's own transaction reads them: the endpoint sends its queries with no tenant (U7). The
+    // Unread tab asks for the unread ones alone.
     internal static async Task<Result<CursorPage<NotificationResponse>>> ListAsync(
-        HttpContext http, IMessageBus bus, Inbox inbox, string? cursor, int? limit, CancellationToken cancellationToken)
+        HttpContext http, IMessageBus bus, Inbox inbox, bool? unread, string? cursor, int? limit, CancellationToken cancellationToken)
     {
         var page = CursorRequest.Create(cursor, limit);
         if (!page.IsSuccess)
@@ -57,7 +61,7 @@ public static class NotificationEndpoints
 
         var reader = await ReaderAsync(http, bus, cancellationToken);
         var found = await bus.InvokeForTenantAsync<Result<CursorPage<StoredNotification>>>(
-            WithoutTenant, new ListNotificationsQuery(reader, inbox, page.Value), cancellationToken);
+            WithoutTenant, new ListNotificationsQuery(reader, inbox, page.Value, unread == true), cancellationToken);
         if (!found.IsSuccess)
         {
             return found.Error;
@@ -84,8 +88,8 @@ public static class NotificationEndpoints
         bus.InvokeForTenantAsync<NotificationReader>(WithoutTenant, new GetNotificationReaderQuery(http.User.Id()), cancellationToken);
 
     private static Task<Result<CursorPage<NotificationResponse>>> ListNotifications(
-        Guid tenantId, string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
-        ListAsync(http, bus, Inbox.OfTenant(tenantId), cursor, limit, cancellationToken);
+        Guid tenantId, bool? unread, string? cursor, int? limit, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
+        ListAsync(http, bus, Inbox.OfTenant(tenantId), unread, cursor, limit, cancellationToken);
 
     private static Task<Result<UnreadNotificationCountResponse>> GetUnreadNotificationCount(
         Guid tenantId, HttpContext http, IMessageBus bus, CancellationToken cancellationToken) =>
