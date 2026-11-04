@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "../../lib/utils";
 import { Icon, type LucideIcon } from "../icon";
 
 export type EmptyStateProps = {
@@ -11,6 +12,11 @@ export type EmptyStateProps = {
   action?: ReactNode;
   /** The 20 px icon in its tile above the title, when the page has one (the design's Empty state). */
   icon?: LucideIcon;
+  /**
+   * list: in place of a list's rows; page: the whole content of a page, such as "Page not found" and "You can't open this page",
+   * 120 px below the top bar from bp-tablet (2.15, 2.40) and 40 px on a phone (2.43).
+   */
+  size?: "list" | "page";
 };
 
 /** What a list shows when it has nothing (the design's Empty state): what will appear and how, one action at most, no apology. */
@@ -21,11 +27,15 @@ export function EmptyState({
   code,
   action,
   icon,
+  size = "list",
 }: EmptyStateProps) {
   return (
     <div
       role={kind === "error" ? "alert" : undefined}
-      className="flex flex-col items-center gap-2 px-6 py-10 text-center"
+      className={cn(
+        "flex flex-col items-center gap-2 px-6 py-10 text-center",
+        size === "page" && "tablet:pt-30",
+      )}
     >
       {icon && (
         <span className="flex size-10 items-center justify-center rounded-lg bg-muted">

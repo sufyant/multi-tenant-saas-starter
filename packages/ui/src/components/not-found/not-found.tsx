@@ -34,6 +34,7 @@ export function NotFound({
   // action (2.40 to 2.44).
   return (
     <EmptyState
+      size={signedOut ? "list" : "page"}
       icon={signedOut ? undefined : SearchXIcon}
       title={organisation ? t("orgNotFoundTitle") : t("notFoundTitle")}
       description={
