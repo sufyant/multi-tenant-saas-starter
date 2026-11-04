@@ -279,21 +279,25 @@ public sealed class AccessCheckCacheTests(Valkey valkey, Database database) : IC
         keptReads.ShouldBe(0);
     }
 
-    // A cache that stops never fails a request: the access check reads the database, and answers what the rows say.
+    // A cache that stops never fails a request: the access check reads the database, and answers what the rows say. Valkey never comes
+    // back, so the durable removal of the suspension's tags (C6) is still tried when the test ends. So the test runs on a database of its
+    // own (section 9, rule 10), and waits for no message: the answer reads the rows that the suspension committed before it answered.
     [Fact]
     public async Task CheckAccess_ValkeyStopped_AnswersFromTheDatabase()
     {
+        var own = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, own);
         await using var stopping = new Valkey();
         await stopping.InitializeAsync();
-        await using var api = Host(stopping.ConnectionString);
-        var tenant = await _testData.AddTenantAsync();
-        var member = await _testData.AddMemberAsync(tenant.Id);
-        var admin = api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await using var api = Host(stopping.ConnectionString, own);
+        var tenant = await testData.AddTenantAsync();
+        var member = await testData.AddMemberAsync(tenant.Id);
+        var admin = api.CreateClient(await testData.AddSystemAdminAsync(), secondFactor: true);
         var before = (await api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation)).StatusCode;
 
         await stopping.StopAsync();
         var whileStopped = (await api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation)).StatusCode;
-        (await api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant.Id))).EnsureSuccessStatusCode();
+        (await admin.SuspendTenantAsync(tenant.Id)).EnsureSuccessStatusCode();
         var afterTheSuspension = (await api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation)).StatusCode;
 
         (before, whileStopped, afterTheSuspension).ShouldBe((HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.Forbidden));
@@ -302,8 +306,8 @@ public sealed class AccessCheckCacheTests(Valkey valkey, Database database) : IC
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    private ApiFactory Host(string? cache = null) =>
-        new(database.ConnectionStringFor(DatabaseRoles.Application), settings: new Dictionary<string, string?> { ["ConnectionStrings:Cache"] = cache ?? valkey.ConnectionString });
+    private ApiFactory Host(string? cache = null, string databaseName = Database.MainDatabase) =>
+        new(database.ConnectionStringFor(DatabaseRoles.Application, databaseName), settings: new Dictionary<string, string?> { ["ConnectionStrings:Cache"] = cache ?? valkey.ConnectionString });
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
