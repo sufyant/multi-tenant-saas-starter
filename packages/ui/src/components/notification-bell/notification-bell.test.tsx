@@ -124,7 +124,7 @@ describe("NotificationBell", () => {
     expect(
       within(row).getByText(`${joined.title}: the body.`),
     ).toBeInTheDocument();
-    expect(within(row).getByText("3 minutes ago")).toBeInTheDocument();
+    expect(within(row).getByText("3 min ago")).toBeInTheDocument();
   });
 
   it("NotificationBell_UnreadItem_SaysUnreadBesideTheMark", () => {

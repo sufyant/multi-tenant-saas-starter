@@ -36,7 +36,7 @@ describe("Time", () => {
       />,
     );
 
-    expect(screen.getByText("12 minutes ago")).toBeInTheDocument();
+    expect(screen.getByText("12 min ago")).toBeInTheDocument();
   });
 
   it("Time_InRtl_UsesWesternDigits", () => {
