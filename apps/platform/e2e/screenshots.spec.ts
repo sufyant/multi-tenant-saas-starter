@@ -175,6 +175,8 @@ const shellShots: {
   path?: string;
   mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
   open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+  /** What the page shows once it has loaded, when it is not a heading of the content. */
+  ready?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
 }[] = [
   { file: "2.01-organisations-en-light-desktop", size: "desktop" },
   {
@@ -234,6 +236,12 @@ const shellShots: {
     size: "phone",
     path: "/notifications",
     mock: (page) => mockNotifications(page, bellList),
+    // The top bar names the page; the content has no heading of its own (3.08).
+    ready: (page) =>
+      page
+        .getByRole("main")
+        .getByRole("link", { name: /suspended/ })
+        .waitFor(),
   },
   {
     file: "2.22-not-found-en-light-desktop",
@@ -278,7 +286,8 @@ for (const shot of shellShots.map(withDefaults))
     await shot.mock?.(page);
 
     await page.goto(shot.path);
-    await page.getByRole("main").getByRole("heading").first().waitFor();
+    await (shot.ready?.(page) ??
+      page.getByRole("main").getByRole("heading").first().waitFor());
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
     // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
