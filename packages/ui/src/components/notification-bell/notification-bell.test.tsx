@@ -241,6 +241,21 @@ describe("NotificationBell", () => {
     expect(links[1]).toHaveAccessibleName(/^Unread.*Deniz Arslan joined/);
   });
 
+  it("NotificationBell_UnreadTabItemReadThenPressed_GivesItsReadTimeAsTheListGaveIt", async () => {
+    const onOpenItem = vi.fn();
+    const { rerender } = render(
+      bell({ onOpenItem, list: loaded([fresh, joined]) }),
+    );
+    rerender(bell({ onOpenItem, list: loaded([joined]) }));
+
+    await userEvent.click(screen.getByRole("link", { name: /Your role/ }));
+
+    expect(onOpenItem).toHaveBeenCalledWith(
+      { ...fresh, readHere: true },
+      { follow: true },
+    );
+  });
+
   it("NotificationBell_TabChanged_DropsTheItemsReadThere", () => {
     const { rerender } = render(bell({ list: loaded([fresh, joined]) }));
     rerender(bell({ list: loaded([joined]) }));

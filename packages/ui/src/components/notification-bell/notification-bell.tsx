@@ -48,6 +48,8 @@ export type NotificationEntry = {
   organisation?: string;
   area: string;
   actor?: string;
+  /** Read while the Unread tab was open: the list no longer holds it, so the bell keeps it in its place, drawn as read (F57). */
+  readHere?: true;
 };
 
 /** The bell's two tabs: the unread items only, or every item (3.01, 3.02). */
@@ -480,7 +482,7 @@ function Item({
   now?: Instant;
 }) {
   const t = useTranslations();
-  const unread = entry.readAt === null;
+  const unread = entry.readAt === null && !entry.readHere;
   return (
     <li
       data-fresh={fresh || undefined}
@@ -569,13 +571,10 @@ function withReadHere(items: NotificationEntry[], shown: NotificationEntry[]) {
   for (const entry of shown) {
     if (ids.has(entry.id))
       at = merged.findIndex((item) => item.id === entry.id) + 1;
-    else merged.splice(at++, 0, { ...entry, readAt: entry.readAt ?? readHere });
+    else merged.splice(at++, 0, { ...entry, readHere: true });
   }
   return merged;
 }
-
-/** The read time of an item read while the Unread tab was open: the list has no answer for it, and only its being read shows. */
-const readHere = "";
 
 /**
  * What came in since the list was last shown: the items new at its top. A reader who has scrolled keeps their place, so the new
