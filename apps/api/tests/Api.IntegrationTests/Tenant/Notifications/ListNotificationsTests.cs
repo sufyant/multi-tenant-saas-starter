@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using Tenancy;
 
 namespace Api.IntegrationTests.Tenant.Notifications;
@@ -157,6 +158,56 @@ public sealed class ListNotificationsTests(Database database) : IAsyncLifetime
         first.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([newest]);
         next.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([oldest]);
         next.GetProperty("nextCursor").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    // The Read filter: only the ones the reader opened. No filter reads the whole bell (N7h: a boolean field of the response).
+    [Fact]
+    public async Task ListNotifications_ReadOnly_ShowsOnlyTheReadOnes()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        var userId = await _testData.UserIdOfAsync(member);
+        var read = await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant", createdAt: DateTimeOffset.UtcNow.AddMinutes(-2));
+        var unread = await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant", createdAt: DateTimeOffset.UtcNow.AddMinutes(-1));
+        await _rows.MarkReadAsync(read);
+        var client = _api.CreateClient(member);
+
+        var readOnes = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/notifications?unread=false", Cancellation);
+        var all = await client.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/notifications", Cancellation);
+
+        readOnes.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([read]);
+        all.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([unread, read]);
+    }
+
+    // Each item says whether it is unread, which the read derives from readAt: nothing more is stored.
+    [Fact]
+    public async Task ListNotifications_EachItem_SaysWhetherItIsUnread()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+        var userId = await _testData.UserIdOfAsync(member);
+        var read = await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant", createdAt: DateTimeOffset.UtcNow.AddMinutes(-2));
+        await _rows.AddAsync(userId, "tenant.plan_changed", tenant.Id, "Tenant", createdAt: DateTimeOffset.UtcNow.AddMinutes(-1));
+        await _rows.MarkReadAsync(read);
+
+        var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/notifications", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("unread").GetBoolean()).ShouldBe([true, false]);
+    }
+
+    // K5: a boolean filter that is neither true nor false, or empty, is a value the endpoint cannot read.
+    [Theory]
+    [InlineData("unread=yes")]
+    [InlineData("unread=")]
+    public async Task ListNotifications_AnUnreadFilterThatIsNoBoolean_IsRejected(string query)
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id);
+
+        var response = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/notifications?{query}", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("request.invalid");
     }
 
     // An item names its area in the reader's language, the person who acted as they are named now, and its organisation as it was, so the

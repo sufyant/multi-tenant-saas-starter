@@ -119,6 +119,23 @@ public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLi
     }
 
     [Fact]
+    public async Task ListPlatformNotifications_ReadOnly_ShowsOnlyTheReadOnes()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = await _testData.AddSystemAdminAsync();
+        var userId = await _testData.UserIdOfAsync(admin);
+        var unread = await _rows.AddAsync(userId, "tenant.purged", tenant.Id, "Platform");
+        var read = await _rows.AddAsync(userId, "tenant.purged", tenant.Id, "Platform");
+        await _rows.MarkReadAsync(read);
+
+        var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/notifications?unread=false&limit=100", Cancellation);
+
+        var ids = page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToList();
+        ids.ShouldContain(read);
+        ids.ShouldNotContain(unread);
+    }
+
+    [Fact]
     public async Task ListPlatformNotifications_AMemberWhoIsNoSystemAdmin_IsForbidden()
     {
         var listed = await _api.CreateClient(await _testData.AddUserAsync(), secondFactor: true).GetAsync("/v1/platform/notifications", Cancellation);

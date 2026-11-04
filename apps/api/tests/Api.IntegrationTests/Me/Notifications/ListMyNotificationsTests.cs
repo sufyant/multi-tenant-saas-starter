@@ -4,7 +4,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Me.Notifications;
 
-// GET /v1/me/notifications (U7): the personal bell. Its Unread tab reads only the unread ones, as the tenant's bell does.
+// GET /v1/me/notifications (U7): the personal bell. Its filter reads only the unread ones, or only the read ones, as the tenant's bell does.
 public sealed class ListMyNotificationsTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -23,8 +23,10 @@ public sealed class ListMyNotificationsTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    [Fact]
-    public async Task ListMyNotifications_UnreadOnly_ShowsOnlyTheUnreadOnes()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ListMyNotifications_TheUnreadFilter_ShowsOnlyTheItemsOfThatValue(bool unreadOnly)
     {
         var user = await _testData.AddUserAsync();
         var userId = await _testData.UserIdOfAsync(user);
@@ -32,8 +34,9 @@ public sealed class ListMyNotificationsTests(Database database) : IAsyncLifetime
         var read = await _rows.AddAsync(userId, "member.removed", null, "Personal", createdAt: DateTimeOffset.UtcNow.AddMinutes(-1));
         await _rows.MarkReadAsync(read);
 
-        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/notifications?unread=true", Cancellation);
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>($"/v1/me/notifications?unread={unreadOnly.ToString().ToLowerInvariant()}", Cancellation);
 
-        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ShouldBe([unread]);
+        page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid() == unread, item.GetProperty("unread").GetBoolean()))
+            .ShouldBe([(unreadOnly, unreadOnly)]);
     }
 }
