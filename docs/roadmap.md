@@ -52,6 +52,13 @@ Status: done.
 - More shared patterns: "+" only on create and add buttons, one bar at a time, the rules for long text, and a pseudo-localization test.
 - The Privacy link, and `privacyUrl` and `statusUrl` in the brand settings.
 
+35-frontend-fix:
+
+- The design foundation from the Figma file: the tokens, the fonts (Instrument Sans, JetBrains Mono, Noto Sans Arabic) and the shared components of the Components page. The pages keep their layouts until steps 36, 37a and 37b (the maintainer's decision of 2026-11-04).
+- The shell as the design draws it: the organisation's name and the role, search inside the sidebar, Notifications as a row, and "Staging" on the strip.
+- Home: "Welcome" with the first name and a card for each page the person can open (4.01, 4.02). Its terms notice (4.03) comes with step 38.
+- CI keeps the screenshots of each pull request for seven days, for the review against the design.
+
 ## 4. Step 36: Personal pages
 
 Status: todo.
