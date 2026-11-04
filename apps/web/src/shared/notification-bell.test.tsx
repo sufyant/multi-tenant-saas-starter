@@ -6,7 +6,7 @@ import {
   NotificationType,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -99,6 +99,22 @@ describe("TenantBell", () => {
     expect(
       await screen.findByRole("link", { name: /Deniz Arslan joined/ }),
     ).toHaveAttribute("href", "/northwind/settings/members");
+  });
+
+  it("TenantBell_Opened_NamesEachItemsOrganisation", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 3 unread" }),
+    );
+
+    const item = await screen.findByRole("link", { name: /Deniz Arslan/ });
+    expect(
+      within(item.closest("li") as HTMLElement).getByTestId(
+        "notification-meta",
+      ),
+    ).toHaveTextContent(new RegExp(`^${northwind.name} · `));
   });
 
   it("TenantBell_ItemOpened_FollowsItsLinkBeforeTheReadIsAnswered", async () => {
