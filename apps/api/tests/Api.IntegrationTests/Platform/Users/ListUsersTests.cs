@@ -36,14 +36,14 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     {
         await UseADatabaseOfItsOwnAsync();
         var random = Guid.NewGuid().ToString();
-        var carol = await _testData.AddUserAsync(email: "carol@example.com", firstName: "Carol", lastName: "Shaw");
-        var bob = await _testData.AddSystemAdminAsync(email: "bob@example.com");
-        var alice = await _testData.AddUserAsync(email: "alice@example.com", firstName: "Alice", lastName: "Ball");
+        var carol = await _testData.AddUserAsync(email: TestEmails.Of("carol@example.com"), firstName: "Carol", lastName: "Shaw");
+        var bob = await _testData.AddSystemAdminAsync(email: TestEmails.Of("bob@example.com"));
+        var alice = await _testData.AddUserAsync(email: TestEmails.Of("alice@example.com"), firstName: "Alice", lastName: "Ball");
         await _testData.SuspendUserAsync(alice);
-        var deletedLater = await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: "dave@example.com");
+        var deletedLater = await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: TestEmails.Of("dave@example.com"));
         await _testData.DeleteUserAsync(deletedLater);
         await _testData.SuspendUserAsync(deletedLater);
-        var deletedEarlier = await _testData.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: "erin@example.com");
+        var deletedEarlier = await _testData.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: TestEmails.Of("erin@example.com"));
         await _testData.DeleteUserAsync(deletedEarlier);
 
         var response = await _api.CreateClient(bob, secondFactor: true).GetAsync("/v1/platform/users", Cancellation);
@@ -52,9 +52,9 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Users(page).ShouldBe(
         [
-            (await _testData.UserIdOfAsync(alice), "alice@example.com", "Alice", "Ball", "suspended", false),
-            (await _testData.UserIdOfAsync(bob), "bob@example.com", null, null, "active", true),
-            (await _testData.UserIdOfAsync(carol), "carol@example.com", "Carol", "Shaw", "active", false),
+            (await _testData.UserIdOfAsync(alice), TestEmails.Of("alice@example.com"), "Alice", "Ball", "suspended", false),
+            (await _testData.UserIdOfAsync(bob), TestEmails.Of("bob@example.com"), null, null, "active", true),
+            (await _testData.UserIdOfAsync(carol), TestEmails.Of("carol@example.com"), "Carol", "Shaw", "active", false),
             (Guid.Parse($"0{random[1..]}"), null, null, null, "deleted", false),
             (Guid.Parse($"f{random[1..]}"), null, null, null, "deleted", false),
         ]);
@@ -71,13 +71,13 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     public async Task ListUsers_ALaterPage_ReturnsTheRestAndTheTotal()
     {
         await UseADatabaseOfItsOwnAsync();
-        var admin = await _testData.AddSystemAdminAsync(email: "admin@example.com");
-        await _testData.AddUserAsync(email: "bea@example.com");
-        var last = await _testData.AddUserAsync(email: "cem@example.com");
+        var admin = await _testData.AddSystemAdminAsync(email: TestEmails.Of("admin@example.com"));
+        await _testData.AddUserAsync(email: TestEmails.Of("bea@example.com"));
+        var last = await _testData.AddUserAsync(email: TestEmails.Of("cem@example.com"));
 
         var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/users?page=2&pageSize=2", Cancellation);
 
-        Users(page).ShouldBe([(await _testData.UserIdOfAsync(last), "cem@example.com", null, null, "active", false)]);
+        Users(page).ShouldBe([(await _testData.UserIdOfAsync(last), TestEmails.Of("cem@example.com"), null, null, "active", false)]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
         page.GetProperty("total").GetInt32().ShouldBe(3);
     }
@@ -132,10 +132,10 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     public async Task ListUsers_AStatusFilter_ReturnsTheUsersInThatStatusOnly(string status, int count)
     {
         await UseADatabaseOfItsOwnAsync();
-        await _testData.AddUserAsync(email: "active@example.com");
-        var suspended = await _testData.AddUserAsync(email: "suspended@example.com");
+        await _testData.AddUserAsync(email: TestEmails.Of("active@example.com"));
+        var suspended = await _testData.AddUserAsync(email: TestEmails.Of("suspended@example.com"));
         await _testData.SuspendUserAsync(suspended);
-        var deleted = await _testData.AddUserAsync(email: "deleted@example.com");
+        var deleted = await _testData.AddUserAsync(email: TestEmails.Of("deleted@example.com"));
         await _testData.DeleteUserAsync(deleted);
         await _testData.SuspendUserAsync(deleted);
 
@@ -152,8 +152,8 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     public async Task ListUsers_AnIsSystemAdminFilter_ReturnsTheUsersWithThatValueOnly(string value, int count)
     {
         await UseADatabaseOfItsOwnAsync();
-        await _testData.AddUserAsync(email: "user@example.com");
-        await _testData.AddSystemAdminAsync(email: "admin@example.com");
+        await _testData.AddUserAsync(email: TestEmails.Of("user@example.com"));
+        await _testData.AddSystemAdminAsync(email: TestEmails.Of("admin@example.com"));
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?isSystemAdmin={value}", Cancellation);
 
@@ -199,17 +199,18 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(0);
     }
 
-    // users.email is not unique (review of 2026-10-21), so the filter answers every user with the address, never "at most one".
+    // Two live users never keep one address (A7, the maintainer's decision of 2026-11-04), so the filter answers the one user with it; a
+    // deleted user keeps no address (A8) and never matches.
     [Fact]
-    public async Task ListUsers_AnEmailFilterThatTwoUsersHave_ReturnsBoth()
+    public async Task ListUsers_AnEmailFilter_ReturnsTheOneUserWithTheAddress()
     {
-        var first = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
-        var second = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+        var user = await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+        await _testData.DeleteUserAsync(await _testData.AddUserAsync(email: $"ali-old{_marker}@northwind.example"));
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
             $"/v1/platform/users?email={Uri.EscapeDataString($"ali{_marker}@northwind.example")}", Cancellation);
 
-        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(first), await _testData.UserIdOfAsync(second)], ignoreOrder: true);
+        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(user)]);
     }
 
     // An address is checked as the other email inputs are (CreateTenant, InviteMember, InviteOwner).
@@ -255,17 +256,21 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(2);
     }
 
-    // The "Add" dialog's search combines with the other filters: of two users with the address, only the system admin is listed.
+    // The "Add" dialog's search combines with the other filters: the user with the address is listed only when they are a system admin.
     [Fact]
     public async Task ListUsers_AnEmailFilterWithIsSystemAdmin_ReturnsTheSystemAdminWithThatAddressOnly()
     {
         var admin = await _testData.AddSystemAdminAsync(email: $"ali{_marker}@northwind.example");
-        await _testData.AddUserAsync(email: $"ali{_marker}@northwind.example");
+        await _testData.AddUserAsync(email: $"kali{_marker}@northwind.example");
+        var client = await SystemAdminAsync();
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
+        var ofTheAdmin = await client.GetFromJsonAsync<JsonElement>(
             $"/v1/platform/users?isSystemAdmin=true&email={Uri.EscapeDataString($"ali{_marker}@northwind.example")}", Cancellation);
+        var ofTheUser = await client.GetFromJsonAsync<JsonElement>(
+            $"/v1/platform/users?isSystemAdmin=true&email={Uri.EscapeDataString($"kali{_marker}@northwind.example")}", Cancellation);
 
-        Users(page).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(admin)]);
+        Users(ofTheAdmin).Select(user => user.Id).ShouldBe([await _testData.UserIdOfAsync(admin)]);
+        Users(ofTheUser).ShouldBeEmpty();
     }
 
     // A system admin's grant keeps when it was granted, and the list answers it; a user who is no system admin has none.
@@ -329,16 +334,15 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         EmailsOf(page).ShouldBe(emails);
     }
 
+    // Two live users never keep one address (A7), so only the last name can tie.
     [Theory]
-    [InlineData("email")]
-    [InlineData("-email")]
     [InlineData("lastName")]
     [InlineData("-lastName")]
     public async Task ListUsers_TwoUsersWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
     {
         var random = Guid.NewGuid().ToString();
-        await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: $"same{_marker}@t.org", lastName: "Same");
-        await _testData.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: $"same{_marker}@t.org", lastName: "Same");
+        await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: $"same1{_marker}@t.org", lastName: "Same");
+        await _testData.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: $"same2{_marker}@t.org", lastName: "Same");
         var admin = await SystemAdminAsync();
 
         var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);

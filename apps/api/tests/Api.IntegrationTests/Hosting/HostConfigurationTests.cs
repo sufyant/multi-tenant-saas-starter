@@ -27,6 +27,10 @@ public sealed class HostConfigurationTests(Database database)
         { Environments.Development, ["ControlPlane:Clerk:SecretKey"] },
         { Environments.Development, ["ControlPlane:Invitations:AcceptUrl"] },
         { Environments.Development, ["ControlPlane:SystemAdmins:RootEmails:0"] },
+        { Environments.Development, ["Host:Storage:Endpoint"] },
+        { Environments.Development, ["Host:Storage:Bucket"] },
+        { Environments.Development, ["Host:Storage:AccessKeyId"] },
+        { Environments.Development, ["Host:Storage:SecretAccessKey"] },
         { Environments.Production, ["Host:Authentication:AuthorizedParties:0"] },
         { Environments.Production, ["Notifications:Resend:ApiKey"] },
         { Environments.Production, ["Notifications:Resend:From"] },
@@ -52,6 +56,8 @@ public sealed class HostConfigurationTests(Database database)
         { "Host:ShutdownTimeout", "00:00:00" },
         { "Host:ManagementPort", "0" },
         { "Host:ManagementPort", "65536" },
+        { "Host:Storage:Endpoint", "/storage" },
+        { "Host:Storage:Timeout", "00:00:00" },
     };
 
     [Theory]

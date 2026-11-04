@@ -100,6 +100,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Clerk settings are code: `.clerk/`. Never run `pnpm clerk:apply` yourself. You may run `pnpm clerk:plan`.
 - Never change a user or a setting in the Clerk dashboard.
 - Better Stack settings are code: `.betterstack/`. Never run `pnpm betterstack:apply` yourself. You may run `pnpm betterstack:plan`.
+- Cloudflare settings are code: `.cloudflare/`. Never run `pnpm cloudflare:apply` yourself. You may run `pnpm cloudflare:plan` when a token is present.
 - Never create or push a `v*` tag. A release is the maintainer's decision.
 - Never approve a production deployment. It is the maintainer's decision.
 

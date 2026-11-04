@@ -1,3 +1,4 @@
+using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Users;
 using SharedKernel;
@@ -284,5 +285,28 @@ public sealed class UserTests
         user.Status.ShouldBe(UserStatus.Deleted);
         User.InStatus(UserStatus.Deleted).Compile()(user).ShouldBeTrue();
         User.InStatus(UserStatus.Suspended).Compile()(user).ShouldBeFalse();
+    }
+
+    // A7: the user's own change of address, after the code to the new one. The same address is no change.
+    [Fact]
+    public void ChangeEmail_ANewAddress_KeepsItInItsOneForm()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
+
+        var changed = user.ChangeEmail(EmailAddress.Create(" Ada@New.Example "));
+
+        (changed.Value, user.Email).ShouldBe((StateChange.Changed, "ada@new.example"));
+        user.ChangeEmail(EmailAddress.Create("ada@new.example")).Value.ShouldBe(StateChange.Unchanged);
+    }
+
+    [Fact]
+    public void ChangeEmail_ADeletedUser_IsForbiddenAndKeepsNoAddress()
+    {
+        var user = User.Join(Guid.CreateVersion7(), "user_1", EmailAddress.Create("ada@example.com"), "Ada", "Lovelace", Language.En, Now);
+        user.Delete(Now);
+
+        var changed = user.ChangeEmail(EmailAddress.Create("ada@new.example"));
+
+        (changed.Error.Code, user.Email).ShouldBe((ControlPlaneErrorCodes.UserDeleted, null));
     }
 }

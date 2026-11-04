@@ -1,3 +1,4 @@
+using Api.Storage;
 using Audit.Api;
 using Audit.Infrastructure;
 using ControlPlane.Api;
@@ -28,9 +29,10 @@ internal static class ModuleComposition
 
         // The modules that take part in the tenant purge, named to ControlPlane through its contract: the purge waits for a reply of
         // each, and knows no module (docs/flows/tenant-purge.md). A module that handles PurgeTenantDataCommand is named here
-        // (TenantPurgeParticipantTests).
+        // (TenantPurgeParticipantTests). The host's file store takes part too: it deletes the tenant's files.
         builder.Services.AddSingleton(new TenantPurgeParticipant(AuditModule.TenantPurgeParticipant));
         builder.Services.AddSingleton(new TenantPurgeParticipant(NotificationsModule.TenantPurgeParticipant));
+        builder.Services.AddSingleton(new TenantPurgeParticipant(PurgeTenantFilesHandler.Participant));
 
         return role;
     }

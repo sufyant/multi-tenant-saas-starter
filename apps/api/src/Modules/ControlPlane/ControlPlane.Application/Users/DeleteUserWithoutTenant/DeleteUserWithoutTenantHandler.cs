@@ -1,4 +1,5 @@
 using ControlPlane.Application.Users.DeleteIdentityAccount;
+using ControlPlane.Application.Users.DeleteUserFiles;
 using ControlPlane.Application.Users.EraseFormerMember;
 using ControlPlane.Contracts.Users;
 using SharedKernel;
@@ -10,7 +11,7 @@ namespace ControlPlane.Application.Users.DeleteUserWithoutTenant;
 // left without a tenant. It locks the user row and checks again under the lock: a system admin stays, a user who joined another tenant
 // meanwhile stays, and a user already deleted changes nothing. Otherwise it erases the user as DeleteUser does (User.Delete), records
 // user.deleted by the platform, and after the commit deletes the user at the identity provider and erases the user's address in each
-// tenant the user joined, as DeleteUser does (A8). No caller waits for an answer, so a user who stays is no error.
+// tenant the user joined, and deletes the user's own records and files, as DeleteUser does (A8). No caller waits for an answer, so a user who stays is no error.
 public static class DeleteUserWithoutTenantHandler
 {
     public static async Task<OutgoingMessages> HandleAsync(
@@ -34,11 +35,13 @@ public static class DeleteUserWithoutTenantHandler
             return [];
         }
 
+        await users.DeleteOwnRecordsAsync(user.Id, cancellationToken);
         await users.SaveChangesAsync(cancellationToken);
         return
         [
             new UserDeletedEvent(Guid.CreateVersion7(now), now, user.Id, null),
             new DeleteIdentityAccountCommand(user.ExternalId),
+            new DeleteUserFilesCommand(user.Id),
             .. EraseFormerMemberCommand.For(user.Id, email, joined),
         ];
     }

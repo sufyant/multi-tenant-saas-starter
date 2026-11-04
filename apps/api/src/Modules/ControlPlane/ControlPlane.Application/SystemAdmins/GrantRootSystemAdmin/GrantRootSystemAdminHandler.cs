@@ -28,7 +28,15 @@ public static class GrantRootSystemAdminHandler
         var isSystemAdmin = user is not null && await users.IsSystemAdminAsync(user.Id, cancellationToken);
         if (user is null)
         {
-            user = User.EnterAsRootSystemAdmin(Guid.CreateVersion7(now), command.ExternalUserId, EmailAddress.Create(command.Email), now);
+            // Another live user keeps the listed address: the unique index of the addresses refuses a second user with it, so the door
+            // writes none and grants nothing (A7).
+            var email = EmailAddress.Create(command.Email);
+            if (await users.IsEmailTakenAsync(email, Guid.Empty, cancellationToken))
+            {
+                return [];
+            }
+
+            user = User.EnterAsRootSystemAdmin(Guid.CreateVersion7(now), command.ExternalUserId, email, now);
             users.Add(user);
         }
 

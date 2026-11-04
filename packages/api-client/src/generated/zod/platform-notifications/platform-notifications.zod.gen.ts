@@ -33,6 +33,7 @@ export const ListPlatformNotificationsResponse = zod.object({
   TenantReactivated: 'tenant.reactivated',
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
+  UserDataExportReady: 'user.data_export_ready',
 }).describe('The type of a notification, area.event.'),
   "title": zod.string().describe('The title, in the reader\'s language.'),
   "body": zod.string().describe('The body, in the reader\'s language.'),
@@ -46,6 +47,7 @@ export const ListPlatformNotificationsResponse = zod.object({
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
   PlatformTenant: 'platform_tenant',
+  AccountSecurity: 'account_security',
 }).describe('Where a notification leads, which the web turns into a URL.'),
   "tenantId": zod.uuid().nullable()
 }).describe('Where it leads.'),

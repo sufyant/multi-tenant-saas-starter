@@ -38,10 +38,17 @@ public static class NotificationCatalog
 
     public const string TenantSuspended = "tenant.suspended";
 
+    /// <summary>
+    /// The second exception of U9: the export's completion is the worker's, not a command, so it writes no audit entry and has no operation
+    /// to take its name from.
+    /// </summary>
+    public const string UserDataExportReady = "user.data_export_ready";
+
     /// <summary>The types whose name is no audit operation, each with its reason (U9).</summary>
     public static readonly IReadOnlyDictionary<string, string> NamedApart = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
+        [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
     };
 
     /// <summary>Every type, by its name.</summary>
@@ -124,10 +131,20 @@ public static class NotificationCatalog
             Organisations,
             WebAndEmail(),
             [Tenant()]),
+
+        // A person's data is ready to download: the person may not open the app soon, so the email tells them too (U5). It leads to Account
+        // and security, never to the file.
+        new(
+            UserDataExportReady,
+            NotificationBell.Personal,
+            NotificationLinkKind.AccountSecurity,
+            YourAccount,
+            WebAndEmail(),
+            [new("expiresAt", NotificationValueKind.Date)]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
     // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
-    // plan and its values, and the platform's news of an organisation.
+    // plan and its values, the platform's news of an organisation, and the reader's own account.
     private const string Members = "members";
 
     private const string YourAccess = "your_access";
@@ -135,6 +152,8 @@ public static class NotificationCatalog
     private const string OrganisationPlan = "organisation_plan";
 
     private const string Organisations = "organisations";
+
+    private const string YourAccount = "your_account";
 
     /// <summary>The entry of a stored or a sent type. A type the catalog does not know is a mistake of ours.</summary>
     public static NotificationKind Of(string type) =>

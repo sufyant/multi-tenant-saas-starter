@@ -1,0 +1,8 @@
+Starter
+
+Your email address was changed
+
+Your email address was changed to {{newEmail}}. If this wasn’t you, contact us.
+{{supportUrl}}
+
+You received this because this was the email address of your account.

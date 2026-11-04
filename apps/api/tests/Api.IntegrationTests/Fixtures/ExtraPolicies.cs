@@ -6,11 +6,14 @@ internal static class ExtraPolicies
 {
     public static readonly IReadOnlyList<(string Table, string Name, string Command)> Policies =
     [
+        ("audit.entries", "own_actions", "SELECT"),
         ("audit.platform_entries", "platform_insert", "INSERT"),
         ("audit.platform_entries", "platform_read", "SELECT"),
         ("control_plane.invitations", "own_accepted_invitations", "SELECT"),
         ("control_plane.memberships", "own_memberships", "SELECT"),
         ("control_plane.roles", "own_roles", "SELECT"),
+        ("control_plane.stored_files", "own_files", "ALL"),
+        ("control_plane.verification_codes", "own_verification_codes", "ALL"),
         ("notifications.notifications", "own_notifications", "ALL"),
         ("notifications.notifications", "owner_delete", "DELETE"),
         ("notifications.notifications", "owner_read", "SELECT"),

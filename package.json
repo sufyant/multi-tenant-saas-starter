@@ -30,6 +30,8 @@
     "clerk:apply": "scripts/clerk/config.sh apply",
     "betterstack:plan": "scripts/betterstack/config.sh plan",
     "betterstack:apply": "scripts/betterstack/config.sh apply",
+    "cloudflare:plan": "scripts/cloudflare/config.sh plan",
+    "cloudflare:apply": "scripts/cloudflare/config.sh apply",
     "skills:update": "scripts/agent-skills/update.sh"
   },
   "devDependencies": {

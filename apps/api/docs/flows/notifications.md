@@ -8,7 +8,7 @@ A notification about the person's account or access is transactional: the produc
 
 ## 1. The types
 
-A type tells of one event and has the name of its event's audit operation, so the same event carries one label in the audit log and in the bell (U9). The one exception, `tenant.owner_joined`, says why in `NotificationCatalog.NamedApart`.
+A type tells of one event and has the name of its event's audit operation, so the same event carries one label in the audit log and in the bell (U9). The two exceptions, `tenant.owner_joined` and `user.data_export_ready`, say why in `NotificationCatalog.NamedApart`.
 
 | Type | Event | Recipients | Bell | Channels | Values | Link |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -22,8 +22,9 @@ A type tells of one event and has the name of its event's audit operation, so th
 | `tenant.suspended`, `tenant.reactivated`, `tenant.reopened` | `TenantSuspendedEvent`, `TenantReactivatedEvent`, `TenantReopenedEvent` | every system admin but the actor | the platform's | web and email | the actor | `platform_tenant` |
 | `tenant.closed` | `TenantClosedEvent` | every system admin but the actor | the platform's | web and email | the actor and the date the purge deletes the data (`ReopenableUntil`) | `platform_tenant` |
 | `tenant.purged` | `TenantPurgedEvent` | every system admin: the platform acted | the platform's | web and email | none beyond the tenant | `platform_tenant` |
+| `user.data_export_ready` | `DataExportReadyEvent` | the person who asked for the export: the worker completed it, so the person is told | personal | web and email | the date until which the file can be downloaded (`flows/personal-data-export.md`) | `account_security` |
 
-Every type also keeps the tenant's name as it was at that moment.
+Every type about a tenant also keeps the tenant's name as it was at that moment.
 
 Each type also has an area and an actor in the catalog (U1). The list shows them beside an item; they are display labels only.
 
@@ -33,6 +34,7 @@ Each type also has an area and an actor in the catalog (U1). The list shows them
 | `your_access` | Your access, Erişiminiz, وصولك | `member.role_changed`, `member.removed` | the one who changed the role or removed the member; none when the platform made an Owner |
 | `organisation_plan` | Organisation plan, Kuruluş planı, خطة المؤسسة | `tenant.plan_changed`, `tenant.entitlement_override_set`, `tenant.entitlement_override_removed` | none: the platform acted |
 | `organisations` | Organisations, Kuruluşlar, المؤسسات | `tenant.owner_joined` and every status type | the new Owner, who accepted; the system admin who changed the status; none for `tenant.purged` |
+| `your_account` | Your account, Hesabınız, حسابك | `user.data_export_ready` | none: the worker completed the export |
 
 - An override leads to the page of its key: `members.max` to the members (`tenant_members`), `roles.custom` and `roles.custom.max` to the roles (`tenant_roles`), any other key to the tenant's general settings (`tenant_settings`).
 - A value keeps a person by user id only (K3). The read names them now, so a deleted user reads as "Deleted user" in the reader's language, and a renamed one by the new name (U2). A tenant's, a plan's and a role's name stay as they were at that moment.

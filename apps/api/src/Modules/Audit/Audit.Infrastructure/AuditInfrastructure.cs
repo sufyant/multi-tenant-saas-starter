@@ -2,6 +2,7 @@ using Audit.Application.AuditLogs;
 using Audit.Infrastructure.Persistence;
 using Audit.Infrastructure.Persistence.AuditLogs;
 using Microsoft.Extensions.DependencyInjection;
+using SharedKernel;
 using Tenancy;
 using Wolverine.EntityFrameworkCore;
 
@@ -22,6 +23,9 @@ public static class AuditInfrastructure
 
         // Registered by type, so Wolverine builds it in its generated code on the handler's own DbContext (W1).
         services.AddScoped<IAuditLog, AuditLog>();
+
+        // The module's part of a person's data export (docs/flows/personal-data-export.md).
+        services.AddScoped<IPersonalDataExporter, AuditDataExporter>();
 
         return services;
     }

@@ -147,6 +147,80 @@ public sealed class ClerkIdentityProviderTests(Database database) : IDisposable
         _clerk.Requests.ShouldHaveSingleItem();
     }
 
+    // A7: ControlPlane owns the address. Clerk gets it verified and primary, and the old addresses go; a linked Google or Microsoft
+    // account is an external account of Clerk's, not an address, so it stays.
+    [Fact]
+    public async Task ReplaceEmail_ANewAddress_AddsItVerifiedAndPrimaryAndDeletesTheOldOnes()
+    {
+        _clerk.Respond("""
+            {"id":"user_1","email_addresses":[
+              {"id":"idn_old","email_address":"ada@old.example","verification":{"status":"verified"}},
+              {"id":"idn_work","email_address":"ada@work.example","verification":{"status":"unverified"}}]}
+            """);
+        _clerk.Respond("""{"id":"idn_new","email_address":"ada@new.example"}""");
+        _clerk.Respond("""{"id":"idn_old","deleted":true}""");
+        _clerk.Respond("""{"id":"idn_work","deleted":true}""");
+
+        await Identity().ReplaceEmailAsync("user_1", "ada@new.example", Cancellation);
+
+        _clerk.Requests.Select(request => (request.Method, request.Uri.ToString())).ShouldBe(
+        [
+            (HttpMethod.Get, "https://api.clerk.test/v1/users/user_1"),
+            (HttpMethod.Post, "https://api.clerk.test/v1/email_addresses"),
+            (HttpMethod.Delete, "https://api.clerk.test/v1/email_addresses/idn_old"),
+            (HttpMethod.Delete, "https://api.clerk.test/v1/email_addresses/idn_work"),
+        ]);
+        JsonNode.DeepEquals(
+            JsonNode.Parse(_clerk.Requests[1].Body!),
+            JsonNode.Parse("""{"user_id":"user_1","email_address":"ada@new.example","verified":true,"primary":true}""")).ShouldBeTrue(_clerk.Requests[1].Body);
+    }
+
+    // A retried call finds the address added: it makes it verified and primary, and deletes the rest.
+    [Fact]
+    public async Task ReplaceEmail_TheAddressIsThereAlready_MakesItPrimaryAndDeletesTheOthers()
+    {
+        _clerk.Respond("""
+            {"id":"user_1","email_addresses":[
+              {"id":"idn_old","email_address":"ada@old.example","verification":{"status":"verified"}},
+              {"id":"idn_new","email_address":"ada@new.example","verification":{"status":"verified"}}]}
+            """);
+        _clerk.Respond("""{"id":"idn_new","email_address":"ada@new.example"}""");
+        _clerk.Respond("""{"id":"idn_old","deleted":true}""");
+
+        await Identity().ReplaceEmailAsync("user_1", "ada@new.example", Cancellation);
+
+        _clerk.Requests.Select(request => (request.Method, request.Uri.ToString())).ShouldBe(
+        [
+            (HttpMethod.Get, "https://api.clerk.test/v1/users/user_1"),
+            (HttpMethod.Patch, "https://api.clerk.test/v1/email_addresses/idn_new"),
+            (HttpMethod.Delete, "https://api.clerk.test/v1/email_addresses/idn_old"),
+        ]);
+        JsonNode.DeepEquals(JsonNode.Parse(_clerk.Requests[1].Body!), JsonNode.Parse("""{"verified":true,"primary":true}""")).ShouldBeTrue(_clerk.Requests[1].Body);
+    }
+
+    // Clerk finds the users who have the address, verified or not. Another one's account takes it; the person's own does not.
+    [Fact]
+    public async Task IsEmailTakenByAnotherAccount_AnotherUserHasTheAddress_IsTrue()
+    {
+        _clerk.Respond("""[{"id":"user_other","email_addresses":[{"id":"idn_1","email_address":"ayse@example.com","verification":{"status":"verified"}}]}]""");
+
+        var taken = await Identity().IsEmailTakenByAnotherAccountAsync("ayse@example.com", "user_1", Cancellation);
+
+        taken.ShouldBeTrue();
+        var request = _clerk.Requests.ShouldHaveSingleItem();
+        (request.Method, request.Uri).ShouldBe((HttpMethod.Get, new Uri("https://api.clerk.test/v1/users?email_address=ayse%40example.com")));
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("""[{"id":"user_1","email_addresses":[]}]""")]
+    public async Task IsEmailTakenByAnotherAccount_NoOtherUserHasTheAddress_IsFalse(string answer)
+    {
+        _clerk.Respond(answer);
+
+        (await Identity().IsEmailTakenByAnotherAccountAsync("ada@new.example", "user_1", Cancellation)).ShouldBeFalse();
+    }
+
     [Fact]
     public async Task CallClerk_KeepsFailing_IsAnError()
     {

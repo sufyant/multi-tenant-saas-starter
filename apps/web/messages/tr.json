@@ -286,7 +286,11 @@
         "suspended": "<actor></actor> bu kuruluşu askıya aldı."
       },
       "user": {
+        "data_export_downloaded": "<actor></actor> verilerinin bir kopyasını indirdi.",
+        "data_export_requested": "<actor></actor> verilerinin bir kopyasını istedi.",
         "deleted": "<actor></actor>, <target></target> adlı kullanıcının hesabını sildi.",
+        "deletion_requested": "<actor></actor> hesabını silmek istedi.",
+        "email_changed": "<actor></actor> e-posta adresini değiştirdi.",
         "email_preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "reactivated": "<actor></actor>, <target></target> adlı kullanıcının hesabını yeniden etkinleştirdi.",

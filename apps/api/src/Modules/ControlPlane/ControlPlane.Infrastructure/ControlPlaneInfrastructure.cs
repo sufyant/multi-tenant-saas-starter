@@ -1,4 +1,5 @@
 using System.Net.Mail;
+using ControlPlane.Application.DataExports;
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Plans;
@@ -16,6 +17,7 @@ using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
 using ControlPlane.Infrastructure.Persistence;
+using ControlPlane.Infrastructure.Persistence.DataExports;
 using ControlPlane.Infrastructure.Persistence.Invitations;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.Plans;
@@ -25,6 +27,7 @@ using ControlPlane.Infrastructure.Persistence.Tenants;
 using ControlPlane.Infrastructure.Persistence.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SharedKernel;
 using Tenancy;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
@@ -75,6 +78,14 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IRoleQueries, RoleQueries>();
         services.AddScoped<IPlanQueries, PlanQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
+        services.AddScoped<IStoredFileRepository, StoredFileRepository>();
+
+        services.AddScoped<IDataExportQueries, DataExportQueries>();
+
+        // The module's part of a person's data export (docs/flows/personal-data-export.md). The export takes every exporter from the
+        // message's scope, so Wolverine's generated code builds none of them on a DbContext of the handler, which has no transaction.
+        services.AddScoped<IPersonalDataExporter, UserDataExporter>();
+        services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IEnumerable<IPersonalDataExporter>>());
 
 
         services.AddOptions<InvitationOptions>()

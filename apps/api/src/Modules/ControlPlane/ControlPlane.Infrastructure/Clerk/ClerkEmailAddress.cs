@@ -4,4 +4,5 @@ namespace ControlPlane.Infrastructure.Clerk;
 
 internal sealed record ClerkEmailAddress(
     [property: JsonPropertyName("email_address")] string EmailAddress,
-    [property: JsonPropertyName("verification")] ClerkVerification? Verification);
+    [property: JsonPropertyName("verification")] ClerkVerification? Verification,
+    [property: JsonPropertyName("id")] string? Id = null);

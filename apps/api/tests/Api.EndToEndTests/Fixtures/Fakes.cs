@@ -40,6 +40,10 @@ internal sealed class FakeIdentityProvider : IIdentityProvider
     public Task<IReadOnlyList<string>> FindVerifiedEmailsAsync(string externalUserId, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<string>>(_accounts.GetValueOrDefault(externalUserId, []));
 
+    public Task ReplaceEmailAsync(string externalUserId, string email, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task<bool> IsEmailTakenByAnotherAccountAsync(string email, string externalUserId, CancellationToken cancellationToken) => Task.FromResult(false);
+
     public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 

@@ -69,6 +69,11 @@
       "forbidden": "Bu işlem için yetkiniz yok.",
       "unauthenticated": "Oturumunuz sona erdi. Yeniden giriş yapın."
     },
+    "data_export": {
+      "in_progress": "Verilerinizin dışa aktarımı hazırlanıyor. Hazır olana kadar bekleyin.",
+      "not_found": "Verilerinizin bir dışa aktarımı yok.",
+      "not_ready": "Dosya indirmeye hazır değil."
+    },
     "idempotency": {
       "key_in_progress": "Bu istek hâlâ sürüyor. Biraz bekleyin, sonra sonucu kontrol edin.",
       "key_invalid": "İstek gönderilemedi. Sayfayı yenileyip yeniden deneyin.",
@@ -171,11 +176,19 @@
     },
     "user": {
       "deleted": "Bu hesap silindi.",
+      "email_taken": "Bu e-posta adresini başka bir hesap kullanıyor.",
+      "email_unchanged": "Bu zaten sizin e-posta adresiniz.",
       "has_memberships": "Bu kullanıcı hâlâ bir kuruluşun üyesi.",
       "is_system_admin": "Sistem yöneticisi silinemez.",
       "last_owner": "Bu kullanıcı bir kuruluşun son Sahibi. Önce başka bir üyeyi Sahip yapın.",
       "not_found": "Bu kullanıcı yok.",
       "suspended": "Hesabınız askıya alındı."
+    },
+    "verification_code": {
+      "expired": "Kodun süresi doldu. Yeni bir kod gönderin.",
+      "invalid": "Bu kod doğru değil. E-postayı kontrol edip yeniden deneyin.",
+      "too_many_attempts": "Kod çok kez denendi. Yeni bir kod gönderin.",
+      "too_many_sends": "Çok fazla kod gönderildi. Bir saat sonra yeniden deneyin."
     }
   },
   "signIn": {
