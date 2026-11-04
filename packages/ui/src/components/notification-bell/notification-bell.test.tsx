@@ -23,7 +23,6 @@ const entry = (
 ): NotificationEntry => ({
   id,
   title,
-  body: `${title}: the body.`,
   createdAt: "2026-10-16T13:29:00Z",
   readAt,
   href: `/northwind/${id}`,
@@ -71,6 +70,12 @@ function bell(props: Partial<NotificationBellProps> = {}) {
 /** The badge's text, or null without a badge. */
 const countOf = (button: HTMLElement) =>
   button.querySelector("[data-slot='bell-count']")?.textContent ?? null;
+
+/** The paragraph of a row whose whole text is `text`: the meta line, which puts the organisation and the time in one line. */
+const lineOf = (row: HTMLElement, text: string) =>
+  within(row).queryByText(
+    (_, element) => element?.tagName === "P" && element.textContent === text,
+  );
 
 const scrollOf = () =>
   screen
@@ -131,23 +136,16 @@ describe("NotificationBell", () => {
     const item = screen.getByRole("link", { name: /Deniz Arslan joined/ });
     const row = item.closest("li") as HTMLElement;
     expect(item).toHaveAttribute("href", "/northwind/a");
-    expect(within(row).getByTestId("notification-meta")).toHaveTextContent(
-      /^Northwind Traders · 3 min ago$/,
-    );
-    expect(within(row).queryByText(`${joined.title}: the body.`)).toBeNull();
+    expect(lineOf(row, "Northwind Traders · 3 min ago")).toBeInTheDocument();
   });
 
   it("NotificationBell_ItemWithoutOrganisation_ShowsTheTimeAlone", () => {
-    render(
-      bell({ list: loaded([{ ...joined, organisation: undefined }]) }),
-    );
+    render(bell({ list: loaded([{ ...joined, organisation: undefined }]) }));
 
     const row = screen
       .getByRole("link", { name: /Deniz Arslan joined/ })
       .closest("li") as HTMLElement;
-    expect(within(row).getByTestId("notification-meta")).toHaveTextContent(
-      /^3 min ago$/,
-    );
+    expect(lineOf(row, "3 min ago")).toBeInTheDocument();
   });
 
   it("NotificationBell_UnreadItem_SaysUnreadBesideTheMark", () => {

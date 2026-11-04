@@ -101,7 +101,7 @@ describe("TenantBell", () => {
     ).toHaveAttribute("href", "/northwind/settings/members");
   });
 
-  it("TenantBell_Opened_NamesEachItemsOrganisation", async () => {
+  it("TenantBell_Opened_NamesEachItemsOrganisationAndLeavesTheBody", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
     renderInTenant(<TenantBell tenantId={northwind.id} />);
 
@@ -111,10 +111,9 @@ describe("TenantBell", () => {
 
     const item = await screen.findByRole("link", { name: /Deniz Arslan/ });
     expect(
-      within(item.closest("li") as HTMLElement).getByTestId(
-        "notification-meta",
-      ),
-    ).toHaveTextContent(new RegExp(`^${northwind.name} · `));
+      within(item.closest("li") as HTMLElement).getByText(northwind.name),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(joined.body)).toBeNull();
   });
 
   it("TenantBell_ItemOpened_FollowsItsLinkBeforeTheReadIsAnswered", async () => {
