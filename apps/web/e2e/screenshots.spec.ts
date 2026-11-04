@@ -28,8 +28,11 @@ test.skip(
 );
 
 const folder = "test-results/screenshots";
+// CI runs the production build, which has no /dev/components (F33): its shots run on a development server only.
+const productionBuild = Boolean(process.env.CI);
 
 test("Screenshot_DevComponents_EnglishLightDesktop", async ({ page }) => {
+  test.skip(productionBuild, "A production build has no /dev/components.");
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -44,6 +47,7 @@ test("Screenshot_DevComponents_EnglishLightDesktop", async ({ page }) => {
 });
 
 test("Screenshot_DevComponents_ArabicDarkPhone", async ({ page }) => {
+  test.skip(productionBuild, "A production build has no /dev/components.");
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "dark" });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -59,16 +63,19 @@ test("Screenshot_DevComponents_ArabicDarkPhone", async ({ page }) => {
   });
 });
 
-test("Screenshot_Preferences_TurkishLightTablet", async ({ page }) => {
+test("Screenshot_Profile_TurkishLightTablet", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });
   await page.setViewportSize({ width: 834, height: 1112 });
   await mockApi(page, Language.Tr);
 
   await page.goto(`/${northwind.slug}/settings/profile`);
-  await page.getByRole("heading", { level: 1, name: "Tercihler" }).waitFor();
+  await page
+    .getByRole("main")
+    .getByRole("heading", { level: 1, name: "Profil" })
+    .waitFor();
 
-  await page.screenshot({ path: `${folder}/preferences-tr-light-tablet.png` });
+  await page.screenshot({ path: `${folder}/profile-tr-light-tablet.png` });
 });
 
 const members = `/${northwind.slug}/settings/members`;
@@ -80,10 +87,10 @@ const rowAction = (menu: string, item: string) => async (page: Page) => {
   await page.getByRole("alertdialog").waitFor();
 };
 /** Opens the account menu, from the phone's drawer on a phone, and waits until it shows. */
-const openUserMenu = (name: RegExp) => async (page: Page) => {
+const openUserMenu = (name: string) => async (page: Page) => {
   const drawer = page.getByRole("button", { name: "Open menu" });
   if (await drawer.isVisible()) await drawer.click();
-  await page.getByRole("button", { name }).click();
+  await page.getByRole("button", { name, exact: true }).click();
   await expect(page.getByRole("menu")).toBeVisible();
 };
 const shots: {
@@ -246,7 +253,7 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    open: openUserMenu(/Ayşe Yılmaz/),
+    open: openUserMenu("Ayşe Yılmaz"),
   },
   {
     name: "UserMenu_OwnerArabicDarkDesktop",
@@ -257,7 +264,7 @@ const shots: {
     width: 1440,
     height: 900,
     query: "",
-    open: openUserMenu(/Ayşe Yılmaz/),
+    open: openUserMenu("Ayşe Yılmaz"),
   },
   {
     name: "UserMenu_OwnerEnglishLightPhone",
@@ -268,7 +275,7 @@ const shots: {
     width: 390,
     height: 844,
     query: "",
-    open: openUserMenu(/Ayşe Yılmaz/),
+    open: openUserMenu("Ayşe Yılmaz"),
   },
   {
     name: "MembersByRole_OwnerEnglishLightDesktop",
@@ -290,7 +297,7 @@ for (const shot of shots) {
     await mockMembers(page, { role: shot.role, language: shot.language });
 
     await page.goto(`${members}${shot.query}`);
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
 
@@ -333,11 +340,7 @@ const pages = variants.flatMap(({ language, scheme, size }) =>
       `${settings}/activity`,
       viewer(language, BuiltInRole.Member),
     ],
-    [
-      "preferences",
-      `${settings}/preferences`,
-      (page: Page) => mockApi(page, language),
-    ],
+    ["profile", `${settings}/profile`, (page: Page) => mockApi(page, language)],
     ["home", `/${northwind.slug}`, (page: Page) => mockApi(page, language)],
     [
       "suspended",
@@ -371,7 +374,7 @@ for (const shot of pages) {
     await shot.mock(page);
 
     await page.goto(shot.path);
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
     await page.screenshot({
@@ -413,7 +416,7 @@ for (const { language, scheme, size } of reviewVariants)
       await mockMembers(page, { language });
 
       await page.goto(path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
       await page.screenshot({
@@ -483,7 +486,7 @@ const planPages: {
     path: members,
     plan: customRolesOff,
     open: async (page) => {
-      await page.getByRole("button", { name: /Invite|Davet|دعوة/ }).click();
+      await page.getByRole("button", { name: /invite|davet|دعوة/i }).click();
       await page.getByRole("alertdialog").waitFor();
     },
   },
@@ -506,7 +509,7 @@ for (const { language, scheme, size } of reviewVariants)
       await mockMembers(page, { language, role: shot.role, plan: shot.plan });
 
       await page.goto(shot.path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
       await shot.open?.(page);
 
@@ -611,7 +614,8 @@ const shellShots: {
   {
     file: "2.06-account-menu-en-light-desktop",
     size: "desktop",
-    open: (page) => page.getByRole("button", { name: /Ayşe/ }).click(),
+    open: (page) =>
+      page.getByRole("button", { name: "Ayşe Yılmaz", exact: true }).click(),
   },
   {
     file: "2.07-notifications-en-light-desktop",
@@ -663,7 +667,7 @@ for (const shot of shellShots.map(withDefaults))
     await shot.mock?.(page);
 
     await page.goto(shot.path);
-    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
     // The screen as it rests: every opening animation has finished.

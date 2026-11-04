@@ -104,6 +104,15 @@ describe("NotificationBell", () => {
     expect(countOf(screen.getByRole("button", { name }))).toBe(shown);
   });
 
+  // WCAG 2.5.3 (axe's label-content-name-mismatch): the row's visible words, without punctuation, stay in its accessible name.
+  it("NotificationBell_Row_KeepsItsVisibleWordsInItsName", () => {
+    render(bell({ open: false, place: "row" }));
+
+    expect(
+      screen.getByRole("button", { name: "Notifications, 3 unread" }),
+    ).toHaveTextContent(/^Notifications 3$/);
+  });
+
   it("NotificationBell_Closed_OpensOnPress", async () => {
     const onOpenChange = vi.fn();
     render(bell({ open: false, onOpenChange }));

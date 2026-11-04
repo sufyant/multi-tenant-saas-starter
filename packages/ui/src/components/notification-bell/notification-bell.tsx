@@ -130,6 +130,8 @@ export function NotificationBell(props: NotificationBellProps) {
       >
         {t("notifications.bell")}
       </span>
+      {/* The flex row draws no space; the space keeps "Notifications 2" one phrase of the name (WCAG 2.5.3). */}
+      {count && " "}
       {count}
     </>
   ) : (

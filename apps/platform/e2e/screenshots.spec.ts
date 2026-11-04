@@ -62,7 +62,7 @@ for (const { language, scheme, size } of variants)
       await mockPlatform(page, language);
 
       await page.goto(path);
-      await page.getByRole("heading", { level: 1 }).waitFor();
+      await page.getByRole("main").getByRole("heading").first().waitFor();
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
       await page.screenshot({
@@ -77,10 +77,10 @@ const menus = [
     language: Language.En,
     scheme: "light",
     size: "desktop",
-    name: /Kelly/,
+    name: "Sam Kelly",
   },
-  { language: Language.Ar, scheme: "dark", size: "desktop", name: /Kelly/ },
-  { language: Language.En, scheme: "light", size: "phone", name: /Kelly/ },
+  { language: Language.Ar, scheme: "dark", size: "desktop", name: "Sam Kelly" },
+  { language: Language.En, scheme: "light", size: "phone", name: "Sam Kelly" },
 ] as const;
 
 for (const { language, scheme, size, name } of menus)
@@ -98,10 +98,10 @@ for (const { language, scheme, size, name } of menus)
     await mockPlatform(page, language);
 
     await page.goto("/users");
-    await page.getByRole("heading", { level: 1 }).waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     if (size === "phone")
       await page.getByRole("button", { name: "Open menu" }).click();
-    await page.getByRole("button", { name }).click();
+    await page.getByRole("button", { name, exact: true }).click();
     await page.getByRole("menu").waitFor();
 
     await page.screenshot({
@@ -167,7 +167,8 @@ const shellShots: {
   {
     file: "2.03-account-menu-en-light-desktop",
     size: "desktop",
-    open: (page) => page.getByRole("button", { name: /Sam Kelly/ }).click(),
+    open: (page) =>
+      page.getByRole("button", { name: "Sam Kelly", exact: true }).click(),
   },
   {
     file: "3.01-notifications-en-light-desktop",
@@ -209,7 +210,7 @@ for (const shot of shellShots.map(withDefaults))
     await shot.mock?.(page);
 
     await page.goto(shot.path);
-    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    await page.getByRole("main").getByRole("heading").first().waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
     await shot.open?.(page);
     // The screen as it rests: every opening animation has finished.
