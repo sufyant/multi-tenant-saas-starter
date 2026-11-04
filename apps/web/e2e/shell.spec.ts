@@ -79,6 +79,41 @@ for (const size of Object.keys(sizes) as Size[])
         await expectAccessible(page);
       });
 
+// The expanded sidebar from bp-desktop (the Shell screens, 2.01): the organisation's name and the person's role, search inside the
+// sidebar, and Notifications as a row with its label. A screen reader's text is 1 px wide, so each check reads the width.
+test("Shell_Desktop_SidebarShowsTheOrganisationSearchAndNotificationsRow", async ({
+  page,
+}) => {
+  await open(page);
+
+  const menu = page.getByRole("navigation", { name: "Main menu" });
+  await expect(menu).toBeVisible();
+  const width = async (text: string) =>
+    (await menu.getByText(text, { exact: true }).boundingBox())?.width ?? 0;
+  expect(await width("Northwind Traders")).toBeGreaterThan(40);
+  expect(await width("Owner")).toBeGreaterThan(20);
+  expect(await width("Notifications")).toBeGreaterThan(40);
+  const menuBox = await menu.boundingBox();
+  const searchBox = await menu
+    .getByRole("button", { name: "Search or jump to" })
+    .boundingBox();
+  expect(searchBox?.x).toBeGreaterThanOrEqual(menuBox?.x ?? 0);
+  expect((searchBox?.x ?? 0) + (searchBox?.width ?? 0)).toBeLessThanOrEqual(
+    (menuBox?.x ?? 0) + (menuBox?.width ?? 0),
+  );
+});
+
+// Home (4.01): the welcome with the first name and a card for each page the role can open.
+test("Shell_Home_WelcomesAndOffersThePages", async ({ page }) => {
+  await open(page);
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: /^Welcome, / }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Members/ })).toBeVisible();
+  await expectAccessible(page);
+});
+
 test("Shell_EnvironmentStrip_PushesTheLayoutDown", async ({ page }) => {
   await open(page);
 
@@ -88,6 +123,7 @@ test("Shell_EnvironmentStrip_PushesTheLayoutDown", async ({ page }) => {
   const stripBox = await strip.boundingBox();
   const menuBox = await menu.boundingBox();
   expect(stripBox).toMatchObject({ y: 0, height: 24 });
+  await expect(strip).toHaveText("Local");
   expect(menuBox?.y).toBeGreaterThanOrEqual(24);
 });
 

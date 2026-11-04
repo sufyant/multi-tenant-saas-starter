@@ -338,7 +338,7 @@ const pages = variants.flatMap(({ language, scheme, size }) =>
       `${settings}/preferences`,
       (page: Page) => mockApi(page, language),
     ],
-    ["overview", `/${northwind.slug}`, (page: Page) => mockApi(page, language)],
+    ["home", `/${northwind.slug}`, (page: Page) => mockApi(page, language)],
     [
       "suspended",
       `/${northwind.slug}`,
@@ -547,3 +547,119 @@ test("Screenshot_Notifications_ArabicDarkPhone", async ({ page }) => {
 
   await page.screenshot({ path: `${folder}/notifications-ar-dark-phone.png` });
 });
+
+// The shell at the sizes of the design's frames (the Shell, Notifications and Home screens), for the comparison in each pull
+// request: CI uploads them as the workflow artifact "screenshots" (scripts/ci/test-e2e.sh). The name gives the frame.
+const frames = {
+  desktop: { width: 1280, height: 800 },
+  tablet: { width: 1024, height: 768 },
+  phone: { width: 375, height: 812 },
+};
+const blueHarbour = {
+  ...northwind,
+  id: "0198f0a2-0000-7000-8000-0000000000b2",
+  slug: "blue-harbour",
+  name: "Blue Harbour Logistics",
+  status: MyTenantResponseStatus.Suspended,
+};
+
+const shellShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  path?: string;
+  mock?: (page: Page) => Promise<unknown>;
+  open?: (page: Page) => Promise<void>;
+}[] = [
+  { file: "2.01-home-en-light-desktop", size: "desktop" },
+  { file: "2.28-home-en-dark-desktop", size: "desktop", scheme: "dark" },
+  {
+    file: "2.01-home-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+  },
+  { file: "3.13-home-en-light-tablet", size: "tablet" },
+  { file: "2.29-home-en-light-phone", size: "phone" },
+  {
+    file: "2.29-drawer-en-light-phone",
+    size: "phone",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "2.03-switcher-en-light-desktop",
+    size: "desktop",
+    mock: (page) =>
+      page.route("**/api/v1/me/tenants*", (route) =>
+        route.fulfill({
+          json: {
+            items: [northwind, blueHarbour],
+            page: 1,
+            pageSize: 100,
+            total: 2,
+          },
+        }),
+      ),
+    open: (page) =>
+      page.getByRole("button", { name: /Northwind Traders/ }).click(),
+  },
+  {
+    file: "2.05-command-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.keyboard.press("ControlOrMeta+k"),
+  },
+  {
+    file: "2.06-account-menu-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.getByRole("button", { name: /Ayşe/ }).click(),
+  },
+  {
+    file: "2.07-notifications-en-light-desktop",
+    size: "desktop",
+    mock: mockNotifications,
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "5-settings-members-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/members`,
+  },
+  {
+    file: "5-settings-members-en-light-tablet",
+    size: "tablet",
+    path: `${settings}/members`,
+  },
+  {
+    file: "2.30-settings-drawer-en-light-phone",
+    size: "phone",
+    path: `${settings}/members`,
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "2.40-not-found-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}/no-such-page`,
+  },
+];
+
+for (const shot of shellShots)
+  test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
+    const language = shot.language ?? Language.En;
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+    await page.setViewportSize(frames[shot.size]);
+    await context.addCookies([
+      { name: localeCookie, value: language, url: baseURL },
+    ]);
+    await mockMembers(page, { language });
+    await shot.mock?.(page);
+
+    await page.goto(shot.path ?? `/${northwind.slug}`);
+    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
+    await page.waitForTimeout(400);
+
+    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+  });

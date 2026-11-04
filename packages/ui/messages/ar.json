@@ -293,7 +293,7 @@
     "tabTitle": "{page} · {product}",
     "tabTitleUnread": "({count}) {page} · {product}",
     "environment": {
-      "staging": "بيئة الاختبار · بيانات تجريبية فقط",
+      "staging": "اختبار",
       "preview": "معاينة · #{number}",
       "local": "محلي",
       "tabStaging": "[اختبار]",

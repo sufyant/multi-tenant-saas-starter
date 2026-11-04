@@ -1,5 +1,5 @@
-import { OverviewPage } from "@/features/overview/overview-page";
+import { HomePage } from "@/features/home/home-page";
 
-export default function TenantOverviewPage() {
-  return <OverviewPage />;
+export default function TenantHomePage() {
+  return <HomePage />;
 }

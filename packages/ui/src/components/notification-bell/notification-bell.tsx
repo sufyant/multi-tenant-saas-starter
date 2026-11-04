@@ -72,8 +72,8 @@ export type NotificationBellProps = {
   /** Tests and previews only: the "now" of the relative times. */
   now?: Instant;
   /**
-   * Where the bell sits (the Shell screens): a row of the expanded sidebar, "Notifications" and the count; an icon of a tablet's
-   * rail; or an icon of the phone's top bar, the default.
+   * Where the bell sits (the Shell screens): a row, "Notifications" and the count; the sidebar's place, an icon on a tablet's rail
+   * and the row from bp-desktop; or an icon of the phone's top bar, the default.
    */
   place?: "row" | "rail" | "icon";
 };
@@ -95,45 +95,58 @@ export function NotificationBell(props: NotificationBellProps) {
   const label = unread
     ? t("notifications.bellUnread", { count: countText(unread) })
     : t("notifications.bell");
-  const row = place === "row";
+  // A sidebar row: "Notifications" and the count. In the sidebar's place (`rail`) a tablet's icon rail shows the bell alone and
+  // the count on its corner.
+  const row = place === "row" || place === "rail";
+  const rail = place === "rail";
+  const count = unread ? (
+    <span
+      aria-hidden="true"
+      data-slot="bell-count"
+      className={cn(
+        "rounded-full bg-primary px-1.5 text-status text-primary-foreground tabular-nums",
+        row
+          ? rail &&
+              "max-desktop:absolute max-desktop:start-6 max-desktop:top-1.5"
+          : "absolute start-6 top-1.5",
+      )}
+    >
+      {countText(unread)}
+    </span>
+  ) : null;
   const button = row ? (
     <>
-      <Icon icon={BellIcon} size={16} className="shrink-0" />
+      <Icon
+        icon={BellIcon}
+        size={16}
+        className={cn("shrink-0", rail && "max-desktop:size-4.5")}
+      />
       <span
         aria-hidden="true"
-        className="min-w-0 flex-1 truncate text-start max-desktop:sr-only"
+        className={cn(
+          "min-w-0 flex-1 truncate text-start",
+          rail && "max-desktop:sr-only",
+        )}
       >
         {t("notifications.bell")}
       </span>
-      {unread ? (
-        <span
-          aria-hidden="true"
-          data-slot="bell-count"
-          className="rounded-full bg-primary px-1.5 text-small leading-4 font-medium text-primary-foreground tabular-nums max-desktop:absolute max-desktop:end-0.5 max-desktop:top-1 max-desktop:px-1 max-desktop:text-[10px]"
-        >
-          {countText(unread)}
-        </span>
-      ) : null}
+      {count}
     </>
   ) : (
     <>
-      <Icon icon={BellIcon} size={18} />
-      {unread ? (
-        <span
-          aria-hidden="true"
-          data-slot="bell-count"
-          className="absolute end-0.5 top-1 min-w-4 rounded-full bg-neutral-text px-1 text-center text-[10px] leading-4 font-semibold text-background tabular-nums ring-2 ring-background"
-        >
-          {countText(unread)}
-        </span>
-      ) : null}
+      <Icon icon={BellIcon} size={20} />
+      {count}
     </>
   );
   const buttonClass = cn(
     "relative inline-flex shrink-0 items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-accent aria-expanded:text-foreground",
     row
-      ? "h-control-md gap-2.5 px-2 text-body max-desktop:size-10 max-desktop:justify-center max-desktop:px-0"
-      : "size-control-lg justify-center max-tablet:size-touch-target",
+      ? cn(
+          "h-7.5 w-full gap-2.5 px-2 text-body",
+          rail &&
+            "max-desktop:size-12 max-desktop:justify-center max-desktop:px-0",
+        )
+      : "size-touch-target justify-center",
   );
 
   if (phone)

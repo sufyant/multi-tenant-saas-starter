@@ -125,3 +125,83 @@ test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
     path: `${folder}/notifications-en-light-desktop.png`,
   });
 });
+
+// The shell at the sizes of the design's frames (the platform's Shell and Notifications screens), for the comparison in each pull
+// request: CI uploads them as the workflow artifact "screenshots" (scripts/ci/test-e2e.sh). The name gives the frame.
+const frames = {
+  desktop: { width: 1280, height: 800 },
+  tablet: { width: 1024, height: 768 },
+  phone: { width: 375, height: 812 },
+};
+const shellShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  path?: string;
+  mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
+  open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+}[] = [
+  { file: "organisations-en-light-desktop", size: "desktop" },
+  { file: "organisations-en-dark-desktop", size: "desktop", scheme: "dark" },
+  {
+    file: "organisations-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+  },
+  { file: "organisations-en-light-tablet", size: "tablet" },
+  {
+    file: "drawer-en-light-phone",
+    size: "phone",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  {
+    file: "command-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.keyboard.press("ControlOrMeta+k"),
+  },
+  {
+    file: "account-menu-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.getByRole("button", { name: /Sam Kelly/ }).click(),
+  },
+  {
+    file: "notifications-en-light-desktop",
+    size: "desktop",
+    mock: mockNotifications,
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
+  },
+  {
+    file: "settings-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+  },
+  {
+    file: "settings-drawer-en-light-phone",
+    size: "phone",
+    path: "/settings/system-admins",
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+];
+
+for (const shot of shellShots)
+  test(`Screenshot_Shell_${shot.file}`, async ({ page, context, baseURL }) => {
+    const language = shot.language ?? Language.En;
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+    await page.setViewportSize(frames[shot.size]);
+    await context.addCookies([
+      { name: localeCookie, value: language, url: baseURL },
+    ]);
+    await mockPlatform(page, language);
+    await shot.mock?.(page);
+
+    await page.goto(shot.path ?? "/");
+    await page.getByRole("heading", { level: 1 }).first().waitFor();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
+    await page.waitForTimeout(400);
+
+    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+  });

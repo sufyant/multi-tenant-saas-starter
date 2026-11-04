@@ -283,7 +283,8 @@ function TenantFrame({
               }}
               organisations={several ? others : []}
               title={t("shell.yourOrganisations")}
-              variant={place}
+              // The drawer passes "row": the organisation's name heads its menu (the phone's drawer).
+              variant={place === "rail" ? "rail" : "drawer"}
               linkComponent={Link}
             />
           ) : (

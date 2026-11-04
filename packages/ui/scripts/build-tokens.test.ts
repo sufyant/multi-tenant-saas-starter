@@ -231,9 +231,7 @@ describe("buildTokensCss", () => {
 
     const css = buildTokensCss(source);
 
-    expect(themeBlock(css).split("\n")).toEqual(
-      realThemeBlock.split("\n"),
-    );
+    expect(themeBlock(css).split("\n")).toEqual(realThemeBlock.split("\n"));
   });
 
   it("BuildTokensCss_NewColorToken_GoesIntoTheThemeAsAColor", () => {

@@ -293,7 +293,7 @@
     "tabTitle": "{page} · {product}",
     "tabTitleUnread": "({count}) {page} · {product}",
     "environment": {
-      "staging": "Test ortamı · yalnızca deneme verisi",
+      "staging": "Test",
       "preview": "Önizleme · #{number}",
       "local": "Yerel",
       "tabStaging": "[Test]",

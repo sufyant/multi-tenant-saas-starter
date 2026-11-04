@@ -39,10 +39,13 @@
       "purging": "Being deleted"
     }
   },
-  "overview": {
-    "title": "Overview",
-    "organisation": "Organisation",
-    "text": "Product sections appear in the rail as they are added. There is nothing else to do here right now."
+  "home": {
+    "welcome": "Welcome, {name}",
+    "welcomeNoName": "Welcome",
+    "members": "People in {organisation} and their roles.",
+    "roles": "What each role can do.",
+    "activity": "Who changed what, and when.",
+    "settings": "The organisation’s name, plan and details."
   },
   "profile": {
     "title": "Profile",
