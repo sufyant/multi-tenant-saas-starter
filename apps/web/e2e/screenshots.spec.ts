@@ -592,6 +592,13 @@ const bellList = {
 };
 const openBell = (page: Page) =>
   page.getByRole("button", { name: /^Notifications/ }).click();
+/** On a phone the bell opens its full screen, which slides up after the frames the shot waits for: wait until it reaches the top. */
+const openBellFullScreen = async (page: Page) => {
+  await openBell(page);
+  await expect
+    .poll(async () => (await page.getByRole("dialog").boundingBox())?.y)
+    .toBeLessThanOrEqual(0);
+};
 
 const shellShots: {
   file: string;
@@ -686,13 +693,13 @@ const shellShots: {
     file: "3.14-notifications-en-light-phone",
     size: "phone",
     mock: (page) => mockNotifications(page, bellList),
-    open: openBell,
+    open: openBellFullScreen,
   },
   {
     file: "3.15-notifications-empty-en-light-phone",
     size: "phone",
     mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
-    open: openBell,
+    open: openBellFullScreen,
   },
   {
     file: "5-settings-members-en-light-desktop",

@@ -188,8 +188,13 @@ const shellShots: {
     file: "3.08-notifications-en-light-phone",
     size: "phone",
     mock: mockNotifications,
-    open: (page) =>
-      page.getByRole("button", { name: /^Notifications/ }).click(),
+    // The full screen slides up after the frames the shot waits for: wait until it reaches the top.
+    open: async (page) => {
+      await page.getByRole("button", { name: /^Notifications/ }).click();
+      await expect
+        .poll(async () => (await page.getByRole("dialog").boundingBox())?.y)
+        .toBeLessThanOrEqual(0);
+    },
   },
   {
     file: "2.22-not-found-en-light-desktop",
