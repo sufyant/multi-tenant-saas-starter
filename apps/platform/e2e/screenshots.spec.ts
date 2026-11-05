@@ -264,6 +264,35 @@ const shellShots: {
     path: "/settings/system-admins",
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
+  // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame.
+  {
+    file: "8.01-profile-en-light-desktop",
+    size: "desktop",
+    path: "/settings/profile",
+  },
+  {
+    file: "8.08-profile-en-light-tablet",
+    size: "tablet",
+    path: "/settings/profile",
+  },
+  {
+    file: "8.07-profile-en-light-phone",
+    size: "phone",
+    path: "/settings/profile",
+  },
+  {
+    file: "8.09-profile-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/profile",
+    open: (page) => page.getByRole("radio", { name: "Dark" }).click(),
+  },
+  {
+    file: "8.10-profile-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/settings/profile",
+  },
 ];
 
 /** A shot's language, theme and page when it names none: English, light, the start page. */

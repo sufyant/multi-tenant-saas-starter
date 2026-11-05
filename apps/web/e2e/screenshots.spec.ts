@@ -764,6 +764,46 @@ const shellShots: {
     role: BuiltInRole.Member,
     path: `${settings}/activity`,
   },
+  // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame.
+  {
+    file: "5.01-profile-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/profile`,
+  },
+  {
+    file: "5.08-profile-en-light-tablet",
+    size: "tablet",
+    path: `${settings}/profile`,
+  },
+  {
+    file: "5.09-profile-en-light-phone",
+    size: "phone",
+    path: `${settings}/profile`,
+  },
+  {
+    file: "5.07-profile-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: `${settings}/profile`,
+    open: (page) => page.getByRole("radio", { name: "Dark" }).click(),
+  },
+  {
+    file: "5.10-profile-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: `${settings}/profile`,
+  },
+  // The Dates and times pattern: a time's line on hover, the city and its offset (F18, F60).
+  {
+    file: "pattern-time-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    mock: viewer(Language.En, BuiltInRole.Owner),
+    open: async (page) => {
+      await page.getByRole("main").locator("time").first().hover();
+      await page.getByRole("tooltip").waitFor();
+    },
+  },
 ];
 
 /** A shot's language, theme, role and page when it names none: English, light, the owner, the start page. */
