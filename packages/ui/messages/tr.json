@@ -19,7 +19,7 @@
     "light": "Açık",
     "dark": "Koyu",
     "system": "Sistem",
-    "hint": "Bu cihazda saklanır."
+    "hint": "Bu cihazda saklanır. Sistem, cihazın ayarını izler."
   },
   "languages": {
     "en": "English",

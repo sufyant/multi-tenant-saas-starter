@@ -19,7 +19,7 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System",
-    "hint": "Saved on this device."
+    "hint": "Saved on this device. System follows the device’s setting."
   },
   "languages": {
     "en": "English",
