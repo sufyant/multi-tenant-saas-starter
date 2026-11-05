@@ -15,6 +15,7 @@ import {
   messageKeySets,
   numericLayerClasses,
   physicalDirectionClasses,
+  primaryTextClasses,
   testFolders,
   testsBesideTheirFile,
   userFacingLiterals,
@@ -45,6 +46,10 @@ describe("architecture of packages/ui", () => {
 
   it("F53_PackagesUi_UsesNoNumericLayerClass", () => {
     expect(numericLayerClasses(src)).toEqual([]);
+  });
+
+  it("F20_PackagesUi_ColoursNoTextWithPrimary", () => {
+    expect(primaryTextClasses(src)).toEqual([]);
   });
 
   it("F25_PackagesUi_WritesNoUserFacingLiteral", () => {
