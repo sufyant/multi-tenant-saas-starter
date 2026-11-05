@@ -18,23 +18,27 @@ const renderChoice = () =>
 describe("ThemeChoice", () => {
   it("ThemeChoice_FirstVisit_OffersSystemLightDarkWithSystemOn", () => {
     renderChoice();
-    const group = screen.getByRole("group", { name: "Theme" });
+    const group = screen.getByRole("radiogroup", { name: "Theme" });
 
     expect(
-      [...group.querySelectorAll("button")].map((button) => button.textContent),
+      [...group.querySelectorAll("[role=radio]")].map(
+        (radio) => radio.textContent,
+      ),
     ).toEqual(["System", "Light", "Dark"]);
-    expect(screen.getByRole("button", { name: "System" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
   });
 
   it("ThemeChoice_PickDark_SavesItOnTheDevice", async () => {
     renderChoice();
 
-    await userEvent.click(screen.getByRole("button", { name: "Dark" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Dark" }));
 
     expect(localStorage.getItem("theme")).toBe("dark");
-    expect(screen.getByText("Saved on this device.")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Dark" })).toBeChecked();
+    expect(
+      screen.getByText(
+        "Saved on this device. System follows the device’s setting.",
+      ),
+    ).toBeInTheDocument();
   });
 });
