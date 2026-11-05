@@ -27,7 +27,7 @@ export function AuthFooter({ onLanguageChange, privacyUrl }: AuthFooterProps) {
         href={privacyUrl}
         target="_blank"
         rel="noreferrer"
-        className="rounded-sm text-small text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded-sm text-small text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
       >
         {t("privacy")}
       </a>

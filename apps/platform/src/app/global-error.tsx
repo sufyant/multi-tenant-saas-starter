@@ -51,7 +51,7 @@ export default function GlobalError({
         </button>
         <a
           href={brand.supportUrl}
-          className="text-body text-primary underline underline-offset-4"
+          className="text-body text-link underline underline-offset-4"
         >
           {text.problems.contactSupport}
         </a>

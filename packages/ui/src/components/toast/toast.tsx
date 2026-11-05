@@ -75,7 +75,7 @@ export function Toaster({ dir, closeLabel, regionLabel }: ToasterProps) {
             "!bg-popover !text-popover-foreground !border-border !shadow-lg !rounded-lg !font-sans !gap-2.5 !px-3.5 !py-3",
           title: "!text-small !font-medium",
           description: "!text-small !text-muted-foreground",
-          actionButton: "!bg-transparent !text-primary !font-medium",
+          actionButton: "!bg-transparent !text-link !font-medium",
         },
       }}
     />

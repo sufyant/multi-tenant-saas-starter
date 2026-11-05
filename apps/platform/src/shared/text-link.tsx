@@ -13,10 +13,7 @@ export function TextLink({
   children: ReactNode;
 }) {
   return (
-    <Link
-      href={href}
-      className="text-primary underline underline-offset-4 hover:text-primary-hover"
-    >
+    <Link href={href} className="text-link underline underline-offset-4">
       {children}
     </Link>
   );

@@ -119,7 +119,7 @@ export function ConnectionBar({
           href={statusUrl}
           target="_blank"
           rel="noreferrer"
-          className="rounded-sm font-normal text-primary underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-sm font-normal underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {t("statusPage")}
         </a>
