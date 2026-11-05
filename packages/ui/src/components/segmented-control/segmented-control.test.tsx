@@ -75,4 +75,25 @@ describe("SegmentedControl", () => {
         .map((radio) => (radio as HTMLButtonElement).disabled),
     ).toEqual([true, true, true]);
   });
+
+  it("SegmentedControl_DefaultSize_IsTheMediumControlHeight", () => {
+    renderControl();
+
+    expect(screen.getByRole("radiogroup")).toHaveClass("h-control-md");
+  });
+
+  it("SegmentedControl_TouchSize_IsTheTouchHeight", () => {
+    renderControl({ size: "touch" });
+
+    expect(screen.getByRole("radiogroup")).toHaveClass("h-control-lg");
+  });
+
+  it("SegmentedControl_AdaptiveSize_IsTouchBelowTheDesktopBreakpoint", () => {
+    renderControl({ size: "adaptive" });
+
+    expect(screen.getByRole("radiogroup")).toHaveClass(
+      "h-control-lg",
+      "desktop:h-control-md",
+    );
+  });
 });

@@ -41,4 +41,14 @@ describe("ThemeChoice", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("ThemeChoice_OnAPhone_FillsTheRowAtTheTouchSize", () => {
+    renderChoice();
+
+    expect(screen.getByRole("radiogroup", { name: "Theme" })).toHaveClass(
+      "w-full",
+      "tablet:w-fit",
+      "h-control-lg",
+    );
+  });
 });

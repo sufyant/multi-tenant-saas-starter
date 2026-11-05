@@ -1143,7 +1143,7 @@ function CheckboxPreview() {
   );
 }
 
-/** A role list as the ChangeRole board draws it: the Owner role disabled with its reason. */
+/** The theme at both sizes, the billing period of two options, and a disabled control. */
 function SegmentedControlPreview() {
   const [theme, setTheme] = useState("system");
   const [period, setPeriod] = useState("monthly");
@@ -1187,6 +1187,7 @@ function SegmentedControlPreview() {
   );
 }
 
+/** A role list as the ChangeRole board draws it: the Owner role disabled with its reason. */
 function RadioGroupPreview() {
   const id = useId();
   const roles = [
