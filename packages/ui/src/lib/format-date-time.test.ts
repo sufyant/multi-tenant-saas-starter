@@ -60,41 +60,27 @@ describe("format-date-time", () => {
     expect(formatUtc(at, riyadh)).toBe("13:32 UTC");
   });
 
-  it("ZoneLabel_DublinInSummer_EndsWithItsUtcOffset", () => {
-    const label = zoneLabel(at, dublin);
-
-    expect(label).toMatch(/^\S.* \(UTC\+1\)$/);
+  it("ZoneLabel_DublinInSummer_IsTheCityAndUtcPlusOne", () => {
+    expect(zoneLabel(at, dublin)).toBe("Dublin (UTC+1)");
   });
 
-  it("ZoneLabel_DublinInWinter_EndsWithOffsetZero", () => {
-    expect(zoneLabel("2026-12-03T09:14:00Z", dublin)).toMatch(
-      /^\S.* \(UTC\+0\)$/,
-    );
+  it("ZoneLabel_DublinInWinter_IsTheCityAndUtcPlusZero", () => {
+    expect(zoneLabel("2026-12-03T09:14:00Z", dublin)).toBe("Dublin (UTC+0)");
   });
 
-  it("ZoneLabel_ZoneWithoutAName_UsesTheCityOfTheZone", () => {
-    vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
-      UnnamedZoneFormat as never,
-    );
-
-    expect(zoneLabel(at, dublin)).toBe("Dublin (UTC+3)");
+  it("ZoneLabel_ArabicIstanbul_IsTheCityAndItsOffsetInWesternDigits", () => {
+    expect(
+      zoneLabel(at, { locale: "ar-SA", timeZone: "Europe/Istanbul" }),
+    ).toBe("Istanbul (UTC+3)");
   });
 
-  it("ZoneLabel_ArabicIstanbul_EndsWithItsOffsetInWesternDigits", () => {
-    const label = zoneLabel(at, {
-      locale: "ar-SA",
-      timeZone: "Europe/Istanbul",
-    });
-
-    expect(label).toMatch(/^\S.* \(UTC\+3\)$/);
-    expect(label).not.toMatch(/[٠-٩]/);
-  });
-
-  it("ZoneLabel_ArabicRiyadh_EndsWithItsOffsetInWesternDigits", () => {
-    const label = zoneLabel(at, riyadh);
-
-    expect(label).toMatch(/^\S.* \(UTC\+3\)$/);
-    expect(label).not.toMatch(/[٠-٩]/);
+  it("ZoneLabel_ZoneOfSeveralWords_WritesTheCityWithSpaces", () => {
+    expect(
+      zoneLabel(at, {
+        locale: "en-IE",
+        timeZone: "America/Argentina/Buenos_Aires",
+      }),
+    ).toBe("Buenos Aires (UTC-3)");
   });
 
   it("FormatTime_NullTimeZone_UsesTheBrowsersZone", () => {
