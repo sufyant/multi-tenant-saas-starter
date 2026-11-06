@@ -364,3 +364,35 @@ describe("PersonalBell", () => {
     ).toHaveAttribute("href", "/");
   });
 });
+
+describe("Bell offline", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  // The browser's signal is only a hint (F59): Chrome on macOS can say offline with some VPNs while every call answers.
+  it("TenantBell_BrowserSaysOfflineWhileTheCallsAnswer_KeepsMarkAll", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
+    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: /^Notifications, \d+ unread$/,
+      }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Mark all as read" }),
+    ).toBeEnabled();
+    expect(screen.queryByText("You’re offline.")).not.toBeInTheDocument();
+  });
+
+  it("PersonalBell_CallsGetNoAnswerWhileOffline_ShowsTheOfflineRow", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    server.use(http.get("*", () => HttpResponse.error()));
+    renderWithProviders(<PersonalBell />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications" }),
+    );
+
+    expect(await screen.findByText("You’re offline.")).toBeInTheDocument();
+  });
+});

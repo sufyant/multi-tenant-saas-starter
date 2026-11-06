@@ -25,6 +25,7 @@ type BellPlace = NotificationBellProps["place"];
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useOffline } from "@repo/ui/lib/use-online";
 import {
   type InfiniteData,
   type UseInfiniteQueryResult,
@@ -38,6 +39,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { notificationHref } from "./notification-link";
+import { useServerReach } from "./server-bar";
 
 /** The platform's bell (`GET /v1/platform/notifications`). On a phone it opens the page of notifications (3.08). */
 export function PlatformBell({
@@ -78,6 +80,8 @@ export function usePlatformBell(
   const t = useTranslations();
   const failureText = useFailureText();
   const [chosen, setTab] = useState<NotificationTab>();
+  const { serverDown, noAnswer } = useServerReach();
+  const offline = useOffline(serverDown, noAnswer);
   // A page that failed on GetMe may hold the bell ("No access yet"): reading it again on mount would take that page away.
   const me = useQuery({ ...getGetMeQueryOptions(), retryOnMount: false });
   const count = useQuery(bell.count);
@@ -149,6 +153,7 @@ export function usePlatformBell(
       },
       onMarkAll: () => markAll.mutate(),
       markingAll: markAll.isPending,
+      offline,
       timeZone: me.data?.timeZone,
       linkComponent: Link,
     },

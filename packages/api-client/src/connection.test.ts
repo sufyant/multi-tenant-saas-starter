@@ -212,6 +212,39 @@ describe("serverReach", () => {
     expect(reach.isDown()).toBe(true);
   });
 
+  // The bar and the bell read one verdict (F59, F57).
+  it("ServerReach_SameClient_IsOneStore", () => {
+    const queryClient = client();
+
+    expect(serverReach(queryClient)).toBe(serverReach(queryClient));
+  });
+
+  // No call is followed while nobody listens, so a new listener starts from up, not from an old verdict.
+  it("ServerReach_ListenedAgainAfterDown_StartsUp", async () => {
+    const queryClient = client();
+    const reach = serverReach(queryClient);
+    const stop = reach.subscribe(() => undefined);
+    await call(queryClient, "a", fails(noServer()), 1);
+    stop();
+
+    reach.subscribe(() => undefined);
+
+    expect(reach.isDown()).toBe(false);
+  });
+
+  it("ServerReach_OneListenerLeaves_TheOtherStillHears", async () => {
+    const queryClient = client();
+    const reach = serverReach(queryClient);
+    const said: boolean[] = [];
+    reach.subscribe(() => said.push(reach.isDown()));
+    const bell = reach.subscribe(() => undefined);
+
+    bell();
+    await call(queryClient, "a", fails(noServer()), 1);
+
+    expect(said).toEqual([true]);
+  });
+
   it("ServerReach_403_StaysUp", async () => {
     const queryClient = client();
     const { reach } = follow(queryClient);

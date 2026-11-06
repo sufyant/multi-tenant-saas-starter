@@ -27,9 +27,21 @@ type CallAction = { type: string; error?: unknown };
 
 /**
  * Whether the server answers, from the app's own calls: every query and command of the client, through its caches (F59). A store
- * for `useSyncExternalStore`, so the shell's connection bar follows it without a request of its own.
+ * for `useSyncExternalStore`, so the connection bar and the bell follow it without a request of their own.
  */
 export function serverReach(queryClient: QueryClient): ServerReach {
+  let reach = reaches.get(queryClient);
+  if (!reach) {
+    reach = newServerReach(queryClient);
+    reaches.set(queryClient, reach);
+  }
+  return reach;
+}
+
+// One store for each client, so the bar and the bell read one verdict.
+const reaches = new WeakMap<QueryClient, ServerReach>();
+
+function newServerReach(queryClient: QueryClient): ServerReach {
   let down = false;
   let silent = false;
   // Each start and each failure takes the next number, so a failure knows whether its call started after the doubt.
@@ -67,7 +79,11 @@ export function serverReach(queryClient: QueryClient): ServerReach {
     if (action.type === "failed") startedAt.set(call, ++clock);
   };
   let stop: (() => void) | undefined;
+  // Nothing was followed while nobody listened, so a new start forgets the old verdict.
   const start = () => {
+    down = false;
+    silent = false;
+    doubtSince = undefined;
     const queries = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === "updated") follow(event.query, event.action);
     });

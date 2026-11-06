@@ -11,11 +11,17 @@ const subscribe = (changed: () => void) => {
   };
 };
 
-/** Whether the browser has a connection (`navigator.onLine`). The server renders online. */
+/** Whether the browser has a connection (`navigator.onLine`), only a hint (F59). The server renders online. */
 export function useOnline(): boolean {
   return useSyncExternalStore(
     subscribe,
     () => navigator.onLine,
     () => true,
   );
+}
+
+/** Whether the app is offline, by the rule of F59, from the verdict of `serverReach`. */
+export function useOffline(serverDown: boolean, noAnswer: boolean): boolean {
+  const online = useOnline();
+  return serverDown && noAnswer && !online;
 }
