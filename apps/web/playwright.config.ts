@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Playwright with Clerk's test mode (F35). The setup project signs in once through our sign-in page and keeps the session; the
-// page tests reuse it. Each page test also runs axe (F37).
+// Playwright with Clerk's test mode (F35). The setup project makes a temporary user, signs in once through our sign-in page and
+// keeps the session; the page tests reuse it, and the teardown deletes the user. The signed-out tests send the user a code, so
+// they wait for the setup too. Each page test also runs axe (F37).
 const port = Number(process.env.E2E_PORT ?? 3000);
 
 export default defineConfig({
@@ -25,15 +26,21 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "setup", testMatch: /global\.setup\.ts/ },
+    {
+      name: "setup",
+      testMatch: /global\.setup\.ts/,
+      teardown: "teardown",
+    },
+    { name: "teardown", testMatch: /global\.teardown\.ts/ },
     {
       name: "signed-out",
       testMatch: /sign-in\.spec\.ts/,
+      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "signed-in",
-      testIgnore: /(global\.setup|sign-in\.spec)\.ts/,
+      testIgnore: /(global\.setup|global\.teardown|sign-in\.spec)\.ts/,
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],

@@ -20,8 +20,6 @@ on:
         required: false
       CLERK_SECRET_KEY_TEST:
         required: false
-      E2E_CLERK_USER_EMAIL:
-        required: false
 
 # In a called workflow, the github context is the caller's: github.workflow is "Delivery",
 # github.event_name is "push" and github.run_id is the caller's run (GitHub Docs, "Reusing workflow
@@ -386,9 +384,8 @@ jobs:
         env:
           PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
           SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
-          USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
         run: |
-          if [[ -n "$PUBLISHABLE_KEY" && -n "$SECRET_KEY" && -n "$USER_EMAIL" ]]; then
+          if [[ -n "$PUBLISHABLE_KEY" && -n "$SECRET_KEY" ]]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "::notice title=E2E skipped::The Clerk test secrets are absent (a fork or Dependabot pull request, or a push to main). The Playwright tests did not run."
@@ -416,7 +413,6 @@ jobs:
         env:
           CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
-          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
         run: scripts/ci/test-e2e.sh
 
       # The screenshots of every pull request, for the review against the design (docs/frontend/AGENTS.md, "How we work"). They

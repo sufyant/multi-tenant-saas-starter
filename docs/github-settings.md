@@ -160,15 +160,14 @@ A caller passes the three secrets to `deploy.yml` by name. The called job sets `
 
 ### 3.7 Repository secrets for the Playwright tests
 
-The job `e2e` in `.github/workflows/ci.yml` runs the Playwright tests of `apps/web` and `apps/platform` (F35 and F37 in `docs/frontend/ARCHITECTURE.md`). The tests sign in through a Clerk development instance, so the job needs three repository secrets. The script never sets or reads them.
+The job `e2e` in `.github/workflows/ci.yml` runs the Playwright tests of `apps/web` and `apps/platform` (F35 and F37 in `docs/frontend/ARCHITECTURE.md`). The tests sign in through a Clerk development instance, so the job needs two repository secrets. Each app's setup makes its own temporary user of that instance and its teardown deletes it. The script never sets or reads them.
 
 | Name | Kind | What it holds | Who sets it |
 | --- | --- | --- | --- |
-| `CLERK_PUBLISHABLE_KEY_TEST` | secret | The publishable key (`pk_test_...`) of the Clerk development instance. It is not confidential, but the job reads the three values from one place | The maintainer, with `gh secret set CLERK_PUBLISHABLE_KEY_TEST` |
+| `CLERK_PUBLISHABLE_KEY_TEST` | secret | The publishable key (`pk_test_...`) of the Clerk development instance. It is not confidential, but the job reads the two values from one place | The maintainer, with `gh secret set CLERK_PUBLISHABLE_KEY_TEST` |
 | `CLERK_SECRET_KEY_TEST` | secret | The secret key (`sk_test_...`) of the same instance. Never a key of the production instance | The maintainer, with `gh secret set CLERK_SECRET_KEY_TEST` |
-| `E2E_CLERK_USER_EMAIL` | secret | The address of a user of the same instance, with `+clerk_test` in it. It signs in with the code `424242`, and no email goes out | The maintainer, with `gh secret set E2E_CLERK_USER_EMAIL` |
 
-GitHub gives no repository secret to a workflow run from a fork's pull request, and gives a Dependabot pull request the Dependabot secrets only (GitHub Docs: "Using secrets in GitHub Actions", "Automating Dependabot with GitHub Actions"). `delivery.yml` passes none of the three to `ci.yml`. In these runs the job skips its steps with the notice "E2E skipped" and passes. To run the tests on Dependabot pull requests too, set the same three values with `gh secret set <name> --app dependabot`.
+GitHub gives no repository secret to a workflow run from a fork's pull request, and gives a Dependabot pull request the Dependabot secrets only (GitHub Docs: "Using secrets in GitHub Actions", "Automating Dependabot with GitHub Actions"). `delivery.yml` passes neither to `ci.yml`. In these runs the job skips its steps with the notice "E2E skipped" and passes. To run the tests on Dependabot pull requests too, set the same two values with `gh secret set <name> --app dependabot`.
 
 ### 3.8 Source map upload of the web and platform images
 
