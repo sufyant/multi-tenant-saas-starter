@@ -13,6 +13,8 @@ export const backOnlineMs = 2000;
 export type ConnectionBarProps = {
   /** The app's calls found no server on two tries in a row: a network error, 502, 503 or 504 (`serverReach` of the client). */
   serverDown: boolean;
+  /** The last failed try got no answer at all, so "offline" can show; a proxy's 502, 503 or 504 is an answer (`serverReach`). */
+  noAnswer: boolean;
   /** Tries again: reads the page's queries. */
   onRetry: () => void;
   /** The product's name: "Starter isn’t answering." */
@@ -41,21 +43,21 @@ function next(
 }
 
 /**
- * The bar of a connection problem (the Connection bar): the app's calls find no server, in amber, "offline" when the browser says
- * so too and "isn't answering" when it does not. The browser's signal alone shows nothing: its offline event only starts a try. A
- * countdown leads to the next try after 5, 10 and 30 seconds, and "Try now"; "Back online" in green once an answer comes. A
- * connection problem comes before every other bar. The text is a polite live region, so a screen reader hears each change once,
- * not each second.
+ * The bar of a connection problem (the Connection bar, F59): offline or a server that does not answer, in amber, with a countdown
+ * to the next try after 5, 10 and 30 seconds, and "Try now"; "Back online" in green once an answer comes. A connection problem
+ * comes before every other bar. The text is a polite live region, so a screen reader hears each change once, not each second.
  */
 export function ConnectionBar({
   serverDown,
+  noAnswer,
   onRetry,
   product,
   statusUrl,
 }: ConnectionBarProps) {
   const t = useTranslations("appShell.connection");
   const online = useOnline();
-  const problem: Problem = serverDown ? (online ? "server" : "offline") : null;
+  const offline = !online && noAnswer;
+  const problem: Problem = serverDown ? (offline ? "offline" : "server") : null;
   const [countdown, step] = useReducer(next, start);
   const [back, setBack] = useState(false);
   const had = useRef<Problem>(null);
@@ -81,7 +83,7 @@ export function ConnectionBar({
     return () => clearInterval(timer);
   }, [problem]);
 
-  // The browser's offline event is only a hint: it starts one try, and the calls decide.
+  // The browser's offline event starts one try, and the calls decide (F59).
   useEffect(() => {
     const check = () => retry.current();
     window.addEventListener("offline", check);

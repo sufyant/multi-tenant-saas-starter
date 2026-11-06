@@ -18,9 +18,15 @@ export function ServerBar() {
     reach.isDown,
     () => false,
   );
+  const noAnswer = useSyncExternalStore(
+    reach.subscribe,
+    reach.noAnswer,
+    () => false,
+  );
   return (
     <ConnectionBar
       serverDown={serverDown}
+      noAnswer={noAnswer}
       product={brand.name}
       statusUrl={brand.statusUrl}
       onRetry={() => void queryClient.invalidateQueries()}

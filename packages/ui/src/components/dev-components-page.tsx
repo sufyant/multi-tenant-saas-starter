@@ -945,6 +945,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
         <>
           <ConnectionBar
             serverDown
+            noAnswer={false}
             onRetry={() => {}}
             product="Starter"
             statusUrl="https://status.starter.example"
