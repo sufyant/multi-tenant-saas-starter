@@ -267,7 +267,8 @@ export function NotificationPage(props: NotificationPageProps) {
 /**
  * The list's frame (3.01 to 3.08, 3.14, 3.15): the header with Mark all as read, the tabs, the offline row, the items or their
  * state, and the foot. A popover keeps Mark all in its header, disabled while it has nothing to do; the phone's full screen has
- * Close in its header and Mark all on the tabs' row; the platform's page is the full screen without its header (3.08 is 3.14).
+ * Close in its header and Mark all on the tabs' row, which wraps for a longer language (F60); the platform's page is the full
+ * screen without its header (3.08 is 3.14).
  */
 function NotificationPanel({
   unread,
@@ -349,14 +350,14 @@ function NotificationPanel({
             <div className="min-w-0 flex-1">{title}</div>
             {close}
           </div>
-          <div className="flex h-11 shrink-0 items-center justify-between gap-2 ps-4 pe-2">
+          <div className="flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-x-2 ps-4 pe-2">
             {tabs}
             {items && items.length > 0 && markAll}
           </div>
         </>
       )}
       {layout === "page" && (
-        <div className="flex h-11 shrink-0 items-center justify-between gap-2">
+        <div className="flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-x-2">
           {tabs}
           {items && items.length > 0 && markAll}
         </div>
