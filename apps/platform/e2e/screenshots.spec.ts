@@ -248,6 +248,14 @@ const shellShots: {
         .waitFor(),
   },
   {
+    file: "3.10-notifications-empty-en-light-phone",
+    size: "phone",
+    path: "/notifications",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    ready: (page) =>
+      page.getByRole("main").getByText("No notifications").waitFor(),
+  },
+  {
     file: "2.22-not-found-en-light-desktop",
     size: "desktop",
     path: "/no-such-page",
