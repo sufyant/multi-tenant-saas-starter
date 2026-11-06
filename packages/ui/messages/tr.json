@@ -243,6 +243,12 @@
     "sessionEndedTitle": "Oturumunuz sona erdi",
     "sessionEndedText": "Bu cihazda oturumunuz kapatıldı. Bulunduğunuz sayfaya dönmek için yeniden giriş yapın."
   },
+  "confirmIdentity": {
+    "title": "Kimliğinizi doğrulayın",
+    "emailText": "<email></email> adresine 6 haneli bir kod gönderdik. Son doğrulamanızın üzerinden bir süre geçtiği için yeniden soruyoruz.",
+    "appText": "Kimlik doğrulayıcı uygulamanızdaki 6 haneli kodu girin. Son doğrulamanızın üzerinden bir süre geçtiği için yeniden soruyoruz.",
+    "verify": "Doğrula ve devam et"
+  },
   "preferencesForm": {
     "yourName": "Adınız",
     "name": "Ad",

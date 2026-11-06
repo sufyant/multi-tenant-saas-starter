@@ -243,6 +243,12 @@
     "sessionEndedTitle": "Your session ended",
     "sessionEndedText": "You were signed out on this device. Sign in again to go back to the page you were on."
   },
+  "confirmIdentity": {
+    "title": "Confirm it’s you",
+    "emailText": "We sent a 6-digit code to <email></email>. We ask again because your last check was a while ago.",
+    "appText": "Enter the 6-digit code from your authenticator app. We ask again because your last check was a while ago.",
+    "verify": "Verify and continue"
+  },
   "preferencesForm": {
     "yourName": "Your name",
     "name": "Name",
