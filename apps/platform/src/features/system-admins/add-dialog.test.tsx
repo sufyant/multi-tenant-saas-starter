@@ -457,7 +457,7 @@ describe("AddSystemAdminDialog", () => {
       step.getByRole("button", { name: "Verify and continue" }),
     ).toBeVisible();
     expect(
-      step.getByRole("button", { name: "Use a backup code" }),
+      step.getByRole("button", { name: "Use a backup code instead" }),
     ).toBeVisible();
   });
 
@@ -547,7 +547,7 @@ describe("AddSystemAdminDialog", () => {
     await makeSystemAdmin();
     const step = await reverify();
     await userEvent.click(
-      step.getByRole("button", { name: "Use a backup code" }),
+      step.getByRole("button", { name: "Use a backup code instead" }),
     );
     await userEvent.type(
       step.getByRole("textbox", { name: "Backup code" }),

@@ -32,14 +32,12 @@ setup(
     await page.goto("/sign-in");
     await signInWithEmailCode(page, email);
     await expect(
-      page.getByRole("heading", { name: "Set up your authenticator app" }),
+      page.getByRole("heading", { name: "Set up two-step verification" }),
     ).toBeVisible({ timeout: 30_000 });
     await expectAccessible(page);
-    const key = page.getByRole("textbox", {
-      name: "Cannot scan? Type this key instead:",
-    });
-    await expect(key).not.toHaveValue("");
-    const secret = (await key.inputValue()).replaceAll(" ", "");
+    // The key shows in groups of four after "Key:" (platform frame 1.03).
+    const key = page.getByText(/^[A-Z2-7]{4}( [A-Z2-7]{1,4})+$/);
+    const secret = (await key.innerText()).replaceAll(" ", "");
     await page
       .getByRole("textbox", { name: "Enter the 6-digit code the app shows" })
       .pressSequentially(await totpCode(secret));
@@ -59,9 +57,7 @@ setup(
     await expectAccessible(page);
     saveUser({ id, email, secret, backupCodes: await codes.allInnerTexts() });
     await page.getByRole("checkbox").check();
-    await page
-      .getByRole("button", { name: "Continue to the platform" })
-      .click();
+    await page.getByRole("button", { name: "Continue" }).click();
     await leaveTwoStep(page, secret);
 
     await clerk.signOut({ page });

@@ -15,7 +15,9 @@ test("TwoStep_BackupCode_SignsInOnceAndNeverAgain", async ({ browser }) => {
   await first.goto("/sign-in");
   await signInWithEmailCode(first, email);
 
-  await first.getByRole("button", { name: "Use a backup code" }).click();
+  await first
+    .getByRole("button", { name: "Use a backup code instead" })
+    .click();
   await expectAccessible(first);
   await first.getByRole("textbox", { name: "Backup code" }).fill(backupCode);
   await first.getByRole("button", { name: "Continue" }).click();
@@ -25,7 +27,9 @@ test("TwoStep_BackupCode_SignsInOnceAndNeverAgain", async ({ browser }) => {
   await setupClerkTestingToken({ page: second });
   await second.goto("/sign-in");
   await signInWithEmailCode(second, email);
-  await second.getByRole("button", { name: "Use a backup code" }).click();
+  await second
+    .getByRole("button", { name: "Use a backup code instead" })
+    .click();
   await second.getByRole("textbox", { name: "Backup code" }).fill(backupCode);
   await second.getByRole("button", { name: "Continue" }).click();
 

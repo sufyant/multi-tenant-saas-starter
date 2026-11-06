@@ -73,7 +73,7 @@ afterEach(() => {
 });
 
 async function enrol(user: ReturnType<typeof userEvent.setup>) {
-  await screen.findByDisplayValue("JBSW Y3DP EHPK 3PXP K7QN");
+  await screen.findByText("JBSW Y3DP EHPK 3PXP K7QN");
   await user.type(
     screen.getByRole("textbox", {
       name: "Enter the 6-digit code the app shows",
@@ -93,12 +93,13 @@ describe("TwoStepPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Set up your authenticator app",
+        name: "Set up two-step verification",
       }),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByDisplayValue("JBSW Y3DP EHPK 3PXP K7QN"),
-    ).toHaveAttribute("dir", "ltr");
+    expect(await screen.findByText("JBSW Y3DP EHPK 3PXP K7QN")).toHaveAttribute(
+      "dir",
+      "ltr",
+    );
     expect(
       screen.getByRole("img", { name: "QR code for your authenticator app" }),
     ).toBeInTheDocument();
@@ -203,13 +204,11 @@ describe("TwoStepPage", () => {
     await enrol(person);
 
     await person.click(await screen.findByRole("checkbox"));
-    await person.click(
-      screen.getByRole("button", { name: "Continue to the platform" }),
-    );
+    await person.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(
       await screen.findByRole("heading", {
-        name: "Enter your authenticator code",
+        name: "Enter the code from your app",
       }),
     ).toBeInTheDocument();
     expect(session.startVerification).toHaveBeenCalledWith({
@@ -224,9 +223,7 @@ describe("TwoStepPage", () => {
     await enrol(person);
 
     await person.click(await screen.findByRole("checkbox"));
-    await person.click(
-      screen.getByRole("button", { name: "Continue to the platform" }),
-    );
+    await person.click(screen.getByRole("button", { name: "Continue" }));
 
     await vi.waitFor(() =>
       expect(session.getToken).toHaveBeenCalledWith({ skipCache: true }),
@@ -278,7 +275,7 @@ describe("TwoStepPage", () => {
     renderWithProviders(<TwoStepPage />);
 
     await person.click(
-      await screen.findByRole("button", { name: "Use a backup code" }),
+      await screen.findByRole("button", { name: "Use a backup code instead" }),
     );
     await person.type(
       screen.getByRole("textbox", { name: "Backup code" }),

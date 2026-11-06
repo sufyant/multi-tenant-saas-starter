@@ -10,7 +10,7 @@ test("SignIn_SignedOutVisitor_IsSentToSignIn", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/sign-in/);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Sign in to Starter" }),
+    page.getByRole("heading", { level: 1, name: "Sign in to your account" }),
   ).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible();
   await expectAccessible(page);
@@ -21,7 +21,7 @@ test("SignIn_EmailCode_ShowsTheCodeStep", async ({ page }) => {
   await page.goto("/sign-in");
 
   await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
-  await page.getByRole("button", { name: "Email me a code" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(
     page.getByRole("heading", { name: "Check your email" }),

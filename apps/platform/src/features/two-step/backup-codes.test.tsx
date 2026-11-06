@@ -10,9 +10,7 @@ describe("BackupCodes", () => {
   it("BackupCodes_NotConfirmed_KeepsContinueDisabled", () => {
     renderWithProviders(<BackupCodes codes={codes} onContinue={vi.fn()} />);
 
-    expect(
-      screen.getByRole("button", { name: "Continue to the platform" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
   });
 
   it("BackupCodes_Confirmed_LetsThePersonContinue", async () => {
@@ -22,12 +20,10 @@ describe("BackupCodes", () => {
 
     await user.click(
       screen.getByRole("checkbox", {
-        name: "I saved these codes. I understand I cannot see them again, only make new ones.",
+        name: "I saved my backup codes",
       }),
     );
-    await user.click(
-      screen.getByRole("button", { name: "Continue to the platform" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
@@ -42,7 +38,7 @@ describe("BackupCodes", () => {
       .mockImplementation(() => {});
     renderWithProviders(<BackupCodes codes={codes} onContinue={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "Download as text" }));
+    await user.click(screen.getByRole("button", { name: "Download" }));
 
     expect(click).toHaveBeenCalledTimes(1);
     expect(await createObjectURL.mock.calls[0]?.[0].text()).toBe(
@@ -54,7 +50,7 @@ describe("BackupCodes", () => {
     const user = userEvent.setup();
     renderWithProviders(<BackupCodes codes={codes} onContinue={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: "Copy codes" }));
+    await user.click(screen.getByRole("button", { name: "Copy" }));
 
     expect(await navigator.clipboard.readText()).toBe(`${codes.join("\n")}\n`);
   });

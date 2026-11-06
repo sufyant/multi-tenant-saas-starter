@@ -13,6 +13,9 @@ export default async function SignInPage() {
   return (
     <SignInScreen
       title={t("signInPage.title")}
+      text={t("signInPage.text", { brand: brand.name })}
+      secondFactorTitle={t("signInPage.secondFactorTitle")}
+      secondFactorText={t("signInPage.secondFactorText")}
       brand={t("meta.title")}
       platformLabel={t("shell.platform")}
       onLanguageChange={setLocale}
