@@ -292,7 +292,8 @@
     "signedOut": "Signed out of {device}",
     "signedOutText": "That device must sign in again.",
     "signOutOthersTitle": "Sign out of {count, plural, one {# other session} other {# other sessions}}?",
-    "signOutOthersText": "{devices} sign out at once. This device stays signed in.",
+    "signOutOthersText": "<devices></devices> sign out at once. This device stays signed in.",
+    "moreDevices": "{count, plural, one {# more} other {# more}}",
     "signedOutOthers": "Signed out of {count, plural, one {# other session} other {# other sessions}}",
     "signedOutOthersText": "Only this device is signed in.",
     "notDone": "That did not work"

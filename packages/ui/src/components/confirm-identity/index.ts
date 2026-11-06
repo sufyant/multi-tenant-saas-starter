@@ -1,5 +1,7 @@
+export { ConfirmIdentity } from "./confirm-identity";
 export {
-  ConfirmIdentity,
+  type ConfirmStep,
+  useConfirmIdentity,
   type VerificationLevel,
   type VerifyingSession,
-} from "./confirm-identity";
+} from "./use-confirm-identity";

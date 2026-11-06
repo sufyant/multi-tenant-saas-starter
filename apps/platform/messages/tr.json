@@ -26,7 +26,7 @@
     "nameNote": "Adınız platformun Etkinliğinde görünür."
   },
   "securityPage": {
-    "intro": "{name} · bu ayarlar platformda ve her kuruluşta aynıdır.",
+    "intro": "<name></name> · bu ayarlar platformda ve her kuruluşta aynıdır.",
     "twoStep": "Platformda zorunludur. E-posta kodundan, Google'dan veya Microsoft'tan sonra bir kimlik doğrulayıcı uygulamadan 6 haneli bir kod da girersiniz."
   },
   "access": {

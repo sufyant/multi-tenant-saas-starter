@@ -13,20 +13,28 @@ import { Pill } from "../pill";
 import { InlineSkeleton } from "../skeleton";
 import { showToast } from "../toast";
 import {
+  authenticatorOn,
   connectedAccount,
+  describeSession,
+  disconnect,
   type IdentitySession,
+  isCancelled,
   type Provider,
   providers,
+  removeUnfinished,
+  revoke,
   startConnecting,
-  unfinishedAccounts,
   useIdentity,
   useSensitive,
   useSessions,
 } from "./identity";
 
+/** The most devices a sentence names; the rest are "n more" (F15). */
+const namedDevices = 3;
+
 export type AccountSecurityProps = {
-  /** The line under the page's title, in the app's words: the person's name and where the settings apply. */
-  intro: string;
+  /** The line under the page's title, in the app's words: the person's name, isolated, and where the settings apply. */
+  intro: ReactNode;
   /** The address our API keeps (A7). */
   email: string | null;
   /** The app's words for two-step verification; on the platform it is required and has no action. */
@@ -154,6 +162,7 @@ function SignInMethods({
   onUnexpectedError?: (error: Error) => void;
 }) {
   const t = useTranslations("accountSecurity");
+  const common = useTranslations("common");
   const { user } = useIdentity();
   const [disconnecting, setDisconnecting] = useState<Provider>();
   const [pending, setPending] = useState(false);
@@ -170,10 +179,10 @@ function SignInMethods({
         : Promise.resolve(),
     onUnexpectedError,
   );
-  const disconnect = useSensitive(async (provider: Provider) => {
-    await connectedAccount(user, provider)?.destroy();
-    await user?.reload();
-  }, onUnexpectedError);
+  const removal = useSensitive(
+    (provider: Provider) => disconnect(user, provider),
+    onUnexpectedError,
+  );
 
   useBackFromProvider();
 
@@ -225,11 +234,12 @@ function SignInMethods({
           title={t("disconnectTitle", { provider: t(disconnecting) })}
           description={t("disconnectText", { provider: t(disconnecting) })}
           actionLabel={t("disconnect")}
+          cancelLabel={common("cancel")}
           pending={pending}
           onConfirm={async () => {
             setPending(true);
             try {
-              await disconnect.run(disconnecting);
+              await removal.run(disconnecting);
               showToast({
                 title: t("disconnected", { provider: t(disconnecting) }),
                 description: t("disconnectedText"),
@@ -243,7 +253,7 @@ function SignInMethods({
         />
       )}
       {connect.confirm}
-      {disconnect.confirm}
+      {removal.confirm}
     </Card>
   );
 }
@@ -277,16 +287,14 @@ function useBackFromProvider() {
       description: t("signIn.errors.oauthDenied"),
       tone: "destructive",
     });
-    void Promise.all(
-      unfinishedAccounts(user, provider).map((account) => account.destroy()),
-    ).then(() => user.reload());
+    void removeUnfinished(user, provider);
   }, [user, t]);
 }
 
 function TwoStep({ text, required }: { text: string; required: boolean }) {
   const t = useTranslations("accountSecurity");
   const { user } = useIdentity();
-  const on = required || Boolean(user?.totpEnabled);
+  const on = required || authenticatorOn(user);
   return (
     <Card title={t("twoStepTitle")} text={text}>
       <Row>
@@ -316,9 +324,7 @@ function Sessions({
   const failed = useFailure(onUnexpectedError);
   const name = useDeviceName();
 
-  const revoke = useSensitive(async (...sessions: IdentitySession[]) => {
-    await Promise.all(sessions.map((each) => each.revoke()));
-  }, onUnexpectedError);
+  const signing = useSensitive(revoke, onUnexpectedError);
 
   const sessions = state.status === "success" ? state.sessions : [];
   const others = sessions.filter((each) => each.id !== session?.id);
@@ -326,7 +332,7 @@ function Sessions({
 
   const signOut = async (one: IdentitySession) => {
     try {
-      await revoke.run(one);
+      await signing.run(one);
       showToast({
         title: t("accountSecurity.signedOut", { device: name(one) }),
         description: t("accountSecurity.signedOutText"),
@@ -366,17 +372,14 @@ function Sessions({
         <ul>
           {sessions.map((each) => {
             const current = each.id === session?.id;
-            const activity = each.latestActivity;
-            const place = [
-              activity.city,
-              countryName(activity.country, options.locale),
-            ]
+            const seen = describeSession(each);
+            const place = [seen.city, countryName(seen.country, options.locale)]
               .filter(Boolean)
               .join(", ");
             const when = current
               ? t("accountSecurity.activeNow")
               : t("accountSecurity.lastActive", {
-                  time: formatRelative(each.lastActiveAt, options),
+                  time: formatRelative(seen.lastActiveAt, options),
                 });
             return (
               <Row
@@ -429,17 +432,22 @@ function Sessions({
           title={t("accountSecurity.signOutOthersTitle", {
             count: others.length,
           })}
-          description={t("accountSecurity.signOutOthersText", {
-            devices: new Intl.ListFormat(options.locale, {
-              type: "conjunction",
-            }).format(others.map(name)),
+          description={t.rich("accountSecurity.signOutOthersText", {
+            devices: () => (
+              <DeviceList
+                names={others.map(name)}
+                locale={options.locale}
+                more={(count) => t("accountSecurity.moreDevices", { count })}
+              />
+            ),
           })}
           actionLabel={t("accountSecurity.signOut")}
+          cancelLabel={t("common.cancel")}
           pending={pending}
           onConfirm={async () => {
             setPending(true);
             try {
-              await revoke.run(...others);
+              await signing.run(...others);
               showToast({
                 title: t("accountSecurity.signedOutOthers", {
                   count: others.length,
@@ -455,7 +463,7 @@ function Sessions({
           }}
         />
       )}
-      {revoke.confirm}
+      {signing.confirm}
     </Card>
   );
 }
@@ -464,11 +472,38 @@ function Sessions({
 function useDeviceName() {
   const t = useTranslations("accountSecurity");
   return (each: IdentitySession) => {
-    const { browserName, deviceType } = each.latestActivity;
-    if (browserName && deviceType)
-      return t("device", { browser: browserName, device: deviceType });
-    return browserName ?? deviceType ?? t("someDevice");
+    const { browser, device } = describeSession(each);
+    if (browser && device) return t("device", { browser, device });
+    return browser ?? device ?? t("someDevice");
   };
+}
+
+/**
+ * Devices in a sentence: at most three by name, each isolated, then "n more" (F15). The list's words come from the Intl API in
+ * the person's language.
+ */
+function DeviceList({
+  names,
+  locale,
+  more,
+}: {
+  names: string[];
+  locale: string;
+  more: (count: number) => string;
+}) {
+  const shown = names.slice(0, namedDevices);
+  const rest = names.length - shown.length;
+  const items = rest > 0 ? [...shown, more(rest)] : shown;
+  return new Intl.ListFormat(locale, { type: "conjunction" })
+    .formatToParts(items)
+    .map((part, index) =>
+      part.type === "element" ? (
+        // biome-ignore lint/suspicious/noArrayIndexKey: the parts of a formatted list have no id of their own.
+        <bdi key={index}>{part.value}</bdi>
+      ) : (
+        part.value
+      ),
+    );
 }
 
 /** A country in the person's language when Clerk gives its two-letter code; any other value as Clerk gives it. */
@@ -486,10 +521,3 @@ function useFailure(onUnexpectedError?: (error: Error) => void) {
     showToast({ title: t("notDone"), tone: "destructive" });
   };
 }
-
-/** Clerk's reverification rejects with this when the person cancels "Confirm it's you". */
-const isCancelled = (reason: unknown) =>
-  typeof reason === "object" &&
-  reason !== null &&
-  "code" in reason &&
-  reason.code === "reverification_cancelled";

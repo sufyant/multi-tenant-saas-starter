@@ -26,7 +26,7 @@
     "nameNote": "Your name shows in the platform’s Activity."
   },
   "securityPage": {
-    "intro": "{name} · these settings are the same on the platform and in every organisation.",
+    "intro": "<name></name> · these settings are the same on the platform and in every organisation.",
     "twoStep": "Required on the platform. After the email code, Google or Microsoft, you also enter a 6-digit code from an authenticator app."
   },
   "access": {

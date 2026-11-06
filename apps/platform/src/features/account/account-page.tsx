@@ -20,7 +20,9 @@ export function AccountPage() {
   const name = [me.data.firstName, me.data.lastName].filter(Boolean).join(" ");
   return (
     <AccountSecurity
-      intro={t("securityPage.intro", { name })}
+      intro={t.rich("securityPage.intro", {
+        name: () => <bdi>{name}</bdi>,
+      })}
       email={me.data.email}
       twoStep={{ text: t("securityPage.twoStep"), required: true }}
       returnPath="/settings/account"

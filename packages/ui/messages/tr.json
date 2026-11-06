@@ -292,7 +292,8 @@
     "signedOut": "{device} oturumu kapatıldı",
     "signedOutText": "O cihazın yeniden giriş yapması gerekir.",
     "signOutOthersTitle": "{count, plural, one {Diğer # oturumdan} other {Diğer # oturumdan}} çıkış yapılsın mı?",
-    "signOutOthersText": "{devices} aynı anda çıkış yapar. Bu cihazda giriş açık kalır.",
+    "signOutOthersText": "<devices></devices> aynı anda çıkış yapar. Bu cihazda giriş açık kalır.",
+    "moreDevices": "{count, plural, one {# cihaz daha} other {# cihaz daha}}",
     "signedOutOthers": "{count, plural, one {Diğer # oturum kapatıldı} other {Diğer # oturum kapatıldı}}",
     "signedOutOthersText": "Yalnızca bu cihazda giriş açık.",
     "notDone": "Bu işlem yapılamadı"

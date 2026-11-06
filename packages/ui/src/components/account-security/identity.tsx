@@ -104,6 +104,51 @@ export function unfinishedAccounts(
   );
 }
 
+/** Removes the provider's account from the person, then reads the person again. */
+export async function disconnect(
+  user: IdentityUser | null | undefined,
+  provider: Provider,
+) {
+  await connectedAccount(user, provider)?.destroy();
+  await user?.reload();
+}
+
+/** Removes the attempts that the provider did not finish, so a later Connect starts clean. */
+export async function removeUnfinished(user: IdentityUser, provider: Provider) {
+  await Promise.all(
+    unfinishedAccounts(user, provider).map((account) => account.destroy()),
+  );
+  await user.reload();
+}
+
+/** Signs out the sessions at the identity provider. */
+export async function revoke(...sessions: IdentitySession[]) {
+  await Promise.all(sessions.map((each) => each.revoke()));
+}
+
+/** Whether the person's authenticator app is on. */
+export const authenticatorOn = (user: IdentityUser | null | undefined) =>
+  Boolean(user?.totpEnabled);
+
+/** What the page says about a session: the browser, the device and the place Clerk saw, and its last activity. */
+export function describeSession(each: IdentitySession) {
+  const { browserName, deviceType, city, country } = each.latestActivity;
+  return {
+    browser: browserName,
+    device: deviceType,
+    city,
+    country,
+    lastActiveAt: each.lastActiveAt,
+  };
+}
+
+/** Clerk's reverification rejects with this code when the person cancels "Confirm it's you". */
+export const isCancelled = (reason: unknown) =>
+  typeof reason === "object" &&
+  reason !== null &&
+  "code" in reason &&
+  reason.code === "reverification_cancelled";
+
 /**
  * Wraps a change to the identity provider in Clerk's reverification. It gives the change to call and the step to render: the
  * step shows only while Clerk waits for the check.
