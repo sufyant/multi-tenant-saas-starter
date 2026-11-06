@@ -310,23 +310,23 @@
     "notDone": "That did not work"
   },
   "preferencesForm": {
-    "yourName": "Your name",
     "name": "Name",
     "nameRequired": "Enter your name.",
     "nameTooLong": "Use 1 to {max} characters.",
-    "languageAndTimeZone": "Language and time zone",
     "language": "Language",
-    "languageHint": "Dates and numbers use this language’s format.",
+    "languageHint": "The language of the app. <arabic>العربية</arabic> reads right to left.",
     "languageSearch": "Search languages",
     "languageEmpty": "No language found",
     "timeZone": "Time zone",
-    "timeZoneHint": "Every time on screen is shown in this zone.",
+    "timeZoneHint": "Dates and times show in this time zone.",
     "timeZoneSearch": "Search cities or zones",
     "timeZoneEmpty": "No time zone found",
     "thisDevice": "{zone} (this device)",
-    "save": "Save preferences",
-    "saved": "Preferences saved",
-    "notSaved": "Preferences not saved"
+    "save": "Save changes",
+    "saved": "Profile saved",
+    "notSaved": "Profile not saved",
+    "notLoadedTitle": "Your profile did not load",
+    "notLoadedText": "Check your connection and try again."
   },
   "notifications": {
     "bell": "Notifications",

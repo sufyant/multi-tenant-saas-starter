@@ -310,23 +310,23 @@
     "notDone": "لم يتم ذلك"
   },
   "preferencesForm": {
-    "yourName": "اسمك",
     "name": "الاسم",
     "nameRequired": "أدخل اسمك.",
     "nameTooLong": "استخدم من 1 إلى {max} حرف.",
-    "languageAndTimeZone": "اللغة والمنطقة الزمنية",
     "language": "اللغة",
-    "languageHint": "تستخدم التواريخ والأرقام تنسيق هذه اللغة.",
+    "languageHint": "لغة التطبيق. <arabic>العربية</arabic> تُقرأ من اليمين إلى اليسار.",
     "languageSearch": "ابحث عن لغة",
     "languageEmpty": "لم يتم العثور على لغة",
     "timeZone": "المنطقة الزمنية",
-    "timeZoneHint": "يُعرض كل وقت على الشاشة بهذه المنطقة.",
+    "timeZoneHint": "تظهر التواريخ والأوقات بهذه المنطقة الزمنية.",
     "timeZoneSearch": "ابحث عن مدينة أو منطقة",
     "timeZoneEmpty": "لم يتم العثور على منطقة زمنية",
     "thisDevice": "{zone} (هذا الجهاز)",
-    "save": "حفظ التفضيلات",
-    "saved": "تم حفظ التفضيلات",
-    "notSaved": "لم يتم حفظ التفضيلات"
+    "save": "حفظ التغييرات",
+    "saved": "تم حفظ الملف الشخصي",
+    "notSaved": "لم يتم حفظ الملف الشخصي",
+    "notLoadedTitle": "لم يتم تحميل ملفك الشخصي",
+    "notLoadedText": "تحقّق من اتصالك وحاول مرة أخرى."
   },
   "notifications": {
     "bell": "الإشعارات",

@@ -14,6 +14,7 @@ import {
   mockAuditLog,
   mockMembers,
   mockNotifications,
+  mockRename,
   mockTenantStatus,
   northwind,
   type Plan,
@@ -623,6 +624,29 @@ const openBellFullScreen = async (page: Page) => {
 };
 
 /** Scrolls the theme's card, the one radio group of the Profile page, into view. */
+/** The Name field of the Profile form. */
+const nameField = (page: Page) => page.getByRole("textbox", { name: "Name" });
+
+/** Adds a word to the name, so Save changes turns on (5.02, 8.02). */
+const editName = async (page: Page) => {
+  await nameField(page).press("End");
+  await nameField(page).pressSequentially(" Demir");
+};
+
+/** Saves the name; the mocked RenameMe answers, and the toast says so (5.04, 8.04). */
+const saveName = async (page: Page) => {
+  await editName(page);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByText("Profile saved").waitFor();
+};
+
+/** Saves an empty name, so the field says to enter one (5.03, 8.03). */
+const emptyName = async (page: Page) => {
+  await nameField(page).fill("");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByText("Enter your name.").waitFor();
+};
+
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
@@ -837,6 +861,25 @@ const shellShots: {
     language: Language.Ar,
     path: `${settings}/profile`,
     open: showTheme,
+  },
+  {
+    file: "5.02-profile-edited-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/profile`,
+    open: editName,
+  },
+  {
+    file: "5.03-profile-name-empty-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/profile`,
+    open: emptyName,
+  },
+  {
+    file: "5.04-profile-saved-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/profile`,
+    mock: (page) => mockRename(page, Language.En),
+    open: saveName,
   },
   // The Dates and times pattern: a time's line on hover, the city and its offset (F18, F60).
   {

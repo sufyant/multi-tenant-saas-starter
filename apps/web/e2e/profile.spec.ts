@@ -63,9 +63,9 @@ test("Profile_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await page.goto(`/${northwind.slug}/settings/profile`);
   await expect(page.getByRole("button", { name: /Ayşe Yılmaz/ })).toBeVisible();
   await page.getByRole("textbox", { name: "Name" }).fill("Ayla Kaya");
-  await page.getByRole("button", { name: "Save preferences" }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
 
-  await expect(page.getByText("Preferences saved")).toBeVisible();
+  await expect(page.getByText("Profile saved")).toBeVisible();
   await expectAccessible(page);
   expect(bodies).toEqual([{ name: "Ayla Kaya" }]);
   await page.getByRole("button", { name: /Ayla Kaya/ }).click();

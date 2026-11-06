@@ -49,8 +49,10 @@
   },
   "profile": {
     "title": "Profil",
-    "text": "Bunlar sizi her kuruluşta ve her cihazda izler.",
-    "nameNote": "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür."
+    "intro": "<name></name> · her kuruluşta aynı.",
+    "introUnknown": "Her kuruluşta aynı.",
+    "nameNote": "Kuruluşlarınızın üyeleri bu adı görür.",
+    "savedNote": "Yeni adınız her kuruluşta görünür."
   },
   "securityPage": {
     "intro": "<name></name> · bu ayarlar her kuruluşta aynıdır.",
