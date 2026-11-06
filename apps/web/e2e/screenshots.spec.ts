@@ -20,6 +20,7 @@ import {
   pro,
   roleChanged,
 } from "./api";
+import { mockIdentity } from "./identity";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
@@ -825,6 +826,16 @@ const shellShots: {
   },
   // Account and security (F62). Clerk is the real development instance: the test user has this one session and no linked
   // account, the state of 6.05.
+  // 6.01: Google connected and two other sessions, which Clerk's answers get on the way to the page (e2e/identity.ts).
+  {
+    file: "6.01-account-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: (page) => mockIdentity(page, "ayse.demir@gmail.example"),
+    open: (page) =>
+      page.getByText("Firefox on Windows", { exact: true }).waitFor(),
+  },
   {
     file: "6.05-account-en-light-desktop",
     fullPage: true,

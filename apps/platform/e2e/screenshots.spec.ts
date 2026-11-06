@@ -10,6 +10,7 @@ import {
   shannonSuspended,
   users,
 } from "./api";
+import { mockIdentity } from "./identity";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
@@ -313,12 +314,15 @@ const shellShots: {
   },
   // Account and security (F62). Clerk is the real development instance: the setup's temporary user has this one session, an
   // authenticator and no linked account.
+  // 9.01: Google connected and two other sessions, which Clerk's answers get on the way to the page (e2e/identity.ts).
   {
     file: "9.01-account-en-light-desktop",
     fullPage: true,
     size: "desktop",
     path: "/settings/account",
-    open: sessionsShown,
+    mock: (page) => mockIdentity(page, "deniz.kaya@gmail.example"),
+    open: (page) =>
+      page.getByText("Firefox on Windows", { exact: true }).waitFor(),
   },
   {
     file: "9.14-account-en-dark-desktop",
