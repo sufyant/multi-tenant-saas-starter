@@ -4,6 +4,7 @@ export {
   ActivityIcon,
   ArrowLeftIcon,
   ArrowRightLeftIcon,
+  AtSignIcon,
   BellIcon,
   Building2 as BuildingIcon,
   CheckIcon,

@@ -7,7 +7,7 @@ import { Button } from "../button";
 import { CopyButton } from "../copy-button";
 import { Dialog } from "../dialog";
 import { Icon } from "../icon";
-import { CircleXIcon, MailIcon } from "../icon/icons";
+import { AtSignIcon, CircleXIcon, MailIcon } from "../icon/icons";
 import { Label } from "../label";
 import { Pill } from "../pill";
 import { InlineSkeleton } from "../skeleton";
@@ -52,6 +52,12 @@ export type AccountSecurityProps = {
 
 const connectedParameter = "connected";
 
+/** Each provider's logo keeps its owner's colours, as its brand rules ask: an image of the app (`public/brands/`), as on sign-in. */
+const logos = {
+  google: "/brands/google.svg",
+  microsoft: "/brands/microsoft.svg",
+} as const;
+
 /**
  * Settings › Account and security of both apps (F62, the Account and security screens): the email, the sign-in methods,
  * two-step verification and the sessions, then the app's own cards. The identity provider's parts read and change Clerk through
@@ -78,9 +84,9 @@ export function AccountSecurity({
       <Card title={t("emailTitle")} text={t("emailText")}>
         <Row>
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="hidden size-8 items-center justify-center rounded-md bg-muted tablet:flex">
+            <Tile>
               <Icon icon={MailIcon} />
-            </span>
+            </Tile>
             <bdi dir="ltr" className="min-w-0 break-all text-body">
               {email}
             </bdi>
@@ -133,6 +139,31 @@ export function Card({
       </div>
       {children}
     </section>
+  );
+}
+
+/** The small square before a row's words: an icon or a logo. A phone leaves it out (6.07). */
+function Tile({ children }: { children: ReactNode }) {
+  return (
+    <span className="hidden size-8 shrink-0 items-center justify-center rounded-md bg-muted tablet:flex">
+      {children}
+    </span>
+  );
+}
+
+/** A row's words after its tile. */
+function WithTile({
+  tile,
+  children,
+}: {
+  tile: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <Tile>{tile}</Tile>
+      <div className="min-w-0">{children}</div>
+    </div>
   );
 }
 
@@ -193,11 +224,15 @@ function SignInMethods({
       text={t("methodsText")}
     >
       <Row>
-        <p className="flex items-center gap-2 text-body">
-          {t("emailCode")}
-          <Label>{t("alwaysOn")}</Label>
-        </p>
-        <p className="text-small text-muted-foreground">{t("emailCodeText")}</p>
+        <WithTile tile={<Icon icon={AtSignIcon} />}>
+          <p className="flex items-center gap-2 text-body">
+            {t("emailCode")}
+            <Label>{t("alwaysOn")}</Label>
+          </p>
+          <p className="text-small text-muted-foreground">
+            {t("emailCodeText")}
+          </p>
+        </WithTile>
       </Row>
       {providers.map((provider) => {
         const account = connectedAccount(user, provider);
@@ -216,14 +251,21 @@ function SignInMethods({
               </Button>
             }
           >
-            <p className="text-body">{t(provider)}</p>
-            <p className="text-small text-muted-foreground">
-              {account ? (
-                <bdi dir="ltr">{account.emailAddress}</bdi>
-              ) : (
-                t("notConnected")
-              )}
-            </p>
+            <WithTile
+              tile={
+                // biome-ignore lint/performance/noImgElement: a fixed 18px logo needs no optimisation, and packages/ui has no next/image.
+                <img src={logos[provider]} alt="" width={18} height={18} />
+              }
+            >
+              <p className="text-body">{t(provider)}</p>
+              <p className="text-small text-muted-foreground">
+                {account ? (
+                  <bdi dir="ltr">{account.emailAddress}</bdi>
+                ) : (
+                  t("notConnected")
+                )}
+              </p>
+            </WithTile>
           </Row>
         );
       })}
