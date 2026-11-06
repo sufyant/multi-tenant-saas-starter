@@ -252,7 +252,18 @@
   "accountSecurity": {
     "emailTitle": "E-posta",
     "emailText": "Bu adresle giriş yapar ve e-posta alırsınız.",
+    "copyEmail": "E-postayı kopyala",
     "verified": "Doğrulandı",
+    "changeEmail": "E-postayı değiştir",
+    "changeTitle": "E-postanızı değiştirin",
+    "changeText": "Yeni adrese 6 haneli bir kod göndeririz. Kodu girdiğinizde e-postanız değişir.",
+    "newEmail": "Yeni e-posta",
+    "sendCode": "Kod gönder",
+    "checkTitle": "E-postanızı kontrol edin",
+    "sentText": "<email></email> adresine 6 haneli bir kod gönderdik. {minutes, plural, one {# dakika} other {# dakika}} geçerlidir.",
+    "verify": "Doğrula",
+    "changed": "E-posta değişti",
+    "changedText": "Bundan sonra {email} ile giriş yaparsınız. Eski adresinize de haber verdik.",
     "methodsTitle": "Giriş yöntemleri",
     "methodsLead": "Nasıl giriş yapabileceğiniz.",
     "methodsText": "E-posta kodu her zaman çalışır.",
@@ -340,6 +351,7 @@
     "tabAll": "Tümü"
   },
   "patterns": {
+    "copy": "Kopyala",
     "copied": "Kopyalandı",
     "deletedUser": "Silinmiş kullanıcı"
   },

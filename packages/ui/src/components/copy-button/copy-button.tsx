@@ -11,14 +11,14 @@ export const copiedMs = 2000;
 export type CopyButtonProps = {
   /** The text that goes to the clipboard: an address, an email, a version. */
   value: string;
-  /** What the button copies, for its accessible name: "Copy the address". */
+  /** The button's accessible name, which starts with its label "Copy" (WCAG 2.2, 2.5.3): "Copy the address". */
   label: string;
   className?: string;
 };
 
 /**
- * The small copy button beside an address or an email (the Copy pattern). After a click it says "Copied" for two seconds; a
- * polite live region says it to a screen reader too.
+ * The small copy button beside an address or an email (the Copy pattern): its icon and "Copy". After a click it says "Copied"
+ * for two seconds; a polite live region says it to a screen reader too.
  */
 export function CopyButton({ value, label, className }: CopyButtonProps) {
   const t = useTranslations("patterns");
@@ -42,7 +42,7 @@ export function CopyButton({ value, label, className }: CopyButtonProps) {
         )}
       >
         <Icon icon={copied ? CheckIcon : CopyIcon} size={14} />
-        {copied && <span aria-hidden="true">{t("copied")}</span>}
+        <span aria-hidden="true">{copied ? t("copied") : t("copy")}</span>
       </button>
       <span role="status" className="sr-only">
         {copied ? t("copied") : ""}

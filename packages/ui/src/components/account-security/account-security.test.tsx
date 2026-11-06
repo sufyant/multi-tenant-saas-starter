@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import en from "../../../messages/en.json";
 import { expectVisibleToast } from "../../../test/toast";
 import { Toaster } from "../toast";
@@ -95,6 +96,14 @@ function userOf({
 const props: AccountSecurityProps = {
   intro: "Ayşe Demir · these settings are the same in every organisation.",
   email: "ayse@northwind.example",
+  // The email change has its own tests (email-change.test.tsx).
+  emailChange: {
+    schema: z.object({ email: z.string() }),
+    send: async () => ({ expiresAt: "2026-11-06T10:10:00Z" }),
+    verify: async () => {},
+    readFailure: () => ({ problem: null, fields: null, saved: false }),
+    onChanged: () => {},
+  },
   twoStep: { text: "Optional.", required: false },
   returnPath: "/northwind/settings/account",
   now,
@@ -136,11 +145,28 @@ const violations = async (within: Element = document.body) =>
   ).violations.map((violation) => violation.id);
 
 describe("AccountSecurity", () => {
+  // 6.07: on a phone the top bar holds the page's title, so the page leaves its own out; the address and Copy share a line
+  // and Verified goes under them. jsdom draws no breakpoint, so the classes say it.
+  it("AccountSecurity_Phone_LeavesTheTitleToTheTopBarAndPutsVerifiedUnderTheAddress", () => {
+    clerk.user = userOf();
+    renderPage();
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Account and security" }),
+    ).toHaveClass("max-tablet:hidden");
+    expect(
+      screen.getByRole("button", { name: "Copy the email" }).parentElement,
+    ).toHaveClass("max-tablet:basis-full");
+  });
+
   it("AccountSecurity_Loaded_ShowsTheEmailTheMethodsAndTheSessions", async () => {
     clerk.user = userOf();
     renderPage();
 
     expect(screen.getByText("ayse@northwind.example")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy the email" }),
+    ).toHaveTextContent("Copy");
     expect(screen.getByText("Verified")).toBeInTheDocument();
     expect(screen.getByText("ayse.demir@gmail.example")).toBeInTheDocument();
     expect(screen.getByText("Not connected")).toBeInTheDocument();

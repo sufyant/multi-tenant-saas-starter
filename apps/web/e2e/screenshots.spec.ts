@@ -640,6 +640,22 @@ const otherSessionsShown = (page: Page) =>
 const sessionsShown = (page: Page) =>
   page.getByText("This device", { exact: true }).waitFor();
 
+/** Opens Change email; with an address, sends it, and the mocked API answers that the code works for 10 minutes (6.08, 6.09). */
+const changeEmail = (address?: string) => async (page: Page) => {
+  await otherSessionsShown(page);
+  await page.route("**/api/v1/me/email-change", (route) =>
+    route.fulfill({
+      status: 201,
+      json: { expiresAt: new Date(Date.now() + 600_000).toISOString() },
+    }),
+  );
+  await page.getByRole("button", { name: "Change email" }).click();
+  if (!address) return;
+  await page.getByRole("textbox", { name: "New email" }).fill(address);
+  await page.getByRole("button", { name: "Send code" }).click();
+  await page.getByRole("alertdialog", { name: "Check your email" }).waitFor();
+};
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -868,6 +884,20 @@ const shellShots: {
     path: `${settings}/account`,
     mock: fullState,
     open: otherSessionsShown,
+  },
+  {
+    file: "6.08-change-email-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: fullState,
+    open: changeEmail(),
+  },
+  {
+    file: "6.09-email-code-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: fullState,
+    open: changeEmail("ayse.demir@northwind-traders.example"),
   },
 ];
 

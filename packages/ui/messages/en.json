@@ -252,7 +252,18 @@
   "accountSecurity": {
     "emailTitle": "Email",
     "emailText": "You sign in and receive email at this address.",
+    "copyEmail": "Copy the email",
     "verified": "Verified",
+    "changeEmail": "Change email",
+    "changeTitle": "Change your email",
+    "changeText": "We send a 6-digit code to the new address. Your email changes when you enter it.",
+    "newEmail": "New email",
+    "sendCode": "Send code",
+    "checkTitle": "Check your email",
+    "sentText": "We sent a 6-digit code to <email></email>. It works for {minutes, plural, one {# minute} other {# minutes}}.",
+    "verify": "Verify",
+    "changed": "Email changed",
+    "changedText": "You sign in with {email} from now on. We told your old address too.",
     "methodsTitle": "Sign-in methods",
     "methodsLead": "How you can sign in.",
     "methodsText": "The email code always works.",
@@ -340,6 +351,7 @@
     "tabAll": "All"
   },
   "patterns": {
+    "copy": "Copy",
     "copied": "Copied",
     "deletedUser": "Deleted user"
   },

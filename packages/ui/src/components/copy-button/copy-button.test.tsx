@@ -25,6 +25,17 @@ describe("CopyButton", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Copied");
   });
 
+  // The Copy pattern of the design labels the button; its accessible name starts with that label (WCAG 2.2, 2.5.3).
+  it("CopyButton_Shown_SaysCopyThenCopied", async () => {
+    const user = renderButton();
+    const button = screen.getByRole("button", { name: "Copy the version" });
+    expect(button).toHaveTextContent("Copy");
+
+    await user.click(button);
+
+    expect(button).toHaveTextContent("Copied");
+  });
+
   it("CopyButton_TwoSecondsLater_SaysNothing", async () => {
     const user = renderButton();
     await user.click(screen.getByRole("button", { name: "Copy the version" }));

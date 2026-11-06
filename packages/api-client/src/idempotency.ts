@@ -1,4 +1,5 @@
-import { ErrorCode, ProblemDetailsError } from "@repo/api-client";
+import { ErrorCode } from "./generated/endpoints.schemas.gen";
+import { ProblemDetailsError } from "./mutator";
 
 /**
  * Whether the API saved this answer under the Idempotency-Key (I6), so the same intent sent later needs a new key (F48): a 4xx
