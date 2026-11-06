@@ -1,0 +1,349 @@
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { NextIntlClientProvider } from "next-intl";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import en from "../../../messages/en.json";
+import { expectVisibleToast } from "../../../test/toast";
+import { Toaster } from "../toast";
+import { AccountSecurity, type AccountSecurityProps } from "./account-security";
+
+// Clerk is a system we do not own: its hooks are faked at their boundary, with the resources the page reads.
+const clerk = vi.hoisted(() => ({
+  user: null as unknown,
+  session: { id: "sess_chrome" } as unknown,
+  reverify: null as null | ((asked: unknown) => void),
+}));
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({ user: clerk.user }),
+  useSession: () => ({ session: clerk.session }),
+  useReverification:
+    (change: (...args: unknown[]) => Promise<unknown>, options: never) =>
+    (...args: unknown[]) =>
+      clerk.reverify
+        ? new Promise((resolve, reject) =>
+            clerk.reverify?.({
+              ...(options as object),
+              resolve,
+              reject,
+            }),
+          )
+        : change(...args),
+}));
+
+// Each app holds the locale's format; the page reads it as the apps do.
+const messages = { ...en, locale: { format: "en-IE" } };
+const now = new Date("2026-11-06T10:00:00Z");
+const sessionOf = (
+  id: string,
+  browserName: string,
+  deviceType: string,
+  city: string,
+  minutesAgo: number,
+) => ({
+  id,
+  status: "active",
+  lastActiveAt: new Date(now.getTime() - minutesAgo * 60_000),
+  latestActivity: {
+    id: `act_${id}`,
+    browserName,
+    deviceType,
+    city,
+    country: "TR",
+  },
+  revoke: vi.fn(async () => ({})),
+});
+
+function userOf({
+  sessions = [
+    sessionOf("sess_safari", "Safari", "iPhone", "Istanbul", 120),
+    sessionOf("sess_chrome", "Chrome", "Macintosh", "Istanbul", 0),
+    sessionOf("sess_firefox", "Firefox", "Windows", "Berlin", 3 * 24 * 60),
+  ],
+  accounts = [
+    {
+      id: "eac_google",
+      provider: "google",
+      emailAddress: "ayse.demir@gmail.example",
+      verification: { status: "verified" },
+      destroy: vi.fn(async () => {}),
+    },
+  ],
+  getSessions = async () => sessions,
+}: {
+  sessions?: ReturnType<typeof sessionOf>[];
+  accounts?: unknown[];
+  getSessions?: () => Promise<unknown>;
+} = {}) {
+  return {
+    externalAccounts: accounts,
+    twoFactorEnabled: false,
+    totpEnabled: false,
+    getSessions: vi.fn(getSessions),
+    createExternalAccount: vi.fn(async () => ({
+      verification: {
+        externalVerificationRedirectURL: new URL(
+          "https://login.microsoftonline.example/authorize",
+        ),
+      },
+    })),
+    reload: vi.fn(async () => {}),
+    sessions,
+  };
+}
+
+const props: AccountSecurityProps = {
+  intro: "Ayşe Demir · these settings are the same in every organisation.",
+  email: "ayse@northwind.example",
+  twoStep: { text: "Optional.", required: false },
+  returnPath: "/northwind/settings/account",
+  now,
+};
+
+function renderPage(overrides: Partial<AccountSecurityProps> = {}) {
+  render(
+    <NextIntlClientProvider
+      locale="en"
+      messages={messages}
+      timeZone="Europe/Istanbul"
+      now={now}
+    >
+      <AccountSecurity {...props} {...overrides} />
+      <Toaster dir="ltr" closeLabel="Close" regionLabel="Notifications" />
+    </NextIntlClientProvider>,
+  );
+}
+
+afterEach(() => {
+  clerk.reverify = null;
+  window.history.replaceState(null, "", "/");
+  vi.restoreAllMocks();
+});
+
+describe("AccountSecurity", () => {
+  it("AccountSecurity_Loaded_ShowsTheEmailTheMethodsAndTheSessions", async () => {
+    clerk.user = userOf();
+    renderPage();
+
+    expect(screen.getByText("ayse@northwind.example")).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getByText("ayse.demir@gmail.example")).toBeInTheDocument();
+    expect(screen.getByText("Not connected")).toBeInTheDocument();
+    const sessions = within(screen.getByRole("region", { name: "Sessions" }));
+    expect(
+      (await sessions.findAllByRole("listitem")).map(
+        (row) => row.querySelector("p")?.textContent,
+      ),
+    ).toEqual([
+      "Chrome on MacintoshThis device",
+      "Safari on iPhone",
+      "Firefox on Windows",
+    ]);
+    expect(
+      sessions.getByText(/Istanbul, Türkiye · active now/),
+    ).toBeInTheDocument();
+    expect(sessions.getAllByRole("button", { name: "Sign out" })).toHaveLength(
+      2,
+    );
+  });
+
+  it("AccountSecurity_DisconnectGoogle_AsksThenDisconnectsAndSaysSo", async () => {
+    const user = userOf();
+    clerk.user = user;
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Disconnect Google?" }),
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Disconnect" }));
+
+    expect(
+      (user.externalAccounts[0] as { destroy: () => void }).destroy,
+    ).toHaveBeenCalledOnce();
+    await expectVisibleToast("Google disconnected");
+  });
+
+  it("AccountSecurity_ConnectMicrosoft_GoesToTheProviderAndComesBackHere", async () => {
+    const user = userOf();
+    clerk.user = user;
+    const assign = vi.fn();
+    vi.spyOn(window, "location", "get").mockReturnValue({
+      ...window.location,
+      origin: "https://web.example.test",
+      assign,
+    });
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Connect" }));
+
+    expect(user.createExternalAccount).toHaveBeenCalledWith({
+      strategy: "oauth_microsoft",
+      redirectUrl:
+        "https://web.example.test/northwind/settings/account?connected=microsoft",
+    });
+    expect(assign).toHaveBeenCalledWith(
+      "https://login.microsoftonline.example/authorize",
+    );
+  });
+
+  it("AccountSecurity_BackFromAProvider_SaysConnected", async () => {
+    window.history.replaceState(null, "", "/settings/account?connected=google");
+    clerk.user = userOf();
+    renderPage();
+
+    await expectVisibleToast("Google connected");
+    expect(window.location.search).toBe("");
+  });
+
+  it("AccountSecurity_BackFromARefusal_SaysNotConnectedAndRemovesTheAttempt", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/settings/account?connected=microsoft",
+    );
+    const attempt = {
+      id: "eac_microsoft",
+      provider: "microsoft",
+      emailAddress: "",
+      verification: { status: "unverified" },
+      destroy: vi.fn(async () => {}),
+    };
+    clerk.user = userOf({ accounts: [attempt] });
+    renderPage();
+
+    await expectVisibleToast("Microsoft not connected");
+    expect(attempt.destroy).toHaveBeenCalledOnce();
+  });
+
+  it("AccountSecurity_SignOutASession_SignsItOutAndSaysSo", async () => {
+    const user = userOf();
+    clerk.user = user;
+    renderPage();
+
+    const safari = (await screen.findByText("Safari on iPhone")).closest("li");
+    await userEvent.click(
+      within(safari as HTMLElement).getByRole("button", { name: "Sign out" }),
+    );
+
+    expect(user.sessions[0]?.revoke).toHaveBeenCalledOnce();
+    await expectVisibleToast("Signed out of Safari on iPhone");
+    // Clerk's list of sessions is cached: the row leaves the page without a new read.
+    expect(
+      within(screen.getByRole("region", { name: "Sessions" })).queryByText(
+        "Safari on iPhone",
+      ),
+    ).toBeNull();
+    expect(user.getSessions).toHaveBeenCalledOnce();
+  });
+
+  it("AccountSecurity_SignOutOthers_AsksThenSignsOutEveryOtherSession", async () => {
+    const user = userOf();
+    clerk.user = user;
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Sign out of all other sessions",
+      }),
+    );
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Sign out of 2 other sessions?",
+      }),
+    );
+    expect(
+      dialog.getByText(
+        /Safari on iPhone and Firefox on Windows sign out at once/,
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole("button", { name: "Sign out" }));
+
+    expect(user.sessions.map((each) => each.revoke.mock.calls.length)).toEqual([
+      1, 0, 1,
+    ]);
+    await expectVisibleToast("Signed out of 2 other sessions");
+  });
+
+  it("AccountSecurity_OnlyThisDevice_SaysSoWithoutSignOutButtons", async () => {
+    clerk.user = userOf({
+      sessions: [
+        sessionOf("sess_chrome", "Chrome", "Macintosh", "Istanbul", 0),
+      ],
+    });
+    renderPage();
+
+    expect(
+      await screen.findByText("You’re signed in only on this device."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  });
+
+  it("AccountSecurity_SessionsFail_OffersToTryAgain", async () => {
+    const user = userOf({
+      getSessions: async () => {
+        throw new Error("offline");
+      },
+    });
+    clerk.user = user;
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        "Couldn’t load your sessions. Check your connection and try again.",
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(user.getSessions).toHaveBeenCalledTimes(2);
+  });
+
+  it("AccountSecurity_ClerkAsksForACheck_ShowsConfirmItsYou", async () => {
+    clerk.user = userOf();
+    clerk.session = {
+      id: "sess_chrome",
+      startVerification: vi.fn(async () => ({
+        status: "needs_first_factor",
+        supportedFirstFactors: [
+          {
+            strategy: "email_code",
+            emailAddressId: "idn_ayse",
+            safeIdentifier: "ayse@northwind.example",
+          },
+        ],
+      })),
+      prepareFirstFactorVerification: vi.fn(async () => ({})),
+    };
+    clerk.reverify = (asked) =>
+      (
+        asked as {
+          onNeedsReverification: (properties: unknown) => void;
+        }
+      ).onNeedsReverification({
+        level: "first_factor",
+        complete: vi.fn(),
+        cancel: vi.fn(),
+      });
+    renderPage();
+
+    const safari = (await screen.findByText("Safari on iPhone")).closest("li");
+    await userEvent.click(
+      within(safari as HTMLElement).getByRole("button", { name: "Sign out" }),
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", { name: "Confirm it’s you" }),
+    ).toBeInTheDocument();
+  });
+
+  it("AccountSecurity_TwoStepRequired_SaysOnWithoutActions", () => {
+    clerk.user = { ...userOf(), twoFactorEnabled: true, totpEnabled: true };
+    renderPage({
+      twoStep: { text: "Required on the platform.", required: true },
+    });
+
+    const twoStep = within(
+      screen.getByRole("region", { name: "Two-step verification" }),
+    );
+    expect(twoStep.getByText("On")).toBeInTheDocument();
+    expect(twoStep.queryByRole("button")).toBeNull();
+  });
+});
