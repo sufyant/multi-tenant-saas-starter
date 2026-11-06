@@ -3,7 +3,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { pseudoCookie } from "@repo/ui/lib/pseudo-locale";
-import { mockPlatform } from "./api";
+import { mockNotifications, mockPlatform } from "./api";
 import { expectAccessible } from "./axe";
 
 // The shell of the platform (the platform's Shell screens, the Screen sizes rules): a desktop and a phone, light and dark, English and
@@ -23,8 +23,9 @@ const texts = {
   },
 } as const;
 
-/** The box of a part of the page; a part with no box fails the test. */
+/** The box of a part of the page, once it shows; a part with no box fails the test. `boundingBox` does not wait. */
 const boxOf = async (locator: Locator) => {
+  await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
   return box as NonNullable<typeof box>;
@@ -236,3 +237,30 @@ for (const size of Object.keys(sizes) as Size[])
     expect(overflow).toEqual({ sideways: false, cut: [] });
     await expectAccessible(page);
   });
+
+// The page of notifications under the phone's top bar (3.08): the tabs' row with Mark all as read holds the longer texts.
+test("Shell_PseudoLocale_PageOfNotifications_NothingOverflows", async ({
+  page,
+}) => {
+  await mockNotifications(page);
+  await open(page, {
+    size: "phone",
+    path: "/notifications",
+    cookies: [{ name: pseudoCookie, value: "1" }],
+  });
+  await expect(page.getByRole("button", { name: /^\[Ṁåŕǩ/ })).toBeVisible();
+
+  const overflow = await page.evaluate(() => {
+    const row = document.querySelector("main [role=tablist]")
+      ?.parentElement as HTMLElement;
+    return {
+      sideways: document.documentElement.scrollWidth > window.innerWidth,
+      row: row.scrollWidth > row.clientWidth,
+      cut: [...document.querySelectorAll("main button")]
+        .filter((button) => button.scrollWidth > button.clientWidth + 1)
+        .map((button) => button.textContent),
+    };
+  });
+  expect(overflow).toEqual({ sideways: false, row: false, cut: [] });
+  await expectAccessible(page);
+});

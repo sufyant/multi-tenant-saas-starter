@@ -3,7 +3,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { pseudoCookie } from "@repo/ui/lib/pseudo-locale";
-import { mockMembers, northwind } from "./api";
+import { mockMembers, mockNotifications, northwind } from "./api";
 import { expectAccessible } from "./axe";
 
 // The shell of the tenant web (the Shell screens, the Screen sizes rules): a desktop and a phone, light and dark, English and
@@ -23,8 +23,9 @@ const texts = {
   },
 } as const;
 
-/** The box of a part of the page; a part with no box fails the test. */
+/** The box of a part of the page, once it shows; a part with no box fails the test. `boundingBox` does not wait. */
 const boxOf = async (locator: Locator) => {
+  await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
   return box as NonNullable<typeof box>;
@@ -241,3 +242,32 @@ for (const size of Object.keys(sizes) as Size[])
     expect(overflow).toEqual({ sideways: false, cut: [] });
     await expectAccessible(page);
   });
+
+// The tenant web has no page of notifications: on a phone the bell opens its full screen (3.14), whose tabs' row with Mark all
+// as read holds the longer texts.
+test("Shell_PseudoLocale_NotificationsFullScreen_NothingOverflows", async ({
+  page,
+}) => {
+  await mockNotifications(page);
+  await open(page, {
+    size: "phone",
+    cookies: [{ name: pseudoCookie, value: "1" }],
+  });
+  await page.getByRole("button", { name: /^\[Ñøţîƒîçåţîøñš/ }).click();
+  const screen = page.getByRole("dialog");
+  await expect(screen.getByRole("button", { name: /^\[Ṁåŕǩ/ })).toBeVisible();
+
+  const overflow = await screen.evaluate((dialog) => {
+    const row = dialog.querySelector("[role=tablist]")
+      ?.parentElement as HTMLElement;
+    return {
+      sideways: document.documentElement.scrollWidth > window.innerWidth,
+      row: row.scrollWidth > row.clientWidth,
+      cut: [...dialog.querySelectorAll("button")]
+        .filter((button) => button.scrollWidth > button.clientWidth + 1)
+        .map((button) => button.textContent),
+    };
+  });
+  expect(overflow).toEqual({ sideways: false, row: false, cut: [] });
+  await expectAccessible(page);
+});

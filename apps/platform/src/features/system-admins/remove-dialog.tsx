@@ -8,15 +8,16 @@ import {
   type UserResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
+import { ConfirmIdentity } from "@repo/ui/components/confirm-identity";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { reportError } from "@/error-tracking/report-error";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
-import { ReverifyStep } from "./reverify-step";
 import {
   afterRefusal,
   needsReverification,
@@ -64,8 +65,10 @@ export function RemoveDialog({
 
   if (reverifying && session)
     return (
-      <ReverifyStep
+      <ConfirmIdentity
         session={session}
+        level="second_factor"
+        onUnexpectedError={reportError}
         onCancel={onClose}
         onVerified={() => {
           setReverifying(false);
