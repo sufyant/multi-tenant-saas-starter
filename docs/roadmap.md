@@ -8,7 +8,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | done |
-| 36 | Personal pages | in progress: 36-backend done, 36-backend-name done; 36-frontend: Account and security in review, Profile next |
+| 36 | Personal pages | done |
 | 37a | The web's organisation pages | todo |
 | 37b | The platform's pages | todo |
 | 38 | Terms of use | todo |
@@ -87,7 +87,7 @@ Status: done.
 
 ## 4. Step 36: Personal pages
 
-Status: in progress. 36-backend is done; 36-frontend builds the screens on its API.
+Status: done.
 
 - Profile: the name, the language and the time zone.
 - Account and security: the email change goes through our API. The API owns the email and updates the identity provider.
