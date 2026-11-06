@@ -480,7 +480,8 @@ describe("NotificationBell", () => {
   it("NotificationPage_Loaded_ListsTheItemsOnThePageWithoutACard", () => {
     render(page());
 
-    expect(screen.getByRole("tabpanel")).not.toHaveClass("border", "bg-card");
+    expect(screen.getByRole("tabpanel")).not.toHaveClass("border");
+    expect(screen.getByRole("tabpanel")).not.toHaveClass("bg-card");
   });
 
   it("NotificationBell_PhoneEmpty_HasNoMarkAll", () => {

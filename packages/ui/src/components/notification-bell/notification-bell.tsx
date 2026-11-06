@@ -257,8 +257,8 @@ export function NotificationBell(props: NotificationBellProps) {
 }
 
 /**
- * The platform's page of notifications on a phone (3.08 of the platform): under the top bar, which names the page, the tabs, a
- * full-width Mark all as read and the items in a card.
+ * The platform's page of notifications on a phone (3.08 of the platform): under the top bar, which names the page, the tenant
+ * web's full screen without its header: the tabs' row ending with Mark all as read, and the items on the page.
  */
 export function NotificationPage(props: NotificationPageProps) {
   return <NotificationPanel {...props} layout="page" />;
