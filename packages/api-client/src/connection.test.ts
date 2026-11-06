@@ -212,6 +212,13 @@ describe("serverReach", () => {
     expect(reach.isDown()).toBe(true);
   });
 
+  // The bar and the bell read one verdict (F59, F57).
+  it("ServerReach_SameClient_IsOneStore", () => {
+    const queryClient = client();
+
+    expect(serverReach(queryClient)).toBe(serverReach(queryClient));
+  });
+
   it("ServerReach_403_StaysUp", async () => {
     const queryClient = client();
     const { reach } = follow(queryClient);

@@ -61,6 +61,7 @@ function bell(props: Partial<NotificationBellProps> = {}) {
         onOpenItem={vi.fn()}
         onMarkAll={vi.fn()}
         markingAll={false}
+        offline={false}
         tab="unread"
         onTabChange={vi.fn()}
         timeZone="Europe/Dublin"
@@ -84,6 +85,7 @@ function page(props: Partial<NotificationBellProps> = {}) {
         onOpenItem={vi.fn()}
         onMarkAll={vi.fn()}
         markingAll={false}
+        offline={false}
         tab="unread"
         onTabChange={vi.fn()}
         timeZone="Europe/Dublin"
@@ -380,9 +382,19 @@ describe("NotificationBell", () => {
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
-  it("NotificationBell_Offline_KeepsTheListAndMarkAllWaits", () => {
+  // The browser's signal is only a hint (F59): while the calls answer, the bell shows no offline row.
+  it("NotificationBell_BrowserSaysOfflineWhileTheCallsAnswer_ShowsNoOfflineRow", () => {
     vi.stubGlobal("navigator", { ...navigator, onLine: false });
     render(bell());
+
+    expect(screen.queryByText("You’re offline.")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Mark all as read" }),
+    ).toBeEnabled();
+  });
+
+  it("NotificationBell_Offline_KeepsTheListAndDisablesMarkAll", () => {
+    render(bell({ offline: true }));
 
     expect(screen.getByText("You’re offline.")).toBeInTheDocument();
     expect(
