@@ -25,9 +25,10 @@ public sealed class ResendEmailChannelTests : IDisposable
 
     public void Dispose() => _resend.Dispose();
 
-    // Every email goes out in HTML and in plain text (Resend, "Send Email": html and text).
+    // Every email goes out in HTML and in plain text (Resend, "Send Email": html and text). The sender's name is the brand's
+    // (packages/brand/brand.json), and its address the setting's.
     [Fact]
-    public async Task SendEmail_ThroughResend_PostsItsHtmlAndTextFromTheConfiguredAddress()
+    public async Task SendEmail_ThroughResend_PostsItsHtmlAndTextFromTheBrandsNameAndTheConfiguredAddress()
     {
         await Notifications().SendAsync(Email, Cancellation);
 
@@ -35,7 +36,7 @@ public sealed class ResendEmailChannelTests : IDisposable
         (request.Method, request.Uri).ShouldBe((HttpMethod.Post, new Uri("https://api.resend.test/emails")));
         request.Authorization.ShouldBe("Bearer re_test_key");
         var body = JsonDocument.Parse(request.Body).RootElement;
-        body.GetProperty("from").GetString().ShouldBe("App <no-reply@app.test>");
+        body.GetProperty("from").GetString().ShouldBe("Starter <no-reply@app.test>");
         body.GetProperty("to").EnumerateArray().Select(to => to.GetString()).ShouldBe(["ada@example.com"]);
         body.GetProperty("subject").GetString().ShouldBe("You are invited");
         body.GetProperty("html").GetString().ShouldBe("<p><a href=\"https://app.test/accept?token=abc\">Open</a></p>");
@@ -83,7 +84,7 @@ public sealed class ResendEmailChannelTests : IDisposable
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Notifications:Resend:ApiKey"] = "re_test_key",
-                ["Notifications:Resend:From"] = "App <no-reply@app.test>",
+                ["Notifications:Resend:FromAddress"] = "no-reply@app.test",
                 ["Notifications:Resend:ApiUrl"] = "https://api.resend.test/",
                 ["Notifications:Resend:Timeout"] = timeout,
             })

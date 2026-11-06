@@ -43,7 +43,7 @@ internal sealed class EndToEndApp(Database database, string role, FakeIdentityPr
         builder.UseSetting("Host:Authentication:Issuer", TestTokens.Issuer);
         builder.UseSetting("Host:Authentication:AuthorizedParties:0", TestTokens.AuthorizedParty);
         builder.UseSetting("Notifications:Resend:ApiKey", "re_test_unused");
-        builder.UseSetting("Notifications:Resend:From", "no-reply@app.test");
+        builder.UseSetting("Notifications:Resend:FromAddress", "no-reply@app.test");
 
         builder.ConfigureTestServices(services =>
         {
