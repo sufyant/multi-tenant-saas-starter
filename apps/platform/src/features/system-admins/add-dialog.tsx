@@ -11,6 +11,7 @@ import {
 } from "@repo/api-client";
 import { Avatar } from "@repo/ui/components/avatar";
 import { Banner } from "@repo/ui/components/banner";
+import { ConfirmIdentity } from "@repo/ui/components/confirm-identity";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
@@ -20,10 +21,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { reportError } from "@/error-tracking/report-error";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
 import { savedUnderKey } from "@/shared/saved-under-key";
-import { ReverifyStep } from "./reverify-step";
 import {
   afterRefusal,
   needsReverification,
@@ -119,8 +120,10 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
 
   if (step === "reverify" && person && session)
     return (
-      <ReverifyStep
+      <ConfirmIdentity
         session={session}
+        level="second_factor"
+        onUnexpectedError={reportError}
         onCancel={onClose}
         onVerified={() => {
           setStep("confirm");

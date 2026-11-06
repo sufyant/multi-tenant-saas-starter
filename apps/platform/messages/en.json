@@ -317,10 +317,7 @@
     "removeText": "They can no longer open the platform. Their memberships in organisations stay.",
     "removeAction": "Remove",
     "noLongerAdmin": "<bdi>{name}</bdi> is no longer a system admin.",
-    "rootCannotRemove": "Root admins can’t be removed here.",
-    "reverifyTitle": "Confirm it’s you",
-    "reverifyText": "Enter the 6-digit code from your authenticator app. We ask again because your last check was a while ago.",
-    "verify": "Verify and continue"
+    "rootCannotRemove": "Root admins can’t be removed here."
   },
   "activity": {
     "title": "Activity",
