@@ -13,7 +13,7 @@ import { CircleXIcon } from "../icon/icons";
 import { Pill } from "../pill";
 import { InlineSkeleton } from "../skeleton";
 import { showToast } from "../toast";
-import { Card, Row } from "./account-security";
+import { Card, Row } from "./card";
 import type { ReadFailure } from "./email-change";
 
 /**
