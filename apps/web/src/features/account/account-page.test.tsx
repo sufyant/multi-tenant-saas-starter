@@ -51,10 +51,12 @@ describe("AccountPage", () => {
 
     renderInTenant(<AccountPage />, { url: "/northwind/settings/account" });
 
+    // The name is isolated from the sentence around it (F15).
+    expect(await screen.findByText("Ayşe Yılmaz")).toContainHTML(
+      "<bdi>Ayşe Yılmaz</bdi>",
+    );
     expect(
-      await screen.findByText(
-        "Ayşe Yılmaz · these settings are the same in every organisation.",
-      ),
+      screen.getByText(/these settings are the same in every organisation\.$/),
     ).toBeInTheDocument();
     expect(screen.getByText("ayse@northwind.io")).toBeInTheDocument();
     const twoStep = within(

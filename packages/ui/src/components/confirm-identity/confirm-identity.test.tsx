@@ -1,10 +1,12 @@
 import { ClerkAPIResponseError } from "@clerk/nextjs/errors";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
-import { ConfirmIdentity, type VerifyingSession } from "./confirm-identity";
+import { ConfirmIdentity } from "./confirm-identity";
+import type { VerifyingSession } from "./use-confirm-identity";
 
 // Clerk's session reverification, faked at its boundary: each call answers the next state of the check.
 function sessionOf(
@@ -52,6 +54,21 @@ function renderStep(
   );
   return { onVerified, onCancel };
 }
+
+// jsdom draws nothing, so the rules of colour and of page regions stay out; jsdom counts Base UI's focus guards as focusable
+// inside aria-hidden, and Chromium's axe does not (F37).
+const violations = async () =>
+  (
+    await axe.run(
+      { include: [document.body], exclude: [["[data-base-ui-focus-guard]"]] },
+      {
+        rules: {
+          "color-contrast": { enabled: false },
+          region: { enabled: false },
+        },
+      },
+    )
+  ).violations.map((violation) => violation.id);
 
 describe("ConfirmIdentity", () => {
   it("ConfirmIdentity_FirstFactor_EmailsACodeAndChecksIt", async () => {
@@ -173,6 +190,35 @@ describe("ConfirmIdentity", () => {
 
     expect(session.prepareFirstFactorVerification).toHaveBeenCalledTimes(2);
     expect(await step.findByText("We sent a new code.")).toBeInTheDocument();
+  });
+
+  it("ConfirmIdentity_AStateNoStepServes_SaysItDidNotWork", async () => {
+    const session = sessionOf("needs_second_factor", {
+      second: async () => ({ status: "needs_first_factor_again" }),
+    });
+    const { onVerified } = renderStep(session, "second_factor");
+
+    const step = within(
+      await screen.findByRole("alertdialog", { name: "Confirm it’s you" }),
+    );
+    await step.findByText(/code from your authenticator app/);
+    await userEvent.type(step.getByRole("textbox", { name: "Code" }), "654321");
+    await userEvent.click(
+      step.getByRole("button", { name: "Verify and continue" }),
+    );
+
+    expect(
+      await step.findByText("Sign-in did not work. Try again."),
+    ).toBeInTheDocument();
+    expect(onVerified).not.toHaveBeenCalled();
+  });
+
+  it("ConfirmIdentity_EmailStep_HasNoAccessibilityViolation", async () => {
+    renderStep(sessionOf("needs_first_factor"));
+
+    await screen.findByText(/We sent a 6-digit code/);
+
+    expect(await violations()).toEqual([]);
   });
 
   it("ConfirmIdentity_Cancel_SendsNothing", async () => {

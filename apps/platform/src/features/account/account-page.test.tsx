@@ -49,9 +49,13 @@ describe("AccountPage", () => {
 
     renderWithProviders(<AccountPage />);
 
+    // The name is isolated from the sentence around it (F15).
+    expect(await screen.findByText("Ciara Byrne")).toContainHTML(
+      "<bdi>Ciara Byrne</bdi>",
+    );
     expect(
-      await screen.findByText(
-        "Ciara Byrne · these settings are the same on the platform and in every organisation.",
+      screen.getByText(
+        /these settings are the same on the platform and in every organisation\.$/,
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("ciara@starter.dev")).toBeInTheDocument();

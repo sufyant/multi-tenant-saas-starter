@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
@@ -118,6 +119,21 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
 });
+
+// jsdom draws nothing, so the rules of colour and of page regions stay out; jsdom counts Base UI's focus guards as focusable
+// inside aria-hidden, and Chromium's axe does not (F37).
+const violations = async (within: Element = document.body) =>
+  (
+    await axe.run(
+      { include: [within], exclude: [["[data-base-ui-focus-guard]"]] },
+      {
+        rules: {
+          "color-contrast": { enabled: false },
+          region: { enabled: false },
+        },
+      },
+    )
+  ).violations.map((violation) => violation.id);
 
 describe("AccountSecurity", () => {
   it("AccountSecurity_Loaded_ShowsTheEmailTheMethodsAndTheSessions", async () => {
@@ -246,22 +262,79 @@ describe("AccountSecurity", () => {
         name: "Sign out of all other sessions",
       }),
     );
-    const dialog = within(
-      await screen.findByRole("alertdialog", {
-        name: "Sign out of 2 other sessions?",
-      }),
+    const box = await screen.findByRole("alertdialog", {
+      name: "Sign out of 2 other sessions?",
+    });
+    const dialog = within(box);
+    expect(box).toHaveTextContent(
+      "Safari on iPhone and Firefox on Windows sign out at once.",
     );
-    expect(
-      dialog.getByText(
-        /Safari on iPhone and Firefox on Windows sign out at once/,
-      ),
-    ).toBeInTheDocument();
     await userEvent.click(dialog.getByRole("button", { name: "Sign out" }));
 
     expect(user.sessions.map((each) => each.revoke.mock.calls.length)).toEqual([
       1, 0, 1,
     ]);
     await expectVisibleToast("Signed out of 2 other sessions");
+  });
+
+  it("AccountSecurity_SignOutOfFiveOthers_NamesThreeThenTheRest", async () => {
+    clerk.user = userOf({
+      sessions: [
+        sessionOf("sess_chrome", "Chrome", "Macintosh", "Istanbul", 0),
+        ...["Safari", "Firefox", "Edge", "Opera", "Brave"].map(
+          (browser, index) =>
+            sessionOf(
+              `sess_${browser}`,
+              browser,
+              "Windows",
+              "Berlin",
+              index + 1,
+            ),
+        ),
+      ],
+    });
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Sign out of all other sessions",
+      }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Sign out of 5 other sessions?",
+    });
+
+    expect(dialog).toHaveTextContent(
+      "Safari on Windows, Firefox on Windows, Edge on Windows and 2 more sign out at once.",
+    );
+    expect(dialog.querySelectorAll("bdi")).toHaveLength(4);
+  });
+
+  it("AccountSecurity_PageAndItsDialogs_HaveNoAccessibilityViolation", async () => {
+    clerk.user = userOf();
+    renderPage();
+    await screen.findByText("Safari on iPhone");
+    expect(await violations()).toEqual([]);
+
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    // An open dialog is checked on its own: the page behind it is hidden from assistive technology then.
+    expect(
+      await violations(
+        await screen.findByRole("alertdialog", { name: "Disconnect Google?" }),
+      ),
+    ).toEqual([]);
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Sign out of all other sessions" }),
+    );
+    expect(
+      await violations(
+        await screen.findByRole("alertdialog", {
+          name: "Sign out of 2 other sessions?",
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it("AccountSecurity_OnlyThisDevice_SaysSoWithoutSignOutButtons", async () => {
