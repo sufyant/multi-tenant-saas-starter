@@ -97,6 +97,29 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await PlatformLogAsync(aloneId)).ShouldBe($"user.deleted|Platform|-|User|{aloneId}|-");
     }
 
+    // The purge takes the memberships away, so it names the Owners before: an Owner who stays a user hears of it in the personal bell. An
+    // Admin is no Owner.
+    [Fact]
+    public async Task PurgeTenant_AnOwnerWithAnotherTenant_TellsTheOwnerInThePersonalBell()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var elsewhere = (await _testData.AddTenantAsync()).Id;
+        await _testData.AddMemberAsync(elsewhere, owner);
+        await _testData.AddMemberAsync(elsewhere, admin);
+        var (ownerId, adminId) = (await _testData.UserIdOfAsync(owner), await _testData.UserIdOfAsync(admin));
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(concat_ws('|', user_id, type, coalesce(tenant_id::text, '-'), bell, "values"->>'tenantName'), ', ')
+            FROM notifications.notifications WHERE user_id IN ('{ownerId}', '{adminId}')
+            """,
+            _databaseName)).ShouldBe($"{ownerId}|tenant.purged_for_owners|-|Personal|Gone Ltd");
+    }
+
     // A8: a purge deletes a user through the user deletion path, so a tenant the user left before loses the user's address too.
     [Fact]
     public async Task PurgeTenant_AMemberLeftWithoutATenantWhoLeftAnotherTenantBefore_ErasesTheirAddressThere()

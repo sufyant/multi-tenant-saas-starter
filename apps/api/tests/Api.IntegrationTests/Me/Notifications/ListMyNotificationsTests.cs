@@ -39,4 +39,26 @@ public sealed class ListMyNotificationsTests(Database database) : IAsyncLifetime
         page.GetProperty("items").EnumerateArray().Select(item => (item.GetProperty("id").GetGuid() == unread, item.GetProperty("unread").GetBoolean()))
             .ShouldBe([(unreadOnly, unreadOnly)]);
     }
+
+    // The Owners' reactivated and reopened lead into the organisation; suspended, closed and purged to the start page (the maintainer's
+    // decisions of 2026-11-06). The personal bell shows both, and the platform names no system admin.
+    [Fact]
+    public async Task ListMyNotifications_AnOwnersReopenedAndSuspendedOrganisation_LeadToItsSettingsAndToTheStartPage()
+    {
+        var user = await _testData.AddUserAsync();
+        var userId = await _testData.UserIdOfAsync(user);
+        var tenantId = Guid.CreateVersion7();
+        await _rows.AddAsync(userId, "tenant.suspended_for_owners", null, "Personal", createdAt: DateTimeOffset.UtcNow.AddMinutes(-2));
+        await _rows.AddAsync(userId, "tenant.reopened_for_owners", tenantId, "Personal", createdAt: DateTimeOffset.UtcNow.AddMinutes(-1));
+
+        var page = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me/notifications", Cancellation);
+
+        page.GetProperty("items").EnumerateArray()
+            .Select(item => string.Join('|', item.GetProperty("title").GetString(), item.GetProperty("body").GetString(), item.GetProperty("link").GetRawText()))
+            .ShouldBe(
+            [
+                $$"""Acme Ltd was reopened|The platform reopened Acme Ltd. Its members can open it again.|{"kind":"tenant_settings","tenantId":"{{tenantId}}"}""",
+                """Acme Ltd was suspended|The platform suspended Acme Ltd. Its members can’t open it until it is reactivated.|{"kind":"start","tenantId":null}""",
+            ]);
+    }
 }
