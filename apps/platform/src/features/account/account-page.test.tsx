@@ -16,16 +16,19 @@ import { renderWithProviders } from "../../../test/render";
 import { AccountPage } from "./account-page";
 
 // Clerk is a system we do not own: the page's identity provider cards read a signed-in system admin with one session.
+// Clerk's hooks give the same objects on every render, as Clerk does.
+const clerk = vi.hoisted(() => ({
+  user: {
+    externalAccounts: [],
+    totpEnabled: true,
+    getSessions: async () => [],
+    reload: async () => {},
+  },
+  session: { id: "sess_this" },
+}));
 vi.mock("@clerk/nextjs", () => ({
-  useUser: () => ({
-    user: {
-      externalAccounts: [],
-      totpEnabled: true,
-      getSessions: async () => [],
-      reload: async () => {},
-    },
-  }),
-  useSession: () => ({ session: { id: "sess_this" } }),
+  useUser: () => ({ user: clerk.user }),
+  useSession: () => ({ session: clerk.session }),
   useReverification: (change: unknown) => change,
 }));
 

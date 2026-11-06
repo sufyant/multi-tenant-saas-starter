@@ -638,6 +638,8 @@ const shellShots: {
   path?: string;
   mock?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<void>;
+  /** The whole page, for a frame taller than the screen. */
+  fullPage?: boolean;
 }[] = [
   { file: "2.01-home-en-light-desktop", size: "desktop" },
   {
@@ -825,12 +827,14 @@ const shellShots: {
   // account, the state of 6.05.
   {
     file: "6.05-account-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
     open: sessionsShown,
   },
   {
     file: "6.06-account-en-dark-desktop",
+    fullPage: true,
     size: "desktop",
     scheme: "dark",
     path: `${settings}/account`,
@@ -838,6 +842,7 @@ const shellShots: {
   },
   {
     file: "6.07-account-en-light-phone",
+    fullPage: true,
     size: "phone",
     path: `${settings}/account`,
     open: sessionsShown,
@@ -880,5 +885,8 @@ for (const shot of shellShots.map(withDefaults))
       Promise.all(document.getAnimations().map((each) => each.finished)),
     );
 
-    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+    await page.screenshot({
+      path: `${folder}/shell-${shot.file}.png`,
+      fullPage: shot.fullPage,
+    });
   });

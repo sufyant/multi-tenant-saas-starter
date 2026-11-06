@@ -183,6 +183,8 @@ const shellShots: {
   path?: string;
   mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
   open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+  /** The whole page, for a frame taller than the screen. */
+  fullPage?: boolean;
   /** What the page shows once it has loaded, when it is not a heading of the content. */
   ready?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
 }[] = [
@@ -313,12 +315,14 @@ const shellShots: {
   // authenticator and no linked account.
   {
     file: "9.01-account-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: "/settings/account",
     open: sessionsShown,
   },
   {
     file: "9.14-account-en-dark-desktop",
+    fullPage: true,
     size: "desktop",
     scheme: "dark",
     path: "/settings/account",
@@ -326,6 +330,7 @@ const shellShots: {
   },
   {
     file: "9.13-account-en-light-phone",
+    fullPage: true,
     size: "phone",
     path: "/settings/account",
     open: sessionsShown,
@@ -368,5 +373,8 @@ for (const shot of shellShots.map(withDefaults))
       Promise.all(document.getAnimations().map((each) => each.finished)),
     );
 
-    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+    await page.screenshot({
+      path: `${folder}/shell-${shot.file}.png`,
+      fullPage: shot.fullPage,
+    });
   });
