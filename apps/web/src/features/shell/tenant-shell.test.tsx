@@ -204,7 +204,12 @@ describe("TenantShell", () => {
       within(menu)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual(["Back to Northwind Traders", "Profile", "Members"]);
+    ).toEqual([
+      "Back to Northwind Traders",
+      "Profile",
+      "Account and security",
+      "Members",
+    ]);
     expect(within(menu).getByRole("link", { name: "Members" })).toHaveAttribute(
       "aria-current",
       "page",
