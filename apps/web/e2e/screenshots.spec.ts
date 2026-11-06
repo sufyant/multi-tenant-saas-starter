@@ -621,6 +621,10 @@ const openBellFullScreen = async (page: Page) => {
     .toBeLessThanOrEqual(0);
 };
 
+/** Scrolls the theme's card, the one radio group of the Profile page, into view. */
+const showTheme = (page: Page) =>
+  page.getByRole("radiogroup").scrollIntoViewIfNeeded();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -764,34 +768,42 @@ const shellShots: {
     role: BuiltInRole.Member,
     path: `${settings}/activity`,
   },
-  // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame.
+  // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame. Each shot
+  // scrolls the card into view, because the two name fields make the form taller than the frame's.
   {
     file: "5.01-profile-en-light-desktop",
     size: "desktop",
     path: `${settings}/profile`,
+    open: showTheme,
   },
   {
     file: "5.08-profile-en-light-tablet",
     size: "tablet",
     path: `${settings}/profile`,
+    open: showTheme,
   },
   {
     file: "5.09-profile-en-light-phone",
     size: "phone",
     path: `${settings}/profile`,
+    open: showTheme,
   },
   {
     file: "5.07-profile-en-dark-desktop",
     size: "desktop",
     scheme: "dark",
     path: `${settings}/profile`,
-    open: (page) => page.getByRole("radio", { name: "Dark" }).click(),
+    open: async (page) => {
+      await page.getByRole("radio", { name: "Dark" }).click();
+      await showTheme(page);
+    },
   },
   {
     file: "5.10-profile-ar-light-desktop",
     size: "desktop",
     language: Language.Ar,
     path: `${settings}/profile`,
+    open: showTheme,
   },
   // The Dates and times pattern: a time's line on hover, the city and its offset (F18, F60).
   {
