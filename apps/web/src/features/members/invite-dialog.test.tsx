@@ -88,7 +88,7 @@ const sent = (email: string): InvitationResponse => ({
   email,
   role: roleOf.member,
   invitedBy: ayse.userId,
-  invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
+  invitedByName: { name: "Ayşe Yılmaz", deleted: false },
   language: Language.En,
   createdAt: new Date().toISOString(),
   expiresAt: new Date(Date.now() + 7 * day).toISOString(),

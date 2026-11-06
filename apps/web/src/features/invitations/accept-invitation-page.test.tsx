@@ -67,8 +67,7 @@ const pending: InvitationPreviewResponse = {
   tenantName: "Northwind Traders",
   inviterName: {
     kind: InviterNameResponseKind.User,
-    firstName: "Ayşe",
-    lastName: "Yılmaz",
+    name: "Ayşe Yılmaz",
     deleted: false,
   },
   role: roleOf.member,
@@ -171,10 +170,9 @@ describe("AcceptInvitationPage", () => {
       }),
     ).toBeInTheDocument();
     await user.type(
-      screen.getByRole("textbox", { name: "First name" }),
-      "  Ali ",
+      screen.getByRole("textbox", { name: "Name" }),
+      "  Ali Kaya ",
     );
-    await user.type(screen.getByRole("textbox", { name: "Last name" }), "Kaya");
     await user.click(
       screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
@@ -182,12 +180,11 @@ describe("AcceptInvitationPage", () => {
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
     expect(accepted).toHaveBeenCalledWith({
       code,
-      firstName: "Ali",
-      lastName: "Kaya",
+      name: "Ali Kaya",
     });
   });
 
-  it("AcceptInvitationPage_NewPersonWithoutAFirstName_SaysFillItInAndSendsNothing", async () => {
+  it("AcceptInvitationPage_NewPersonWithoutAName_SaysFillItInAndSendsNothing", async () => {
     setUp();
     const accepted = vi.fn();
     server.use(
@@ -202,15 +199,15 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.type(
-      await screen.findByRole("textbox", { name: "Last name" }),
-      "Kaya",
+      await screen.findByRole("textbox", { name: "Name" }),
+      "   ",
     );
     await user.click(
       screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
 
     expect(
-      await screen.findByRole("textbox", { name: "First name" }),
+      await screen.findByRole("textbox", { name: "Name" }),
     ).toHaveAccessibleDescription("Fill in this field.");
     expect(accepted).not.toHaveBeenCalled();
   });
@@ -227,7 +224,7 @@ describe("AcceptInvitationPage", () => {
             title: "Invalid",
             code: ErrorCode.RequestValidationFailed,
             traceId: "00-trace-02",
-            errors: { lastName: ["too_long"] },
+            errors: { name: ["too_long"] },
           },
           { status: 400 },
         ),
@@ -237,10 +234,9 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.type(
-      await screen.findByRole("textbox", { name: "First name" }),
-      "Ali",
+      await screen.findByRole("textbox", { name: "Name" }),
+      "Ali Kaya",
     );
-    await user.type(screen.getByRole("textbox", { name: "Last name" }), "Kaya");
     await user.click(
       screen.getByRole("button", { name: "Join Northwind Traders" }),
     );
@@ -333,8 +329,7 @@ describe("AcceptInvitationPage", () => {
     [
       {
         kind: InviterNameResponseKind.Platform,
-        firstName: null,
-        lastName: null,
+        name: null,
         deleted: null,
       },
       "Ask the platform to invite you again.",
@@ -342,8 +337,7 @@ describe("AcceptInvitationPage", () => {
     [
       {
         kind: InviterNameResponseKind.User,
-        firstName: null,
-        lastName: null,
+        name: null,
         deleted: true,
       },
       "Ask the person who invited you to invite you again.",

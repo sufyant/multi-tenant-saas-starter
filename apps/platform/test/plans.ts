@@ -181,7 +181,7 @@ export const ciaraOverride = (
   state: EntitlementOverrideResponseState.Active,
   reason: "Moving their old roles over; review at year end.",
   setById: "0198f0a2-0000-7000-8000-0000000000c1",
-  setBy: { firstName: "Ciara", lastName: "Byrne", deleted: false },
+  setBy: { name: "Ciara Byrne", deleted: false },
   setAt: "2026-10-16T13:20:00Z",
   ...values,
 });

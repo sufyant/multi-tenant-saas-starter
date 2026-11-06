@@ -298,8 +298,7 @@ describe("CreateOrganisationDialog", () => {
         return HttpResponse.json({
           id: "0198f0a2-0000-7000-8000-0000000000a9",
           email: "ciara@platform.example",
-          firstName: "Ciara",
-          lastName: "Byrne",
+          name: "Ciara Byrne",
           isSystemAdmin: true,
           language: Language.En,
           timeZone: "Europe/Dublin",

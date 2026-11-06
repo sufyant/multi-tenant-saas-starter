@@ -50,7 +50,7 @@ const invitation = (
   email,
   role: roleOf.member,
   invitedBy: ayse.userId,
-  invitedByName: { firstName: "Ayşe", lastName: "Yılmaz", deleted: false },
+  invitedByName: { name: "Ayşe Yılmaz", deleted: false },
   language: Language.En,
   createdAt: new Date().toISOString(),
   expiresAt: new Date(Date.now() + hoursLeft * hour).toISOString(),
@@ -65,7 +65,7 @@ const ali = invitation("inv-01", "ali@northwind.io", 6 * 24, {
   language: Language.Ar,
 });
 const conor = invitation("inv-03", "conor@northwind.io", 20, {
-  invitedByName: { firstName: null, lastName: null, deleted: true },
+  invitedByName: { name: null, deleted: true },
   language: Language.Tr,
 });
 const padraig = invitation("inv-04", "padraig@northwind.io", -4 * 24);
