@@ -63,6 +63,17 @@ const activity = (
   },
 });
 
+/** The client's active session in an answer: the client itself, or the client beside the answer. */
+function activeSessionOf(answer: unknown): string | undefined {
+  if (!answer || typeof answer !== "object") return undefined;
+  const { client, response } = answer as Json;
+  const found = [answer, client, response].find(
+    (each) =>
+      each && typeof each === "object" && (each as Json).object === "client",
+  ) as Json | undefined;
+  return (found?.last_active_session_id as string | null) ?? undefined;
+}
+
 /** Gives every user object of an answer the account, wherever it sits (the answer itself or the client beside it). */
 function withAccount(value: unknown, account: Json): unknown {
   if (Array.isArray(value))
@@ -95,6 +106,9 @@ export async function mockIdentity(
   if (!fapi)
     throw new Error("CLERK_FAPI is not set: run Playwright's global setup.");
   const account = googleEmail ? googleAccount(googleEmail) : null;
+  // This browser's session, from the client in Clerk's answers: the shared test user has many, and the list's first is not
+  // this one.
+  let thisSession: string | undefined;
   await page.route(
     new RegExp(`^https://${fapi.replaceAll(".", "\\.")}/v1/`),
     async (route) => {
@@ -105,12 +119,13 @@ export async function mockIdentity(
       if (!response.headers()["content-type"]?.includes("json"))
         return route.fulfill({ response });
       const answer = await response.json();
+      thisSession = activeSessionOf(answer) ?? thisSession;
       let body = account ? withAccount(answer, account) : answer;
       if (url.pathname.endsWith("/me/sessions/active")) {
         // Clerk answers this list as a bare array, or wrapped in `response` beside the client.
         const wrapped = !Array.isArray(body);
         const list = (wrapped ? (body as Json).response : body) as Json[];
-        const [current] = list;
+        const current = list.find((each) => each.id === thisSession) ?? list[0];
         if (current) {
           const now = Date.now();
           const thisDevice = activity(
