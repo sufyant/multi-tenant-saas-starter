@@ -1,4 +1,8 @@
-import { ErrorCode, Language } from "@repo/api-client";
+import {
+  DataExportResponseStatus,
+  ErrorCode,
+  Language,
+} from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -46,6 +50,26 @@ const me = getGetMeResponseMock({
   timeZone: "Europe/Dublin",
 });
 
+/** No export yet: GetMyDataExport's 404. */
+const noExport = http.get("*/v1/me/data-exports/latest", () =>
+  HttpResponse.json(
+    {
+      code: ErrorCode.DataExportNotFound,
+      traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    },
+    { status: 404 },
+  ),
+);
+
+const readyExport = {
+  id: "0b6f7c6e-3d1a-4d4e-9a55-6a1f3c2b9e10",
+  status: DataExportResponseStatus.Ready,
+  requestedAt: "2026-11-05T09:00:00Z",
+  readyAt: "2026-11-05T09:04:00Z",
+  expiresAt: "2026-11-12T09:04:00Z",
+  sizeBytes: 48_213,
+};
+
 describe("AccountPage", () => {
   it("AccountPage_Shown_SaysTwoStepIsRequiredAndOn", async () => {
     server.use(http.get("*/v1/me", () => HttpResponse.json(me)));
@@ -81,6 +105,7 @@ describe("AccountPage", () => {
         reads += 1;
         return HttpResponse.json(me);
       }),
+      noExport,
       http.post("*/v1/me/email-change", async ({ request }) => {
         sent.push({
           key: request.headers.get("Idempotency-Key"),
@@ -151,5 +176,84 @@ describe("AccountPage", () => {
 
     await expect.poll(() => reads).toBeGreaterThan(1);
     expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("AccountPage_NoExportYet_OffersTheExportAndNoDeletion", async () => {
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(me)),
+      noExport,
+    );
+
+    renderWithProviders(<AccountPage />);
+
+    const yourData = within(
+      await screen.findByRole("region", { name: "Your data" }),
+    );
+    expect(
+      await yourData.findByRole("button", { name: "Export my data" }),
+    ).toBeInTheDocument();
+    // The platform has no Delete my account (the maintainer's decision of 2026-11-05).
+    expect(
+      screen.queryByRole("region", { name: "Delete my account" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("AccountPage_AReadyExport_DownloadsThroughAFreshLink", async () => {
+    const downloads: string[] = [];
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(me)),
+      http.get("*/v1/me/data-exports/latest", () =>
+        HttpResponse.json(readyExport),
+      ),
+      http.post("*/v1/me/data-exports/:exportId/download", ({ params }) => {
+        downloads.push(String(params.exportId));
+        return HttpResponse.json({
+          url: "https://files.example/export.zip",
+          expiresAt: "2026-11-06T10:05:00Z",
+        });
+      }),
+    );
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+
+    renderWithProviders(<AccountPage />);
+
+    const yourData = within(
+      await screen.findByRole("region", { name: "Your data" }),
+    );
+    expect(await yourData.findByText("Ready")).toBeInTheDocument();
+    await userEvent.click(yourData.getByRole("button", { name: "Download" }));
+
+    await expect
+      .poll(() => assign.mock.calls)
+      .toEqual([["https://files.example/export.zip"]]);
+    expect(downloads).toEqual([readyExport.id]);
+    vi.unstubAllGlobals();
+  });
+
+  // The platform's shell does not watch the reads, so a read of Your data that refuses the account reads GetMe again, as the
+  // email change does, and the shell shows its page (F47).
+  it("AccountPage_ExportReadOfASuspendedAccount_ReadsGetMeAgain", async () => {
+    let reads = 0;
+    server.use(
+      http.get("*/v1/me", () => {
+        reads += 1;
+        return HttpResponse.json(me);
+      }),
+      http.get("*/v1/me/data-exports/latest", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.UserSuspended,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<AccountPage />);
+
+    await screen.findByRole("region", { name: "Your data" });
+    await expect.poll(() => reads).toBeGreaterThan(1);
   });
 });

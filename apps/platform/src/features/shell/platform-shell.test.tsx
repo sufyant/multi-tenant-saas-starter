@@ -8,6 +8,7 @@ import {
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
@@ -263,6 +264,36 @@ describe("PlatformShell", () => {
       "Account and security",
       "System admins",
     ]);
+  });
+
+  // The platform's own item of the account menu (2.03): the web app of WEB_APP_URL, which the server layout gives the shell.
+  it("PlatformShell_AccountMenu_OpensTheWebAppOfTheFrame", async () => {
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({
+          isSystemAdmin: true,
+          name: "Deniz Kaya",
+          language: "en",
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell webAppUrl="https://app.example.test">
+        Content
+      </PlatformShell>,
+    );
+    const [accountMenu] = await screen.findAllByRole("button", {
+      name: /Deniz Kaya/,
+    });
+    if (!accountMenu) throw new Error("No account menu.");
+    await userEvent.click(accountMenu);
+
+    expect(
+      await screen.findByRole("menuitem", {
+        name: "Open the web app (opens in a new tab)",
+      }),
+    ).toHaveAttribute("href", "https://app.example.test");
   });
 
   it("PlatformShell_UserPage_NamesTheUserInTheBreadcrumb", async () => {

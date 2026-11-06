@@ -18,4 +18,5 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - The sidebar starts with the organisation switcher, which opens "Your organisations" when the user has more than one (F59). The product's own sections go into `productSections` of `src/features/shell/tenant-shell.tsx`, after Home.
 - What the user may do comes from `GetMyTenant.permissions` (F5).
 - Settings opens Profile, the page every person can open. Inside Settings the sidebar shows the settings menu: My account (Profile, Account and security) and Organisation (General, Members, Roles, Activity log), each page only with its read permission (F5, F59).
+- `/account/deleted` is open in the proxy: the page after Delete my account, which names the address from the tab's storage (F62).
 - `/invitations/accept?code=...` is open in the proxy: it signs a new person up with Clerk's ticket, or sends a signed-out person to sign-in and back (F44).

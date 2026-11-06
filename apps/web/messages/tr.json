@@ -56,7 +56,19 @@
   },
   "securityPage": {
     "intro": "<name></name> · bu ayarlar her kuruluşta aynıdır.",
-    "twoStep": "İsteğe bağlı. E-posta kodundan veya Google'dan sonra bir kimlik doğrulayıcı uygulamadan 6 haneli bir kod da girersiniz."
+    "twoStep": "İsteğe bağlı. E-posta kodundan veya Google'dan sonra bir kimlik doğrulayıcı uygulamadan 6 haneli bir kod da girersiniz.",
+    "deleteTitle": "Hesabımı sil",
+    "deleteText": "Girişiniz her kuruluşta sona erer. Etkinliğiniz “Silinmiş kullanıcı” adıyla kalır. Bu geri alınamaz.",
+    "cannotDeleteTitle": "Hesabınızı henüz silemezsiniz",
+    "lastOwner": "<organisations></organisations> kuruluşunun son Sahibisiniz. Önce başka bir üyeyi Sahip yapın, sonra hesabınızı silin.",
+    "moreOrganisations": "{count, plural, one {# kuruluş daha} other {# kuruluş daha}}",
+    "confirmTitle": "Hesabınız silinsin mi?",
+    "confirmText": "<organisation></organisation> kuruluşuna ve üyesi olduğunuz diğer her kuruluşa erişiminizi hemen kaybedersiniz. Etkinliğiniz “Silinmiş kullanıcı” adıyla kalır. Bu geri alınamaz.",
+    "codeSent": "<email></email> adresine 6 haneli bir kod gönderdik. {minutes, plural, one {# dakika} other {# dakika}} geçerlidir.",
+    "deletedTitle": "Hesabınız silindi",
+    "deletedText": "<email></email> adresine bir onay gönderdik. Geri dönmek için yeni bir davete ihtiyacınız var.",
+    "deletedTextNoAddress": "Adresinize bir onay gönderdik. Geri dönmek için yeni bir davete ihtiyacınız var.",
+    "goToSignIn": "Girişe git"
   },
   "signInPage": {
     "title": "Starter'a giriş yapın"

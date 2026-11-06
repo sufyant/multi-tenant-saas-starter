@@ -1,0 +1,45 @@
+import { screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderWithProviders } from "../../../test/render";
+import { DeletedAccount, deletedEmailKey } from "./deleted-account";
+
+// The footer's language switch is a server action, which a unit test does not run.
+vi.mock("@/i18n/set-locale", () => ({ setLocale: async () => {} }));
+
+afterEach(() => sessionStorage.clear());
+
+describe("DeletedAccount", () => {
+  // The address comes from this tab's storage, never from the address bar (the privacy rules), and it is read once.
+  it("DeletedAccount_AfterTheDeletion_NamesTheAddressOnceAndOffersSignIn", async () => {
+    sessionStorage.setItem(deletedEmailKey, "lena@northwind.example");
+
+    renderWithProviders(<DeletedAccount />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Your account was deleted" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("lena@northwind.example")).toBeInTheDocument();
+    expect(sessionStorage.getItem(deletedEmailKey)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Go to sign-in" }),
+    ).toHaveAttribute("href", "/sign-in");
+  });
+
+  // Before sign-in every screen shows the footer with the language and Privacy (F59).
+  it("DeletedAccount_SignedOut_ShowsTheFooterBeforeSignIn", async () => {
+    renderWithProviders(<DeletedAccount />);
+
+    expect(
+      await screen.findByRole("link", { name: /Privacy/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+  });
+
+  it("DeletedAccount_WithoutAStoredAddress_SaysYourAddress", async () => {
+    renderWithProviders(<DeletedAccount />);
+
+    expect(
+      await screen.findByText(/We sent a confirmation to your address\./),
+    ).toBeInTheDocument();
+  });
+});

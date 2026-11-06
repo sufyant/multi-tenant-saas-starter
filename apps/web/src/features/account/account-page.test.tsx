@@ -1,4 +1,9 @@
-import { BuiltInRole, Language } from "@repo/api-client";
+import {
+  BuiltInRole,
+  DataExportResponseStatus,
+  ErrorCode,
+  Language,
+} from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -31,6 +36,7 @@ vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: clerk.user }),
   useSession: () => ({ session: clerk.session }),
   useReverification: (change: unknown) => change,
+  useClerk: () => ({ signOut: async () => {} }),
 }));
 
 const server = setupServer();
@@ -45,10 +51,31 @@ const me = getGetMeResponseMock({
   timeZone: "Europe/Istanbul",
 });
 
+/** No export yet: GetMyDataExport's 404. */
+const noExport = http.get("*/v1/me/data-exports/latest", () =>
+  HttpResponse.json(
+    {
+      code: ErrorCode.DataExportNotFound,
+      traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    },
+    { status: 404 },
+  ),
+);
+
+const readyExport = {
+  id: "0b6f7c6e-3d1a-4d4e-9a55-6a1f3c2b9e10",
+  status: DataExportResponseStatus.Ready,
+  requestedAt: "2026-11-05T09:00:00Z",
+  readyAt: "2026-11-05T09:04:00Z",
+  expiresAt: "2026-11-12T09:04:00Z",
+  sizeBytes: 48_213,
+};
+
 describe("AccountPage", () => {
   it("AccountPage_Shown_NamesThePersonAndShowsTheirAddress", async () => {
     server.use(
       http.get("*/v1/me", () => HttpResponse.json(me)),
+      noExport,
       ...tenantAnswers(BuiltInRole.Member),
     );
 
@@ -78,6 +105,7 @@ describe("AccountPage", () => {
         reads += 1;
         return HttpResponse.json(me);
       }),
+      noExport,
       http.post("*/v1/me/email-change", async ({ request }) => {
         sent.push({
           key: request.headers.get("Idempotency-Key"),
@@ -118,5 +146,94 @@ describe("AccountPage", () => {
     ]);
     expect(codes).toEqual([{ code: "381906" }]);
     expect(reads).toBeGreaterThan(1);
+  });
+
+  it("AccountPage_NoExportYet_OffersTheExportAndDeletion", async () => {
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(me)),
+      noExport,
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+
+    renderInTenant(<AccountPage />, { url: "/northwind/settings/account" });
+
+    const yourData = within(
+      await screen.findByRole("region", { name: "Your data" }),
+    );
+    expect(
+      await yourData.findByRole("button", { name: "Export my data" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Delete my account" }),
+    ).toBeInTheDocument();
+  });
+
+  it("AccountPage_AReadyExport_DownloadsThroughAFreshLink", async () => {
+    const downloads: string[] = [];
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(me)),
+      http.get("*/v1/me/data-exports/latest", () =>
+        HttpResponse.json(readyExport),
+      ),
+      http.post("*/v1/me/data-exports/:exportId/download", ({ params }) => {
+        downloads.push(String(params.exportId));
+        return HttpResponse.json({
+          url: "https://files.example/export.zip",
+          expiresAt: "2026-11-06T10:05:00Z",
+        });
+      }),
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+
+    renderInTenant(<AccountPage />, { url: "/northwind/settings/account" });
+
+    const yourData = within(
+      await screen.findByRole("region", { name: "Your data" }),
+    );
+    expect(await yourData.findByText("Ready")).toBeInTheDocument();
+    await userEvent.click(yourData.getByRole("button", { name: "Download" }));
+
+    await expect
+      .poll(() => assign.mock.calls)
+      .toEqual([["https://files.example/export.zip"]]);
+    expect(downloads).toEqual([readyExport.id]);
+    vi.unstubAllGlobals();
+  });
+
+  // While the worker prepares the file the card reads the export again every 10 seconds, so Ready shows without a reload (F62).
+  it("AccountPage_APreparingExport_ReadsItAgainUntilItIsReady", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let reads = 0;
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(me)),
+      http.get("*/v1/me/data-exports/latest", () => {
+        reads += 1;
+        return HttpResponse.json(
+          reads === 1
+            ? {
+                ...readyExport,
+                status: DataExportResponseStatus.Preparing,
+                readyAt: null,
+                expiresAt: null,
+              }
+            : readyExport,
+        );
+      }),
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+
+    renderInTenant(<AccountPage />, { url: "/northwind/settings/account" });
+
+    const yourData = within(
+      await screen.findByRole("region", { name: "Your data" }),
+    );
+    expect(await yourData.findByText("Preparing")).toBeInTheDocument();
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(await yourData.findByText("Ready")).toBeInTheDocument();
+    expect(reads).toBe(2);
+    vi.useRealTimers();
   });
 });

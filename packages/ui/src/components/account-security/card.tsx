@@ -1,15 +1,19 @@
 import { type ReactNode, useId } from "react";
+import { cn } from "../../lib/utils";
 
 /** A card of Account and security: its title and text, then its rows. `lead` is a first sentence that a phone leaves out (6.07). */
 export function Card({
   title,
   lead,
   text,
+  tone,
   children,
 }: {
   title: string;
   lead?: string;
   text: string;
+  /** A card whose action cannot be undone: its title is red (Delete my account, 6.01). */
+  tone?: "destructive";
   children: ReactNode;
 }) {
   const id = useId();
@@ -19,7 +23,10 @@ export function Card({
       className="flex flex-col rounded-lg border border-border bg-card"
     >
       <div className="flex flex-col gap-1 px-5 pt-4 pb-3">
-        <h2 id={id} className="text-section-title">
+        <h2
+          id={id}
+          className={cn("text-section-title", tone && "text-destructive-text")}
+        >
           {title}
         </h2>
         <p className="text-small text-muted-foreground">

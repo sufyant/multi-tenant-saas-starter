@@ -68,10 +68,13 @@ const notAUserYet = (error: Error | null) =>
  */
 export function PlatformShell({
   notFound = false,
+  webAppUrl,
   children,
 }: {
   /** "Page not found" of an address that no page has: its own crumb, and no row of the menu is the current one (2.40). */
   notFound?: boolean;
+  /** `WEB_APP_URL`, which the server reads: the account menu's "Open the web app" (2.03). */
+  webAppUrl?: string;
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -266,6 +269,7 @@ export function PlatformShell({
               person={{ name: admin.name }}
               profileHref="/settings/profile"
               accountAndSecurityHref="/settings/account"
+              webAppHref={webAppUrl}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}
               variant={place}

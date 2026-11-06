@@ -6,7 +6,9 @@ import { cn } from "../../lib/utils";
 import { Avatar, initialsOf, type Person } from "../avatar";
 import { copiedMs } from "../copy-button";
 import {
+  ArrowRightLeftIcon,
   ChevronsUpDownIcon,
+  ExternalLinkIcon,
   Icon,
   LockIcon,
   LogOutIcon,
@@ -31,6 +33,8 @@ export type AccountMenuProps = {
   profileHref: string;
   /** Account and security; without it the item does not show, as a page a person cannot open is not in their menu. */
   accountAndSecurityHref?: string;
+  /** The platform's own item, "Open the web app": the web app's origin, opened in a new tab. Without it the item does not show. */
+  webAppHref?: string;
   onSignOut: () => void;
   /** The image's commit, seven characters (`shortRevision`); without it, as in a local run, the version row does not show. */
   version?: string;
@@ -44,7 +48,7 @@ export type AccountMenuProps = {
 
 /**
  * The account menu at the foot of the sidebar and of the phone drawer (the Account menu screens): who is signed in, Profile,
- * Account and security, Sign out, and last "Version a1b2c3d" in small grey text. A click on the version copies it and says
+ * Account and security, on the platform "Open the web app" in a new tab, Sign out, and last "Version a1b2c3d" in small grey text. A click on the version copies it and says
  * "Copied" for two seconds, without closing the menu. It takes the person from its props; this package never imports the identity
  * provider.
  */
@@ -54,6 +58,7 @@ export function AccountMenu({
   person,
   profileHref,
   accountAndSecurityHref,
+  webAppHref,
   onSignOut,
   version,
   linkComponent: Link = "a",
@@ -145,6 +150,19 @@ export function AccountMenu({
             >
               <Icon icon={LockIcon} />
               {t("appShell.accountAndSecurity")}
+            </DropdownMenuItem>
+          )}
+          {webAppHref && (
+            <DropdownMenuItem
+              render={<a href={webAppHref} target="_blank" rel="noopener" />}
+              className={item}
+            >
+              <Icon icon={ArrowRightLeftIcon} />
+              <span className="flex-1">
+                {t("appShell.openWebApp")}{" "}
+                <span className="sr-only">{t("appShell.opensInNewTab")}</span>
+              </span>
+              <Icon icon={ExternalLinkIcon} className="text-muted-foreground" />
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />

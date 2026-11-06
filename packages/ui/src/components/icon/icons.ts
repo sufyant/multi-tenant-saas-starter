@@ -15,6 +15,7 @@ export {
   CircleXIcon,
   CopyIcon,
   CreditCardIcon,
+  ExternalLinkIcon,
   FlaskConicalIcon,
   GlobeIcon,
   HistoryIcon,

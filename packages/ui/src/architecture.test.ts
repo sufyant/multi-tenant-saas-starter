@@ -100,13 +100,17 @@ describe("architecture of packages/ui", () => {
     expect(enumLiterals(src, contractEnumValues(generatedSchemas))).toEqual([]);
   });
 
-  // Each app gives Account and security the same calls of the email change, which packages/ui does not read at run time (F62).
-  it("F62_EmailChangeCalls_AreTheSameInBothApps", () => {
-    const file = "src/features/account/use-email-change.ts";
-    expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
-      readFileSync(join(packages, "../apps/platform", file), "utf8"),
-    );
-  });
+  // Each app gives Account and security the same calls of the email change and of Your data, and reads their failures the same
+  // way; packages/ui does not read the generated client at run time (F62).
+  it.each(["use-email-change.ts", "use-your-data.ts", "use-read-failure.ts"])(
+    "F62_AccountCalls_%s_IsTheSameInBothApps",
+    (name) => {
+      const file = `src/features/account/${name}`;
+      expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
+        readFileSync(join(packages, "../apps/platform", file), "utf8"),
+      );
+    },
+  );
 
   // Each app holds the same error tracking code, because only an app may import the SDK (F55, and the deviations table).
   it("F55_ErrorTracking_IsTheSameInBothApps", () => {

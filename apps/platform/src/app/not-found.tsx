@@ -3,6 +3,7 @@ import { brand } from "@repo/brand";
 import { AuthFooter, AuthLayout } from "@repo/ui/components/auth-layout";
 import { NotFound } from "@repo/ui/components/not-found";
 import { getTranslations } from "next-intl/server";
+import { env } from "@/env";
 import { PlatformShell } from "@/features/shell/platform-shell";
 import { setLocale } from "@/i18n/set-locale";
 
@@ -29,7 +30,7 @@ export default async function NotFoundPage() {
     );
   }
   return (
-    <PlatformShell notFound>
+    <PlatformShell notFound webAppUrl={env().WEB_APP_URL}>
       <NotFound kind="page" href="/" />
     </PlatformShell>
   );

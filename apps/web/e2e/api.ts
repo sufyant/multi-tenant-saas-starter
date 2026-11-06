@@ -8,6 +8,7 @@ import {
   type ChangeMemberRoleRequest,
   type ChangePreferencesRequest,
   type CursorPageOfAuditEntryResponse,
+  type DataExportResponse,
   ErrorCode,
   type InvitationPreviewResponse,
   type InvitationResponse,
@@ -185,6 +186,7 @@ export async function mockApi(
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({ json: me(language) }),
   );
+  await mockDataExport(page);
   await page.route("**/api/v1/me/tenants*", (route) =>
     route.fulfill({
       json: { items: [northwind], page: 1, pageSize: 100, total: 1 },
@@ -662,4 +664,22 @@ export async function mockNotifications(
       signal();
     },
   };
+}
+
+/** The person's latest data export for Your data (F62): none by default, GetMyDataExport's 404. */
+export async function mockDataExport(
+  page: Page,
+  latest?: DataExportResponse,
+): Promise<void> {
+  await page.route("**/api/v1/me/data-exports/latest", (route) =>
+    latest
+      ? route.fulfill({ json: latest })
+      : route.fulfill({
+          status: 404,
+          json: {
+            code: ErrorCode.DataExportNotFound,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+        }),
+  );
 }

@@ -39,6 +39,7 @@ run() {
     -e CLERK_SECRET_KEY=sk_test_fake_not_a_secret \
     -e CLERK_TELEMETRY_DISABLED=1 \
     -e APP_ENVIRONMENT=local \
+    -e WEB_APP_URL=http://localhost:3000 \
     "$app"
   status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 \
     --retry 30 --retry-delay 1 --retry-all-errors --retry-max-time 30 \
