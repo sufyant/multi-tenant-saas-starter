@@ -210,10 +210,9 @@ export const GetTenantPlanResponse = zod.object({
   "reason": zod.string(),
   "setById": zod.uuid(),
   "setBy": zod.object({
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean()
-}).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.'),
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
   "setAt": zod.iso.datetime({"offset":true})
 }).describe('A tenant\'s override of one key: its value, its expiry (null for one that never expires), its state, the system admin\'s reason, the\nsystem admin who set it, by id and by name, and when.')]),
   "effective": zod.object({
@@ -261,10 +260,9 @@ export const ChangeTenantPlanResponse = zod.object({
   "reason": zod.string(),
   "setById": zod.uuid(),
   "setBy": zod.object({
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean()
-}).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.'),
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
   "setAt": zod.iso.datetime({"offset":true})
 }).describe('A tenant\'s override of one key: its value, its expiry (null for one that never expires), its state, the system admin\'s reason, the\nsystem admin who set it, by id and by name, and when.')]),
   "effective": zod.object({
@@ -346,10 +344,9 @@ export const SetEntitlementOverrideResponse = zod.object({
   "reason": zod.string(),
   "setById": zod.uuid(),
   "setBy": zod.object({
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean()
-}).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.'),
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
   "setAt": zod.iso.datetime({"offset":true})
 }).describe('A tenant\'s override of one key: its value, its expiry (null for one that never expires), its state, the system admin\'s reason, the\nsystem admin who set it, by id and by name, and when.')]),
   "effective": zod.object({

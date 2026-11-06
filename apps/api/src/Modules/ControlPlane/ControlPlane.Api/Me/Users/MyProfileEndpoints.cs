@@ -20,7 +20,7 @@ using Wolverine;
 
 namespace ControlPlane.Api.Me.Users;
 
-/// <summary>The signed-in user's own profile, names, preferences and address, and the deletion of their own account.</summary>
+/// <summary>The signed-in user's own profile, name, preferences and address, and the deletion of their own account.</summary>
 public static class MyProfileEndpoints
 {
     internal const string NoLocation =
@@ -48,14 +48,14 @@ public static class MyProfileEndpoints
     private static async Task<Result<MeResponse>> GetMe(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<MeView>>(new GetMeQuery(user.Id()), cancellationToken)).Map(ToResponse);
 
-    // Renaming sets a state, so it takes no idempotency key (I1): the names the user has answer 200 again. The token names the user, so a
-    // user changes only their own names. It answers the user as GetMe reads them.
+    // Renaming sets a state, so it takes no idempotency key (I1): the name the user has answers 200 again. The token names the user, so a
+    // user changes only their own name. It answers the user as GetMe reads them.
     private static async Task<Result<MeResponse>> RenameMe(
         RenameMeRequest request,
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<MeView>>(new RenameMeCommand(user.Id(), request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<MeView>>(new RenameMeCommand(user.Id(), request.Name), cancellationToken)).Map(ToResponse);
 
     // Changing the preferences sets a state, so it takes no idempotency key (I1): the values the user has answer 200 again.
     private static async Task<Result<PreferencesResponse>> ChangePreferences(
@@ -155,7 +155,7 @@ public static class MyProfileEndpoints
 
     private static VerificationCodeResponse ToResponse(VerificationCodeView code) => new(code.ExpiresAt);
 
-    private static MeResponse ToResponse(MeView me) => new(me.Id, me.Email, me.FirstName, me.LastName, me.IsSystemAdmin, me.Language, me.TimeZone);
+    private static MeResponse ToResponse(MeView me) => new(me.Id, me.Email, me.Name, me.IsSystemAdmin, me.Language, me.TimeZone);
 
     private static PreferencesResponse ToResponse(PreferencesView preferences) => new(preferences.Language, preferences.TimeZone);
 }

@@ -23,13 +23,13 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
     Task<UserProfile?> IUserRepository.FindProfileAsync(string externalUserId, CancellationToken cancellationToken) =>
         controlPlane.Users
             .Where(user => user.ExternalId == externalUserId)
-            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
+            .Select(user => new UserProfile(user.Id, user.Email, user.Name, user.Language, user.DeletedAt != null))
             .SingleOrDefaultAsync(cancellationToken);
 
     Task<UserProfile?> IUserRepository.FindProfileAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.Users
             .Where(user => user.Id == userId)
-            .Select(user => new UserProfile(user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt != null))
+            .Select(user => new UserProfile(user.Id, user.Email, user.Name, user.Language, user.DeletedAt != null))
             .SingleOrDefaultAsync(cancellationToken);
 
     Task<UserIdentity?> IUserRepository.FindIdentityAsync(Guid userId, CancellationToken cancellationToken) =>

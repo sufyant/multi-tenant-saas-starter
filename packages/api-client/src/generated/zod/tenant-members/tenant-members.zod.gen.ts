@@ -26,8 +26,8 @@ export const ListMembersQueryParams = zod.object({
   RoleDescending: '-role',
   Email: 'email',
   EmailDescending: '-email',
-  LastName: 'lastName',
-  LastNameDescending: '-lastName',
+  Name: 'name',
+  NameDescending: '-name',
 }).optional(),
   "q": zod.string().max(listMembersQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
   "roleId": zod.uuid().optional()
@@ -37,8 +37,7 @@ export const ListMembersResponse = zod.object({
   "items": zod.array(zod.object({
   "userId": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "role": zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
@@ -46,7 +45,7 @@ export const ListMembersResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "deleted": zod.boolean(),
   "joinedAt": zod.iso.datetime({"offset":true})
-}).describe('A member of the tenant: the user\'s id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows "Deleted user", as the audit logs say `deleted` (K3).')),
+}).describe('A member of the tenant: the user\'s id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and an empty name, and\nthe screen shows "Deleted user", as the audit logs say `deleted` (K3).')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
@@ -64,8 +63,7 @@ export const ChangeMemberRoleBody = zod.object({
 export const ChangeMemberRoleResponse = zod.object({
   "userId": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "role": zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
@@ -73,7 +71,7 @@ export const ChangeMemberRoleResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "deleted": zod.boolean(),
   "joinedAt": zod.iso.datetime({"offset":true})
-}).describe('A member of the tenant: the user\'s id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and empty names, and\nthe screen shows "Deleted user", as the audit logs say `deleted` (K3).')
+}).describe('A member of the tenant: the user\'s id, the copy of their email address and name, their role, whether the identity provider deleted\nthe user, and when they joined the tenant. A deleted user has an empty email address and an empty name, and\nthe screen shows "Deleted user", as the audit logs say `deleted` (K3).')
 
 export const RemoveMemberParams = zod.object({
   "userId": zod.uuid(),

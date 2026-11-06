@@ -162,7 +162,7 @@ public static class TenantEndpoints
         [.. tenant.Owners.Select(ToResponse)],
         tenant.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
 
-    private static TenantOwnerResponse ToResponse(TenantOwnerView owner) => new(owner.UserId, owner.FirstName, owner.LastName, owner.Email);
+    private static TenantOwnerResponse ToResponse(TenantOwnerView owner) => new(owner.UserId, owner.Name, owner.Email);
 
     private static OwnerInvitationResponse ToResponse(OwnerInvitationView invitation) =>
         new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfInvitation(invitation.State), invitation.Language);

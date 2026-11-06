@@ -48,10 +48,9 @@ export const InviteMemberResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "invitedBy": zod.uuid(),
   "invitedByName": zod.object({
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean()
-}).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.'),
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
   "createdAt": zod.iso.datetime({"offset":true}),
   "expiresAt": zod.iso.datetime({"offset":true}),
   "state": zod.enum({
@@ -102,10 +101,9 @@ export const ListInvitationsResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "invitedBy": zod.uuid(),
   "invitedByName": zod.object({
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean()
-}).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.'),
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
   "createdAt": zod.iso.datetime({"offset":true}),
   "expiresAt": zod.iso.datetime({"offset":true}),
   "state": zod.enum({

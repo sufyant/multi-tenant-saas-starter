@@ -7,7 +7,6 @@ public sealed class RenameMeValidator : AbstractValidator<RenameMeCommand>
 {
     public RenameMeValidator()
     {
-        RuleFor(command => command.FirstName).ValidPersonName();
-        RuleFor(command => command.LastName).ValidPersonName();
+        RuleFor(command => command.Name).ValidPersonName();
     }
 }
