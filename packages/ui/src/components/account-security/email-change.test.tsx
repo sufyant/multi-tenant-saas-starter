@@ -1,9 +1,10 @@
-import { ErrorCode } from "@repo/api-client";
+import { ErrorCode, schemas } from "@repo/api-client";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import en from "../../../messages/en.json";
 import { expectVisibleToast } from "../../../test/toast";
 import { dismissToasts, Toaster } from "../toast";
@@ -14,6 +15,16 @@ const now = new Date("2026-11-06T10:00:00Z");
 const inTenMinutes = "2026-11-06T10:10:00Z";
 
 /** A failure as the app reads it: the API's code, its field codes, and whether the API saved it under the key. */
+// The app's schema: the generated body of RequestEmailChange, trimmed and required (F11).
+const schema = schemas.RequestEmailChangeBody.extend({
+  email: z
+    .string()
+    .trim()
+    .min(1)
+    .max(schemas.requestEmailChangeBodyEmailMax)
+    .pipe(z.email()),
+});
+
 const refusal = (
   code: ErrorCode,
   {
@@ -32,6 +43,7 @@ function renderChange(overrides: Partial<EmailChangeProps> = {}) {
     verify: vi.fn(async () => {}),
     readFailure: vi.fn(() => refusal(ErrorCode.ServerError)),
     onChanged: vi.fn(),
+    schema,
     now,
     ...overrides,
   };
@@ -174,6 +186,66 @@ describe("EmailChange", () => {
     expect(calls).toHaveLength(2);
     expect(calls[1]?.[1]).not.toBe(calls[0]?.[1]);
     expect(await step.findByText("We sent a new code.")).toBeInTheDocument();
+  });
+
+  it("EmailChange_EmptyAddress_SaysFillItInAndSendsNothing", async () => {
+    const props = renderChange();
+
+    await sendTo(" ");
+
+    expect(await screen.findByText("Fill in this field.")).toBeInTheDocument();
+    expect(props.send).not.toHaveBeenCalled();
+  });
+
+  it("EmailChange_MalformedAddress_SaysSoAndSendsNothing", async () => {
+    const props = renderChange();
+
+    await sendTo("ayse-at-northwind");
+
+    expect(
+      await screen.findByText("Enter an email address like name@company.com."),
+    ).toBeInTheDocument();
+    expect(props.send).not.toHaveBeenCalled();
+  });
+
+  it("EmailChange_AFailureTheAppHandled_ClosesWithoutAText", async () => {
+    renderChange({
+      send: vi.fn().mockRejectedValue(new Error("signed out")),
+      readFailure: () => ({ ...refusal(ErrorCode.ServerError), handled: true }),
+    });
+
+    await sendTo("ayse.demir@northwind-traders.example");
+
+    await expect.poll(() => screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.queryByText(/Something went wrong/)).toBeNull();
+  });
+
+  it("EmailChange_SendANewCodeTwice_SendsOnceAtATime", async () => {
+    let answer = () => {};
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({ expiresAt: inTenMinutes })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answer = () => resolve({ expiresAt: inTenMinutes });
+          }),
+      );
+    renderChange({ send });
+
+    await sendTo("ayse.demir@northwind-traders.example");
+    const step = within(
+      await screen.findByRole("alertdialog", { name: "Check your email" }),
+    );
+    await userEvent.click(
+      step.getByRole("button", { name: "Send a new code" }),
+    );
+    await userEvent.click(
+      step.getByRole("button", { name: "Send a new code" }),
+    );
+    answer();
+
+    expect(send).toHaveBeenCalledTimes(2);
   });
 
   it("EmailChange_BothSteps_HaveNoAccessibilityViolation", async () => {
