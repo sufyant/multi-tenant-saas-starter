@@ -52,6 +52,10 @@
     "text": "Bunlar sizi her kuruluşta ve her cihazda izler.",
     "nameNote": "Adınız, üyesi olduğunuz her kuruluşun üyelerine görünür."
   },
+  "securityPage": {
+    "intro": "{name} · bu ayarlar her kuruluşta aynıdır.",
+    "twoStep": "İsteğe bağlı. E-posta kodundan veya Google'dan sonra bir kimlik doğrulayıcı uygulamadan 6 haneli bir kod da girersiniz."
+  },
   "signInPage": {
     "title": "Starter'a giriş yapın"
   },

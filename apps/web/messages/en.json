@@ -52,6 +52,10 @@
     "text": "These follow you to every organisation and device.",
     "nameNote": "Your name shows to the members of every organisation you belong to."
   },
+  "securityPage": {
+    "intro": "{name} · these settings are the same in every organisation.",
+    "twoStep": "Optional. After the email code or Google, you also enter a 6-digit code from an authenticator app."
+  },
   "signInPage": {
     "title": "Sign in to Starter"
   },
