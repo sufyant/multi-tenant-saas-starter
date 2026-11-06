@@ -143,6 +143,8 @@ describe("PreferencesForm", () => {
 
     await expectVisibleToast("Profile saved");
     await expectVisibleToast("Your new name shows in every organisation.");
+    // The saved values are the form's new start, so Save changes is off again (5.04).
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
   });
 
   // 5.05: while GetMe loads, the card keeps its place: the labels, the notes and Save changes off.

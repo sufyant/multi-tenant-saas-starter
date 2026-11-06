@@ -454,6 +454,12 @@ describe("ProfilePage", () => {
     expect(
       await screen.findByText("Your profile did not load"),
     ).toBeInTheDocument();
+    // F4: the API code's message and the reference that support searches for.
+    expect(
+      screen.getByText(
+        /^Something went wrong on our side\..+Ref 4bf92f3577b34da6a3ce929d0e0e4736/,
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Contact support" }),
     ).toBeInTheDocument();
@@ -462,6 +468,30 @@ describe("ProfilePage", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("textbox", { name: "Name" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // A GetMe that refuses the account is not the card's to say: the account's page shows (F47).
+  it("ProfilePage_GetMeOfASuspendedAccount_ShowsTheAccountsPage", async () => {
+    server.use(
+      http.get("*/v1/me", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.UserSuspended,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Your account is suspended"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Your profile did not load"),
     ).not.toBeInTheDocument();
   });
 });
