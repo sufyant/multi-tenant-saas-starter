@@ -24,6 +24,7 @@ export {
   LockIcon,
   LogOutIcon,
   type LucideIcon,
+  MailIcon,
   MenuIcon,
   MonitorIcon,
   MoonIcon,
