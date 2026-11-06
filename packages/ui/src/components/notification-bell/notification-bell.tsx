@@ -267,7 +267,7 @@ export function NotificationPage(props: NotificationPageProps) {
 /**
  * The list's frame (3.01 to 3.08, 3.14, 3.15): the header with Mark all as read, the tabs, the offline row, the items or their
  * state, and the foot. A popover keeps Mark all in its header, disabled while it has nothing to do; the phone's full screen has
- * Close in its header and Mark all on the tabs' row; the platform's page has no header and Mark all at full width.
+ * Close in its header and Mark all on the tabs' row; the platform's page is the full screen without its header (3.08 is 3.14).
  */
 function NotificationPanel({
   unread,
@@ -299,8 +299,6 @@ function NotificationPanel({
   const markAll = (
     <Button
       variant="ghost"
-      size={layout === "page" ? "xl" : undefined}
-      className={cn(layout === "page" && "w-full")}
       disabled={!online || markingAll || !unread || !items}
       onClick={onMarkAll}
     >
@@ -358,10 +356,10 @@ function NotificationPanel({
         </>
       )}
       {layout === "page" && (
-        <>
+        <div className="flex h-11 shrink-0 items-center justify-between gap-2">
           {tabs}
           {items && items.length > 0 && markAll}
-        </>
+        </div>
       )}
       <TabsContent
         value={tab}
@@ -371,8 +369,7 @@ function NotificationPanel({
           "relative flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain",
           layout === "popover" && "py-1",
           layout === "screen" && "px-2",
-          layout === "page" &&
-            "flex-none overflow-visible rounded-lg border border-border bg-card",
+          layout === "page" && "flex-none overflow-visible",
         )}
       >
         {!online && (
