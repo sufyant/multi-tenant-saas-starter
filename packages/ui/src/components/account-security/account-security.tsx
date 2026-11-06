@@ -12,9 +12,9 @@ import { Label } from "../label";
 import { Pill } from "../pill";
 import { InlineSkeleton } from "../skeleton";
 import { showToast } from "../toast";
+import { Card, Row } from "./card";
 import { EmailChange, type EmailChangeProps } from "./email-change";
 import {
-  authenticatorOn,
   connectedAccount,
   describeSession,
   disconnect,
@@ -29,6 +29,7 @@ import {
   useSensitive,
   useSessions,
 } from "./identity";
+import { TwoStep } from "./two-step-card";
 
 /** The most devices a sentence names; the rest are "n more" (F15). */
 const namedDevices = 3;
@@ -109,44 +110,12 @@ export function AccountSecurity({
         returnPath={returnPath}
         onUnexpectedError={onUnexpectedError}
       />
-      <TwoStep {...twoStep} />
+      <TwoStep {...twoStep} onUnexpectedError={onUnexpectedError} />
       <Sessions
         timeZone={timeZone}
         now={now}
         onUnexpectedError={onUnexpectedError}
       />
-      {children}
-    </section>
-  );
-}
-
-/** A card of the page: its title and text, then its rows. `lead` is a first sentence that a phone leaves out (6.07). */
-export function Card({
-  title,
-  lead,
-  text,
-  children,
-}: {
-  title: string;
-  lead?: string;
-  text: string;
-  children: ReactNode;
-}) {
-  const id = useRef(`card-${title.replaceAll(" ", "-")}`).current;
-  return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col rounded-lg border border-border bg-card"
-    >
-      <div className="flex flex-col gap-1 px-5 pt-4 pb-3">
-        <h2 id={id} className="text-section-title">
-          {title}
-        </h2>
-        <p className="text-small text-muted-foreground">
-          {lead && <span className="hidden tablet:inline">{lead} </span>}
-          {text}
-        </p>
-      </div>
       {children}
     </section>
   );
@@ -174,24 +143,6 @@ function WithTile({
       <Tile>{tile}</Tile>
       <div className="min-w-0">{children}</div>
     </div>
-  );
-}
-
-/** A row of a card: its words, and its action at the end, under them on a phone. */
-export function Row({
-  children,
-  action,
-  as: Tag = "div",
-}: {
-  children: ReactNode;
-  action?: ReactNode;
-  as?: "div" | "li";
-}) {
-  return (
-    <Tag className="flex flex-col gap-3 border-t border-border px-5 py-3 tablet:flex-row tablet:items-center tablet:justify-between">
-      <div className="min-w-0">{children}</div>
-      {action && <div className="shrink-0">{action}</div>}
-    </Tag>
   );
 }
 
@@ -341,22 +292,6 @@ function useBackFromProvider() {
     });
     void removeUnfinished(user, provider);
   }, [user, t]);
-}
-
-function TwoStep({ text, required }: { text: string; required: boolean }) {
-  const t = useTranslations("accountSecurity");
-  const { user } = useIdentity();
-  const on = required || authenticatorOn(user);
-  return (
-    <Card title={t("twoStepTitle")} text={text}>
-      <Row>
-        <p className="text-body">{t("authenticatorApp")}</p>
-        <p className="text-small text-muted-foreground">
-          {t(on ? "on" : "off")}
-        </p>
-      </Row>
-    </Card>
-  );
 }
 
 function Sessions({

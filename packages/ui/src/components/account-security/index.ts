@@ -1,9 +1,8 @@
 export {
   AccountSecurity,
   type AccountSecurityProps,
-  Card,
-  Row,
 } from "./account-security";
+export { Card, Row } from "./card";
 export {
   EmailChange,
   type EmailChangeProps,

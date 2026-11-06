@@ -482,7 +482,7 @@ describe("AccountSecurity", () => {
     ).toBeInTheDocument();
     await userEvent.type(
       setUp.getByRole("textbox", {
-        name: "2. Enter the 6-digit code the app shows.",
+        name: "Enter the 6-digit code the app shows.",
       }),
       "123456",
     );
