@@ -127,27 +127,22 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 
 - A blocked account: 403 `user.suspended` or `user.deleted` (A9).
 - A refused join: 422 `invitation.system_admin_cannot_join` (T5).
+- The frame 9.r16 takes the number 9.20 in Figma (the maintainer's decision of 2026-11-06).
 - It comes before 37a-frontend-1.
 
-37a-backend-1, the Owners' notifications and the sender:
+37a-backend, the Owners' notifications, the sender, the exports' audit entries and the cities of the time zones, in one pull request (the maintainer's decision of 2026-11-06):
 
 - Five new types tell an organisation's Owners of `tenant.suspended`, `tenant.reactivated`, `tenant.closed`, `tenant.reopened` and `tenant.purged`, with their own texts and footers in three languages. Each is named apart (U9), because the same event tells the system admins with other texts.
 - They go to the personal bell and by email (U5). The suspended, closed and purged types lead to the start page; the reactivated and reopened types lead to the organisation (the maintainer's decisions of 2026-11-06).
 - An email's sender takes its name from `packages/brand/brand.json` and its address from the setting `Notifications:Resend:FromAddress`, which replaces `Notifications:Resend:From`. `.railway/railway.ts` names the new variable (the maintainer's decision of 2026-11-06).
-
-37a-backend-2, the exports' audit entries:
-
 - Two small commands write the audit entries `members.exported` and `activity_log.exported` in the organisation's Activity log. The web calls each one before it writes the file (the maintainer's decision of 2026-11-06).
-
-37a-time-zone-cities, the city of a time zone in each language:
-
 - One generated JSON holds each time zone's city in English, Turkish and Arabic, from the `exemplarCity` of Unicode CLDR. The web, the platform and the API's emails read the same file. The file is committed, and the CI job "Generated files: current" checks it (the maintainer's decision of 2026-11-06).
 - The Unicode License v3 joins `.github/dependency-review-config.yml`. F18 gets an exception for the city names.
 
 37a-emails, the emails in the new design:
 
 - The invitation, the removal, the data file, the generic notification, the closed organisation and the deletion warning, in light and dark, in three languages (13.01, 13.03 to 13.08, 13.10 to 13.15).
-- It waits for 37a-backend-1 and 37a-time-zone-cities.
+- It waits for 37a-backend.
 
 37a-frontend-sign-in, the sign-in screens of both apps:
 
@@ -165,14 +160,14 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 37a-frontend-2, General and Members:
 
 - General (7.01 to 7.05) and Members (8.01 to 8.23, 8.25 to 8.38, 8.41, 8.43, 8.45), with the CSV export of the members.
-- The web's server writes the CSV file from the API's pages, as a stream, after the audit call of 37a-backend-2. A cell that starts with `=`, `+`, `-` or `@` is escaped (OWASP, "CSV Injection"; the maintainer's decision of 2026-11-06).
+- The web's server writes the CSV file from the API's pages, as a stream, after the audit call of 37a-backend. A cell that starts with `=`, `+`, `-` or `@` is escaped (OWASP, "CSV Injection"; the maintainer's decision of 2026-11-06).
 - "No free seat" ends with "ask us for more seats", which links to the support contact of `brand.json` (8.43, 8.45, without the billing manager; the maintainer's decision of 2026-11-06).
-- It waits for 37a-backend-2.
+- It waits for 37a-backend.
 
 37a-frontend-3, Roles and Activity log:
 
-- Roles (9.01 to 9.17, 9.r16) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
-- It waits for 37a-backend-2.
+- Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
+- It waits for 37a-backend.
 
 37b, the platform's pages:
 
