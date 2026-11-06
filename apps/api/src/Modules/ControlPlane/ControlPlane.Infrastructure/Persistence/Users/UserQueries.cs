@@ -48,7 +48,7 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             return null;
         }
 
-        return new MeView(user.Id, user.Email, user.FirstName, user.LastName, await IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
+        return new MeView(user.Id, user.Email, user.Name, await IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
     }
 
     // The user, the system admin who suspended them, when they were granted system admin, and their memberships: the four queries, in the
@@ -110,14 +110,13 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             var pattern = ListQueryExtensions.ContainsPattern(search);
             users = users.Where(user =>
                 EF.Functions.ILike(user.Email!, pattern, ListQueryExtensions.Escape)
-                || EF.Functions.ILike(user.FirstName!, pattern, ListQueryExtensions.Escape)
-                || EF.Functions.ILike(user.LastName!, pattern, ListQueryExtensions.Escape));
+                || EF.Functions.ILike(user.Name!, pattern, ListQueryExtensions.Escape));
         }
 
         var total = await users.CountAsync(cancellationToken);
         var sorted = list.Sort switch
         {
-            ListUsersSort.LastName => users.OrderBy(user => user.LastName == null).ThenBy(user => user.LastName, list.Descending),
+            ListUsersSort.Name => users.OrderBy(user => user.Name == null).ThenBy(user => user.Name, list.Descending),
             _ => users.OrderBy(user => user.Email == null).ThenBy(user => user.Email, list.Descending),
         };
         var page = await sorted

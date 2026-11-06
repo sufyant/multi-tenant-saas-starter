@@ -25,11 +25,10 @@ import { z } from "zod";
 import { setLocale } from "@/i18n/set-locale";
 import { ProblemScreen } from "@/shared/problem-screen";
 
-// The generated schemas of RenameMe and ChangePreferences (F11). The API trims each name and needs 1 to 100 characters (A7);
+// The generated schemas of RenameMe and ChangePreferences (F11). The API trims the name and needs 1 to 100 characters (A7);
 // the generated schema has the limit only, so the form adds the trim and the minimum.
 const preferences = schemas.RenameMeBody.extend({
-  firstName: z.string().trim().min(1).max(schemas.renameMeBodyFirstNameMax),
-  lastName: z.string().trim().min(1).max(schemas.renameMeBodyLastNameMax),
+  name: z.string().trim().min(1).max(schemas.renameMeBodyNameMax),
 }).extend(schemas.ChangePreferencesBody.shape);
 
 const actionOf = (error: unknown) =>
@@ -87,16 +86,12 @@ function Preferences({ me }: { me: MeResponse }) {
   return (
     <PreferencesForm
       values={{
-        firstName: me.firstName ?? "",
-        lastName: me.lastName ?? "",
+        name: me.name ?? "",
         language: me.language,
         timeZone: me.timeZone,
       }}
       schema={preferences}
-      nameMax={{
-        firstName: schemas.renameMeBodyFirstNameMax,
-        lastName: schemas.renameMeBodyLastNameMax,
-      }}
+      nameMax={schemas.renameMeBodyNameMax}
       languages={Object.values(Language)}
       nameNote={t("profile.nameNote")}
       rename={rename.mutateAsync}

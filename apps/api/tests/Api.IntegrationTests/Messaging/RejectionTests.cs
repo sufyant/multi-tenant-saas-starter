@@ -68,7 +68,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<MyTenantView>>(
-            tenant.Id, new AcceptInvitationCommand(user, "no-such-secret", [Email()], "Ada", "Lovelace"));
+            tenant.Id, new AcceptInvitationCommand(user, "no-such-secret", [Email()], "Ada Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.not_found");
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
@@ -82,7 +82,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var user = $"user_{Guid.NewGuid():N}";
 
         var (result, session) = await InvokeForTenantAsync<Result<MyTenantView>>(
-            tenantId, new AcceptInvitationCommand(user, secret, [Email()], "Ada", "Lovelace"));
+            tenantId, new AcceptInvitationCommand(user, secret, [Email()], "Ada Lovelace"));
 
         result.Error.Code.Value.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
@@ -98,7 +98,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         var member = await _testData.AddMemberAsync(tenantId);
 
         var (result, session) = await InvokeForTenantAsync<Result<MyTenantView>>(
-            tenantId, new AcceptInvitationCommand(member, secret, [email], "Ada", "Lovelace"));
+            tenantId, new AcceptInvitationCommand(member, secret, [email], "Ada Lovelace"));
 
         result.Error.Code.Value.ShouldBe("member.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);

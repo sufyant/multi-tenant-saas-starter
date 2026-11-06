@@ -70,13 +70,12 @@ internal static class Handlers
 
     // Accepting starts outside any tenant: the invitation code names the tenant, the identity provider is asked for the user's
     // verified email addresses, and then the invitation is found by its secret in that tenant. A person who is not a user yet
-    // gives their names.
+    // gives their name.
     public static async Task<Result<MyTenantView>> AcceptAsync(
         IServiceProvider services,
         string code,
         string userId,
-        string? firstName = "Ada",
-        string? lastName = "Lovelace")
+        string? name = "Ada Lovelace")
     {
         IReadOnlyList<string> verifiedEmails;
         await using (var scope = services.CreateAsyncScope())
@@ -85,7 +84,7 @@ internal static class Handlers
         }
 
         var (accepted, _) = await InTenant.RunAsync(services, TenantIdOf(code), scope => AcceptInvitationHandler.HandleAsync(
-            new AcceptInvitationCommand(userId, SecretOf(code), verifiedEmails, firstName, lastName),
+            new AcceptInvitationCommand(userId, SecretOf(code), verifiedEmails, name),
             scope.GetRequiredService<ITenantRepository>(),
             scope.GetRequiredService<IUserRepository>(),
             scope.GetRequiredService<TimeProvider>(),

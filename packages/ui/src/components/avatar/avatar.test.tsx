@@ -3,34 +3,36 @@ import { describe, expect, it } from "vitest";
 import { Avatar, initialsOf } from "./avatar";
 
 describe("initialsOf", () => {
-  it("InitialsOf_TwoNames_IsTheirFirstLetters", () => {
-    expect(initialsOf({ firstName: "Ayşe", lastName: "Yılmaz" })).toBe("AY");
+  it("InitialsOf_TwoWords_IsTheirFirstLetters", () => {
+    expect(initialsOf({ name: "Ayşe Yılmaz" })).toBe("AY");
   });
 
-  it("InitialsOf_OneName_IsItsFirstLetter", () => {
-    expect(initialsOf({ firstName: "Ayşe", lastName: null })).toBe("A");
+  // The maintainer's decision of 2026-11-06: the first letters of the first and the last word, whatever lies between.
+  it("InitialsOf_ThreeWords_IsTheFirstAndTheLastWordsFirstLetters", () => {
+    expect(initialsOf({ name: "María  José García" })).toBe("MG");
   });
 
-  it("InitialsOf_NoNames_IsTheEmailsFirstLetterInCapitals", () => {
+  it("InitialsOf_OneWord_IsItsFirstLetter", () => {
+    expect(initialsOf({ name: "Ayşe" })).toBe("A");
+  });
+
+  it("InitialsOf_NoName_IsTheEmailsFirstLetterInCapitals", () => {
     expect(
       initialsOf({
-        firstName: null,
-        lastName: null,
+        name: null,
         email: "ayse@northwind.example",
       }),
     ).toBe("A");
   });
 
   it("InitialsOf_DeletedUser_IsEmpty", () => {
-    expect(initialsOf({ firstName: null, lastName: null })).toBe("");
+    expect(initialsOf({ name: null })).toBe("");
   });
 });
 
 describe("Avatar", () => {
   it("Avatar_Person_ShowsTheInitialsHiddenFromScreenReaders", () => {
-    const { container } = render(
-      <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />,
-    );
+    const { container } = render(<Avatar person={{ name: "Ayşe Yılmaz" }} />);
     const avatar = container.querySelector('[data-slot="avatar"]');
 
     expect(avatar).toHaveTextContent("AY");
@@ -39,9 +41,7 @@ describe("Avatar", () => {
 
   // jsdom draws nothing, so the look is the classes of the tokens; Playwright reads the top bar's drawn avatar.
   it("Avatar_InAList_IsTheSmallTintedCircle", () => {
-    const { container } = render(
-      <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />,
-    );
+    const { container } = render(<Avatar person={{ name: "Ayşe Yılmaz" }} />);
 
     expect(container.querySelector('[data-slot="avatar"]')).toHaveClass(
       "size-7",
@@ -54,10 +54,7 @@ describe("Avatar", () => {
 
   it("Avatar_Size_TakesTheClass", () => {
     const { container } = render(
-      <Avatar
-        person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
-        className="size-11"
-      />,
+      <Avatar person={{ name: "Ayşe Yılmaz" }} className="size-11" />,
     );
 
     expect(container.querySelector('[data-slot="avatar"]')).toHaveClass(

@@ -187,7 +187,7 @@ public static class PlanEndpoints
                     entry.Expired ? EntitlementOverrideResponseState.Expired : EntitlementOverrideResponseState.Active,
                     entry.Reason,
                     entry.SetById,
-                    new UserNameResponse(entry.SetBy.FirstName, entry.SetBy.LastName, entry.SetBy.Deleted),
+                    new UserNameResponse(entry.SetBy.Name, entry.SetBy.Deleted),
                     entry.SetAt)
                 : null,
             ToResponse(entitlement.Effective),

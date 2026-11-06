@@ -32,14 +32,14 @@ internal sealed class PlatformTenants(Database database, ApiFactory api)
             $"SELECT id FROM control_plane.invitations WHERE tenant_id = '{tenantId}' ORDER BY created_at DESC, id DESC LIMIT 1");
 
     // A new person with an account at the address accepts the invitation with the code of its email. Returns their identity provider id.
-    public async Task<(string UserId, HttpResponseMessage Accepted)> AcceptAsync(Guid invitationId, string email, string firstName = "Ada", string lastName = "Lovelace")
+    public async Task<(string UserId, HttpResponseMessage Accepted)> AcceptAsync(Guid invitationId, string email, string name = "Ada Lovelace")
     {
         var userId = $"user_{Guid.NewGuid():N}";
         api.Identity.AddAccount(userId, email);
-        var accepted = await api.WaitingForMessagesAsync(() => AcceptAsync(userId, api.Email.CodeSentFor(invitationId), firstName, lastName));
+        var accepted = await api.WaitingForMessagesAsync(() => AcceptAsync(userId, api.Email.CodeSentFor(invitationId), name));
         return (userId, accepted);
     }
 
-    public Task<HttpResponseMessage> AcceptAsync(string userId, string code, string firstName = "Ada", string lastName = "Lovelace") =>
-        api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName, lastName }, Cancellation);
+    public Task<HttpResponseMessage> AcceptAsync(string userId, string code, string name = "Ada Lovelace") =>
+        api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name }, Cancellation);
 }

@@ -62,11 +62,17 @@ public static class AcceptInvitationHandler
             return (allowed.Error, []);
         }
 
-        // A person who is not a user yet gives their names, as a validator would refuse them: a 400 that names each missing field. It
-        // comes after the tenant's checks, so a stranger with the link learns nothing more, and before any change (W7).
-        if (existing is null && (command.FirstName is null || command.LastName is null))
+        // A person who is not a user yet gives their name, as a validator would refuse it: a 400 that names the missing field. It comes
+        // after the tenant's checks, so a stranger with the link learns nothing more, and before any change (W7).
+        if (existing is null && command.Name is null)
         {
-            throw new ValidationException(MissingNames(command));
+            throw new ValidationException(
+            [
+                new ValidationFailure(nameof(command.Name), $"{nameof(command.Name)} is required for a person who is not a user yet.")
+                {
+                    ErrorCode = nameof(FieldErrorCode.Required),
+                },
+            ]);
         }
 
         // A new user's address is the invited one, which another live user may keep when two accounts of the identity provider verified it:
@@ -77,7 +83,7 @@ public static class AcceptInvitationHandler
             return (Errors.UserEmailTaken, []);
         }
 
-        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitedEmail, command.FirstName!, command.LastName!, invitation.Language, now);
+        var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitedEmail, command.Name!, invitation.Language, now);
         var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
         {
@@ -103,12 +109,4 @@ public static class AcceptInvitationHandler
             MyTenantView.Of(tenant, role),
             [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id, tenant.Name, invitedBy, firstOwner, role.Name, role.BuiltIn is not null)]);
     }
-
-    private static IEnumerable<ValidationFailure> MissingNames(AcceptInvitationCommand command) =>
-        new (string Field, string? Value)[] { (nameof(command.FirstName), command.FirstName), (nameof(command.LastName), command.LastName) }
-            .Where(field => field.Value is null)
-            .Select(field => new ValidationFailure(field.Field, $"{field.Field} is required for a person who is not a user yet.")
-            {
-                ErrorCode = nameof(FieldErrorCode.Required),
-            });
 }

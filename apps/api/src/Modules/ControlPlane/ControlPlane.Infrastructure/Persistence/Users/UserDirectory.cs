@@ -33,25 +33,25 @@ public sealed class UserDirectory(ControlPlaneDbContext controlPlane, ReadCache 
     {
         var users = await controlPlane.Users
             .Where(user => userIds.Contains(user.Id))
-            .Select(user => new { user.Id, user.FirstName, user.LastName, user.DeletedAt })
+            .Select(user => new { user.Id, user.Name, user.DeletedAt })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         return users.ToDictionary(
             user => user.Id,
-            user => new UserName(DisplayName(user.FirstName, user.LastName), user.DeletedAt is not null));
+            user => new UserName(user.Name, user.DeletedAt is not null));
     }
 
     public async Task<IReadOnlyList<UserContact>> FindContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken)
     {
         var users = await controlPlane.Users
             .Where(user => userIds.Contains(user.Id))
-            .Select(user => new { user.Id, user.Email, user.FirstName, user.LastName, user.Language, user.DeletedAt, user.SuspendedAt, user.TimeZone })
+            .Select(user => new { user.Id, user.Email, user.Name, user.Language, user.DeletedAt, user.SuspendedAt, user.TimeZone })
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         return [.. users.Select(user => new UserContact(
-            user.Id, user.Email, DisplayName(user.FirstName, user.LastName), user.Language, user.DeletedAt is null && user.SuspendedAt is null, user.TimeZone))];
+            user.Id, user.Email, user.Name, user.Language, user.DeletedAt is null && user.SuspendedAt is null, user.TimeZone))];
     }
 
     public async Task<UserContact?> FindContactAsync(string externalUserId, CancellationToken cancellationToken)
@@ -65,11 +65,6 @@ public sealed class UserDirectory(ControlPlaneDbContext controlPlane, ReadCache 
 
     public async Task<IReadOnlyList<Guid>> ListSystemAdminIdsAsync(CancellationToken cancellationToken) =>
         await controlPlane.SystemAdmins.Select(admin => admin.UserId).Order().ToListAsync(cancellationToken);
-
-    // The full name, else none: the identity provider may hold a user without a name, and the email address is not a name. A deleted
-    // user's name is erased (A8).
-    private static string? DisplayName(string? firstName, string? lastName) =>
-        string.Join(' ', new[] { firstName, lastName }.Where(part => !string.IsNullOrWhiteSpace(part))) is { Length: > 0 } name ? name : null;
 
     // A person who is not a user yet is neither deleted nor suspended.
     private async Task<UserAccess> ReadAccessAsync(string externalUserId, CancellationToken cancellationToken) =>

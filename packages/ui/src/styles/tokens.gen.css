@@ -19,6 +19,7 @@
   --primary-hover: #4247c2;
   --primary-subtle: #eeeffc;
   --primary-subtle-foreground: var(--foreground);
+  --link: var(--primary);
   --border: #e8e6e1;
   --input: #8a857c;
   --ring: #4e54d4;
@@ -175,6 +176,7 @@
   --primary-hover: #4e53c9;
   --primary-subtle: #211f36;
   --primary-subtle-foreground: var(--foreground);
+  --link: #9ea2f5;
   --border: #2e2c29;
   --input: #77736b;
   --ring: #9ea2f5;
@@ -247,6 +249,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-subtle: var(--primary-subtle);
   --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+  --color-link: var(--link);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

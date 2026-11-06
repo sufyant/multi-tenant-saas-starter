@@ -249,8 +249,7 @@ export function AcceptInvitationPage({
     );
   const fields = action?.kind === "field-errors" ? action.fields : {};
   const fieldErrors = {
-    firstName: fields.firstName?.[0] && `validation.${fields.firstName[0]}`,
-    lastName: fields.lastName?.[0] && `validation.${fields.lastName[0]}`,
+    name: fields.name?.[0] && `validation.${fields.name[0]}`,
   };
   const key = action?.kind === "message" ? action.key : undefined;
   const message =

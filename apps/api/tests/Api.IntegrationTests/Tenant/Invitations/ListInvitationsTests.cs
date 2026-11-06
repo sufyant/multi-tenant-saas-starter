@@ -79,11 +79,11 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var ada = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Byron"), role: "Admin");
-        var gone = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
+        var ada = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Byron"), role: "Admin");
+        var gone = await _testData.AddUserAsync(name: "Gone Away");
         var byAda = await _testData.AddInvitationAsync(tenant.Id, email: "a@example.com", invitedBy: ada);
         var byGone = await _testData.AddInvitationAsync(tenant.Id, email: "b@example.com", invitedBy: gone);
-        await database.ScalarAsync<object>($"UPDATE control_plane.users SET last_name = 'Lovelace' WHERE external_id = '{ada}'");
+        await database.ScalarAsync<object>($"UPDATE control_plane.users SET name = 'Ada Lovelace' WHERE external_id = '{ada}'");
         await _testData.DeleteUserAsync(gone);
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/invitations?sort=email", Cancellation);
@@ -92,8 +92,8 @@ public sealed class ListInvitationsTests(Database database) : IAsyncLifetime
             .Select(item => (item.GetProperty("id").GetGuid(), item.GetProperty("invitedBy").GetGuid(), item.GetProperty("invitedByName").ToString()))
             .ShouldBe(
             [
-                (byAda, await _testData.UserIdOfAsync(ada), """{"firstName":"Ada","lastName":"Lovelace","deleted":false}"""),
-                (byGone, await _testData.UserIdOfAsync(gone), """{"firstName":null,"lastName":null,"deleted":true}"""),
+                (byAda, await _testData.UserIdOfAsync(ada), """{"name":"Ada Lovelace","deleted":false}"""),
+                (byGone, await _testData.UserIdOfAsync(gone), """{"name":null,"deleted":true}"""),
             ]);
     }
 

@@ -19,7 +19,7 @@ namespace ControlPlane.Contracts.Invitations;
 /// writes <paramref name="ExpiresAt"/>. It stays for a worker of that version during the deploy, and goes in a later release.
 /// </param>
 /// <param name="InviterName">
-/// The inviter's first and last name, copied at this moment for the email only; null when the platform invites, because a system admin
+/// The inviter's whole name, copied at this moment for the email only; null when the platform invites, because a system admin
 /// invites as the platform, and the email names the brand.
 /// </param>
 /// <param name="RoleName">The name of the role the invitation gives, as the role keeps it: a built-in role's stored name, or the name the Owner typed.</param>

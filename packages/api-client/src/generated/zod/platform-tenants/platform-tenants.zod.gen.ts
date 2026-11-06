@@ -147,10 +147,9 @@ export const GetTenantResponse = zod.object({
   "ownerCount": zod.int(),
   "owners": zod.array(zod.object({
   "userId": zod.uuid(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "email": zod.string().nullable()
-}).describe('An Owner of a tenant: the user\'s id, names and address.')),
+}).describe('An Owner of a tenant: the user\'s id, name and address.')),
   "ownerInvitation": zod.union([zod.null(),zod.object({
   "email": zod.string(),
   "expiresAt": zod.iso.datetime({"offset":true}),

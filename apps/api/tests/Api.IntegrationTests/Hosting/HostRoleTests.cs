@@ -490,7 +490,7 @@ public sealed class HostRoleTests(Database database)
         var userId = await testData.UserIdOfAsync(user);
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var renamed = await admin.PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        var renamed = await admin.PatchAsJsonAsync($"/v1/platform/users/{userId}", new { name = "Ada Lovelace" }, Cancellation);
         var deleted = await admin.DeleteAsync($"/v1/platform/users/{userId}", Cancellation);
         await Waiting.UntilAsync(async () => !worker.Identity.Deleted.IsEmpty && await PlatformEntriesAsync(name, userId, "user.deleted") > 0
             && await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0 && await PlatformEntriesAsync(name, userId, "user.renamed") > 0);
@@ -641,7 +641,7 @@ public sealed class HostRoleTests(Database database)
         var testData = new TestData(database, name);
         var tenant = await testData.AddTenantAsync();
         var owner = web.CreateClient(
-            await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace", language: "tr"), role: "Owner"));
+            await testData.AddMemberAsync(tenant.Id, await testData.AddUserAsync(name: "Ada Lovelace", language: "tr"), role: "Owner"));
 
         var invited = await owner.InviteMemberAsync(tenant.Id, "grace@navy.test", role: (await testData.RoleIdOfAsync(tenant.Id, "Member")).ToString());
         await Waiting.UntilAsync(async () => worker.Email.Sent.Count > 0 && await AuditEntriesAsync(name, tenant.Id, "member.invited") > 0);

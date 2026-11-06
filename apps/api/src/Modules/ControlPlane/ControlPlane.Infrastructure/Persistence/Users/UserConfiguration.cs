@@ -14,16 +14,14 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         user.Property(u => u.ExternalId).HasMaxLength(255);
         // R17: the lengths of the domain, as the invitations keep an address.
         user.Property(u => u.Email).HasMaxLength(EmailAddress.MaxLength);
-        user.Property(u => u.FirstName).HasMaxLength(User.NameMaxLength);
-        user.Property(u => u.LastName).HasMaxLength(User.NameMaxLength);
+        user.Property(u => u.Name).HasMaxLength(User.NameMaxLength);
         user.HasIndex(u => u.ExternalId).IsUnique();
         // A7: two live users never keep one address. The index holds the stored form, the one every comparison reads (section 6, "The one
         // form of an email address"); a deleted user keeps none (A8), so it holds only live users.
         user.HasIndex(u => u.Email).IsUnique().HasFilter("email IS NOT NULL").HasDatabaseName("ux_users_email");
-        user.HasIndex(u => u.LastName);
+        user.HasIndex(u => u.Name);
         user.HasIndex(u => u.Email, "ix_users_email_trgm").HasDatabaseName("ix_users_email_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
-        user.HasIndex(u => u.FirstName, "ix_users_first_name_trgm").HasDatabaseName("ix_users_first_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
-        user.HasIndex(u => u.LastName, "ix_users_last_name_trgm").HasDatabaseName("ix_users_last_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
+        user.HasIndex(u => u.Name, "ix_users_name_trgm").HasDatabaseName("ix_users_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
         user.Property(u => u.Language).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
         user.Property(u => u.TimeZone).HasMaxLength(User.TimeZoneMaxLength);
         user.HasOne<User>().WithMany().HasForeignKey(u => u.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
@@ -35,7 +33,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         user.ToTable(table => table.HasCheckConstraint("ck_users_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)"));
         user.ToTable(table => table.HasCheckConstraint(
             "ck_users_deleted_keeps_no_personal_data",
-            "deleted_at IS NULL OR (email IS NULL AND first_name IS NULL AND last_name IS NULL AND time_zone IS NULL)"));
+            "deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL)"));
 
         // The database's defaults: a row inserted without these columns is a user from the moment of the insert, with no membership
         // (R13).

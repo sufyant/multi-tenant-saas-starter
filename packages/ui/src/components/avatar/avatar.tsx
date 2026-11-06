@@ -2,19 +2,21 @@ import { cn } from "../../lib/utils";
 import { AvatarFallback, Avatar as AvatarPrimitive } from "../ui/avatar";
 
 export type Person = {
-  firstName: string | null;
-  lastName: string | null;
+  /** The person's one name, whole (the API's A7). */
+  name: string | null;
   /** The letter when the person has no name yet, as an invited member. */
   email?: string | null;
 };
 
-/** The avatar's letters: the first letter of each name, else of the email; nothing for a deleted user, who has neither. */
+/**
+ * The avatar's letters: the first letter of the name's first and last word, one letter for a name of one word, else the email's
+ * first letter; nothing for a deleted user, who has neither. Only the drawing reads the words: the name itself stays whole.
+ */
 export function initialsOf(person: Person): string {
-  const names = [person.firstName, person.lastName].filter(
-    (name): name is string => Boolean(name),
-  );
-  return names.length > 0
-    ? names.map((name) => name.charAt(0)).join("")
+  const words = (person.name ?? "").split(/\s+/).filter(Boolean);
+  const ends = words.length > 1 ? [words[0], words.at(-1)] : words;
+  return ends.length > 0
+    ? ends.map((word) => word?.charAt(0)).join("")
     : (person.email ?? "").charAt(0).toLocaleUpperCase();
 }
 

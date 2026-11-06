@@ -29,6 +29,7 @@ const names = [
   "RadioGroup",
   "RowMenu",
   "Search",
+  "SegmentedControl",
   "SignIn",
   "Skeleton",
   "Status",

@@ -40,8 +40,7 @@ public static class UserEndpoints
     internal static UserResponse ToResponse(UserView user) => new(
         user.Id,
         user.Email,
-        user.FirstName,
-        user.LastName,
+        user.Name,
         ResponseStatus.OfUser(user.Status),
         user.IsSystemAdmin,
         user.IsRootSystemAdmin,
@@ -152,7 +151,7 @@ public static class UserEndpoints
         ClaimsPrincipal user,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserView>>(new RenameUserCommand(user.Id(), userId, request.FirstName, request.LastName), cancellationToken)).Map(ToResponse);
+        (await bus.InvokeAsync<Result<UserView>>(new RenameUserCommand(user.Id(), userId, request.Name), cancellationToken)).Map(ToResponse);
 
     // A user's memberships are under row level security, and a transaction declares one tenant (R4), so the deletion runs in steps, each
     // in a transaction of its own (docs/flows/user-deletion.md). A deletion sets a state, so it takes no idempotency key (I1); a second one
@@ -166,8 +165,7 @@ public static class UserEndpoints
     private static UserDetailResponse ToResponse(UserDetailView user) => new(
         user.User.Id,
         user.User.Email,
-        user.User.FirstName,
-        user.User.LastName,
+        user.User.Name,
         ResponseStatus.OfUser(user.User.Status),
         user.User.IsSystemAdmin,
         user.User.IsRootSystemAdmin,

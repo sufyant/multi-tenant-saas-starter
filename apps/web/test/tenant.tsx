@@ -48,15 +48,13 @@ export const northwind: MyTenantResponse = {
 
 const member = (
   userId: string,
-  firstName: string,
-  lastName: string,
+  name: string,
   email: string,
   role: BuiltInRole,
   joinedAt: string,
 ): MemberResponse => ({
   userId,
-  firstName,
-  lastName,
+  name,
   email,
   role: roleOf[role],
   deleted: false,
@@ -65,32 +63,28 @@ const member = (
 
 export const ayse = member(
   "0198f0a2-0000-7000-8000-000000000001",
-  "Ayşe",
-  "Yılmaz",
+  "Ayşe Yılmaz",
   "ayse@northwind.io",
   BuiltInRole.Owner,
   "2026-03-03T09:20:00Z",
 );
 export const mehmet = member(
   "0198f0a2-0000-7000-8000-000000000002",
-  "Mehmet",
-  "Kaya",
+  "Mehmet Kaya",
   "mehmet@northwind.io",
   BuiltInRole.Admin,
   "2026-03-05T10:00:00Z",
 );
 export const ibrahim = member(
   "0198f0a2-0000-7000-8000-000000000004",
-  "İbrahim",
-  "Bulut",
+  "İbrahim Bulut",
   "ibrahim@northwind.io",
   BuiltInRole.Member,
   "2026-06-02T10:15:00Z",
 );
 export const john = member(
   "0198f0a2-0000-7000-8000-000000000006",
-  "John",
-  "Byrne",
+  "John Byrne",
   "john@northwind.io",
   BuiltInRole.Member,
   "2026-03-09T08:00:00Z",
@@ -163,8 +157,7 @@ export const billingLead = customRole(
 const meOfPerson = (person: MemberResponse): MeResponse => ({
   id: person.userId,
   email: person.email,
-  firstName: person.firstName,
-  lastName: person.lastName,
+  name: person.name,
   isSystemAdmin: false,
   language: "en",
   timeZone: "Europe/Dublin",

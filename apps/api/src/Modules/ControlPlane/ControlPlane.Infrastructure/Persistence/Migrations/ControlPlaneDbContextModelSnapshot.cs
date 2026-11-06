@@ -691,27 +691,22 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("external_id");
 
-                    b.Property<string>("FirstName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("first_name");
-
                     b.Property<string>("Language")
                         .IsRequired()
                         .HasMaxLength(35)
                         .HasColumnType("character varying(35)")
                         .HasColumnName("language");
 
-                    b.Property<string>("LastName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("last_name");
-
                     b.Property<int>("MembershipCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("membership_count");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
 
                     b.Property<DateTimeOffset?>("SuspendedAt")
                         .HasColumnType("timestamp with time zone")
@@ -738,8 +733,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_external_id");
 
-                    b.HasIndex("LastName")
-                        .HasDatabaseName("ix_users_last_name");
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_users_name");
 
                     b.HasIndex("SuspendedBy")
                         .HasDatabaseName("ix_users_suspended_by");
@@ -750,21 +745,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Email" }, "ix_users_email_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Email" }, "ix_users_email_trgm"), new[] { "gin_trgm_ops" });
 
-                    b.HasIndex(new[] { "FirstName" }, "ix_users_first_name_trgm")
-                        .HasDatabaseName("ix_users_first_name_trgm");
+                    b.HasIndex(new[] { "Name" }, "ix_users_name_trgm")
+                        .HasDatabaseName("ix_users_name_trgm");
 
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "FirstName" }, "ix_users_first_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "FirstName" }, "ix_users_first_name_trgm"), new[] { "gin_trgm_ops" });
-
-                    b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm")
-                        .HasDatabaseName("ix_users_last_name_trgm");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "LastName" }, "ix_users_last_name_trgm"), new[] { "gin_trgm_ops" });
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_users_name_trgm"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_users_name_trgm"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("users", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_users_deleted_keeps_no_personal_data", "deleted_at IS NULL OR (email IS NULL AND first_name IS NULL AND last_name IS NULL AND time_zone IS NULL)");
+                            t.HasCheckConstraint("ck_users_deleted_keeps_no_personal_data", "deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL)");
 
                             t.HasCheckConstraint("ck_users_language", "language IN ('en', 'tr', 'ar')");
 

@@ -12,6 +12,7 @@ import {
   nativeChoiceControls,
   numericLayerClasses,
   physicalDirectionClasses,
+  primaryTextClasses,
   roleNameDecisions,
   sdkImportRefusals,
   testFolders,
@@ -54,6 +55,10 @@ describe("architecture of apps/platform", () => {
 
   it("F53_AppsPlatform_UsesNoNumericLayerClass", () => {
     expect(numericLayerClasses(src)).toEqual([]);
+  });
+
+  it("F20_AppsPlatform_ColoursNoTextWithPrimary", () => {
+    expect(primaryTextClasses(src)).toEqual([]);
   });
 
   it("F25_AppsPlatform_WritesNoUserFacingLiteral", () => {

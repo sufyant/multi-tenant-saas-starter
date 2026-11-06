@@ -110,7 +110,7 @@ test("Shell_Desktop_SidebarShowsTheOrganisationSearchAndNotificationsRow", async
   );
 });
 
-// Home (4.01): the welcome with the first name and a card for each page the role can open.
+// Home (4.01): the welcome with the whole name and a card for each page the role can open.
 test("Shell_Home_WelcomesAndOffersThePages", async ({ page }) => {
   await open(page);
 

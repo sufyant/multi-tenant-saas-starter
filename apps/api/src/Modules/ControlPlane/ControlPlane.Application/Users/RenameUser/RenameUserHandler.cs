@@ -22,7 +22,7 @@ public static class RenameUserHandler
         }
 
         var systemAdminGrantedAt = await users.FindSystemAdminGrantedAtAsync(user.Id, cancellationToken);
-        var renamed = user.Rename(command.FirstName, command.LastName);
+        var renamed = user.Rename(command.Name);
         if (!renamed.IsSuccess || renamed.Value == StateChange.Unchanged)
         {
             return (renamed.Map(_ => UserView.Of(user, systemAdminGrantedAt, systemAdmins)), []);

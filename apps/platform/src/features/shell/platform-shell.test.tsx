@@ -275,8 +275,7 @@ describe("PlatformShell", () => {
         HttpResponse.json({
           id: userId,
           email: "ayse@northwind.example",
-          firstName: "Ayşe",
-          lastName: "Yılmaz",
+          name: "Ayşe Yılmaz",
           status: UserResponseStatus.Active,
           isSystemAdmin: false,
           isRootSystemAdmin: false,
@@ -309,8 +308,7 @@ describe("PlatformShell", () => {
       getGetUserMockHandler(
         getGetUserResponseMock({
           id: userId,
-          firstName: null,
-          lastName: null,
+          name: null,
           email: null,
           status: UserResponseStatus.Deleted,
         }),
@@ -335,8 +333,7 @@ describe("PlatformShell", () => {
       getGetUserMockHandler(
         getGetUserResponseMock({
           id: userId,
-          firstName: null,
-          lastName: null,
+          name: null,
           email: "root@starter.example",
           status: UserResponseStatus.Active,
         }),
