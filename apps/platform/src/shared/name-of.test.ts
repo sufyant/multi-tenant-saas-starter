@@ -5,12 +5,11 @@ import { userNameOf } from "./name-of";
 const deletedUser = "Deleted user";
 
 describe("userNameOf", () => {
-  it("UserNameOf_Deleted_SaysDeletedUserWhateverNamesItHolds", () => {
+  it("UserNameOf_Deleted_SaysDeletedUserWhateverNameItHolds", () => {
     expect(
       userNameOf(
         {
-          firstName: "Ayşe",
-          lastName: "Yılmaz",
+          name: "Ayşe Yılmaz",
           email: "ayse@northwind.example",
           status: UserResponseStatus.Deleted,
         },
@@ -19,12 +18,11 @@ describe("userNameOf", () => {
     ).toBe("Deleted user");
   });
 
-  it("UserNameOf_WithNames_ShowsTheNames", () => {
+  it("UserNameOf_WithAName_ShowsTheWholeName", () => {
     expect(
       userNameOf(
         {
-          firstName: "Ayşe",
-          lastName: "Yılmaz",
+          name: "Ayşe Yılmaz",
           email: "ayse@northwind.example",
           status: UserResponseStatus.Active,
         },
@@ -33,12 +31,11 @@ describe("userNameOf", () => {
     ).toBe("Ayşe Yılmaz");
   });
 
-  it("UserNameOf_ActiveWithoutNames_ShowsTheEmail", () => {
+  it("UserNameOf_ActiveWithoutAName_ShowsTheEmail", () => {
     expect(
       userNameOf(
         {
-          firstName: null,
-          lastName: null,
+          name: null,
           email: "root@starter.example",
           status: UserResponseStatus.Active,
         },

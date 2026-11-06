@@ -170,12 +170,11 @@ internal sealed class TestData(Database database, string databaseName = Database
             """,
             databaseName);
 
-    // A user with an email address and names, each of which may be missing. Without a language, English.
+    // A user with an email address and a name, each of which may be missing. Without a language, English.
     public async Task<string> AddUserAsync(
         Guid? id = null,
         string? email = null,
-        string? firstName = null,
-        string? lastName = null,
+        string? name = null,
         string? language = null,
         string? timeZone = null,
         DateTimeOffset? createdAt = null)
@@ -183,8 +182,8 @@ internal sealed class TestData(Database database, string databaseName = Database
         var externalId = $"user_{Guid.NewGuid():N}";
         await database.ScalarAsync<object>(
             $"""
-            INSERT INTO control_plane.users (id, external_id, email, first_name, last_name, language{Column("created_at", createdAt)})
-            VALUES ('{id ?? Guid.NewGuid()}', '{externalId}', {Text(email)}, {Text(firstName)}, {Text(lastName)}, 'en'{Value(createdAt)})
+            INSERT INTO control_plane.users (id, external_id, email, language{Column("name", name)}{Column("created_at", createdAt)})
+            VALUES ('{id ?? Guid.NewGuid()}', '{externalId}', {Text(email)}, 'en'{Value(name)}{Value(createdAt)})
             """,
             database: databaseName);
         if (language is not null || timeZone is not null)
@@ -211,11 +210,11 @@ internal sealed class TestData(Database database, string databaseName = Database
         return externalId;
     }
 
-    // Marks the user the way a system admin's deletion does: the email address, the names and the time zone erased, the time of the
+    // Marks the user the way a system admin's deletion does: the email address, the name and the time zone erased, the time of the
     // deletion set.
     public Task DeleteUserAsync(string externalId) =>
         database.ScalarAsync<object>(
-            $"UPDATE control_plane.users SET email = NULL, first_name = NULL, last_name = NULL, time_zone = NULL, deleted_at = now() WHERE external_id = '{externalId}'",
+            $"UPDATE control_plane.users SET email = NULL, name = NULL, time_zone = NULL, deleted_at = now() WHERE external_id = '{externalId}'",
             database: databaseName);
 
     // A suspension names the system admin who suspended the user (R15). The user stands in for them: the key needs only a user.
@@ -287,13 +286,13 @@ internal sealed class TestData(Database database, string databaseName = Database
     public Task<string?> UserRowVersionOfAsync(string externalId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT xmin::text FROM control_plane.users WHERE external_id = '{externalId}'", databaseName);
 
-    // Our copy of a user's email address, names and preferences, and whether the user is marked deleted.
+    // Our copy of a user's email address, name and preferences, and whether the user is marked deleted.
     public async Task<StoredUser> UserOfAsync(string externalId, string? databaseName = null)
     {
         var json = await database.ScalarAsSuperuserAsync<string>(
             $"""
             SELECT json_build_object(
-                'email', email, 'firstName', first_name, 'lastName', last_name, 'deleted', deleted_at IS NOT NULL, 'language', language,
+                'email', email, 'name', name, 'deleted', deleted_at IS NOT NULL, 'language', language,
                 'timeZone', time_zone)::text
             FROM control_plane.users WHERE external_id = '{externalId}'
             """,
@@ -308,6 +307,12 @@ internal sealed class TestData(Database database, string databaseName = Database
     private static string Column(string name, DateTimeOffset? moment) => moment is null ? string.Empty : $", {name}";
 
     private static string Value(DateTimeOffset? moment) => moment is { } given ? $", '{given:O}'" : string.Empty;
+
+    // A column the test gives a text for, and its value; without one the column stays out, so a database taken back before the column
+    // was added takes the row too (the user's name, step 36).
+    private static string Column(string name, string? text) => text is null ? string.Empty : $", {name}";
+
+    private static string Value(string? text) => text is null ? string.Empty : $", {Text(text)}";
 
     private static string ColumnsOf(object value) => value switch
     {
@@ -325,4 +330,4 @@ internal sealed class TestData(Database database, string databaseName = Database
     private static string Moment(DateTimeOffset? moment) => moment is { } given ? $"'{given:O}'" : "now()";
 }
 
-internal sealed record StoredUser(string? Email, string? FirstName, string? LastName, bool Deleted, string Language = "en", string? TimeZone = null);
+internal sealed record StoredUser(string? Email, string? Name, bool Deleted, string Language = "en", string? TimeZone = null);

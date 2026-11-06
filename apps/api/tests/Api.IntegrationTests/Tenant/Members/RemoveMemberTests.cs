@@ -188,7 +188,7 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var member = await _testData.UserIdOfAsync(
-            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("grace@example.com"), firstName: "Grace", lastName: "Hopper")));
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("grace@example.com"), name: "Grace Hopper")));
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, member));
 

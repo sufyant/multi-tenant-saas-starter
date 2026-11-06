@@ -4,5 +4,5 @@ namespace ControlPlane.Application.Users.ListUsers;
 public enum ListUsersSort
 {
     Email,
-    LastName,
+    Name,
 }

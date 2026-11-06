@@ -34,7 +34,7 @@ afterAll(() => server.close());
 
 const suspended = userDetailOf(john, {
   suspendedAt: "2026-10-16T09:00:00Z",
-  suspendedBy: { firstName: "Ciara", lastName: "Byrne", deleted: false },
+  suspendedBy: { name: "Ciara Byrne", deleted: false },
 });
 
 const open = () =>

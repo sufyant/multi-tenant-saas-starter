@@ -10,7 +10,7 @@ export function TextButton({
     <button
       type="button"
       className={cn(
-        "rounded-sm text-primary underline-offset-4 outline-none hover:text-primary-hover hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+        "rounded-sm text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}

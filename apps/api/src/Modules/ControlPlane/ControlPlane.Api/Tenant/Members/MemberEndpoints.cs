@@ -60,5 +60,5 @@ public static class MemberEndpoints
         await bus.InvokeAsync<Result>(new RemoveMemberCommand(user.Id(), userId), cancellationToken);
 
     private static MemberResponse ToResponse(MemberView member) =>
-        new(member.UserId, member.Email, member.FirstName, member.LastName, RoleEndpoints.ToResponse(member.Role), member.Deleted, member.JoinedAt);
+        new(member.UserId, member.Email, member.Name, RoleEndpoints.ToResponse(member.Role), member.Deleted, member.JoinedAt);
 }

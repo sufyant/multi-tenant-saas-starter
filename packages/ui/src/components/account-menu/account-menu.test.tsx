@@ -9,7 +9,7 @@ import { AccountMenu, type AccountMenuProps } from "./account-menu";
 const props = {
   name: "Ayşe Demir",
   email: "ayse@northwind.example",
-  person: { firstName: "Ayşe", lastName: "Demir" },
+  person: { name: "Ayşe Demir" },
   profileHref: "/northwind/settings/profile",
   version: "a1b2c3d",
 };

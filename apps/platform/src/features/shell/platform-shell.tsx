@@ -254,9 +254,9 @@ export function PlatformShell({
         account={(place) =>
           admin && (
             <AccountMenu
-              name={[admin.firstName, admin.lastName].filter(Boolean).join(" ")}
+              name={admin.name ?? ""}
               email={admin.email ?? ""}
-              person={{ firstName: admin.firstName, lastName: admin.lastName }}
+              person={{ name: admin.name }}
               profileHref="/settings/profile"
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}

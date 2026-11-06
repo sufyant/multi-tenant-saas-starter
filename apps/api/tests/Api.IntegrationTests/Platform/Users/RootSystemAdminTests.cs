@@ -90,14 +90,14 @@ public sealed class RootSystemAdminTests(Database database)
     public async Task VisitTheSystemDoor_AKnownListedUser_BecomesASystemAdminWithTheSameId()
     {
         var root = RootEmail();
-        var user = await _testData.AddUserAsync(email: root.ToLowerInvariant(), firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: root.ToLowerInvariant(), name: "Ada Lovelace");
         await using var api = WithRoots(root);
         api.Identity.AddAccount(user, root);
 
         await api.WaitingForMessagesAsync(() => api.CreateClient(user, secondFactor: true).GetAsync("/v1/platform/users", Cancellation));
 
         (await IsSystemAdminAsync(user)).ShouldBeTrue();
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(root.ToLowerInvariant(), "Ada", "Lovelace", Deleted: false, "en", null));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(root.ToLowerInvariant(), "Ada Lovelace", Deleted: false, "en", null));
     }
 
     // Root is read from the stored address (SystemDoor.IsRoot). A known user whose stored address is another one is no root, even with a

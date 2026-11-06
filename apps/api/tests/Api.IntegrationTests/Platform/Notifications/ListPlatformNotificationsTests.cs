@@ -75,8 +75,7 @@ public sealed class ListPlatformNotificationsTests(Database database) : IAsyncLi
     {
         var tenant = await _testData.AddTenantAsync();
         var admin = await _testData.AddSystemAdminAsync();
-        var names = actor.Split(' ');
-        var actorId = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: names[0], lastName: names[1]));
+        var actorId = await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: actor));
         var notification = await _rows.AddAsync(
             await _testData.UserIdOfAsync(admin), type, tenant.Id, "Platform", values: $$"""{"tenantName": "Blue Harbour Logistics", "{{person}}": "{{actorId}}"}""");
 

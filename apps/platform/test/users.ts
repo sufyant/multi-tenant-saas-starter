@@ -20,15 +20,13 @@ import { atlas, northwind, shannon } from "./organisations";
 
 const user = (
   id: string,
-  firstName: string | null,
-  lastName: string | null,
+  name: string | null,
   email: string | null,
   values: Partial<UserResponse> = {},
 ): UserResponse => ({
   id,
   email,
-  firstName,
-  lastName,
+  name,
   status: UserResponseStatus.Active,
   isSystemAdmin: false,
   isRootSystemAdmin: false,
@@ -40,27 +38,23 @@ const user = (
 
 export const ayse = user(
   "0198f0a2-0000-7000-8000-0000000000a1",
-  "Ayşe",
-  "Yılmaz",
+  "Ayşe Yılmaz",
   "ayse@northwind.example",
 );
 export const mehmet = user(
   "0198f0a2-0000-7000-8000-0000000000a2",
-  "Mehmet",
-  "Kaya",
+  "Mehmet Kaya",
   "mehmet@northwind.example",
 );
 export const john = user(
   "0198f0a2-0000-7000-8000-0000000000a3",
-  "John",
-  "Byrne",
+  "John Byrne",
   "john@northwind.example",
   { status: UserResponseStatus.Suspended, membershipCount: 1 },
 );
 export const ciara = user(
   "0198f0a2-0000-7000-8000-0000000000a4",
-  "Ciara",
-  "Byrne",
+  "Ciara Byrne",
   "ciara@starter.example",
   {
     isSystemAdmin: true,
@@ -70,8 +64,7 @@ export const ciara = user(
 );
 export const rory = user(
   "0198f0a2-0000-7000-8000-0000000000a5",
-  "Rory",
-  "Brennan",
+  "Rory Brennan",
   "rory@starter.example",
   {
     isSystemAdmin: true,
@@ -80,19 +73,15 @@ export const rory = user(
     membershipCount: 0,
   },
 );
-/** A user a system admin deleted: no names and no email (A8). */
-export const erased = user(
-  "0198f0a2-0000-7000-8000-0000000000a6",
-  null,
-  null,
-  null,
-  { status: UserResponseStatus.Deleted, membershipCount: 0 },
-);
+/** A user a system admin deleted: no name and no email (A8). */
+export const erased = user("0198f0a2-0000-7000-8000-0000000000a6", null, null, {
+  status: UserResponseStatus.Deleted,
+  membershipCount: 0,
+});
 
-/** A root system admin whom the door added: active, with an email and no names yet (A7). */
+/** A root system admin whom the door added: active, with an email and no name yet (A7). */
 export const unnamed = user(
   "0198f0a2-0000-7000-8000-0000000000a8",
-  null,
   null,
   "root@starter.example",
   {
@@ -234,8 +223,7 @@ export const userResponse =
 /** Tomás Ryan, a system admin who is neither root nor the viewer (the SystemAdmins board). */
 export const tomas = user(
   "0198f0a2-0000-7000-8000-0000000000a7",
-  "Tomás",
-  "Ryan",
+  "Tomás Ryan",
   "tomas@starter.example",
   {
     isSystemAdmin: true,
@@ -252,8 +240,7 @@ export const meAs = (value: UserResponse) =>
   getGetMeMockHandler(
     getGetMeResponseMock({
       id: value.id,
-      firstName: value.firstName,
-      lastName: value.lastName,
+      name: value.name,
       email: value.email,
       isSystemAdmin: true,
       language: Language.En,

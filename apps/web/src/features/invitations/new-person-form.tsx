@@ -10,27 +10,15 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { InvitationHeading } from "./join-card";
 
-// The generated schema of AcceptInvitation (F11). A person who is not a user yet must give both names: 1 to 100 characters each,
-// trimmed, as the API counts them (A7). The generated schema has them optional, because a known user sends none.
-const names = schemas.AcceptInvitationBody.pick({
-  firstName: true,
-  lastName: true,
-}).extend({
-  firstName: z
-    .string()
-    .trim()
-    .min(1)
-    .max(schemas.acceptInvitationBodyFirstNameMax),
-  lastName: z
-    .string()
-    .trim()
-    .min(1)
-    .max(schemas.acceptInvitationBodyLastNameMax),
+// The generated schema of AcceptInvitation (F11). A person who is not a user yet must give their name: 1 to 100 characters,
+// trimmed, as the API counts it (A7). The generated schema has it optional, because a known user sends none.
+const names = schemas.AcceptInvitationBody.pick({ name: true }).extend({
+  name: z.string().trim().min(1).max(schemas.acceptInvitationBodyNameMax),
 });
 
 export type Names = z.infer<typeof names>;
 
-/** A new person types their names before they join (the AcceptNewPerson board): the identity provider keeps none (A7). */
+/** A new person types their name before they join (the AcceptNewPerson board): the identity provider keeps none (A7). */
 export function NewPersonForm({
   preview,
   email,
@@ -50,7 +38,7 @@ export function NewPersonForm({
   const t = useTranslations();
   const form = useForm<Names>({
     resolver: zodResolver(names),
-    defaultValues: { firstName: "", lastName: "" },
+    defaultValues: { name: "" },
   });
   const message = (field: keyof Names) => {
     const key = form.formState.errors[field]?.message ?? fieldErrors?.[field];
@@ -67,20 +55,12 @@ export function NewPersonForm({
         onSubmit={form.handleSubmit(onJoin)}
         className="flex flex-col gap-3"
       >
-        <div className="grid grid-cols-1 gap-3 tablet:grid-cols-2">
-          <Input
-            label={t("invitations.firstName")}
-            autoComplete="given-name"
-            error={message("firstName")}
-            {...form.register("firstName")}
-          />
-          <Input
-            label={t("invitations.lastName")}
-            autoComplete="family-name"
-            error={message("lastName")}
-            {...form.register("lastName")}
-          />
-        </div>
+        <Input
+          label={t("invitations.name")}
+          autoComplete="name"
+          error={message("name")}
+          {...form.register("name")}
+        />
         <Button
           type="submit"
           variant="primary"

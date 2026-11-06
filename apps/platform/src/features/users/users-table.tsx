@@ -26,7 +26,7 @@ import { actionsOf, statuses } from "./user";
 
 /** The column a person can sort by, and the API's sort field (K5). The email's sort works from the URL. */
 const sorts = {
-  user: { asc: ListUsersSort.LastName, desc: ListUsersSort.LastNameDescending },
+  user: { asc: ListUsersSort.Name, desc: ListUsersSort.NameDescending },
 };
 
 /**
@@ -97,9 +97,7 @@ export function UsersTable({
       sortable: true,
       render: (user) => (
         <span className="flex min-w-0 items-center gap-3">
-          <Avatar
-            person={{ firstName: user.firstName, lastName: user.lastName }}
-          />
+          <Avatar person={{ name: user.name }} />
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 flex-wrap items-center gap-2">
               {name(user)}
@@ -166,11 +164,7 @@ export function UsersTable({
         )
       }
       actionsLabel={t("users.actions")}
-      cardLead={(user) => (
-        <Avatar
-          person={{ firstName: user.firstName, lastName: user.lastName }}
-        />
-      )}
+      cardLead={(user) => <Avatar person={{ name: user.name }} />}
       rowCount={page.total}
       page={page.page}
       pageSize={page.pageSize}

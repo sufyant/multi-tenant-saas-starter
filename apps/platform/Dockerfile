@@ -10,7 +10,7 @@
 
 # Debian, like the runtime image, so the native packages the build installs match the runtime's C library.
 # Its major version must agree with .nvmrc; the deps stage checks that.
-FROM node:22.23.4-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf AS deps
+FROM node:22.23.4-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS deps
 # The Node major version from .nvmrc. CI passes it: --build-arg NODE_MAJOR="$(cat .nvmrc)".
 ARG NODE_MAJOR=22
 RUN test "$(node -p 'process.versions.node.split(".")[0]')" = "$NODE_MAJOR" \
@@ -52,7 +52,7 @@ RUN if find apps/platform/.next/standalone apps/platform/.next/static apps/platf
     fi
 
 # Distroless: Node and nothing else. No shell, no npm, no package manager.
-FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:10747a1323be68f206aed893599d43e6697ad67257e7c42703553f99fbce3d33 AS runtime
+FROM gcr.io/distroless/nodejs22-debian13:nonroot@sha256:8ad9cc935b7843c4024b7e1487b5ef472c354ea847b97c667023e2618552607e AS runtime
 # The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
 USER 0:0
 WORKDIR /app

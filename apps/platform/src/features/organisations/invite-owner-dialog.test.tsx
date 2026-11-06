@@ -56,7 +56,7 @@ const sent = () =>
         builtIn: "owner",
       },
       invitedBy: "0198f0a2-0000-7000-8000-0000000000a9",
-      invitedByName: { firstName: "Ciara", lastName: "Byrne", deleted: false },
+      invitedByName: { name: "Ciara Byrne", deleted: false },
       createdAt: new Date().toISOString(),
       expiresAt,
       state: InvitationResponseState.Pending,

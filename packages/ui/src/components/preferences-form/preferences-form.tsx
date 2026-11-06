@@ -14,7 +14,7 @@ import { Input } from "../input";
 import { showToast } from "../toast";
 import { timeZoneOptions } from "./time-zones";
 
-export type Names = { firstName: string; lastName: string };
+export type Names = { name: string };
 export type Preferences = { language: Language; timeZone: string | null };
 export type PreferencesValues = Names & Preferences;
 
@@ -24,13 +24,13 @@ export type PreferencesChanges = { names?: Names; preferences?: Preferences };
 export type PreferencesFormProps = {
   /** The values of GetMe. A name the user has not got is "". */
   values: PreferencesValues;
-  /** The generated schemas of RenameMe and ChangePreferences as one object, with the names trimmed and required (F11). */
+  /** The generated schemas of RenameMe and ChangePreferences as one object, with the name trimmed and required (F11). */
   schema: z.ZodType<PreferencesValues, PreferencesValues>;
-  /** The most characters of each name: the generated schema's maximum (`schemas.renameMeBodyFirstNameMax`). */
-  nameMax: Record<keyof Names, number>;
+  /** The most characters of the name: the generated schema's maximum (`schemas.renameMeBodyNameMax`). */
+  nameMax: number;
   /** The languages of the contract: `Object.values(Language)`. */
   languages: readonly Language[];
-  /** Under the names: who sees them. Each app has its own. */
+  /** Under the name: who sees it. Each app has its own. */
   nameNote: string;
   rename: (names: Names) => Promise<unknown>;
   changePreferences: (preferences: Preferences) => Promise<unknown>;
@@ -47,21 +47,17 @@ export function changesOf(
   saved: PreferencesValues,
   values: PreferencesValues,
 ): PreferencesChanges {
-  const { firstName, lastName, language, timeZone } = values;
-  const renamed = firstName !== saved.firstName || lastName !== saved.lastName;
+  const { name, language, timeZone } = values;
+  const renamed = name !== saved.name;
   const changed = language !== saved.language || timeZone !== saved.timeZone;
   return {
-    ...(renamed && { names: { firstName, lastName } }),
+    ...(renamed && { names: { name } }),
     ...(changed && { preferences: { language, timeZone } }),
   };
 }
 
-const nameFields = ["firstName", "lastName"] as const;
+const nameFields = ["name"] as const;
 const preferenceFields = ["timeZone"] as const;
-const required = {
-  firstName: "preferencesForm.firstNameRequired",
-  lastName: "preferencesForm.lastNameRequired",
-} as const;
 
 /**
  * Settings > Preferences (the Preferences boards of both apps): the person's name (RenameMe), language and time zone
@@ -148,11 +144,11 @@ export function PreferencesForm({
 
   const { errors, isSubmitting } = form.formState;
   // Zod's error map and the API's field codes both give a key of the validation messages (F12). A name has texts of its own.
-  const nameError = (field: (typeof nameFields)[number]) => {
-    const key = errors[field]?.message;
-    if (key === "validation.required") return t(required[field]);
+  const nameError = () => {
+    const key = errors.name?.message;
+    if (key === "validation.required") return t("preferencesForm.nameRequired");
     if (key === "validation.too_long")
-      return t("preferencesForm.nameTooLong", { max: nameMax[field] });
+      return t("preferencesForm.nameTooLong", { max: nameMax });
     return key && t(key as "validation.invalid");
   };
   const timeZoneError = errors.timeZone?.message;
@@ -170,20 +166,12 @@ export function PreferencesForm({
         <h2 id="preferences-name" className="text-section-title">
           {t("preferencesForm.yourName")}
         </h2>
-        <div className="grid grid-cols-1 gap-3 tablet:grid-cols-2">
-          <Input
-            label={t("preferencesForm.firstName")}
-            autoComplete="given-name"
-            error={nameError("firstName")}
-            {...form.register("firstName")}
-          />
-          <Input
-            label={t("preferencesForm.lastName")}
-            autoComplete="family-name"
-            error={nameError("lastName")}
-            {...form.register("lastName")}
-          />
-        </div>
+        <Input
+          label={t("preferencesForm.name")}
+          autoComplete="name"
+          error={nameError()}
+          {...form.register("name")}
+        />
         <p className="text-small text-muted-foreground">{nameNote}</p>
       </section>
       <section

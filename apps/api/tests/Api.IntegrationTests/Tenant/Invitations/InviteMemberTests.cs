@@ -54,7 +54,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task InviteMember_AsAnOwnerOrAnAdmin_CreatesAPendingInvitation(string inviterRole)
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: inviterRole);
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: inviterRole);
         var email = NewEmail();
 
         var invited = await _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email);
@@ -64,7 +64,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invitation.EnumerateObject().Select(field => field.Name)
             .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state", "language"], ignoreOrder: true);
         invitation.GetProperty("state").GetString().ShouldBe("pending");
-        invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":"Ada","lastName":"Lovelace","deleted":false}""");
+        invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"name":"Ada Lovelace","deleted":false}""");
         invitation.GetProperty("email").GetString().ShouldBe(email);
         RoleAnswers.Of(invitation).ShouldBe(RoleAnswers.BuiltIn("member"));
         invitation.GetProperty("invitedBy").GetGuid().ShouldBe(await _testData.UserIdOfAsync(inviter));
@@ -79,7 +79,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task InviteMember_WithoutALanguage_InvitesInTheInvitersLanguage()
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace", language: "tr"), role: "Owner");
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace", language: "tr"), role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
@@ -93,7 +93,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task InviteMember_WithALanguage_InvitesInIt()
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace", language: "tr"), role: "Owner");
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace", language: "tr"), role: "Owner");
         var email = NewEmail();
 
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email, language: "ar"));
@@ -110,7 +110,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync(name: "Northwind Traders");
         var inviter = await _testData.AddMemberAsync(
-            tenant.Id, await _testData.AddUserAsync(firstName: "Ayşe", lastName: "Yılmaz", timeZone: "Europe/Istanbul"), role: "Owner");
+            tenant.Id, await _testData.AddUserAsync(name: "Ayşe Yılmaz", timeZone: "Europe/Istanbul"), role: "Owner");
         var email = NewEmail();
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email, role: "admin"));
@@ -128,7 +128,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     public async Task InviteMember_AnInviterWithoutATimeZone_WritesTheExpiryInUtc()
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var inviter = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: "Owner");
         var email = NewEmail();
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
@@ -143,7 +143,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var inviter = _api.CreateClient(
-            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner"));
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: "Owner"));
         var custom = await _testData.AddCustomRoleAsync(tenant.Id, "Field agent", "tenant.profile.read");
         var (builtIn, typed) = (NewEmail(), NewEmail());
 
@@ -852,7 +852,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
     }
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name = "Ada Lovelace" }, Cancellation);
 
     private Task<long> InvitationsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE tenant_id = '{tenantId}'");

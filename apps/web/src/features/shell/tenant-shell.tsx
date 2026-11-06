@@ -346,14 +346,9 @@ function TenantFrame({
         account={(place) =>
           me.data && (
             <AccountMenu
-              name={[me.data.firstName, me.data.lastName]
-                .filter(Boolean)
-                .join(" ")}
+              name={me.data.name ?? ""}
               email={me.data.email ?? ""}
-              person={{
-                firstName: me.data.firstName,
-                lastName: me.data.lastName,
-              }}
+              person={{ name: me.data.name }}
               profileHref={`${settings}/profile`}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}

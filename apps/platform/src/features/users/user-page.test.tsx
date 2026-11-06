@@ -95,8 +95,7 @@ describe("UserPage", () => {
         userDetailOf(john, {
           suspendedAt: "2026-10-16T09:00:00Z",
           suspendedBy: {
-            firstName: "Ciara",
-            lastName: "Byrne",
+            name: "Ciara Byrne",
             deleted: false,
           },
         }),
@@ -124,8 +123,7 @@ describe("UserPage", () => {
         userDetailOf(john, {
           suspendedAt: "2026-10-16T09:00:00Z",
           suspendedBy: {
-            firstName: "Ciara",
-            lastName: "Byrne",
+            name: "Ciara Byrne",
             deleted: false,
           },
         }),
@@ -148,7 +146,7 @@ describe("UserPage", () => {
       userAnswer(
         userDetailOf(john, {
           suspendedAt: "2026-10-16T09:00:00Z",
-          suspendedBy: { firstName: null, lastName: null, deleted: true },
+          suspendedBy: { name: null, deleted: true },
         }),
       ),
     );

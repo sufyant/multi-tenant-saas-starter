@@ -42,7 +42,7 @@ public static class ChangeMemberRoleHandler
         var (target, oldRole, change) = changed.Value;
         var user = await users.FindProfileAsync(target.UserId, cancellationToken)
             ?? throw new InvalidOperationException("A member is always a user.");
-        var member = new MemberView(user.Id, user.Email, user.FirstName, user.LastName, RoleView.Of(role), user.Deleted, target.JoinedAt);
+        var member = new MemberView(user.Id, user.Email, user.Name, RoleView.Of(role), user.Deleted, target.JoinedAt);
         if (change == StateChange.Unchanged)
         {
             return (member, []);

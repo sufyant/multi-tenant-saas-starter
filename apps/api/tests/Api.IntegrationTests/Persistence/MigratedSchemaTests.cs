@@ -213,7 +213,7 @@ public sealed class MigratedSchemaTests(Database database)
         var purged = await testData.AddTenantAsync(status: "Purged");
         var suspended = await testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", timeZone: "Europe/Dublin");
         await testData.SuspendUserAsync(suspended);
-        var deleted = await testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace", timeZone: "Europe/Dublin");
+        var deleted = await testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Ada Lovelace", timeZone: "Europe/Dublin");
         await testData.DeleteUserAsync(deleted);
         await database.ScalarAsSuperuserAsync<object>(
             $"INSERT INTO control_plane.tenant_purge_sagas (id, state, waiting, tenant_id, version) VALUES ('{purged.Id}', 'Completed', ARRAY[]::text[], '{purged.Id}', 3)",
@@ -245,7 +245,7 @@ public sealed class MigratedSchemaTests(Database database)
             $"UPDATE control_plane.users SET language = 'de' WHERE external_id = '{owner}'",
             $"UPDATE control_plane.users SET membership_count = -1 WHERE external_id = '{suspended}'",
             $"UPDATE control_plane.users SET suspended_by = NULL WHERE external_id = '{suspended}'",
-            $"UPDATE control_plane.users SET first_name = 'Ada' WHERE external_id = '{deleted}'",
+            $"UPDATE control_plane.users SET name = 'Ada Lovelace' WHERE external_id = '{deleted}'",
             $"UPDATE control_plane.invitations SET status = 'Expired' WHERE id = '{cancelled}'",
             $"UPDATE control_plane.invitations SET language = 'de' WHERE id = '{pending}'",
             $"UPDATE control_plane.invitations SET accepted_at = now() WHERE id = '{pending}'",
@@ -409,23 +409,22 @@ public sealed class MigratedSchemaTests(Database database)
         refusals.ShouldBe(["fk_roles_tenants_tenant_id", "fk_memberships_users_user_id", "fk_system_admins_users_user_id", "taken"]);
     }
 
-    // R17: a user's address and names have the lengths of the domain, as an invitation's address has. A user at each limit is stored; one
+    // R17: a user's address and name have the lengths of the domain, as an invitation's address has. A user at each limit is stored; one
     // character more is refused.
     [Fact]
     public async Task WriteUser_OneCharacterOverALimit_IsRefused()
     {
         var migrated = await database.CreateMigratedDatabaseAsync();
         var testData = new TestData(database, migrated);
-        var user = await testData.AddUserAsync(email: $"{new string('a', 308)}@example.com", firstName: new string('F', 100), lastName: new string('L', 100));
+        var user = await testData.AddUserAsync(email: $"{new string('a', 308)}@example.com", name: new string('N', 100));
 
         var refusals = await RefusingAsync(
             migrated,
             PostgresErrorCodes.StringDataRightTruncation,
             $"UPDATE control_plane.users SET email = 'a' || email WHERE external_id = '{user}'",
-            $"UPDATE control_plane.users SET first_name = first_name || 'F' WHERE external_id = '{user}'",
-            $"UPDATE control_plane.users SET last_name = last_name || 'L' WHERE external_id = '{user}'");
+            $"UPDATE control_plane.users SET name = name || 'N' WHERE external_id = '{user}'");
 
-        refusals.ShouldBe(["refused", "refused", "refused"]);
+        refusals.ShouldBe(["refused", "refused"]);
     }
 
     // The tenant's summary keeps its latest Owner invitation while it has no Owner (R12), as a command writes it.

@@ -19,7 +19,7 @@
     "light": "فاتح",
     "dark": "داكن",
     "system": "النظام",
-    "hint": "يُحفظ على هذا الجهاز."
+    "hint": "يُحفظ على هذا الجهاز. يتبع خيار النظام إعداد الجهاز."
   },
   "languages": {
     "en": "English",
@@ -245,10 +245,8 @@
   },
   "preferencesForm": {
     "yourName": "اسمك",
-    "firstName": "الاسم الأول",
-    "lastName": "اسم العائلة",
-    "firstNameRequired": "أدخل اسمك الأول.",
-    "lastNameRequired": "أدخل اسم العائلة.",
+    "name": "الاسم",
+    "nameRequired": "أدخل اسمك.",
     "nameTooLong": "استخدم من 1 إلى {max} حرف.",
     "languageAndTimeZone": "اللغة والمنطقة الزمنية",
     "language": "اللغة",

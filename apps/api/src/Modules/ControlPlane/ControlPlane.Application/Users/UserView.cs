@@ -12,8 +12,7 @@ namespace ControlPlane.Application.Users;
 public sealed record UserView(
     Guid Id,
     string? Email,
-    string? FirstName,
-    string? LastName,
+    string? Name,
     string Status,
     bool IsSystemAdmin,
     bool IsRootSystemAdmin,
@@ -29,8 +28,7 @@ public sealed record UserView(
         new(
             user.Id,
             user.Email,
-            user.FirstName,
-            user.LastName,
+            user.Name,
             user.Status.ToString(),
             systemAdminGrantedAt is not null,
             systemAdminGrantedAt is not null && SystemDoor.IsRoot(user.Email, systemAdmins.Roots),

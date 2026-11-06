@@ -19,7 +19,7 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System",
-    "hint": "Saved on this device."
+    "hint": "Saved on this device. System follows the device’s setting."
   },
   "languages": {
     "en": "English",
@@ -245,10 +245,8 @@
   },
   "preferencesForm": {
     "yourName": "Your name",
-    "firstName": "First name",
-    "lastName": "Last name",
-    "firstNameRequired": "Enter your first name.",
-    "lastNameRequired": "Enter your last name.",
+    "name": "Name",
+    "nameRequired": "Enter your name.",
     "nameTooLong": "Use 1 to {max} characters.",
     "languageAndTimeZone": "Language and time zone",
     "language": "Language",

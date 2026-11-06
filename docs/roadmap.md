@@ -8,7 +8,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | done |
-| 36 | Personal pages | in progress: 36-backend done, 36-frontend todo |
+| 36 | Personal pages | in progress: 36-backend done, 36-backend-name done, 36-frontend todo |
 | 37a | The web's organisation pages | todo |
 | 37b | The platform's pages | todo |
 | 38 | Terms of use | todo |
@@ -57,7 +57,7 @@ Status: done.
 
 - The design foundation from the Figma file: the tokens, the fonts (Instrument Sans, JetBrains Mono, Noto Sans Arabic, from their Fontsource packages, so the build makes no request to Google) and the shared components of the Components page. The pages keep their layouts until steps 36, 37a and 37b (the maintainer's decision of 2026-11-04).
 - The shell as the design draws it: the organisation's name and the role, search inside the sidebar, Notifications as a row, and "Staging" on the strip.
-- Home: "Welcome" with the first name and a card for each page the person can open (4.01, 4.02). Its terms notice (4.03) comes with step 38.
+- Home: "Welcome" with the whole name and a card for each page the person can open (4.01, 4.02). Its terms notice (4.03) comes with step 38.
 - CI keeps the screenshots of each pull request for seven days, for the review against the design.
 - Only the design's breakpoints: Tailwind's own are removed, and the architecture test fails on them.
 
@@ -103,6 +103,8 @@ Status: in progress. 36-backend is done; 36-frontend builds the screens on its A
 - Email change: a 6-digit code to the new address; our record changes, the identity provider takes the address through the outbox, and the old address is told. A7 changes: we own the email, and the identity provider only signs people in.
 - One verification code mechanism for both, with its numbers in `apps/api/docs/ARCHITECTURE.md`, section 6.
 - The audit operations `user.data_export_requested`, `user.data_export_downloaded`, `user.deletion_requested` and `user.email_changed`.
+
+36-backend-name (the maintainer's decision of 2026-11-06): a person has one name, `name`, trimmed, 1 to 100 characters, in place of a first and a last name. It changes the users table, every contract, the export and the screens. A greeting uses the whole name, and the avatar's initials are the first letters of the name's first and last word. Done.
 
 ## 5. Step 37: Organisation pages
 

@@ -40,8 +40,7 @@ afterAll(() => server.close());
 const url = "/northwind/settings/profile";
 
 const me = getGetMeResponseMock({
-  firstName: "Ayşe",
-  lastName: "Yılmaz",
+  name: "Ayşe Yılmaz",
   email: "ayse@northwind.io",
   language: Language.En,
   timeZone: "Europe/Istanbul",
@@ -133,8 +132,7 @@ describe("ProfilePage", () => {
 
     renderInTenant(<ProfilePage />, { url });
 
-    expect(await textbox("First name")).toHaveValue("Ayşe");
-    expect(await textbox("Last name")).toHaveValue("Yılmaz");
+    expect(await textbox("Name")).toHaveValue("Ayşe Yılmaz");
     expect(await field("Language")).toHaveTextContent("English");
     expect(await field("Time zone")).toHaveTextContent(/^Istanbul/);
     expect(
@@ -153,11 +151,11 @@ describe("ProfilePage", () => {
 
     renderInTenant(<ProfilePage />, { url });
 
-    const theme = await screen.findByRole("group", { name: "Theme" });
+    const theme = await screen.findByRole("radiogroup", { name: "Theme" });
     expect(
       within(theme)
-        .getAllByRole("button")
-        .map((button) => button.textContent),
+        .getAllByRole("radio")
+        .map((radio) => radio.textContent),
     ).toEqual(["System", "Light", "Dark"]);
   });
 
@@ -197,11 +195,11 @@ describe("ProfilePage", () => {
     server.use(...preferencesAnswers(me, sent));
     renderInTenant(<ProfilePage />, { url });
 
-    await retype("First name", "  Ayla ");
+    await retype("Name", "  Ayla Yılmaz ");
     await save();
 
     expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
-    expect(sent.names).toEqual([{ firstName: "Ayla", lastName: "Yılmaz" }]);
+    expect(sent.names).toEqual([{ name: "Ayla Yılmaz" }]);
     expect(sent.preferences).toEqual([]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
@@ -228,12 +226,12 @@ describe("ProfilePage", () => {
     server.use(...preferencesAnswers(me, sent));
     renderInTenant(<ProfilePage />, { url });
 
-    await retype("Last name", "Kaya");
+    await retype("Name", "Ayşe Kaya");
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
     expect(await screen.findAllByText("Preferences saved")).toHaveLength(1);
-    expect(sent.names).toEqual([{ firstName: "Ayşe", lastName: "Kaya" }]);
+    expect(sent.names).toEqual([{ name: "Ayşe Kaya" }]);
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Asia/Riyadh" },
     ]);
@@ -246,10 +244,10 @@ describe("ProfilePage", () => {
     renderInTenant(<ProfilePage />, { url });
 
     expect(await field("Time zone")).toHaveTextContent(/\(this device\)$/);
-    await retype("First name", " Ayşe ");
+    await retype("Name", " Ayşe Yılmaz ");
     await save();
 
-    expect(await textbox("First name")).not.toHaveAttribute("aria-invalid");
+    expect(await textbox("Name")).not.toHaveAttribute("aria-invalid");
     expect(sent.names).toEqual([]);
     expect(sent.preferences).toEqual([]);
     expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
@@ -270,10 +268,7 @@ describe("ProfilePage", () => {
     ]);
   });
 
-  it.each([
-    ["firstName", "First name", "Enter your first name."],
-    ["lastName", "Last name", "Enter your last name."],
-  ])(
+  it.each([["name", "Name", "Enter your name."]])(
     "ProfilePage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
     async (_json, name, message) => {
       const sent = nothingSent();
@@ -291,10 +286,8 @@ describe("ProfilePage", () => {
   );
 
   it.each([
-    ["firstName", "required", "First name", "Enter your first name."],
-    ["lastName", "required", "Last name", "Enter your last name."],
-    ["firstName", "too_long", "First name", "Use 1 to 100 characters."],
-    ["lastName", "too_long", "Last name", "Use 1 to 100 characters."],
+    ["name", "required", "Name", "Enter your name."],
+    ["name", "too_long", "Name", "Use 1 to 100 characters."],
   ])(
     "ProfilePage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
     async (json, code, name, message) => {
@@ -315,7 +308,7 @@ describe("ProfilePage", () => {
     server.use(...preferencesAnswers(me, sent));
     renderInTenant(<ProfilePage />, { url });
 
-    const box = await textbox("Last name");
+    const box = await textbox("Name");
     await userEvent.clear(box);
     await userEvent.click(box);
     await userEvent.paste("a".repeat(101));
@@ -330,16 +323,16 @@ describe("ProfilePage", () => {
   it("ProfilePage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
     const sent = nothingSent();
     server.use(
-      renameRefuses({ lastName: ["too_long"] }),
+      renameRefuses({ name: ["too_long"] }),
       ...preferencesAnswers(me, sent),
     );
     renderInTenant(<ProfilePage />, { url });
 
-    await retype("Last name", "Kaya");
+    await retype("Name", "Ayşe Kaya");
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
-    const box = await textbox("Last name");
+    const box = await textbox("Name");
     await vi.waitFor(() =>
       expect(box).toHaveAccessibleDescription("Use 1 to 100 characters."),
     );
@@ -358,7 +351,7 @@ describe("ProfilePage", () => {
     );
     renderInTenant(<ProfilePage />, { url });
 
-    await retype("First name", "Ayla");
+    await retype("Name", "Ayla Yılmaz");
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
@@ -369,9 +362,9 @@ describe("ProfilePage", () => {
       ),
     );
     expect(timeZone).toHaveAttribute("aria-invalid", "true");
-    expect(sent.names).toEqual([{ firstName: "Ayla", lastName: "Yılmaz" }]);
+    expect(sent.names).toEqual([{ name: "Ayla Yılmaz" }]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
-    expect(await textbox("First name")).not.toHaveAttribute("aria-invalid");
+    expect(await textbox("Name")).not.toHaveAttribute("aria-invalid");
   });
 
   it("ProfilePage_InArabic_ShowsArabicTexts", async () => {
@@ -383,7 +376,7 @@ describe("ProfilePage", () => {
       await screen.findByRole("heading", { name: "الملف الشخصي" }),
     ).toBeInTheDocument();
     expect(await field("اللغة")).toHaveTextContent("العربية");
-    expect(await textbox("الاسم الأول")).toHaveValue("Ayşe");
+    expect(await textbox("الاسم")).toHaveValue("Ayşe Yılmaz");
   });
 
   it("ProfilePage_UserSuspended_ReadsGetMeAgain", async () => {

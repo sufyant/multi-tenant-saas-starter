@@ -133,7 +133,7 @@ function zonePart(
   at: Instant,
   locale: string,
   timeZone: string | undefined,
-  style: "long" | "longGeneric" | "longOffset",
+  style: "longGeneric" | "longOffset",
 ): string {
   const parts = new Intl.DateTimeFormat(locale, {
     timeZone,
@@ -166,10 +166,9 @@ function namedZone(
   at: Instant,
   locale: string,
   timeZone: string,
-  style: "long" | "longGeneric",
 ): string | null {
   const latin = `${locale}-u-nu-latn`;
-  const name = zonePart(at, latin, timeZone, style);
+  const name = zonePart(at, latin, timeZone, "longGeneric");
   return name !== zonePart(at, latin, timeZone, "longOffset") ? name : null;
 }
 
@@ -178,13 +177,12 @@ const cityOf = (timeZone: string) =>
   (timeZone.split("/").pop() ?? timeZone).replaceAll("_", " ");
 
 /**
- * The zone's name in the user's language with its offset: `Irish Standard Time (UTC+1)`. When the browser has no name for the
- * zone, it gives only an offset; the city of the IANA zone takes its place: `Istanbul (UTC+3)`.
+ * The zone as a person reads it beside a time: the city of its IANA name and its offset at that instant, all year:
+ * `Dublin (UTC+1)` in summer, `Dublin (UTC+0)` in winter (F18). The city is in English: the Intl API names no city.
  */
 export function zoneLabel(at: Instant, options: DateTimeOptions): string {
   const timeZone = options.timeZone ?? browserTimeZone();
-  const name = namedZone(at, options.locale, timeZone, "long");
-  return `${name ?? cityOf(timeZone)} (${utcOffset(at, timeZone)})`;
+  return `${cityOf(timeZone)} (${utcOffset(at, timeZone)})`;
 }
 
 /**
@@ -194,7 +192,7 @@ export function zoneLabel(at: Instant, options: DateTimeOptions): string {
  */
 export function zoneName(at: Instant, options: DateTimeOptions): string {
   const timeZone = options.timeZone ?? browserTimeZone();
-  const name = namedZone(at, options.locale, timeZone, "longGeneric");
+  const name = namedZone(at, options.locale, timeZone);
   return name ? `${cityOf(timeZone)}, ${name}` : cityOf(timeZone);
 }
 

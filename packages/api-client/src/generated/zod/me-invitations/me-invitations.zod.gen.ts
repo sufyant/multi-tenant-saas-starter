@@ -7,17 +7,14 @@
 import * as zod from 'zod';
 
 
-export const acceptInvitationBodyFirstNameMax = 100;
-
-export const acceptInvitationBodyLastNameMax = 100;
+export const acceptInvitationBodyNameMax = 100;
 
 
 
 export const AcceptInvitationBody = zod.object({
   "code": zod.string(),
-  "firstName": zod.string().max(acceptInvitationBodyFirstNameMax).nullish(),
-  "lastName": zod.string().max(acceptInvitationBodyLastNameMax).nullish()
-}).describe('The invitation code from the invitation link, and the names of a person who is not a user yet, each within the API\'s limit.\nThe API trims each name before it counts its length. A known user sends none.')
+  "name": zod.string().max(acceptInvitationBodyNameMax).nullish()
+}).describe('The invitation code from the invitation link, and the name of a person who is not a user yet, within the API\'s limit. The API\ntrims the name before it counts its length. A known user sends none.')
 
 export const AcceptInvitationResponse = zod.object({
   "id": zod.uuid(),
@@ -47,10 +44,9 @@ export const GetInvitationPreviewResponse = zod.object({
   User: 'user',
   Platform: 'platform',
 }).describe('Who invited: a user of the tenant, or the platform, for which a system admin acted.'),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean().nullable()
-}).describe('Who invited: a user, with the names stored now and `deleted` for a user a system admin deleted, or the platform,\nwith no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do.'),
+}).describe('Who invited: a user, with the name stored now and `deleted` for a user a system admin deleted, or the platform,\nwith no name and no `deleted`. The screen names the platform from `kind`, as the audit logs do.'),
   "role": zod.union([zod.null(),zod.object({
   "id": zod.uuid(),
   "name": zod.string(),

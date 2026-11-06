@@ -54,7 +54,7 @@ export function SystemAdminsPage() {
 
   const person = (user: UserResponse) => (
     <span className="flex min-w-0 items-center gap-3">
-      <Avatar person={{ firstName: user.firstName, lastName: user.lastName }} />
+      <Avatar person={{ name: user.name }} />
       <span className="flex min-w-0 flex-col">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <bdi className="truncate font-medium">
@@ -149,11 +149,7 @@ export function SystemAdminsPage() {
         label={t("systemAdmins.title")}
         actions={actions}
         actionsLabel={t("systemAdmins.actions")}
-        cardLead={(user) => (
-          <Avatar
-            person={{ firstName: user.firstName, lastName: user.lastName }}
-          />
-        )}
+        cardLead={(user) => <Avatar person={{ name: user.name }} />}
         rowCount={list.data.total}
         page={list.data.page}
         pageSize={list.data.pageSize}

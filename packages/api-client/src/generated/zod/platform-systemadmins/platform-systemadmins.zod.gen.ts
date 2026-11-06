@@ -27,8 +27,7 @@ export const GrantSystemAdminHeader = zod.object({
 export const GrantSystemAdminResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "status": zod.enum({
   Active: 'active',
   Suspended: 'suspended',
@@ -39,7 +38,7 @@ export const GrantSystemAdminResponse = zod.object({
   "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and name, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 
 export const RevokeSystemAdminParams = zod.object({
   "userId": zod.uuid()

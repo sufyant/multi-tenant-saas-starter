@@ -89,7 +89,7 @@ export function ImpactDialog({
           href={`/organisations/${row.tenantId}`}
           target="_blank"
           rel="noopener"
-          className="text-primary underline underline-offset-4 hover:text-primary-hover"
+          className="text-link underline underline-offset-4"
         >
           <bdi className="font-medium">{row.name}</bdi>
           <span className="sr-only"> {t("newTab")}</span>

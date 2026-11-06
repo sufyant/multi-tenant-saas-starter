@@ -235,10 +235,7 @@ function PersonCard({ person }: { person: UserResponse }) {
   const users = useTranslations("users");
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-      <Avatar
-        person={{ firstName: person.firstName, lastName: person.lastName }}
-        className="size-10"
-      />
+      <Avatar person={{ name: person.name }} className="size-10" />
       <div className="flex min-w-0 flex-col">
         <bdi className="truncate font-medium">
           {userNameOf(person, users("deletedUser"))}

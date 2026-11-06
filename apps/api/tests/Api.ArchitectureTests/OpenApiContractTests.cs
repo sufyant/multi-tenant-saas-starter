@@ -682,14 +682,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     {
         string[] known =
         [
-            "AcceptInvitationRequest.firstName PredicateValidator",
-            "AcceptInvitationRequest.lastName PredicateValidator",
+            "AcceptInvitationRequest.name PredicateValidator",
             "ChangePreferencesRequest.timeZone RegularExpressionValidator",
             "CreateTenantRequest.slug PredicateValidator",
-            "RenameMeRequest.firstName PredicateValidator",
-            "RenameMeRequest.lastName PredicateValidator",
-            "RenameUserRequest.firstName PredicateValidator",
-            "RenameUserRequest.lastName PredicateValidator",
+            "RenameMeRequest.name PredicateValidator",
+            "RenameUserRequest.name PredicateValidator",
             "SuspendTenantRequest.reason PredicateValidator",
             "SetEntitlementOverrideRequest.reason PredicateValidator",
         ];

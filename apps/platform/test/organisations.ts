@@ -177,8 +177,7 @@ export const detailOf = (
       ? [
           {
             userId: "0198f0a2-0000-7000-8000-0000000000a1",
-            firstName: "Ayşe",
-            lastName: "Yılmaz",
+            name: "Ayşe Yılmaz",
             email: "ayse@northwind.example",
           },
         ]

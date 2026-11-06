@@ -34,7 +34,7 @@ const shown = {
 
 /**
  * Every date and time on screen (the Dates and times pattern): local time only, and on hover or focus, after 300ms, one line with
- * the full local date and time, the zone and its UTC offset: "1 Nov 2026, 14:32 · Irish Standard Time (UTC+0)". Only `format-date-time.ts` formats (F18).
+ * the full local date and time, the zone and its UTC offset: "1 Nov 2026, 14:32 · Dublin (UTC+0)". Only `format-date-time.ts` formats (F18).
  */
 export function Time({
   at,

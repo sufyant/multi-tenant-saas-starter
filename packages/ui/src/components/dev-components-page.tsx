@@ -32,8 +32,11 @@ import {
   HomeIcon,
   Icon,
   KeyIcon,
+  MonitorIcon,
+  MoonIcon,
   PlusIcon,
   SettingsIcon,
+  SunIcon,
   UsersIcon,
 } from "./icon";
 import { Input } from "./input";
@@ -45,6 +48,7 @@ import { PreferencesForm } from "./preferences-form";
 import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
 import { Search } from "./search";
+import { SegmentedControl } from "./segmented-control";
 import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
 import { Skeleton } from "./skeleton";
 import { Status } from "./status";
@@ -67,8 +71,7 @@ const resolved = async () => {};
 const previewNameMax = 100;
 const previewName = z.string().trim().min(1).max(previewNameMax);
 const preferencesSchema = z.object({
-  firstName: previewName,
-  lastName: previewName,
+  name: previewName,
   language: z.enum(Object.keys(messages) as [keyof typeof messages]),
   timeZone: z.string().nullable(),
 });
@@ -389,6 +392,10 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       render: () => <RadioGroupPreview />,
     },
     {
+      name: "SegmentedControl",
+      render: () => <SegmentedControlPreview />,
+    },
+    {
       name: "CodeInput",
       render: () => (
         <>
@@ -468,13 +475,12 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           <div className="w-[640px] max-w-full">
             <PreferencesForm
               values={{
-                firstName: "Ayşe",
-                lastName: "Yılmaz",
+                name: "Ayşe Yılmaz",
                 language,
                 timeZone: sample.timeZone,
               }}
               schema={preferencesSchema}
-              nameMax={{ firstName: previewNameMax, lastName: previewNameMax }}
+              nameMax={previewNameMax}
               languages={Object.keys(messages) as (keyof typeof messages)[]}
               nameNote={sample.nameNote}
               rename={resolved}
@@ -491,18 +497,14 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       name: "Avatar",
       render: () => (
         <>
-          <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />
+          <Avatar person={{ name: "Ayşe Yılmaz" }} />
           <Avatar
             person={{
-              firstName: null,
-              lastName: null,
+              name: null,
               email: "kemal@northwind.example",
             }}
           />
-          <Avatar
-            person={{ firstName: "Mehmet", lastName: "Kaya" }}
-            className="size-11"
-          />
+          <Avatar person={{ name: "Mehmet Kaya" }} className="size-11" />
         </>
       ),
     },
@@ -920,7 +922,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
+            person={{ name: "Ayşe Yılmaz" }}
             profileHref="#profile"
             onSignOut={() => {}}
             version="a1b2c3d"
@@ -1135,6 +1137,50 @@ function CheckboxPreview() {
   );
 }
 
+/** The theme at both sizes, the billing period of two options, and a disabled control. */
+function SegmentedControlPreview() {
+  const [theme, setTheme] = useState("system");
+  const [period, setPeriod] = useState("monthly");
+  const themes = [
+    { value: "system", label: "System", icon: MonitorIcon },
+    { value: "light", label: "Light", icon: SunIcon },
+    { value: "dark", label: "Dark", icon: MoonIcon },
+  ];
+  return (
+    <>
+      <SegmentedControl
+        label="Theme"
+        value={theme}
+        options={themes}
+        onValueChange={setTheme}
+      />
+      <SegmentedControl
+        label="Theme, touch"
+        value={theme}
+        options={themes}
+        onValueChange={setTheme}
+        size="touch"
+      />
+      <SegmentedControl
+        label="Billing period"
+        value={period}
+        options={[
+          { value: "monthly", label: "Monthly" },
+          { value: "yearly", label: "Yearly" },
+        ]}
+        onValueChange={setPeriod}
+      />
+      <SegmentedControl
+        label="Theme, disabled"
+        value="system"
+        options={themes}
+        onValueChange={noop}
+        disabled
+      />
+    </>
+  );
+}
+
 /** A role list as the ChangeRole board draws it: the Owner role disabled with its reason. */
 function RadioGroupPreview() {
   const id = useId();
@@ -1227,7 +1273,7 @@ function AppShellPreview({ sample }: { sample: Sample }) {
           <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
+            person={{ name: "Ayşe Yılmaz" }}
             profileHref="#profile"
             onSignOut={() => {}}
             version="a1b2c3d"

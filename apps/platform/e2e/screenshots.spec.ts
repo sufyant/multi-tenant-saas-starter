@@ -167,6 +167,10 @@ const bellList = {
     },
   ],
 };
+/** Scrolls the theme's card, the one radio group of the Profile page, into view. */
+const showTheme = (page: Page) =>
+  page.getByRole("radiogroup").scrollIntoViewIfNeeded();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -244,6 +248,14 @@ const shellShots: {
         .waitFor(),
   },
   {
+    file: "3.10-notifications-empty-en-light-phone",
+    size: "phone",
+    path: "/notifications",
+    mock: (page) => mockNotifications(page, { items: [], unread: 0 }),
+    ready: (page) =>
+      page.getByRole("main").getByText("No notifications").waitFor(),
+  },
+  {
     file: "2.22-not-found-en-light-desktop",
     size: "desktop",
     path: "/no-such-page",
@@ -263,6 +275,43 @@ const shellShots: {
     size: "phone",
     path: "/settings/system-admins",
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
+  },
+  // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame. Each shot
+  // scrolls the card into view, because the two name fields and the email make the page taller than the frame's.
+  {
+    file: "8.01-profile-en-light-desktop",
+    size: "desktop",
+    path: "/settings/profile",
+    open: showTheme,
+  },
+  {
+    file: "8.08-profile-en-light-tablet",
+    size: "tablet",
+    path: "/settings/profile",
+    open: showTheme,
+  },
+  {
+    file: "8.07-profile-en-light-phone",
+    size: "phone",
+    path: "/settings/profile",
+    open: showTheme,
+  },
+  {
+    file: "8.09-profile-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/profile",
+    open: async (page) => {
+      await page.getByRole("radio", { name: "Dark" }).click();
+      await showTheme(page);
+    },
+  },
+  {
+    file: "8.10-profile-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/settings/profile",
+    open: showTheme,
   },
 ];
 

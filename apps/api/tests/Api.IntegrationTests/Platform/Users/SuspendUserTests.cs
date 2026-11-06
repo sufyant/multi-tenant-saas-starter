@@ -30,7 +30,7 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task SuspendUser_ActiveUser_AnswersTheUserSuspended()
     {
-        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Ada Lovelace");
         var id = await _testData.UserIdOfAsync(user);
 
         var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation);
@@ -38,9 +38,9 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         body.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt"], ignoreOrder: true);
         body.GetProperty("id").GetGuid().ShouldBe(id);
-        body.GetProperty("firstName").GetString().ShouldBe("Ada");
+        body.GetProperty("name").GetString().ShouldBe("Ada Lovelace");
         body.GetProperty("status").GetString().ShouldBe("suspended");
         body.GetProperty("isSystemAdmin").GetBoolean().ShouldBeFalse();
         (await SuspendedAtAsync(user)).ShouldNotBeNull();

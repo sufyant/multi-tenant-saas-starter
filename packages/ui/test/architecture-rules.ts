@@ -182,6 +182,31 @@ export function numericLayerClasses(
     );
 }
 
+// The class `text-primary` alone, with or without a variant or `!`: `text-primary-foreground` is another token.
+const primaryTextClass = /(?<=^|[\s"'`{(:!])text-primary(?![\w-])/g;
+
+/** Rule F20: a text link takes the `link` token, never `primary`, which is a fill (buttons, the logo tile, the bell's count). */
+export function primaryTextClasses(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  return filesUnder(root)
+    .filter(
+      (path) =>
+        /\.(ts|tsx|css)$/.test(path) &&
+        !isGenerated(path) &&
+        !ignored(root, path, options),
+    )
+    .flatMap((path) =>
+      linesMatching(
+        root,
+        path,
+        primaryTextClass,
+        (match) => `text class "${match}"; a text link uses text-link`,
+      ),
+    );
+}
+
 // A variant of Tailwind's own breakpoints, `sm:` to `2xl:` and their `max-` forms. A size key such as `sm: "h-7"` has a space after
 // the colon, so it is no finding.
 const defaultBreakpointClass =

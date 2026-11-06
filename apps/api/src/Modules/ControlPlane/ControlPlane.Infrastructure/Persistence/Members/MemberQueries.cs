@@ -25,7 +25,7 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             from membership in controlPlane.TenantMemberships
             join memberRole in controlPlane.Roles on membership.RoleId equals memberRole.Id
             join user in controlPlane.Users on membership.UserId equals user.Id
-            select new { membership.UserId, user.Email, user.FirstName, user.LastName, Role = memberRole, Deleted = user.DeletedAt != null, membership.JoinedAt };
+            select new { membership.UserId, user.Email, user.Name, Role = memberRole, Deleted = user.DeletedAt != null, membership.JoinedAt };
         if (roleId is { } wanted)
         {
             members = members.Where(member => member.Role.Id == wanted);
@@ -36,16 +36,15 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             var pattern = ListQueryExtensions.ContainsPattern(search);
             members = members.Where(member =>
                 EF.Functions.ILike(member.Email!, pattern, ListQueryExtensions.Escape)
-                || EF.Functions.ILike(member.FirstName!, pattern, ListQueryExtensions.Escape)
-                || EF.Functions.ILike(member.LastName!, pattern, ListQueryExtensions.Escape));
+                || EF.Functions.ILike(member.Name!, pattern, ListQueryExtensions.Escape));
         }
 
-        // A member without an email address or a last name, such as a deleted user, comes last in both directions.
+        // A member without an email address or a name, such as a deleted user, comes last in both directions.
         var total = await members.CountAsync(cancellationToken);
         var sorted = list.Sort switch
         {
             ListMembersSort.Email => members.OrderBy(member => member.Email == null).ThenBy(member => member.Email, list.Descending),
-            ListMembersSort.LastName => members.OrderBy(member => member.LastName == null).ThenBy(member => member.LastName, list.Descending),
+            ListMembersSort.Name => members.OrderBy(member => member.Name == null).ThenBy(member => member.Name, list.Descending),
             _ => members
                 .OrderBy(
                     member => member.Role.BuiltIn == BuiltInRole.Owner ? 0 : member.Role.BuiltIn == BuiltInRole.Admin ? 1 : member.Role.BuiltIn == BuiltInRole.Member ? 2 : 3,
@@ -60,7 +59,7 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             .ToListAsync(cancellationToken);
 
         return ListPage.Of(
-            [.. page.Select(member => new MemberView(member.UserId, member.Email, member.FirstName, member.LastName, RoleView.Of(member.Role), member.Deleted, member.JoinedAt))],
+            [.. page.Select(member => new MemberView(member.UserId, member.Email, member.Name, RoleView.Of(member.Role), member.Deleted, member.JoinedAt))],
             list.Paging,
             total);
     }

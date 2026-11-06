@@ -39,8 +39,7 @@ import {
 export const me = (language: Language): MeResponse => ({
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e30",
   email: "admin@starter.example",
-  firstName: "Sam",
-  lastName: "Kelly",
+  name: "Sam Kelly",
   isSystemAdmin: true,
   language,
   timeZone: "Europe/Dublin",
@@ -121,8 +120,7 @@ export const organisations = {
       owners: [
         {
           userId: "0198f0a2-0000-7000-8000-00000000b003",
-          firstName: "Ayşe",
-          lastName: "Yılmaz",
+          name: "Ayşe Yılmaz",
           email: "ayse@northwind.io",
         },
       ],
@@ -196,15 +194,13 @@ const listItem = ({
 
 const person = (
   id: string,
-  firstName: string | null,
-  lastName: string | null,
+  name: string | null,
   email: string | null,
   fields: Partial<UserResponse> = {},
 ): UserResponse => ({
   id,
   email,
-  firstName,
-  lastName,
+  name,
   status: UserResponseStatus.Active,
   isSystemAdmin: false,
   isRootSystemAdmin: false,
@@ -223,7 +219,6 @@ export const users = {
   root: person(
     "0198f0a2-0000-7000-8000-00000000b001",
     null,
-    null,
     "root@starter.example",
     {
       isSystemAdmin: true,
@@ -231,28 +226,25 @@ export const users = {
       systemAdminGrantedAt: "2026-01-02T08:00:00Z",
     },
   ),
-  sam: person(me(Language.En).id, "Sam", "Kelly", me(Language.En).email, {
+  sam: person(me(Language.En).id, "Sam Kelly", me(Language.En).email, {
     isSystemAdmin: true,
     systemAdminGrantedAt: "2026-02-10T09:30:00Z",
   }),
   ayse: person(
     "0198f0a2-0000-7000-8000-00000000b003",
-    "Ayşe",
-    "Yılmaz",
+    "Ayşe Yılmaz",
     "ayse@northwind.io",
     { membershipCount: 2, createdAt: "2026-03-03T09:20:00Z" },
   ),
   john: person(
     "0198f0a2-0000-7000-8000-00000000b004",
-    "John",
-    "Byrne",
+    "John Byrne",
     "john@kestrel.example",
     { membershipCount: 1, createdAt: "2026-03-09T08:00:00Z" },
   ),
   mehmet: person(
     "0198f0a2-0000-7000-8000-00000000b005",
-    "Mehmet",
-    "Kaya",
+    "Mehmet Kaya",
     "mehmet@shannon.example",
     {
       status: UserResponseStatus.Suspended,
@@ -260,7 +252,7 @@ export const users = {
       createdAt: "2026-04-11T16:05:00Z",
     },
   ),
-  deleted: person("0198f0a2-0000-7000-8000-00000000b006", null, null, null, {
+  deleted: person("0198f0a2-0000-7000-8000-00000000b006", null, null, {
     status: UserResponseStatus.Deleted,
     createdAt: "2026-05-20T12:00:00Z",
   }),
@@ -412,7 +404,7 @@ export async function mockPlatform(
         (params.get("isSystemAdmin") !== "true" || user.isSystemAdmin) &&
         (!email || user.email?.toLocaleLowerCase("en") === email) &&
         (!q ||
-          [user.firstName, user.lastName, user.email].some((text) =>
+          [user.name, user.email].some((text) =>
             text?.toLocaleLowerCase("en").includes(q),
           )),
     );
@@ -598,7 +590,7 @@ export const tenantPlan = (tenantId: string): TenantPlanResponse => ({
         state: EntitlementOverrideResponseState.Active,
         reason: "Moving their old roles over; review at year end.",
         setById: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e30",
-        setBy: { firstName: "Sam", lastName: "Kelly", deleted: false },
+        setBy: { name: "Sam Kelly", deleted: false },
         setAt: inDays(-2),
       },
       effective: value({ maximum: 25 }),

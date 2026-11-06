@@ -5,8 +5,8 @@ using SharedKernel;
 namespace ControlPlane.Domain.Users;
 
 /// <summary>
-/// One identity across tenants, matched to the identity provider's user id. ControlPlane owns the email address and the names (A7):
-/// the identity provider keeps no name, and only the user or a system admin changes one.
+/// One identity across tenants, matched to the identity provider's user id. ControlPlane owns the email address and the name (A7):
+/// the identity provider keeps no name, and only the user or a system admin changes it.
 /// </summary>
 internal sealed class User(Guid id, string externalId)
 {
@@ -37,9 +37,8 @@ internal sealed class User(Guid id, string externalId)
     /// <summary>The user's address, in its one form (<see cref="EmailAddress"/>); none once the user is deleted.</summary>
     public string? Email { get; private set; }
 
-    public string? FirstName { get; private set; }
-
-    public string? LastName { get; private set; }
+    /// <summary>The person's whole name, as they write it: one field, never split into parts (A7); none once the user is deleted.</summary>
+    public string? Name { get; private set; }
 
     /// <summary>
     /// The language the web speaks to the user. A new user starts with their invitation's; a root system admin whom the system door lets in
@@ -79,23 +78,22 @@ internal sealed class User(Guid id, string externalId)
 
     /// <summary>
     /// A person who is not a user yet joins through an invitation, at this moment: the invited address, which the identity provider
-    /// verified, and the names they typed, without the spaces around them. They have no membership yet: ControlPlane adds the membership of
+    /// verified, and the name they typed, without the spaces around it. They have no membership yet: ControlPlane adds the membership of
     /// the tenant they join, and counts it as it counts every membership (R13).
     /// </summary>
-    public static User Join(Guid id, string externalId, EmailAddress email, string firstName, string lastName, Language language, DateTimeOffset now) =>
+    public static User Join(Guid id, string externalId, EmailAddress email, string name, Language language, DateTimeOffset now) =>
         new(id, externalId)
         {
             Email = email.Value,
-            FirstName = firstName.Trim(),
-            LastName = lastName.Trim(),
+            Name = name.Trim(),
             Language = language,
             CreatedAt = now,
         };
 
     /// <summary>
     /// A root system admin who is not a user yet enters through the system door, at this moment: the listed address, which the identity
-    /// provider verified, no names, as the identity provider keeps none, and English, as no invitation chose a language. A system admin
-    /// gives them their names (A7).
+    /// provider verified, no name, as the identity provider keeps none, and English, as no invitation chose a language. A system admin
+    /// gives them their name (A7).
     /// </summary>
     public static User EnterAsRootSystemAdmin(Guid id, string externalId, EmailAddress email, DateTimeOffset now) =>
         new(id, externalId)
@@ -123,18 +121,18 @@ internal sealed class User(Guid id, string externalId)
     }
 
     /// <summary>
-    /// A system admin changes the names. Changed when they changed; the same names with spaces around them are no change. A deleted user
-    /// has no names to change: giving them one would keep personal data the deletion erased.
+    /// A system admin changes the name. Changed when it changed; the same name with spaces around it is no change. A deleted user has
+    /// no name to change: giving them one would keep personal data the deletion erased.
     /// </summary>
-    public Result<StateChange> Rename(string firstName, string lastName) =>
-        DeletedAt is null ? SetNames(firstName, lastName) : Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
+    public Result<StateChange> Rename(string name) =>
+        DeletedAt is null ? SetName(name) : Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
 
     /// <summary>
-    /// The user corrects their own names, under the rules of <see cref="Rename"/>. A deleted user is refused, as on every me endpoint
+    /// The user corrects their own name, under the rules of <see cref="Rename"/>. A deleted user is refused, as on every me endpoint
     /// (A9).
     /// </summary>
-    public Result<StateChange> RenameMe(string firstName, string lastName) =>
-        DeletedAt is null ? SetNames(firstName, lastName) : Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
+    public Result<StateChange> RenameMe(string name) =>
+        DeletedAt is null ? SetName(name) : Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted.");
 
     /// <summary>
     /// The user changes their own address to one whose code they gave (A7): ControlPlane owns the address, and the identity provider takes
@@ -153,13 +151,13 @@ internal sealed class User(Guid id, string externalId)
     }
 
     /// <summary>
-    /// Erases the email address, the names and the time zone, which tells where the person lives, and marks the user deleted. A second
+    /// Erases the email address, the name and the time zone, which tells where the person lives, and marks the user deleted. A second
     /// deletion keeps the first time. Changed for the first deletion.
     /// </summary>
     public StateChange Delete(DateTimeOffset now)
     {
         var first = DeletedAt is null;
-        (Email, FirstName, LastName, TimeZone) = (null, null, null, null);
+        (Email, Name, TimeZone) = (null, null, null);
         DeletedAt ??= now;
         return first ? StateChange.Changed : StateChange.Unchanged;
     }
@@ -187,11 +185,11 @@ internal sealed class User(Guid id, string externalId)
         return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 
-    // The names without the spaces around them. Changed when they changed.
-    private StateChange SetNames(string firstName, string lastName)
+    // The name without the spaces around it. Changed when it changed.
+    private StateChange SetName(string name)
     {
-        var changed = (FirstName, LastName) != (firstName.Trim(), lastName.Trim());
-        (FirstName, LastName) = (firstName.Trim(), lastName.Trim());
+        var changed = Name != name.Trim();
+        Name = name.Trim();
         return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 }

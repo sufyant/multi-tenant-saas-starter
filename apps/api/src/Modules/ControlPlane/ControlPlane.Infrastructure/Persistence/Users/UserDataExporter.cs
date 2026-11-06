@@ -20,7 +20,7 @@ public sealed class UserDataExporter(ControlPlaneDbContext controlPlane) : IPers
         var profile = await controlPlane.Users
             .AsNoTracking()
             .Where(user => user.Id == userId)
-            .Select(user => new { user.Email, user.FirstName, user.LastName, user.Language, user.TimeZone, user.CreatedAt })
+            .Select(user => new { user.Email, user.Name, user.Language, user.TimeZone, user.CreatedAt })
             .SingleOrDefaultAsync(cancellationToken);
 
         var memberships = await (

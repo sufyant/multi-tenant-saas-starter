@@ -79,8 +79,7 @@ describe("DeleteUserDialog", () => {
         [
           detail,
           userDetailOf(ayse, {
-            firstName: null,
-            lastName: null,
+            name: null,
             email: null,
             status: UserResponseStatus.Deleted,
             membershipCount: 0,

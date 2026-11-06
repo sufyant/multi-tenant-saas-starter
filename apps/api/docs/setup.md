@@ -79,7 +79,7 @@ The settings. The values are in `.clerk/config.json` only.
 | Email sign-in and verification | `auth_email.used_for_sign_in`, `auth_email.sign_in_strategies`, `auth_email.verify_at_sign_up`, `auth_email.verification_strategies` | A person signs in with an email code and verifies their address at sign-up. No magic link |
 | Password | `auth_password.enabled`, `auth_password.required` | No password: an email code, Google or Microsoft signs a person in |
 | Social sign-in | `connection_oauth_google`, `connection_oauth_microsoft` | Google and Microsoft sign a person in. A new person still needs an invitation |
-| First and last name | `user_model.first_name`, `user_model.last_name` | Clerk asks for no name. After a Google or Microsoft sign-in it may keep that provider's names on its side (A7). The API keeps the names it uses |
+| First and last name | `user_model.first_name`, `user_model.last_name` | Clerk asks for no name. After a Google or Microsoft sign-in it may keep that provider's names on its side (A7). The API keeps the one name it uses (`users.name`) and sends Clerk none |
 | Multi-factor | `auth_multi_factor.authenticator_app`, `auth_multi_factor.backup_code` | The system door needs a verified second factor (`fva`). A backup code signs in a person who lost their device |
 | Bot protection on sign-up | `auth_attack_protection.bot_protection.captcha_enabled` | Stops automated sign-up attempts |
 | User enumeration protection | `auth_attack_protection.enumeration_protection` | Sign-in never tells a visitor whether an address has an account or an invitation |

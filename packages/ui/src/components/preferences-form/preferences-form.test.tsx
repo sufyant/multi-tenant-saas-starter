@@ -15,11 +15,10 @@ z.config({ customError: zodErrorMap });
 // Each app holds the locale's format; the form reads it as the app's pages do.
 const messages = { ...en, locale: { format: "en-IE" } };
 
-// The app gives the generated schemas; this one has their shape and the names' rule (A7).
+// The app gives the generated schemas; this one has their shape and the name's rule (A7).
 const name = z.string().trim().min(1).max(100);
 const schema = z.object({
-  firstName: name,
-  lastName: name,
+  name,
   language: z.enum(Language),
   timeZone: z.string().nullable(),
 });
@@ -52,13 +51,12 @@ function renderForm(
     >
       <PreferencesForm
         values={{
-          firstName: "Ayşe",
-          lastName: "Yılmaz",
+          name: "Ayşe Yılmaz",
           language: Language.En,
           timeZone: "Europe/Istanbul",
         }}
         schema={schema}
-        nameMax={{ firstName: 100, lastName: 100 }}
+        nameMax={100}
         languages={Object.values(Language)}
         nameNote="Your name shows to the members of every organisation you belong to."
         rename={rename}
@@ -84,15 +82,13 @@ async function retype(label: string, text: string) {
 }
 
 describe("PreferencesForm", () => {
-  it("PreferencesForm_Values_ShowsTheNamesAndTheNote", () => {
+  it("PreferencesForm_Values_ShowsTheOneNameAndTheNote", () => {
     renderForm();
 
-    expect(screen.getByRole("textbox", { name: "First name" })).toHaveValue(
-      "Ayşe",
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue(
+      "Ayşe Yılmaz",
     );
-    expect(screen.getByRole("textbox", { name: "Last name" })).toHaveValue(
-      "Yılmaz",
-    );
+    expect(screen.getAllByRole("textbox")).toHaveLength(1);
     expect(
       screen.getByRole("heading", { name: "Your name" }),
     ).toBeInTheDocument();
@@ -103,28 +99,25 @@ describe("PreferencesForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("PreferencesForm_NameChanged_SendsTheTrimmedNamesOnly", async () => {
+  it("PreferencesForm_NameChanged_SendsTheTrimmedNameOnly", async () => {
     renderForm();
 
-    await retype("First name", "  Ayla ");
+    await retype("Name", "  Ayla Yılmaz ");
     await save();
 
     await vi.waitFor(() =>
       expect(onSaved).toHaveBeenCalledWith({
-        names: { firstName: "Ayla", lastName: "Yılmaz" },
+        names: { name: "Ayla Yılmaz" },
       }),
     );
-    expect(rename).toHaveBeenCalledWith({
-      firstName: "Ayla",
-      lastName: "Yılmaz",
-    });
+    expect(rename).toHaveBeenCalledWith({ name: "Ayla Yılmaz" });
     expect(changePreferences).not.toHaveBeenCalled();
   });
 
   it("PreferencesForm_NothingChanged_SendsNothing", async () => {
     renderForm();
 
-    await retype("Last name", " Yılmaz ");
+    await retype("Name", " Ayşe Yılmaz ");
     await save();
 
     expect(rename).not.toHaveBeenCalled();
@@ -132,28 +125,28 @@ describe("PreferencesForm", () => {
     expect(onSaved).not.toHaveBeenCalled();
   });
 
-  it("PreferencesForm_WhitespaceName_SaysEnterYourFirstName", async () => {
+  it("PreferencesForm_WhitespaceName_SaysEnterYourName", async () => {
     renderForm();
 
-    await retype("First name", "   ");
+    await retype("Name", "   ");
     await save();
 
     expect(
-      await screen.findByRole("textbox", { name: "First name" }),
-    ).toHaveAccessibleDescription("Enter your first name.");
+      await screen.findByRole("textbox", { name: "Name" }),
+    ).toHaveAccessibleDescription("Enter your name.");
     expect(rename).not.toHaveBeenCalled();
   });
 
   it("PreferencesForm_RenameRefusedWithACode_ShowsItUnderTheField", async () => {
-    rename.mockRejectedValueOnce(new Refusal({ lastName: ["too_long"] }));
+    rename.mockRejectedValueOnce(new Refusal({ name: ["too_long"] }));
     renderForm();
 
-    await retype("Last name", "Kaya");
+    await retype("Name", "Ayşe Kaya");
     await save();
 
     await vi.waitFor(() =>
       expect(
-        screen.getByRole("textbox", { name: "Last name" }),
+        screen.getByRole("textbox", { name: "Name" }),
       ).toHaveAccessibleDescription("Use 1 to 100 characters."),
     );
     expect(onFailed).not.toHaveBeenCalled();
@@ -165,7 +158,7 @@ describe("PreferencesForm", () => {
     rename.mockRejectedValueOnce(failure);
     renderForm();
 
-    await retype("First name", "Ayla");
+    await retype("Name", "Ayla Yılmaz");
     await save();
 
     await vi.waitFor(() => expect(onFailed).toHaveBeenCalledWith(failure));
@@ -176,7 +169,7 @@ describe("PreferencesForm", () => {
     rename.mockRejectedValueOnce(failure);
     renderForm();
 
-    await retype("First name", "Ayla");
+    await retype("Name", "Ayla Yılmaz");
     await userEvent.click(screen.getByRole("combobox", { name: "Time zone" }));
     await userEvent.type(
       await screen.findByRole("combobox", { name: "Search cities or zones" }),
@@ -202,7 +195,7 @@ describe("PreferencesForm", () => {
     [
       "en",
       { ...en, locale: { format: "en-IE" } },
-      ["First name", "Save preferences"],
+      ["Name", "Save preferences"],
       "Use 1 to 40 characters.",
     ],
     [
@@ -214,7 +207,7 @@ describe("PreferencesForm", () => {
     [
       "ar",
       { ...ar, locale: { format: "ar-SA" } },
-      ["الاسم الأول", "حفظ التفضيلات"],
+      ["الاسم", "حفظ التفضيلات"],
       "استخدم من 1 إلى 40 حرف.",
     ],
   ] as const)(
@@ -223,8 +216,8 @@ describe("PreferencesForm", () => {
       const short = z.string().trim().min(1).max(40);
       renderForm(
         {
-          schema: schema.extend({ firstName: short }),
-          nameMax: { firstName: 40, lastName: 100 },
+          schema: schema.extend({ name: short }),
+          nameMax: 40,
         },
         { locale, localeMessages },
       );

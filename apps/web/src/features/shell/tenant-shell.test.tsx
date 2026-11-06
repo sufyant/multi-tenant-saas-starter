@@ -90,8 +90,7 @@ const answers = (total: number) => [
   ),
   getGetMeMockHandler(
     getGetMeResponseMock({
-      firstName: "Ayşe",
-      lastName: "Yılmaz",
+      name: "Ayşe Yılmaz",
       language: "en",
     }),
   ),
