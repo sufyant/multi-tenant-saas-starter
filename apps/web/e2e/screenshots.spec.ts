@@ -626,6 +626,16 @@ const openBellFullScreen = async (page: Page) => {
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
+/** The state of the frames that show Google connected and two other sessions (e2e/identity.ts). */
+const fullState = (page: Page) =>
+  mockIdentity(page, {
+    googleEmail: "ayse.demir@gmail.example",
+    otherSessions: true,
+  });
+/** Waits until the sessions show the last of the other devices. */
+const otherSessionsShown = (page: Page) =>
+  page.getByText("Firefox on Windows", { exact: true }).waitFor();
+
 /** Waits until Account and security has read the sessions from Clerk: the current one carries "This device". */
 const sessionsShown = (page: Page) =>
   page.getByText("This device", { exact: true }).waitFor();
@@ -824,21 +834,15 @@ const shellShots: {
       await page.getByText(/ · .+ \(UTC[+-]\d+(:\d+)?\)$/).waitFor();
     },
   },
-  // Account and security (F62), the state of 6.05: this device alone and no linked account. The shared test user gathers a
-  // session in every run, so Clerk's answer of the sessions is changed on the way to the page (e2e/identity.ts).
-  // 6.01: Google connected and two other sessions, which Clerk's answers get on the way to the page (e2e/identity.ts).
+  // Account and security (F62): 6.01, 6.06 and 6.07 show Google connected and two other sessions; 6.05 this device alone with no
+  // linked account. The shared test user gathers a session in every run, so Clerk's answers are changed on the way to the page.
   {
     file: "6.01-account-en-light-desktop",
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
-    mock: (page) =>
-      mockIdentity(page, {
-        googleEmail: "ayse.demir@gmail.example",
-        otherSessions: true,
-      }),
-    open: (page) =>
-      page.getByText("Firefox on Windows", { exact: true }).waitFor(),
+    mock: fullState,
+    open: otherSessionsShown,
   },
   {
     file: "6.05-account-en-light-desktop",
@@ -854,16 +858,16 @@ const shellShots: {
     size: "desktop",
     scheme: "dark",
     path: `${settings}/account`,
-    mock: (page) => mockIdentity(page, {}),
-    open: sessionsShown,
+    mock: fullState,
+    open: otherSessionsShown,
   },
   {
     file: "6.07-account-en-light-phone",
     fullPage: true,
     size: "phone",
     path: `${settings}/account`,
-    mock: (page) => mockIdentity(page, {}),
-    open: sessionsShown,
+    mock: fullState,
+    open: otherSessionsShown,
   },
 ];
 

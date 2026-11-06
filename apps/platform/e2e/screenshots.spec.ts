@@ -172,9 +172,15 @@ const bellList = {
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
-/** Waits until Account and security has read the sessions from Clerk: the current one carries "This device". */
-const sessionsShown = (page: Page) =>
-  page.getByText("This device", { exact: true }).waitFor();
+/** The state of the frames that show Google connected and two other sessions (e2e/identity.ts). */
+const fullState = (page: Page) =>
+  mockIdentity(page, {
+    googleEmail: "deniz.kaya@gmail.example",
+    otherSessions: true,
+  });
+/** Waits until the sessions show the last of the other devices. */
+const otherSessionsShown = (page: Page) =>
+  page.getByText("Firefox on Windows", { exact: true }).waitFor();
 
 const shellShots: {
   file: string;
@@ -312,21 +318,15 @@ const shellShots: {
     path: "/settings/profile",
     open: showTheme,
   },
-  // Account and security (F62). Clerk is the real development instance: the setup's temporary user has this one session, an
-  // authenticator and no linked account.
-  // 9.01: Google connected and two other sessions, which Clerk's answers get on the way to the page (e2e/identity.ts).
+  // Account and security (F62): 9.01, 9.13 and 9.14 show Google connected and two other sessions. The setup's temporary user has
+  // one session and no linked account, so Clerk's answers are changed on the way to the page.
   {
     file: "9.01-account-en-light-desktop",
     fullPage: true,
     size: "desktop",
     path: "/settings/account",
-    mock: (page) =>
-      mockIdentity(page, {
-        googleEmail: "deniz.kaya@gmail.example",
-        otherSessions: true,
-      }),
-    open: (page) =>
-      page.getByText("Firefox on Windows", { exact: true }).waitFor(),
+    mock: fullState,
+    open: otherSessionsShown,
   },
   {
     file: "9.14-account-en-dark-desktop",
@@ -334,14 +334,16 @@ const shellShots: {
     size: "desktop",
     scheme: "dark",
     path: "/settings/account",
-    open: sessionsShown,
+    mock: fullState,
+    open: otherSessionsShown,
   },
   {
     file: "9.13-account-en-light-phone",
     fullPage: true,
     size: "phone",
     path: "/settings/account",
-    open: sessionsShown,
+    mock: fullState,
+    open: otherSessionsShown,
   },
 ];
 
