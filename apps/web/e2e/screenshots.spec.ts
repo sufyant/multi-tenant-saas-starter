@@ -642,7 +642,7 @@ const sessionsShown = (page: Page) =>
 
 /** Opens Change email; with an address, sends it, and the mocked API answers that the code works for 10 minutes (6.08, 6.09). */
 const changeEmail = (address?: string) => async (page: Page) => {
-  await sessionsShown(page);
+  await otherSessionsShown(page);
   await page.route("**/api/v1/me/email-change", (route) =>
     route.fulfill({
       status: 201,
@@ -889,12 +889,14 @@ const shellShots: {
     file: "6.08-change-email-en-light-desktop",
     size: "desktop",
     path: `${settings}/account`,
+    mock: fullState,
     open: changeEmail(),
   },
   {
     file: "6.09-email-code-en-light-desktop",
     size: "desktop",
     path: `${settings}/account`,
+    mock: fullState,
     open: changeEmail("ayse.demir@northwind-traders.example"),
   },
 ];
