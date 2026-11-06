@@ -35,18 +35,18 @@ afterAll(() => server.close());
 const open = () =>
   openUserAction(ayse, "Ayşe Yılmaz", "Rename", "Rename Ayşe Yılmaz");
 
-const lastName = async (
+const rename = async (
   dialog: Awaited<ReturnType<typeof open>>,
   value: string,
 ) => {
-  const field = dialog.getByRole("textbox", { name: "Last name" });
+  const field = dialog.getByRole("textbox", { name: "Name" });
   await userEvent.clear(field);
   await userEvent.type(field, value);
   await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
 };
 
 describe("RenameUserDialog", () => {
-  it("Rename_Success_SendsTrimmedNamesAndReadsTheUserAgain", async () => {
+  it("Rename_Success_SendsTheTrimmedNameAndReadsTheUserAgain", async () => {
     const reads = { count: 0 };
     const calls: { key: string | null; body: unknown }[] = [];
     server.use(
@@ -55,30 +55,29 @@ describe("RenameUserDialog", () => {
       platformCommand(
         "patch",
         `users/${ayse.id}`,
-        [userResponse(ayse, { lastName: "Yılmaz Demir" })],
+        [userResponse(ayse, { name: "Ayşe Yılmaz Demir" })],
         calls,
       ),
     );
 
     const dialog = await open();
-    expect(dialog.getByRole("textbox", { name: "First name" })).toHaveValue(
-      "Ayşe",
+    expect(dialog.getByRole("textbox", { name: "Name" })).toHaveValue(
+      "Ayşe Yılmaz",
     );
+    expect(dialog.getAllByRole("textbox")).toHaveLength(1);
     expect(
       dialog.getByText(
-        "Fixes a typo or a name change. The new names show in every organisation at once. Past Activity shows the new names too.",
+        "Fixes a typo or a name change. The new name shows in every organisation at once. Past Activity shows the new name too.",
       ),
     ).toBeVisible();
-    await lastName(dialog, "  Yılmaz Demir ");
+    await rename(dialog, "  Ayşe Yılmaz Demir ");
 
     await expectVisibleToast(sentence("Renamed to Ayşe Yılmaz Demir."));
-    expect(calls).toEqual([
-      { key: null, body: { firstName: "Ayşe", lastName: "Yılmaz Demir" } },
-    ]);
+    expect(calls).toEqual([{ key: null, body: { name: "Ayşe Yılmaz Demir" } }]);
     await waitFor(() => expect(reads.count).toBe(2));
   });
 
-  it("Rename_EmptyLastName_SaysEnterALastNameAndSendsNothing", async () => {
+  it("Rename_EmptyName_SaysEnterANameAndSendsNothing", async () => {
     const calls: { key: string | null; body: unknown }[] = [];
     server.use(
       meAnswer(),
@@ -87,15 +86,15 @@ describe("RenameUserDialog", () => {
     );
 
     const dialog = await open();
-    await lastName(dialog, "   ");
+    await rename(dialog, "   ");
 
-    expect(await dialog.findByText("Enter a last name.")).toBeVisible();
+    expect(await dialog.findByText("Enter a name.")).toBeVisible();
     expect(calls).toEqual([]);
   });
 
   it.each([
-    [FieldErrorCode.Required, "firstName", "Enter a first name."],
-    [FieldErrorCode.TooLong, "lastName", "Use 1 to 100 characters."],
+    [FieldErrorCode.Required, "name", "Enter a name."],
+    [FieldErrorCode.TooLong, "name", "Use 1 to 100 characters."],
   ])("Rename_%sOn%s_ShowsTheFieldsText", async (code, field, text) => {
     server.use(
       meAnswer(),
@@ -107,7 +106,7 @@ describe("RenameUserDialog", () => {
     );
 
     const dialog = await open();
-    await lastName(dialog, "Demir");
+    await rename(dialog, "Ayşe Demir");
 
     expect(await dialog.findByText(text)).toBeVisible();
   });
@@ -123,7 +122,7 @@ describe("RenameUserDialog", () => {
     );
 
     const dialog = await open();
-    await lastName(dialog, "Demir");
+    await rename(dialog, "Ayşe Demir");
 
     expect(
       await dialog.findByText(sentence("This user was deleted.")),

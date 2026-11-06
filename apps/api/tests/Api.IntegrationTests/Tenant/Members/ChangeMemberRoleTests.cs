@@ -37,7 +37,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var tenant = await _testData.AddTenantAsync();
         var actor = await _testData.AddMemberAsync(tenant.Id, role: actorRole);
         var joined = new DateTimeOffset(2026, 2, 3, 4, 5, 6, TimeSpan.Zero);
-        var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace"), joinedAt: joined);
+        var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), name: "Ada Lovelace"), joinedAt: joined);
         var memberId = await _testData.UserIdOfAsync(member);
 
         var changed = await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor).ChangeMemberRoleAsync(tenant.Id, memberId, "admin"));
@@ -46,7 +46,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var body = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         body.GetProperty("userId").GetGuid().ShouldBe(memberId);
         body.GetProperty("email").GetString().ShouldBe(TestEmails.Of("ada@example.com"));
-        body.GetProperty("lastName").GetString().ShouldBe("Lovelace");
+        body.GetProperty("name").GetString().ShouldBe("Ada Lovelace");
         RoleAnswers.Of(body).ShouldBe(RoleAnswers.BuiltIn("admin"));
         body.GetProperty("deleted").GetBoolean().ShouldBeFalse();
         body.GetProperty("joinedAt").GetDateTimeOffset().ShouldBe(joined);
@@ -321,7 +321,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var member = await _testData.UserIdOfAsync(
-            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("grace@example.com"), firstName: "Grace", lastName: "Hopper")));
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: TestEmails.Of("grace@example.com"), name: "Grace Hopper")));
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, member, "admin"));
 

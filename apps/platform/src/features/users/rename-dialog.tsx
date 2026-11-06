@@ -23,28 +23,23 @@ import { isolated } from "@/shared/isolated";
 import { nameOf, userNameOf } from "@/shared/name-of";
 import { afterRefusal, refreshUser, type User } from "./user";
 
-// The generated schema of RenameUser (F11). The API trims both names and needs 1 to 100 characters each (A7); the generated schema
-// has the limits only, so the form adds the trim and the minimum.
+// The generated schema of RenameUser (F11). The API trims the name and needs 1 to 100 characters (A7); the generated schema has the
+// limit only, so the form adds the trim and the minimum.
 const renaming = schemas.RenameUserBody.extend({
-  firstName: z.string().trim().min(1).max(schemas.renameUserBodyFirstNameMax),
-  lastName: z.string().trim().min(1).max(schemas.renameUserBodyLastNameMax),
+  name: z.string().trim().min(1).max(schemas.renameUserBodyNameMax),
 });
 type Renaming = z.infer<typeof renaming>;
-type Field = keyof Renaming;
-
-const fields: Field[] = ["firstName", "lastName"];
 
 const tooLong = (error: string) =>
   error === FieldErrorCode.TooLong || error === "validation.too_long";
 
-/** A name's error, a Zod key or an API field code, as the board's text for that field (the Messages board). */
-const fieldText = (field: Field, error: string | undefined) => {
+/** The name's error, a Zod key or an API field code, as the board's text for that field (the Messages board). */
+const fieldText = (error: string | undefined) => {
   if (!error) return undefined;
-  if (tooLong(error)) return "nameTooLong";
-  return field === "firstName" ? "firstNameRequired" : "lastNameRequired";
+  return tooLong(error) ? "nameTooLong" : "nameRequired";
 };
 
-/** Rename a user (the RenameUser board): the first and the last name. A refusal shows its text in the dialog (F47). */
+/** Rename a user (the RenameUser board): the one name, whole. A refusal shows its text in the dialog (F47). */
 export function RenameDialog({
   user,
   onClose,
@@ -59,10 +54,7 @@ export function RenameDialog({
   const name = userNameOf(user, t("deletedUser"));
   const form = useForm<Renaming>({
     resolver: zodResolver(renaming),
-    defaultValues: {
-      firstName: user.firstName ?? "",
-      lastName: user.lastName ?? "",
-    },
+    defaultValues: { name: user.name ?? "" },
   });
 
   const rename = useMutation({
@@ -73,10 +65,8 @@ export function RenameDialog({
       if (!(error instanceof ProblemDetailsError)) return;
       const action = actionFor(error.status, error.problem);
       if (action.kind !== "field-errors") return;
-      for (const field of fields) {
-        const [code] = action.fields[field] ?? [];
-        if (code) form.setError(field, { message: code });
-      }
+      const [code] = action.fields.name ?? [];
+      if (code) form.setError("name", { message: code });
     },
   });
 
@@ -109,11 +99,8 @@ export function RenameDialog({
         },
       }),
   );
-  const max = schemas.renameUserBodyFirstNameMax;
-  const errorOf = (field: Field) => {
-    const key = fieldText(field, form.formState.errors[field]?.message);
-    return key && t(key, { max });
-  };
+  const max = schemas.renameUserBodyNameMax;
+  const error = fieldText(form.formState.errors.name?.message);
 
   return (
     <Dialog
@@ -131,20 +118,12 @@ export function RenameDialog({
         onSubmit={(event) => void submit(event)}
         className="flex flex-col gap-3.5"
       >
-        <div className="grid grid-cols-1 gap-3 tablet:grid-cols-2">
-          <Input
-            label={t("firstName")}
-            autoComplete="off"
-            error={errorOf("firstName")}
-            {...form.register("firstName")}
-          />
-          <Input
-            label={t("lastName")}
-            autoComplete="off"
-            error={errorOf("lastName")}
-            {...form.register("lastName")}
-          />
-        </div>
+        <Input
+          label={t("name")}
+          autoComplete="off"
+          error={error && t(error, { max })}
+          {...form.register("name")}
+        />
         {failure && (
           <Banner tone="destructive" title={failure.title}>
             {failure.text}

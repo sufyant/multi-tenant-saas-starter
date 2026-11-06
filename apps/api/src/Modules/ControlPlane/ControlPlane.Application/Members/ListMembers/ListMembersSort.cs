@@ -5,5 +5,5 @@ public enum ListMembersSort
 {
     Role,
     Email,
-    LastName,
+    Name,
 }

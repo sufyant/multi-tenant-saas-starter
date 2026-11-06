@@ -240,7 +240,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.Users
             .Where(user => user.Id == userId)
             .Select(user => new InvitingUser(
-                controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id), user.FirstName, user.LastName, user.TimeZone))
+                controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id), user.Name, user.TimeZone))
             .SingleAsync(cancellationToken);
 
     // The rows go by bulk statements, which row level security keeps to the active tenant, in the order the keys need: an invitation and a

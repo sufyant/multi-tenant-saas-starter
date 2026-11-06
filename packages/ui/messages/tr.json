@@ -245,10 +245,8 @@
   },
   "preferencesForm": {
     "yourName": "Adınız",
-    "firstName": "Ad",
-    "lastName": "Soyad",
-    "firstNameRequired": "Adınızı girin.",
-    "lastNameRequired": "Soyadınızı girin.",
+    "name": "Ad",
+    "nameRequired": "Adınızı girin.",
     "nameTooLong": "1 ile {max} karakter arasında yazın.",
     "languageAndTimeZone": "Dil ve saat dilimi",
     "language": "Dil",

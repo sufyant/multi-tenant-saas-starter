@@ -5,8 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 /**
- * The invitation code from the invitation link, and the names of a person who is not a user yet, each within the API's limit.
- * The API trims each name before it counts its length. A known user sends none.
+ * The invitation code from the invitation link, and the name of a person who is not a user yet, within the API's limit. The API
+ * trims the name before it counts its length. A known user sends none.
  */
 export interface AcceptInvitationRequest {
   code: string;
@@ -14,12 +14,7 @@ export interface AcceptInvitationRequest {
      * @maxLength 100
      * @nullable
      */
-  firstName?: string | null;
-  /**
-     * @maxLength 100
-     * @nullable
-     */
-  lastName?: string | null;
+  name?: string | null;
 }
 
 /**
@@ -745,14 +740,12 @@ export const EntitlementOverrideResponseState = {
 } as const;
 
 /**
- * A user's names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no
- * names and `deleted`, and the screen shows "Deleted user". It holds no email address.
+ * A user's name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and
+ * `deleted`, and the screen shows "Deleted user". It holds no email address.
  */
 export interface UserNameResponse {
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   deleted: boolean;
 }
 
@@ -931,15 +924,13 @@ export const InviterNameResponseKind = {
 } as const;
 
 /**
- * Who invited: a user, with the names stored now and `deleted` for a user a system admin deleted, or the platform,
- * with no names and no `deleted`. The screen names the platform from `kind`, as the audit logs do.
+ * Who invited: a user, with the name stored now and `deleted` for a user a system admin deleted, or the platform,
+ * with no name and no `deleted`. The screen names the platform from `kind`, as the audit logs do.
  */
 export interface InviterNameResponse {
   kind: InviterNameResponseKind;
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   /** @nullable */
   deleted: boolean | null;
 }
@@ -1043,7 +1034,7 @@ export interface ListPageOfInvitationResponse {
 
 /**
  * A member of the tenant: the user's id, the copy of their email address and name, their role, whether the identity provider deleted
- * the user, and when they joined the tenant. A deleted user has an empty email address and empty names, and
+ * the user, and when they joined the tenant. A deleted user has an empty email address and an empty name, and
  * the screen shows "Deleted user", as the audit logs say `deleted` (K3).
  */
 export interface MemberResponse {
@@ -1051,9 +1042,7 @@ export interface MemberResponse {
   /** @nullable */
   email: string | null;
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   role: RoleResponse;
   deleted: boolean;
   joinedAt: string;
@@ -1229,7 +1218,7 @@ export const UserResponseStatus = {
 } as const;
 
 /**
- * A user: our user id, not the identity provider's, their email address and names, their status (active, suspended or
+ * A user: our user id, not the identity provider's, their email address and name, their status (active, suspended or
  * deleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin
  * can revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),
  * how many tenants they are a member of, and when they became a user.
@@ -1239,9 +1228,7 @@ export interface UserResponse {
   /** @nullable */
   email: string | null;
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   status: UserResponseStatus;
   isSystemAdmin: boolean;
   isRootSystemAdmin: boolean;
@@ -1275,9 +1262,7 @@ export interface MeResponse {
   /** @nullable */
   email: string | null;
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   isSystemAdmin: boolean;
   language: Language;
   /** @nullable */
@@ -1379,14 +1364,12 @@ export interface ProblemDetails {
 }
 
 /**
- * The signed-in user's own names, each within the API's limit. The API trims each name before it counts its length. Both are required,
- * so a client that leaves one out never clears it.
+ * The signed-in user's own name, within the API's limit. The API trims the name before it counts its length. It is required, so a
+ * client that leaves it out never clears it.
  */
 export interface RenameMeRequest {
   /** @maxLength 100 */
-  firstName: string;
-  /** @maxLength 100 */
-  lastName: string;
+  name: string;
 }
 
 /**
@@ -1398,13 +1381,11 @@ export interface RenameTenantRequest {
 }
 
 /**
- * A user's new names, each within the API's limit. The API trims each name before it counts its length.
+ * A user's new name, within the API's limit. The API trims the name before it counts its length.
  */
 export interface RenameUserRequest {
   /** @maxLength 100 */
-  firstName: string;
-  /** @maxLength 100 */
-  lastName: string;
+  name: string;
 }
 
 /**
@@ -1491,14 +1472,12 @@ export interface SuspendTenantRequest {
 }
 
 /**
- * An Owner of a tenant: the user's id, names and address.
+ * An Owner of a tenant: the user's id, name and address.
  */
 export interface TenantOwnerResponse {
   userId: string;
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   /** @nullable */
   email: string | null;
 }
@@ -1636,7 +1615,7 @@ export interface UserMembershipResponse {
 }
 
 /**
- * One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's names
+ * One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's name
  * (null when the user is not suspended), and every membership by the tenant's name.
  */
 export interface UserDetailResponse {
@@ -1644,9 +1623,7 @@ export interface UserDetailResponse {
   /** @nullable */
   email: string | null;
   /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
+  name: string | null;
   status: UserResponseStatus;
   isSystemAdmin: boolean;
   isRootSystemAdmin: boolean;
@@ -1807,8 +1784,8 @@ export type ListUsersSort = typeof ListUsersSort[keyof typeof ListUsersSort];
 export const ListUsersSort = {
   Email: 'email',
   EmailDescending: '-email',
-  LastName: 'lastName',
-  LastNameDescending: '-lastName',
+  Name: 'name',
+  NameDescending: '-name',
 } as const;
 
 export type GrantSystemAdminHeaders = {
@@ -1867,8 +1844,8 @@ export const ListMembersSort = {
   RoleDescending: '-role',
   Email: 'email',
   EmailDescending: '-email',
-  LastName: 'lastName',
-  LastNameDescending: '-lastName',
+  Name: 'name',
+  NameDescending: '-name',
 } as const;
 
 export type InviteMemberHeaders = {

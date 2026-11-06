@@ -37,8 +37,7 @@ test("AcceptInvitation_NewPerson_AsksForTheNames", async ({ page }) => {
   await mockInvitation(page, pendingInvitation, { knownUser: false });
   await page.goto(acceptPage);
 
-  await expect(page.getByRole("textbox", { name: "First name" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Last name" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Name" })).toBeVisible();
   await expectAccessible(page);
 });
 

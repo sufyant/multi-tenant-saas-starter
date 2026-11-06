@@ -172,8 +172,8 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var ada = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"));
-        var deletedUser = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
+        var ada = await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Ada Lovelace"));
+        var deletedUser = await _testData.AddUserAsync(name: "Gone Away");
         await _testData.DeleteUserAsync(deletedUser);
         var deleted = await _testData.UserIdOfAsync(deletedUser);
         var unknown = Guid.CreateVersion7();
@@ -289,7 +289,7 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         var marker = Guid.NewGuid().ToString("N");
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var named = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"named-{marker}@example.com", firstName: "Ada", lastName: "Lovelace"));
+        var named = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"named-{marker}@example.com", name: "Ada Lovelace"));
         var unnamed = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"unnamed-{marker}@example.com"));
         await _audit.AddTenantEntryAsync(tenant.Id, Start, "User", named, "member.role_changed", "User", unnamed);
 

@@ -10,8 +10,7 @@ import * as zod from 'zod';
 export const GetMeResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "isSystemAdmin": zod.boolean(),
   "language": zod.enum({
   En: 'en',
@@ -21,22 +20,18 @@ export const GetMeResponse = zod.object({
   "timeZone": zod.string().nullable()
 }).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.')
 
-export const renameMeBodyFirstNameMax = 100;
-
-export const renameMeBodyLastNameMax = 100;
+export const renameMeBodyNameMax = 100;
 
 
 
 export const RenameMeBody = zod.object({
-  "firstName": zod.string().max(renameMeBodyFirstNameMax),
-  "lastName": zod.string().max(renameMeBodyLastNameMax)
-}).describe('The signed-in user\'s own names, each within the API\'s limit. The API trims each name before it counts its length. Both are required,\nso a client that leaves one out never clears it.')
+  "name": zod.string().max(renameMeBodyNameMax)
+}).describe('The signed-in user\'s own name, within the API\'s limit. The API trims the name before it counts its length. It is required, so a\nclient that leaves it out never clears it.')
 
 export const RenameMeResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "isSystemAdmin": zod.boolean(),
   "language": zod.enum({
   En: 'en',
@@ -100,8 +95,7 @@ export const ChangeEmailBody = zod.object({
 export const ChangeEmailResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "isSystemAdmin": zod.boolean(),
   "language": zod.enum({
   En: 'en',

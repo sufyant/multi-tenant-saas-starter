@@ -49,7 +49,7 @@ public sealed class TenantCreationTests(Database database) : IAsyncLifetime
         await Waiting.UntilAsync(() => _email.Sent.Any(sent => sent.To == ownerEmail));
         var acceptLink = _identity.SignUpThrough(LinkIn(_email.Sent.Single(sent => sent.To == ownerEmail).Text), "user_e2e_owner");
         var accepted = await owner.PostAsJsonAsync(
-            "/v1/me/invitations/accept", new { code = CodeOf(acceptLink), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+            "/v1/me/invitations/accept", new { code = CodeOf(acceptLink), name = "Ada Lovelace" }, Cancellation);
         var myTenants = await owner.GetFromJsonAsync<JsonElement>("/v1/me/tenants", Cancellation);
         var members = await owner.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/members", Cancellation);
         var strangerMembers = await stranger.GetAsync($"/v1/tenants/{tenantId}/members", Cancellation);

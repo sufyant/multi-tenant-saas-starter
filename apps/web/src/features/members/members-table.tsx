@@ -28,8 +28,8 @@ import { useRoleReach } from "./use-role-reach";
 /** The columns a person can sort by, and the API's sort field of each (K5). */
 const sorts = {
   name: {
-    asc: ListMembersSort.LastName,
-    desc: ListMembersSort.LastNameDescending,
+    asc: ListMembersSort.Name,
+    desc: ListMembersSort.NameDescending,
   },
   role: { asc: ListMembersSort.Role, desc: ListMembersSort.RoleDescending },
 };

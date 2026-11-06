@@ -22,8 +22,8 @@ export const ListUsersQueryParams = zod.object({
   "sort": zod.enum({
   Email: 'email',
   EmailDescending: '-email',
-  LastName: 'lastName',
-  LastNameDescending: '-lastName',
+  Name: 'name',
+  NameDescending: '-name',
 }).optional(),
   "q": zod.string().max(listUsersQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
   "status": zod.enum({
@@ -39,8 +39,7 @@ export const ListUsersResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "status": zod.enum({
   Active: 'active',
   Suspended: 'suspended',
@@ -51,7 +50,7 @@ export const ListUsersResponse = zod.object({
   "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')),
+}).describe('A user: our user id, not the identity provider\'s, their email address and name, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')),
   "page": zod.int(),
   "pageSize": zod.int(),
   "total": zod.int()
@@ -64,8 +63,7 @@ export const GetUserParams = zod.object({
 export const GetUserResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "status": zod.enum({
   Active: 'active',
   Suspended: 'suspended',
@@ -78,10 +76,9 @@ export const GetUserResponse = zod.object({
   "createdAt": zod.iso.datetime({"offset":true}),
   "suspendedAt": zod.iso.datetime({"offset":true}).nullable(),
   "suspendedBy": zod.union([zod.null(),zod.object({
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "deleted": zod.boolean()
-}).describe('A user\'s names as they are stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no\nnames and `deleted`, and the screen shows "Deleted user". It holds no email address.')]),
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
   "memberships": zod.array(zod.object({
   "tenantId": zod.uuid(),
   "tenantName": zod.string(),
@@ -100,28 +97,24 @@ export const GetUserResponse = zod.object({
   "joinedAt": zod.iso.datetime({"offset":true}),
   "lastOwner": zod.boolean()
 }).describe('A tenant the user is a member of: its id, name, slug and status, the user\'s role there, when they joined, and whether they are\nits last Owner. The suspend dialog warns with `lastOwner`, and the delete refusal names those tenants.'))
-}).describe('One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin\'s names\n(null when the user is not suspended), and every membership by the tenant\'s name.')
+}).describe('One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin\'s name\n(null when the user is not suspended), and every membership by the tenant\'s name.')
 
 export const RenameUserParams = zod.object({
   "userId": zod.uuid()
 })
 
-export const renameUserBodyFirstNameMax = 100;
-
-export const renameUserBodyLastNameMax = 100;
+export const renameUserBodyNameMax = 100;
 
 
 
 export const RenameUserBody = zod.object({
-  "firstName": zod.string().max(renameUserBodyFirstNameMax),
-  "lastName": zod.string().max(renameUserBodyLastNameMax)
-}).describe('A user\'s new names, each within the API\'s limit. The API trims each name before it counts its length.')
+  "name": zod.string().max(renameUserBodyNameMax)
+}).describe('A user\'s new name, within the API\'s limit. The API trims the name before it counts its length.')
 
 export const RenameUserResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "status": zod.enum({
   Active: 'active',
   Suspended: 'suspended',
@@ -132,7 +125,7 @@ export const RenameUserResponse = zod.object({
   "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and name, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 
 export const DeleteUserParams = zod.object({
   "userId": zod.uuid()
@@ -147,8 +140,7 @@ export const SuspendUserParams = zod.object({
 export const SuspendUserResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "status": zod.enum({
   Active: 'active',
   Suspended: 'suspended',
@@ -159,7 +151,7 @@ export const SuspendUserResponse = zod.object({
   "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and name, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 
 export const ReactivateUserParams = zod.object({
   "userId": zod.uuid()
@@ -168,8 +160,7 @@ export const ReactivateUserParams = zod.object({
 export const ReactivateUserResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
+  "name": zod.string().nullable(),
   "status": zod.enum({
   Active: 'active',
   Suspended: 'suspended',
@@ -180,5 +171,5 @@ export const ReactivateUserResponse = zod.object({
   "systemAdminGrantedAt": zod.iso.datetime({"offset":true}).nullable(),
   "membershipCount": zod.int(),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A user: our user id, not the identity provider\'s, their email address and names, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
+}).describe('A user: our user id, not the identity provider\'s, their email address and name, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')
 

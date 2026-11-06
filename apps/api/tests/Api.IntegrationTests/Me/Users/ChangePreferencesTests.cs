@@ -39,7 +39,7 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         var preferences = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         preferences.EnumerateObject().Select(field => (field.Name, field.Value.GetString())).ShouldBe([("language", "tr"), ("timeZone", "Europe/Istanbul")]);
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(TestEmails.Of("ada@example.com"), null, null, Deleted: false, "tr", "Europe/Istanbul"));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(TestEmails.Of("ada@example.com"), null, Deleted: false, "tr", "Europe/Istanbul"));
     }
 
     // K3: a command that changes state writes one record. A user belongs to no tenant, so it goes to the platform's log, by the user
@@ -110,7 +110,7 @@ public sealed class ChangePreferencesTests(Database database) : IAsyncLifetime
 
         changed.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await CodeOfAsync(changed)).ShouldBe("request.invalid");
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, null, Deleted: false, "ar", "Asia/Dubai"));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, Deleted: false, "ar", "Asia/Dubai"));
     }
 
     // The shape of an IANA name: parts of letters, digits, "_", "-" and "+", joined by "/" (IANA, "Theory and pragmatics of the tz code

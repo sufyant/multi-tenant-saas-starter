@@ -71,8 +71,7 @@ const resolved = async () => {};
 const previewNameMax = 100;
 const previewName = z.string().trim().min(1).max(previewNameMax);
 const preferencesSchema = z.object({
-  firstName: previewName,
-  lastName: previewName,
+  name: previewName,
   language: z.enum(Object.keys(messages) as [keyof typeof messages]),
   timeZone: z.string().nullable(),
 });
@@ -476,13 +475,12 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           <div className="w-[640px] max-w-full">
             <PreferencesForm
               values={{
-                firstName: "Ayşe",
-                lastName: "Yılmaz",
+                name: "Ayşe Yılmaz",
                 language,
                 timeZone: sample.timeZone,
               }}
               schema={preferencesSchema}
-              nameMax={{ firstName: previewNameMax, lastName: previewNameMax }}
+              nameMax={previewNameMax}
               languages={Object.keys(messages) as (keyof typeof messages)[]}
               nameNote={sample.nameNote}
               rename={resolved}
@@ -499,18 +497,14 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       name: "Avatar",
       render: () => (
         <>
-          <Avatar person={{ firstName: "Ayşe", lastName: "Yılmaz" }} />
+          <Avatar person={{ name: "Ayşe Yılmaz" }} />
           <Avatar
             person={{
-              firstName: null,
-              lastName: null,
+              name: null,
               email: "kemal@northwind.example",
             }}
           />
-          <Avatar
-            person={{ firstName: "Mehmet", lastName: "Kaya" }}
-            className="size-11"
-          />
+          <Avatar person={{ name: "Mehmet Kaya" }} className="size-11" />
         </>
       ),
     },
@@ -928,7 +922,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
+            person={{ name: "Ayşe Yılmaz" }}
             profileHref="#profile"
             onSignOut={() => {}}
             version="a1b2c3d"
@@ -1279,7 +1273,7 @@ function AppShellPreview({ sample }: { sample: Sample }) {
           <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            person={{ firstName: "Ayşe", lastName: "Yılmaz" }}
+            person={{ name: "Ayşe Yılmaz" }}
             profileHref="#profile"
             onSignOut={() => {}}
             version="a1b2c3d"

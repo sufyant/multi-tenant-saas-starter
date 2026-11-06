@@ -22,13 +22,13 @@ public static class RenameMeHandler
             return (Errors.UserNotFound, []);
         }
 
-        var renamed = user.RenameMe(command.FirstName, command.LastName);
+        var renamed = user.RenameMe(command.Name);
         if (!renamed.IsSuccess)
         {
             return (renamed.Error, []);
         }
 
-        var me = new MeView(user.Id, user.Email, user.FirstName, user.LastName, await users.IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
+        var me = new MeView(user.Id, user.Email, user.Name, await users.IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
         if (renamed.Value == StateChange.Unchanged)
         {
             return (me, []);

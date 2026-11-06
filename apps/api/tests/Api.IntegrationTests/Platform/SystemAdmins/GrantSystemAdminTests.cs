@@ -30,7 +30,7 @@ public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GrantSystemAdmin_AnActiveUser_AnswersTheUserAsASystemAdmin()
     {
-        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Ada Lovelace");
         var id = await _testData.UserIdOfAsync(user);
 
         var response = await GrantAsync(await SystemAdminAsync(), id);
@@ -38,8 +38,8 @@ public sealed class GrantSystemAdminTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldBeNull();
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        (body.GetProperty("id").GetGuid(), body.GetProperty("firstName").GetString(), body.GetProperty("status").GetString())
-            .ShouldBe((id, "Ada", "active"));
+        (body.GetProperty("id").GetGuid(), body.GetProperty("name").GetString(), body.GetProperty("status").GetString())
+            .ShouldBe((id, "Ada Lovelace", "active"));
         (body.GetProperty("isSystemAdmin").GetBoolean(), body.GetProperty("isRootSystemAdmin").GetBoolean()).ShouldBe((true, false));
         body.GetProperty("systemAdminGrantedAt").GetDateTimeOffset().UtcDateTime
             .ShouldBe(await database.ScalarAsync<DateTime>($"SELECT granted_at FROM control_plane.system_admins WHERE user_id = '{id}'"), TimeSpan.FromMicroseconds(1));

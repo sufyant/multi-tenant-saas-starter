@@ -117,14 +117,14 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_WhileADeletionHoldsTheUser_WaitsAndIsRefused()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var known = await _testData.AddUserAsync(email: email, firstName: "Grace");
+        var known = await _testData.AddUserAsync(email: email, name: "Grace");
         _api.Identity.AddAccount(known, email);
         var slug = await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
         await using var deletion = new NpgsqlConnection(database.SuperuserConnectionString);
         await deletion.OpenAsync(Cancellation);
         await using var holding = await deletion.BeginTransactionAsync(Cancellation);
         await using var delete = new NpgsqlCommand(
-            $"UPDATE control_plane.users SET email = NULL, first_name = NULL, deleted_at = now() WHERE external_id = '{known}'", deletion, holding);
+            $"UPDATE control_plane.users SET email = NULL, name = NULL, deleted_at = now() WHERE external_id = '{known}'", deletion, holding);
         await delete.ExecuteNonQueryAsync(Cancellation);
 
         var accepting = AcceptAsync(known, _api.Email.CodeSentTo(email));
@@ -145,7 +145,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     {
         var email = $"{Guid.NewGuid():N}@example.com";
         var (firstSecret, secondSecret) = (Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
-        var known = await _testData.AddUserAsync(email: email, firstName: "Grace");
+        var known = await _testData.AddUserAsync(email: email, name: "Grace");
         _api.Identity.AddAccount(known, email);
         var first = await _testData.AddTenantAsync();
         var second = await _testData.AddTenantAsync();
@@ -205,10 +205,10 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await _testData.CountedMembershipsOfAsync(invitee)).ShouldBe(2);
     }
 
-    // A7: a new user gets the invited address, which the identity provider verified, and the names the person typed, without the
-    // spaces around them. The identity provider keeps no name.
+    // A7: a new user gets the invited address, which the identity provider verified, and the name the person typed, whole and without
+    // the spaces around it. The identity provider keeps no name.
     [Fact]
-    public async Task AcceptInvitation_NewUser_StoresTheInvitedAddressAndTheTypedNames()
+    public async Task AcceptInvitation_NewUser_StoresTheInvitedAddressAndTheTypedName()
     {
         var invitee = $"user_{Guid.NewGuid():N}";
         var email = $"{Guid.NewGuid():N}@example.com";
@@ -216,10 +216,10 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         _api.Identity.AddAccount(invitee, email.ToUpperInvariant());
 
         var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
-            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = " Ada ", lastName = "Lovelace  " }, Cancellation);
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), name = " Ada Lovelace  " }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _testData.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false));
+        (await _testData.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada Lovelace", Deleted: false));
     }
 
     // Decision 6 of step 20j: a new user starts with the language of the invitation they accept, and with no time zone.
@@ -232,10 +232,10 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         _api.Identity.AddAccount(invitee, email);
 
         var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
-            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), name = "Ada Lovelace" }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _testData.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada", "Lovelace", Deleted: false, "tr", null));
+        (await _testData.UserOfAsync(invitee)).ShouldBe(new StoredUser(email, "Ada Lovelace", Deleted: false, "tr", null));
     }
 
     // A known user keeps the language and the time zone they chose.
@@ -243,20 +243,20 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     public async Task AcceptInvitation_KnownUser_KeepsTheirLanguageAndTimeZone()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var known = await _testData.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper", language: "ar", timeZone: "Asia/Dubai");
+        var known = await _testData.AddUserAsync(email: email, name: "Grace Hopper", language: "ar", timeZone: "Asia/Dubai");
         _api.Identity.AddAccount(known, email);
         await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email, language: "tr"));
 
         var accepted = await _api.CreateClient(known).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false, "ar", "Asia/Dubai"));
+        (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace Hopper", Deleted: false, "ar", "Asia/Dubai"));
     }
 
-    // A person who is not a user yet gives both names; a missing one is a field that failed validation (K5). The invitation stays
+    // A person who is not a user yet gives their name; a missing one is a field that failed validation (K5). The invitation stays
     // pending, and no user is written.
     [Fact]
-    public async Task AcceptInvitation_NewUserWithoutNames_IsABadRequestThatNamesEachMissingField()
+    public async Task AcceptInvitation_NewUserWithoutAName_IsABadRequestThatNamesTheMissingField()
     {
         var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
 
@@ -265,8 +265,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         problem.GetProperty("code").GetString().ShouldBe("request.validation_failed");
-        problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
-        problem.GetProperty("errors").GetProperty("lastName").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
+        problem.GetProperty("errors").GetProperty("name").EnumerateArray().Select(error => error.GetString()).ShouldBe(["required"]);
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
     }
 
@@ -274,31 +273,31 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     [InlineData("", "required")]
     [InlineData("   ", "required")]
     [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "too_long")]
-    public async Task AcceptInvitation_NewUserWithAWrongName_IsABadRequestForThatField(string firstName, string fieldCode)
+    public async Task AcceptInvitation_NewUserWithAWrongName_IsABadRequestForTheName(string name, string fieldCode)
     {
         var (_, invitee, code) = await InviteSomeoneWithAnAccountAsync();
 
-        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName, lastName = "Lovelace" }, Cancellation);
+        var accepted = await _api.CreateClient(invitee).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await accepted.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        problem.GetProperty("errors").GetProperty("firstName").EnumerateArray().Select(error => error.GetString()).ShouldBe([fieldCode]);
+        problem.GetProperty("errors").GetProperty("name").EnumerateArray().Select(error => error.GetString()).ShouldBe([fieldCode]);
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
     }
 
-    // A known user keeps their names: they need none to join another tenant.
+    // A known user keeps their name: they need none to join another tenant.
     [Fact]
-    public async Task AcceptInvitation_KnownUserWithoutNames_JoinsAndKeepsTheirNames()
+    public async Task AcceptInvitation_KnownUserWithoutAName_JoinsAndKeepsTheirName()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var known = await _testData.AddUserAsync(email: email, firstName: "Grace", lastName: "Hopper");
+        var known = await _testData.AddUserAsync(email: email, name: "Grace Hopper");
         _api.Identity.AddAccount(known, email);
         await _api.WaitingForMessagesAsync(() => CreateTenantWithOwnerAsync(email));
 
         var accepted = await _api.CreateClient(known).PostAsJsonAsync("/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email) }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace", "Hopper", Deleted: false));
+        (await _testData.UserOfAsync(known)).ShouldBe(new StoredUser(email, "Grace Hopper", Deleted: false));
     }
 
     // API4: accepting an invitation has a stricter limit of its own, ten in a minute by default, on top of the general one; the
@@ -578,7 +577,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         var invitee = $"user_{Guid.NewGuid():N}";
         _api.Identity.AddAccount(invitee, email);
         var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
-            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentTo(email), name = "Ada Lovelace" }, Cancellation);
         _time.Advance(TimeSpan.FromDays(7));
 
         await SignUps.ExpireAsync(tenantId, invitationId);
@@ -623,7 +622,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await RevokeAsync(owner, tenant.Id, invitation)).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         var accepted = await _api.CreateClient(invitee).PostAsJsonAsync(
-            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentFor(invitation), firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+            "/v1/me/invitations/accept", new { code = _api.Email.CodeSentFor(invitation), name = "Ada Lovelace" }, Cancellation);
 
         accepted.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(accepted)).ShouldBe("invitation.not_found");
@@ -711,7 +710,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))") > 0;
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name = "Ada Lovelace" }, Cancellation);
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 

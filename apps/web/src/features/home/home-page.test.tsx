@@ -17,13 +17,16 @@ const cards = () =>
     .map((link) => link.querySelector("[data-slot=card-title]")?.textContent);
 
 describe("HomePage", () => {
-  it("HomePage_Owner_WelcomesByFirstNameAndOffersEveryPage", async () => {
+  it("HomePage_Owner_WelcomesByTheWholeNameAndOffersEveryPage", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner));
 
     renderInTenant(<HomePage />, { url: "/northwind" });
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Welcome, Ayşe" }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Welcome, Ayşe Yılmaz",
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 1 }).nextElementSibling,

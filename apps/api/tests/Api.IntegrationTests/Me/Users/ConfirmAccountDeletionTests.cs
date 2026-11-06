@@ -34,7 +34,7 @@ public sealed class ConfirmAccountDeletionTests(Database database) : IAsyncLifet
     {
         var email = $"ada-{Guid.NewGuid():N}@example.com";
         var tenant = await _testData.AddTenantAsync();
-        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email, firstName: "Ada", lastName: "Lovelace"));
+        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email, name: "Ada Lovelace"));
         var userId = await _testData.UserIdOfAsync(user);
         await DataExportRequests.ReadyAsync(_api, user);
         await ObjectStorage.PutAsync($"{FileKeys.User(userId)}avatar", "a later module's file");
@@ -43,7 +43,7 @@ public sealed class ConfirmAccountDeletionTests(Database database) : IAsyncLifet
         var deleted = await _api.WaitingForMessagesAsync(() => AccountRequests.ConfirmAccountDeletionAsync(_api, user, AccountRequests.CodeSentTo(_api, email)));
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, null, Deleted: true));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, Deleted: true));
         (await _testData.StoredMembershipCountOfAsync(user)).ShouldBe(0);
         _api.Identity.Deleted.ShouldBe([user]);
         (await ObjectStorage.KeysAsync(FileKeys.User(userId))).ShouldBeEmpty();
@@ -57,7 +57,7 @@ public sealed class ConfirmAccountDeletionTests(Database database) : IAsyncLifet
     public async Task ConfirmAccountDeletion_AWrongCode_IsABadRequestAndDeletesNothing()
     {
         var email = $"ada-{Guid.NewGuid():N}@example.com";
-        var user = await _testData.AddUserAsync(email: email, firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: email, name: "Ada Lovelace");
         await _api.WaitingForMessagesAsync(() => AccountRequests.RequestAccountDeletionAsync(_api, user));
 
         var deleted = await AccountRequests.ConfirmAccountDeletionAsync(_api, user, "no-code");

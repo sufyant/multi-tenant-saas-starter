@@ -570,7 +570,7 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
             () => api.CreateClient(admin, secondFactor: true).CreateTenantAsync(new { name = "Acme Ltd", slug = Slug(), ownerEmail = "owner@example.com" }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await _testData.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.RootEmail, null, null, Deleted: false, "en", null));
+        (await _testData.UserOfAsync(admin, name)).ShouldBe(new StoredUser(ApiFactory.RootEmail, null, Deleted: false, "en", null));
     }
 
     // The unique index of the addresses (A7): another live user keeps the listed address, so the door writes no second user with it and

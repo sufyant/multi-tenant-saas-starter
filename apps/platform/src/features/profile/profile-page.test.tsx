@@ -37,8 +37,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const me = getGetMeResponseMock({
-  firstName: "Ciara",
-  lastName: "Byrne",
+  name: "Ciara Byrne",
   email: "ciara@starter.dev",
   isSystemAdmin: true,
   language: Language.En,
@@ -146,8 +145,7 @@ describe("ProfilePage", () => {
 
     renderPage();
 
-    expect(await textbox("First name")).toHaveValue("Ciara");
-    expect(await textbox("Last name")).toHaveValue("Byrne");
+    expect(await textbox("Name")).toHaveValue("Ciara Byrne");
     expect(await field("Language")).toHaveTextContent("English");
     expect(await field("Time zone")).toHaveTextContent(/^Dublin/);
     expect(
@@ -170,7 +168,7 @@ describe("ProfilePage", () => {
     expect(
       screen.queryByRole("textbox", { name: "Email" }),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("textbox")).toHaveLength(2);
+    expect(screen.getAllByRole("textbox")).toHaveLength(1);
   });
 
   it("ProfilePage_Theme_StaysOnThePage", async () => {
@@ -188,11 +186,11 @@ describe("ProfilePage", () => {
     server.use(...preferencesAnswers(me, sent));
     renderPage();
 
-    await retype("First name", " Ciarán ");
+    await retype("Name", " Ciarán Byrne ");
     await save();
 
     expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
-    expect(sent.names).toEqual([{ firstName: "Ciarán", lastName: "Byrne" }]);
+    expect(sent.names).toEqual([{ name: "Ciarán Byrne" }]);
     expect(sent.preferences).toEqual([]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
@@ -218,12 +216,12 @@ describe("ProfilePage", () => {
     server.use(...preferencesAnswers(me, sent));
     renderPage();
 
-    await retype("Last name", "Walsh");
+    await retype("Name", "Ciara Walsh");
     await pickTimeZone("Istanbul", /^Istanbul/);
     await save();
 
     expect(await screen.findAllByText("Preferences saved")).toHaveLength(1);
-    expect(sent.names).toEqual([{ firstName: "Ciara", lastName: "Walsh" }]);
+    expect(sent.names).toEqual([{ name: "Ciara Walsh" }]);
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Europe/Istanbul" },
     ]);
@@ -235,19 +233,16 @@ describe("ProfilePage", () => {
     server.use(...preferencesAnswers(me, sent));
     renderPage();
 
-    await retype("First name", "Ciara ");
+    await retype("Name", "Ciara Byrne ");
     await save();
 
-    expect(await textbox("First name")).not.toHaveAttribute("aria-invalid");
+    expect(await textbox("Name")).not.toHaveAttribute("aria-invalid");
     expect(sent.names).toEqual([]);
     expect(sent.preferences).toEqual([]);
     expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
   });
 
-  it.each([
-    ["firstName", "First name", "Enter your first name."],
-    ["lastName", "Last name", "Enter your last name."],
-  ])(
+  it.each([["name", "Name", "Enter your name."]])(
     "ProfilePage_%sOnlySpaces_SaysWhatToEnterAndSendsNothing",
     async (_json, name, message) => {
       const sent = nothingSent();
@@ -265,10 +260,8 @@ describe("ProfilePage", () => {
   );
 
   it.each([
-    ["firstName", "required", "First name", "Enter your first name."],
-    ["lastName", "required", "Last name", "Enter your last name."],
-    ["firstName", "too_long", "First name", "Use 1 to 100 characters."],
-    ["lastName", "too_long", "Last name", "Use 1 to 100 characters."],
+    ["name", "required", "Name", "Enter your name."],
+    ["name", "too_long", "Name", "Use 1 to 100 characters."],
   ])(
     "ProfilePage_RenameMeRefuses%s_%s_ShowsTheTextUnderTheField",
     async (json, code, name, message) => {
@@ -287,18 +280,18 @@ describe("ProfilePage", () => {
   it("ProfilePage_RenameMeRefusedChangePreferencesSaved_KeepsTheTimeZoneAndShowsTheNameError", async () => {
     const sent = nothingSent();
     server.use(
-      renameRefuses({ firstName: ["required"] }),
+      renameRefuses({ name: ["required"] }),
       ...preferencesAnswers(me, sent),
     );
     renderPage();
 
-    await retype("First name", "Ciarán");
+    await retype("Name", "Ciarán Byrne");
     await pickTimeZone("Istanbul", /^Istanbul/);
     await save();
 
-    const box = await textbox("First name");
+    const box = await textbox("Name");
     await vi.waitFor(() =>
-      expect(box).toHaveAccessibleDescription("Enter your first name."),
+      expect(box).toHaveAccessibleDescription("Enter your name."),
     );
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Europe/Istanbul" },
@@ -315,7 +308,7 @@ describe("ProfilePage", () => {
     );
     renderPage();
 
-    await retype("Last name", "Walsh");
+    await retype("Name", "Ciara Walsh");
     await pickTimeZone("Istanbul", /^Istanbul/);
     await save();
 
@@ -325,7 +318,7 @@ describe("ProfilePage", () => {
         "Choose a time zone from the list.",
       ),
     );
-    expect(sent.names).toEqual([{ firstName: "Ciara", lastName: "Walsh" }]);
+    expect(sent.names).toEqual([{ name: "Ciara Walsh" }]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
   });
 
@@ -352,7 +345,7 @@ describe("ProfilePage", () => {
     );
     renderPage();
 
-    await retype("First name", "Ciarán");
+    await retype("Name", "Ciarán Byrne");
     await save();
 
     await vi.waitFor(() => expect(sent.reads).toBe(2));
@@ -367,7 +360,7 @@ describe("ProfilePage", () => {
     );
     renderPage();
 
-    await retype("First name", "Ciarán");
+    await retype("Name", "Ciarán Byrne");
     await save();
 
     await vi.waitFor(() => expect(sent.reads).toBe(2));
@@ -383,7 +376,7 @@ describe("ProfilePage", () => {
     );
     renderPage();
 
-    await retype("First name", "Ciarán");
+    await retype("Name", "Ciarán Byrne");
     await save();
 
     await vi.waitFor(() =>
@@ -401,7 +394,7 @@ describe("ProfilePage", () => {
     );
     renderPage();
 
-    await retype("First name", "Ciarán");
+    await retype("Name", "Ciarán Byrne");
     await save();
 
     expect(
@@ -417,7 +410,7 @@ describe("ProfilePage", () => {
     expect(
       await screen.findByRole("heading", { name: "الملف الشخصي" }),
     ).toBeInTheDocument();
-    expect(await textbox("الاسم الأول")).toHaveValue("Ciara");
+    expect(await textbox("الاسم")).toHaveValue("Ciara Byrne");
     expect(screen.getByText("يظهر اسمك في نشاط المنصة.")).toBeInTheDocument();
   });
 });

@@ -17,7 +17,7 @@ const cards = [
 ] as const;
 
 /**
- * An organisation's Home (the Home screens): "Welcome" with the person's first name, the organisation's name, and a card for each
+ * An organisation's Home (the Home screens): "Welcome" with the person's whole name (the API's A7), the organisation's name, and a card for each
  * page the person can open (F5). The product's own work comes after it in the menu (`productSections`).
  */
 export function HomePage() {
@@ -25,14 +25,14 @@ export function HomePage() {
   const can = useCan();
   const { detail } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
-  const firstName = me.data?.firstName;
+  const name = me.data?.name;
   const organisation = () => <bdi>{detail.name}</bdi>;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-0.5">
         <h1 className="text-page-title">
-          {firstName
-            ? t.rich("home.welcome", { name: () => <bdi>{firstName}</bdi> })
+          {name
+            ? t.rich("home.welcome", { name: () => <bdi>{name}</bdi> })
             : t("home.welcomeNoName")}
         </h1>
         <p className="text-body text-muted-foreground">

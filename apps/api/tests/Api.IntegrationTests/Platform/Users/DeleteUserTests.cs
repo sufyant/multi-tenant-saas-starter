@@ -41,7 +41,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         var (firstId, secondId) = TwoIdsInOrder();
         var first = await _testData.AddTenantAsync(tenantId: firstId);
         var second = await _testData.AddTenantAsync(tenantId: secondId);
-        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Ada Lovelace");
         await _testData.AddMemberAsync(first.Id, user, role: "Member");
         await _testData.AddMemberAsync(second.Id, user, role: "Owner");
         await _testData.AddMemberAsync(second.Id, role: "Owner");
@@ -52,7 +52,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
 
         deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await MembershipsOfAsync(id)).ShouldBe(0);
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, null, Deleted: true));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, null, Deleted: true));
         (await _audit.PlatformLogAsync(id)).ShouldBe($"user.deleted|User|{await _testData.UserIdOfAsync(admin)}|User|{id}|-");
         (await _audit.TenantLogAsync(id)).ShouldBe(
             $"{first.Id}:member.removed|Platform|-|User|{id}|-, {second.Id}:member.removed|Platform|-|User|{id}|-");
@@ -165,7 +165,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         var acme = await _testData.AddTenantAsync();
         var neverJoined = await _testData.AddTenantAsync();
         var email = $"{Guid.NewGuid():N}@example.com";
-        var user = await _testData.AddUserAsync(email: email, firstName: "Ayşe");
+        var user = await _testData.AddUserAsync(email: email, name: "Ayşe");
         await _testData.AddInvitationAsync(acme.Id, email, status: "Accepted", acceptedBy: user);
         var pending = await _testData.AddInvitationAsync(acme.Id, email);
         var signUp = $"inv_{Guid.NewGuid():N}";
@@ -261,18 +261,18 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     {
         var marker = Guid.NewGuid().ToString("N");
         var tenant = await _testData.AddTenantAsync();
-        var user = await _testData.AddUserAsync(email: $"{marker}@example.com", firstName: $"Ada{marker}", lastName: $"Lovelace{marker}");
+        var user = await _testData.AddUserAsync(email: $"{marker}@example.com", name: $"Ada Lovelace{marker}");
         await _testData.AddMemberAsync(tenant.Id, user);
         var userId = await _testData.UserIdOfAsync(user);
         var admin = await _testData.AddSystemAdminAsync();
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(admin, secondFactor: true)
-            .PatchAsJsonAsync($"/v1/platform/users/{userId}", new { firstName = $"Grace{marker}", lastName = $"Hopper{marker}" }, Cancellation));
+            .PatchAsJsonAsync($"/v1/platform/users/{userId}", new { name = $"Grace Hopper{marker}" }, Cancellation));
         var before = await NamesAsync(userId);
         var kept = await RowsHoldingAsync("control_plane", marker);
 
         await _api.WaitingForMessagesAsync(() => DeleteAsync(admin, userId));
 
-        before[userId].ShouldBe(new UserName($"Grace{marker} Hopper{marker}", Deleted: false));
+        before[userId].ShouldBe(new UserName($"Grace Hopper{marker}", Deleted: false));
         kept.ShouldBe(1);
         (await RowsHoldingAsync("audit", marker)).ShouldBe(0);
         (await RowsHoldingAsync("control_plane", marker)).ShouldBe(0);
@@ -287,7 +287,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     {
         var member = await _testData.AddTenantAsync(tenantId: Guid.CreateVersion7());
         var owned = await _testData.AddTenantAsync(tenantId: Guid.CreateVersion7(), status: "Suspended");
-        var user = await _testData.AddUserAsync(firstName: "Ada");
+        var user = await _testData.AddUserAsync(name: "Ada");
         await _testData.AddMemberAsync(member.Id, user, role: "Member");
         await _testData.AddMemberAsync(owned.Id, user, role: "Owner");
         var id = await _testData.UserIdOfAsync(user);
@@ -299,7 +299,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         problem.GetProperty("code").GetString().ShouldBe("user.last_owner");
         problem.GetProperty("tenantIds").EnumerateArray().Select(tenant => tenant.GetGuid()).ShouldBe([owned.Id]);
         (await MembershipsOfAsync(id)).ShouldBe(2);
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, "Ada", null, Deleted: false));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, "Ada", Deleted: false));
         _api.Identity.Deleted.ShouldBeEmpty();
     }
 
@@ -312,7 +312,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         var (leftId, ownedId) = TwoIdsInOrder();
         var left = await _testData.AddTenantAsync(tenantId: leftId);
         var owned = await _testData.AddTenantAsync(tenantId: ownedId);
-        var user = await _testData.AddUserAsync(firstName: "Ada");
+        var user = await _testData.AddUserAsync(name: "Ada");
         await _testData.AddMemberAsync(left.Id, user, role: "Member");
         await _testData.AddMemberAsync(owned.Id, user, role: "Owner");
         var otherOwner = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(owned.Id, role: "Owner"));
@@ -341,7 +341,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         problem.GetProperty("tenantIds").EnumerateArray().Select(tenant => tenant.GetGuid()).ShouldBe([owned.Id]);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{id}' AND tenant_id = '{left.Id}'")).ShouldBe(0);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE user_id = '{id}' AND tenant_id = '{owned.Id}'")).ShouldBe(1);
-        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, "Ada", null, Deleted: false));
+        (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(null, "Ada", Deleted: false));
         _api.Identity.Deleted.ShouldBeEmpty();
     }
 
@@ -350,7 +350,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DeleteUser_ClerkFailsOnce_IsTriedAgainAfterTheCommit()
     {
-        var user = await _testData.AddUserAsync(firstName: "Ada");
+        var user = await _testData.AddUserAsync(name: "Ada");
         var id = await _testData.UserIdOfAsync(user);
         _api.Identity.FailNext(1);
 
@@ -420,7 +420,7 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task DeleteUser_AUserWithFiles_DeletesTheirFilesAndTheirRecordsAndSendsNoConfirmation()
     {
-        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Ada Lovelace");
         var id = await _testData.UserIdOfAsync(user);
         await DataExportRequests.ReadyAsync(_api, user);
         await ObjectStorage.PutAsync($"{SharedKernel.FileKeys.User(id)}avatar", "a later module's file");

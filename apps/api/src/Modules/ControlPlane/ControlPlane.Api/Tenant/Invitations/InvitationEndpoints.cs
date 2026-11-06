@@ -51,7 +51,7 @@ public static class InvitationEndpoints
         invitation.Language);
 
     // The platform's user detail names the system admin who suspended a user in the same shape (N7g).
-    internal static UserNameResponse ToResponse(UserNameView name) => new(name.FirstName, name.LastName, name.Deleted);
+    internal static UserNameResponse ToResponse(UserNameView name) => new(name.Name, name.Deleted);
 
     // The invitation runs inside the tenant of the route, which the tenant door has proved, under the request's idempotency key (I1).
     // The server chooses the invitation's id. The endpoint declares 201, so the host answers a new invitation with 201, and a replayed

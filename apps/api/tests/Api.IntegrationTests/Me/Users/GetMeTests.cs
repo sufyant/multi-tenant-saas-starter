@@ -27,15 +27,15 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetMe_AUser_ReturnsTheirUserIdProfileAndThatTheyAreNoSystemAdmin()
     {
-        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), name: "Ada Lovelace");
 
         var response = await _api.CreateClient(user).GetAsync("/v1/me", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
-        Me(me).ShouldBe((await _testData.UserIdOfAsync(user), TestEmails.Of("ada@example.com"), "Ada", "Lovelace", false));
+        Me(me).ShouldBe((await _testData.UserIdOfAsync(user), TestEmails.Of("ada@example.com"), "Ada Lovelace", false));
         me.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "firstName", "lastName", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
+            ["id", "email", "name", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
     }
 
     // The preferences follow the user to every tenant and device. A user who set no time zone has none: the web uses the browser's.
@@ -60,7 +60,7 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
 
         var me = await _api.CreateClient(admin).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
 
-        Me(me).ShouldBe((await _testData.UserIdOfAsync(admin), TestEmails.Of("grace@example.com"), null, null, true));
+        Me(me).ShouldBe((await _testData.UserIdOfAsync(admin), TestEmails.Of("grace@example.com"), null, true));
     }
 
     [Fact]
@@ -92,10 +92,9 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
-    private static (Guid Id, string? Email, string? FirstName, string? LastName, bool IsSystemAdmin) Me(JsonElement me) => (
+    private static (Guid Id, string? Email, string? Name, bool IsSystemAdmin) Me(JsonElement me) => (
         me.GetProperty("id").GetGuid(),
         me.GetProperty("email").GetString(),
-        me.GetProperty("firstName").GetString(),
-        me.GetProperty("lastName").GetString(),
+        me.GetProperty("name").GetString(),
         me.GetProperty("isSystemAdmin").GetBoolean());
 }

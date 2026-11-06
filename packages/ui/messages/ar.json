@@ -245,10 +245,8 @@
   },
   "preferencesForm": {
     "yourName": "اسمك",
-    "firstName": "الاسم الأول",
-    "lastName": "اسم العائلة",
-    "firstNameRequired": "أدخل اسمك الأول.",
-    "lastNameRequired": "أدخل اسم العائلة.",
+    "name": "الاسم",
+    "nameRequired": "أدخل اسمك.",
     "nameTooLong": "استخدم من 1 إلى {max} حرف.",
     "languageAndTimeZone": "اللغة والمنطقة الزمنية",
     "language": "اللغة",

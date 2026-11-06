@@ -88,8 +88,8 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     public async Task ListPlatformAuditEntries_ActorsAndTargets_AreNamedOnRead()
     {
         var admin = await _testData.AddSystemAdminAsync();
-        var grace = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Grace", lastName: "Hopper"));
-        var deletedUser = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
+        var grace = await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Grace Hopper"));
+        var deletedUser = await _testData.AddUserAsync(name: "Gone Away");
         await _testData.DeleteUserAsync(deletedUser);
         var deleted = await _testData.UserIdOfAsync(deletedUser);
         var tenant = Guid.CreateVersion7();
@@ -110,7 +110,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     {
         var marker = Guid.NewGuid().ToString("N");
         var admin = await _testData.AddSystemAdminAsync(email: $"admin-{marker}@example.com");
-        var target = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"target-{marker}@example.com", firstName: "Ada"));
+        var target = await _testData.UserIdOfAsync(await _testData.AddUserAsync(email: $"target-{marker}@example.com", name: "Ada"));
         await _audit.AddPlatformEntryAsync(_start, "User", await _testData.UserIdOfAsync(admin), "User", target);
 
         var answer = await _api.CreateClient(admin, secondFactor: true).GetStringAsync("/v1/platform/audit-log?limit=1", Cancellation);
@@ -200,7 +200,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     {
         var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var tenant = Guid.CreateVersion7();
-        var mehmet = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Mehmet", lastName: "Kaya"));
+        var mehmet = await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Mehmet Kaya"));
         await AddOwnerMadeAsync(_start, tenant, mehmet);
 
         var page = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/audit-log?tenantId={tenant}", Cancellation);
@@ -214,7 +214,7 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
     {
         var client = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var tenant = Guid.CreateVersion7();
-        var user = await _testData.AddUserAsync(firstName: "Mehmet", lastName: "Kaya");
+        var user = await _testData.AddUserAsync(name: "Mehmet Kaya");
         var mehmet = await _testData.UserIdOfAsync(user);
         await AddOwnerMadeAsync(_start, tenant, mehmet);
         await _testData.DeleteUserAsync(user);
@@ -231,9 +231,9 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         using var commands = new SqlCommands();
         var admin = await _testData.AddSystemAdminAsync();
         var tenant = Guid.CreateVersion7();
-        await AddOwnerMadeAsync(_start, tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Ada")));
-        await AddOwnerMadeAsync(_start.AddTicks(10), tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Bea")));
-        await AddOwnerMadeAsync(_start.AddTicks(20), tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Cem")));
+        await AddOwnerMadeAsync(_start, tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Ada")));
+        await AddOwnerMadeAsync(_start.AddTicks(10), tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Bea")));
+        await AddOwnerMadeAsync(_start.AddTicks(20), tenant, await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Cem")));
 
         var one = await commands.CountAsync(
             () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/audit-log?tenantId={tenant}&limit=1", Cancellation));

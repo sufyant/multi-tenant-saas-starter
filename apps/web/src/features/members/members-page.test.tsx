@@ -152,8 +152,7 @@ describe("MembersPage", () => {
   it("MembersPage_CustomViewer_ActsOnlyOnMembersWhoseRoleItFullyHolds", async () => {
     const dara = {
       ...john,
-      firstName: "Dara",
-      lastName: "Quinn",
+      name: "Dara Quinn",
       role: billingLead,
     };
     server.use(
@@ -347,8 +346,7 @@ describe("MembersPage", () => {
         ayse,
         {
           ...john,
-          firstName: null,
-          lastName: null,
+          name: null,
           email: null,
           deleted: true,
         },
@@ -370,7 +368,7 @@ describe("MembersPage", () => {
     );
 
     renderInTenant(<MembersPage />, {
-      url: `/northwind/settings/members?q=byrne&roleId=${roleOf.member.id}&page=2&sort=-lastName`,
+      url: `/northwind/settings/members?q=byrne&roleId=${roleOf.member.id}&page=2&sort=-name`,
     });
 
     await waitFor(() => expect(requests).toHaveLength(1));
@@ -379,7 +377,7 @@ describe("MembersPage", () => {
         q: "byrne",
         roleId: roleOf.member.id,
         page: "2",
-        sort: "-lastName",
+        sort: "-name",
       },
     ]);
     expect(
@@ -408,7 +406,7 @@ describe("MembersPage", () => {
       await (await table()).findByRole("button", { name: "Name" }),
     );
 
-    await waitFor(() => expect(window.location.search).toBe("?sort=lastName"));
+    await waitFor(() => expect(window.location.search).toBe("?sort=name"));
   });
 
   it("MembersPage_BackAndForward_RestoreTheTab", async () => {

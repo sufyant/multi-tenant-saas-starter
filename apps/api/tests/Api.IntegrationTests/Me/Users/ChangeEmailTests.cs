@@ -177,7 +177,7 @@ public sealed class ChangeEmailTests(Database database) : IAsyncLifetime
 
     private async Task<(string User, string NewEmail)> UserWithACodeAsync()
     {
-        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), firstName: "Ada", lastName: "Lovelace");
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"), name: "Ada Lovelace");
         var newEmail = $"a{Guid.NewGuid():N}@new.example";
         (await _api.WaitingForMessagesAsync(() => AccountRequests.RequestEmailChangeAsync(_api, user, newEmail))).StatusCode.ShouldBe(HttpStatusCode.Created);
         return (user, newEmail);

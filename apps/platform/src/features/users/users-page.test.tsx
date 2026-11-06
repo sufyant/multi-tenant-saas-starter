@@ -233,7 +233,7 @@ describe("UsersPage", () => {
       meAnswer(),
       usersAnswer(usersPageOf([ayse]), requests),
       platformCommand("patch", `users/${ayse.id}`, [
-        userResponse(ayse, { lastName: "Demir" }),
+        userResponse(ayse, { name: "Ayşe Demir" }),
       ]),
     );
 
@@ -243,9 +243,9 @@ describe("UsersPage", () => {
     const dialog = within(
       await screen.findByRole("alertdialog", { name: "Rename Ayşe Yılmaz" }),
     );
-    const lastName = dialog.getByRole("textbox", { name: "Last name" });
-    await userEvent.clear(lastName);
-    await userEvent.type(lastName, "Demir");
+    const name = dialog.getByRole("textbox", { name: "Name" });
+    await userEvent.clear(name);
+    await userEvent.type(name, "Ayşe Demir");
     await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
 
     await expectVisibleToast(sentence("Renamed to Ayşe Demir."));
@@ -326,7 +326,7 @@ describe("UsersPage", () => {
     );
   });
 
-  it("UsersPage_SortByUser_SortsByLastNameInTheUrl", async () => {
+  it("UsersPage_SortByUser_SortsByNameInTheUrl", async () => {
     const requests: URLSearchParams[] = [];
     server.use(meAnswer(), usersAnswer(usersPageOf([ayse]), requests));
 
@@ -334,13 +334,13 @@ describe("UsersPage", () => {
     await userEvent.click(
       (await table()).getByRole("button", { name: "User" }),
     );
-    await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("lastName"));
+    await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("name"));
     await userEvent.click(
       (await table()).getByRole("button", { name: "User" }),
     );
 
-    await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("-lastName"));
-    await waitFor(() => expect(searchParam("sort")).toBe("-lastName"));
+    await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("-name"));
+    await waitFor(() => expect(searchParam("sort")).toBe("-name"));
   });
 
   it("UsersPage_EmailSortInTheUrl_IsSent", async () => {
