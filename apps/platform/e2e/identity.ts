@@ -105,9 +105,12 @@ export async function mockIdentity(
       if (!response.headers()["content-type"]?.includes("json"))
         return route.fulfill({ response });
       const answer = await response.json();
-      const body = (account ? withAccount(answer, account) : answer) as Json;
+      let body = account ? withAccount(answer, account) : answer;
       if (url.pathname.endsWith("/me/sessions/active")) {
-        const [current] = body.response as Json[];
+        // Clerk answers this list as a bare array, or wrapped in `response` beside the client.
+        const wrapped = !Array.isArray(body);
+        const list = (wrapped ? (body as Json).response : body) as Json[];
+        const [current] = list;
         if (current) {
           const now = Date.now();
           const thisDevice = activity(
@@ -119,7 +122,7 @@ export async function mockIdentity(
             "TR",
             now,
           );
-          body.response = [
+          const sessions = [
             thisDevice,
             activity(
               current,
@@ -140,6 +143,7 @@ export async function mockIdentity(
               Date.UTC(2026, 9, 3, 14),
             ),
           ].slice(0, otherSessions ? 3 : 1);
+          body = wrapped ? { ...(body as Json), response: sessions } : sessions;
         }
       }
       return route.fulfill({ response, json: body });
