@@ -172,7 +172,8 @@ const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
 /** Waits until Account and security has read the sessions from Clerk: the current one carries "This device". */
-const sessionsShown = (page: Page) => page.getByText("This device").waitFor();
+const sessionsShown = (page: Page) =>
+  page.getByText("This device", { exact: true }).waitFor();
 
 const shellShots: {
   file: string;

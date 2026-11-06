@@ -18,6 +18,6 @@ test("Account_English_SaysTwoStepIsOnAndShowsThisDevice", async ({ page }) => {
   await expect(
     page.getByRole("region", { name: "Two-step verification" }),
   ).toContainText("On");
-  await expect(page.getByText("This device")).toBeVisible();
+  await expect(page.getByText("This device", { exact: true })).toBeVisible();
   await expectAccessible(page);
 });

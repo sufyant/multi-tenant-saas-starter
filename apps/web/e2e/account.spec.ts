@@ -20,7 +20,7 @@ test("Account_English_ShowsTheEmailTheMethodsAndThisDevice", async ({
   await expect(
     page.getByRole("region", { name: "Sign-in methods" }),
   ).toContainText("Email code");
-  await expect(page.getByText("This device")).toBeVisible();
+  await expect(page.getByText("This device", { exact: true })).toBeVisible();
   await expectAccessible(page);
 });
 
@@ -30,7 +30,7 @@ test("Account_Arabic_IsRightToLeft", async ({ page }) => {
 
   await page.goto(`/${northwind.slug}/settings/account`);
 
-  await expect(page.getByText("هذا الجهاز")).toBeVisible();
+  await expect(page.getByText("هذا الجهاز", { exact: true })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expectAccessible(page);
 });

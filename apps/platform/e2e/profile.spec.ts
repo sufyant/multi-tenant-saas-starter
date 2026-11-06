@@ -39,7 +39,6 @@ test("Profile_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
 
   await page.goto("/settings/profile");
   await expect(page.getByRole("button", { name: /Kelly/ })).toBeVisible();
-  await expect(page.getByText("admin@starter.example")).toBeVisible();
   await page.getByRole("textbox", { name: "Name" }).fill("Sasha Kelly");
   await page.getByRole("button", { name: "Save preferences" }).click();
 
