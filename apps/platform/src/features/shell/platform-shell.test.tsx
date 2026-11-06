@@ -272,8 +272,7 @@ describe("PlatformShell", () => {
       getGetMeMockHandler(
         getGetMeResponseMock({
           isSystemAdmin: true,
-          firstName: "Deniz",
-          lastName: "Kaya",
+          name: "Deniz Kaya",
           language: "en",
         }),
       ),
