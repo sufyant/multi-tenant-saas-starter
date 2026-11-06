@@ -423,7 +423,14 @@ describe("ProfilePage", () => {
 
   // 5.05 and 8.05: while GetMe loads, the card keeps its place and the theme shows.
   it("ProfilePage_Loading_KeepsTheFormsPlaceAndTheTheme", async () => {
-    server.use(http.get("*/v1/me", () => new Promise<never>(() => {})));
+    // GetMe answers at the end of the test, so no request stays open for the next one.
+    let answer = () => {};
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    server.use(
+      http.get("*/v1/me", () => answered.then(() => HttpResponse.json(me))),
+    );
 
     renderPage();
 
@@ -433,6 +440,8 @@ describe("ProfilePage", () => {
     expect(
       screen.getByRole("radiogroup", { name: "Theme" }),
     ).toBeInTheDocument();
+    answer();
+    expect(await textbox("Name")).toHaveValue("Ciara Byrne");
   });
 
   // 5.06 and 8.06: a profile that did not load says so with a way to support, and the theme still shows.

@@ -50,6 +50,7 @@ const actionOf = (error: unknown) =>
  */
 export function ProfilePage() {
   const t = useTranslations();
+  const failureText = useFailureText();
   const me = useQuery(getGetMeQueryOptions());
   // A refused account goes to its page or to sign-in (F4, F47); any other failure keeps the page and says so in its card (5.06).
   const action = me.error ? actionOf(me.error) : null;
@@ -78,19 +79,31 @@ export function ProfilePage() {
       {me.data ? (
         <Preferences me={me.data} />
       ) : me.error ? (
+        // F4: the API code's message and its reference, which Contact support carries too; a lost connection has no code.
         <Banner
           tone="destructive"
           title={t("preferencesForm.notLoadedTitle")}
           action={
             <Button
-              render={<a href={supportLink(brand.supportUrl, undefined)} />}
+              render={
+                <a
+                  href={supportLink(
+                    brand.supportUrl,
+                    problemOf(me.error)
+                      ? failureText(problemOf(me.error))
+                      : undefined,
+                  )}
+                />
+              }
               nativeButton={false}
             >
               {t("problems.contactSupport")}
             </Button>
           }
         >
-          {t("preferencesForm.notLoadedText")}
+          {problemOf(me.error)
+            ? failureText(problemOf(me.error))
+            : t("preferencesForm.notLoadedText")}
         </Banner>
       ) : (
         <PreferencesFormSkeleton

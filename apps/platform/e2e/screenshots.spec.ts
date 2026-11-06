@@ -169,7 +169,6 @@ const bellList = {
     },
   ],
 };
-/** Scrolls the theme's card, the one radio group of the Profile page, into view. */
 /** The Name field of the Profile form. */
 const nameField = (page: Page) => page.getByRole("textbox", { name: "Name" });
 
@@ -193,6 +192,7 @@ const emptyName = async (page: Page) => {
   await page.getByText("Enter your name.").waitFor();
 };
 
+/** Scrolls the theme's card, the one radio group of the Profile page, into view. */
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
