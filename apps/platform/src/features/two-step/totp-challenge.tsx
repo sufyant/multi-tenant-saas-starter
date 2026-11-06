@@ -1,27 +1,34 @@
 "use client";
 
+import {
+  useConfirmIdentity,
+  type VerifyingSession,
+} from "@repo/ui/components/confirm-identity";
 import { SecondFactorStep, TextButton } from "@repo/ui/components/sign-in";
 import { useTranslations } from "next-intl";
-import { type Session, useReverification } from "@/shared/use-reverification";
+import { reportError } from "@/error-tracking/report-error";
 
 /**
  * The second factor of a session that has none verified (the TotpChallenge board), through Clerk's session reverification at
- * the level `second_factor`. It serves a returning system admin whose session lost the factor, and the one who just enrolled.
+ * the level `second_factor` (`useConfirmIdentity` of `packages/ui`). It serves a returning system admin whose session lost the
+ * factor, and the one who just enrolled.
  */
 export function TotpChallenge({
   session,
   onVerified,
   onSignOut,
 }: {
-  session: Session;
+  session: VerifyingSession;
   onVerified: () => void;
   onSignOut: () => void;
 }) {
   const t = useTranslations("common");
-  const { verify, error, pending, clearError } = useReverification(
+  const { verify, error, pending, clearError } = useConfirmIdentity({
     session,
+    level: "second_factor",
     onVerified,
-  );
+    onUnexpectedError: reportError,
+  });
 
   return (
     <SecondFactorStep

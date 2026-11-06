@@ -10,6 +10,7 @@ import {
   shannonSuspended,
   users,
 } from "./api";
+import { mockIdentity } from "./identity";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
@@ -171,6 +172,16 @@ const bellList = {
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
+/** The state of the frames that show Google connected and two other sessions (e2e/identity.ts). */
+const fullState = (page: Page) =>
+  mockIdentity(page, {
+    googleEmail: "deniz.kaya@gmail.example",
+    otherSessions: true,
+  });
+/** Waits until the sessions show the last of the other devices. */
+const otherSessionsShown = (page: Page) =>
+  page.getByText("Firefox on Windows", { exact: true }).waitFor();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -179,6 +190,8 @@ const shellShots: {
   path?: string;
   mock?: (page: Parameters<typeof mockPlatform>[0]) => Promise<unknown>;
   open?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+  /** The whole page, for a frame taller than the screen. */
+  fullPage?: boolean;
   /** What the page shows once it has loaded, when it is not a heading of the content. */
   ready?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
 }[] = [
@@ -277,7 +290,7 @@ const shellShots: {
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
   // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame. Each shot
-  // scrolls the card into view, because the two name fields and the email make the page taller than the frame's.
+  // scrolls the card into view, because the two name fields make the form taller than the frame's.
   {
     file: "8.01-profile-en-light-desktop",
     size: "desktop",
@@ -312,6 +325,33 @@ const shellShots: {
     language: Language.Ar,
     path: "/settings/profile",
     open: showTheme,
+  },
+  // Account and security (F62): 9.01, 9.13 and 9.14 show Google connected and two other sessions. The setup's temporary user has
+  // one session and no linked account, so Clerk's answers are changed on the way to the page.
+  {
+    file: "9.01-account-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: "/settings/account",
+    mock: fullState,
+    open: otherSessionsShown,
+  },
+  {
+    file: "9.14-account-en-dark-desktop",
+    fullPage: true,
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/account",
+    mock: fullState,
+    open: otherSessionsShown,
+  },
+  {
+    file: "9.13-account-en-light-phone",
+    fullPage: true,
+    size: "phone",
+    path: "/settings/account",
+    mock: fullState,
+    open: otherSessionsShown,
   },
 ];
 
@@ -351,5 +391,8 @@ for (const shot of shellShots.map(withDefaults))
       Promise.all(document.getAnimations().map((each) => each.finished)),
     );
 
-    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+    await page.screenshot({
+      path: `${folder}/shell-${shot.file}.png`,
+      fullPage: shot.fullPage,
+    });
   });

@@ -20,6 +20,7 @@ import {
   pro,
   roleChanged,
 } from "./api";
+import { mockIdentity } from "./identity";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
@@ -625,6 +626,20 @@ const openBellFullScreen = async (page: Page) => {
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
+/** The state of the frames that show Google connected and two other sessions (e2e/identity.ts). */
+const fullState = (page: Page) =>
+  mockIdentity(page, {
+    googleEmail: "ayse.demir@gmail.example",
+    otherSessions: true,
+  });
+/** Waits until the sessions show the last of the other devices. */
+const otherSessionsShown = (page: Page) =>
+  page.getByText("Firefox on Windows", { exact: true }).waitFor();
+
+/** Waits until Account and security has read the sessions from Clerk: the current one carries "This device". */
+const sessionsShown = (page: Page) =>
+  page.getByText("This device", { exact: true }).waitFor();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -634,6 +649,8 @@ const shellShots: {
   path?: string;
   mock?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<void>;
+  /** The whole page, for a frame taller than the screen. */
+  fullPage?: boolean;
 }[] = [
   { file: "2.01-home-en-light-desktop", size: "desktop" },
   {
@@ -817,6 +834,41 @@ const shellShots: {
       await page.getByText(/ · .+ \(UTC[+-]\d+(:\d+)?\)$/).waitFor();
     },
   },
+  // Account and security (F62): 6.01, 6.06 and 6.07 show Google connected and two other sessions; 6.05 this device alone with no
+  // linked account. The shared test user gathers a session in every run, so Clerk's answers are changed on the way to the page.
+  {
+    file: "6.01-account-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: fullState,
+    open: otherSessionsShown,
+  },
+  {
+    file: "6.05-account-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: (page) => mockIdentity(page, {}),
+    open: sessionsShown,
+  },
+  {
+    file: "6.06-account-en-dark-desktop",
+    fullPage: true,
+    size: "desktop",
+    scheme: "dark",
+    path: `${settings}/account`,
+    mock: fullState,
+    open: otherSessionsShown,
+  },
+  {
+    file: "6.07-account-en-light-phone",
+    fullPage: true,
+    size: "phone",
+    path: `${settings}/account`,
+    mock: fullState,
+    open: otherSessionsShown,
+  },
 ];
 
 /** A shot's language, theme, role and page when it names none: English, light, the owner, the start page. */
@@ -855,5 +907,8 @@ for (const shot of shellShots.map(withDefaults))
       Promise.all(document.getAnimations().map((each) => each.finished)),
     );
 
-    await page.screenshot({ path: `${folder}/shell-${shot.file}.png` });
+    await page.screenshot({
+      path: `${folder}/shell-${shot.file}.png`,
+      fullPage: shot.fullPage,
+    });
   });

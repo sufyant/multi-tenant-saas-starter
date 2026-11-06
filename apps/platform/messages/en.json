@@ -23,8 +23,11 @@
   "profile": {
     "title": "Profile",
     "text": "These follow you to every device.",
-    "nameNote": "Your name shows in the platform’s Activity.",
-    "email": "Email"
+    "nameNote": "Your name shows in the platform’s Activity."
+  },
+  "securityPage": {
+    "intro": "<name></name> · these settings are the same on the platform and in every organisation.",
+    "twoStep": "Required on the platform. After the email code, Google or Microsoft, you also enter a 6-digit code from an authenticator app."
   },
   "access": {
     "noAccessTitle": "You don’t have access",
@@ -317,10 +320,7 @@
     "removeText": "They can no longer open the platform. Their memberships in organisations stay.",
     "removeAction": "Remove",
     "noLongerAdmin": "<bdi>{name}</bdi> is no longer a system admin.",
-    "rootCannotRemove": "Root admins can’t be removed here.",
-    "reverifyTitle": "Confirm it’s you",
-    "reverifyText": "Enter the 6-digit code from your authenticator app. We ask again because your last check was a while ago.",
-    "verify": "Verify and continue"
+    "rootCannotRemove": "Root admins can’t be removed here."
   },
   "activity": {
     "title": "Activity",

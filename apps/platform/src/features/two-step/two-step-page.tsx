@@ -28,7 +28,7 @@ export function TwoStepPage() {
 
   const go = () => window.location.assign("/");
   // The proxy reads the session's token, so the page waits for a token that holds the new factor before it leaves. After the
-  // challenge, `useReverification` has asked for it already.
+  // challenge, `useConfirmIdentity` has asked for it already.
   const enter = async () => {
     await session?.getToken({ skipCache: true });
     go();

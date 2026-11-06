@@ -260,6 +260,7 @@ describe("PlatformShell", () => {
     expect(menu.getAllByRole("link").map((link) => link.textContent)).toEqual([
       "Back to the platform",
       "Profile",
+      "Account and security",
       "System admins",
     ]);
   });
