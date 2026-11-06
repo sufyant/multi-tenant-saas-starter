@@ -82,7 +82,10 @@ export function AccountSecurity({
   return (
     <section className="flex min-w-0 max-w-[760px] flex-col gap-4">
       <div>
-        <h1 className="text-page-title">{shell("accountAndSecurity")}</h1>
+        {/* On a phone the top bar holds the page's title, so the page leaves its own out (6.07). */}
+        <h1 className="text-page-title max-tablet:hidden">
+          {shell("accountAndSecurity")}
+        </h1>
         <p className="mt-1 text-body text-muted-foreground">{intro}</p>
       </div>
       <Card title={t("emailTitle")} text={t("emailText")}>
@@ -91,10 +94,13 @@ export function AccountSecurity({
             <Tile>
               <Icon icon={MailIcon} />
             </Tile>
-            <bdi dir="ltr" className="min-w-0 break-all text-body">
-              {email}
-            </bdi>
-            {email && <CopyButton value={email} label={t("emailTitle")} />}
+            {/* On a phone the address and Copy share a line, and Verified goes under them (6.07). */}
+            <span className="flex min-w-0 items-center gap-1 max-tablet:basis-full">
+              <bdi dir="ltr" className="min-w-0 break-all text-body">
+                {email}
+              </bdi>
+              {email && <CopyButton value={email} label={t("copyEmail")} />}
+            </span>
             <Pill tone="success">{t("verified")}</Pill>
           </div>
         </Row>

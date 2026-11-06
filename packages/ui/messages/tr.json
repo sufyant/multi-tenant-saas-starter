@@ -252,6 +252,7 @@
   "accountSecurity": {
     "emailTitle": "E-posta",
     "emailText": "Bu adresle giriş yapar ve e-posta alırsınız.",
+    "copyEmail": "E-postayı kopyala",
     "verified": "Doğrulandı",
     "changeEmail": "E-postayı değiştir",
     "changeTitle": "E-postanızı değiştirin",
@@ -350,6 +351,7 @@
     "tabAll": "Tümü"
   },
   "patterns": {
+    "copy": "Kopyala",
     "copied": "Kopyalandı",
     "deletedUser": "Silinmiş kullanıcı"
   },

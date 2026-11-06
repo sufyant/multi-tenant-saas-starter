@@ -252,6 +252,7 @@
   "accountSecurity": {
     "emailTitle": "Email",
     "emailText": "You sign in and receive email at this address.",
+    "copyEmail": "Copy the email",
     "verified": "Verified",
     "changeEmail": "Change email",
     "changeTitle": "Change your email",
@@ -350,6 +351,7 @@
     "tabAll": "All"
   },
   "patterns": {
+    "copy": "Copy",
     "copied": "Copied",
     "deletedUser": "Deleted user"
   },
