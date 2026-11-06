@@ -162,6 +162,19 @@ describe("AccountSecurity", () => {
     );
   });
 
+  // Each provider keeps its own logo (6.01); a phone leaves the tiles out.
+  it("AccountSecurity_Methods_ShowEachProvidersLogo", () => {
+    clerk.user = userOf();
+    renderPage();
+
+    const methods = screen.getByRole("region", { name: "Sign-in methods" });
+    expect(
+      [...methods.querySelectorAll("img")].map((logo) =>
+        logo.getAttribute("src"),
+      ),
+    ).toEqual(["/brands/google.svg", "/brands/microsoft.svg"]);
+  });
+
   it("AccountSecurity_DisconnectGoogle_AsksThenDisconnectsAndSaysSo", async () => {
     const user = userOf();
     clerk.user = user;
