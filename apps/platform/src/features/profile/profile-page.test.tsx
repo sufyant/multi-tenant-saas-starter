@@ -419,6 +419,10 @@ describe("ProfilePage", () => {
     expect(
       screen.getByText(/the same on the platform and in every organisation\.$/),
     ).toBeInTheDocument();
+    // On a phone the top bar shows the title; the main region keeps it for screen readers (5.09). jsdom draws no breakpoint.
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Profile" }),
+    ).toHaveClass("max-tablet:sr-only");
   });
 
   // 5.05 and 8.05: while GetMe loads, the card keeps its place and the theme shows.

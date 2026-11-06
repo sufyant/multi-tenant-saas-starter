@@ -48,9 +48,9 @@ test("Profile_ArabicForm_SavesTheTimeZone", async ({ page }) => {
     .getByRole("combobox", { name: "ابحث عن مدينة أو منطقة" })
     .fill("Riyadh");
   await page.getByRole("option", { name: /^Riyadh/ }).click();
-  await page.getByRole("button", { name: "حفظ التفضيلات" }).click();
+  await page.getByRole("button", { name: "حفظ التغييرات" }).click();
 
-  await expect(page.getByText("تم حفظ التفضيلات")).toBeVisible();
+  await expect(page.getByText("تم حفظ الملف الشخصي")).toBeVisible();
   expect(bodies).toEqual([{ language: Language.Ar, timeZone: "Asia/Riyadh" }]);
   await expectAccessible(page);
 });

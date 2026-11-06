@@ -64,8 +64,9 @@ export function ProfilePage() {
   return (
     <section className="flex min-w-0 max-w-[760px] flex-col gap-4">
       <div>
-        {/* On a phone the top bar holds the page's title, so the page leaves its own out (5.09). */}
-        <h1 className="text-page-title max-tablet:hidden">
+        {/* On a phone the top bar shows the page's title, so the page's own is for screen readers only (5.09): the main region
+            keeps its heading. */}
+        <h1 className="text-page-title max-tablet:sr-only">
           {t("profile.title")}
         </h1>
         <p className="mt-1 text-body text-muted-foreground max-tablet:mt-0">
