@@ -42,7 +42,10 @@ test("Account_ConnectedGoogleAndOtherSessions_OffersDisconnectAndSignOut", async
 }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
-  await mockIdentity(page, "ayse.demir@gmail.example");
+  await mockIdentity(page, {
+    googleEmail: "ayse.demir@gmail.example",
+    otherSessions: true,
+  });
 
   await page.goto(`/${northwind.slug}/settings/account`);
 

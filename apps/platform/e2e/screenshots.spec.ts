@@ -320,7 +320,11 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: "/settings/account",
-    mock: (page) => mockIdentity(page, "deniz.kaya@gmail.example"),
+    mock: (page) =>
+      mockIdentity(page, {
+        googleEmail: "deniz.kaya@gmail.example",
+        otherSessions: true,
+      }),
     open: (page) =>
       page.getByText("Firefox on Windows", { exact: true }).waitFor(),
   },

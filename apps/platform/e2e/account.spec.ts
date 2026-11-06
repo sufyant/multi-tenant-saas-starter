@@ -29,12 +29,15 @@ test("Account_ConnectedGoogleAndOtherSessions_OffersDisconnectAndSignOut", async
 }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
-  await mockIdentity(page, "ayse.demir@gmail.example");
+  await mockIdentity(page, {
+    googleEmail: "deniz.kaya@gmail.example",
+    otherSessions: true,
+  });
 
   await page.goto("/settings/account");
 
   const methods = page.getByRole("region", { name: "Sign-in methods" });
-  await expect(methods).toContainText("ayse.demir@gmail.example");
+  await expect(methods).toContainText("deniz.kaya@gmail.example");
   await expect(
     methods.getByRole("button", { name: "Disconnect" }),
   ).toBeVisible();

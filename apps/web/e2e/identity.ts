@@ -1,8 +1,8 @@
 import type { Page } from "@playwright/test";
 
-// Clerk is the real development instance, where the test user has one session and no linked account. A frame that needs more
-// (a connected Google account, other sessions) takes Clerk's real answers and changes them on the way to the page: every user
-// in an answer gets the account, and the list of sessions gets the frame's devices. The route sits on the page, so it runs
+// Clerk is the real development instance. A frame needs a known state of the identity provider (a connected Google account, the
+// sessions), and the web's shared test user gathers a session in every run, so a shot takes Clerk's real answers and changes
+// them on the way to the page: every user in an answer gets the account, and the list of sessions gets the frame's devices. The route sits on the page, so it runs
 // before the testing token's route on the context; it adds the testing token itself, as that route does.
 
 const testingToken = "__clerk_testing_token";
@@ -80,14 +80,21 @@ function withAccount(value: unknown, account: Json): unknown {
 }
 
 /**
- * The state of the frames 6.01 and 9.01: Google connected with the address given, and three sessions: this device (Chrome on
- * a Mac, which Clerk names "Macintosh", in Istanbul, active now), Safari on iPhone in Istanbul two hours ago, and Firefox on Windows in Berlin on 3 October.
+ * The identity provider's state of a frame. This device is always Chrome on a Mac, which Clerk names "Macintosh", in Istanbul,
+ * active now. With `googleEmail`, Google is connected with that address. With `otherSessions`, as in 6.01 and 9.01, Safari on
+ * iPhone in Istanbul two hours ago and Firefox on Windows in Berlin on 3 October follow it; without, as in 6.05, it is alone.
  */
-export async function mockIdentity(page: Page, googleEmail: string) {
+export async function mockIdentity(
+  page: Page,
+  {
+    googleEmail,
+    otherSessions = false,
+  }: { googleEmail?: string; otherSessions?: boolean },
+) {
   const fapi = process.env.CLERK_FAPI;
   if (!fapi)
     throw new Error("CLERK_FAPI is not set: run Playwright's global setup.");
-  const account = googleAccount(googleEmail);
+  const account = googleEmail ? googleAccount(googleEmail) : null;
   await page.route(
     new RegExp(`^https://${fapi.replaceAll(".", "\\.")}/v1/`),
     async (route) => {
@@ -97,21 +104,23 @@ export async function mockIdentity(page: Page, googleEmail: string) {
       const response = await route.fetch({ url: url.toString() });
       if (!response.headers()["content-type"]?.includes("json"))
         return route.fulfill({ response });
-      const body = withAccount(await response.json(), account) as Json;
+      const answer = await response.json();
+      const body = (account ? withAccount(answer, account) : answer) as Json;
       if (url.pathname.endsWith("/me/sessions/active")) {
         const [current] = body.response as Json[];
         if (current) {
           const now = Date.now();
+          const thisDevice = activity(
+            current,
+            current.id as string,
+            "Chrome",
+            "Macintosh",
+            "Istanbul",
+            "TR",
+            now,
+          );
           body.response = [
-            activity(
-              current,
-              current.id as string,
-              "Chrome",
-              "Macintosh",
-              "Istanbul",
-              "TR",
-              now,
-            ),
+            thisDevice,
             activity(
               current,
               "sess_e2e_iphone",
@@ -130,7 +139,7 @@ export async function mockIdentity(page: Page, googleEmail: string) {
               "DE",
               Date.UTC(2026, 9, 3, 14),
             ),
-          ];
+          ].slice(0, otherSessions ? 3 : 1);
         }
       }
       return route.fulfill({ response, json: body });

@@ -824,15 +824,19 @@ const shellShots: {
       await page.getByText(/ · .+ \(UTC[+-]\d+(:\d+)?\)$/).waitFor();
     },
   },
-  // Account and security (F62). Clerk is the real development instance: the test user has this one session and no linked
-  // account, the state of 6.05.
+  // Account and security (F62), the state of 6.05: this device alone and no linked account. The shared test user gathers a
+  // session in every run, so Clerk's answer of the sessions is changed on the way to the page (e2e/identity.ts).
   // 6.01: Google connected and two other sessions, which Clerk's answers get on the way to the page (e2e/identity.ts).
   {
     file: "6.01-account-en-light-desktop",
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
-    mock: (page) => mockIdentity(page, "ayse.demir@gmail.example"),
+    mock: (page) =>
+      mockIdentity(page, {
+        googleEmail: "ayse.demir@gmail.example",
+        otherSessions: true,
+      }),
     open: (page) =>
       page.getByText("Firefox on Windows", { exact: true }).waitFor(),
   },
@@ -841,6 +845,7 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
+    mock: (page) => mockIdentity(page, {}),
     open: sessionsShown,
   },
   {
@@ -849,6 +854,7 @@ const shellShots: {
     size: "desktop",
     scheme: "dark",
     path: `${settings}/account`,
+    mock: (page) => mockIdentity(page, {}),
     open: sessionsShown,
   },
   {
@@ -856,6 +862,7 @@ const shellShots: {
     fullPage: true,
     size: "phone",
     path: `${settings}/account`,
+    mock: (page) => mockIdentity(page, {}),
     open: sessionsShown,
   },
 ];
