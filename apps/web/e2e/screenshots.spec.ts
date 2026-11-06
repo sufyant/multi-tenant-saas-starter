@@ -649,9 +649,14 @@ const setUp =
     const dialog = page.getByRole("alertdialog", {
       name: "Set up two-step verification",
     });
-    await dialog.getByText("JBSW", { exact: false }).waitFor();
+    // The key sits in a read-only field, whose value the text queries do not see.
+    await expect(
+      dialog.getByRole("textbox", { name: "Can’t scan it? Enter this key:" }),
+    ).toHaveValue(/JBSW/);
     if (steps < 1) return;
-    await dialog.getByRole("textbox").first().pressSequentially("123456");
+    await dialog
+      .getByRole("textbox", { name: "Enter the 6-digit code the app shows." })
+      .pressSequentially("123456");
     await dialog.getByRole("button", { name: "Turn on" }).click();
     await page
       .getByRole("alertdialog", { name: "Save your backup codes" })
