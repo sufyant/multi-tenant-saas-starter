@@ -801,7 +801,8 @@ const shellShots: {
     mock: viewer(Language.En, BuiltInRole.Owner),
     open: async (page) => {
       await page.getByRole("main").locator("time").first().hover();
-      await page.getByRole("tooltip").waitFor();
+      // The tooltip's line ends with the zone's city and offset; the shot waits for that text, as time.test.tsx does.
+      await page.getByText(/ · .+ \(UTC[+-]\d+(:\d+)?\)$/).waitFor();
     },
   },
 ];
