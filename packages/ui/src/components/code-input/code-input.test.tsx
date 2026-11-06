@@ -134,4 +134,12 @@ describe("CodeInput", () => {
       "That code is not right.",
     );
   });
+
+  // The Entry frames draw the boxes in the middle of the card and no label above them; the label stays for screen readers.
+  it("CodeInput_Centred_KeepsTheLabelForScreenReadersOnly", () => {
+    render(<CodeInput label="Code" value="" onChange={vi.fn()} centred />);
+
+    expect(screen.getByRole("textbox", { name: "Code" })).toBeInTheDocument();
+    expect(screen.getByText("Code")).toHaveClass("sr-only");
+  });
 });

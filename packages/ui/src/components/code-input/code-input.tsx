@@ -2,6 +2,7 @@
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { type ReactNode, useId } from "react";
+import { cn } from "../../lib/utils";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "../ui/input-otp";
 
 const length = 6;
@@ -19,6 +20,8 @@ export type CodeInputProps = {
   disabled?: boolean;
   autoFocus?: boolean;
   id?: string;
+  /** The boxes in the middle of a centred card, with the label for screen readers only (the Entry frames). */
+  centred?: boolean;
 };
 
 /**
@@ -35,13 +38,17 @@ export function CodeInput({
   disabled,
   autoFocus,
   id,
+  centred,
 }: CodeInputProps) {
   const ownId = useId();
   const inputId = id ?? ownId;
   const errorId = `${inputId}-error`;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-body font-medium">
+      <label
+        htmlFor={inputId}
+        className={cn("text-body font-medium", centred && "sr-only")}
+      >
         {label}
       </label>
       <InputOTP
@@ -57,7 +64,7 @@ export function CodeInput({
         autoFocus={autoFocus}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
-        containerClassName="justify-start"
+        containerClassName={centred ? "justify-center" : "justify-start"}
       >
         <InputOTPGroup dir="ltr">
           {slots.map((index) => (
@@ -65,7 +72,10 @@ export function CodeInput({
               key={index}
               index={index}
               aria-invalid={error ? true : undefined}
-              className="h-code-slot-height w-code-slot-width bg-card font-mono text-section-title"
+              className={cn(
+                "h-code-slot-height w-code-slot-width bg-card text-section-title",
+                centred ? "rounded-lg" : "font-mono",
+              )}
             />
           ))}
         </InputOTPGroup>
@@ -74,7 +84,10 @@ export function CodeInput({
         <p
           id={errorId}
           role="alert"
-          className="text-small text-destructive-text"
+          className={cn(
+            "text-small text-destructive-text",
+            centred && "text-center",
+          )}
         >
           {error}
         </p>

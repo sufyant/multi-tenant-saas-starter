@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
@@ -17,7 +17,11 @@ vi.mock("@clerk/nextjs", () => ({
 const renderCallback = () =>
   render(
     <NextIntlClientProvider locale="en" messages={en} timeZone="Europe/Dublin">
-      <SsoCallback />
+      <SsoCallback
+        brand="Starter"
+        onLanguageChange={async () => {}}
+        privacyUrl="https://starter.example/privacy"
+      />
     </NextIntlClientProvider>,
   );
 
@@ -50,5 +54,22 @@ describe("SsoCallback", () => {
     renderCallback();
 
     expect(decorateUrl).toHaveBeenCalledWith("/");
+  });
+
+  // Frame 1.38: while Clerk ends the callback, the card says what happens.
+  it("SsoCallback_WhileClerkFinishes_SaysSignInIsFinishing", () => {
+    clerk.exit = "none";
+
+    renderCallback();
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Finishing sign-in…" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Google or Microsoft sent you back. This takes a moment.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 });

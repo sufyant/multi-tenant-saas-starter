@@ -435,7 +435,8 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           >
             <div className="flex w-[400px] max-w-full flex-col gap-6">
               <EmailStep
-                title="Sign in to Starter"
+                title="Sign in to your account"
+                text="Use your work email. We send you a 6-digit code. No password."
                 onSubmit={noop}
                 onProvider={noop}
               />
@@ -451,6 +452,8 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
             </div>
             <div className="flex w-[400px] max-w-full flex-col gap-6">
               <SecondFactorStep
+                title="Two-step verification"
+                text="Open your authenticator app and enter the 6-digit code for this account."
                 onSubmit={noop}
                 exit={<TextButton>Sign out</TextButton>}
                 error="locked"

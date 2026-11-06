@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { BackupCodeList } from "./totp-fields";
+import { describe, expect, it, vi } from "vitest";
+import { BackupCodeList, TotpFields } from "./totp-fields";
+import type { Totp } from "./use-totp-enrolment";
 
 const labels = {
   list: "Backup codes",
@@ -26,5 +27,38 @@ describe("BackupCodeList", () => {
     expect(
       screen.getAllByRole("button").map((button) => button.textContent),
     ).toEqual(["Download", "Copy"]);
+  });
+});
+
+describe("TotpFields", () => {
+  // Platform frame 1.03: the QR code, the key on one line with its copy button, and the six boxes, all in the middle of the card.
+  it("TotpFields_Centred_ShowsTheKeyInGroupsOfFourAndTheCode", () => {
+    render(
+      <TotpFields
+        centred
+        totp={{ secret: "JBSWY3DPEHPK3PXP", uri: "otpauth://totp/x" } as Totp}
+        code=""
+        onCodeChange={vi.fn()}
+        labels={{
+          scan: "Scan the QR code",
+          qr: "QR code for your authenticator app",
+          cannotScan: "Key:",
+          copyKey: "Copy key",
+          copied: "Copied",
+          enterCode: "Code from the app",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("JBSW Y3DP EHPK 3PXP")).toHaveAttribute(
+      "dir",
+      "ltr",
+    );
+    expect(
+      screen.getByRole("button", { name: "Copy key" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: "Code from the app" }),
+    ).toBeInTheDocument();
   });
 });

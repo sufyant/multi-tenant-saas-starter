@@ -86,8 +86,9 @@
   --panel-details: 300px;
   --rail-width: 56px;
   --rail-expanded: 232px;
-  --code-slot-width: 48px;
-  --code-slot-height: 56px;
+  --code-slot-width: 44px;
+  --code-slot-height: 48px;
+  --auth-card-max: 424px;
   --content-max: 1280px;
   --bp-tablet: 768px;
   --bp-desktop: 1280px;
@@ -303,6 +304,7 @@
   --spacing-rail-expanded: var(--rail-expanded);
   --spacing-code-slot-width: var(--code-slot-width);
   --spacing-code-slot-height: var(--code-slot-height);
+  --container-auth-card-max: var(--auth-card-max);
   --container-content-max: var(--content-max);
 
   --shadow-xs: var(--shadow-xs);

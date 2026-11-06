@@ -7,6 +7,7 @@ export type SignInStep = "email" | "code" | "totp" | "backupCode" | "ticket";
 export type SignInErrorKey =
   | "emailRequired"
   | "emailInvalid"
+  | "sendFailed"
   | "cannotSignIn"
   | "captcha"
   | "tooManyRequests"
@@ -108,6 +109,9 @@ export function signInErrorKey(
   onUnexpectedError?: (error: Error) => void,
 ): SignInErrorKey {
   const code = clerkErrorCode(error);
+  // A call that got no answer of Clerk's API has no code: the network failed, and the address stays for another try (frame 1.04).
+  if (step === "email" && error instanceof Error && code === undefined)
+    return "sendFailed";
   const key = code && (byStep[step][code] ?? everywhere[code]);
   if (key) return key;
   const name = code ?? "none";

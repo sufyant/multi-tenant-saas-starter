@@ -19,7 +19,8 @@ export type TotpFieldsLabels = {
 /**
  * The two steps of an enrolment (the TotpEnrol board): the QR code, which the browser draws, so the secret goes to no other
  * server and to no QR service; the typed key in groups of four, left to right, with a copy button; and the six digits. Each
- * place gives its words.
+ * place gives its words. `centred` draws them in the middle of the card before sign-in (platform frame 1.03): the card's text
+ * says what to do, so the steps have no numbers, and the key is one line after its label.
  */
 export function TotpFields({
   totp,
@@ -28,6 +29,7 @@ export function TotpFields({
   error,
   disabled,
   labels,
+  centred,
 }: {
   totp?: Totp;
   code: string;
@@ -35,31 +37,62 @@ export function TotpFields({
   error?: string;
   disabled?: boolean;
   labels: TotpFieldsLabels;
+  centred?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     await navigator.clipboard.writeText(totp?.secret ?? "");
     setCopied(true);
   };
+  // Dark modules on a light ground in both themes, so every camera reads the code.
+  const qr = (
+    <div className="self-start rounded-md bg-background p-3 text-foreground dark:bg-foreground dark:text-background">
+      {totp?.uri ? (
+        <QRCodeSVG
+          value={totp.uri}
+          size={160}
+          fgColor="currentColor"
+          bgColor="transparent"
+          title={labels.qr}
+        />
+      ) : (
+        <div className="size-40" />
+      )}
+    </div>
+  );
+  if (centred)
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <div className="self-center rounded-lg border border-border">{qr}</div>
+        <p className="flex flex-wrap items-center justify-center gap-2 text-small">
+          <span>{labels.cannotScan}</span>
+          <bdi dir="ltr" className="font-mono">
+            {groupsOfFour(totp?.secret ?? "")}
+          </bdi>
+          <Button
+            type="button"
+            onClick={() => void copy()}
+            disabled={!totp?.secret}
+          >
+            {copied ? labels.copied : labels.copyKey}
+          </Button>
+        </p>
+        <CodeInput
+          label={labels.enterCode}
+          value={code}
+          onChange={onCodeChange}
+          error={error}
+          disabled={disabled || !totp}
+          centred
+        />
+      </div>
+    );
   return (
     <ol className="flex list-outside list-decimal flex-col gap-4 ps-5 text-body">
       <li>
         {labels.scan}
         <div className="mt-3 flex flex-col gap-3">
-          {/* Dark modules on a light ground in both themes, so every camera reads the code. */}
-          <div className="self-start rounded-md bg-background p-3 text-foreground dark:bg-foreground dark:text-background">
-            {totp?.uri ? (
-              <QRCodeSVG
-                value={totp.uri}
-                size={160}
-                fgColor="currentColor"
-                bgColor="transparent"
-                title={labels.qr}
-              />
-            ) : (
-              <div className="size-40" />
-            )}
-          </div>
+          {qr}
           <div className="flex flex-wrap items-end gap-2">
             <Input
               label={labels.cannotScan}

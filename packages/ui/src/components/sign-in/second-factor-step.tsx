@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { type FormEvent, type ReactNode, useState } from "react";
-import { AuthCard } from "../auth-layout";
+import { AuthHeading } from "../auth-layout/auth-screen";
 import { Button } from "../button";
 import { CodeInput } from "../code-input";
 import { Input } from "../input";
@@ -12,8 +12,11 @@ import { TextButton } from "./text-button";
 export type SecondFactor = "totp" | "backupCode";
 
 export type SecondFactorStepProps = {
+  /** The app's own title and sentence for the authenticator code: "Two-step verification", "Enter the code from your app". */
+  title: string;
+  text: string;
   onSubmit: (code: string, factor: SecondFactor) => void;
-  /** The way out at the end of the hint: "Use another email" before sign-in, "Sign out" after it. */
+  /** The way out after the switch to the other factor: "Use another email" before sign-in, "Sign out" after it. */
   exit: ReactNode;
   pending?: boolean;
   error?: SignInErrorKey;
@@ -22,10 +25,12 @@ export type SecondFactorStepProps = {
 };
 
 /**
- * The second factor (the TotpChallenge board): the six digits of the authenticator app, or one backup code. Both apps ask for it,
- * because a system admin who signs in to the tenant web passes it too: one Clerk instance serves both.
+ * The second factor (web frames 1.07 and 1.08, platform frames 1.05 and 1.06): the six digits of the authenticator app, or one backup
+ * code. Both apps ask for it, because a system admin who signs in to the tenant web passes it too: one Clerk instance serves both.
  */
 export function SecondFactorStep({
+  title,
+  text,
   onSubmit,
   exit,
   pending,
@@ -48,66 +53,58 @@ export function SecondFactorStep({
   const totp = factor === "totp";
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-page-title">
-          {totp ? t("totpTitle") : t("backupCodeTitle")}
-        </h1>
-        <p className="text-body text-muted-foreground">
-          {totp ? t("totpText") : t("backupCodeText")}
-        </p>
-      </div>
-      <AuthCard>
-        <form noValidate onSubmit={submit} className="flex flex-col gap-3">
-          {totp ? (
-            <CodeInput
-              label={t("code")}
-              value={code}
-              onChange={setCode}
-              error={message}
-              disabled={pending}
-              autoFocus
-            />
-          ) : (
-            <Input
-              label={t("backupCode")}
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-              dir="ltr"
-              className="font-mono"
-              error={message}
-              disabled={pending}
-              autoFocus
-            />
-          )}
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            className="w-full"
+      <AuthHeading
+        title={totp ? title : t("backupCodeTitle")}
+        text={totp ? text : t("backupCodeSignInText")}
+      />
+      <form noValidate onSubmit={submit} className="flex flex-col gap-4">
+        {totp ? (
+          <CodeInput
+            label={t("code")}
+            value={code}
+            onChange={setCode}
+            error={message}
             disabled={pending}
-          >
-            {t("continue")}
-          </Button>
-        </form>
-        <p className="text-small text-muted-foreground">
-          {totp ? (
-            <>
-              {t("noPhone")}{" "}
-              <TextButton onClick={() => change("backupCode")}>
-                {t("useBackupCode")}
-              </TextButton>
-            </>
-          ) : (
-            <TextButton onClick={() => change("totp")}>
-              {t("useAuthenticator")}
-            </TextButton>
-          )}
-          {" · "}
-          {exit}
-        </p>
-      </AuthCard>
+            autoFocus
+            centred
+          />
+        ) : (
+          <Input
+            label={t("backupCode")}
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+            dir="ltr"
+            className="font-mono"
+            error={message}
+            disabled={pending}
+            autoFocus
+          />
+        )}
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          disabled={pending}
+        >
+          {t("continue")}
+        </Button>
+      </form>
+      <p className="text-center text-small font-medium">
+        <TextButton
+          className="text-foreground"
+          onClick={() => change(totp ? "backupCode" : "totp")}
+        >
+          {totp ? t("useBackupCode") : t("useAuthenticator")}
+        </TextButton>
+        {totp && (
+          <>
+            {" · "}
+            {exit}
+          </>
+        )}
+      </p>
     </>
   );
 }

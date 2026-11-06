@@ -185,7 +185,9 @@ describe("EmailChange", () => {
     const calls = (props.send as ReturnType<typeof vi.fn>).mock.calls;
     expect(calls).toHaveLength(2);
     expect(calls[1]?.[1]).not.toBe(calls[0]?.[1]);
-    expect(await step.findByText("We sent a new code.")).toBeInTheDocument();
+    expect(
+      await step.findByText("We sent a new code. It replaces the old one."),
+    ).toBeInTheDocument();
   });
 
   it("EmailChange_EmptyAddress_SaysFillItInAndSendsNothing", async () => {

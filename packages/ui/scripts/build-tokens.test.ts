@@ -75,6 +75,7 @@ const realThemeBlock = `@theme inline {
   --spacing-rail-expanded: var(--rail-expanded);
   --spacing-code-slot-width: var(--code-slot-width);
   --spacing-code-slot-height: var(--code-slot-height);
+  --container-auth-card-max: var(--auth-card-max);
   --container-content-max: var(--content-max);
 
   --shadow-xs: var(--shadow-xs);

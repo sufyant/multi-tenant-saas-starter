@@ -14,7 +14,7 @@ const providers: { id: Provider; logo: string }[] = [
 ];
 
 /**
- * Google and Microsoft, before the email code (the design system's boards). Each logo keeps its owner's colours, as the providers' brand rules
+ * Google and Microsoft, before the email code (frame 1.01). Each logo keeps its owner's colours, as the providers' brand rules
  * ask, so it is an image of the app (`public/brands/`), not a token. The label names the provider; the logo is decoration.
  */
 export function ProviderButtons({
@@ -23,18 +23,17 @@ export function ProviderButtons({
   disabled,
 }: ProviderButtonsProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {providers.map(({ id, logo }) => (
         <Button
           key={id}
           type="button"
-          size="lg"
-          className="w-full justify-center gap-2.5"
+          className="w-full justify-center"
           disabled={disabled}
           onClick={() => onSelect(id)}
           icon={
-            // biome-ignore lint/performance/noImgElement: a fixed 18px logo needs no optimisation, and packages/ui has no next/image.
-            <img src={logo} alt="" width={18} height={18} />
+            // biome-ignore lint/performance/noImgElement: a fixed 16px logo needs no optimisation, and packages/ui has no next/image.
+            <img src={logo} alt="" width={16} height={16} />
           }
         >
           {labels[id]}
