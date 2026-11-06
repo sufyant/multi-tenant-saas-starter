@@ -28,6 +28,7 @@ type BellPlace = NotificationBellProps["place"];
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useOffline } from "@repo/ui/lib/use-online";
 import {
   type InfiniteData,
   type UseInfiniteQueryResult,
@@ -41,6 +42,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { notificationHref } from "./notification-link";
+import { useServerReach } from "./server-bar";
 
 /** The bell inside an organisation: that tenant's notifications and the personal ones (`GET /v1/tenants/{tenantId}/notifications`). */
 export function TenantBell({
@@ -72,6 +74,8 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
   const failureText = useFailureText();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<NotificationTab>("all");
+  const { serverDown, noAnswer } = useServerReach();
+  const offline = useOffline(serverDown, noAnswer);
   // A page that failed on GetMe may hold the bell ("No access yet"): reading it again on mount would take that page away.
   const me = useQuery({ ...getGetMeQueryOptions(), retryOnMount: false });
   // The cached list of the tenant layout gives each link its organisation's slug (F30).
@@ -151,6 +155,7 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
       }}
       onMarkAll={() => markAll.mutate()}
       markingAll={markAll.isPending}
+      offline={offline}
       timeZone={me.data?.timeZone}
       linkComponent={Link}
       place={place}

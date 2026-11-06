@@ -30,6 +30,18 @@ type CallAction = { type: string; error?: unknown };
  * for `useSyncExternalStore`, so the shell's connection bar follows it without a request of its own.
  */
 export function serverReach(queryClient: QueryClient): ServerReach {
+  let reach = reaches.get(queryClient);
+  if (!reach) {
+    reach = newServerReach(queryClient);
+    reaches.set(queryClient, reach);
+  }
+  return reach;
+}
+
+// One store for each client, so the bar and the bell read one verdict.
+const reaches = new WeakMap<QueryClient, ServerReach>();
+
+function newServerReach(queryClient: QueryClient): ServerReach {
   let down = false;
   let silent = false;
   // Each start and each failure takes the next number, so a failure knows whether its call started after the doubt.

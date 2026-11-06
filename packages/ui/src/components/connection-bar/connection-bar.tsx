@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { useOnline } from "../../lib/use-online";
+import { useOffline } from "../../lib/use-online";
 import { cn } from "../../lib/utils";
 
 /** The waits between two tries (the Connection bar): 5, 10, then 30 seconds for every later try. */
@@ -55,8 +55,7 @@ export function ConnectionBar({
   statusUrl,
 }: ConnectionBarProps) {
   const t = useTranslations("appShell.connection");
-  const online = useOnline();
-  const offline = !online && noAnswer;
+  const offline = useOffline(serverDown, noAnswer);
   const problem: Problem = serverDown ? (offline ? "offline" : "server") : null;
   const [countdown, step] = useReducer(next, start);
   const [back, setBack] = useState(false);
