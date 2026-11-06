@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { Language, NotificationType } from "@repo/api-client";
+import { ErrorCode, Language, NotificationType } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
   mockNotifications,
@@ -11,7 +12,9 @@ import {
   shannonSuspended,
   users,
 } from "./api";
+import { createUser, deleteUser } from "./clerk-users";
 import { mockIdentity } from "./identity";
+import { enrolledUser, signInWithEmailCode, totpCode } from "./two-step";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
@@ -469,3 +472,205 @@ for (const shot of shellShots.map(withDefaults))
       fullPage: shot.fullPage,
     });
   });
+
+// The platform's Entry frames (1.01 to 1.12). The sign-in shots run signed out with the setup's user, who has an authenticator
+// app, so Clerk asks for the second factor on its own. The enrolment shots sign in a user of their own, made for the shot and
+// deleted after it, because only a user without an authenticator app reaches the enrolment. Playwright changes one answer of
+// Clerk: the locked account of 1.07, which a real lock would keep for the setup's user for the rest of the run.
+const toTheCode = async (page: Page) => {
+  await page.getByRole("textbox", { name: "Email" }).fill(enrolledUser().email);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("heading", { name: "Check your email" }).waitFor();
+};
+
+const toTheSecondFactor = async (page: Page) => {
+  await toTheCode(page);
+  await page.getByRole("textbox", { name: "Code" }).pressSequentially("424242");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page
+    .getByRole("heading", { name: "Enter the code from your app" })
+    .waitFor();
+};
+
+const entryShots: {
+  file: string;
+  size: keyof typeof frames;
+  scheme?: "light" | "dark";
+  mock?: (page: Page) => Promise<unknown>;
+  open?: (page: Page) => Promise<unknown>;
+}[] = [
+  { file: "1.01-sign-in-en-light-desktop", size: "desktop" },
+  {
+    file: "1.02-check-your-email-en-light-desktop",
+    size: "desktop",
+    open: toTheCode,
+  },
+  {
+    file: "1.05-authenticator-code-en-light-desktop",
+    size: "desktop",
+    open: toTheSecondFactor,
+  },
+  {
+    file: "1.06-backup-code-en-light-desktop",
+    size: "desktop",
+    open: async (page) => {
+      await toTheSecondFactor(page);
+      await page
+        .getByRole("button", { name: "Use a backup code instead" })
+        .click();
+      await page
+        .getByRole("textbox", { name: "Backup code" })
+        .fill("4f7k-2m9q");
+    },
+  },
+  {
+    file: "1.07-wrong-code-locked-en-light-desktop",
+    size: "desktop",
+    mock: (page) =>
+      page.route("**/v1/client/sign_ins/*/attempt_first_factor**", (route) =>
+        route.fulfill({
+          status: 403,
+          json: {
+            errors: [{ code: "user_locked", message: "", long_message: "" }],
+          },
+        }),
+      ),
+    open: async (page) => {
+      await toTheCode(page);
+      await page
+        .getByRole("textbox", { name: "Code" })
+        .pressSequentially("381946");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await page.getByRole("alert").filter({ hasText: "Too many" }).waitFor();
+    },
+  },
+  { file: "1.09-sign-in-en-dark-desktop", size: "desktop", scheme: "dark" },
+  { file: "1.10-phone-sign-in-en-light-phone", size: "phone" },
+  {
+    file: "1.11-phone-check-your-email-en-light-phone",
+    size: "phone",
+    open: toTheCode,
+  },
+  {
+    file: "1.12-phone-two-step-verification-en-light-phone",
+    size: "phone",
+    open: toTheSecondFactor,
+  },
+];
+
+/** The screen at rest: every opening animation has finished. */
+const still = async (page: Page) => {
+  await page.evaluate(
+    () =>
+      new Promise((done) =>
+        requestAnimationFrame(() => requestAnimationFrame(done)),
+      ),
+  );
+  await page.evaluate(() =>
+    Promise.all(document.getAnimations().map((each) => each.finished)),
+  );
+};
+
+test.describe("signed out", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  for (const shot of entryShots)
+    test(`Screenshot_Entry_${shot.file}`, async ({
+      page,
+      context,
+      baseURL,
+    }) => {
+      await setupClerkTestingToken({ page });
+      await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+      await page.setViewportSize(frames[shot.size]);
+      await context.addCookies([
+        { name: localeCookie, value: Language.En, url: baseURL },
+      ]);
+      await shot.mock?.(page);
+
+      await page.goto("/sign-in");
+      await page.getByRole("heading", { level: 1 }).waitFor();
+      await shot.open?.(page);
+      await still(page);
+
+      await page.screenshot({ path: `${folder}/entry-${shot.file}.png` });
+    });
+
+  // Frames 1.03 and 1.04: a user without an authenticator app signs in, and the gate asks them to set one up.
+  test("Screenshot_Entry_1.03-and-1.04-enrolment-en-light-desktop", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const email = `e2e-platform-${randomUUID()}+clerk_test@example.com`;
+    const id = await createUser(email);
+    try {
+      await setupClerkTestingToken({ page });
+      await page.emulateMedia({ colorScheme: "light" });
+      await page.setViewportSize(frames.desktop);
+      await page.goto("/sign-in");
+      await signInWithEmailCode(page, email);
+      await page
+        .getByRole("heading", { name: "Set up two-step verification" })
+        .waitFor({ timeout: 30_000 });
+      const key = page.getByText(/^[A-Z2-7]{4}( [A-Z2-7]{1,4})+$/);
+      await still(page);
+      await page.screenshot({
+        path: `${folder}/entry-1.03-set-up-the-authenticator-en-light-desktop.png`,
+      });
+
+      const secret = (await key.innerText()).replaceAll(" ", "");
+      await page
+        .getByRole("textbox", { name: "Enter the 6-digit code the app shows" })
+        .pressSequentially(await totpCode(secret));
+      await page
+        .getByRole("button", { name: "Turn on two-step sign-in" })
+        .click();
+      await expect(
+        page.getByRole("list", { name: "Backup codes" }).getByRole("listitem"),
+      ).toHaveCount(10);
+      await still(page);
+      await page.screenshot({
+        path: `${folder}/entry-1.04-save-backup-codes-en-light-desktop.png`,
+      });
+    } finally {
+      await deleteUser(id);
+    }
+  });
+});
+
+// Frame 1.08: a signed-in person whom the door refuses.
+test("Screenshot_Entry_1.08-not-a-system-admin-en-light-desktop", async ({
+  page,
+}) => {
+  await setupClerkTestingToken({ page });
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize(frames.desktop);
+  await page.route("**/api/v1/me", (route) =>
+    route.fulfill({
+      json: {
+        id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e31",
+        email: "maria@northwind.example",
+        name: "Maria Rossi",
+        isSystemAdmin: false,
+        language: Language.En,
+        timeZone: "Europe/Dublin",
+      },
+    }),
+  );
+  await page.route("**/api/v1/platform/tenants**", (route) =>
+    route.fulfill({
+      status: 403,
+      json: { status: 403, title: "Forbidden", code: ErrorCode.AuthForbidden },
+    }),
+  );
+
+  await page.goto("/");
+  await page
+    .getByRole("heading", { name: "You don’t have access to the platform" })
+    .waitFor();
+  await still(page);
+
+  await page.screenshot({
+    path: `${folder}/entry-1.08-not-a-system-admin-en-light-desktop.png`,
+  });
+});

@@ -66,13 +66,13 @@ test("SignIn_Arabic_IsMirroredAndKeepsTheCodeLeftToRight", async ({
 
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(
-    page.getByRole("heading", { level: 1, name: "تسجيل الدخول إلى Starter" }),
+    page.getByRole("heading", { level: 1, name: "سجّل الدخول إلى حسابك" }),
   ).toBeVisible();
   await expectAccessible(page);
   await page
     .getByRole("textbox", { name: "البريد الإلكتروني" })
     .fill(e2eUserEmail());
-  await page.getByRole("button", { name: "أرسل لي رمزًا" }).click();
+  await page.getByRole("button", { name: "متابعة" }).click();
 
   await expect(
     page.getByRole("heading", { name: "تحقّق من بريدك الإلكتروني" }),
