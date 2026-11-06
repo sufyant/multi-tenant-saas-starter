@@ -10,8 +10,6 @@ export type AppFrame = {
   environment: Environment;
   /** The image's commit, seven characters; none in a run without `SOURCE_REVISION`. */
   version?: string;
-  /** The platform's only: the web app's origin of `WEB_APP_URL`, for the account menu's "Open the web app". */
-  webAppUrl?: string;
 };
 
 const Context = createContext<AppFrame>({
@@ -19,7 +17,7 @@ const Context = createContext<AppFrame>({
 });
 
 /**
- * What the server read at start for the frame of every page, the environment, the version and the platform's web app address, and the environment strip above
+ * What the server read at start for the frame of every page, the environment and the version, and the environment strip above
  * every page outside production (F59). The strip's height is `--strip-height`, so a full-height frame below it, such as the
  * shell's sidebar, leaves it its place. The root layout gives it.
  */

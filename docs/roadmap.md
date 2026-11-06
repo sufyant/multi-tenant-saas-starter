@@ -8,7 +8,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | --- | --- | --- |
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | done |
-| 36 | Personal pages | in progress: 36-backend done, 36-backend-name done, 36-frontend todo |
+| 36 | Personal pages | in progress: 36-backend done, 36-backend-name done; 36-frontend: Account and security in review, Profile next |
 | 37a | The web's organisation pages | todo |
 | 37b | The platform's pages | todo |
 | 38 | Terms of use | todo |

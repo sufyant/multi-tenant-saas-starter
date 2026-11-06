@@ -68,17 +68,20 @@ const notAUserYet = (error: Error | null) =>
  */
 export function PlatformShell({
   notFound = false,
+  webAppUrl,
   children,
 }: {
   /** "Page not found" of an address that no page has: its own crumb, and no row of the menu is the current one (2.40). */
   notFound?: boolean;
+  /** `WEB_APP_URL`, which the server reads: the account menu's "Open the web app" (2.03). */
+  webAppUrl?: string;
   children: ReactNode;
 }) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  const { version, webAppUrl } = useAppFrame();
+  const { version } = useAppFrame();
   const tabTitle = useTabTitleText(t("meta.title"));
   const me = useQuery(getGetMeQueryOptions());
   // One ask of the door per page load, then one more read of GetMe when it lets the person in (F42).

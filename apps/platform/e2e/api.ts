@@ -7,6 +7,7 @@ import {
   BuiltInRole,
   type CreateTenantRequest,
   type CursorPageOfAuditEntryResponse,
+  type DataExportResponse,
   EntitlementOverrideResponseState,
   type EntitlementValueResponse,
   ErrorCode,
@@ -52,6 +53,7 @@ export async function mockApi(
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({ json: me(language) }),
   );
+  await mockDataExport(page);
 }
 
 /** RenameMe saves the names, and GetMe answers them from then on, as the API does. It records each body. */
@@ -768,4 +770,22 @@ export async function mockNotifications(
       signal();
     },
   };
+}
+
+/** The person's latest data export for Your data (F62): none by default, GetMyDataExport's 404. */
+export async function mockDataExport(
+  page: Page,
+  latest?: DataExportResponse,
+): Promise<void> {
+  await page.route("**/api/v1/me/data-exports/latest", (route) =>
+    latest
+      ? route.fulfill({ json: latest })
+      : route.fulfill({
+          status: 404,
+          json: {
+            code: ErrorCode.DataExportNotFound,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+        }),
+  );
 }

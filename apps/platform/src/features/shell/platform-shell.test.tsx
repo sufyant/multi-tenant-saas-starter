@@ -7,7 +7,6 @@ import {
   getListTenantsMockHandler,
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
-import { AppFrameProvider } from "@repo/ui/components/app-frame";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -267,7 +266,7 @@ describe("PlatformShell", () => {
     ]);
   });
 
-  // The platform's own item of the account menu (2.03): the web app of WEB_APP_URL, which the root layout gives the frame.
+  // The platform's own item of the account menu (2.03): the web app of WEB_APP_URL, which the server layout gives the shell.
   it("PlatformShell_AccountMenu_OpensTheWebAppOfTheFrame", async () => {
     server.use(
       getGetMeMockHandler(
@@ -281,18 +280,15 @@ describe("PlatformShell", () => {
     );
 
     renderWithProviders(
-      <AppFrameProvider
-        value={{
-          environment: { kind: "production" },
-          webAppUrl: "https://app.example.test",
-        }}
-      >
-        <PlatformShell>Content</PlatformShell>
-      </AppFrameProvider>,
+      <PlatformShell webAppUrl="https://app.example.test">
+        Content
+      </PlatformShell>,
     );
-    await userEvent.click(
-      (await screen.findAllByRole("button", { name: /Deniz Kaya/ }))[0],
-    );
+    const [accountMenu] = await screen.findAllByRole("button", {
+      name: /Deniz Kaya/,
+    });
+    if (!accountMenu) throw new Error("No account menu.");
+    await userEvent.click(accountMenu);
 
     expect(
       await screen.findByRole("menuitem", {

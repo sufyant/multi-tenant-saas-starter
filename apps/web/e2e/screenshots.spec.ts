@@ -2,6 +2,8 @@ import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import {
   BuiltInRole,
+  DataExportResponseStatus,
+  ErrorCode,
   Language,
   MyTenantResponseStatus,
 } from "@repo/api-client";
@@ -12,6 +14,7 @@ import {
   me,
   mockApi,
   mockAuditLog,
+  mockDataExport,
   mockMembers,
   mockNotifications,
   mockRename,
@@ -714,6 +717,67 @@ const changeEmail = (address?: string) => async (page: Page) => {
   await page.getByRole("alertdialog", { name: "Check your email" }).waitFor();
 };
 
+/** A ready export of the person, downloadable for a week (6.21). */
+const readyExport = {
+  id: "0198f0a2-0000-7000-8000-0000000000e1",
+  status: DataExportResponseStatus.Ready,
+  requestedAt: "2026-11-05T09:00:00Z",
+  readyAt: "2026-11-05T09:04:00Z",
+  expiresAt: "2026-11-12T09:04:00Z",
+  sizeBytes: 48_213,
+};
+
+/** Scrolls to a card of Account and security once the sessions show, so the frame's card is in view. */
+const cardShown = (name: string) => async (page: Page) => {
+  await sessionsShown(page);
+  await page.getByRole("region", { name }).scrollIntoViewIfNeeded();
+};
+
+/** Opens Export my data; with `request`, asks for it, and the mocked API answers that the worker prepares it (6.19, 6.20). */
+const exportData =
+  (request = false) =>
+  async (page: Page) => {
+    await cardShown("Your data")(page);
+    await page.route("**/api/v1/me/data-exports", (route) =>
+      route.fulfill({
+        status: 201,
+        json: {
+          ...readyExport,
+          status: DataExportResponseStatus.Preparing,
+          readyAt: null,
+          expiresAt: null,
+          sizeBytes: null,
+        },
+      }),
+    );
+    await page.getByRole("button", { name: "Export my data" }).click();
+    if (!request) return;
+    await page.getByRole("button", { name: "Request export" }).click();
+    await page.getByText("Export started").waitFor();
+  };
+
+/** Asks to delete the account; the mocked API refuses the last Owner (6.22) or sends the code (6.23). */
+const deleteAccount = (lastOwner: boolean) => async (page: Page) => {
+  await cardShown("Delete my account")(page);
+  await page.route("**/api/v1/me/account-deletion", (route) =>
+    lastOwner
+      ? route.fulfill({
+          status: 409,
+          json: {
+            code: ErrorCode.UserLastOwner,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+            tenantIds: [northwind.id],
+          },
+        })
+      : route.fulfill({
+          status: 201,
+          json: { expiresAt: new Date(Date.now() + 600_000).toISOString() },
+        }),
+  );
+  await page.getByRole("button", { name: "Delete my account" }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -1000,6 +1064,50 @@ const shellShots: {
     path: `${settings}/account`,
     mock: settableState,
     open: setUp(2),
+  },
+  {
+    file: "6.19-export-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    open: exportData(),
+  },
+  {
+    file: "6.20-export-requested-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    open: exportData(true),
+  },
+  {
+    file: "6.21-export-ready-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: (page) => mockDataExport(page, readyExport),
+    open: cardShown("Your data"),
+  },
+  {
+    file: "6.22-delete-refused-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    open: deleteAccount(true),
+  },
+  {
+    file: "6.23-delete-code-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    open: deleteAccount(false),
+  },
+  // The page after the deletion reads the address from the tab's storage, which Delete my account writes (F62).
+  {
+    file: "6.24-account-deleted-en-light-desktop",
+    size: "desktop",
+    path: "/account/deleted",
+    mock: (page) =>
+      page.addInitScript(() =>
+        sessionStorage.setItem(
+          "deleted-account-email",
+          "ayse.demir@northwind.example",
+        ),
+      ),
   },
 ];
 
