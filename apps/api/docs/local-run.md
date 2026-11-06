@@ -149,12 +149,12 @@ Clerk's invitation leads to our accept link, `https://app.localhost/invitations/
 
 ## 8. Accept the invitation
 
-As the owner, signed in with the invited email address verified. A person who is not a user yet gives their first and last name; ControlPlane keeps them, and the API sends Clerk none (A7):
+As the owner, signed in with the invited email address verified. A person who is not a user yet gives their name; ControlPlane keeps it, and the API sends Clerk none (A7):
 
 ```sh
 curl -X POST http://127.0.0.1:5080/v1/me/invitations/accept \
   -H "Authorization: Bearer <owner token>" -H "Content-Type: application/json" \
-  -d '{"code":"<tenantId>.<secret>","firstName":"Ayşe","lastName":"Yılmaz"}'
+  -d '{"code":"<tenantId>.<secret>","name":"Ayşe Yılmaz"}'
 curl http://127.0.0.1:5080/v1/me/tenants -H "Authorization: Bearer <owner token>"
 curl http://127.0.0.1:5080/v1/tenants/<tenantId>/members -H "Authorization: Bearer <owner token>"
 ```
