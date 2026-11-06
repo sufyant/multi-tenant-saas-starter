@@ -6,6 +6,7 @@ import {
   getListUsersQueryOptions,
   grantSystemAdmin,
   problemOf,
+  savedUnderKey,
   schemas,
   type UserResponse,
 } from "@repo/api-client";
@@ -24,7 +25,6 @@ import { z } from "zod";
 import { reportError } from "@/error-tracking/report-error";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
-import { savedUnderKey } from "@/shared/saved-under-key";
 import {
   afterRefusal,
   needsReverification,

@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { reportError } from "@/error-tracking/report-error";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { useEmailChange } from "./use-email-change";
 
 /**
  * Settings › Account and security (F62, the platform's Account and security screens): the shared page with the platform's
@@ -15,6 +16,7 @@ import { ProblemScreen } from "@/shared/problem-screen";
 export function AccountPage() {
   const t = useTranslations();
   const me = useQuery(getGetMeQueryOptions());
+  const emailChange = useEmailChange();
   if (me.error) return <ProblemScreen error={me.error} />;
   if (!me.data) return <Skeleton label={t("common.loading")} />;
   return (
@@ -23,6 +25,7 @@ export function AccountPage() {
         name: () => <bdi>{me.data.name}</bdi>,
       })}
       email={me.data.email}
+      emailChange={emailChange}
       twoStep={{ text: t("securityPage.twoStep"), required: true }}
       returnPath="/settings/account"
       timeZone={me.data.timeZone}

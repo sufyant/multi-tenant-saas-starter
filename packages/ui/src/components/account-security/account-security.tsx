@@ -12,6 +12,7 @@ import { Label } from "../label";
 import { Pill } from "../pill";
 import { InlineSkeleton } from "../skeleton";
 import { showToast } from "../toast";
+import { EmailChange, type EmailChangeProps } from "./email-change";
 import {
   authenticatorOn,
   connectedAccount,
@@ -37,6 +38,8 @@ export type AccountSecurityProps = {
   intro: ReactNode;
   /** The address our API keeps (A7). */
   email: string | null;
+  /** The app's calls of the email change (6.08 to 6.11). */
+  emailChange: EmailChangeProps;
   /** The app's words for two-step verification; on the platform it is required and has no action. */
   twoStep: { text: string; required: boolean };
   /** This page's path: the provider brings the person back to it after Connect. */
@@ -66,6 +69,7 @@ const logos = {
 export function AccountSecurity({
   intro,
   email,
+  emailChange,
   twoStep,
   returnPath,
   timeZone,
@@ -82,7 +86,7 @@ export function AccountSecurity({
         <p className="mt-1 text-body text-muted-foreground">{intro}</p>
       </div>
       <Card title={t("emailTitle")} text={t("emailText")}>
-        <Row>
+        <Row action={<EmailChange {...emailChange} />}>
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
             <Tile>
               <Icon icon={MailIcon} />

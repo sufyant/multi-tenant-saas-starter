@@ -95,6 +95,13 @@ function userOf({
 const props: AccountSecurityProps = {
   intro: "Ayşe Demir · these settings are the same in every organisation.",
   email: "ayse@northwind.example",
+  // The email change has its own tests (email-change.test.tsx).
+  emailChange: {
+    send: async () => ({ expiresAt: "2026-11-06T10:10:00Z" }),
+    verify: async () => {},
+    readFailure: () => ({ problem: null, fields: null, saved: false }),
+    onChanged: () => {},
+  },
   twoStep: { text: "Optional.", required: false },
   returnPath: "/northwind/settings/account",
   now,

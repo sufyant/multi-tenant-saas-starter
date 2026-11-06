@@ -13,6 +13,7 @@ import {
   ProblemDetailsError,
   problemOf,
   ReservedSlug,
+  savedUnderKey,
   schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
@@ -30,7 +31,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { isolated } from "@/shared/isolated";
 import { plansQuery, refreshPlans } from "@/shared/plans";
-import { savedUnderKey } from "@/shared/saved-under-key";
 import { emailText, nameText, slugText } from "./field-text";
 import { LanguageChoice } from "./language-choice";
 import { afterRefusal } from "./organisation";

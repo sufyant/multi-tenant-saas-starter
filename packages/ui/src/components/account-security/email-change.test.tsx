@@ -1,3 +1,4 @@
+import { ErrorCode } from "@repo/api-client";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
@@ -14,7 +15,7 @@ const inTenMinutes = "2026-11-06T10:10:00Z";
 
 /** A failure as the app reads it: the API's code, its field codes, and whether the API saved it under the key. */
 const refusal = (
-  code: string,
+  code: ErrorCode,
   {
     fields = null,
     saved = true,
@@ -27,10 +28,9 @@ const refusal = (
 
 function renderChange(overrides: Partial<EmailChangeProps> = {}) {
   const props: EmailChangeProps = {
-    email: "ayse@northwind.example",
     send: vi.fn(async () => ({ expiresAt: inTenMinutes })),
     verify: vi.fn(async () => {}),
-    readFailure: vi.fn(() => refusal("server.error")),
+    readFailure: vi.fn(() => refusal(ErrorCode.ServerError)),
     onChanged: vi.fn(),
     now,
     ...overrides,
@@ -91,7 +91,10 @@ describe("EmailChange", () => {
       .fn()
       .mockRejectedValueOnce(new Error("refused"))
       .mockResolvedValueOnce({ expiresAt: inTenMinutes });
-    renderChange({ send, readFailure: () => refusal("user.email_taken") });
+    renderChange({
+      send,
+      readFailure: () => refusal(ErrorCode.UserEmailTaken),
+    });
 
     await sendTo("omar@northwind.example");
     expect(
@@ -106,7 +109,7 @@ describe("EmailChange", () => {
     renderChange({
       send: vi.fn().mockRejectedValue(new Error("refused")),
       readFailure: () =>
-        refusal("request.validation_failed", {
+        refusal(ErrorCode.RequestValidationFailed, {
           fields: { email: ["email_invalid"] },
         }),
     });
@@ -138,7 +141,7 @@ describe("EmailChange", () => {
   it("EmailChange_WrongCode_SaysSoUnderTheCode", async () => {
     const props = renderChange({
       verify: vi.fn().mockRejectedValue(new Error("refused")),
-      readFailure: () => refusal("verification_code.invalid"),
+      readFailure: () => refusal(ErrorCode.VerificationCodeInvalid),
     });
 
     await sendTo("ayse.demir@northwind-traders.example");
