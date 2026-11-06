@@ -632,6 +632,35 @@ const fullState = (page: Page) =>
     googleEmail: "ayse.demir@gmail.example",
     otherSessions: true,
   });
+/** The frame's state with an authenticator that Set up can turn on (6.25 to 6.27). */
+const settableState = (page: Page) =>
+  mockIdentity(page, {
+    googleEmail: "ayse.demir@gmail.example",
+    otherSessions: true,
+    authenticator: true,
+  });
+
+/** Opens Set up; with `steps`, types a code and turns it on (6.26), then saves the codes (6.27). */
+const setUp =
+  (steps: 0 | 1 | 2 = 0) =>
+  async (page: Page) => {
+    await otherSessionsShown(page);
+    await page.getByRole("button", { name: "Set up" }).click();
+    const dialog = page.getByRole("alertdialog", {
+      name: "Set up two-step verification",
+    });
+    await dialog.getByText("JBSW", { exact: false }).waitFor();
+    if (steps < 1) return;
+    await dialog.getByRole("textbox").first().pressSequentially("123456");
+    await dialog.getByRole("button", { name: "Turn on" }).click();
+    await page
+      .getByRole("alertdialog", { name: "Save your backup codes" })
+      .waitFor();
+    if (steps < 2) return;
+    await page.getByRole("button", { name: "I saved them" }).click();
+    await page.getByText("Two-step verification is on").waitFor();
+  };
+
 /** Waits until the sessions show the last of the other devices. */
 const otherSessionsShown = (page: Page) =>
   page.getByText("Firefox on Windows", { exact: true }).waitFor();
@@ -898,6 +927,31 @@ const shellShots: {
     path: `${settings}/account`,
     mock: fullState,
     open: changeEmail("ayse.demir@northwind-traders.example"),
+  },
+  // 6.25 to 6.27: Set up, the backup codes and the authenticator on; Clerk's answers of Set up are the frame's (e2e/identity.ts).
+  {
+    file: "6.25-two-step-set-up-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: settableState,
+    open: setUp(),
+  },
+  {
+    file: "6.26-backup-codes-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: settableState,
+    open: setUp(1),
+  },
+  {
+    file: "6.27-two-step-on-en-light-desktop",
+    fullPage: true,
+    size: "desktop",
+    path: `${settings}/account`,
+    mock: settableState,
+    open: setUp(2),
   },
 ];
 
