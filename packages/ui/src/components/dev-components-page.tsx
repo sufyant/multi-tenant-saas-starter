@@ -106,8 +106,7 @@ const samples = {
     settings: "Settings",
     overview: "Overview",
     you: "(you)",
-    nameNote:
-      "Your name shows to the members of every organisation you belong to.",
+    nameNote: "Members of your organisations see this name.",
   },
   tr: {
     dir: "ltr" as const,

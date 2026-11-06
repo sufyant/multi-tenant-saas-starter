@@ -5,6 +5,7 @@ import { localeCookie } from "@repo/ui/lib/locale";
 import {
   mockNotifications,
   mockPlatform,
+  mockRename,
   organisations,
   plans,
   shannonSuspended,
@@ -168,6 +169,29 @@ const bellList = {
     },
   ],
 };
+/** The Name field of the Profile form. */
+const nameField = (page: Page) => page.getByRole("textbox", { name: "Name" });
+
+/** Adds a word to the name, so Save changes turns on (5.02, 8.02). */
+const editName = async (page: Page) => {
+  await nameField(page).press("End");
+  await nameField(page).pressSequentially(" Demir");
+};
+
+/** Saves the name; the mocked RenameMe answers, and the toast says so (5.04, 8.04). */
+const saveName = async (page: Page) => {
+  await editName(page);
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByText("Profile saved").waitFor();
+};
+
+/** Saves an empty name, so the field says to enter one (5.03, 8.03). */
+const emptyName = async (page: Page) => {
+  await nameField(page).fill("");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByText("Enter your name.").waitFor();
+};
+
 /** Scrolls the theme's card, the one radio group of the Profile page, into view. */
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
@@ -341,6 +365,25 @@ const shellShots: {
     language: Language.Ar,
     path: "/settings/profile",
     open: showTheme,
+  },
+  {
+    file: "8.02-profile-edited-en-light-desktop",
+    size: "desktop",
+    path: "/settings/profile",
+    open: editName,
+  },
+  {
+    file: "8.03-profile-name-empty-en-light-desktop",
+    size: "desktop",
+    path: "/settings/profile",
+    open: emptyName,
+  },
+  {
+    file: "8.04-profile-saved-en-light-desktop",
+    size: "desktop",
+    path: "/settings/profile",
+    mock: (page) => mockRename(page, Language.En),
+    open: saveName,
   },
   // Account and security (F62): 9.01, 9.13 and 9.14 show Google connected and two other sessions. The setup's temporary user has
   // one session and no linked account, so Clerk's answers are changed on the way to the page.

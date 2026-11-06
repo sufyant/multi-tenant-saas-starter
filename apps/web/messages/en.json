@@ -49,8 +49,10 @@
   },
   "profile": {
     "title": "Profile",
-    "text": "These follow you to every organisation and device.",
-    "nameNote": "Your name shows to the members of every organisation you belong to."
+    "intro": "<name></name> · the same in every organisation.",
+    "introUnknown": "The same in every organisation.",
+    "nameNote": "Members of your organisations see this name.",
+    "savedNote": "Your new name shows in every organisation."
   },
   "securityPage": {
     "intro": "<name></name> · these settings are the same in every organisation.",

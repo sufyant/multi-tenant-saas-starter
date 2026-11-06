@@ -334,23 +334,23 @@
     "notDone": "Bu işlem yapılamadı"
   },
   "preferencesForm": {
-    "yourName": "Adınız",
     "name": "Ad",
     "nameRequired": "Adınızı girin.",
     "nameTooLong": "1 ile {max} karakter arasında yazın.",
-    "languageAndTimeZone": "Dil ve saat dilimi",
     "language": "Dil",
-    "languageHint": "Tarihler ve sayılar bu dilin biçimini kullanır.",
+    "languageHint": "Uygulamanın dili. <arabic>العربية</arabic> sağdan sola okunur.",
     "languageSearch": "Dil ara",
     "languageEmpty": "Dil bulunamadı",
     "timeZone": "Saat dilimi",
-    "timeZoneHint": "Ekrandaki her saat bu dilimde gösterilir.",
+    "timeZoneHint": "Tarihler ve saatler bu saat diliminde gösterilir.",
     "timeZoneSearch": "Şehir veya dilim ara",
     "timeZoneEmpty": "Saat dilimi bulunamadı",
     "thisDevice": "{zone} (bu cihaz)",
-    "save": "Tercihleri kaydet",
-    "saved": "Tercihler kaydedildi",
-    "notSaved": "Tercihler kaydedilmedi"
+    "save": "Değişiklikleri kaydet",
+    "saved": "Profil kaydedildi",
+    "notSaved": "Profil kaydedilmedi",
+    "notLoadedTitle": "Profiliniz yüklenmedi",
+    "notLoadedText": "Bağlantınızı kontrol edip yeniden deneyin."
   },
   "notifications": {
     "bell": "Bildirimler",

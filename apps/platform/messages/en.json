@@ -22,8 +22,9 @@
   },
   "profile": {
     "title": "Profile",
-    "text": "These follow you to every device.",
-    "nameNote": "Your name shows in the platform’s Activity."
+    "intro": "<name></name> · the same on the platform and in every organisation.",
+    "introUnknown": "The same on the platform and in every organisation.",
+    "nameNote": "Your name shows in the platform’s Activity log."
   },
   "securityPage": {
     "intro": "<name></name> · these settings are the same on the platform and in every organisation.",

@@ -30,6 +30,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh }),
 }));
 vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
+// Clerk is a system we do not own: the account's page names the signed-in address and offers Sign out. Its hooks give the
+// same objects on every render, as Clerk does.
+const clerk = vi.hoisted(() => ({
+  user: { primaryEmailAddress: { emailAddress: "ayse@northwind.example" } },
+  signOut: async () => {},
+}));
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({ user: clerk.user }),
+  useClerk: () => ({ signOut: clerk.signOut }),
+}));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -122,9 +132,7 @@ async function retype(name: string, text: string) {
 }
 
 const save = async () =>
-  userEvent.click(
-    await screen.findByRole("button", { name: "Save preferences" }),
-  );
+  userEvent.click(await screen.findByRole("button", { name: "Save changes" }));
 
 describe("ProfilePage", () => {
   it("ProfilePage_GetMe_ShowsTheNameTheLanguageAndTheTimeZone", async () => {
@@ -136,12 +144,7 @@ describe("ProfilePage", () => {
     expect(await field("Language")).toHaveTextContent("English");
     expect(await field("Time zone")).toHaveTextContent(/^Istanbul/);
     expect(
-      screen.getByText("These follow you to every organisation and device."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Your name shows to the members of every organisation you belong to.",
-      ),
+      screen.getByText("Members of your organisations see this name."),
     ).toBeInTheDocument();
   });
 
@@ -173,7 +176,7 @@ describe("ProfilePage", () => {
     ).toHaveAttribute("lang", "tr");
   });
 
-  it("ProfilePage_TimeZoneOption_ShowsItsOffsetAndItsTime", async () => {
+  it("ProfilePage_TimeZoneOption_ShowsItsCityItsOffsetAndItsTime", async () => {
     server.use(...preferencesAnswers(me));
     renderInTenant(<ProfilePage />, { url });
 
@@ -185,7 +188,7 @@ describe("ProfilePage", () => {
 
     expect(
       await screen.findByRole("option", {
-        name: /^Riyadh, .+UTC\+3 · \d{2}:\d{2}$/,
+        name: /^Riyadh \(UTC\+3\)\d{2}:\d{2}$/,
       }),
     ).toBeInTheDocument();
   });
@@ -198,7 +201,7 @@ describe("ProfilePage", () => {
     await retype("Name", "  Ayla Yılmaz ");
     await save();
 
-    expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
+    expect(await screen.findByText("Profile saved")).toBeInTheDocument();
     expect(sent.names).toEqual([{ name: "Ayla Yılmaz" }]);
     expect(sent.preferences).toEqual([]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
@@ -212,7 +215,7 @@ describe("ProfilePage", () => {
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
-    expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
+    expect(await screen.findByText("Profile saved")).toBeInTheDocument();
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Asia/Riyadh" },
     ]);
@@ -230,7 +233,7 @@ describe("ProfilePage", () => {
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
-    expect(await screen.findAllByText("Preferences saved")).toHaveLength(1);
+    expect(await screen.findAllByText("Profile saved")).toHaveLength(1);
     expect(sent.names).toEqual([{ name: "Ayşe Kaya" }]);
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Asia/Riyadh" },
@@ -250,7 +253,7 @@ describe("ProfilePage", () => {
     expect(await textbox("Name")).not.toHaveAttribute("aria-invalid");
     expect(sent.names).toEqual([]);
     expect(sent.preferences).toEqual([]);
-    expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile saved")).not.toBeInTheDocument();
   });
 
   it("ProfilePage_LanguageChanged_SetsTheLocaleCookieAndRefreshes", async () => {
@@ -340,7 +343,7 @@ describe("ProfilePage", () => {
       { language: Language.En, timeZone: "Asia/Riyadh" },
     ]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
-    expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile saved")).not.toBeInTheDocument();
   });
 
   it("ProfilePage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
@@ -405,7 +408,7 @@ describe("ProfilePage", () => {
     await save();
 
     await vi.waitFor(() => expect(sent.reads).toBe(2));
-    expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile not saved")).not.toBeInTheDocument();
   });
 
   it("ProfilePage_ServerError_SaysNotSavedWithTheReference", async () => {
@@ -415,11 +418,113 @@ describe("ProfilePage", () => {
     await pick("Time zone", "Riyadh", /^Riyadh/);
     await save();
 
-    expect(
-      await screen.findByText("Preferences not saved"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Profile not saved")).toBeInTheDocument();
     expect(
       screen.getByText(/Ref 4bf92f3577b34da6a3ce929d0e0e4736/),
     ).toBeInTheDocument();
+  });
+
+  // 5.01 and 8.01: the line under the title names the person, isolated (F15), and says where the settings apply.
+  it("ProfilePage_Shown_NamesThePersonInTheIntro", async () => {
+    server.use(...preferencesAnswers(me));
+
+    renderInTenant(<ProfilePage />, { url });
+
+    expect(await screen.findByText("Ayşe Yılmaz")).toContainHTML(
+      "<bdi>Ayşe Yılmaz</bdi>",
+    );
+    expect(
+      screen.getByText(/the same in every organisation\.$/),
+    ).toBeInTheDocument();
+    // On a phone the top bar shows the title; the main region keeps it for screen readers (5.09). jsdom draws no breakpoint.
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Profile" }),
+    ).toHaveClass("max-tablet:sr-only");
+  });
+
+  // 5.05 and 8.05: while GetMe loads, the card keeps its place and the theme shows.
+  it("ProfilePage_Loading_KeepsTheFormsPlaceAndTheTheme", async () => {
+    // GetMe answers at the end of the test, so no request stays open for the next one.
+    let answer = () => {};
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    server.use(
+      http.get("*/v1/me", () => answered.then(() => HttpResponse.json(me))),
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+
+    renderInTenant(<ProfilePage />, { url });
+
+    expect(
+      await screen.findByRole("button", { name: "Save changes" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("radiogroup", { name: "Theme" }),
+    ).toBeInTheDocument();
+    answer();
+    expect(await textbox("Name")).toHaveValue("Ayşe Yılmaz");
+  });
+
+  // 5.06 and 8.06: a profile that did not load says so with a way to support, and the theme still shows.
+  it("ProfilePage_GetMeFailed_SaysItDidNotLoadAndKeepsTheTheme", async () => {
+    server.use(
+      http.get("*/v1/me", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.ServerError,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 500 },
+        ),
+      ),
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+
+    renderInTenant(<ProfilePage />, { url });
+
+    expect(
+      await screen.findByText("Your profile did not load"),
+    ).toBeInTheDocument();
+    // F4: the API code's message and the reference that support searches for.
+    expect(
+      screen.getByText(
+        /^Something went wrong on our side\..+Ref 4bf92f3577b34da6a3ce929d0e0e4736/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Contact support" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radiogroup", { name: "Theme" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", { name: "Name" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // A GetMe that refuses the account is not the card's to say: the account's page shows (F47).
+  it("ProfilePage_GetMeOfASuspendedAccount_ShowsTheAccountsPage", async () => {
+    server.use(
+      http.get("*/v1/me", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.UserSuspended,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 403 },
+        ),
+      ),
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+
+    renderInTenant(<ProfilePage />, { url });
+
+    expect(
+      await screen.findByText("Your account is suspended"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Your profile did not load"),
+    ).not.toBeInTheDocument();
   });
 });

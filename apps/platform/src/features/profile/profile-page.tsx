@@ -9,15 +9,23 @@ import {
   Language,
   type MeResponse,
   ProblemDetailsError,
+  problemOf,
   type RenameMeRequest,
   renameMe,
   schemas,
 } from "@repo/api-client";
-import { PreferencesForm } from "@repo/ui/components/preferences-form";
+import { brand } from "@repo/brand";
+import { Banner } from "@repo/ui/components/banner";
+import { Button } from "@repo/ui/components/button";
+import {
+  PreferencesForm,
+  PreferencesFormSkeleton,
+} from "@repo/ui/components/preferences-form";
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
-import { Skeleton } from "@repo/ui/components/skeleton";
 import { ThemeChoice } from "@repo/ui/components/theme-choice";
 import { showToast } from "@repo/ui/components/toast";
+import { supportLink } from "@repo/ui/lib/support-link";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -42,26 +50,69 @@ const actionOf = (error: unknown) =>
  */
 export function ProfilePage() {
   const t = useTranslations();
+  const failureText = useFailureText();
   const me = useQuery(getGetMeQueryOptions());
-
-  if (me.error) return <ProblemScreen error={me.error} />;
-
+  // A refused account goes to its page or to sign-in (F4, F47); any other failure keeps the page and says so in its card (5.06).
+  const action = me.error ? actionOf(me.error) : null;
+  if (
+    me.error &&
+    (action?.kind === "sign-in" ||
+      action?.kind === "account-suspended" ||
+      action?.kind === "account-deleted")
+  )
+    return <ProblemScreen error={me.error} />;
   return (
-    <section className="flex min-w-0 max-w-[640px] flex-col gap-4">
+    <section className="flex min-w-0 max-w-[760px] flex-col gap-4">
       <div>
-        <h1 className="text-page-title">{t("profile.title")}</h1>
-        <p className="mt-1 text-body text-muted-foreground">
-          {t("profile.text")}
+        {/* On a phone the top bar shows the page's title, so the page's own is for screen readers only (5.09): the main region
+            keeps its heading. */}
+        <h1 className="text-page-title max-tablet:sr-only">
+          {t("profile.title")}
+        </h1>
+        <p className="mt-1 text-body text-muted-foreground max-tablet:mt-0">
+          {me.data
+            ? t.rich("profile.intro", {
+                name: () => <bdi>{me.data.name}</bdi>,
+              })
+            : t("profile.introUnknown")}
         </p>
       </div>
       {me.data ? (
-        <>
-          <Preferences me={me.data} />
-          <ThemeChoice />
-        </>
+        <Preferences me={me.data} />
+      ) : me.error ? (
+        // F4: the API code's message and its reference, which Contact support carries too; a lost connection has no code.
+        <Banner
+          tone="destructive"
+          title={t("preferencesForm.notLoadedTitle")}
+          action={
+            <Button
+              render={
+                <a
+                  href={supportLink(
+                    brand.supportUrl,
+                    problemOf(me.error)
+                      ? failureText(problemOf(me.error))
+                      : undefined,
+                  )}
+                />
+              }
+              nativeButton={false}
+            >
+              {t("problems.contactSupport")}
+            </Button>
+          }
+        >
+          {problemOf(me.error)
+            ? failureText(problemOf(me.error))
+            : t("preferencesForm.notLoadedText")}
+        </Banner>
       ) : (
-        <Skeleton label={t("common.loading")} />
+        <PreferencesFormSkeleton
+          nameNote={t("profile.nameNote")}
+          languages={Object.values(Language)}
+        />
       )}
+      <ThemeChoice />
     </section>
   );
 }

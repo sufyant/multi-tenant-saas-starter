@@ -22,8 +22,9 @@
   },
   "profile": {
     "title": "Profil",
-    "text": "Bunlar sizi her cihazda izler.",
-    "nameNote": "Adınız platformun Etkinliğinde görünür."
+    "intro": "<name></name> · platformda ve her kuruluşta aynı.",
+    "introUnknown": "Platformda ve her kuruluşta aynı.",
+    "nameNote": "Adınız platformun Etkinlik kaydında görünür."
   },
   "securityPage": {
     "intro": "<name></name> · bu ayarlar platformda ve her kuruluşta aynıdır.",

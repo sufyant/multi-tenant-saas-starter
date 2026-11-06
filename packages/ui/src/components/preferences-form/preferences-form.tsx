@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Language } from "@repo/api-client";
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { browserTimeZone } from "../../lib/format-date-time";
@@ -12,6 +12,7 @@ import { Button } from "../button";
 import { Combobox } from "../combobox";
 import { Input } from "../input";
 import { showToast } from "../toast";
+import { Skeleton as SkeletonBlock } from "../ui/skeleton";
 import { timeZoneOptions } from "./time-zones";
 
 export type Names = { name: string };
@@ -32,6 +33,8 @@ export type PreferencesFormProps = {
   languages: readonly Language[];
   /** Under the name: who sees it. Each app has its own. */
   nameNote: string;
+  /** Under "Profile saved" after a new name: where it shows (5.04). Without it the toast has its title only. */
+  savedNote?: string;
   rename: (names: Names) => Promise<unknown>;
   changePreferences: (preferences: Preferences) => Promise<unknown>;
   /** The API's field codes of a refusal, keyed by the field's JSON name, else null (F4). */
@@ -60,8 +63,9 @@ const nameFields = ["name"] as const;
 const preferenceFields = ["timeZone"] as const;
 
 /**
- * Settings > Preferences (the Preferences boards of both apps): the person's name (RenameMe), language and time zone
- * (ChangePreferences), with one Save that sends only what changed. The two calls run side by side and the form waits for both
+ * The card of Settings › Profile (the Profile screens of both apps): the person's name (RenameMe), language and time zone
+ * (ChangePreferences), each 360 px wide from bp-tablet, and Save changes in the card's foot, which stays off until a value
+ * changes and sends only what changed. The two calls run side by side and the form waits for both
  * (F47). A call that succeeds stays saved when the other fails; the failed call's field codes show under its fields. A time
  * zone the person never set is null: the device's zone shows as the value, and null stays unless they choose a zone.
  */
@@ -71,6 +75,7 @@ export function PreferencesForm({
   nameMax,
   languages,
   nameNote,
+  savedNote,
   rename,
   changePreferences,
   fieldCodesOf,
@@ -139,10 +144,16 @@ export function PreferencesForm({
     if (failure) return onFailed(failure);
     const failed =
       (changes.names && !named.sent) || (changes.preferences && !changed.sent);
-    if (!failed) showToast({ title: t("preferencesForm.saved") });
+    if (failed) return;
+    // Everything is saved: the values are the form's new start, so Save changes is off again.
+    form.reset(next);
+    showToast({
+      title: t("preferencesForm.saved"),
+      ...(done.names && savedNote && { description: savedNote }),
+    });
   });
 
-  const { errors, isSubmitting } = form.formState;
+  const { errors, isSubmitting, isDirty } = form.formState;
   // Zod's error map and the API's field codes both give a key of the validation messages (F12). A name has texts of its own.
   const nameError = () => {
     const key = errors.name?.message;
@@ -157,30 +168,16 @@ export function PreferencesForm({
     <form
       noValidate
       onSubmit={(event) => void submit(event)}
-      className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5"
+      className="flex flex-col rounded-lg border border-border bg-card shadow-xs"
     >
-      <section
-        aria-labelledby="preferences-name"
-        className="flex flex-col gap-3"
-      >
-        <h2 id="preferences-name" className="text-section-title">
-          {t("preferencesForm.yourName")}
-        </h2>
+      <div className="flex flex-col gap-5 p-5 [&>*]:tablet:max-w-[360px]">
         <Input
           label={t("preferencesForm.name")}
           autoComplete="name"
+          hint={nameNote}
           error={nameError()}
           {...form.register("name")}
         />
-        <p className="text-small text-muted-foreground">{nameNote}</p>
-      </section>
-      <section
-        aria-labelledby="preferences-language"
-        className="flex flex-col gap-4 border-t border-border pt-5"
-      >
-        <h2 id="preferences-language" className="text-section-title">
-          {t("preferencesForm.languageAndTimeZone")}
-        </h2>
         <Combobox
           label={t("preferencesForm.language")}
           value={form.watch("language")}
@@ -192,9 +189,10 @@ export function PreferencesForm({
           }))}
           onValueChange={(id) => {
             const language = languages.find((choice) => choice === id);
-            if (language) form.setValue("language", language);
+            if (language)
+              form.setValue("language", language, { shouldDirty: true });
           }}
-          hint={t("preferencesForm.languageHint")}
+          hint={<LanguageNote languages={languages} />}
           searchPlaceholder={t("preferencesForm.languageSearch")}
           emptyLabel={t("preferencesForm.languageEmpty")}
         />
@@ -204,7 +202,7 @@ export function PreferencesForm({
           options={zones}
           onValueChange={(id) => {
             form.clearErrors("timeZone");
-            form.setValue("timeZone", id);
+            form.setValue("timeZone", id, { shouldDirty: true });
           }}
           hint={t("preferencesForm.timeZoneHint")}
           error={
@@ -213,12 +211,91 @@ export function PreferencesForm({
           searchPlaceholder={t("preferencesForm.timeZoneSearch")}
           emptyLabel={t("preferencesForm.timeZoneEmpty")}
         />
-      </section>
-      <div className="flex justify-end border-t border-border pt-4">
-        <Button type="submit" variant="primary" disabled={isSubmitting}>
+      </div>
+      <Foot>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={isSubmitting || !isDirty}
+          className="max-tablet:w-full"
+        >
           {t("preferencesForm.save")}
         </Button>
-      </div>
+      </Foot>
     </form>
+  );
+}
+
+/** The card's foot: a line above it, Save changes at the end; on a phone across the card (5.09). */
+function Foot({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex justify-end border-t border-border px-5 py-3">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The language's note names Arabic in its own script and direction, so it reads right to left in every language (F14). Arabic is
+ * the contract's language that reads right to left; this package names no contract value (F3).
+ */
+function LanguageNote({ languages }: { languages: readonly Language[] }) {
+  const t = useTranslations();
+  const rightToLeft = languages.find(
+    (language) => directionOf(language) === "rtl",
+  );
+  return t.rich("preferencesForm.languageHint", {
+    arabic: (text) => (
+      <span lang={rightToLeft} dir="rtl">
+        {text}
+      </span>
+    ),
+  });
+}
+
+/** The card while GetMe loads (5.05): the labels and the notes in their places, a bar for each value, and Save changes off. */
+export function PreferencesFormSkeleton({
+  nameNote,
+  languages,
+}: {
+  nameNote: string;
+  /** The languages of the contract: `Object.values(Language)`. */
+  languages: readonly Language[];
+}) {
+  const t = useTranslations();
+  const field = (label: string, note: ReactNode) => (
+    <div className="flex flex-col gap-1.5 tablet:max-w-[360px]">
+      <span className="text-small font-medium">{label}</span>
+      <SkeletonBlock
+        aria-hidden="true"
+        className="h-control-md w-full [animation-duration:1.4s] motion-reduce:animate-none"
+      />
+      <span className="text-small text-muted-foreground">{note}</span>
+    </div>
+  );
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label={t("common.loading")}
+      className="flex flex-col rounded-lg border border-border bg-card shadow-xs"
+    >
+      <div className="flex flex-col gap-5 p-5">
+        {field(t("preferencesForm.name"), nameNote)}
+        {field(
+          t("preferencesForm.language"),
+          <LanguageNote languages={languages} />,
+        )}
+        {field(
+          t("preferencesForm.timeZone"),
+          t("preferencesForm.timeZoneHint"),
+        )}
+      </div>
+      <Foot>
+        <Button variant="primary" disabled className="max-tablet:w-full">
+          {t("preferencesForm.save")}
+        </Button>
+      </Foot>
+    </div>
   );
 }
