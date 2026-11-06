@@ -1067,18 +1067,21 @@ const shellShots: {
   },
   {
     file: "6.19-export-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
     open: exportData(),
   },
   {
     file: "6.20-export-requested-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
     open: exportData(true),
   },
   {
     file: "6.21-export-ready-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
     mock: (page) => mockDataExport(page, readyExport),
@@ -1086,12 +1089,14 @@ const shellShots: {
   },
   {
     file: "6.22-delete-refused-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
     open: deleteAccount(true),
   },
   {
     file: "6.23-delete-code-en-light-desktop",
+    fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
     open: deleteAccount(false),

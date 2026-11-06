@@ -201,4 +201,39 @@ describe("AccountPage", () => {
     expect(downloads).toEqual([readyExport.id]);
     vi.unstubAllGlobals();
   });
+
+  // While the worker prepares the file the card reads the export again every 10 seconds, so Ready shows without a reload (F62).
+  it("AccountPage_APreparingExport_ReadsItAgainUntilItIsReady", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let reads = 0;
+    server.use(
+      http.get("*/v1/me", () => HttpResponse.json(me)),
+      http.get("*/v1/me/data-exports/latest", () => {
+        reads += 1;
+        return HttpResponse.json(
+          reads === 1
+            ? {
+                ...readyExport,
+                status: DataExportResponseStatus.Preparing,
+                readyAt: null,
+                expiresAt: null,
+              }
+            : readyExport,
+        );
+      }),
+      ...tenantAnswers(BuiltInRole.Member),
+    );
+
+    renderInTenant(<AccountPage />, { url: "/northwind/settings/account" });
+
+    const yourData = within(
+      await screen.findByRole("region", { name: "Your data" }),
+    );
+    expect(await yourData.findByText("Preparing")).toBeInTheDocument();
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(await yourData.findByText("Ready")).toBeInTheDocument();
+    expect(reads).toBe(2);
+    vi.useRealTimers();
+  });
 });

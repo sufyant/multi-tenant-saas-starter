@@ -15,6 +15,7 @@ import { Button } from "@repo/ui/components/button";
 import { CodeInput } from "@repo/ui/components/code-input";
 import { Dialog } from "@repo/ui/components/dialog";
 import { TextButton } from "@repo/ui/components/sign-in";
+import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,12 @@ export function DeleteAccount({ email }: { email: string | null }) {
         });
       }
       if (again) return setError(failureText(problem));
-      setOpen({ step: "refused", reason: failureText(problem) });
+      // Any other failure asks nothing of the person, so it is no refusal: a toast says what went wrong (F4).
+      showToast({
+        title: t("accountSecurity.notDone"),
+        description: failureText(problem),
+        tone: "destructive",
+      });
     }
   };
 

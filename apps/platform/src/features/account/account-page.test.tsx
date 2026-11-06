@@ -230,4 +230,30 @@ describe("AccountPage", () => {
     expect(downloads).toEqual([readyExport.id]);
     vi.unstubAllGlobals();
   });
+
+  // The platform's shell does not watch the reads, so a read of Your data that refuses the account reads GetMe again, as the
+  // email change does, and the shell shows its page (F47).
+  it("AccountPage_ExportReadOfASuspendedAccount_ReadsGetMeAgain", async () => {
+    let reads = 0;
+    server.use(
+      http.get("*/v1/me", () => {
+        reads += 1;
+        return HttpResponse.json(me);
+      }),
+      http.get("*/v1/me/data-exports/latest", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.UserSuspended,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<AccountPage />);
+
+    await screen.findByRole("region", { name: "Your data" });
+    await expect.poll(() => reads).toBeGreaterThan(1);
+  });
 });

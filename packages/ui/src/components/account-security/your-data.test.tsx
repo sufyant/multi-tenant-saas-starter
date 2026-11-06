@@ -158,6 +158,35 @@ describe("YourData", () => {
     ).toBeInTheDocument();
   });
 
+  // F48: a refusal the API saved under the key ends the intent, so the next ask sends a new key; a server failure keeps it.
+  it.each([
+    [true, "a new key"],
+    [false, "the same key"],
+  ])("YourData_AskAgainAfterAFailureSaved_%s_Sends_%s", async (saved) => {
+    const request = vi.fn().mockRejectedValue(new Error("refused"));
+    renderCard({
+      request,
+      readFailure: () => ({
+        problem: { code: ErrorCode.ServerError, reference: "4bf92f35" },
+        fields: null,
+        saved,
+      }),
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Export my data" }),
+    );
+    const ask = await screen.findByRole("button", { name: "Request export" });
+    await userEvent.click(ask);
+    await expect.poll(() => request.mock.calls.length).toBe(1);
+    await expect.poll(() => ask.hasAttribute("disabled")).toBe(false);
+    await userEvent.click(ask);
+
+    await expect.poll(() => request.mock.calls.length).toBe(2);
+    const [first, second] = request.mock.calls.map(([key]) => key);
+    expect(first === second).toBe(!saved);
+  });
+
   it("YourData_ReadFailed_OffersToTryAgain", async () => {
     const onRetry = vi.fn();
     renderCard({ state: { kind: "error", onRetry } });

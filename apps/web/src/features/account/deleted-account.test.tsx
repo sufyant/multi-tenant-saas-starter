@@ -1,7 +1,10 @@
 import { screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../../test/render";
 import { DeletedAccount, deletedEmailKey } from "./deleted-account";
+
+// The footer's language switch is a server action, which a unit test does not run.
+vi.mock("@/i18n/set-locale", () => ({ setLocale: async () => {} }));
 
 afterEach(() => sessionStorage.clear());
 
@@ -20,6 +23,16 @@ describe("DeletedAccount", () => {
     expect(
       screen.getByRole("button", { name: "Go to sign-in" }),
     ).toHaveAttribute("href", "/sign-in");
+  });
+
+  // Before sign-in every screen shows the footer with the language and Privacy (F59).
+  it("DeletedAccount_SignedOut_ShowsTheFooterBeforeSignIn", async () => {
+    renderWithProviders(<DeletedAccount />);
+
+    expect(
+      await screen.findByRole("link", { name: /Privacy/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
   });
 
   it("DeletedAccount_WithoutAStoredAddress_SaysYourAddress", async () => {

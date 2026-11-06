@@ -139,4 +139,98 @@ describe("DeleteAccount", () => {
     ).toBeInTheDocument();
     expect(clerk.signOut).not.toHaveBeenCalled();
   });
+
+  // F15: a sentence names at most three organisations, then "n more".
+  it("DeleteAccount_LastOwnerOfFour_NamesThreeThenOneMore", async () => {
+    const others = ["Atlas Logistics", "Blue Harbour", "Cedar Works"].map(
+      (name, index) => ({
+        ...northwind,
+        id: `0198f0a2-0000-7000-8000-00000000000${index + 1}`,
+        name,
+        slug: name.toLowerCase().replace(" ", "-"),
+      }),
+    );
+    const mine = [northwind, ...others];
+    const { handlers } = deletion(() =>
+      HttpResponse.json(
+        {
+          code: ErrorCode.UserLastOwner,
+          traceId,
+          tenantIds: mine.map((tenant) => tenant.id),
+        },
+        { status: 409 },
+      ),
+    );
+    server.use(
+      http.get("*/v1/me/tenants", () =>
+        HttpResponse.json({ items: mine, page: 1, pageSize: 100, total: 4 }),
+      ),
+      ...handlers,
+    );
+
+    await start();
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "You can’t delete your account yet",
+      }),
+    ).toHaveTextContent(
+      "You are the last Owner of Northwind Traders, Atlas Logistics, Blue Harbour and 1 more organisation.",
+    );
+  });
+
+  // A failure that asks nothing of the person is no refusal: it says what went wrong in a toast and opens no dialog (F4).
+  it("DeleteAccount_ServerFailure_SaysSoInAToastAndOpensNoDialog", async () => {
+    const { handlers } = deletion(() =>
+      HttpResponse.json({ code: "server.error", traceId }, { status: 500 }),
+    );
+    server.use(...handlers);
+
+    await start();
+
+    expect(await screen.findByText("That did not work")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  // "Send a new code" is a new intent, so it sends a new key (F48).
+  it("DeleteAccount_SendANewCode_SendsANewKey", async () => {
+    const { handlers, sent } = deletion(codeSent);
+    server.use(...handlers);
+
+    await start();
+    const step = within(
+      await screen.findByRole("alertdialog", { name: "Delete your account?" }),
+    );
+    await userEvent.click(
+      step.getByRole("button", { name: "Send a new code" }),
+    );
+
+    await expect.poll(() => sent.keys.length).toBe(2);
+    expect(sent.keys[0]).not.toBe(sent.keys[1]);
+  });
+
+  // A suspended account closes the step and reads GetMe again, so the shell shows its page (F47).
+  it("DeleteAccount_ConfirmOfASuspendedAccount_ClosesTheStep", async () => {
+    const { handlers } = deletion(codeSent, () =>
+      HttpResponse.json(
+        { code: ErrorCode.UserSuspended, traceId },
+        { status: 403 },
+      ),
+    );
+    server.use(...handlers);
+
+    await start();
+    const step = within(
+      await screen.findByRole("alertdialog", { name: "Delete your account?" }),
+    );
+    await userEvent.type(step.getByRole("textbox", { name: "Code" }), "381906");
+    await userEvent.click(
+      step.getByRole("button", { name: "Delete my account" }),
+    );
+
+    await expect
+      .poll(() => screen.queryByRole("alertdialog"))
+      .not.toBeInTheDocument();
+    expect(clerk.signOut).not.toHaveBeenCalled();
+  });
 });

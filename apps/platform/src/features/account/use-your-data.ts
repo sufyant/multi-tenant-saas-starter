@@ -14,6 +14,7 @@ import type {
   YourDataProps,
 } from "@repo/ui/components/account-security";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useReadFailure } from "./use-read-failure";
 
 /** How often the card reads the export again while the worker prepares it. */
@@ -22,8 +23,8 @@ const preparingPoll = 10_000;
 /**
  * The calls of Your data (F62): `GetMyDataExport` through `useQuery` and `RequestDataExport` with the intent's Idempotency-Key
  * (F48) and `DownloadDataExport` through `useMutation` (F2). The contract's status becomes the card's state here, so
- * `packages/ui` names no status (F3); no export yet is the 404 `data_export.not_found`. The shell handles a read that refuses
- * the account (F47).
+ * `packages/ui` names no status (F3); no export yet is the 404 `data_export.not_found`. A read that refuses the account reads
+ * as a command's failure does: the platform's shell watches no reads (F47).
  */
 export function useYourData(): Omit<YourDataProps, "email" | "timeZone"> {
   const queryClient = useQueryClient();
@@ -41,6 +42,14 @@ export function useYourData(): Omit<YourDataProps, "email" | "timeZone"> {
     onSuccess: (sent) =>
       queryClient.setQueryData(getGetMyDataExportQueryKey(), sent),
   });
+  const readError = latest.error;
+  useEffect(() => {
+    if (
+      readError &&
+      problemOf(readError)?.code !== ErrorCode.DataExportNotFound
+    )
+      readFailure(readError);
+  }, [readError, readFailure]);
   const download = useMutation({
     mutationFn: (exportId: string) => downloadDataExport(exportId),
   });
