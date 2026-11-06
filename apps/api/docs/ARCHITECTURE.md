@@ -576,7 +576,7 @@ The emails are written once, with React Email, in `packages/emails`, and rendere
 - A message of the renderer names the value, never its content: a link carries an invitation's secret.
 - One formatter, `EmailDates`, writes a date and a moment for both emails, from each language's month names and patterns in `languages.json`, because the image has no ICU ("Container image" below). A moment is in a time zone, with the zone's label: the city of the IANA name and the offset at that moment, `Istanbul (UTC+3)`. Without a zone, or with one the image's data does not know, it is in UTC. The city stays the IANA name in English: without ICU there is no localized city name, so an email writes `Istanbul` where the boards write `İstanbul`.
 - A notification has one generic email, `notification`: the title and the body that the bell shows, rendered by `NotificationText` from `notifications.json` in the recipient's language, and one button to `Notifications:Links:WebUrl`, or to `PlatformUrl` for the platform's notifications (U2).
-- The brand's name and support contact come from `packages/brand/brand.json`, through `brand.json` of the generated folder. A product built from the template changes that one file.
+- The brand's name and support contact come from `packages/brand/brand.json`, through `brand.json` of the generated folder. A product built from the template changes that one file. The sender of every email is the brand's name and the address of `Notifications:Resend:FromAddress`: `Starter <no-reply@starter.example>`.
 
 Sources: Hunt and Thomas, *The Pragmatic Programmer*, Topic 9 (DRY). React Email documentation, "render". Resend documentation, "Send Email" (`html` and `text`). W3C, "Working with time zones".
 

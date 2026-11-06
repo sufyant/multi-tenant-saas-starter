@@ -48,8 +48,9 @@ public static class NotificationsInfrastructure
                 (resend, environment) => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(resend.ApiKey),
                 $"{ResendOptions.Section}:ApiKey must be set outside Development, or no email is sent.")
             .Validate<IHostEnvironment>(
-                (resend, environment) => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(resend.From),
-                $"{ResendOptions.Section}:From must be set outside Development, or no email is sent.")
+                (resend, environment) => environment.IsDevelopment() || !string.IsNullOrWhiteSpace(resend.FromAddress),
+                $"{ResendOptions.Section}:FromAddress must be set outside Development, or no email is sent.")
+            .Validate(resend => resend.HasABareAddress, $"{ResendOptions.Section}:FromAddress must be an email address without a name: the name is the brand's.")
             .Validate(resend => resend.ApiUrl.IsAbsoluteUri, $"{ResendOptions.Section}:ApiUrl must be an absolute URL.")
             .Validate(resend => resend.Timeout > TimeSpan.Zero, $"{ResendOptions.Section}:Timeout must be positive.")
             .ValidateOnStart();

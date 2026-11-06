@@ -75,7 +75,7 @@ const sharedVariables = [
   "ControlPlane__Clerk__SecretKey",
   "ControlPlane__Invitations__AcceptUrl",
   "Notifications__Resend__ApiKey",
-  "Notifications__Resend__From",
+  "Notifications__Resend__FromAddress",
   "Host__ErrorTracking__Dsn",
   "Host__Storage__AccessKeyId",
   "Host__Storage__SecretAccessKey",

@@ -92,7 +92,7 @@ Host__ManagementPort=5180               # the health endpoints; each process on 
 Notes:
 
 - Every other key has the default in the Default column of `configuration.md`. Set a key only to change its value. For example, set `ControlPlane__Clerk__BackendApiUrl` when the identity provider's Backend API is not at the default URL.
-- Leave `Notifications__Resend__ApiKey` unset. In Development without it, the worker writes each email to its log instead of sending it. If it is set together with `Notifications__Resend__From`, email is really sent, in Development too.
+- Leave `Notifications__Resend__ApiKey` unset. In Development without it, the worker writes each email to its log instead of sending it. If it is set together with `Notifications__Resend__FromAddress`, email is really sent, in Development too.
 - Leave `ConnectionStrings__Messaging` unset; Wolverine then uses `ConnectionStrings__Database`.
 - Do not give the running processes `ConnectionStrings__Migrations` (R3).
 - Leave `OTEL_EXPORTER_OTLP_ENDPOINT` unset unless a collector listens there; without it no telemetry is sent. `setup.md`, section 5, runs the .NET Aspire Dashboard as a local collector.

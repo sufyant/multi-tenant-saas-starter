@@ -112,7 +112,7 @@ docker run --rm --network api-image \
   echo "Notifications__Links__WebUrl=https://app.example.invalid/"
   echo "Notifications__Links__PlatformUrl=https://platform.example.invalid/"
   echo "Notifications__Resend__ApiKey=re_fake_not_a_secret"
-  echo "Notifications__Resend__From=App <no-reply@example.invalid>"
+  echo "Notifications__Resend__FromAddress=no-reply@example.invalid"
   echo "Notifications__Resend__ApiUrl=https://resend.example.invalid/"
 } > "$RUNNER_TEMP/api.env"
 
