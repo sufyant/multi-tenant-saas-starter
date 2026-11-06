@@ -11,7 +11,6 @@ import {
 } from "react";
 import type { Instant } from "../../lib/format-date-time";
 import type { Problem } from "../../lib/use-failure-text";
-import { useOnline } from "../../lib/use-online";
 import { usePhone } from "../../lib/use-phone";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
@@ -81,6 +80,8 @@ export type NotificationBellProps = {
   /** Marks read what this bell shows. */
   onMarkAll: () => void;
   markingAll: boolean;
+  /** The app is offline (`useOffline`, F59): the offline row shows, and Mark all as read is disabled. */
+  offline: boolean;
   /** The tab the list shows; the app reads the list for it. */
   tab: NotificationTab;
   onTabChange: (tab: NotificationTab) => void;
@@ -276,6 +277,7 @@ function NotificationPanel({
   onOpenItem,
   onMarkAll,
   markingAll,
+  offline,
   tab,
   onTabChange,
   timeZone,
@@ -290,7 +292,6 @@ function NotificationPanel({
   layout?: "popover" | "screen" | "page";
 }) {
   const t = useTranslations("notifications");
-  const online = useOnline();
   const scroll = useRef<HTMLDivElement>(null);
   const loaded = list.status === "success" ? list.items : undefined;
   const items = useReadHere(loaded, tab);
@@ -300,7 +301,7 @@ function NotificationPanel({
   const markAll = (
     <Button
       variant="ghost"
-      disabled={!online || markingAll || !unread || !items}
+      disabled={offline || markingAll || !unread || !items}
       onClick={onMarkAll}
     >
       {t("markAll")}
@@ -373,7 +374,7 @@ function NotificationPanel({
           layout === "page" && "flex-none overflow-visible",
         )}
       >
-        {!online && (
+        {offline && (
           <div className="flex shrink-0 gap-2 rounded-md bg-muted px-2.5 py-2 text-small">
             <Icon icon={WifiOffIcon} size={16} className="mt-px shrink-0" />
             <div className="min-w-0">

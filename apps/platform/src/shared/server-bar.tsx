@@ -4,7 +4,7 @@ import { serverReach } from "@repo/api-client";
 import { brand } from "@repo/brand";
 import { ConnectionBar } from "@repo/ui/components/connection-bar";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 /**
  * The shell's connection bar (the Connection bar): it follows the app's own calls through the client's caches (`serverReach`), so
@@ -12,7 +12,21 @@ import { useMemo, useSyncExternalStore } from "react";
  */
 export function ServerBar() {
   const queryClient = useQueryClient();
-  const reach = useMemo(() => serverReach(queryClient), [queryClient]);
+  const { serverDown, noAnswer } = useServerReach();
+  return (
+    <ConnectionBar
+      serverDown={serverDown}
+      noAnswer={noAnswer}
+      product={brand.name}
+      statusUrl={brand.statusUrl}
+      onRetry={() => void queryClient.invalidateQueries()}
+    />
+  );
+}
+
+/** The verdict of the app's own calls, which the bar and the bell share (`serverReach`, F59). */
+export function useServerReach() {
+  const reach = serverReach(useQueryClient());
   const serverDown = useSyncExternalStore(
     reach.subscribe,
     reach.isDown,
@@ -23,13 +37,5 @@ export function ServerBar() {
     reach.noAnswer,
     () => false,
   );
-  return (
-    <ConnectionBar
-      serverDown={serverDown}
-      noAnswer={noAnswer}
-      product={brand.name}
-      statusUrl={brand.statusUrl}
-      onRetry={() => void queryClient.invalidateQueries()}
-    />
-  );
+  return { serverDown, noAnswer };
 }
