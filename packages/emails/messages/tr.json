@@ -142,6 +142,31 @@
       "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
       "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
     },
+    "tenant.suspended_for_owners": {
+      "title": "{tenantName} askıya alındı",
+      "body": "Platform, {tenantName} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.",
+      "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+    },
+    "tenant.reactivated_for_owners": {
+      "title": "{tenantName} yeniden etkinleştirildi",
+      "body": "Platform, {tenantName} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir.",
+      "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+    },
+    "tenant.closed_for_owners": {
+      "title": "{tenantName} kapatıldı",
+      "body": "Platform, {tenantName} kuruluşunu kapattı. Platform onu daha önce yeniden açmazsa, kuruluş tüm verileriyle birlikte {reopenableUntil} tarihinde silinecek.",
+      "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+    },
+    "tenant.reopened_for_owners": {
+      "title": "{tenantName} yeniden açıldı",
+      "body": "Platform, {tenantName} kuruluşunu yeniden açtı. Üyeleri onu yeniden açabilir.",
+      "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+    },
+    "tenant.purged_for_owners": {
+      "title": "{tenantName} silindi",
+      "body": "Platform, {tenantName} kuruluşunu ve tüm verilerini sildi. Artık bu kuruluşu açamazsınız.",
+      "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+    },
     "user.data_export_ready": {
       "title": "Veri dosyanız hazır",
       "body": "{expiresAt} tarihine kadar Hesap ve güvenlik sayfasından indirebilirsiniz. İndirmek için oturum açmış olmanız gerekir.",

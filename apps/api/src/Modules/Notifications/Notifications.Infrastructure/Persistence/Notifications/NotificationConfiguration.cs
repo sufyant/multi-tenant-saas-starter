@@ -29,15 +29,24 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
         notification.HasIndex(n => n.TenantId);
         notification.HasIndex(n => n.CreatedAt);
 
-        // R15: a type and a bell of the catalog, and a tenant notification about a tenant, a personal one about none.
+        // R15: a type and a bell of the catalog, and a tenant notification about a tenant, a personal one about none, unless its type leads
+        // into a tenant: it then keeps that tenant.
         notification.ToTable(table =>
         {
             table.HasCheckConstraint("ck_notifications_type", CheckConstraints.OneOf("type", NotificationCatalog.Kinds.Keys.Order(StringComparer.Ordinal)));
             table.HasCheckConstraint("ck_notifications_bell", CheckConstraints.OneOf<NotificationBell>("bell"));
             table.HasCheckConstraint(
                 "ck_notifications_tenant",
-                $"(bell <> '{nameof(NotificationBell.Tenant)}' OR tenant_id IS NOT NULL) AND (bell <> '{nameof(NotificationBell.Personal)}' OR tenant_id IS NULL)");
+                $"(bell <> '{nameof(NotificationBell.Tenant)}' OR tenant_id IS NOT NULL) AND (bell <> '{nameof(NotificationBell.Personal)}' OR (tenant_id IS NOT NULL) = ({PersonalIntoATenant()}))");
             table.HasCheckConstraint("ck_notifications_values", "jsonb_typeof(\"values\") = 'object'");
         });
     }
+
+    // The personal types that lead into a tenant, in the catalog's order of names.
+    private static string PersonalIntoATenant() => CheckConstraints.OneOf(
+        "type",
+        NotificationCatalog.Kinds.Values
+            .Where(kind => kind.Bell == NotificationBell.Personal && kind.LeadsIntoATenant)
+            .Select(kind => kind.Type)
+            .Order(StringComparer.Ordinal));
 }

@@ -18,6 +18,8 @@ public static class NotificationCatalog
 
     public const string TenantClosed = "tenant.closed";
 
+    public const string TenantClosedForOwners = "tenant.closed_for_owners";
+
     public const string TenantEntitlementOverrideRemoved = "tenant.entitlement_override_removed";
 
     public const string TenantEntitlementOverrideSet = "tenant.entitlement_override_set";
@@ -32,11 +34,19 @@ public static class NotificationCatalog
 
     public const string TenantPurged = "tenant.purged";
 
+    public const string TenantPurgedForOwners = "tenant.purged_for_owners";
+
     public const string TenantReactivated = "tenant.reactivated";
+
+    public const string TenantReactivatedForOwners = "tenant.reactivated_for_owners";
 
     public const string TenantReopened = "tenant.reopened";
 
+    public const string TenantReopenedForOwners = "tenant.reopened_for_owners";
+
     public const string TenantSuspended = "tenant.suspended";
+
+    public const string TenantSuspendedForOwners = "tenant.suspended_for_owners";
 
     /// <summary>
     /// The second exception of U9: the export's completion is the worker's, not a command, so it writes no audit entry and has no operation
@@ -49,6 +59,11 @@ public static class NotificationCatalog
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
         [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
+        [TenantSuspendedForOwners] = OwnersApart,
+        [TenantReactivatedForOwners] = OwnersApart,
+        [TenantClosedForOwners] = OwnersApart,
+        [TenantReopenedForOwners] = OwnersApart,
+        [TenantPurgedForOwners] = OwnersApart,
     };
 
     /// <summary>Every type, by its name.</summary>
@@ -132,6 +147,15 @@ public static class NotificationCatalog
             WebAndEmail(),
             [Tenant()]),
 
+        // The organisation's Owners hear of its status in the personal bell, because the tenant door may refuse them, and by email (U5). The
+        // platform acted, so no system admin is named. A suspended, closed or purged organisation cannot be opened, so it leads to the start
+        // page; a reactivated or reopened one leads into the organisation, so that notification keeps the tenant it tells of.
+        OwnersStatus(TenantSuspendedForOwners, NotificationLinkKind.Start),
+        OwnersStatus(TenantReactivatedForOwners, NotificationLinkKind.TenantSettings),
+        OwnersStatus(TenantClosedForOwners, NotificationLinkKind.Start, new NotificationValue("reopenableUntil", NotificationValueKind.Date)),
+        OwnersStatus(TenantReopenedForOwners, NotificationLinkKind.TenantSettings),
+        OwnersStatus(TenantPurgedForOwners, NotificationLinkKind.Start),
+
         // A person's data is ready to download: the person may not open the app soon, so the email tells them too (U5). It leads to Account
         // and security, never to the file.
         new(
@@ -155,6 +179,9 @@ public static class NotificationCatalog
 
     private const string YourAccount = "your_account";
 
+    // The status types of the Owners share the event of the platform's type, which tells the system admins with other texts.
+    private const string OwnersApart = "The same event tells the system admins in the platform's bell; the organisation's Owners hear of it with texts of their own.";
+
     /// <summary>The entry of a stored or a sent type. A type the catalog does not know is a mistake of ours.</summary>
     public static NotificationKind Of(string type) =>
         Kinds.TryGetValue(type, out var kind) ? kind : throw new InvalidOperationException($"The notification catalog has no type {type}.");
@@ -168,6 +195,15 @@ public static class NotificationCatalog
         WebAndEmail(),
         [Tenant(), Person("actorName"), .. more],
         Actor: "actorName");
+
+    // A change of a tenant's status, to its Owners, in the personal bell and by email (U5). Their access to the organisation changes.
+    private static NotificationKind OwnersStatus(string type, NotificationLinkKind link, params NotificationValue[] more) => new(
+        type,
+        NotificationBell.Personal,
+        link,
+        YourAccess,
+        WebAndEmail(),
+        [Tenant(), .. more]);
 
     private static NotificationValue Tenant() => new(NotificationKind.TenantValue, NotificationValueKind.Text);
 

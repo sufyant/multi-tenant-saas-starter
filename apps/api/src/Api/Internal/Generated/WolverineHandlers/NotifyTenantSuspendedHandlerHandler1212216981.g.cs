@@ -44,11 +44,11 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantSuspended.NotifyTenantSuspendedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantSuspended.NotifyTenantSuspendedHandler.HandleAsync(tenantSuspendedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing2 = await Notifications.Application.Tenants.NotifyTenantSuspended.NotifyTenantSuspendedHandler.HandleAsync(tenantSuspendedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
+                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

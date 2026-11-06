@@ -44,11 +44,11 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantReopened.NotifyTenantReopenedHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Notifications.Application.Tenants.NotifyTenantReopened.NotifyTenantReopenedHandler.HandleAsync(tenantReopenedEvent, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing2 = await Notifications.Application.Tenants.NotifyTenantReopened.NotifyTenantReopenedHandler.HandleAsync(tenantReopenedEvent, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
-                await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
+                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

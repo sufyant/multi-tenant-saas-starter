@@ -8,5 +8,9 @@ namespace ControlPlane.Contracts.Tenants;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="TenantName">The tenant's name, which its tombstone keeps, for its audit entry.</param>
+/// <param name="OwnerIds">
+/// The user ids of the tenant's Owners just before the purge took the memberships away, for their notification. None in an event of the
+/// version before step 37a.
+/// </param>
 [MessageName("tenant-purged")]
-public sealed record TenantPurgedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string TenantName);
+public sealed record TenantPurgedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string TenantName, IReadOnlyList<Guid>? OwnerIds = null);

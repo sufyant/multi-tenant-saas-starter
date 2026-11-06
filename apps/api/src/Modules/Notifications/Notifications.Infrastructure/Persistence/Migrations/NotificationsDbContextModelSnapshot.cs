@@ -82,9 +82,9 @@ namespace Notifications.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_notifications_bell", "bell IN ('Tenant', 'Personal', 'Platform')");
 
-                            t.HasCheckConstraint("ck_notifications_tenant", "(bell <> 'Tenant' OR tenant_id IS NOT NULL) AND (bell <> 'Personal' OR tenant_id IS NULL)");
+                            t.HasCheckConstraint("ck_notifications_tenant", "(bell <> 'Tenant' OR tenant_id IS NOT NULL) AND (bell <> 'Personal' OR (tenant_id IS NOT NULL) = (type IN ('tenant.reactivated_for_owners', 'tenant.reopened_for_owners')))");
 
-                            t.HasCheckConstraint("ck_notifications_type", "type IN ('member.joined', 'member.removed', 'member.role_changed', 'tenant.closed', 'tenant.entitlement_override_removed', 'tenant.entitlement_override_set', 'tenant.owner_joined', 'tenant.plan_changed', 'tenant.purged', 'tenant.reactivated', 'tenant.reopened', 'tenant.suspended', 'user.data_export_ready')");
+                            t.HasCheckConstraint("ck_notifications_type", "type IN ('member.joined', 'member.removed', 'member.role_changed', 'tenant.closed', 'tenant.closed_for_owners', 'tenant.entitlement_override_removed', 'tenant.entitlement_override_set', 'tenant.owner_joined', 'tenant.plan_changed', 'tenant.purged', 'tenant.purged_for_owners', 'tenant.reactivated', 'tenant.reactivated_for_owners', 'tenant.reopened', 'tenant.reopened_for_owners', 'tenant.suspended', 'tenant.suspended_for_owners', 'user.data_export_ready')");
 
                             t.HasCheckConstraint("ck_notifications_values", "jsonb_typeof(\"values\") = 'object'");
                         });

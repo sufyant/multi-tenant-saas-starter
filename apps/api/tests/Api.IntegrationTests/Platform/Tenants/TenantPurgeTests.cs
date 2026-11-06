@@ -103,21 +103,17 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     public async Task PurgeTenant_AnOwnerWithAnotherTenant_TellsTheOwnerInThePersonalBell()
     {
         var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
-        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        var admin = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@acme.test"), role: "Owner");
+        var admin = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@acme.test"), role: "Admin");
         var elsewhere = (await _testData.AddTenantAsync()).Id;
         await _testData.AddMemberAsync(elsewhere, owner);
         await _testData.AddMemberAsync(elsewhere, admin);
         var (ownerId, adminId) = (await _testData.UserIdOfAsync(owner), await _testData.UserIdOfAsync(admin));
 
         await PurgeAsync(tenant.Id, ClosedAt);
+        await Waiting.UntilAsync(async () => await NotificationsOfAsync(ownerId, adminId) is not null);
 
-        (await database.ScalarAsSuperuserAsync<string>(
-            $"""
-            SELECT string_agg(concat_ws('|', user_id, type, coalesce(tenant_id::text, '-'), bell, "values"->>'tenantName'), ', ')
-            FROM notifications.notifications WHERE user_id IN ('{ownerId}', '{adminId}')
-            """,
-            _databaseName)).ShouldBe($"{ownerId}|tenant.purged_for_owners|-|Personal|Gone Ltd");
+        (await NotificationsOfAsync(ownerId, adminId)).ShouldBe($"{ownerId}|tenant.purged_for_owners|-|Personal|Gone Ltd");
     }
 
     // A8: a purge deletes a user through the user deletion path, so a tenant the user left before loses the user's address too.
@@ -382,6 +378,15 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             $"""
             SELECT string_agg(status || ':' || coalesce(email, '-'), ', ' ORDER BY status, email)
             FROM control_plane.invitations WHERE tenant_id = '{tenantId}'
+            """,
+            _databaseName);
+
+    // The users' notifications as "user|type|tenant|bell|the tenant's name", with "-" for no tenant; null for none.
+    private Task<string?> NotificationsOfAsync(params Guid[] userIds) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(concat_ws('|', user_id, type, coalesce(tenant_id::text, '-'), bell, "values"->>'tenantName'), ', ' ORDER BY user_id, type)
+            FROM notifications.notifications WHERE user_id IN ({string.Join(", ", userIds.Select(id => $"'{id}'"))})
             """,
             _databaseName);
 
