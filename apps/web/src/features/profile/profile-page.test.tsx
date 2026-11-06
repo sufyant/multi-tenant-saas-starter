@@ -153,11 +153,11 @@ describe("ProfilePage", () => {
 
     renderInTenant(<ProfilePage />, { url });
 
-    const theme = await screen.findByRole("group", { name: "Theme" });
+    const theme = await screen.findByRole("radiogroup", { name: "Theme" });
     expect(
       within(theme)
-        .getAllByRole("button")
-        .map((button) => button.textContent),
+        .getAllByRole("radio")
+        .map((radio) => radio.textContent),
     ).toEqual(["System", "Light", "Dark"]);
   });
 

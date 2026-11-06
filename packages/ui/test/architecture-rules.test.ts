@@ -18,6 +18,7 @@ import {
   nativeChoiceControls,
   numericLayerClasses,
   physicalDirectionClasses,
+  primaryTextClasses,
   roleNameDecisions,
   sdkImportRefusals,
   testFolders,
@@ -96,6 +97,28 @@ describe("architecture rules", () => {
     });
 
     expect(numericLayerClasses(root)).toEqual([]);
+  });
+
+  it("PrimaryTextClasses_TextPrimaryWithAVariantOrImportant_IsAFinding", () => {
+    const root = folder({
+      "a.tsx":
+        'export const A = () => <a className="text-primary hover:text-primary !text-primary" />;',
+    });
+
+    expect(primaryTextClasses(root)).toEqual([
+      'a.tsx:1: text class "text-primary"; a text link uses text-link',
+      'a.tsx:1: text class "text-primary"; a text link uses text-link',
+      'a.tsx:1: text class "text-primary"; a text link uses text-link',
+    ]);
+  });
+
+  it("PrimaryTextClasses_OtherPrimaryTokensAndTheLinkToken_AreNoFinding", () => {
+    const root = folder({
+      "a.tsx":
+        'export const A = () => <a className="bg-primary text-primary-foreground text-primary-subtle-foreground text-link" />;',
+    });
+
+    expect(primaryTextClasses(root)).toEqual([]);
   });
 
   it("DefaultBreakpointClasses_SmMdAndMaxLg_AreFindings", () => {

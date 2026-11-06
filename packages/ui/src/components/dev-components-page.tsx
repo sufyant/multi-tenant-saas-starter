@@ -32,8 +32,11 @@ import {
   HomeIcon,
   Icon,
   KeyIcon,
+  MonitorIcon,
+  MoonIcon,
   PlusIcon,
   SettingsIcon,
+  SunIcon,
   UsersIcon,
 } from "./icon";
 import { Input } from "./input";
@@ -45,6 +48,7 @@ import { PreferencesForm } from "./preferences-form";
 import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
 import { Search } from "./search";
+import { SegmentedControl } from "./segmented-control";
 import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
 import { Skeleton } from "./skeleton";
 import { Status } from "./status";
@@ -387,6 +391,10 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
     {
       name: "RadioGroup",
       render: () => <RadioGroupPreview />,
+    },
+    {
+      name: "SegmentedControl",
+      render: () => <SegmentedControlPreview />,
     },
     {
       name: "CodeInput",
@@ -1132,6 +1140,50 @@ function CheckboxPreview() {
         </div>
       ))}
     </div>
+  );
+}
+
+/** The theme at both sizes, the billing period of two options, and a disabled control. */
+function SegmentedControlPreview() {
+  const [theme, setTheme] = useState("system");
+  const [period, setPeriod] = useState("monthly");
+  const themes = [
+    { value: "system", label: "System", icon: MonitorIcon },
+    { value: "light", label: "Light", icon: SunIcon },
+    { value: "dark", label: "Dark", icon: MoonIcon },
+  ];
+  return (
+    <>
+      <SegmentedControl
+        label="Theme"
+        value={theme}
+        options={themes}
+        onValueChange={setTheme}
+      />
+      <SegmentedControl
+        label="Theme, touch"
+        value={theme}
+        options={themes}
+        onValueChange={setTheme}
+        size="touch"
+      />
+      <SegmentedControl
+        label="Billing period"
+        value={period}
+        options={[
+          { value: "monthly", label: "Monthly" },
+          { value: "yearly", label: "Yearly" },
+        ]}
+        onValueChange={setPeriod}
+      />
+      <SegmentedControl
+        label="Theme, disabled"
+        value="system"
+        options={themes}
+        onValueChange={noop}
+        disabled
+      />
+    </>
   );
 }
 

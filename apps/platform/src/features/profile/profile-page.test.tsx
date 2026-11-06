@@ -178,7 +178,9 @@ describe("ProfilePage", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("group", { name: "Theme" })).toBeVisible();
+    expect(
+      await screen.findByRole("radiogroup", { name: "Theme" }),
+    ).toBeVisible();
   });
 
   it("ProfilePage_NameChanged_SendsRenameMeOnlyReadsGetMeAgainAndSaysSaved", async () => {
