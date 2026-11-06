@@ -20,7 +20,7 @@ export function useOnline(): boolean {
   );
 }
 
-/** Offline (F59): the app's calls got no answer on two tries (`serverReach`), and the browser says offline too. */
+/** Whether the app is offline, by the rule of F59, from the verdict of `serverReach`. */
 export function useOffline(serverDown: boolean, noAnswer: boolean): boolean {
   const online = useOnline();
   return serverDown && noAnswer && !online;

@@ -27,7 +27,7 @@ type CallAction = { type: string; error?: unknown };
 
 /**
  * Whether the server answers, from the app's own calls: every query and command of the client, through its caches (F59). A store
- * for `useSyncExternalStore`, so the shell's connection bar follows it without a request of its own.
+ * for `useSyncExternalStore`, so the connection bar and the bell follow it without a request of their own.
  */
 export function serverReach(queryClient: QueryClient): ServerReach {
   let reach = reaches.get(queryClient);
@@ -79,7 +79,11 @@ function newServerReach(queryClient: QueryClient): ServerReach {
     if (action.type === "failed") startedAt.set(call, ++clock);
   };
   let stop: (() => void) | undefined;
+  // Nothing was followed while nobody listened, so a new start forgets the old verdict.
   const start = () => {
+    down = false;
+    silent = false;
+    doubtSince = undefined;
     const queries = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === "updated") follow(event.query, event.action);
     });
