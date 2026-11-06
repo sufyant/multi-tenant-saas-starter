@@ -235,3 +235,46 @@ describe("env in railway.ts", () => {
     await expect(serviceIn("preview")).rejects.toThrow("preview");
   });
 });
+
+// The values that railway.ts builds itself, for every service. `ctx.shared.X` is a reference object, so a template string
+// that holds it writes "[object Object]", and `railway:plan` hides the value (docs/deployment.md, section 7). Railway's own
+// syntax references a shared variable inside a string.
+describe("values built in railway.ts", () => {
+  const resourcesIn = async (environment: string) =>
+    (
+      await program(
+        createRailwayContext({ projectName: "project", environment }),
+        project,
+      )
+    ).resources?.flat() as unknown as {
+      name?: string;
+      variables?: Record<string, unknown>;
+    }[];
+
+  it.each(["staging", "production"])(
+    "DefineProject_InRailwayEnvironment_%s_WritesNoObjectIntoAString",
+    async (environment) => {
+      expect(JSON.stringify(await resourcesIn(environment))).not.toContain(
+        "[object Object]",
+      );
+    },
+  );
+
+  it.each(["staging", "production"])(
+    "DefineApi_InRailwayEnvironment_%s_NamesTheStorageAccountByItsSharedVariable",
+    async (environment) => {
+      const resources = await resourcesIn(environment);
+
+      for (const name of [api.services.web, api.services.worker]) {
+        expect(
+          resources.find((resource) => resource.name === name)?.variables
+            ?.Host__Storage__Endpoint,
+        ).toEqual(
+          literal(
+            `https://\${{shared.CLOUDFLARE_ACCOUNT_ID}}.eu.r2.cloudflarestorage.com`,
+          ),
+        );
+      }
+    },
+  );
+});
