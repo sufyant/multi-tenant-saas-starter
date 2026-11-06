@@ -8,7 +8,7 @@ import { useMemo, useSyncExternalStore } from "react";
 
 /**
  * The shell's connection bar (the Connection bar): it follows the app's own calls through the client's caches (`serverReach`), so
- * it sends no request of its own. A try reads the page's queries again and sends the commands that waited for the connection.
+ * it sends no request of its own. A try reads the page's queries again.
  */
 export function ServerBar() {
   const queryClient = useQueryClient();
@@ -23,10 +23,7 @@ export function ServerBar() {
       serverDown={serverDown}
       product={brand.name}
       statusUrl={brand.statusUrl}
-      onRetry={() => {
-        void queryClient.invalidateQueries();
-        void queryClient.resumePausedMutations();
-      }}
+      onRetry={() => void queryClient.invalidateQueries()}
     />
   );
 }

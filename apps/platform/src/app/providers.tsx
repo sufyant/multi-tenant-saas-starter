@@ -17,11 +17,19 @@ import { z } from "zod";
 configureApiClient({ baseUrl: "/api" });
 z.config({ customError: zodErrorMap });
 
-/** The browser's QueryClient: data stays fresh for 60 s, and a 4xx is never retried (F8). */
+/**
+ * The browser's QueryClient: data stays fresh for 60 s, and a 4xx is never retried (F8). Every call goes whatever the browser
+ * says, because the calls, not `navigator.onLine`, decide the connection bar (F59).
+ */
 export const newQueryClient = () =>
   new QueryClient({
     defaultOptions: {
-      queries: { staleTime: 60_000, retry: retryUnlessClientError },
+      queries: {
+        staleTime: 60_000,
+        retry: retryUnlessClientError,
+        networkMode: "always",
+      },
+      mutations: { networkMode: "always" },
     },
   });
 
