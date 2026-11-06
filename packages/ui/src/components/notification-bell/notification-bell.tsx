@@ -257,8 +257,8 @@ export function NotificationBell(props: NotificationBellProps) {
 }
 
 /**
- * The platform's page of notifications on a phone (3.08 of the platform): under the top bar, which names the page, the tabs, a
- * full-width Mark all as read and the items in a card.
+ * The platform's page of notifications on a phone (3.08 of the platform): under the top bar, which names the page, the tenant
+ * web's full screen without its header: the tabs' row ending with Mark all as read, and the items on the page.
  */
 export function NotificationPage(props: NotificationPageProps) {
   return <NotificationPanel {...props} layout="page" />;
@@ -267,7 +267,8 @@ export function NotificationPage(props: NotificationPageProps) {
 /**
  * The list's frame (3.01 to 3.08, 3.14, 3.15): the header with Mark all as read, the tabs, the offline row, the items or their
  * state, and the foot. A popover keeps Mark all in its header, disabled while it has nothing to do; the phone's full screen has
- * Close in its header and Mark all on the tabs' row; the platform's page has no header and Mark all at full width.
+ * Close in its header and Mark all on the tabs' row, which wraps for a longer language (F60); the platform's page is the full
+ * screen without its header (3.08 is 3.14).
  */
 function NotificationPanel({
   unread,
@@ -299,8 +300,6 @@ function NotificationPanel({
   const markAll = (
     <Button
       variant="ghost"
-      size={layout === "page" ? "xl" : undefined}
-      className={cn(layout === "page" && "w-full")}
       disabled={!online || markingAll || !unread || !items}
       onClick={onMarkAll}
     >
@@ -351,17 +350,17 @@ function NotificationPanel({
             <div className="min-w-0 flex-1">{title}</div>
             {close}
           </div>
-          <div className="flex h-11 shrink-0 items-center justify-between gap-2 ps-4 pe-2">
+          <div className="flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-x-2 ps-4 pe-2">
             {tabs}
             {items && items.length > 0 && markAll}
           </div>
         </>
       )}
       {layout === "page" && (
-        <>
+        <div className="flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-x-2">
           {tabs}
           {items && items.length > 0 && markAll}
-        </>
+        </div>
       )}
       <TabsContent
         value={tab}
@@ -371,8 +370,7 @@ function NotificationPanel({
           "relative flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain",
           layout === "popover" && "py-1",
           layout === "screen" && "px-2",
-          layout === "page" &&
-            "flex-none overflow-visible rounded-lg border border-border bg-card",
+          layout === "page" && "flex-none overflow-visible",
         )}
       >
         {!online && (

@@ -466,6 +466,24 @@ describe("NotificationBell", () => {
     expect(onMarkAll).toHaveBeenCalledOnce();
   });
 
+  // The page draws the full screen's tabs row and list (36-design: platform 3.08 is web 3.14 under the top bar).
+  it("NotificationPage_Loaded_PutsMarkAllOnTheTabsRow", () => {
+    render(page());
+
+    const row = screen.getByRole("tablist").parentElement as HTMLElement;
+    expect(
+      within(row).getByRole("button", { name: "Mark all as read" }),
+    ).toBeInTheDocument();
+    expect(within(row).queryByRole("tabpanel")).toBeNull();
+  });
+
+  it("NotificationPage_Loaded_ListsTheItemsOnThePageWithoutACard", () => {
+    render(page());
+
+    expect(screen.getByRole("tabpanel")).not.toHaveClass("border");
+    expect(screen.getByRole("tabpanel")).not.toHaveClass("bg-card");
+  });
+
   it("NotificationBell_PhoneEmpty_HasNoMarkAll", () => {
     asAPhone();
     render(bell({ unread: 0, list: loaded([]) }));
