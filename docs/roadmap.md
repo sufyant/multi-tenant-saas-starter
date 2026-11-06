@@ -150,6 +150,8 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 37a-frontend-sign-in, the sign-in screens of both apps:
 
 - The web's sign-in frames (1.01 to 1.08, 1.20 to 1.22, 1.35 to 1.39) and the platform's (1.01 to 1.12 of the Platform app). "Finishing sign-in" (1.38) is built if the code does not have it (the maintainer's decision of 2026-11-06).
+- The code steps keep their submit button (WCAG 2.2, 3.2.2), the code step names no lifetime (F41), the platform's gate keeps Sign out under the card, and its no-access screen offers another account (the maintainer's decisions of 2026-11-06).
+- Done.
 
 37a-frontend-1, the pages before an organisation opens:
 
