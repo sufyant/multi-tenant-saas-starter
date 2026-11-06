@@ -3,28 +3,16 @@
 import type { useUser } from "@clerk/nextjs";
 import { AuthCard } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
-import { CodeInput } from "@repo/ui/components/code-input";
-import { Input } from "@repo/ui/components/input";
-import {
-  type SignInErrorKey,
-  signInErrorKey,
-} from "@repo/ui/components/sign-in";
+import { TotpFields, useTotpEnrolment } from "@repo/ui/components/two-step";
 import { useTranslations } from "next-intl";
-import { QRCodeSVG } from "qrcode.react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { reportError } from "@/error-tracking/report-error";
 
 type User = NonNullable<ReturnType<typeof useUser>["user"]>;
-type Totp = Awaited<ReturnType<User["createTOTP"]>>;
-
-/** The typed key in groups of four, as authenticator apps show it: "JBSW Y3DP EHPK". */
-export const groupsOfFour = (secret: string) =>
-  secret.match(/.{1,4}/g)?.join(" ") ?? "";
 
 /**
- * The enrolment of an authenticator app (the TotpEnrol board). Clerk makes the secret; the browser draws its QR code, so the
- * secret goes to no other server, ours included, and to no QR service. The six digits the app shows then turn the factor on, and
- * Clerk makes the ten backup codes.
+ * The enrolment of an authenticator app at the platform's gate (the TotpEnrol board, F42): the shared fields and Clerk calls of
+ * `packages/ui` with the gate's words. The six digits the app shows turn the factor on, and Clerk makes the ten backup codes.
  */
 export function TotpEnrol({
   user,
@@ -34,47 +22,16 @@ export function TotpEnrol({
   onEnrolled: (backupCodes: string[]) => void;
 }) {
   const t = useTranslations();
-  const [totp, setTotp] = useState<Totp>();
   const [code, setCode] = useState("");
-  const [error, setError] = useState<SignInErrorKey>();
-  const [pending, setPending] = useState(false);
-  const [copied, setCopied] = useState(false);
-  // A retry after Clerk turned the factor on but did not make the backup codes asks only for the codes.
-  const verified = useRef(false);
-  // React runs an effect twice in development; a second createTOTP would replace the secret the QR code shows.
-  const started = useRef(false);
+  const { totp, verify, error, pending } = useTotpEnrolment({
+    user,
+    onEnrolled,
+    onUnexpectedError: reportError,
+  });
 
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    user
-      .createTOTP()
-      .then(setTotp)
-      .catch((reason: unknown) =>
-        setError(signInErrorKey(reason, "totp", reportError)),
-      );
-  }, [user]);
-
-  const submit = async (event: FormEvent) => {
+  const submit = (event: FormEvent) => {
     event.preventDefault();
-    setPending(true);
-    try {
-      // Clerk answers the verification with the ten codes when backup codes are on. Asking for new ones would need a
-      // reverification, because the account now has a second factor; so createBackupCode is only the fallback.
-      const totp = verified.current
-        ? undefined
-        : await user.verifyTOTP({ code });
-      verified.current = true;
-      onEnrolled(totp?.backupCodes ?? (await user.createBackupCode()).codes);
-    } catch (reason) {
-      setError(signInErrorKey(reason, "totp", reportError));
-      setPending(false);
-    }
-  };
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(totp?.secret ?? "");
-    setCopied(true);
+    void verify(code);
   };
 
   return (
@@ -87,52 +44,21 @@ export function TotpEnrol({
       </div>
       <AuthCard>
         <form noValidate onSubmit={submit} className="flex flex-col gap-4">
-          <ol className="flex list-outside list-decimal flex-col gap-4 ps-5 text-body">
-            <li>
-              {t("twoStep.scan")}
-              <div className="mt-3 flex flex-col gap-3">
-                {/* Dark modules on a light ground in both themes, so every camera reads the code. */}
-                <div className="self-start rounded-md bg-background p-3 text-foreground dark:bg-foreground dark:text-background">
-                  {totp?.uri ? (
-                    <QRCodeSVG
-                      value={totp.uri}
-                      size={160}
-                      fgColor="currentColor"
-                      bgColor="transparent"
-                      title={t("twoStep.qrLabel")}
-                    />
-                  ) : (
-                    <div className="size-40" />
-                  )}
-                </div>
-                <div className="flex flex-wrap items-end gap-2">
-                  <Input
-                    label={t("twoStep.cannotScan")}
-                    readOnly
-                    value={groupsOfFour(totp?.secret ?? "")}
-                    dir="ltr"
-                    className="min-w-0 flex-1 basis-64 [&_input]:font-mono"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => void copy()}
-                    disabled={!totp?.secret}
-                  >
-                    {copied ? t("twoStep.copied") : t("twoStep.copyKey")}
-                  </Button>
-                </div>
-              </div>
-            </li>
-            <li>
-              <CodeInput
-                label={t("twoStep.enterCode")}
-                value={code}
-                onChange={setCode}
-                error={error && t(`signIn.errors.${error}`)}
-                disabled={pending || !totp}
-              />
-            </li>
-          </ol>
+          <TotpFields
+            totp={totp}
+            code={code}
+            onCodeChange={setCode}
+            error={error && t(`signIn.errors.${error}`)}
+            disabled={pending}
+            labels={{
+              scan: t("twoStep.scan"),
+              qr: t("twoStep.qrLabel"),
+              cannotScan: t("twoStep.cannotScan"),
+              copyKey: t("twoStep.copyKey"),
+              copied: t("twoStep.copied"),
+              enterCode: t("twoStep.enterCode"),
+            }}
+          />
           <Button
             type="submit"
             variant="primary"

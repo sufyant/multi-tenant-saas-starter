@@ -130,6 +130,24 @@ export async function revoke(...sessions: IdentitySession[]) {
 export const authenticatorOn = (user: IdentityUser | null | undefined) =>
   Boolean(user?.totpEnabled);
 
+/** Asks Clerk for an authenticator's secret, which the person scans or types. */
+export const createAuthenticator = (user: IdentityUser) => user.createTOTP();
+
+/** Reads the person again, after a change Clerk does not write back by itself. */
+export const readAgain = (user: IdentityUser | null | undefined) =>
+  user?.reload();
+
+/** New backup codes; the earlier ones stop working. */
+export async function newBackupCodes(user: IdentityUser) {
+  return (await user.createBackupCode()).codes;
+}
+
+/** Turns the authenticator off, then reads the person again. */
+export async function turnOffAuthenticator(user: IdentityUser) {
+  await user.disableTOTP();
+  await user.reload();
+}
+
 /** What the page says about a session: the browser, the device and the place Clerk saw, and its last activity. */
 export function describeSession(each: IdentitySession) {
   const { browserName, deviceType, city, country } = each.latestActivity;
