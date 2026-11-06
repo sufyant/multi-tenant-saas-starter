@@ -23,6 +23,7 @@ import { Banner } from "@repo/ui/components/banner";
 import {
   ArrowRightLeftIcon,
   HomeIcon,
+  LockIcon,
   PlusIcon,
   SettingsIcon,
   UserIcon,
@@ -199,6 +200,12 @@ function TenantFrame({
       icon: UserIcon,
       href: `${settings}/profile`,
     },
+    {
+      id: "account",
+      label: t("appShell.accountAndSecurity"),
+      icon: LockIcon,
+      href: `${settings}/account`,
+    },
   ];
   // Billing and Usage join in step 40, with their permission (the Billing is for billing managers pattern).
   const organisation: NavItem[] = organisationPages
@@ -350,6 +357,7 @@ function TenantFrame({
               email={me.data.email ?? ""}
               person={{ name: me.data.name }}
               profileHref={`${settings}/profile`}
+              accountAndSecurityHref={`${settings}/account`}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}
               variant={place}

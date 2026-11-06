@@ -23,8 +23,9 @@ const texts = {
   },
 } as const;
 
-/** The box of a part of the page; a part with no box fails the test. */
+/** The box of a part of the page, once it shows; a part with no box fails the test. `boundingBox` does not wait. */
 const boxOf = async (locator: Locator) => {
+  await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
   return box as NonNullable<typeof box>;

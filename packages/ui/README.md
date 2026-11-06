@@ -36,7 +36,7 @@ Run from this folder, or with `pnpm --filter @repo/ui` from the root.
 | `@tanstack/react-table` | The `Table` component, in manual mode (F10) | MIT |
 | `cmdk` | The command palette of `AppShell` (F28) | MIT |
 | `input-otp` | The six slots of `CodeInput`, through shadcn's `InputOTP` | MIT |
-| `@clerk/nextjs` | The hooks of `SignIn` and `SsoCallback` (Clerk's custom flows, Core 3). A peer: the apps give it, so one Clerk context serves the app and `SignIn` | MIT |
+| `@clerk/nextjs` | The hooks of `SignIn` and `SsoCallback` (Clerk's custom flows, Core 3), of Account and security (`account-security/identity.tsx`) and of Confirm it's you (`confirm-identity/`). A peer: the apps give it, so one Clerk context serves the app and `SignIn` | MIT |
 | `next-intl` | The texts of `SignIn`, its steps, `PreferencesForm`, the shell and the patterns, from the shared messages. A peer: the apps give it | MIT |
 | `react-hook-form` | The state and the validation of `PreferencesForm` (F11) | MIT |
 | `@hookform/resolvers` | The Zod resolver of `PreferencesForm`, for the schema the app gives (F11) | MIT |

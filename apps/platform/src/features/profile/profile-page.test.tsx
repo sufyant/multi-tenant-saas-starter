@@ -159,16 +159,14 @@ describe("ProfilePage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("ProfilePage_Email_IsReadOnly", async () => {
+  // The email is on Account and security, as on the tenant web (36-design: the personal pages are the same in both apps).
+  it("ProfilePage_Shown_HasNoEmail", async () => {
     server.use(...preferencesAnswers(me));
 
     renderPage();
 
-    expect(await screen.findByText("ciara@starter.dev")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("textbox", { name: "Email" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("textbox")).toHaveLength(1);
+    expect(await textbox("Name")).toHaveValue("Ciara Byrne");
+    expect(screen.queryByText("ciara@starter.dev")).toBeNull();
   });
 
   it("ProfilePage_Theme_StaysOnThePage", async () => {

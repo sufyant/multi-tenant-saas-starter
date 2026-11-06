@@ -23,6 +23,7 @@ import {
   ActivityIcon,
   BuildingIcon,
   CreditCardIcon,
+  LockIcon,
   SettingsIcon,
   ShieldCheckIcon,
   UserIcon,
@@ -147,6 +148,12 @@ export function PlatformShell({
       icon: UserIcon,
       href: "/settings/profile",
     },
+    {
+      id: "account",
+      label: t("appShell.accountAndSecurity"),
+      icon: LockIcon,
+      href: "/settings/account",
+    },
   ];
   // Terms of use and Feature flags join in steps 38 and 39.
   const platform: NavItem[] = [
@@ -258,6 +265,7 @@ export function PlatformShell({
               email={admin.email ?? ""}
               person={{ name: admin.name }}
               profileHref="/settings/profile"
+              accountAndSecurityHref="/settings/account"
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}
               variant={place}
