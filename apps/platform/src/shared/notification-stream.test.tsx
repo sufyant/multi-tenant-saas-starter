@@ -15,6 +15,7 @@ import {
 import { renderWithProviders } from "../../test/render";
 import { PlatformBell } from "./notification-bell";
 import { NotificationStream } from "./notification-stream";
+import { ServerBar } from "./server-bar";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
@@ -46,6 +47,7 @@ async function platformBellWithStream() {
     <>
       <NotificationStream />
       <PlatformBell />
+      <ServerBar />
     </>,
   );
   await screen.findByRole("button", { name: "Notifications, 1 unread" });
@@ -91,5 +93,19 @@ describe("NotificationStream", () => {
     expect(
       await screen.findByRole("button", { name: "Notifications, 2 unread" }),
     ).toBeInTheDocument();
+  });
+
+  // The stream closes every 5 minutes and on each navigation, and the browser opens it again. The connection bar follows only
+  // the queries and commands of the client (`serverReach`), never the stream (the Connection bar).
+  it("NotificationStream_StreamClosesAndOpensAgain_ShowsNoConnectionBar", async () => {
+    await platformBellWithStream();
+
+    act(() => FakeEventSource.latest().fail());
+    act(() => FakeEventSource.latest().open());
+
+    expect(
+      await screen.findByRole("button", { name: "Notifications, 2 unread" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });
