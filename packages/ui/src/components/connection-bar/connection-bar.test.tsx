@@ -72,13 +72,42 @@ describe("ConnectionBar", () => {
     );
   });
 
-  it("ConnectionBar_Offline_SaysSo", () => {
+  // The browser's signal is only a hint (MDN, "Navigator: onLine"): calls that answer show no bar.
+  it("ConnectionBar_BrowserSaysOfflineWhileTheCallsAnswer_ShowsNothing", () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     renderBar(false);
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("ConnectionBar_OfflineAndTheCallsFindNoServer_SaysOffline", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    renderBar(true);
 
     expect(screen.getByRole("status")).toHaveTextContent(
       "You’re offline. Trying again in 5 s",
     );
+  });
+
+  it("ConnectionBar_OfflineEvent_TriesOnceAndShowsNothingYet", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    const { onRetry } = renderBar(false);
+
+    act(() => {
+      window.dispatchEvent(new Event("offline"));
+    });
+
+    expect(onRetry).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("ConnectionBar_AnswerAfterOffline_SaysBackOnline", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    const { rerender } = renderBar(true);
+
+    rerender(false);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Back online");
   });
 
   it("ConnectionBar_StatusUrl_LinksTheStatusPageWhileTheServerIsDown", () => {
