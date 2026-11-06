@@ -80,14 +80,12 @@ describe("DeleteAccount", () => {
 
     await start();
 
-    const dialog = within(
+    // The name sits in its own <bdi> (F15), so the sentence is read from the dialog's whole text.
+    expect(
       await screen.findByRole("alertdialog", {
         name: "You can’t delete your account yet",
       }),
-    );
-    expect(
-      await dialog.findByText(/You are the last Owner of Northwind Traders\./),
-    ).toBeInTheDocument();
+    ).toHaveTextContent("You are the last Owner of Northwind Traders.");
     expect(sent.codes).toEqual([]);
   });
 

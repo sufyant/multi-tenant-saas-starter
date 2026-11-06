@@ -17,10 +17,9 @@ describe("DeletedAccount", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("lena@northwind.example")).toBeInTheDocument();
     expect(sessionStorage.getItem(deletedEmailKey)).toBeNull();
-    expect(screen.getByRole("link", { name: "Go to sign-in" })).toHaveAttribute(
-      "href",
-      "/sign-in",
-    );
+    expect(
+      screen.getByRole("button", { name: "Go to sign-in" }),
+    ).toHaveAttribute("href", "/sign-in");
   });
 
   it("DeletedAccount_WithoutAStoredAddress_SaysYourAddress", async () => {

@@ -56,7 +56,19 @@
   },
   "securityPage": {
     "intro": "<name></name> · these settings are the same in every organisation.",
-    "twoStep": "Optional. After the email code or Google, you also enter a 6-digit code from an authenticator app."
+    "twoStep": "Optional. After the email code or Google, you also enter a 6-digit code from an authenticator app.",
+    "deleteTitle": "Delete my account",
+    "deleteText": "Your sign-in ends in every organisation. Your activity stays, under “Deleted user”. This cannot be undone.",
+    "cannotDeleteTitle": "You can’t delete your account yet",
+    "lastOwner": "You are the last Owner of <organisations></organisations>. Make another member an Owner first, then delete your account.",
+    "moreOrganisations": "{count, plural, one {# more organisation} other {# more organisations}}",
+    "confirmTitle": "Delete your account?",
+    "confirmText": "You lose access to <organisation></organisation> at once, and to every other organisation you are in. Your activity stays, under “Deleted user”. This cannot be undone.",
+    "codeSent": "We sent a 6-digit code to <email></email>. It works for {minutes, plural, one {# minute} other {# minutes}}.",
+    "deletedTitle": "Your account was deleted",
+    "deletedText": "We sent a confirmation to <email></email>. To come back, you need a new invitation.",
+    "deletedTextNoAddress": "We sent a confirmation to your address. To come back, you need a new invitation.",
+    "goToSignIn": "Go to sign-in"
   },
   "signInPage": {
     "title": "Sign in to Starter"

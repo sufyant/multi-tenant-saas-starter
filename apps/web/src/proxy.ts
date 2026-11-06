@@ -10,6 +10,7 @@ const isOpen = createRouteMatcher([
   "/sign-in(/.*)?",
   "/sso-callback(/.*)?",
   "/invitations/accept(/.*)?",
+  "/account/deleted",
   "/health",
   "/api(/.*)?",
 ]);

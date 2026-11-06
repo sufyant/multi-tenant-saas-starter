@@ -37,6 +37,7 @@ describe("proxy", () => {
     "/sso-callback/x",
     "/invitations/accept",
     "/invitations/accept/x",
+    "/account/deleted",
     "/health",
     "/api/v1/me",
   ])("Proxy_OpenRoute_%s_NeedsNoSession", async (path) => {
@@ -50,6 +51,8 @@ describe("proxy", () => {
     "/sso-callbacks",
     "/sso-callbacks/settings",
     "/invitations/acceptx",
+    "/account",
+    "/account/deletedx",
     "/healthy",
     "/apis",
     "/atlas",
