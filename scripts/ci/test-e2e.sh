@@ -3,19 +3,18 @@
 # playwright.config.ts starts the production build with `pnpm start`, because CI is set. The tests answer the API in the browser
 # (e2e/api.ts), so no API and no database run here; API_URL names api.example.invalid, which does not resolve.
 #
-# Inputs, from the environment: CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY of a Clerk development instance, and
-# E2E_CLERK_USER_EMAIL, a user of that instance with +clerk_test in the address. Exit codes: 0 when both apps pass; 1 when a
+# Inputs, from the environment: CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY of a Clerk development instance. Each app's setup
+# makes a temporary user of that instance and its teardown deletes it (e2e/clerk-users.ts). Exit codes: 0 when both apps pass; 1 when a
 # variable is missing or an app's tests fail; the build's exit code when a build fails. Both apps run, also when the first fails.
 # Each app writes its HTML report to apps/<app>/playwright-report. Then each app takes its screenshots (e2e/screenshots.spec.ts)
 # into apps/<app>/test-results/screenshots, which ci.yml uploads as the workflow artifact "screenshots" for the review against the
 # design. A screenshot that cannot be taken fails the run too.
 #
 # Run it locally, with the keys of the development instance:
-#   CI=1 CLERK_PUBLISHABLE_KEY=pk_test_... CLERK_SECRET_KEY=sk_test_... \
-#     E2E_CLERK_USER_EMAIL=someone+clerk_test@example.com scripts/ci/test-e2e.sh
+#   CI=1 CLERK_PUBLISHABLE_KEY=pk_test_... CLERK_SECRET_KEY=sk_test_... scripts/ci/test-e2e.sh
 set -euo pipefail
 
-for name in CLERK_PUBLISHABLE_KEY CLERK_SECRET_KEY E2E_CLERK_USER_EMAIL; do
+for name in CLERK_PUBLISHABLE_KEY CLERK_SECRET_KEY; do
   if [[ -z "${!name:-}" ]]; then
     echo "$name is not set." >&2
     exit 1
