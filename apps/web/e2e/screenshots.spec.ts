@@ -729,7 +729,7 @@ const readyExport = {
 
 /** Scrolls to a card of Account and security once the sessions show, so the frame's card is in view. */
 const cardShown = (name: string) => async (page: Page) => {
-  await sessionsShown(page);
+  await otherSessionsShown(page);
   await page.getByRole("region", { name }).scrollIntoViewIfNeeded();
 };
 
@@ -1070,6 +1070,7 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
+    mock: fullState,
     open: exportData(),
   },
   {
@@ -1077,6 +1078,7 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
+    mock: fullState,
     open: exportData(true),
   },
   {
@@ -1084,7 +1086,10 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
-    mock: (page) => mockDataExport(page, readyExport),
+    mock: async (page) => {
+      await fullState(page);
+      await mockDataExport(page, readyExport);
+    },
     open: cardShown("Your data"),
   },
   {
@@ -1092,6 +1097,7 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
+    mock: fullState,
     open: deleteAccount(true),
   },
   {
@@ -1099,6 +1105,7 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     path: `${settings}/account`,
+    mock: fullState,
     open: deleteAccount(false),
   },
   // The page after the deletion reads the address from the tab's storage, which Delete my account writes (F62).
