@@ -101,6 +101,14 @@ describe("architecture of packages/ui", () => {
   });
 
   // Each app holds the same error tracking code, because only an app may import the SDK (F55, and the deviations table).
+  // Each app gives Account and security the same calls of the email change, which packages/ui does not read at run time (F62).
+  it("F62_EmailChangeCalls_AreTheSameInBothApps", () => {
+    const file = "src/features/account/use-email-change.ts";
+    expect(readFileSync(join(packages, "../apps/web", file), "utf8")).toBe(
+      readFileSync(join(packages, "../apps/platform", file), "utf8"),
+    );
+  });
+
   it("F55_ErrorTracking_IsTheSameInBothApps", () => {
     expect(
       differingFiles(
