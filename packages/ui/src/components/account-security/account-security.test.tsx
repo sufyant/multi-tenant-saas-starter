@@ -89,9 +89,29 @@ function userOf({
       },
     })),
     reload: vi.fn(async () => {}),
+    createTOTP: vi.fn(async () => ({
+      secret: "JBSWY3DPEHPK3PXP",
+      uri: "otpauth://totp/Starter:ayse?secret=JBSWY3DPEHPK3PXP",
+    })),
+    verifyTOTP: vi.fn(async () => ({ backupCodes: tenCodes })),
+    createBackupCode: vi.fn(async () => ({ codes: tenCodes.toReversed() })),
+    disableTOTP: vi.fn(async () => ({})),
     sessions,
   };
 }
+
+const tenCodes = [
+  "4f7k-2m9q",
+  "b2hc-q7wv",
+  "m3ty-8fjd",
+  "k7vs-4dqe",
+  "t2lc-7wzn",
+  "x8pd-63tn",
+  "9rze-5kla",
+  "w6nu-2bpr",
+  "e5ga-9hmx",
+  "p8yf-3kre",
+];
 
 const props: AccountSecurityProps = {
   intro: "Ayşe Demir · these settings are the same in every organisation.",
@@ -444,6 +464,90 @@ describe("AccountSecurity", () => {
     expect(
       await screen.findByRole("alertdialog", { name: "Confirm it’s you" }),
     ).toBeInTheDocument();
+  });
+
+  it("AccountSecurity_SetUpTwoStep_ShowsTheKeyThenTheCodesAndSaysItIsOn", async () => {
+    const user = userOf();
+    clerk.user = user;
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Set up" }));
+    const setUp = within(
+      await screen.findByRole("alertdialog", {
+        name: "Set up two-step verification",
+      }),
+    );
+    expect(
+      await setUp.findByDisplayValue("JBSW Y3DP EHPK 3PXP"),
+    ).toBeInTheDocument();
+    await userEvent.type(
+      setUp.getByRole("textbox", {
+        name: "2. Enter the 6-digit code the app shows.",
+      }),
+      "123456",
+    );
+    await userEvent.click(setUp.getByRole("button", { name: "Turn on" }));
+
+    expect(user.verifyTOTP).toHaveBeenCalledWith({ code: "123456" });
+    const codes = within(
+      await screen.findByRole("alertdialog", {
+        name: "Save your backup codes",
+      }),
+    );
+    expect(
+      within(codes.getByRole("list", { name: "Backup codes" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(tenCodes);
+    await userEvent.click(codes.getByRole("button", { name: "I saved them" }));
+    await expectVisibleToast("Two-step verification is on");
+  });
+
+  it("AccountSecurity_NewBackupCodes_ShowsTheNewCodes", async () => {
+    const user = { ...userOf(), totpEnabled: true };
+    clerk.user = user;
+    renderPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "New backup codes" }),
+    );
+
+    expect(user.createBackupCode).toHaveBeenCalledOnce();
+    const codes = within(
+      await screen.findByRole("alertdialog", {
+        name: "Save your backup codes",
+      }),
+    );
+    expect(codes.getByText("p8yf-3kre")).toBeInTheDocument();
+  });
+
+  it("AccountSecurity_TurnOffTwoStep_ChecksACodeThenTurnsItOff", async () => {
+    const user = { ...userOf(), totpEnabled: true };
+    clerk.user = user;
+    clerk.session = {
+      id: "sess_chrome",
+      startVerification: vi.fn(async () => ({ status: "needs_second_factor" })),
+      attemptSecondFactorVerification: vi.fn(async () => ({
+        status: "complete",
+      })),
+      getToken: vi.fn(async () => "token"),
+    };
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Turn off" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Turn off two-step verification?",
+      }),
+    );
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Code" }),
+      "654321",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Turn off" }));
+
+    expect(user.disableTOTP).toHaveBeenCalledOnce();
+    await expectVisibleToast("Two-step verification is off");
   });
 
   it("AccountSecurity_TwoStepRequired_SaysOnWithoutActions", () => {
