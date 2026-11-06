@@ -1,5 +1,11 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import {
+  expect,
+  type Locator,
+  type Page,
+  type Route,
+  test,
+} from "@playwright/test";
 import { Language } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { pseudoCookie } from "@repo/ui/lib/pseudo-locale";
@@ -270,4 +276,45 @@ test("Shell_PseudoLocale_NotificationsFullScreen_NothingOverflows", async ({
   });
   expect(overflow).toEqual({ sideways: false, row: false, cut: [] });
   await expectAccessible(page);
+});
+
+// The browser's offline signal is only a hint (the Connection bar): Chrome on macOS can say offline with some VPNs while every
+// call answers. The bar shows nothing, and the offline event's try reads the page again and finds the server.
+test("Shell_BrowserSaysOfflineWhileTheCallsAnswer_ShowsNoConnectionBar", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(Navigator.prototype, "onLine", { get: () => false }),
+  );
+  await open(page);
+  await expect(
+    page.getByRole("navigation", { name: "Main menu" }),
+  ).toBeVisible();
+
+  await expect(async () => {
+    const read = page.waitForResponse("**/api/v1/me", { timeout: 1000 });
+    await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+    await read;
+  }).toPass();
+
+  await expect(page.locator("[data-slot=connection-bar]")).toHaveCount(0);
+});
+
+// Really offline: the calls find no server, so the bar says so; once a call answers again it says "Back online". The route
+// fails each call too, because the page's mocked answers would otherwise come without a network.
+test("Shell_Offline_ShowsTheConnectionBarThenBackOnline", async ({ page }) => {
+  await open(page);
+  await expect(
+    page.getByRole("navigation", { name: "Main menu" }),
+  ).toBeVisible();
+  const bar = page.locator("[data-slot=connection-bar]");
+  const noNetwork = (route: Route) => route.abort("internetdisconnected");
+
+  await page.route("**/api/v1/**", noNetwork);
+  await page.context().setOffline(true);
+  await expect(bar).toContainText("You’re offline");
+
+  await page.unroute("**/api/v1/**", noNetwork);
+  await page.context().setOffline(false);
+  await expect(bar).toContainText("Back online", { timeout: 10_000 });
 });

@@ -8,4 +8,12 @@ describe("newQueryClient", () => {
       retryUnlessClientError,
     );
   });
+
+  // The app's own calls are the truth (the Connection bar): the browser's offline signal holds no query and no command.
+  it("NewQueryClient_QueriesAndCommands_GoWhateverTheBrowserSays", () => {
+    const options = newQueryClient().getDefaultOptions();
+
+    expect(options.queries?.networkMode).toBe("always");
+    expect(options.mutations?.networkMode).toBe("always");
+  });
 });

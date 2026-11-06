@@ -16,38 +16,63 @@ export function isServerUnreachable(error: unknown): boolean {
 
 export type ServerReach = {
   subscribe: (changed: () => void) => () => void;
-  /** True from a call that found no server until the next call that got an answer. */
+  /** True from the second try that found no server until the next call that got an answer. */
   isDown: () => boolean;
+  /** True while down and the last failed try got no answer at all (a network error), not a proxy's 502, 503 or 504. */
+  noAnswer: () => boolean;
 };
 
+/** The step of a query or a command that its cache reports. */
+type CallAction = { type: string; error?: unknown };
+
 /**
- * Whether the server answers, from the app's own calls: every query and command of the client, through its caches. A store for
- * `useSyncExternalStore`, so the shell's connection bar follows it without a request of its own.
+ * Whether the server answers, from the app's own calls: every query and command of the client, through its caches (F59). A store
+ * for `useSyncExternalStore`, so the shell's connection bar follows it without a request of its own.
  */
 export function serverReach(queryClient: QueryClient): ServerReach {
   let down = false;
+  let silent = false;
+  // Each start and each failure takes the next number, so a failure knows whether its call started after the doubt.
+  let clock = 0;
+  let doubtSince: number | undefined;
+  const startedAt = new WeakMap<object, number>();
   const listeners = new Set<() => void>();
-  const set = (next: boolean) => {
-    if (next === down) return;
+  const set = (next: boolean, nothingCame = false) => {
+    if (next === down && nothingCame === silent) return;
     down = next;
+    silent = nothingCame;
     for (const listener of listeners) listener();
   };
-  // An answer, a refusal too, says the server is up; any other failure, such as a body that does not parse, says nothing.
-  const failed = (error: unknown) => {
-    if (error instanceof ProblemDetailsError || error instanceof TypeError)
-      set(isServerUnreachable(error));
+  const answered = () => {
+    doubtSince = undefined;
+    set(false);
+  };
+  const foundNoServer = (call: object, error: unknown) => {
+    if (doubtSince === undefined) doubtSince = ++clock;
+    else if ((startedAt.get(call) ?? 0) > doubtSince)
+      set(true, error instanceof TypeError);
+  };
+  // An answer, a refusal too, says the server is up; a cancelled call or a body that does not parse says nothing.
+  const failed = (call: object, error: unknown) => {
+    if (isServerUnreachable(error)) foundNoServer(call, error);
+    else if (error instanceof ProblemDetailsError) answered();
+  };
+  const follow = (call: object, action: CallAction) => {
+    if (action.type === "fetch" || action.type === "pending")
+      startedAt.set(call, ++clock);
+    if (action.type === "success") answered();
+    if (action.type === "failed" || action.type === "error")
+      failed(call, action.error);
+    // A retry starts after the failure that it follows.
+    if (action.type === "failed") startedAt.set(call, ++clock);
   };
   let stop: (() => void) | undefined;
   const start = () => {
     const queries = queryClient.getQueryCache().subscribe((event) => {
-      if (event.type !== "updated") return;
-      if (event.action.type === "success") set(false);
-      if (event.action.type === "error") failed(event.action.error);
+      if (event.type === "updated") follow(event.query, event.action);
     });
     const commands = queryClient.getMutationCache().subscribe((event) => {
-      if (event.type !== "updated") return;
-      if (event.action.type === "success") set(false);
-      if (event.action.type === "error") failed(event.action.error);
+      if (event.type === "updated") follow(event.mutation, event.action);
     });
     stop = () => {
       queries();
@@ -64,5 +89,6 @@ export function serverReach(queryClient: QueryClient): ServerReach {
       };
     },
     isDown: () => down,
+    noAnswer: () => silent,
   };
 }
