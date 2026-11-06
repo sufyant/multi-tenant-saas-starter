@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import en from "../../../messages/en.json";
 import { expectVisibleToast } from "../../../test/toast";
 import { Toaster } from "../toast";
@@ -97,6 +98,7 @@ const props: AccountSecurityProps = {
   email: "ayse@northwind.example",
   // The email change has its own tests (email-change.test.tsx).
   emailChange: {
+    schema: z.object({ email: z.string() }),
     send: async () => ({ expiresAt: "2026-11-06T10:10:00Z" }),
     verify: async () => {},
     readFailure: () => ({ problem: null, fields: null, saved: false }),

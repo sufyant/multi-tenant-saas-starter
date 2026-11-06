@@ -1,4 +1,4 @@
-import { Language } from "@repo/api-client";
+import { ErrorCode, Language } from "@repo/api-client";
 import { getGetMeResponseMock } from "@repo/api-client/msw";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -118,5 +118,38 @@ describe("AccountPage", () => {
     ]);
     expect(codes).toEqual([{ code: "381906" }]);
     expect(reads).toBeGreaterThan(1);
+  });
+
+  // A suspended account reads GetMe again, so the shell shows its page (F4, F47); the dialog says nothing of its own.
+  it("AccountPage_ChangeEmailOfASuspendedAccount_ReadsGetMeAgain", async () => {
+    let reads = 0;
+    server.use(
+      http.get("*/v1/me", () => {
+        reads += 1;
+        return HttpResponse.json(me);
+      }),
+      http.post("*/v1/me/email-change", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.UserSuspended,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 403 },
+        ),
+      ),
+    );
+    renderWithProviders(<AccountPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Change email" }),
+    );
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "New email" }),
+      "ayse@demir.example",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Send code" }));
+
+    await expect.poll(() => reads).toBeGreaterThan(1);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 });

@@ -1,7 +1,10 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useState } from "react";
+import { useForm } from "react-hook-form";
+import type { z } from "zod";
 import type { Instant } from "../../lib/format-date-time";
 import { type Problem, useFailureText } from "../../lib/use-failure-text";
 import { useIntentKey } from "../../lib/use-intent-key";
@@ -12,14 +15,22 @@ import { Input } from "../input";
 import { TextButton } from "../sign-in";
 import { showToast } from "../toast";
 
-/** A failed call as the app reads it: the API's code, its field codes, and whether the API saved the answer under the key (I6). */
+/**
+ * A failed call as the app reads it: the API's code, its field codes, whether the API saved the answer under the key (I6), and
+ * whether the app handled it already: a 401 goes to sign-in, a suspended or deleted account reads GetMe again (F4, F47).
+ */
 export type ReadFailure = (error: unknown) => {
   problem: Problem;
   fields: Record<string, string[]> | null;
   saved: boolean;
+  handled?: boolean;
 };
 
+type Address = { email: string };
+
 export type EmailChangeProps = {
+  /** The generated body of `RequestEmailChange`, trimmed and required (F11); the app gives it, as for `PreferencesForm`. */
+  schema: z.ZodType<Address, Address>;
   /** `RequestEmailChange` with its Idempotency-Key (F48); it answers until when the code works. */
   send: (email: string, key: string) => Promise<{ expiresAt: string }>;
   /** `ChangeEmail` with the code. */
@@ -35,12 +46,19 @@ type Step = "email" | "code" | undefined;
 
 const minute = 60_000;
 
+/** The shared validation text of the schema's refusal of the address; any other refusal is a malformed address. */
+const addressRule: Record<
+  string,
+  "validation.required" | "validation.too_long"
+> = { too_small: "validation.required", too_big: "validation.too_long" };
+
 /**
  * Change email (6.08 to 6.11, F62): the new address gets a 6-digit code; the address changes when the person enters it. Our API
  * owns the address and gives it to the identity provider (A7). The calls are the app's; this holds the steps, the keys of F48 and
- * where a refusal shows: an address's under the address, a code's under the code.
+ * where a refusal shows: under the field of the step it came from.
  */
 export function EmailChange({
+  schema,
   send,
   verify,
   readFailure,
@@ -50,6 +68,10 @@ export function EmailChange({
   const t = useTranslations();
   const failureText = useFailureText();
   const { key, renew } = useIntentKey();
+  const form = useForm<Address>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: "" },
+  });
   const [step, setStep] = useState<Step>();
   const [address, setAddress] = useState("");
   const [code, setCode] = useState("");
@@ -64,12 +86,14 @@ export function EmailChange({
     setCode("");
     setError(undefined);
     setResent(false);
+    form.reset();
     renew();
   };
 
   const refused = (reason: unknown, field: "email" | "code") => {
     const failure = readFailure(reason);
     if (failure.saved) renew();
+    if (failure.handled) return close();
     const fieldCode = failure.fields?.[field]?.[0];
     setError(
       fieldCode
@@ -78,16 +102,18 @@ export function EmailChange({
     );
   };
 
-  const sendCode = async (again: boolean) => {
+  const sendCode = async (to: string, again: boolean) => {
+    if (pending) return;
     setPending(true);
     setError(undefined);
     try {
-      const sent = await send(address.trim(), key);
+      const sent = await send(to, key);
       renew();
       const left =
         new Date(sent.expiresAt).getTime() -
         new Date(now ?? Date.now()).getTime();
       setMinutes(Math.max(1, Math.round(left / minute)));
+      setAddress(to);
       setResent(again);
       setStep("code");
     } catch (reason) {
@@ -101,7 +127,7 @@ export function EmailChange({
     setError(undefined);
     try {
       await verify(code);
-      const changedTo = address.trim();
+      const changedTo = address;
       close();
       onChanged();
       showToast({
@@ -114,11 +140,17 @@ export function EmailChange({
     setPending(false);
   };
 
-  const submit = (event?: FormEvent) => {
+  const submitAddress = form.handleSubmit(({ email }) =>
+    sendCode(email, false),
+  );
+  const submitCode = (event?: FormEvent) => {
     event?.preventDefault();
-    if (pending) return;
-    void (step === "email" ? sendCode(false) : check());
+    if (!pending) void check();
   };
+  const ruleError = form.formState.errors.email;
+  const addressError =
+    error ??
+    (ruleError && t(addressRule[ruleError.type] ?? "validation.email_invalid"));
 
   return (
     <>
@@ -135,23 +167,23 @@ export function EmailChange({
           action="primary"
           cancelLabel={t("common.cancel")}
           pending={pending}
-          onConfirm={() => submit()}
+          onConfirm={() => void submitAddress()}
         >
-          <form noValidate onSubmit={submit}>
+          <form noValidate onSubmit={(event) => void submitAddress(event)}>
             <Input
               label={t("accountSecurity.newEmail")}
               type="email"
               autoComplete="email"
               dir="ltr"
               placeholder={t("signIn.emailPlaceholder")}
-              value={address}
-              onChange={(event) => {
-                setAddress(event.target.value);
-                setError(undefined);
+              {...form.register("email", {
                 // Another address is another intent (F48).
-                renew();
-              }}
-              error={error}
+                onChange: () => {
+                  setError(undefined);
+                  renew();
+                },
+              })}
+              error={addressError}
               disabled={pending}
               autoFocus
             />
@@ -164,16 +196,20 @@ export function EmailChange({
           onOpenChange={(isOpen) => !isOpen && close()}
           title={t("accountSecurity.checkTitle")}
           description={t.rich("accountSecurity.sentText", {
-            email: () => <bdi dir="ltr">{address.trim()}</bdi>,
+            email: () => <bdi dir="ltr">{address}</bdi>,
             minutes,
           })}
           actionLabel={t("accountSecurity.verify")}
           action="primary"
           cancelLabel={t("common.cancel")}
           pending={pending}
-          onConfirm={() => submit()}
+          onConfirm={() => submitCode()}
         >
-          <form noValidate onSubmit={submit} className="flex flex-col gap-2">
+          <form
+            noValidate
+            onSubmit={submitCode}
+            className="flex flex-col gap-2"
+          >
             <CodeInput
               label={t("signIn.code")}
               value={code}
@@ -183,7 +219,10 @@ export function EmailChange({
               autoFocus
             />
             <p className="text-small text-muted-foreground">
-              <TextButton onClick={() => void sendCode(true)}>
+              <TextButton
+                disabled={pending}
+                onClick={() => void sendCode(address, true)}
+              >
                 {t("signIn.sendNewCode")}
               </TextButton>
               {resent && <span role="status"> {t("signIn.newCodeSent")}</span>}
