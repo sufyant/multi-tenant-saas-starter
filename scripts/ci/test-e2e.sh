@@ -24,6 +24,8 @@ done
 export API_URL=https://api.example.invalid
 # The tests run as a local environment, so the environment strip shows (the Environment strip).
 export APP_ENVIRONMENT=local
+# The platform's account menu opens the web app (apps/platform/.env.example).
+export WEB_APP_URL=http://localhost:3000
 export CLERK_TELEMETRY_DISABLED=1
 export PLAYWRIGHT_HTML_OPEN=never
 

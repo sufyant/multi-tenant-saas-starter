@@ -63,7 +63,9 @@ export function useYourData(): Omit<YourDataProps, "email" | "timeZone"> {
       case DataExportResponseStatus.Failed:
         return { kind: "unfinished" };
       case DataExportResponseStatus.Expired:
-        return expiresAt ? { kind: "fileDeleted", expiresAt } : { kind: "none" };
+        return expiresAt
+          ? { kind: "fileDeleted", expiresAt }
+          : { kind: "none" };
     }
   })();
 

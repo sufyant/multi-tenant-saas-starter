@@ -78,7 +78,7 @@ export function PlatformShell({
   const router = useRouter();
   const pathname = usePathname();
   const { signOut } = useClerk();
-  const { version } = useAppFrame();
+  const { version, webAppUrl } = useAppFrame();
   const tabTitle = useTabTitleText(t("meta.title"));
   const me = useQuery(getGetMeQueryOptions());
   // One ask of the door per page load, then one more read of GetMe when it lets the person in (F42).
@@ -266,6 +266,7 @@ export function PlatformShell({
               person={{ name: admin.name }}
               profileHref="/settings/profile"
               accountAndSecurityHref="/settings/account"
+              webAppHref={webAppUrl}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}
               variant={place}

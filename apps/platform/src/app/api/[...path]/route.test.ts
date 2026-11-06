@@ -26,6 +26,7 @@ beforeAll(() => {
   vi.stubEnv("CLERK_PUBLISHABLE_KEY", "pk_test_x");
   vi.stubEnv("CLERK_SECRET_KEY", "sk_test_x");
   vi.stubEnv("APP_ENVIRONMENT", "local");
+  vi.stubEnv("WEB_APP_URL", "http://localhost:3000");
   server.listen({ onUnhandledFrame: "error" });
   server.events.on("request:start", ({ request }) => {
     requests.push(request.clone());

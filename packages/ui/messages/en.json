@@ -411,6 +411,8 @@
     "actions": "Actions",
     "profile": "Profile",
     "accountAndSecurity": "Account and security",
+    "openWebApp": "Open the web app",
+    "opensInNewTab": "(opens in a new tab)",
     "version": "Version {version}",
     "copyVersion": "Copy version {version}",
     "tabTitle": "{page} · {product}",

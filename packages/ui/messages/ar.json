@@ -411,6 +411,8 @@
     "actions": "إجراءات",
     "profile": "الملف الشخصي",
     "accountAndSecurity": "الحساب والأمان",
+    "openWebApp": "فتح تطبيق الويب",
+    "opensInNewTab": "(يُفتح في علامة تبويب جديدة)",
     "version": "الإصدار {version}",
     "copyVersion": "نسخ الإصدار {version}",
     "tabTitle": "{page} · {product}",

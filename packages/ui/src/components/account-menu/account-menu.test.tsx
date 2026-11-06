@@ -80,6 +80,39 @@ describe("AccountMenu", () => {
     ).toBeInTheDocument();
   });
 
+  // The platform's own item (2.03): the web app in a new tab, which its name says, as WCAG's technique G201 asks.
+  it("AccountMenu_WebAppHref_OpensTheWebAppInANewTab", async () => {
+    const { menu } = await openMenu({
+      accountAndSecurityHref: "/settings/account",
+      webAppHref: "https://app.example.test",
+    });
+
+    const item = within(menu).getByRole("menuitem", {
+      name: "Open the web app (opens in a new tab)",
+    });
+    expect(item).toHaveAttribute("href", "https://app.example.test");
+    expect(item).toHaveAttribute("target", "_blank");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((each) => each.textContent),
+    ).toEqual([
+      "Profile",
+      "Account and security",
+      "Open the web app (opens in a new tab)",
+      "Sign out",
+      "Version a1b2c3d",
+    ]);
+  });
+
+  it("AccountMenu_NoWebAppHref_ShowsNoWebAppItem", async () => {
+    const { menu } = await openMenu();
+
+    expect(
+      within(menu).queryByRole("menuitem", { name: /Open the web app/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("AccountMenu_ClickTheVersion_CopiesItAndSaysCopied", async () => {
     const { menu, user } = await openMenu();
 

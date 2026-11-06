@@ -7,7 +7,9 @@ import {
   getListTenantsMockHandler,
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
+import { AppFrameProvider } from "@repo/ui/components/app-frame";
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
@@ -263,6 +265,40 @@ describe("PlatformShell", () => {
       "Account and security",
       "System admins",
     ]);
+  });
+
+  // The platform's own item of the account menu (2.03): the web app of WEB_APP_URL, which the root layout gives the frame.
+  it("PlatformShell_AccountMenu_OpensTheWebAppOfTheFrame", async () => {
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({
+          isSystemAdmin: true,
+          firstName: "Deniz",
+          lastName: "Kaya",
+          language: "en",
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <AppFrameProvider
+        value={{
+          environment: { kind: "production" },
+          webAppUrl: "https://app.example.test",
+        }}
+      >
+        <PlatformShell>Content</PlatformShell>
+      </AppFrameProvider>,
+    );
+    await userEvent.click(
+      (await screen.findAllByRole("button", { name: /Deniz Kaya/ }))[0],
+    );
+
+    expect(
+      await screen.findByRole("menuitem", {
+        name: "Open the web app (opens in a new tab)",
+      }),
+    ).toHaveAttribute("href", "https://app.example.test");
   });
 
   it("PlatformShell_UserPage_NamesTheUserInTheBreadcrumb", async () => {

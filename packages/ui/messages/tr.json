@@ -411,6 +411,8 @@
     "actions": "Eylemler",
     "profile": "Profil",
     "accountAndSecurity": "Hesap ve güvenlik",
+    "openWebApp": "Web uygulamasını aç",
+    "opensInNewTab": "(yeni sekmede açılır)",
     "version": "Sürüm {version}",
     "copyVersion": "{version} sürümünü kopyala",
     "tabTitle": "{page} · {product}",

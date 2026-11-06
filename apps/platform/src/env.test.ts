@@ -12,6 +12,7 @@ const valid = {
   CLERK_PUBLISHABLE_KEY: "pk_test_x",
   CLERK_SECRET_KEY: "sk_test_x",
   APP_ENVIRONMENT: "local",
+  WEB_APP_URL: "http://localhost:3000",
 };
 
 describe("env", () => {
@@ -44,6 +45,15 @@ describe("env", () => {
   );
 
   // A missing name would show production's frame in a test environment, or the other way round: the app does not start.
+  it.each([undefined, "", "app.example.test"])(
+    "ReadEnv_WebAppUrl_%s_FailsWithItsName",
+    (url) => {
+      expect(() => readEnv({ ...valid, WEB_APP_URL: url })).toThrow(
+        "WEB_APP_URL",
+      );
+    },
+  );
+
   it.each([undefined, "", "Staging", "preview"])(
     "ReadEnv_AppEnvironment_%s_FailsWithItsName",
     (environment) => {
@@ -195,6 +205,13 @@ describe("env in railway.ts", () => {
   });
 
   // CI sets the image by digest, as for the API.
+  // The web app's origin has one source: the API's authorized party of the web app.
+  it("DefineService_TheApp_ReadsTheWebAppFromTheWebAppsAuthorizedParty", () => {
+    expect(service.variables.WEB_APP_URL).toEqual(
+      shared("Host__Authentication__AuthorizedParties__0"),
+    );
+  });
+
   it("DefineService_TheApp_HasNoSource", () => {
     expect(service.source).toBeUndefined();
   });
