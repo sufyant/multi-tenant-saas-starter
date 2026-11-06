@@ -625,6 +625,9 @@ const openBellFullScreen = async (page: Page) => {
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
+/** Waits until Account and security has read the sessions from Clerk: the current one carries "This device". */
+const sessionsShown = (page: Page) => page.getByText("This device").waitFor();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -816,6 +819,27 @@ const shellShots: {
       // The tooltip's line ends with the zone's city and offset; the shot waits for that text, as time.test.tsx does.
       await page.getByText(/ · .+ \(UTC[+-]\d+(:\d+)?\)$/).waitFor();
     },
+  },
+  // Account and security (F62). Clerk is the real development instance: the test user has this one session and no linked
+  // account, the state of 6.05.
+  {
+    file: "6.05-account-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/account`,
+    open: sessionsShown,
+  },
+  {
+    file: "6.06-account-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: `${settings}/account`,
+    open: sessionsShown,
+  },
+  {
+    file: "6.07-account-en-light-phone",
+    size: "phone",
+    path: `${settings}/account`,
+    open: sessionsShown,
   },
 ];
 

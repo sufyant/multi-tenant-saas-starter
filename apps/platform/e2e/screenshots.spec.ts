@@ -171,6 +171,9 @@ const bellList = {
 const showTheme = (page: Page) =>
   page.getByRole("radiogroup").scrollIntoViewIfNeeded();
 
+/** Waits until Account and security has read the sessions from Clerk: the current one carries "This device". */
+const sessionsShown = (page: Page) => page.getByText("This device").waitFor();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -269,7 +272,7 @@ const shellShots: {
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
   // The theme's card under the Profile form (36-design): System on a light device, Dark chosen in the dark frame. Each shot
-  // scrolls the card into view, because the two name fields and the email make the page taller than the frame's.
+  // scrolls the card into view, because the two name fields make the form taller than the frame's.
   {
     file: "8.01-profile-en-light-desktop",
     size: "desktop",
@@ -304,6 +307,27 @@ const shellShots: {
     language: Language.Ar,
     path: "/settings/profile",
     open: showTheme,
+  },
+  // Account and security (F62). Clerk is the real development instance: the setup's temporary user has this one session, an
+  // authenticator and no linked account.
+  {
+    file: "9.01-account-en-light-desktop",
+    size: "desktop",
+    path: "/settings/account",
+    open: sessionsShown,
+  },
+  {
+    file: "9.14-account-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/account",
+    open: sessionsShown,
+  },
+  {
+    file: "9.13-account-en-light-phone",
+    size: "phone",
+    path: "/settings/account",
+    open: sessionsShown,
   },
 ];
 
