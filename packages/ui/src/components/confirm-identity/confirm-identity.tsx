@@ -22,6 +22,7 @@ export function ConfirmIdentity({
   onVerified,
   onCancel,
   onUnexpectedError,
+  words,
 }: {
   session: VerifyingSession;
   level: VerificationLevel;
@@ -29,6 +30,8 @@ export function ConfirmIdentity({
   onCancel: () => void;
   /** The app's error tracking, for a Clerk error that has no message yet. */
   onUnexpectedError?: (error: Error) => void;
+  /** An action whose own question is the check, such as Turn off two-step verification (6.28): its title, text and button. */
+  words?: { title: string; text: string; action: string };
 }) {
   const t = useTranslations();
   const check = useConfirmIdentity({
@@ -53,8 +56,9 @@ export function ConfirmIdentity({
   };
 
   const message = check.error && t(`signIn.errors.${check.error}`);
-  const description =
-    check.step === "second"
+  const description = words
+    ? words.text
+    : check.step === "second"
       ? t(
           factor === "totp"
             ? "confirmIdentity.appText"
@@ -69,9 +73,10 @@ export function ConfirmIdentity({
     <Dialog
       open
       onOpenChange={(open) => !open && onCancel()}
-      title={t("confirmIdentity.title")}
+      title={words?.title ?? t("confirmIdentity.title")}
       description={description}
-      actionLabel={t("confirmIdentity.verify")}
+      tone={words ? "destructive" : undefined}
+      actionLabel={words?.action ?? t("confirmIdentity.verify")}
       cancelLabel={t("common.cancel")}
       pending={check.pending || check.step === "starting"}
       onConfirm={() => submit()}

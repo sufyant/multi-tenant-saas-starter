@@ -221,6 +221,47 @@ describe("ConfirmIdentity", () => {
     expect(await violations()).toEqual([]);
   });
 
+  it("ConfirmIdentity_WithWords_AsksItsOwnQuestionWithEveryFactor", async () => {
+    const session = sessionOf("needs_second_factor");
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ConfirmIdentity
+          session={session as unknown as VerifyingSession}
+          level="second_factor"
+          onVerified={vi.fn()}
+          onCancel={vi.fn()}
+          words={{
+            title: "Turn off two-step verification?",
+            text: "Enter a code from your app or a backup code.",
+            action: "Turn off",
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const step = within(
+      await screen.findByRole("alertdialog", {
+        name: "Turn off two-step verification?",
+      }),
+    );
+    await userEvent.click(
+      step.getByRole("button", { name: "Use a backup code" }),
+    );
+    expect(
+      step.getByText("Enter a code from your app or a backup code."),
+    ).toBeInTheDocument();
+    await userEvent.type(
+      step.getByRole("textbox", { name: "Backup code" }),
+      "4f7k-2m9q",
+    );
+    await userEvent.click(step.getByRole("button", { name: "Turn off" }));
+
+    expect(session.attemptSecondFactorVerification).toHaveBeenCalledWith({
+      strategy: "backup_code",
+      code: "4f7k-2m9q",
+    });
+  });
+
   it("ConfirmIdentity_Cancel_SendsNothing", async () => {
     const session = sessionOf("needs_first_factor");
     const { onCancel, onVerified } = renderStep(session);

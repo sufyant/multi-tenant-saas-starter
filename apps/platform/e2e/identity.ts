@@ -74,33 +74,57 @@ function activeSessionOf(answer: unknown): string | undefined {
   return (found?.last_active_session_id as string | null) ?? undefined;
 }
 
-/** Gives every user object of an answer the account, wherever it sits (the answer itself or the client beside it). */
-function withAccount(value: unknown, account: Json): unknown {
-  if (Array.isArray(value))
-    return value.map((each) => withAccount(each, account));
+/** Changes every user object of an answer, wherever it sits (the answer itself or the client beside it). */
+function withUser(value: unknown, change: (user: Json) => Json): unknown {
+  if (Array.isArray(value)) return value.map((each) => withUser(each, change));
   if (!value || typeof value !== "object") return value;
   const object = Object.fromEntries(
-    Object.entries(value).map(([key, each]) => [
-      key,
-      withAccount(each, account),
-    ]),
+    Object.entries(value).map(([key, each]) => [key, withUser(each, change)]),
   );
-  return object.object === "user"
-    ? { ...object, external_accounts: [account] }
-    : object;
+  return object.object === "user" ? change(object) : object;
 }
+
+/** The frame's secret and backup codes of 6.25 and 6.26. */
+const totpSecret = "JBSWY3DPEHPK3PXP";
+const backupCodes = [
+  "4f7k-2m9q",
+  "x8pd-63tn",
+  "b2hc-q7wv",
+  "9rze-5kla",
+  "m3ty-8fjd",
+  "w6nu-2bpr",
+  "k7vs-4dqe",
+  "e5ga-9hmx",
+  "t2lc-7wzn",
+  "p8yf-3kre",
+];
+
+/** The authenticator as Clerk's Frontend API gives it: made, then verified with its backup codes. */
+const totp = (verified: boolean) => ({
+  object: "totp",
+  id: "totp_e2e",
+  secret: totpSecret,
+  uri: `otpauth://totp/Starter:e2e?secret=${totpSecret}&issuer=Starter`,
+  verified,
+  backup_codes: verified ? backupCodes : null,
+  created_at: Date.now(),
+  updated_at: Date.now(),
+});
 
 /**
  * The identity provider's state of a frame. This device is always Chrome on a Mac, which Clerk names "Macintosh", in Istanbul,
  * active now. With `googleEmail`, Google is connected with that address. With `otherSessions`, as in 6.01 and 9.01, Safari on
  * iPhone in Istanbul two hours ago and Firefox on Windows in Berlin on 3 October follow it; without, as in 6.05, it is alone.
+ * With `authenticator`, Set up works without touching the user at Clerk: Clerk's answers make the frame's secret, take any code
+ * and give the frame's backup codes, and from then on the person has the authenticator (6.25 to 6.27).
  */
 export async function mockIdentity(
   page: Page,
   {
     googleEmail,
     otherSessions = false,
-  }: { googleEmail?: string; otherSessions?: boolean },
+    authenticator = false,
+  }: { googleEmail?: string; otherSessions?: boolean; authenticator?: boolean },
 ) {
   const fapi = process.env.CLERK_FAPI;
   if (!fapi)
@@ -109,18 +133,39 @@ export async function mockIdentity(
   // This browser's session, from the client in Clerk's answers: the shared test user has many, and the list's first is not
   // this one.
   let thisSession: string | undefined;
+  let authenticatorOn = false;
+  const change = (user: Json): Json => ({
+    ...user,
+    ...(account && { external_accounts: [account] }),
+    ...(authenticatorOn && {
+      totp_enabled: true,
+      backup_code_enabled: true,
+      two_factor_enabled: true,
+    }),
+  });
   await page.route(
     new RegExp(`^https://${fapi.replaceAll(".", "\\.")}/v1/`),
     async (route) => {
       const url = new URL(route.request().url());
       const token = process.env.CLERK_TESTING_TOKEN;
       if (token) url.searchParams.set(testingToken, token);
+      // Clerk sends a change as POST and names the method in `_method`; Set up makes, then verifies, the authenticator.
+      const method =
+        url.searchParams.get("_method") ?? route.request().method();
+      if (authenticator && method === "POST") {
+        if (url.pathname.endsWith("/me/totp"))
+          return route.fulfill({ json: { response: totp(false) } });
+        if (url.pathname.endsWith("/me/totp/attempt_verification")) {
+          authenticatorOn = true;
+          return route.fulfill({ json: { response: totp(true) } });
+        }
+      }
       const response = await route.fetch({ url: url.toString() });
       if (!response.headers()["content-type"]?.includes("json"))
         return route.fulfill({ response });
       const answer = await response.json();
       thisSession = activeSessionOf(answer) ?? thisSession;
-      let body = account ? withAccount(answer, account) : answer;
+      let body = withUser(answer, change);
       if (url.pathname.endsWith("/me/sessions/active")) {
         // Clerk answers this list as a bare array, or wrapped in `response` beside the client.
         const wrapped = !Array.isArray(body);

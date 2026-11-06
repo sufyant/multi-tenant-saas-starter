@@ -2,13 +2,14 @@
 
 import { AuthCard } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
+import { BackupCodeList } from "@repo/ui/components/two-step";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 /**
- * The ten backup codes (the BackupCodes board), shown once: they live only in this screen's state, so leaving the page loses
- * them. "Download as text" builds the file in the browser. The person confirms they saved them before they go on.
+ * The ten backup codes at the platform's gate (the BackupCodes board), shown once: they live only in this screen's state, so
+ * leaving the page loses them. The person confirms they saved them before they go on.
  */
 export function BackupCodes({
   codes,
@@ -20,16 +21,6 @@ export function BackupCodes({
   const t = useTranslations("twoStep");
   const savedId = useId();
   const [saved, setSaved] = useState(false);
-  const text = `${codes.join("\n")}\n`;
-
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = t("fileName");
-    link.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <>
@@ -38,26 +29,15 @@ export function BackupCodes({
         <p className="text-body text-muted-foreground">{t("backupText")}</p>
       </div>
       <AuthCard>
-        <ol
-          aria-label={t("backupCodes")}
-          dir="ltr"
-          className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-md bg-muted p-4 font-mono text-body"
-        >
-          {codes.map((code) => (
-            <li key={code}>{code}</li>
-          ))}
-        </ol>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            onClick={() => void navigator.clipboard.writeText(text)}
-          >
-            {t("copyCodes")}
-          </Button>
-          <Button type="button" onClick={download}>
-            {t("download")}
-          </Button>
-        </div>
+        <BackupCodeList
+          codes={codes}
+          labels={{
+            list: t("backupCodes"),
+            copy: t("copyCodes"),
+            download: t("download"),
+            fileName: t("fileName"),
+          }}
+        />
         <div className="flex items-start gap-2 text-body">
           <Checkbox
             id={savedId}

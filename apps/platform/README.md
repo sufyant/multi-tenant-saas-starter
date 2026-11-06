@@ -25,7 +25,6 @@ pnpm --filter @repo/platform build
 | `next-intl` | Messages and the locale (F13) | MIT |
 | `nuqs` | Filters, tabs, paging and sort in the URL (F9) | MIT |
 | `react-hook-form`, `@hookform/resolvers` | The create and the lifecycle dialogs of Organisations, with the generated Zod schemas (F11) | MIT |
-| `qrcode.react` | The QR code of the authenticator app's enrolment, drawn in the browser (F42) | ISC |
 | `next-themes` | Light, dark and system (F24) | MIT |
 | `@fontsource-variable/instrument-sans`, `@fontsource-variable/jetbrains-mono`, `@fontsource-variable/noto-sans-arabic` | The design's fonts. `next/font/local` loads their variable files, and the app serves them from its own origin (F19) | OFL-1.1 |
 | `@sentry/nextjs` | Error tracking: the errors of the browser and the server go to Better Stack, and the build uploads the source maps (F55). It brings `sentry`, the uploader, which runs in the build only | MIT; `sentry` is FSL-1.1-Apache-2.0, allowed by name in `.github/dependency-review-config.yml` (F38) |
