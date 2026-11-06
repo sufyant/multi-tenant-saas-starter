@@ -17,9 +17,11 @@ public sealed class MigrationStepTests(Database database)
 
     private const string MessageStorageExists = "SELECT to_regclass('wolverine.wolverine_incoming_envelopes') IS NOT NULL";
 
-    // A row as text without the columns that a later migration adds, so a test of an earlier migration compares the columns it knew:
-    // step 32's tenant plan and the summary's counts of custom roles and pending invitations.
-    private const string LaterColumnsLeftOut = "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries'])::text";
+    // A row as text without the columns that a later migration adds or replaces, so a test of an earlier migration compares the columns
+    // it knew: step 32's tenant plan and the summary's counts of custom roles and pending invitations, and step 36's one name of a user in
+    // place of the first and the last name.
+    private const string LaterColumnsLeftOut =
+        "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries', 'first_name', 'last_name', 'name'])::text";
 
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
     [Fact]
@@ -287,6 +289,46 @@ public sealed class MigrationStepTests(Database database)
             "SELECT concat_ws(' ', to_regclass('notifications.email_preferences'), to_regclass('notifications.notification_preferences'), 'gone')",
             before)).ShouldBe("gone");
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE user_id = '{user}'", before)).ShouldBe(1);
+    }
+
+    // Step 36: a person has one name (the maintainer's decision of 2026-11-06). The migration fills it from the first and the last name,
+    // joined by a space and trimmed; a user with neither, or with only spaces, keeps none, as a deleted user does. A joined name over the
+    // length of the domain keeps its first 100 characters (R17). The two columns go, and the unique index of the address and the rule of
+    // a deleted user's data still hold.
+    [Fact]
+    public async Task Migrate_UseOneNameForAPerson_JoinsTheFirstAndTheLastNameAndDropsThem()
+    {
+        var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("UseOneNameForAPerson");
+        var email = $"{Guid.NewGuid():N}@example.com";
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.users (id, external_id, email, first_name, last_name, language, deleted_at) VALUES
+                (gen_random_uuid(), 'both', '{email}', ' Ayşe ', 'Demir ', 'tr', NULL),
+                (gen_random_uuid(), 'first', NULL, 'Grace', NULL, 'en', NULL),
+                (gen_random_uuid(), 'last', NULL, NULL, 'Hopper', 'en', NULL),
+                (gen_random_uuid(), 'spaces', NULL, '', ' ', 'en', NULL),
+                (gen_random_uuid(), 'none', NULL, NULL, NULL, 'en', NULL),
+                (gen_random_uuid(), 'long', NULL, repeat('a', 100), repeat('b', 100), 'en', NULL),
+                (gen_random_uuid(), 'deleted', NULL, NULL, NULL, 'en', now());
+            """,
+            before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>(
+            "SELECT string_agg(external_id || '=' || coalesce(name, '-') || '|' || coalesce(email, '-') || '|' || language, ', ' ORDER BY external_id) FROM control_plane.users",
+            before)).ShouldBe(
+            $"both=Ayşe Demir|{email}|tr, deleted=-|-|en, first=Grace|-|en, last=Hopper|-|en, long={new string('a', 100)}|-|en, none=-|-|en, spaces=-|-|en");
+        (await database.ScalarAsSuperuserAsync<long>(
+            "SELECT count(*) FROM information_schema.columns WHERE table_schema = 'control_plane' AND table_name = 'users' AND column_name IN ('first_name', 'last_name')",
+            before)).ShouldBe(0);
+        var taken = await Should.ThrowAsync<PostgresException>(() => database.ScalarAsSuperuserAsync<object>(
+            $"INSERT INTO control_plane.users (id, external_id, email, language) VALUES (gen_random_uuid(), 'again', '{email}', 'en')", before));
+        (taken.SqlState, taken.ConstraintName).ShouldBe((PostgresErrorCodes.UniqueViolation, "ux_users_email"));
+        var named = await Should.ThrowAsync<PostgresException>(() => database.ScalarAsSuperuserAsync<object>(
+            "UPDATE control_plane.users SET name = 'Ada Lovelace' WHERE external_id = 'deleted'", before));
+        (named.SqlState, named.ConstraintName).ShouldBe((PostgresErrorCodes.CheckViolation, "ck_users_deleted_keeps_no_personal_data"));
     }
 
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one

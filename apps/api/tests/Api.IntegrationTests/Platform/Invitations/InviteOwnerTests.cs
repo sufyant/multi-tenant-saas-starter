@@ -52,7 +52,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
             .ShouldBe(["id", "email", "role", "invitedBy", "invitedByName", "createdAt", "expiresAt", "state", "language"], ignoreOrder: true);
         invitation.GetProperty("state").GetString().ShouldBe("pending");
         (invitation.GetProperty("email").GetString(), RoleAnswers.Of(invitation)).ShouldBe((owner, RoleAnswers.BuiltIn("owner")));
-        invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"firstName":null,"lastName":null,"deleted":false}""");
+        invitation.GetProperty("invitedByName").ToString().ShouldBe("""{"name":null,"deleted":false}""");
         var id = invitation.GetProperty("id").GetGuid();
         (await _testData.InvitationStatusOfAsync(id)).ShouldBe("Pending");
         _api.Email.Sent.Where(email => email.To == owner).ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{id}");

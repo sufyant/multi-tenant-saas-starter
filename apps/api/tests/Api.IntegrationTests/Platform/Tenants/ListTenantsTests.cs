@@ -284,7 +284,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         var graces = await PlatformTenants.InvitationIdOfAsync(
             await _api.WaitingForMessagesAsync(() => _api.CreateClient(first).InviteMemberAsync(owned, grace, role: "owner")));
         _time.Advance(TimeSpan.FromMinutes(1));
-        await tenants.AcceptAsync(graces, grace, "Grace", "Hopper");
+        await tenants.AcceptAsync(graces, grace, "Grace Hopper");
         var pendingTenant = await tenants.CreateAsync(admin, pending, name: $"{_marker} Bravo");
         var closedTenant = await tenants.CreateAsync(admin, closed, name: $"{_marker} Charlie");
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(closedTenant));

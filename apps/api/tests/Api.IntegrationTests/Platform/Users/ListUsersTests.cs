@@ -36,9 +36,9 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     {
         await UseADatabaseOfItsOwnAsync();
         var random = Guid.NewGuid().ToString();
-        var carol = await _testData.AddUserAsync(email: TestEmails.Of("carol@example.com"), firstName: "Carol", lastName: "Shaw");
+        var carol = await _testData.AddUserAsync(email: TestEmails.Of("carol@example.com"), name: "Carol Shaw");
         var bob = await _testData.AddSystemAdminAsync(email: TestEmails.Of("bob@example.com"));
-        var alice = await _testData.AddUserAsync(email: TestEmails.Of("alice@example.com"), firstName: "Alice", lastName: "Ball");
+        var alice = await _testData.AddUserAsync(email: TestEmails.Of("alice@example.com"), name: "Alice Ball");
         await _testData.SuspendUserAsync(alice);
         var deletedLater = await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: TestEmails.Of("dave@example.com"));
         await _testData.DeleteUserAsync(deletedLater);
@@ -52,15 +52,15 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         var page = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Users(page).ShouldBe(
         [
-            (await _testData.UserIdOfAsync(alice), TestEmails.Of("alice@example.com"), "Alice", "Ball", "suspended", false),
-            (await _testData.UserIdOfAsync(bob), TestEmails.Of("bob@example.com"), null, null, "active", true),
-            (await _testData.UserIdOfAsync(carol), TestEmails.Of("carol@example.com"), "Carol", "Shaw", "active", false),
-            (Guid.Parse($"0{random[1..]}"), null, null, null, "deleted", false),
-            (Guid.Parse($"f{random[1..]}"), null, null, null, "deleted", false),
+            (await _testData.UserIdOfAsync(alice), TestEmails.Of("alice@example.com"), "Alice Ball", "suspended", false),
+            (await _testData.UserIdOfAsync(bob), TestEmails.Of("bob@example.com"), null, "active", true),
+            (await _testData.UserIdOfAsync(carol), TestEmails.Of("carol@example.com"), "Carol Shaw", "active", false),
+            (Guid.Parse($"0{random[1..]}"), null, null, "deleted", false),
+            (Guid.Parse($"f{random[1..]}"), null, null, "deleted", false),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name)
             .ShouldBe(
-                ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt"],
+                ["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt"],
                 ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
@@ -77,7 +77,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(admin, secondFactor: true).GetFromJsonAsync<JsonElement>("/v1/platform/users?page=2&pageSize=2", Cancellation);
 
-        Users(page).ShouldBe([(await _testData.UserIdOfAsync(last), TestEmails.Of("cem@example.com"), null, null, "active", false)]);
+        Users(page).ShouldBe([(await _testData.UserIdOfAsync(last), TestEmails.Of("cem@example.com"), null, "active", false)]);
         page.GetProperty("page").GetInt32().ShouldBe(2);
         page.GetProperty("total").GetInt32().ShouldBe(3);
     }
@@ -95,18 +95,18 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("{0}@MATH.org", "Ada")]
-    [InlineData("grace{0}", "Grace")]
-    [InlineData("LOVELACE{0}", "Ada")]
+    [InlineData("{0}@MATH.org", "Ada Lovelace")]
+    [InlineData("grace hopper{0}", "Grace Hopper")]
+    [InlineData("LOVELACE{0}", "Ada Lovelace")]
     public async Task ListUsers_ASearch_FindsTheUsersWhoseEmailOrNameContainsItInAnyCase(string q, string found)
     {
-        await _testData.AddUserAsync(email: $"{_marker}@math.org", firstName: $"Ada{_marker}", lastName: $"Lovelace{_marker}");
-        await _testData.AddUserAsync(email: $"{_marker}@navy.mil", firstName: $"Grace{_marker}", lastName: $"Hopper{_marker}");
+        await _testData.AddUserAsync(email: $"{_marker}@math.org", name: $"Ada Lovelace{_marker}");
+        await _testData.AddUserAsync(email: $"{_marker}@navy.mil", name: $"Grace Hopper{_marker}");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>(
             $"/v1/platform/users?q={Uri.EscapeDataString(string.Format(CultureInfo.InvariantCulture, q, _marker))}", Cancellation);
 
-        Users(page).Select(user => user.FirstName).ShouldBe([$"{found}{_marker}"]);
+        Users(page).Select(user => user.Name).ShouldBe([$"{found}{_marker}"]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
     }
 
@@ -120,7 +120,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={Uri.EscapeDataString($"{_marker} {q}")}", Cancellation);
 
-        Users(page).Select(user => user.LastName).ShouldBe([$"{_marker} {found}"]);
+        Users(page).Select(user => user.Name).ShouldBe([$"{_marker} {found}"]);
     }
 
     // A deleted user has no name or email address left to search for, so the test reads a database of its own. The admin who asks is
@@ -303,16 +303,16 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("total").GetInt32().ShouldBe(0);
     }
 
-    // A user without a last name comes last in both directions, as a user without an email address does.
+    // A user without a name comes last in both directions, as a user without an email address does.
     [Theory]
     [InlineData("email", "al, bea, cy")]
     [InlineData("-email", "cy, bea, al")]
-    [InlineData("lastName", "bea, al, cy")]
-    [InlineData("-lastName", "al, bea, cy")]
+    [InlineData("name", "bea, al, cy")]
+    [InlineData("-name", "al, bea, cy")]
     public async Task ListUsers_ASortField_OrdersByItInItsDirection(string sort, string emails)
     {
-        await _testData.AddUserAsync(email: $"bea{_marker}@t.org", lastName: "Young");
-        await _testData.AddUserAsync(email: $"al{_marker}@t.org", lastName: "Zed");
+        await _testData.AddUserAsync(email: $"bea{_marker}@t.org", name: "Young");
+        await _testData.AddUserAsync(email: $"al{_marker}@t.org", name: "Zed");
         await _testData.AddUserAsync(email: $"cy{_marker}@t.org");
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
@@ -325,24 +325,24 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     [InlineData("-email", "b, a, <none>")]
     public async Task ListUsers_SortedByEmail_PutsUsersWithoutOneLastInBothDirections(string sort, string emails)
     {
-        await _testData.AddUserAsync(email: $"b{_marker}@t.org", firstName: _marker);
-        await _testData.AddUserAsync(firstName: _marker);
-        await _testData.AddUserAsync(email: $"a{_marker}@t.org", firstName: _marker);
+        await _testData.AddUserAsync(email: $"b{_marker}@t.org", name: _marker);
+        await _testData.AddUserAsync(name: _marker);
+        await _testData.AddUserAsync(email: $"a{_marker}@t.org", name: _marker);
 
         var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}", Cancellation);
 
         EmailsOf(page).ShouldBe(emails);
     }
 
-    // Two live users never keep one address (A7), so only the last name can tie.
+    // Two live users never keep one address (A7), so only the name can tie.
     [Theory]
-    [InlineData("lastName")]
-    [InlineData("-lastName")]
+    [InlineData("name")]
+    [InlineData("-name")]
     public async Task ListUsers_TwoUsersWithTheSameSortValue_KeepTheirOrderAcrossPages(string sort)
     {
         var random = Guid.NewGuid().ToString();
-        await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: $"same1{_marker}@t.org", lastName: "Same");
-        await _testData.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: $"same2{_marker}@t.org", lastName: "Same");
+        await _testData.AddUserAsync(Guid.Parse($"f{random[1..]}"), email: $"same1{_marker}@t.org", name: "Same");
+        await _testData.AddUserAsync(Guid.Parse($"0{random[1..]}"), email: $"same2{_marker}@t.org", name: "Same");
         var admin = await SystemAdminAsync();
 
         var first = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&sort={sort}&pageSize=1&page=1", Cancellation);
@@ -354,7 +354,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     [Theory]
     [InlineData("sort=age", "paging.sort_invalid")]
     [InlineData("sort=Email", "paging.sort_invalid")]
-    [InlineData("sort=firstName", "paging.sort_invalid")]
+    [InlineData("sort=lastName", "paging.sort_invalid")]
     [InlineData("status=Active", "paging.filter_invalid")]
     [InlineData("status=banned", "paging.filter_invalid")]
     [InlineData("isSystemAdmin=yes", "request.invalid")]
@@ -475,13 +475,12 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             .ShouldBe((await _testData.UserIdOfAsync(user), false, false));
     }
 
-    private static List<(Guid Id, string? Email, string? FirstName, string? LastName, string Status, bool IsSystemAdmin)> Users(JsonElement page) =>
+    private static List<(Guid Id, string? Email, string? Name, string Status, bool IsSystemAdmin)> Users(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => (
             item.GetProperty("id").GetGuid(),
             item.GetProperty("email").GetString(),
-            item.GetProperty("firstName").GetString(),
-            item.GetProperty("lastName").GetString(),
+            item.GetProperty("name").GetString(),
             item.GetProperty("status").GetString()!,
             item.GetProperty("isSystemAdmin").GetBoolean())),
     ];
@@ -495,7 +494,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
             settings: roots.Select((root, index) => KeyValuePair.Create($"ControlPlane:SystemAdmins:RootEmails:{index}", (string?)root)).ToDictionary());
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name = "Ada Lovelace" }, Cancellation);
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
@@ -512,12 +511,12 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     private string EmailsOf(JsonElement page) =>
         string.Join(", ", Users(page).Select(user => user.Email?.Split(_marker)[0] ?? "<none>"));
 
-    // Users whose last names carry the test's marker, so that a search for the marker finds them alone.
-    private async Task AddUsersAsync(params string[] lastNames)
+    // Users whose names carry the test's marker, so that a search for the marker finds them alone.
+    private async Task AddUsersAsync(params string[] names)
     {
-        foreach (var lastName in lastNames)
+        foreach (var name in names)
         {
-            await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", lastName: $"{_marker} {lastName}");
+            await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: $"{_marker} {name}");
         }
     }
 }

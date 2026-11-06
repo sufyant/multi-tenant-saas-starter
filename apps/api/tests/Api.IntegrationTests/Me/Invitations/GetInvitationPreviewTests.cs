@@ -36,7 +36,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     public async Task GetInvitationPreview_APendingInvitationForTheCaller_NamesTheTenantTheInviterAndTheRole()
     {
         var tenant = await _testData.AddTenantAsync(name: "Preview Ltd");
-        var ada = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var ada = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: "Owner");
         var invitation = await InvitationAsync(tenant.Id, role: "Admin", invitedBy: ada);
 
         var response = await PreviewAsync(invitation.Invitee, invitation.Code);
@@ -45,7 +45,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         var preview = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         preview.EnumerateObject().Select(field => field.Name).ShouldBe(["tenantName", "inviterName", "role", "expiresAt", "state"], ignoreOrder: true);
         preview.GetProperty("tenantName").GetString().ShouldBe("Preview Ltd");
-        preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"user","firstName":"Ada","lastName":"Lovelace","deleted":false}""");
+        preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"user","name":"Ada Lovelace","deleted":false}""");
         RoleAnswers.Of(preview).ShouldBe(RoleAnswers.BuiltIn("admin"));
         preview.GetProperty("expiresAt").GetDateTimeOffset().ShouldBe(Later, TimeSpan.FromMilliseconds(1));
         preview.GetProperty("state").GetString().ShouldBe("pending");
@@ -86,14 +86,14 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     public async Task GetInvitationPreview_AnInvitationThePlatformSent_NamesThePlatformAsTheInviter()
     {
         var tenant = await _testData.AddTenantAsync();
-        var admin = await _testData.AddUserAsync(firstName: "Sys", lastName: "Admin");
+        var admin = await _testData.AddUserAsync(name: "Sys Admin");
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'");
         var invitation = await InvitationAsync(tenant.Id, role: "Owner", invitedBy: admin);
 
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
 
-        preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"platform","firstName":null,"lastName":null,"deleted":null}""");
+        preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"platform","name":null,"deleted":null}""");
         RoleAnswers.Of(preview).ShouldBe(RoleAnswers.BuiltIn("owner"));
     }
 
@@ -102,13 +102,13 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
     public async Task GetInvitationPreview_AnInviterWhoWasDeleted_HasNoNameAndSaysDeleted()
     {
         var tenant = await _testData.AddTenantAsync();
-        var inviter = await _testData.AddUserAsync(firstName: "Gone", lastName: "Away");
+        var inviter = await _testData.AddUserAsync(name: "Gone Away");
         var invitation = await InvitationAsync(tenant.Id, invitedBy: inviter);
         await _testData.DeleteUserAsync(inviter);
 
         var preview = await (await PreviewAsync(invitation.Invitee, invitation.Code)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
 
-        preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"user","firstName":null,"lastName":null,"deleted":true}""");
+        preview.GetProperty("inviterName").ToString().ShouldBe("""{"kind":"user","name":null,"deleted":true}""");
     }
 
     // A forwarded link tells its holder only what the email told them. A caller without the invited address is refused before the state
@@ -326,7 +326,7 @@ public sealed class GetInvitationPreviewTests(Database database) : IAsyncLifetim
         _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/preview", new { code }, Cancellation);
 
     private Task<HttpResponseMessage> AcceptAsync(string userId, string code) =>
-        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, firstName = "Ada", lastName = "Lovelace" }, Cancellation);
+        _api.CreateClient(userId).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name = "Ada Lovelace" }, Cancellation);
 
     private Task<string?> RowVersionOfAsync(Guid invitationId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT xmin::text FROM control_plane.invitations WHERE id = '{invitationId}'");

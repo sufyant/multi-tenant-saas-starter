@@ -73,7 +73,7 @@ public sealed class ListNotificationsTests(Database database) : IAsyncLifetime
     public async Task ListNotifications_TheActorWasDeletedSince_NamesThemDeletedUserInTheLanguage(string language, string body, string actor)
     {
         var tenant = await _testData.AddTenantAsync();
-        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: "Owner");
         await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: language));
         var memberId = await _testData.UserIdOfAsync(member);
@@ -95,11 +95,11 @@ public sealed class ListNotificationsTests(Database database) : IAsyncLifetime
     public async Task ListNotifications_TheActorRenamedThemselvesSince_NamesThemByTheirNameNow()
     {
         var tenant = await _testData.AddTenantAsync();
-        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: "Owner");
         var member = await _testData.AddMemberAsync(tenant.Id);
         var memberId = await _testData.UserIdOfAsync(member);
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).ChangeMemberRoleAsync(tenant.Id, memberId, "admin"));
-        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.users SET last_name = 'King' WHERE external_id = '{owner}'");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.users SET name = 'Ada King' WHERE external_id = '{owner}'");
 
         var page = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/notifications", Cancellation);
 
@@ -219,7 +219,7 @@ public sealed class ListNotificationsTests(Database database) : IAsyncLifetime
     public async Task ListNotifications_ANewMember_NamesTheAreaInTheLanguageTheActorAndTheOrganisation(string language, string area)
     {
         var tenant = await _testData.AddTenantAsync();
-        var joined = await _testData.UserIdOfAsync(await _testData.AddUserAsync(firstName: "Omar", lastName: "Haddad"));
+        var joined = await _testData.UserIdOfAsync(await _testData.AddUserAsync(name: "Omar Haddad"));
         var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(language: language));
         await _rows.AddAsync(
             await _testData.UserIdOfAsync(member),

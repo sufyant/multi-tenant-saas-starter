@@ -187,7 +187,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
 
         (found.GetProperty("memberCount").GetInt32(), found.GetProperty("ownerCount").GetInt32()).ShouldBe((1, 1));
-        Owners(found).ShouldBe([$"{await _testData.UserIdOfAsync(owner)}|Ada|Lovelace|{email}"]);
+        Owners(found).ShouldBe([$"{await _testData.UserIdOfAsync(owner)}|Ada Lovelace|{email}"]);
         found.GetProperty("ownerInvitation").ValueKind.ShouldBe(JsonValueKind.Null);
         found.GetProperty("reopenableUntil").ValueKind.ShouldBe(JsonValueKind.Null);
     }
@@ -203,15 +203,15 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var graces = await PlatformTenants.InvitationIdOfAsync(
             await _api.WaitingForMessagesAsync(() => _api.CreateClient(first).InviteMemberAsync(tenant, grace, role: "owner")));
         _time.Advance(TimeSpan.FromMinutes(1));
-        var (second, _) = await _tenants.AcceptAsync(graces, grace, "Grace", "Hopper");
+        var (second, _) = await _tenants.AcceptAsync(graces, grace, "Grace Hopper");
         var alans = await PlatformTenants.InvitationIdOfAsync(
             await _api.WaitingForMessagesAsync(() => _api.CreateClient(first).InviteMemberAsync(tenant, alan, role: "member")));
-        await _tenants.AcceptAsync(alans, alan, "Alan", "Turing");
+        await _tenants.AcceptAsync(alans, alan, "Alan Turing");
 
         var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
 
         (found.GetProperty("memberCount").GetInt32(), found.GetProperty("ownerCount").GetInt32()).ShouldBe((3, 2));
-        Owners(found).ShouldBe([$"{await _testData.UserIdOfAsync(first)}|Ada|Lovelace|{ada}", $"{await _testData.UserIdOfAsync(second)}|Grace|Hopper|{grace}"]);
+        Owners(found).ShouldBe([$"{await _testData.UserIdOfAsync(first)}|Ada Lovelace|{ada}", $"{await _testData.UserIdOfAsync(second)}|Grace Hopper|{grace}"]);
         found.GetProperty("ownerInvitation").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
@@ -270,10 +270,10 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.not_found");
     }
 
-    // Each Owner as "userId|firstName|lastName|email".
+    // Each Owner as "userId|name|email".
     private static IEnumerable<string> Owners(JsonElement tenant) =>
         tenant.GetProperty("owners").EnumerateArray().Select(owner =>
-            $"{owner.GetProperty("userId").GetGuid()}|{owner.GetProperty("firstName").GetString()}|{owner.GetProperty("lastName").GetString()}|{owner.GetProperty("email").GetString()}");
+            $"{owner.GetProperty("userId").GetGuid()}|{owner.GetProperty("name").GetString()}|{owner.GetProperty("email").GetString()}");
 
     // The Owner invitation as "email|expiresAt|state".
     private static string Invitation(JsonElement tenant)

@@ -78,7 +78,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
     public async Task NotifyMemberRemoved_AnOwnerRemovesAMember_WritesAPersonalOneWithTheOwnerByIdAndSendsTheRequiredEmail()
     {
         var tenant = await _testData.AddTenantAsync();
-        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Ada", lastName: "Lovelace"), role: "Owner");
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Ada Lovelace"), role: "Owner");
         var email = PlatformTenants.Email();
         var member = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email));
         var (ownerId, memberId) = (await _testData.UserIdOfAsync(owner), await _testData.UserIdOfAsync(member));
@@ -112,7 +112,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         var email = PlatformTenants.Email();
         var invited = await _api.WaitingForMessagesAsync(() => _api.CreateClient(inviter).InviteMemberAsync(tenant.Id, email));
 
-        var (person, _) = await new PlatformTenants(database, _api).AcceptAsync(await PlatformTenants.InvitationIdOfAsync(invited), email, "Grace", "Hopper");
+        var (person, _) = await new PlatformTenants(database, _api).AcceptAsync(await PlatformTenants.InvitationIdOfAsync(invited), email, "Grace Hopper");
 
         var (inviterId, personId) = (await _testData.UserIdOfAsync(inviter), await _testData.UserIdOfAsync(person));
         (await _rows.OfAsync(inviterId, personId)).ShouldBe([NotificationRows.Row(inviterId, "member.joined", tenant.Id, "Tenant")]);

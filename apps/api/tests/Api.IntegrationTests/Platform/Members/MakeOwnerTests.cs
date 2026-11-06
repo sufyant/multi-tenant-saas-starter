@@ -124,7 +124,7 @@ public sealed class MakeOwnerTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var member = await _testData.UserIdOfAsync(
-            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(firstName: "Mehmet", lastName: "Kaya"), "Admin"));
+            await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(name: "Mehmet Kaya"), "Admin"));
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var adminRole = await _testData.RoleIdOfAsync(tenant.Id, "Admin");
 

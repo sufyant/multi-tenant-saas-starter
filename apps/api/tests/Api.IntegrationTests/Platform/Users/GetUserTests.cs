@@ -33,7 +33,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     public async Task GetUser_AMemberOfSeveralTenants_ReturnsTheUserAndEachMembershipByTenantName()
     {
         var email = $"{Guid.NewGuid():N}@example.com";
-        var user = await _testData.AddUserAsync(email: email, firstName: "Ada", lastName: "Lovelace", createdAt: Created);
+        var user = await _testData.AddUserAsync(email: email, name: "Ada Lovelace", createdAt: Created);
         var alone = await _testData.AddTenantAsync(name: "Alpha Ltd");
         var shared = await _testData.AddTenantAsync(name: "Bravo Ltd");
         var suspended = await _testData.AddTenantAsync(name: "Charlie Ltd", status: "Suspended");
@@ -52,10 +52,10 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "firstName", "lastName", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
+            ["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
             ignoreOrder: true);
-        (found.GetProperty("id").GetGuid(), found.GetProperty("email").GetString(), found.GetProperty("firstName").GetString(), found.GetProperty("lastName").GetString())
-            .ShouldBe((id, email, "Ada", "Lovelace"));
+        (found.GetProperty("id").GetGuid(), found.GetProperty("email").GetString(), found.GetProperty("name").GetString())
+            .ShouldBe((id, email, "Ada Lovelace"));
         (found.GetProperty("status").GetString(), found.GetProperty("isSystemAdmin").GetBoolean(), found.GetProperty("membershipCount").GetInt32())
             .ShouldBe(("active", false, 4));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(Created);
@@ -101,7 +101,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetUser_ASuspendedUser_SaysWhenAndNamesTheSystemAdminWhoSuspendedThem()
     {
-        var admin = await _testData.AddUserAsync(firstName: "Sys", lastName: "Admin");
+        var admin = await _testData.AddUserAsync(name: "Sys Admin");
         await database.ScalarAsync<object>(
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'");
         var client = _api.CreateClient(admin, secondFactor: true);
@@ -112,7 +112,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
 
         found.GetProperty("status").GetString().ShouldBe("suspended");
         found.GetProperty("suspendedAt").GetDateTimeOffset().ShouldBe(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
-        found.GetProperty("suspendedBy").ToString().ShouldBe("""{"firstName":"Sys","lastName":"Admin","deleted":false}""");
+        found.GetProperty("suspendedBy").ToString().ShouldBe("""{"name":"Sys Admin","deleted":false}""");
     }
 
     // A reactivation forgets who suspended the user.
@@ -136,14 +136,14 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     public async Task GetUser_ADeletedUser_HasNoEmailNoNamesAndNoMemberships()
     {
         var tenant = await _testData.AddTenantAsync();
-        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", firstName: "Gone"));
+        var user = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Gone"));
         var id = await _testData.UserIdOfAsync(user);
         var client = await SystemAdminAsync();
         (await _api.WaitingForMessagesAsync(() => client.DeleteAsync($"/v1/platform/users/{id}", Cancellation))).EnsureSuccessStatusCode();
 
         var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
-        (found.GetProperty("status").GetString(), found.GetProperty("email").GetString(), found.GetProperty("firstName").GetString())
+        (found.GetProperty("status").GetString(), found.GetProperty("email").GetString(), found.GetProperty("name").GetString())
             .ShouldBe(("deleted", null, null));
         found.GetProperty("memberships").GetArrayLength().ShouldBe(0);
         found.GetProperty("membershipCount").GetInt32().ShouldBe(0);
