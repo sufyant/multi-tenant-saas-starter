@@ -38,8 +38,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const me = getGetMeResponseMock({
-  firstName: "Ayşe",
-  lastName: "Yılmaz",
+  name: "Ayşe Yılmaz",
   email: "ayse@northwind.io",
   language: Language.En,
   timeZone: "Europe/Istanbul",

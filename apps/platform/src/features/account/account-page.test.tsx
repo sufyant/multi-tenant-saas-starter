@@ -38,8 +38,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const me = getGetMeResponseMock({
-  firstName: "Ciara",
-  lastName: "Byrne",
+  name: "Ciara Byrne",
   email: "ciara@starter.dev",
   isSystemAdmin: true,
   language: Language.En,
