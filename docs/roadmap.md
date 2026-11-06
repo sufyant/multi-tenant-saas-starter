@@ -121,6 +121,59 @@ Status: todo. It has two parts.
 - The organisation's Owners also receive tenant.suspended, tenant.reactivated, tenant.closed, tenant.reopened and tenant.purged, by bell and email, with their own texts in three languages.
 - The pages move to Pill and Label.
 
+The parts of 37a, in their order. The frames are the Web app page of the design, unless a frame names the Platform app. The pull request of this plan holds the table of every frame with its part, and the table of every value with its field.
+
+37a-design, two frames that the design does not have yet (the maintainer's decision of 2026-11-06):
+
+- A blocked account: 403 `user.suspended` or `user.deleted` (A9).
+- A refused join: 422 `invitation.system_admin_cannot_join` (T5).
+- It comes before 37a-frontend-1.
+
+37a-backend-1, the Owners' notifications and the sender:
+
+- Five new types tell an organisation's Owners of `tenant.suspended`, `tenant.reactivated`, `tenant.closed`, `tenant.reopened` and `tenant.purged`, with their own texts and footers in three languages. Each is named apart (U9), because the same event tells the system admins with other texts.
+- They go to the personal bell and by email (U5). The suspended, closed and purged types lead to the start page; the reactivated and reopened types lead to the organisation (the maintainer's decisions of 2026-11-06).
+- An email's sender takes its name from `packages/brand/brand.json` and its address from the setting `Notifications:Resend:FromAddress`, which replaces `Notifications:Resend:From`. `.railway/railway.ts` names the new variable (the maintainer's decision of 2026-11-06).
+
+37a-backend-2, the exports' audit entries:
+
+- Two small commands write the audit entries `members.exported` and `activity_log.exported` in the organisation's Activity log. The web calls each one before it writes the file (the maintainer's decision of 2026-11-06).
+
+37a-time-zone-cities, the city of a time zone in each language:
+
+- One generated JSON holds each time zone's city in English, Turkish and Arabic, from the `exemplarCity` of Unicode CLDR. The web, the platform and the API's emails read the same file. The file is committed, and the CI job "Generated files: current" checks it (the maintainer's decision of 2026-11-06).
+- The Unicode License v3 joins `.github/dependency-review-config.yml`. F18 gets an exception for the city names.
+
+37a-emails, the emails in the new design:
+
+- The invitation, the removal, the data file, the generic notification, the closed organisation and the deletion warning, in light and dark, in three languages (13.01, 13.03 to 13.08, 13.10 to 13.15).
+- It waits for 37a-backend-1 and 37a-time-zone-cities.
+
+37a-frontend-sign-in, the sign-in screens of both apps:
+
+- The web's sign-in frames (1.01 to 1.08, 1.20 to 1.22, 1.35 to 1.39) and the platform's (1.01 to 1.12 of the Platform app). "Finishing sign-in" (1.38) is built if the code does not have it (the maintainer's decision of 2026-11-06).
+
+37a-frontend-1, the pages before an organisation opens:
+
+- Accept invitation, an ended invitation, the invitation for another email, Choose an organisation, No access yet, the blocked organisation, and the two frames of 37a-design (1.13, 1.16 to 1.19, 1.23, 2.13, 2.14, 8.24).
+- An ended invitation writes its end date from `expiresAt`, in the person's time zone (F18), in place of the frame's "7 days". A cancelled invitation has its own text (the maintainer's decision of 2026-11-06).
+- "Last used" comes from a cookie that holds only the organisation's slug: HttpOnly, Secure, SameSite=Lax. A slug of an organisation the person can no longer open is ignored, and the cookie is deleted (the maintainer's decision of 2026-11-06).
+- The stale mentions of "Settings › Notifications" go.
+- Step 36's leftover: the Profile's language and time zone fields have the chevron the frames draw, down and not up-down.
+- It waits for 37a-design.
+
+37a-frontend-2, General and Members:
+
+- General (7.01 to 7.05) and Members (8.01 to 8.23, 8.25 to 8.38, 8.41, 8.43, 8.45), with the CSV export of the members.
+- The web's server writes the CSV file from the API's pages, as a stream, after the audit call of 37a-backend-2. A cell that starts with `=`, `+`, `-` or `@` is escaped (OWASP, "CSV Injection"; the maintainer's decision of 2026-11-06).
+- "No free seat" ends with "ask us for more seats", which links to the support contact of `brand.json` (8.43, 8.45, without the billing manager; the maintainer's decision of 2026-11-06).
+- It waits for 37a-backend-2.
+
+37a-frontend-3, Roles and Activity log:
+
+- Roles (9.01 to 9.17, 9.r16) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
+- It waits for 37a-backend-2.
+
 37b, the platform's pages:
 
 - Organisations, Users, Plans, Activity log and System admins in the new design.
@@ -170,6 +223,7 @@ The model:
 - The seeded plans: Free (3 seats), Team (15 seats, 5 custom roles) and Business (50 seats, 20 custom roles).
 - A new permission, `tenant.billing.manage`. The Owner holds it by default.
 - A fourth built-in role, Billing manager, with `tenant.profile.read`, `tenant.members.read` and `tenant.billing.manage`. It is free: it takes no seat and no fee per person. Product modules never add permissions to it.
+- Members' "No free seat" says "ask us for more seats" since step 37a. This text changes with the plan: an organisation that pays by card can change its plan (8.39, 8.40), a Contract organisation keeps the text (8.43, 8.45).
 
 40b, Stripe:
 
