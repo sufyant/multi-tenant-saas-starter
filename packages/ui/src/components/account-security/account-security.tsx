@@ -14,12 +14,12 @@ import { InlineSkeleton } from "../skeleton";
 import { showToast } from "../toast";
 import { Card, Row } from "./card";
 import { EmailChange, type EmailChangeProps } from "./email-change";
+import { useFailure } from "./failure";
 import {
   connectedAccount,
   describeSession,
   disconnect,
   type IdentitySession,
-  isCancelled,
   type Provider,
   providers,
   removeUnfinished,
@@ -497,14 +497,4 @@ function DeviceList({
 function countryName(country: string | undefined, locale: string) {
   if (!country || !/^[A-Z]{2}$/.test(country)) return country;
   return new Intl.DisplayNames([locale], { type: "region" }).of(country);
-}
-
-/** A change the identity provider refused: a cancelled check says nothing; any other failure says it did not work. */
-function useFailure(onUnexpectedError?: (error: Error) => void) {
-  const t = useTranslations("accountSecurity");
-  return (reason: unknown) => {
-    if (isCancelled(reason)) return;
-    if (reason instanceof Error) onUnexpectedError?.(reason);
-    showToast({ title: t("notDone"), tone: "destructive" });
-  };
 }

@@ -130,6 +130,13 @@ export async function revoke(...sessions: IdentitySession[]) {
 export const authenticatorOn = (user: IdentityUser | null | undefined) =>
   Boolean(user?.totpEnabled);
 
+/** Asks Clerk for an authenticator's secret, which the person scans or types. */
+export const createAuthenticator = (user: IdentityUser) => user.createTOTP();
+
+/** Reads the person again, after a change Clerk does not write back by itself. */
+export const readAgain = (user: IdentityUser | null | undefined) =>
+  user?.reload();
+
 /** New backup codes; the earlier ones stop working. */
 export async function newBackupCodes(user: IdentityUser) {
   return (await user.createBackupCode()).codes;

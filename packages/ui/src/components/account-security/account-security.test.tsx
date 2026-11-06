@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import en from "../../../messages/en.json";
 import { expectVisibleToast } from "../../../test/toast";
-import { Toaster } from "../toast";
+import { dismissToasts, Toaster } from "../toast";
 import { AccountSecurity, type AccountSecurityProps } from "./account-security";
 
 // Clerk is a system we do not own: its hooks are faked at their boundary, with the resources the page reads.
@@ -144,7 +144,10 @@ function renderPage(overrides: Partial<AccountSecurityProps> = {}) {
 }
 
 afterEach(() => {
+  // sonner shows the toasts still open to the next Toaster that mounts, as the apps' test setup says.
+  dismissToasts();
   clerk.reverify = null;
+  clerk.session = { id: "sess_chrome" };
   window.history.replaceState(null, "", "/");
   vi.restoreAllMocks();
 });
@@ -594,6 +597,34 @@ describe("AccountSecurity", () => {
     ).toBeNull();
     expect(screen.queryByText("That did not work")).toBeNull();
     expect(onUnexpectedError).not.toHaveBeenCalled();
+  });
+
+  // The check opens inside the question's dialog, so the question does not hide it from the person (Base UI's nested dialogs).
+  it("AccountSecurity_DisconnectAskedForACheck_ShowsConfirmOverTheQuestion", async () => {
+    clerk.user = userOf();
+    clerk.session = {
+      id: "sess_chrome",
+      startVerification: vi.fn(async () => ({ status: "needs_second_factor" })),
+    };
+    clerk.reverify = (asked) =>
+      (
+        asked as { onNeedsReverification: (properties: unknown) => void }
+      ).onNeedsReverification({
+        level: "second_factor",
+        complete: vi.fn(),
+        cancel: vi.fn(),
+      });
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    const question = within(
+      await screen.findByRole("alertdialog", { name: "Disconnect Google?" }),
+    );
+    await userEvent.click(question.getByRole("button", { name: "Disconnect" }));
+
+    expect(
+      await screen.findByRole("alertdialog", { name: "Confirm it’s you" }),
+    ).toBeInTheDocument();
   });
 
   it("AccountSecurity_NewBackupCodesFail_SaysItDidNotWork", async () => {

@@ -8,9 +8,13 @@ import { Dialog } from "../dialog";
 import { showToast } from "../toast";
 import { BackupCodeList, TotpFields, useTotpEnrolment } from "../two-step";
 import { Card, Row } from "./card";
+import { useFailure } from "./failure";
 import {
   authenticatorOn,
+  createAuthenticator,
+  isCancelled,
   newBackupCodes,
+  readAgain,
   turnOffAuthenticator,
   useIdentity,
   useSensitive,
@@ -38,6 +42,7 @@ export function TwoStep({
   const [codes, setCodes] = useState<string[]>([]);
   const [firstCodes, setFirstCodes] = useState(false);
   const on = required || authenticatorOn(user);
+  const failed = useFailure(onUnexpectedError);
   const making = useSensitive(
     () => (user ? newBackupCodes(user) : Promise.resolve([])),
     onUnexpectedError,
@@ -49,6 +54,13 @@ export function TwoStep({
     setOpen("codes");
   };
 
+  // However the codes' dialog closes, the person is read again: Clerk's verification does not write the factor back to them.
+  const codesSeen = () => {
+    setOpen(undefined);
+    void readAgain(user);
+    if (firstCodes) showToast({ title: t("isOn"), description: t("isOnText") });
+  };
+
   const actions = required ? null : on ? (
     <>
       <Button
@@ -56,7 +68,7 @@ export function TwoStep({
           void making
             .run()
             .then((next) => showCodes(next, false))
-            .catch(() => {})
+            .catch(failed)
         }
       >
         {t("newCodes")}
@@ -86,17 +98,12 @@ export function TwoStep({
       {open === "codes" && (
         <Dialog
           open
-          onOpenChange={(isOpen) => !isOpen && setOpen(undefined)}
+          onOpenChange={(isOpen) => !isOpen && codesSeen()}
           title={t("codesTitle")}
           description={t("codesText")}
           actionLabel={t("savedCodes")}
           action="primary"
-          onConfirm={() => {
-            setOpen(undefined);
-            void user?.reload();
-            if (firstCodes)
-              showToast({ title: t("isOn"), description: t("isOnText") });
-          }}
+          onConfirm={codesSeen}
         >
           <BackupCodeList
             codes={codes}
@@ -139,10 +146,19 @@ function SetUp({
 }) {
   const t = useTranslations();
   const [code, setCode] = useState("");
-  const creating = useSensitive(() => user.createTOTP(), onUnexpectedError);
+  const creating = useSensitive(
+    () => createAuthenticator(user),
+    onUnexpectedError,
+  );
   const { totp, verify, error, pending } = useTotpEnrolment({
     user,
-    create: creating.run,
+    // A cancelled check closes Set up and says nothing; the promise then never settles, so the enrolment shows no error.
+    create: () =>
+      creating.run().catch((reason: unknown) => {
+        if (!isCancelled(reason)) throw reason;
+        onCancel();
+        return new Promise<never>(() => {});
+      }),
     onEnrolled,
     onUnexpectedError,
   });
@@ -151,38 +167,37 @@ function SetUp({
     if (!pending) void verify(code);
   };
   return (
-    <>
-      <Dialog
-        open
-        onOpenChange={(isOpen) => !isOpen && onCancel()}
-        title={t("accountSecurity.setUpTitle")}
-        actionLabel={t("accountSecurity.turnOn")}
-        action="primary"
-        cancelLabel={t("common.cancel")}
-        actionDisabled={!totp}
-        pending={pending}
-        onConfirm={() => submit()}
-      >
-        <form noValidate onSubmit={submit}>
-          <TotpFields
-            totp={totp}
-            code={code}
-            onCodeChange={setCode}
-            error={error && t(`signIn.errors.${error}`)}
-            disabled={pending}
-            labels={{
-              scan: t("accountSecurity.scan"),
-              qr: t("accountSecurity.qr"),
-              cannotScan: t("accountSecurity.cannotScan"),
-              copyKey: t("accountSecurity.copyKey"),
-              copied: t("accountSecurity.copied"),
-              enterCode: t("accountSecurity.enterCode"),
-            }}
-          />
-        </form>
-      </Dialog>
+    <Dialog
+      open
+      onOpenChange={(isOpen) => !isOpen && onCancel()}
+      title={t("accountSecurity.setUpTitle")}
+      actionLabel={t("accountSecurity.turnOn")}
+      action="primary"
+      cancelLabel={t("common.cancel")}
+      actionDisabled={!totp}
+      pending={pending}
+      onConfirm={() => submit()}
+    >
+      <form noValidate onSubmit={submit}>
+        <TotpFields
+          totp={totp}
+          code={code}
+          onCodeChange={setCode}
+          error={error && t(`signIn.errors.${error}`)}
+          disabled={pending}
+          labels={{
+            scan: t("accountSecurity.scan"),
+            qr: t("accountSecurity.qr"),
+            cannotScan: t("accountSecurity.cannotScan"),
+            copyKey: t("accountSecurity.copyKey"),
+            copied: t("accountSecurity.copied"),
+            enterCode: t("accountSecurity.enterCode"),
+          }}
+        />
+      </form>
+      {/* Inside Set up's dialog, so Base UI keeps the check on top of it as a nested dialog. */}
       {creating.confirm}
-    </>
+    </Dialog>
   );
 }
 
