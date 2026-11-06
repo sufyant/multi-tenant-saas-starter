@@ -12,7 +12,6 @@ export type Inviter =
 export function inviterOf(name: InviterNameResponse): Inviter {
   if (name.kind === InviterNameResponseKind.Platform)
     return { kind: "platform" };
-  const full = [name.firstName, name.lastName].filter(Boolean).join(" ");
-  if (name.deleted || full === "") return { kind: "deletedUser" };
-  return { kind: "person", name: full };
+  if (name.deleted || !name.name) return { kind: "deletedUser" };
+  return { kind: "person", name: name.name };
 }

@@ -49,8 +49,7 @@ const usersFoundBy = (email: string | undefined) =>
 const views = ["overview", "activity"] as const;
 const viewParser = parseAsStringLiteral(views).withDefault("overview");
 
-const nameOf = (owner: TenantOwnerResponse) =>
-  [owner.firstName, owner.lastName].filter(Boolean).join(" ") || null;
+const nameOf = (owner: TenantOwnerResponse) => owner.name || null;
 
 /**
  * One organisation (the OrgDetail, OrgOwnerless, OrgClosed and OrgPurged boards): the header with the actions, the banner of its

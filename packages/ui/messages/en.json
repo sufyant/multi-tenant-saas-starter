@@ -245,10 +245,8 @@
   },
   "preferencesForm": {
     "yourName": "Your name",
-    "firstName": "First name",
-    "lastName": "Last name",
-    "firstNameRequired": "Enter your first name.",
-    "lastNameRequired": "Enter your last name.",
+    "name": "Name",
+    "nameRequired": "Enter your name.",
     "nameTooLong": "Use 1 to {max} characters.",
     "languageAndTimeZone": "Language and time zone",
     "language": "Language",

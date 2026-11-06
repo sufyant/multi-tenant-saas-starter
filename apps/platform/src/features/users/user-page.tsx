@@ -112,10 +112,7 @@ function Detail({ user }: { user: UserDetailResponse }) {
         </Banner>
       )}
       <div className="flex items-center gap-3.5">
-        <Avatar
-          person={{ firstName: user.firstName, lastName: user.lastName }}
-          className="size-11"
-        />
+        <Avatar person={{ name: user.name }} className="size-11" />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-page-title">

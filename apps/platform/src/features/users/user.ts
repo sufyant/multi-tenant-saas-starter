@@ -13,10 +13,7 @@ import type { StatusTone } from "@repo/ui/components/status";
 import type { QueryClient } from "@tanstack/react-query";
 
 /** What the list and the user's page both know of a user: an item of ListUsers, or the answer of GetUser. */
-export type User = Pick<
-  UserResponse,
-  "id" | "email" | "firstName" | "lastName" | "status"
->;
+export type User = Pick<UserResponse, "id" | "email" | "name" | "status">;
 
 /** The message key and the tone of each status (the Users board). Colour is never the only signal: the word stays. */
 export const statuses = {
