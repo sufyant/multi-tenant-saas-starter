@@ -38,7 +38,7 @@ const actionOf = (error: unknown) =>
 
 /**
  * Settings › Profile (F31, the platform's Profile screens): the form of the tenant web for the signed-in user's name, language and
- * time zone, then the email address, read-only, and the theme, which is saved on the device (F24).
+ * time zone, then the theme, which is saved on the device (F24). The email is on Account and security (F62).
  */
 export function ProfilePage() {
   const t = useTranslations();
@@ -57,7 +57,6 @@ export function ProfilePage() {
       {me.data ? (
         <>
           <Preferences me={me.data} />
-          <Email email={me.data.email} />
           <ThemeChoice />
         </>
       ) : (
@@ -128,18 +127,5 @@ function Preferences({ me }: { me: MeResponse }) {
         });
       }}
     />
-  );
-}
-
-/** The email address, which the identity provider owns, read-only. */
-function Email({ email }: { email: string | null }) {
-  const t = useTranslations();
-  return (
-    <dl className="grid grid-cols-1 gap-x-6 gap-y-4 rounded-lg border border-border bg-card p-5 text-body tablet:grid-cols-[12rem_1fr]">
-      <dt className="text-muted-foreground">{t("profile.email")}</dt>
-      <dd>
-        <bdi dir="ltr">{email}</bdi>
-      </dd>
-    </dl>
   );
 }

@@ -23,8 +23,11 @@
   "profile": {
     "title": "Profil",
     "text": "Bunlar sizi her cihazda izler.",
-    "nameNote": "Adınız platformun Etkinliğinde görünür.",
-    "email": "E-posta"
+    "nameNote": "Adınız platformun Etkinliğinde görünür."
+  },
+  "securityPage": {
+    "intro": "<name></name> · bu ayarlar platformda ve her kuruluşta aynıdır.",
+    "twoStep": "Platformda zorunludur. E-posta kodundan, Google'dan veya Microsoft'tan sonra bir kimlik doğrulayıcı uygulamadan 6 haneli bir kod da girersiniz."
   },
   "access": {
     "noAccessTitle": "Erişiminiz yok",
@@ -317,10 +320,7 @@
     "removeText": "Artık platformu açamaz. Kuruluşlardaki üyelikleri kalır.",
     "removeAction": "Kaldır",
     "noLongerAdmin": "<bdi>{name}</bdi> artık bir sistem yöneticisi değil.",
-    "rootCannotRemove": "Kök yöneticiler burada kaldırılamaz.",
-    "reverifyTitle": "Kimliğinizi doğrulayın",
-    "reverifyText": "Kimlik doğrulayıcı uygulamanızdaki 6 haneli kodu girin. Son doğrulamanızın üzerinden bir süre geçtiği için yeniden soruyoruz.",
-    "verify": "Doğrula ve devam et"
+    "rootCannotRemove": "Kök yöneticiler burada kaldırılamaz."
   },
   "activity": {
     "title": "Etkinlik",
