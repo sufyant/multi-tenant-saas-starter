@@ -143,6 +143,25 @@ describe("serverReach", () => {
     expect(said).toContain(true);
   });
 
+  it("ServerReach_TwoNetworkErrors_SaysNoAnswer", async () => {
+    const queryClient = client();
+    const { reach } = follow(queryClient);
+
+    await call(queryClient, "a", fails(noServer()), 1);
+
+    expect(reach.noAnswer()).toBe(true);
+  });
+
+  // A proxy's 502, 503 or 504 is an answer, so the bar says "isn't answering", never "offline".
+  it("ServerReach_Two503s_SaysAnAnswerCame", async () => {
+    const queryClient = client();
+    const { reach } = follow(queryClient);
+
+    await call(queryClient, "a", fails(answer(503)), 1);
+
+    expect(reach.noAnswer()).toBe(false);
+  });
+
   it("ServerReach_AnswerAfterTwo503s_SaysUp", async () => {
     const queryClient = client();
     const { reach } = follow(queryClient);

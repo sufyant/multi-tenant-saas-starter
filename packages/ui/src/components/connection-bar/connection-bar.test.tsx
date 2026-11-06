@@ -4,12 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
 import { ConnectionBar } from "./connection-bar";
 
-function renderBar(serverDown: boolean, statusUrl?: string) {
+function renderBar(serverDown: boolean, statusUrl?: string, noAnswer = true) {
   const onRetry = vi.fn();
   const view = (down: boolean) => (
     <NextIntlClientProvider locale="en" messages={en}>
       <ConnectionBar
         serverDown={down}
+        noAnswer={noAnswer}
         onRetry={onRetry}
         product="Starter"
         statusUrl={statusUrl}
@@ -86,6 +87,16 @@ describe("ConnectionBar", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent(
       "You’re offline. Trying again in 5 s",
+    );
+  });
+
+  // A proxy's 503 is an answer that names no server: the browser is wrong, and the server isn't answering.
+  it("ConnectionBar_BrowserSaysOfflineAndAProxyAnswers503_SaysIsntAnswering", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    renderBar(true, undefined, false);
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Starter isn’t answering.",
     );
   });
 
