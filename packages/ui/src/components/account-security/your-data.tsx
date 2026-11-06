@@ -27,7 +27,7 @@ export type ExportState =
   | { kind: "inProgress" }
   | { kind: "available"; id: string; expiresAt: string }
   | { kind: "unfinished" }
-  | { kind: "deleted"; expiresAt: string };
+  | { kind: "fileDeleted"; expiresAt: string };
 
 export type YourDataProps = {
   state: ExportState;
@@ -150,7 +150,7 @@ export function YourData({
           text: t("accountSecurity.unfinished"),
           action: exportButton("exportTitle"),
         };
-      case "deleted":
+      case "fileDeleted":
         return {
           text: t("accountSecurity.deletedFile", {
             date: formatDate(state.expiresAt, options),

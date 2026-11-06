@@ -112,7 +112,7 @@ describe("YourData", () => {
 
   it("YourData_FileDeleted_SaysWhenAndOffersANewExport", () => {
     renderCard({
-      state: { kind: "deleted", expiresAt: "2026-11-08T12:00:00Z" },
+      state: { kind: "fileDeleted", expiresAt: "2026-11-08T12:00:00Z" },
     });
 
     expect(

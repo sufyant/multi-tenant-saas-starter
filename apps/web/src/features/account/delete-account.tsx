@@ -2,14 +2,11 @@
 
 import { useClerk } from "@clerk/nextjs";
 import {
-  actionFor,
   confirmAccountDeletion,
   ErrorCode,
   getListMyTenantsQueryOptions,
-  ProblemDetailsError,
   problemOf,
   requestAccountDeletion,
-  savedUnderKey,
   schemas,
 } from "@repo/api-client";
 import { Card, Row } from "@repo/ui/components/account-security";
@@ -17,7 +14,7 @@ import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import { CodeInput } from "@repo/ui/components/code-input";
 import { Dialog } from "@repo/ui/components/dialog";
-import { signInAgainUrl, TextButton } from "@repo/ui/components/sign-in";
+import { TextButton } from "@repo/ui/components/sign-in";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,6 +22,7 @@ import { useTranslations } from "next-intl";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { useTenant } from "@/shared/tenant-context";
 import { deletedEmailKey } from "./deleted-account";
+import { useReadFailure } from "./use-read-failure";
 
 /** The most organisations a sentence names; the rest are "n more" (F15). */
 const named = 3;
@@ -45,6 +43,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
   const t = useTranslations();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
+  const readFailure = useReadFailure();
   const { signOut } = useClerk();
   const { tenant } = useTenant();
   const { key, renew } = useIntentKey();
@@ -58,21 +57,6 @@ export function DeleteAccount({ email }: { email: string | null }) {
   const confirm = useMutation({
     mutationFn: (entered: string) => confirmAccountDeletion({ code: entered }),
   });
-
-  /** A refusal the shell or sign-in handles: a 401, a suspended or deleted account (F4, F47). */
-  const handledElsewhere = (reason: unknown) => {
-    const action =
-      reason instanceof ProblemDetailsError
-        ? actionFor(reason.status, reason.problem)
-        : null;
-    if (action?.kind === "sign-in")
-      window.location.assign(signInAgainUrl(window.location));
-    return (
-      action?.kind === "sign-in" ||
-      action?.kind === "account-suspended" ||
-      action?.kind === "account-deleted"
-    );
-  };
 
   /** The organisations the person is the last Owner of, by name: at most three, then "n more". */
   const lastOwnerOf = async (tenantIds: string[]) => {
@@ -114,11 +98,13 @@ export function DeleteAccount({ email }: { email: string | null }) {
         minutes: Math.max(1, Math.round(left / minute)),
       });
     } catch (reason) {
-      if (savedUnderKey(reason)) renew();
-      if (handledElsewhere(reason)) return setOpen(undefined);
-      const problem = problemOf(reason);
+      const { problem, saved, handled } = readFailure(reason);
+      if (saved) renew();
+      if (handled) return setOpen(undefined);
       if (problem?.code === ErrorCode.UserLastOwner && !again) {
-        const organisations = await lastOwnerOf(problem.tenantIds ?? []);
+        const organisations = await lastOwnerOf(
+          problemOf(reason)?.tenantIds ?? [],
+        );
         return setOpen({
           step: "refused",
           reason: t.rich("securityPage.lastOwner", {
@@ -140,8 +126,9 @@ export function DeleteAccount({ email }: { email: string | null }) {
       if (email) sessionStorage.setItem(deletedEmailKey, email);
       await signOut({ redirectUrl: "/account/deleted" });
     } catch (reason) {
-      if (handledElsewhere(reason)) return setOpen(undefined);
-      setError(failureText(problemOf(reason)));
+      const { problem, handled } = readFailure(reason);
+      if (handled) return setOpen(undefined);
+      setError(failureText(problem));
     }
   };
 
