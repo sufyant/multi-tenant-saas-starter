@@ -2,13 +2,19 @@ import { Language } from "@repo/api-client";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import ar from "../../../messages/ar.json";
 import en from "../../../messages/en.json";
 import tr from "../../../messages/tr.json";
+import { expectVisibleToast } from "../../../test/toast";
 import { zodErrorMap } from "../../lib/zod-error-map";
-import { PreferencesForm, type PreferencesFormProps } from "./preferences-form";
+import { dismissToasts, Toaster } from "../toast";
+import {
+  PreferencesForm,
+  type PreferencesFormProps,
+  PreferencesFormSkeleton,
+} from "./preferences-form";
 
 z.config({ customError: zodErrorMap });
 
@@ -28,6 +34,7 @@ const changePreferences = vi.fn(async () => ({}));
 const onSaved = vi.fn(async () => {});
 const onFailed = vi.fn();
 beforeEach(() => vi.clearAllMocks());
+afterEach(() => dismissToasts());
 
 /** A refusal that names the fields, as Problem Details' `errors` does (F4). */
 class Refusal extends Error {
@@ -58,7 +65,8 @@ function renderForm(
         schema={schema}
         nameMax={100}
         languages={Object.values(Language)}
-        nameNote="Your name shows to the members of every organisation you belong to."
+        nameNote="Members of your organisations see this name."
+        savedNote="Your new name shows in every organisation."
         rename={rename}
         changePreferences={changePreferences}
         fieldCodesOf={(error) =>
@@ -68,12 +76,13 @@ function renderForm(
         onFailed={onFailed}
         {...props}
       />
+      <Toaster dir="ltr" closeLabel="Close" regionLabel="Notifications" />
     </NextIntlClientProvider>,
   );
 }
 
 const save = () =>
-  userEvent.click(screen.getByRole("button", { name: "Save preferences" }));
+  userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
 async function retype(label: string, text: string) {
   const field = screen.getByRole("textbox", { name: label });
@@ -82,21 +91,77 @@ async function retype(label: string, text: string) {
 }
 
 describe("PreferencesForm", () => {
-  it("PreferencesForm_Values_ShowsTheOneNameAndTheNote", () => {
+  // 5.01: the three fields with their notes, in one card without section titles; the zone is its city and its offset.
+  it("PreferencesForm_Values_ShowsTheFieldsAndTheirNotesWithoutTitles", () => {
     renderForm();
 
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue(
       "Ayşe Yılmaz",
     );
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Your name" }),
+      screen.getByText("Members of your organisations see this name."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Your name shows to the members of every organisation you belong to.",
-      ),
+      screen.getByText("Dates and times show in this time zone."),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Time zone" }),
+    ).toHaveTextContent(/^Istanbul \(UTC\+3\)/);
+  });
+
+  // The language's note names Arabic in its own script and direction, so it reads right to left (F14).
+  it("PreferencesForm_LanguageNote_NamesArabicInItsOwnScript", () => {
+    renderForm();
+
+    const arabic = screen.getByText("العربية");
+    expect(arabic).toHaveAttribute("lang", "ar");
+    expect(arabic).toHaveAttribute("dir", "rtl");
+    expect(arabic.parentElement).toHaveTextContent(
+      "The language of the app. العربية reads right to left.",
+    );
+  });
+
+  // 5.01 and 5.02: Save changes is off until a value changes.
+  it("PreferencesForm_NothingTyped_SaveChangesIsOffUntilAChange", async () => {
+    renderForm();
+    const button = screen.getByRole("button", { name: "Save changes" });
+    expect(button).toBeDisabled();
+
+    await userEvent.type(screen.getByRole("textbox", { name: "Name" }), "x");
+
+    expect(button).toBeEnabled();
+  });
+
+  // 5.04: a new name says where it shows.
+  it("PreferencesForm_NameSaved_SaysProfileSavedAndWhereTheNameShows", async () => {
+    renderForm();
+
+    await retype("Name", "Ayla Yılmaz");
+    await save();
+
+    await expectVisibleToast("Profile saved");
+    await expectVisibleToast("Your new name shows in every organisation.");
+  });
+
+  // 5.05: while GetMe loads, the card keeps its place: the labels, the notes and Save changes off.
+  it("PreferencesFormSkeleton_Loading_KeepsTheLabelsTheNotesAndSaveOff", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <PreferencesFormSkeleton
+          nameNote="Members of your organisations see this name."
+          languages={Object.values(Language)}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("Time zone")).toBeInTheDocument();
+    expect(
+      screen.getByText("Members of your organisations see this name."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
   });
 
   it("PreferencesForm_NameChanged_SendsTheTrimmedNameOnly", async () => {
@@ -195,19 +260,19 @@ describe("PreferencesForm", () => {
     [
       "en",
       { ...en, locale: { format: "en-IE" } },
-      ["Name", "Save preferences"],
+      ["Name", "Save changes"],
       "Use 1 to 40 characters.",
     ],
     [
       "tr",
       { ...tr, locale: { format: "tr-TR" } },
-      ["Ad", "Tercihleri kaydet"],
+      ["Ad", "Değişiklikleri kaydet"],
       "1 ile 40 karakter arasında yazın.",
     ],
     [
       "ar",
       { ...ar, locale: { format: "ar-SA" } },
-      ["الاسم", "حفظ التفضيلات"],
+      ["الاسم", "حفظ التغييرات"],
       "استخدم من 1 إلى 40 حرف.",
     ],
   ] as const)(

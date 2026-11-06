@@ -132,9 +132,7 @@ async function retype(name: string, text: string) {
 }
 
 const save = async () =>
-  userEvent.click(
-    await screen.findByRole("button", { name: "Save preferences" }),
-  );
+  userEvent.click(await screen.findByRole("button", { name: "Save changes" }));
 
 const renderPage = (locale: "en" | "ar" = "en") =>
   renderWithProviders(<ProfilePage />, locale);
@@ -149,10 +147,7 @@ describe("ProfilePage", () => {
     expect(await field("Language")).toHaveTextContent("English");
     expect(await field("Time zone")).toHaveTextContent(/^Dublin/);
     expect(
-      screen.getByText("Your name shows in the platform’s Activity."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("These follow you to every device."),
+      screen.getByText("Your name shows in the platform’s Activity log."),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/can change your language and time zone/),
@@ -187,7 +182,7 @@ describe("ProfilePage", () => {
     await retype("Name", " Ciarán Byrne ");
     await save();
 
-    expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
+    expect(await screen.findByText("Profile saved")).toBeInTheDocument();
     expect(sent.names).toEqual([{ name: "Ciarán Byrne" }]);
     expect(sent.preferences).toEqual([]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
@@ -201,7 +196,7 @@ describe("ProfilePage", () => {
     await pickTimeZone("Istanbul", /^Istanbul/);
     await save();
 
-    expect(await screen.findByText("Preferences saved")).toBeInTheDocument();
+    expect(await screen.findByText("Profile saved")).toBeInTheDocument();
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Europe/Istanbul" },
     ]);
@@ -218,7 +213,7 @@ describe("ProfilePage", () => {
     await pickTimeZone("Istanbul", /^Istanbul/);
     await save();
 
-    expect(await screen.findAllByText("Preferences saved")).toHaveLength(1);
+    expect(await screen.findAllByText("Profile saved")).toHaveLength(1);
     expect(sent.names).toEqual([{ name: "Ciara Walsh" }]);
     expect(sent.preferences).toEqual([
       { language: Language.En, timeZone: "Europe/Istanbul" },
@@ -237,7 +232,7 @@ describe("ProfilePage", () => {
     expect(await textbox("Name")).not.toHaveAttribute("aria-invalid");
     expect(sent.names).toEqual([]);
     expect(sent.preferences).toEqual([]);
-    expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile saved")).not.toBeInTheDocument();
   });
 
   it.each([["name", "Name", "Enter your name."]])(
@@ -295,7 +290,7 @@ describe("ProfilePage", () => {
       { language: Language.En, timeZone: "Europe/Istanbul" },
     ]);
     await vi.waitFor(() => expect(sent.reads).toBe(2));
-    expect(screen.queryByText("Preferences saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile saved")).not.toBeInTheDocument();
   });
 
   it("ProfilePage_ChangePreferencesRefusedRenameMeSaved_KeepsTheNameAndShowsTheTimeZoneError", async () => {
@@ -347,7 +342,7 @@ describe("ProfilePage", () => {
     await save();
 
     await vi.waitFor(() => expect(sent.reads).toBe(2));
-    expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile not saved")).not.toBeInTheDocument();
   });
 
   it("ProfilePage_UserDeleted_ReadsGetMeAgainWithoutAToast", async () => {
@@ -362,7 +357,7 @@ describe("ProfilePage", () => {
     await save();
 
     await vi.waitFor(() => expect(sent.reads).toBe(2));
-    expect(screen.queryByText("Preferences not saved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Profile not saved")).not.toBeInTheDocument();
   });
 
   it("ProfilePage_SignedOut_GoesToSignIn", async () => {
@@ -395,9 +390,7 @@ describe("ProfilePage", () => {
     await retype("Name", "Ciarán Byrne");
     await save();
 
-    expect(
-      await screen.findByText("Preferences not saved"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Profile not saved")).toBeInTheDocument();
   });
 
   it("ProfilePage_InArabic_ShowsArabicTexts", async () => {
@@ -409,6 +402,66 @@ describe("ProfilePage", () => {
       await screen.findByRole("heading", { name: "الملف الشخصي" }),
     ).toBeInTheDocument();
     expect(await textbox("الاسم")).toHaveValue("Ciara Byrne");
-    expect(screen.getByText("يظهر اسمك في نشاط المنصة.")).toBeInTheDocument();
+    expect(
+      screen.getByText("يظهر اسمك في سجل نشاط المنصة."),
+    ).toBeInTheDocument();
+  });
+
+  // 5.01 and 8.01: the line under the title names the person, isolated (F15), and says where the settings apply.
+  it("ProfilePage_Shown_NamesThePersonInTheIntro", async () => {
+    server.use(...preferencesAnswers(me));
+
+    renderPage();
+
+    expect(await screen.findByText("Ciara Byrne")).toContainHTML(
+      "<bdi>Ciara Byrne</bdi>",
+    );
+    expect(
+      screen.getByText(/the same on the platform and in every organisation\.$/),
+    ).toBeInTheDocument();
+  });
+
+  // 5.05 and 8.05: while GetMe loads, the card keeps its place and the theme shows.
+  it("ProfilePage_Loading_KeepsTheFormsPlaceAndTheTheme", async () => {
+    server.use(http.get("*/v1/me", () => new Promise<never>(() => {})));
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: "Save changes" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("radiogroup", { name: "Theme" }),
+    ).toBeInTheDocument();
+  });
+
+  // 5.06 and 8.06: a profile that did not load says so with a way to support, and the theme still shows.
+  it("ProfilePage_GetMeFailed_SaysItDidNotLoadAndKeepsTheTheme", async () => {
+    server.use(
+      http.get("*/v1/me", () =>
+        HttpResponse.json(
+          {
+            code: ErrorCode.ServerError,
+            traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Your profile did not load"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Contact support" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radiogroup", { name: "Theme" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", { name: "Name" }),
+    ).not.toBeInTheDocument();
   });
 });
