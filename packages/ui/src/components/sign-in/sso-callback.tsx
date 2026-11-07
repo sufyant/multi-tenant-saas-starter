@@ -50,28 +50,34 @@ export function SsoCallback({
     )}${extra}`;
   const signInPage = (extra = "") => window.location.assign(signInUrl(extra));
   return (
-    <AuthScreen
-      brand={brand}
-      platformLabel={platformLabel}
-      footer={
-        <AuthFooter
-          onLanguageChange={onLanguageChange}
-          privacyUrl={privacyUrl}
-        />
-      }
-    >
-      <AuthHeading title={t("finishingTitle")} />
-      <p role="status" className="text-center text-body text-muted-foreground">
-        {slow ? t("finishingSlow") : t("finishingText")}
-      </p>
-      {slow && (
-        <a
-          href={signInUrl()}
-          className="self-center rounded-sm text-small text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+    <>
+      <AuthScreen
+        brand={brand}
+        platformLabel={platformLabel}
+        footer={
+          <AuthFooter
+            onLanguageChange={onLanguageChange}
+            privacyUrl={privacyUrl}
+          />
+        }
+      >
+        <AuthHeading title={t("finishingTitle")} />
+        <p
+          role="status"
+          className="text-center text-body text-muted-foreground"
         >
-          {common("tryAgain")}
-        </a>
-      )}
+          {slow ? t("finishingSlow") : t("finishingText")}
+        </p>
+        {slow && (
+          <a
+            href={signInUrl()}
+            className="self-center rounded-sm text-small text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {common("tryAgain")}
+          </a>
+        )}
+      </AuthScreen>
+      {/* Clerk's callback draws a div with its captcha slot, so it stays out of the card and its gaps. */}
       <HandleSSOCallback
         navigateToApp={({ decorateUrl }) =>
           window.location.assign(
@@ -81,6 +87,6 @@ export function SsoCallback({
         navigateToSignIn={() => signInPage()}
         navigateToSignUp={() => signInPage(`&${ssoFailedParameter}=failed`)}
       />
-    </AuthScreen>
+    </>
   );
 }
