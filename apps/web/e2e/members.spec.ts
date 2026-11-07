@@ -46,7 +46,9 @@ test("Members_Member_SeesAReadOnlyList", async ({ page: browser }) => {
   await expect(
     browser.getByRole("button", { name: "Invite member" }),
   ).toHaveCount(0);
-  await expect(browser.getByRole("tablist")).toHaveCount(0);
+  // A Member keeps the Members tab alone (8.11): Invitations need tenant.invitations.read.
+  await expect(browser.getByRole("tab")).toHaveCount(1);
+  await expect(browser.getByRole("tab", { name: /Members/ })).toBeVisible();
   await expect(rowMenu(browser, "John Byrne")).toHaveCount(0);
   await expectAccessible(browser);
 });
