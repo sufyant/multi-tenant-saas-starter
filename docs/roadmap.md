@@ -255,7 +255,7 @@ The model:
 - A plan has a base fee and a fee per person. Each can be 0, monthly and yearly.
 - A plan has usage meters (a quota, stop or charge, and a unit price) and limits.
 - The seeded plans: Free (3 seats), Team (15 seats, 5 custom roles) and Business (50 seats, 20 custom roles).
-- The custom-role limit follows the same F56 rule as Members: "Create role" stays enabled and opens a dialog that says the limit, the reason and what to do (the maintainer's decision of 2026-11-07).
+- The custom-role limit follows the same F56 rule as Members: "Create role" stays enabled and opens a dialog that says the limit, the reason and what to do, and its banner is as Members' (the maintainer's decisions of 2026-11-07).
 - A new permission, `tenant.billing.manage`. The Owner holds it by default.
 - A fourth built-in role, Billing manager, with `tenant.profile.read`, `tenant.members.read` and `tenant.billing.manage`. It is free: it takes no seat and no fee per person. Product modules never add permissions to it.
 - Members' "No free seat" offers "Request a plan change", to the support contact, since step 37a. This changes with the plan: an organisation that pays by card can change its plan (8.39, 8.40), a Contract organisation keeps the button (8.43, 8.45).
