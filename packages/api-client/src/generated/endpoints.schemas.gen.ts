@@ -394,11 +394,13 @@ export type AuditOperation = typeof AuditOperation[keyof typeof AuditOperation];
 
 
 export const AuditOperation = {
+  ActivityLogExported: 'activity_log.exported',
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  MembersExported: 'members.exported',
   PlanCreated: 'plan.created',
   PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',

@@ -159,6 +159,27 @@ export function useListMembers<TData = Awaited<ReturnType<typeof listMembers>>, 
 
 
 
+export const getExportMembersUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/members/export`
+}
+
+export const exportMembers = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getExportMembersUrl(tenantId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export const getChangeMemberRoleUrl = (tenantId: string,
     userId: string,) => {
 

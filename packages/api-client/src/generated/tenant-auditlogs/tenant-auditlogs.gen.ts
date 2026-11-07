@@ -238,3 +238,24 @@ export function useListAuditEntries<TData = Awaited<ReturnType<typeof listAuditE
 
 
 
+export const getExportAuditLogUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/audit-log/export`
+}
+
+export const exportAuditLog = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getExportAuditLogUrl(tenantId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+

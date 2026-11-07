@@ -39,6 +39,16 @@ export const getListMembersMockHandler = (overrideResponse?: ListPageOfMemberRes
   }, options)
 }
 
+export const getExportMembersMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/tenants/:tenantId/members/export', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
 export const getChangeMemberRoleMockHandler = (overrideResponse?: MemberResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<MemberResponse> | MemberResponse), options?: RequestHandlerOptions) => {
   return http.patch('*/v1/tenants/:tenantId/members/:userId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
 
@@ -62,6 +72,7 @@ export const getRemoveMemberMockHandler = (overrideResponse?: void | ((info: Par
 }
 export const getTenantMembersMock = () => [
   getListMembersMockHandler(),
+  getExportMembersMockHandler(),
   getChangeMemberRoleMockHandler(),
   getRemoveMemberMockHandler()
 ]

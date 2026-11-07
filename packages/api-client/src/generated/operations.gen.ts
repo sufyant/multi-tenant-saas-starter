@@ -144,6 +144,26 @@ export const operations = [
     ]
   },
   {
+    "operationId": "ExportAuditLog",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/audit-log/export",
+    "tag": "Tenant/AuditLogs",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "ExportMembers",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/members/export",
+    "tag": "Tenant/Members",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetInvitationPreview",
     "method": "POST",
     "path": "/v1/me/invitations/preview",
