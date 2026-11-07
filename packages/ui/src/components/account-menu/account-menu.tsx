@@ -89,7 +89,7 @@ export function AccountMenu({
           className={cn(
             "flex min-w-0 items-center text-small font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent",
             chip
-              ? "h-9 max-w-60 gap-2 rounded-full border border-border bg-card ps-1 pe-2.5"
+              ? "h-9 max-w-60 gap-2 rounded-full border border-border bg-card ps-1 pe-2.5 max-tablet:h-control-lg"
               : "w-full gap-2.5 rounded-md py-1 ps-1.5 pe-2 max-tablet:h-12 max-tablet:px-2",
             rail &&
               "max-desktop:size-12 max-desktop:justify-center max-desktop:p-0",

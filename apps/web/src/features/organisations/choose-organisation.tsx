@@ -72,9 +72,10 @@ export function ChooseOrganisation({
     ? [last, ...items.filter((tenant) => tenant !== last)]
     : items;
   return (
-    <>
+    // The bell sits in the page's flow, under the environment strip (F59), at the top end.
+    <div className="relative">
       <LocaleSync language={me.data.language} />
-      <header className="fixed end-4 top-4 tablet:end-5 tablet:top-5">
+      <header className="absolute end-4 top-4 tablet:end-5 tablet:top-5">
         <PersonalBell />
       </header>
       <AuthScreen brand={t("meta.title")}>
@@ -106,7 +107,7 @@ export function ChooseOrganisation({
           {t("common.signOut")}
         </Button>
       </AuthScreen>
-    </>
+    </div>
   );
 }
 

@@ -1444,16 +1444,23 @@ const entryShots: {
   },
 ];
 
-for (const shot of entryShots)
+/** A shot's language, theme and cookies when it names none: English, light, none. */
+const entryDefaults = (shot: (typeof entryShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  cookies: shot.cookies ?? [],
+});
+
+for (const shot of entryShots.map(entryDefaults))
   test(`Screenshot_Entry_${shot.file}`, async ({ page, context, baseURL }) => {
     await setupClerkTestingToken({ page });
-    await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+    await page.emulateMedia({ colorScheme: shot.scheme });
     await page.setViewportSize(frames[shot.size]);
     await context.addCookies(
-      [
-        { name: localeCookie, value: shot.language ?? Language.En },
-        ...(shot.cookies ?? []),
-      ].map((cookie) => ({ ...cookie, url: baseURL })),
+      [{ name: localeCookie, value: shot.language }, ...shot.cookies].map(
+        (cookie) => ({ ...cookie, url: baseURL }),
+      ),
     );
     await shot.mock(page);
 

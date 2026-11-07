@@ -16,6 +16,8 @@ import {
   it,
   vi,
 } from "vitest";
+import { lastOrganisationCookie } from "@/shared/last-organisation-cookie";
+import { cookieStore } from "../../../test/cookies";
 import { renderWithProviders } from "../../../test/render";
 import { roleOf } from "../../../test/tenant";
 import { ChooseOrganisation } from "./choose-organisation";
@@ -31,19 +33,12 @@ vi.mock("@clerk/nextjs", () => ({
   }),
 }));
 vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
-// The cookie of "last used" is a server action's: the test checks the call, not Next.js's cookie store.
-const lastOrganisation = vi.hoisted(() => ({ forget: vi.fn() }));
-vi.mock("@/shared/last-organisation", () => ({
-  forgetOrganisation: lastOrganisation.forget,
-  rememberOrganisation: vi.fn(),
-}));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   replace.mockClear();
-  lastOrganisation.forget.mockClear();
 });
 afterAll(() => server.close());
 
@@ -221,7 +216,7 @@ describe("ChooseOrganisation", () => {
     ]);
     expect(links[0]).toHaveTextContent("Owner · last used");
     expect(links[1]).toHaveTextContent(/^AAtlas LogisticsOwner$/);
-    expect(lastOrganisation.forget).not.toHaveBeenCalled();
+    expect(cookieStore.delete).not.toHaveBeenCalled();
   });
 
   // The roadmap: a slug of an organisation the person can no longer open is ignored, and the cookie is deleted.
@@ -239,7 +234,9 @@ describe("ChooseOrganisation", () => {
     await screen.findAllByRole("link");
     expect(screen.queryByText(/last used/)).not.toBeInTheDocument();
     await vi.waitFor(() =>
-      expect(lastOrganisation.forget).toHaveBeenCalledTimes(1),
+      expect(cookieStore.delete).toHaveBeenCalledExactlyOnceWith(
+        lastOrganisationCookie,
+      ),
     );
   });
 
@@ -257,11 +254,13 @@ describe("ChooseOrganisation", () => {
     await screen.findByText("Suspended");
     expect(screen.queryByText(/last used/)).not.toBeInTheDocument();
     await vi.waitFor(() =>
-      expect(lastOrganisation.forget).toHaveBeenCalledTimes(1),
+      expect(cookieStore.delete).toHaveBeenCalledExactlyOnceWith(
+        lastOrganisationCookie,
+      ),
     );
   });
 
-  it("ChooseOrganisation_NoCookie_ForgetsNothing", async () => {
+  it("ChooseOrganisation_NoCookie_DeletesNothing", async () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
       page([
@@ -273,7 +272,7 @@ describe("ChooseOrganisation", () => {
     renderWithProviders(<ChooseOrganisation />);
 
     await screen.findAllByRole("link");
-    expect(lastOrganisation.forget).not.toHaveBeenCalled();
+    expect(cookieStore.delete).not.toHaveBeenCalled();
   });
 
   it("ChooseOrganisation_ManyOrganisations_OffersSignOut", async () => {

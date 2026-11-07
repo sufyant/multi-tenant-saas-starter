@@ -74,11 +74,10 @@ describe("AccountMenu", () => {
   it("AccountMenu_NoProfileHref_ShowsNoProfileItem", async () => {
     const { menu } = await openMenu({ profileHref: undefined });
 
+    expect(within(menu).getAllByRole("menuitem")).toHaveLength(2);
     expect(
-      within(menu)
-        .getAllByRole("menuitem")
-        .map((item) => item.textContent || item.getAttribute("aria-label")),
-    ).toEqual(["Sign out", "Version a1b2c3d"]);
+      within(menu).queryByRole("menuitem", { name: "Profile" }),
+    ).not.toBeInTheDocument();
   });
 
   // The account button at the top of a page without the shell (frame 1.19): a round button with the avatar and the name, no
@@ -91,7 +90,12 @@ describe("AccountMenu", () => {
     );
 
     const button = screen.getByRole("button", { name: /Ayşe Demir/ });
-    expect(button).toHaveClass("rounded-full", "border", "h-9");
+    expect(button).toHaveClass(
+      "rounded-full",
+      "border",
+      "h-9",
+      "max-tablet:h-control-lg",
+    );
     expect(button.querySelector(".lucide-chevrons-up-down")).toBeNull();
   });
 

@@ -25,8 +25,10 @@ import {
   it,
   vi,
 } from "vitest";
+import { cookieStore } from "../../test/cookies";
 import { renderWithProviders } from "../../test/render";
 import { problem, roleOf } from "../../test/tenant";
+import { lastOrganisationCookie } from "./last-organisation-cookie";
 import { TenantProvider, useCan, useTenant } from "./tenant-context";
 
 // "No access yet" holds the personal bell, whose items follow their links with the router.
@@ -39,17 +41,9 @@ vi.mock("@clerk/nextjs", () => ({
     user: { primaryEmailAddress: { emailAddress: "ali.kaya@gmail.com" } },
   }),
 }));
-// The cookie of "last used" is a server action's (F30): the test checks the call, not Next.js's cookie store.
-const lastOrganisation = vi.hoisted(() => ({ remember: vi.fn() }));
-vi.mock("./last-organisation", () => ({
-  rememberOrganisation: lastOrganisation.remember,
-}));
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => {
-  server.resetHandlers();
-  lastOrganisation.remember.mockClear();
-});
+afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const northwind: MyTenantResponse = {
@@ -188,8 +182,8 @@ describe("TenantProvider", () => {
     );
 
     await screen.findByText(/Northwind Traders/);
-    expect(lastOrganisation.remember).toHaveBeenCalledExactlyOnceWith(
-      "northwind",
+    await vi.waitFor(() =>
+      expect(cookieStore.values.get(lastOrganisationCookie)).toBe("northwind"),
     );
   });
 
@@ -205,7 +199,7 @@ describe("TenantProvider", () => {
     await screen.findByRole("heading", {
       name: "Atlas Logistics is suspended",
     });
-    expect(lastOrganisation.remember).not.toHaveBeenCalled();
+    expect(cookieStore.set).not.toHaveBeenCalled();
   });
 
   it("TenantProvider_SlugNotInTheListOfAPersonWithoutOrganisations_SaysNoAccessYet", async () => {

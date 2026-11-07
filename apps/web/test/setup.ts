@@ -41,9 +41,11 @@ document.elementFromPoint ??= () => null;
 // The app installs the one Zod error map in its providers (F12); a form under test needs it too.
 z.config({ customError: zodErrorMap });
 
-// The cookie of "last used" is a server action's, and Next.js's cookie store exists only in a request: every page of an
-// organisation calls it. Its own test reads the real module (last-organisation.test.ts).
-vi.mock("@/shared/last-organisation", () => ({
-  rememberOrganisation: async () => {},
-  forgetOrganisation: async () => {},
-}));
+// Next.js's cookie store exists only in a request; the server actions of the pages write into this fake one.
+vi.mock("next/headers", async () => {
+  const { cookieStore } = await import("./cookies");
+  return { cookies: async () => cookieStore };
+});
+afterEach(async () => {
+  (await import("./cookies")).resetCookies();
+});

@@ -10,7 +10,8 @@ import { useTranslations } from "next-intl";
 
 /**
  * 422 `invitation.system_admin_cannot_join` (frame 1.48): a system admin never joins an organisation (T5). Sign out comes back to
- * this page, which signs the person in with another email. "Contact support" names the version.
+ * this page, which signs the person in with another email. "Contact support" names the version; inside the sentence it is
+ * underlined, so it is not told apart by colour alone (WCAG 2.2, 1.4.1).
  */
 export function SystemAdminCannotJoin({
   onSwitchAccount,
@@ -36,7 +37,7 @@ export function SystemAdminCannotJoin({
                 brand.supportUrl,
                 version && t("appShell.supportBody", { version }),
               )}
-              className="rounded-sm text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-sm text-link underline underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {chunks}
             </a>
