@@ -17,12 +17,23 @@ internal sealed class S3FileStore(IAmazonS3 s3, IOptions<StorageOptions> setting
 
     public async Task SaveAsync(string key, Stream content, string contentType, CancellationToken cancellationToken)
     {
-        // R2 refuses the SDK's chunked upload with a trailing checksum; a known length sends the body in one part.
+        // R2 implements neither the SDK's chunked signing of a body (STREAMING-AWS4-HMAC-SHA256-PAYLOAD) nor a trailing checksum (Cloudflare
+        // R2 documentation, "S3 API compatibility"). So the SDK signs the whole body in one part: the header carries its SHA-256, which the buffer
+        // lets the SDK compute before it sends the body. Cloudflare's example turns the body's signing off instead, but the SDK allows that on
+        // https only, so local runs and the tests on SeaweedFS, on http, would send another request than production.
         using var buffered = new MemoryStream();
         await content.CopyToAsync(buffered, cancellationToken);
         buffered.Position = 0;
         await s3.PutObjectAsync(
-            new PutObjectRequest { BucketName = _bucket, Key = key, InputStream = buffered, ContentType = contentType, AutoCloseStream = false },
+            new PutObjectRequest
+            {
+                BucketName = _bucket,
+                Key = key,
+                InputStream = buffered,
+                ContentType = contentType,
+                AutoCloseStream = false,
+                UseChunkEncoding = false,
+            },
             cancellationToken);
     }
 
