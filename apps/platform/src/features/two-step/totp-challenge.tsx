@@ -1,10 +1,11 @@
 "use client";
 
+import { Button } from "@repo/ui/components/button";
 import {
   useConfirmIdentity,
   type VerifyingSession,
 } from "@repo/ui/components/confirm-identity";
-import { SecondFactorStep, TextButton } from "@repo/ui/components/sign-in";
+import { SecondFactorStep } from "@repo/ui/components/sign-in";
 import { useTranslations } from "next-intl";
 import { reportError } from "@/error-tracking/report-error";
 
@@ -37,9 +38,9 @@ export function TotpChallenge({
       onSubmit={(code, factor) => void verify(code, factor)}
       onFactorChange={clearError}
       exit={
-        <TextButton className="text-foreground" onClick={onSignOut}>
+        <Button variant="ghost" onClick={onSignOut}>
           {t("common.signOut")}
-        </TextButton>
+        </Button>
       }
       pending={pending}
       error={error}

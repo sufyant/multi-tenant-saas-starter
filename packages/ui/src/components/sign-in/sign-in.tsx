@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { AuthFooter, AuthScreen } from "../auth-layout";
 import { Banner } from "../banner";
+import { Button } from "../button";
 import type { Provider } from "../provider-buttons";
 import {
   type SignInErrorKey,
@@ -21,7 +22,6 @@ import {
   sessionEnded,
 } from "./safe-redirect";
 import { type SecondFactor, SecondFactorStep } from "./second-factor-step";
-import { TextButton } from "./text-button";
 
 export type SignInProps = {
   /** "Sign in to your account", "Sign in to the platform". */
@@ -210,12 +210,13 @@ export function SignIn({
           onSubmit={(code, factor) => void verifySecondFactor(code, factor)}
           onFactorChange={() => setError(undefined)}
           exit={
-            <TextButton
-              className="text-foreground"
+            <Button
+              variant="ghost"
               onClick={() => void startOver()}
+              disabled={pending}
             >
               {t("useAnotherEmail")}
-            </TextButton>
+            </Button>
           }
           pending={pending}
           error={error}

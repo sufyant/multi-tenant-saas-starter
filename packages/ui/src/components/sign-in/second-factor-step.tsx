@@ -7,7 +7,6 @@ import { Button } from "../button";
 import { CodeInput } from "../code-input";
 import { Input } from "../input";
 import type { SignInErrorKey } from "./clerk-errors";
-import { TextButton } from "./text-button";
 
 export type SecondFactor = "totp" | "backupCode";
 
@@ -16,7 +15,7 @@ export type SecondFactorStepProps = {
   title: string;
   text: string;
   onSubmit: (code: string, factor: SecondFactor) => void;
-  /** The way out after the switch to the other factor: "Use another email" before sign-in, "Sign out" after it. */
+  /** The way out under the switch to the other factor, a ghost button: "Use another email" before sign-in, "Sign out" after it. */
   exit: ReactNode;
   pending?: boolean;
   error?: SignInErrorKey;
@@ -90,20 +89,16 @@ export function SecondFactorStep({
           {t("continue")}
         </Button>
       </form>
-      <p className="text-center text-small font-medium">
-        <TextButton
-          className="text-foreground"
+      <div className="flex flex-col items-center gap-4">
+        <Button
+          variant="ghost"
           onClick={() => change(totp ? "backupCode" : "totp")}
+          disabled={pending}
         >
           {totp ? t("useBackupCode") : t("useAuthenticator")}
-        </TextButton>
-        {totp && (
-          <>
-            {" · "}
-            {exit}
-          </>
-        )}
-      </p>
+        </Button>
+        {totp && exit}
+      </div>
     </>
   );
 }

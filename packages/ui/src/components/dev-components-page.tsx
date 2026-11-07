@@ -49,7 +49,7 @@ import { ProviderButtons } from "./provider-buttons";
 import { RowMenu } from "./row-menu";
 import { Search } from "./search";
 import { SegmentedControl } from "./segmented-control";
-import { CodeStep, EmailStep, SecondFactorStep, TextButton } from "./sign-in";
+import { CodeStep, EmailStep, SecondFactorStep } from "./sign-in";
 import { Skeleton } from "./skeleton";
 import { Status } from "./status";
 import { SubNav } from "./sub-nav";
@@ -455,7 +455,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
                 title="Two-step verification"
                 text="Open your authenticator app and enter the 6-digit code for this account."
                 onSubmit={noop}
-                exit={<TextButton>Sign out</TextButton>}
+                exit={<Button variant="ghost">Sign out</Button>}
                 error="locked"
               />
             </div>
