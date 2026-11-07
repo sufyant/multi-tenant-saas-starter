@@ -1192,7 +1192,8 @@ const asksForASecondFactor = (page: Page) =>
 const typeTheFramesAddress =
   (address = "ayse@northwind.example") =>
   (page: Page) =>
-    page.getByRole("textbox", { name: "Email" }).fill(address);
+    // The page's only field, whose name is in the page's language.
+    page.getByRole("textbox").fill(address);
 
 const toTheCodeStep = async (page: Page) => {
   await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
@@ -1239,11 +1240,13 @@ const signInShots: {
   {
     file: "1.04-sign-in-failed-en-light-desktop",
     size: "desktop",
-    mock: (page) => page.route(clerkApi, (route) => route.abort()),
+    // Offline: under Playwright Clerk takes every failed request for an offline browser (navigator.webdriver), so this is the
+    // failure it can reach.
     open: async (page) => {
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
+      await page.context().setOffline(true);
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       // Only the banner: Next's route announcer is an empty alert that is there at once.
       await page.getByText("We could not send the code").waitFor();

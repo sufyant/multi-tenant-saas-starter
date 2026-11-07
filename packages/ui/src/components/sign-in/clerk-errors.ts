@@ -120,12 +120,13 @@ export function signInErrorKey(
   onUnexpectedError?: (error: Error) => void,
 ): SignInErrorKey {
   const code = clerkErrorCode(error);
-  // A call that got no answer of Clerk's API has no code: the network failed, and the address stays for another try (frame 1.04).
+  // The code could not go out (frame 1.04), and the address stays for another try. A call that got no answer of Clerk's API has no
+  // code: the network failed. Offline, Clerk's request gives nothing instead of an error, so the code fails on the step after it.
   if (
     step === "send" &&
     error instanceof Error &&
     !isClerkAPIResponseError(error) &&
-    code === undefined
+    (code === undefined || !navigator.onLine)
   )
     return "sendFailed";
   const key = code && (byStep[step][code] ?? everywhere[code]);
