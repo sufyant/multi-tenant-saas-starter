@@ -108,8 +108,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               frame={{
                 environment: environmentOf(APP_ENVIRONMENT),
                 version: shortRevision(SOURCE_REVISION),
+                webAppUrl: WEB_APP_URL,
               }}
-              webAppUrl={WEB_APP_URL}
             >
               {children}
             </Providers>

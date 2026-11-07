@@ -1,15 +1,21 @@
+import { AppFrameProvider } from "@repo/ui/components/app-frame";
 import { renderHook } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
-import {
-  useOrganisationAddress,
-  WebAppUrlProvider,
-} from "./organisation-address";
+import { messages } from "@/i18n/messages";
+import { useOrganisationAddress } from "./organisation-address";
 
 const wrapper =
   (url: string) =>
   ({ children }: { children: ReactNode }) => (
-    <WebAppUrlProvider value={url}>{children}</WebAppUrlProvider>
+    <NextIntlClientProvider locale="en" messages={messages.en}>
+      <AppFrameProvider
+        value={{ environment: { kind: "production" }, webAppUrl: url }}
+      >
+        {children}
+      </AppFrameProvider>
+    </NextIntlClientProvider>
   );
 
 describe("useOrganisationAddress", () => {

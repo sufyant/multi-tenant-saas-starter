@@ -1,11 +1,11 @@
 import { configureApiClient } from "@repo/api-client";
+import { AppFrameProvider } from "@repo/ui/components/app-frame";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import type { ReactNode } from "react";
 import { messages } from "@/i18n/messages";
-import { WebAppUrlProvider } from "@/shared/organisation-address";
 
 /** The test's origin. The mutator needs an absolute base in Node; MSW answers on it. */
 export const origin = "https://web.example.test";
@@ -33,7 +33,11 @@ export function renderWithProviders(
     >
       <QueryClientProvider client={queryClient}>
         <NuqsAdapter>
-          <WebAppUrlProvider value={webAppUrl}>{ui}</WebAppUrlProvider>
+          <AppFrameProvider
+            value={{ environment: { kind: "production" }, webAppUrl }}
+          >
+            {ui}
+          </AppFrameProvider>
         </NuqsAdapter>
       </QueryClientProvider>
     </NextIntlClientProvider>,
