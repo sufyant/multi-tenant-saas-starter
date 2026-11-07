@@ -185,6 +185,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 37a-frontend-3, Roles and Activity log:
 
 - Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
+- Roles and the Activity log drop their Freshness line, as F59 says (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
 
 37a-frontend-4, the personal pages without an organisation (the maintainer's decision of 2026-11-07):
@@ -208,6 +209,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Organisations, Users, Plans, Activity log and System admins in the new design.
 - At its end, Status, Tag and SubNav are deleted.
 - The platform's organisation initial (`apps/platform/src/shared/initial.tsx`) becomes the shared tile of `packages/ui` where its frames draw the same tile, or the pull request says how they differ (the maintainer's decision of 2026-11-07).
+- The platform's lists drop their Freshness line too (F59). When no screen uses the Freshness component any more, it is deleted from `packages/ui` and from the Figma Components page (the maintainer's decision of 2026-11-07).
 - The platform's lists follow the same F9 and F10 rule (a "Load more" button, no page in the URL), or 37b-start asks when their frames differ (the maintainer's decision of 2026-11-07).
 
 ## 6. Step 38: Terms of use
