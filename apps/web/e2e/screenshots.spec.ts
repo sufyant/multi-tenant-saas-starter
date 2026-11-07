@@ -1188,6 +1188,12 @@ const asksForASecondFactor = (page: Page) =>
     },
   );
 
+/** The address a frame shows, typed in the focused field. */
+const typeTheFramesAddress =
+  (address = "ayse@northwind.example") =>
+  (page: Page) =>
+    page.getByRole("textbox", { name: "Email" }).fill(address);
+
 const toTheCodeStep = async (page: Page) => {
   await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -1204,7 +1210,11 @@ const signInShots: {
   mock?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<unknown>;
 }[] = [
-  { file: "1.01-sign-in-en-light-desktop", size: "desktop" },
+  {
+    file: "1.01-sign-in-en-light-desktop",
+    size: "desktop",
+    open: typeTheFramesAddress(),
+  },
   {
     file: "1.02-sign-in-invalid-email-en-light-desktop",
     size: "desktop",
@@ -1235,12 +1245,8 @@ const signInShots: {
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
       await page.getByRole("button", { name: "Continue", exact: true }).click();
-      // The banner, or the message Clerk's answer gave, so the shot shows what the screen says.
-      await page
-        .getByText("We could not send the code")
-        .or(page.getByRole("alert"))
-        .first()
-        .waitFor();
+      // Only the banner: Next's route announcer is an empty alert that is there at once.
+      await page.getByText("We could not send the code").waitFor();
     },
   },
   {
@@ -1293,8 +1299,17 @@ const signInShots: {
         .fill("4f7k-2m9q");
     },
   },
-  { file: "1.20-sign-in-en-dark-desktop", size: "desktop", scheme: "dark" },
-  { file: "1.21-phone-sign-in-en-light-phone", size: "phone" },
+  {
+    file: "1.20-sign-in-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    open: typeTheFramesAddress(),
+  },
+  {
+    file: "1.21-phone-sign-in-en-light-phone",
+    size: "phone",
+    open: typeTheFramesAddress(),
+  },
   {
     file: "1.22-phone-enter-the-code-en-light-phone",
     size: "phone",
@@ -1333,6 +1348,7 @@ const signInShots: {
     file: "1.39-phone-sign-in-ar-light-phone",
     size: "phone",
     language: Language.Ar,
+    open: typeTheFramesAddress("yusuf@al-ufuq.example"),
   },
 ];
 
@@ -1360,6 +1376,8 @@ test.describe("signed out", () => {
       await page.goto(shot.path ?? "/sign-in");
       await page.getByRole("heading", { level: 1 }).waitFor();
       await shot.open?.(page);
+      // No pointer over a control: a click leaves its hover behind.
+      await page.mouse.move(0, 0);
       await page.evaluate(
         () =>
           new Promise((done) =>

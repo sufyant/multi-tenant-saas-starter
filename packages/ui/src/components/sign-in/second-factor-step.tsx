@@ -76,7 +76,6 @@ export function SecondFactorStep({
             autoComplete="off"
             spellCheck={false}
             dir="ltr"
-            className="[&_input]:font-mono"
             error={message}
             disabled={pending}
             autoFocus

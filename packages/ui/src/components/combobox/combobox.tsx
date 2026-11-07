@@ -8,6 +8,7 @@ import {
   ChevronsUpDownIcon,
   Icon,
   type LucideIcon,
+  SearchIcon,
 } from "../icon";
 import {
   ComboboxContent,
@@ -130,19 +131,25 @@ export function Combobox({
           {variant === "field" && (
             <Icon icon={ChevronsUpDownIcon} className="text-muted-foreground" />
           )}
-          {variant === "filter" && (
+          {variant !== "field" && (
             <Icon
               icon={ChevronDownIcon}
-              className="ms-auto text-muted-foreground"
+              className={cn(
+                "text-muted-foreground",
+                variant === "filter" && "ms-auto",
+              )}
             />
           )}
         </ComboboxPrimitive.Trigger>
         <ComboboxContent className="min-w-64">
-          <ComboboxPrimitive.Input
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-            className="m-1 h-control-md w-[calc(100%-0.5rem)] rounded-md border border-input bg-card px-3 text-body outline-none"
-          />
+          <div className="m-1 flex h-control-md items-center gap-2 rounded-md border border-input bg-card px-3">
+            <Icon icon={SearchIcon} className="text-muted-foreground" />
+            <ComboboxPrimitive.Input
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              className="min-w-0 flex-1 bg-transparent text-body outline-none"
+            />
+          </div>
           <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
           <ComboboxList>
             {(option: ComboboxOption) => (
@@ -151,8 +158,11 @@ export function Combobox({
                 value={option}
                 className="min-h-control-md pointer-coarse:min-h-control-lg"
               >
-                <span lang={option.lang} dir={option.dir} className="flex-1">
-                  {option.label}
+                {/* The label keeps its own direction but starts where the list starts, as العربية does in an English list. */}
+                <span className="flex-1">
+                  <span lang={option.lang} dir={option.dir}>
+                    {option.label}
+                  </span>
                 </span>
                 {option.hint && (
                   <span

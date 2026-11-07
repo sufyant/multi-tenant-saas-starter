@@ -33,6 +33,7 @@ export function BackupCodes({
           download: t("download"),
           fileName: t("fileName"),
         }}
+        centred
       />
       <div className="flex items-start justify-center gap-2 text-body">
         <Checkbox

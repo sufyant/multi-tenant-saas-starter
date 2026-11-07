@@ -483,6 +483,10 @@ const toTheCode = async (page: Page) => {
   await page.getByRole("heading", { name: "Check your email" }).waitFor();
 };
 
+/** The address the frames show, typed in the focused field. */
+const typeTheFramesAddress = (page: Page) =>
+  page.getByRole("textbox", { name: "Email" }).fill("deniz@platform.example");
+
 const toTheSecondFactor = async (page: Page) => {
   await toTheCode(page);
   await page.getByRole("textbox", { name: "Code" }).pressSequentially("424242");
@@ -499,7 +503,11 @@ const entryShots: {
   mock?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<unknown>;
 }[] = [
-  { file: "1.01-sign-in-en-light-desktop", size: "desktop" },
+  {
+    file: "1.01-sign-in-en-light-desktop",
+    size: "desktop",
+    open: typeTheFramesAddress,
+  },
   {
     file: "1.02-check-your-email-en-light-desktop",
     size: "desktop",
@@ -544,8 +552,17 @@ const entryShots: {
       await page.getByRole("alert").filter({ hasText: "Too many" }).waitFor();
     },
   },
-  { file: "1.09-sign-in-en-dark-desktop", size: "desktop", scheme: "dark" },
-  { file: "1.10-phone-sign-in-en-light-phone", size: "phone" },
+  {
+    file: "1.09-sign-in-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    open: typeTheFramesAddress,
+  },
+  {
+    file: "1.10-phone-sign-in-en-light-phone",
+    size: "phone",
+    open: typeTheFramesAddress,
+  },
   {
     file: "1.11-phone-check-your-email-en-light-phone",
     size: "phone",
@@ -558,8 +575,9 @@ const entryShots: {
   },
 ];
 
-/** The screen at rest: every opening animation has finished. */
+/** The screen at rest: no pointer over a control, and every opening animation has finished. */
 const still = async (page: Page) => {
+  await page.mouse.move(0, 0);
   await page.evaluate(
     () =>
       new Promise((done) =>

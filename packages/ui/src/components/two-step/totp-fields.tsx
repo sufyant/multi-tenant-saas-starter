@@ -2,6 +2,7 @@
 
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
+import { cn } from "../../lib/utils";
 import { Button } from "../button";
 import { CodeInput } from "../code-input";
 import { Input } from "../input";
@@ -124,13 +125,18 @@ export function TotpFields({
   );
 }
 
-/** The ten backup codes, left to right in two columns, with Copy and Download, which builds the file in the browser. */
+/**
+ * The ten backup codes, left to right in two columns, with Copy and Download, which builds the file in the browser. `centred` puts
+ * the buttons in the middle of the card before sign-in (platform frame 1.04).
+ */
 export function BackupCodeList({
   codes,
   labels,
+  centred,
 }: {
   codes: string[];
   labels: { list: string; copy: string; download: string; fileName: string };
+  centred?: boolean;
 }) {
   const text = `${codes.join("\n")}\n`;
   const download = () => {
@@ -152,7 +158,7 @@ export function BackupCodeList({
           <li key={code}>{code}</li>
         ))}
       </ol>
-      <div className="flex flex-wrap gap-2">
+      <div className={cn("flex flex-wrap gap-2", centred && "justify-center")}>
         <Button type="button" onClick={download}>
           {labels.download}
         </Button>
