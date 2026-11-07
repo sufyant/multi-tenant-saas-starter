@@ -1,6 +1,9 @@
 // The one place that formats a date or a time (F18). The Intl API only: no date library. Every function takes the user's locale
 // and IANA time zone; a null zone means the browser's own. Digits are Western and the calendar is Gregorian in every language
-// (the design system's README, "Languages and direction").
+// (the design system's README, "Languages and direction"). A zone's city is the one exception to the Intl API: the Intl API names no
+// city, so it comes from Unicode CLDR through the generated time-zone-cities.gen.json.
+
+import cities from "./time-zone-cities.gen.json";
 
 export type Instant = string | Date;
 
@@ -172,28 +175,42 @@ function namedZone(
   return name !== zonePart(at, latin, timeZone, "longOffset") ? name : null;
 }
 
-/** The city of an IANA zone: `America/Argentina/Buenos_Aires` gives `Buenos Aires`. */
-const cityOf = (timeZone: string) =>
-  (timeZone.split("/").pop() ?? timeZone).replaceAll("_", " ");
+type CityLanguage = "en" | "tr" | "ar";
+
+/**
+ * The city of an IANA zone in the locale's language, CLDR's exemplar city: `Europe/Istanbul` gives `İstanbul` in Turkish and
+ * `إسطنبول` in Arabic. A zone CLDR names no city for, or a language it has no names in, gives the city of the IANA name:
+ * `America/Argentina/Buenos_Aires` gives `Buenos Aires`.
+ */
+function cityOf(timeZone: string, locale: string): string {
+  const language = new Intl.Locale(locale).language;
+  const city = (cities as Record<string, Record<CityLanguage, string>>)[
+    timeZone
+  ];
+  return city && language in city
+    ? city[language as CityLanguage]
+    : (timeZone.split("/").pop() ?? timeZone).replaceAll("_", " ");
+}
 
 /**
  * The zone as a person reads it beside a time: the city of its IANA name and its offset at that instant, all year:
- * `Dublin (UTC+1)` in summer, `Dublin (UTC+0)` in winter (F18). The city is in English: the Intl API names no city.
+ * `Dublin (UTC+1)` in summer, `Dublin (UTC+0)` in winter (F18). The city is in the user's language, from CLDR: `إسطنبول (UTC+3)`.
  */
 export function zoneLabel(at: Instant, options: DateTimeOptions): string {
   const timeZone = options.timeZone ?? browserTimeZone();
-  return `${cityOf(timeZone)} (${utcOffset(at, timeZone)})`;
+  return `${cityOf(timeZone, options.locale)} (${utcOffset(at, timeZone)})`;
 }
 
 /**
  * A zone as a person looks for it in a list: its city and its generic name in the user's language, `Dublin, Ireland Time`. When
- * the browser has no name for the zone, the city alone: `Istanbul`. The city is the IANA zone's, in English: the Intl API names no
- * city.
+ * the browser has no name for the zone, the city alone: `İstanbul`. The city is in the user's language, from CLDR, as zoneLabel
+ * writes it.
  */
 export function zoneName(at: Instant, options: DateTimeOptions): string {
   const timeZone = options.timeZone ?? browserTimeZone();
   const name = namedZone(at, options.locale, timeZone);
-  return name ? `${cityOf(timeZone)}, ${name}` : cityOf(timeZone);
+  const city = cityOf(timeZone, options.locale);
+  return name ? `${city}, ${name}` : city;
 }
 
 const minute = 60_000;

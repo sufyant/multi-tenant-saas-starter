@@ -1,0 +1,2602 @@
+{
+  "Africa/Abidjan": {
+    "en": "Abidjan",
+    "tr": "Abidjan",
+    "ar": "أبيدجان"
+  },
+  "Africa/Accra": {
+    "en": "Accra",
+    "tr": "Akra",
+    "ar": "أكرا"
+  },
+  "Africa/Addis_Ababa": {
+    "en": "Addis Ababa",
+    "tr": "Addis Ababa",
+    "ar": "أديس أبابا"
+  },
+  "Africa/Algiers": {
+    "en": "Algiers",
+    "tr": "Cezayir",
+    "ar": "الجزائر"
+  },
+  "Africa/Asmara": {
+    "en": "Asmara",
+    "tr": "Asmara",
+    "ar": "أسمرة"
+  },
+  "Africa/Asmera": {
+    "en": "Asmara",
+    "tr": "Asmara",
+    "ar": "أسمرة"
+  },
+  "Africa/Bamako": {
+    "en": "Bamako",
+    "tr": "Bamako",
+    "ar": "باماكو"
+  },
+  "Africa/Bangui": {
+    "en": "Bangui",
+    "tr": "Bangui",
+    "ar": "بانغوي"
+  },
+  "Africa/Banjul": {
+    "en": "Banjul",
+    "tr": "Banjul",
+    "ar": "بانجول"
+  },
+  "Africa/Bissau": {
+    "en": "Bissau",
+    "tr": "Bissau",
+    "ar": "بيساو"
+  },
+  "Africa/Blantyre": {
+    "en": "Blantyre",
+    "tr": "Blantyre",
+    "ar": "بلانتاير"
+  },
+  "Africa/Brazzaville": {
+    "en": "Brazzaville",
+    "tr": "Brazzavil",
+    "ar": "برازافيل"
+  },
+  "Africa/Bujumbura": {
+    "en": "Bujumbura",
+    "tr": "Bujumbura",
+    "ar": "بوجومبورا"
+  },
+  "Africa/Cairo": {
+    "en": "Cairo",
+    "tr": "Kahire",
+    "ar": "القاهرة"
+  },
+  "Africa/Casablanca": {
+    "en": "Casablanca",
+    "tr": "Kazablanka",
+    "ar": "الدار البيضاء"
+  },
+  "Africa/Ceuta": {
+    "en": "Ceuta",
+    "tr": "Septe",
+    "ar": "سيتا"
+  },
+  "Africa/Conakry": {
+    "en": "Conakry",
+    "tr": "Konakri",
+    "ar": "كوناكري"
+  },
+  "Africa/Dakar": {
+    "en": "Dakar",
+    "tr": "Dakar",
+    "ar": "داكار"
+  },
+  "Africa/Dar_es_Salaam": {
+    "en": "Dar es Salaam",
+    "tr": "Darüsselam",
+    "ar": "دار السلام"
+  },
+  "Africa/Djibouti": {
+    "en": "Djibouti",
+    "tr": "Cibuti",
+    "ar": "جيبوتي"
+  },
+  "Africa/Douala": {
+    "en": "Douala",
+    "tr": "Douala",
+    "ar": "دوالا"
+  },
+  "Africa/El_Aaiun": {
+    "en": "El Aaiún",
+    "tr": "Layun",
+    "ar": "العيون"
+  },
+  "Africa/Freetown": {
+    "en": "Freetown",
+    "tr": "Freetown",
+    "ar": "فري تاون"
+  },
+  "Africa/Gaborone": {
+    "en": "Gaborone",
+    "tr": "Gaborone",
+    "ar": "غابورون"
+  },
+  "Africa/Harare": {
+    "en": "Harare",
+    "tr": "Harare",
+    "ar": "هراري"
+  },
+  "Africa/Johannesburg": {
+    "en": "Johannesburg",
+    "tr": "Johannesburg",
+    "ar": "جوهانسبرغ"
+  },
+  "Africa/Juba": {
+    "en": "Juba",
+    "tr": "Cuba",
+    "ar": "جوبا"
+  },
+  "Africa/Kampala": {
+    "en": "Kampala",
+    "tr": "Kampala",
+    "ar": "كامبالا"
+  },
+  "Africa/Khartoum": {
+    "en": "Khartoum",
+    "tr": "Hartum",
+    "ar": "الخرطوم"
+  },
+  "Africa/Kigali": {
+    "en": "Kigali",
+    "tr": "Kigali",
+    "ar": "كيغالي"
+  },
+  "Africa/Kinshasa": {
+    "en": "Kinshasa",
+    "tr": "Kinşasa",
+    "ar": "كينشاسا"
+  },
+  "Africa/Lagos": {
+    "en": "Lagos",
+    "tr": "Lagos",
+    "ar": "لاغوس"
+  },
+  "Africa/Libreville": {
+    "en": "Libreville",
+    "tr": "Librevil",
+    "ar": "ليبرفيل"
+  },
+  "Africa/Lome": {
+    "en": "Lomé",
+    "tr": "Lomé",
+    "ar": "لومي"
+  },
+  "Africa/Luanda": {
+    "en": "Luanda",
+    "tr": "Luanda",
+    "ar": "لواندا"
+  },
+  "Africa/Lubumbashi": {
+    "en": "Lubumbashi",
+    "tr": "Lubumbashi",
+    "ar": "لومبباشا"
+  },
+  "Africa/Lusaka": {
+    "en": "Lusaka",
+    "tr": "Lusaka",
+    "ar": "لوساكا"
+  },
+  "Africa/Malabo": {
+    "en": "Malabo",
+    "tr": "Malabo",
+    "ar": "مالابو"
+  },
+  "Africa/Maputo": {
+    "en": "Maputo",
+    "tr": "Maputo",
+    "ar": "مابوتو"
+  },
+  "Africa/Maseru": {
+    "en": "Maseru",
+    "tr": "Maseru",
+    "ar": "ماسيرو"
+  },
+  "Africa/Mbabane": {
+    "en": "Mbabane",
+    "tr": "Mbabane",
+    "ar": "مباباني"
+  },
+  "Africa/Mogadishu": {
+    "en": "Mogadishu",
+    "tr": "Mogadişu",
+    "ar": "مقديشيو"
+  },
+  "Africa/Monrovia": {
+    "en": "Monrovia",
+    "tr": "Monrovia",
+    "ar": "مونروفيا"
+  },
+  "Africa/Nairobi": {
+    "en": "Nairobi",
+    "tr": "Nairobi",
+    "ar": "نيروبي"
+  },
+  "Africa/Ndjamena": {
+    "en": "N’Djamena",
+    "tr": "N’Djamena",
+    "ar": "نجامينا"
+  },
+  "Africa/Niamey": {
+    "en": "Niamey",
+    "tr": "Niamey",
+    "ar": "نيامي"
+  },
+  "Africa/Nouakchott": {
+    "en": "Nouakchott",
+    "tr": "Nouakchott",
+    "ar": "نواكشوط"
+  },
+  "Africa/Ouagadougou": {
+    "en": "Ouagadougou",
+    "tr": "Ouagadougou",
+    "ar": "واغادوغو"
+  },
+  "Africa/Porto-Novo": {
+    "en": "Porto-Novo",
+    "tr": "Porto-Novo",
+    "ar": "بورتو نوفو"
+  },
+  "Africa/Sao_Tome": {
+    "en": "São Tomé",
+    "tr": "São Tomé",
+    "ar": "ساو تومي"
+  },
+  "Africa/Timbuktu": {
+    "en": "Bamako",
+    "tr": "Bamako",
+    "ar": "باماكو"
+  },
+  "Africa/Tripoli": {
+    "en": "Tripoli",
+    "tr": "Trablus",
+    "ar": "طرابلس"
+  },
+  "Africa/Tunis": {
+    "en": "Tunis",
+    "tr": "Tunus",
+    "ar": "تونس"
+  },
+  "Africa/Windhoek": {
+    "en": "Windhoek",
+    "tr": "Windhoek",
+    "ar": "ويندهوك"
+  },
+  "America/Adak": {
+    "en": "Adak",
+    "tr": "Adak",
+    "ar": "أداك"
+  },
+  "America/Anchorage": {
+    "en": "Anchorage",
+    "tr": "Anchorage",
+    "ar": "أنشوراج"
+  },
+  "America/Anguilla": {
+    "en": "Anguilla",
+    "tr": "Anguilla",
+    "ar": "أنغويلا"
+  },
+  "America/Antigua": {
+    "en": "Antigua",
+    "tr": "Antigua",
+    "ar": "أنتيغوا"
+  },
+  "America/Araguaina": {
+    "en": "Araguaína",
+    "tr": "Araguaína",
+    "ar": "أروجوانيا"
+  },
+  "America/Argentina/Buenos_Aires": {
+    "en": "Buenos Aires",
+    "tr": "Buenos Aires",
+    "ar": "بوينوس أيرس"
+  },
+  "America/Argentina/Catamarca": {
+    "en": "Catamarca",
+    "tr": "Catamarca",
+    "ar": "كاتاماركا"
+  },
+  "America/Argentina/ComodRivadavia": {
+    "en": "Catamarca",
+    "tr": "Catamarca",
+    "ar": "كاتاماركا"
+  },
+  "America/Argentina/Cordoba": {
+    "en": "Córdoba",
+    "tr": "Córdoba",
+    "ar": "كوردوبا"
+  },
+  "America/Argentina/Jujuy": {
+    "en": "Jujuy",
+    "tr": "Jujuy",
+    "ar": "جوجو"
+  },
+  "America/Argentina/La_Rioja": {
+    "en": "La Rioja",
+    "tr": "La Rioja",
+    "ar": "لا ريوجا"
+  },
+  "America/Argentina/Mendoza": {
+    "en": "Mendoza",
+    "tr": "Mendoza",
+    "ar": "ميندوزا"
+  },
+  "America/Argentina/Rio_Gallegos": {
+    "en": "Río Gallegos",
+    "tr": "Río Gallegos",
+    "ar": "ريو جالييوس"
+  },
+  "America/Argentina/Salta": {
+    "en": "Salta",
+    "tr": "Salta",
+    "ar": "سالطا"
+  },
+  "America/Argentina/San_Juan": {
+    "en": "San Juan",
+    "tr": "San Juan",
+    "ar": "سان خوان"
+  },
+  "America/Argentina/San_Luis": {
+    "en": "San Luis",
+    "tr": "San Luis",
+    "ar": "سان لويس"
+  },
+  "America/Argentina/Tucuman": {
+    "en": "Tucumán",
+    "tr": "Tucumán",
+    "ar": "تاكمان"
+  },
+  "America/Argentina/Ushuaia": {
+    "en": "Ushuaia",
+    "tr": "Ushuaia",
+    "ar": "أشوا"
+  },
+  "America/Aruba": {
+    "en": "Aruba",
+    "tr": "Aruba",
+    "ar": "أروبا"
+  },
+  "America/Asuncion": {
+    "en": "Asunción",
+    "tr": "Asunción",
+    "ar": "أسونسيون"
+  },
+  "America/Atikokan": {
+    "en": "Atikokan",
+    "tr": "Atikokan",
+    "ar": "كورال هاربر"
+  },
+  "America/Atka": {
+    "en": "Adak",
+    "tr": "Adak",
+    "ar": "أداك"
+  },
+  "America/Bahia": {
+    "en": "Bahia",
+    "tr": "Bahia",
+    "ar": "باهيا"
+  },
+  "America/Bahia_Banderas": {
+    "en": "Bahía de Banderas",
+    "tr": "Bahia Banderas",
+    "ar": "باهيا بانديراس"
+  },
+  "America/Barbados": {
+    "en": "Barbados",
+    "tr": "Barbados",
+    "ar": "بربادوس"
+  },
+  "America/Belem": {
+    "en": "Belém",
+    "tr": "Belém",
+    "ar": "بلم"
+  },
+  "America/Belize": {
+    "en": "Belize",
+    "tr": "Belize",
+    "ar": "بليز"
+  },
+  "America/Blanc-Sablon": {
+    "en": "Blanc-Sablon",
+    "tr": "Blanc-Sablon",
+    "ar": "بلانك-سابلون"
+  },
+  "America/Boa_Vista": {
+    "en": "Boa Vista",
+    "tr": "Boa Vista",
+    "ar": "باو فيستا"
+  },
+  "America/Bogota": {
+    "en": "Bogotá",
+    "tr": "Bogotá",
+    "ar": "بوغوتا"
+  },
+  "America/Boise": {
+    "en": "Boise",
+    "tr": "Boise",
+    "ar": "بويس"
+  },
+  "America/Buenos_Aires": {
+    "en": "Buenos Aires",
+    "tr": "Buenos Aires",
+    "ar": "بوينوس أيرس"
+  },
+  "America/Cambridge_Bay": {
+    "en": "Cambridge Bay",
+    "tr": "Cambridge Bay",
+    "ar": "كامبرديج باي"
+  },
+  "America/Campo_Grande": {
+    "en": "Campo Grande",
+    "tr": "Campo Grande",
+    "ar": "كومبو جراند"
+  },
+  "America/Cancun": {
+    "en": "Cancún",
+    "tr": "Cancun",
+    "ar": "كانكون"
+  },
+  "America/Caracas": {
+    "en": "Caracas",
+    "tr": "Caracas",
+    "ar": "كاراكاس"
+  },
+  "America/Catamarca": {
+    "en": "Catamarca",
+    "tr": "Catamarca",
+    "ar": "كاتاماركا"
+  },
+  "America/Cayenne": {
+    "en": "Cayenne",
+    "tr": "Cayenne",
+    "ar": "كايين"
+  },
+  "America/Cayman": {
+    "en": "Cayman",
+    "tr": "Cayman",
+    "ar": "كايمان"
+  },
+  "America/Chicago": {
+    "en": "Chicago",
+    "tr": "Chicago",
+    "ar": "شيكاغو"
+  },
+  "America/Chihuahua": {
+    "en": "Chihuahua",
+    "tr": "Chihuahua",
+    "ar": "تشيواوا"
+  },
+  "America/Ciudad_Juarez": {
+    "en": "Ciudad Juárez",
+    "tr": "Ciudad Juárez",
+    "ar": "سيوداد خواريز"
+  },
+  "America/Coral_Harbour": {
+    "en": "Atikokan",
+    "tr": "Atikokan",
+    "ar": "كورال هاربر"
+  },
+  "America/Cordoba": {
+    "en": "Córdoba",
+    "tr": "Córdoba",
+    "ar": "كوردوبا"
+  },
+  "America/Costa_Rica": {
+    "en": "Costa Rica",
+    "tr": "Kosta Rika",
+    "ar": "كوستاريكا"
+  },
+  "America/Coyhaique": {
+    "en": "Coyhaique",
+    "tr": "Coyhaique",
+    "ar": "كويهايكيو"
+  },
+  "America/Creston": {
+    "en": "Creston",
+    "tr": "Creston",
+    "ar": "كريستون"
+  },
+  "America/Cuiaba": {
+    "en": "Cuiabá",
+    "tr": "Cuiabá",
+    "ar": "كيابا"
+  },
+  "America/Curacao": {
+    "en": "Curaçao",
+    "tr": "Curaçao",
+    "ar": "كوراساو"
+  },
+  "America/Danmarkshavn": {
+    "en": "Danmarkshavn",
+    "tr": "Danmarkshavn",
+    "ar": "دانمرك شافن"
+  },
+  "America/Dawson": {
+    "en": "Dawson",
+    "tr": "Dawson",
+    "ar": "داوسان"
+  },
+  "America/Dawson_Creek": {
+    "en": "Dawson Creek",
+    "tr": "Dawson Creek",
+    "ar": "داوسن كريك"
+  },
+  "America/Denver": {
+    "en": "Denver",
+    "tr": "Denver",
+    "ar": "دنفر"
+  },
+  "America/Detroit": {
+    "en": "Detroit",
+    "tr": "Detroit",
+    "ar": "ديترويت"
+  },
+  "America/Dominica": {
+    "en": "Dominica",
+    "tr": "Dominika",
+    "ar": "دومينيكا"
+  },
+  "America/Edmonton": {
+    "en": "Edmonton",
+    "tr": "Edmonton",
+    "ar": "ايدمونتون"
+  },
+  "America/Eirunepe": {
+    "en": "Eirunepé",
+    "tr": "Eirunepé",
+    "ar": "ايرونبي"
+  },
+  "America/El_Salvador": {
+    "en": "El Salvador",
+    "tr": "El Salvador",
+    "ar": "السلفادور"
+  },
+  "America/Ensenada": {
+    "en": "Tijuana",
+    "tr": "Tijuana",
+    "ar": "تيخوانا"
+  },
+  "America/Fort_Nelson": {
+    "en": "Fort Nelson",
+    "tr": "Fort Nelson",
+    "ar": "فورت نيلسون"
+  },
+  "America/Fort_Wayne": {
+    "en": "Indianapolis",
+    "tr": "Indianapolis",
+    "ar": "إنديانابوليس"
+  },
+  "America/Fortaleza": {
+    "en": "Fortaleza",
+    "tr": "Fortaleza",
+    "ar": "فورتاليزا"
+  },
+  "America/Glace_Bay": {
+    "en": "Glace Bay",
+    "tr": "Glace Bay",
+    "ar": "جلاس باي"
+  },
+  "America/Godthab": {
+    "en": "Nuuk",
+    "tr": "Nuuk",
+    "ar": "غودثاب"
+  },
+  "America/Goose_Bay": {
+    "en": "Goose Bay",
+    "tr": "Goose Bay",
+    "ar": "جوس باي"
+  },
+  "America/Grand_Turk": {
+    "en": "Grand Turk",
+    "tr": "Grand Turk",
+    "ar": "غراند ترك"
+  },
+  "America/Grenada": {
+    "en": "Grenada",
+    "tr": "Grenada",
+    "ar": "غرينادا"
+  },
+  "America/Guadeloupe": {
+    "en": "Guadeloupe",
+    "tr": "Guadeloupe",
+    "ar": "غوادلوب"
+  },
+  "America/Guatemala": {
+    "en": "Guatemala",
+    "tr": "Guatemala",
+    "ar": "غواتيمالا"
+  },
+  "America/Guayaquil": {
+    "en": "Guayaquil",
+    "tr": "Guayaquil",
+    "ar": "غواياكويل"
+  },
+  "America/Guyana": {
+    "en": "Guyana",
+    "tr": "Guyana",
+    "ar": "غيانا"
+  },
+  "America/Halifax": {
+    "en": "Halifax",
+    "tr": "Halifax",
+    "ar": "هاليفاكس"
+  },
+  "America/Havana": {
+    "en": "Havana",
+    "tr": "Havana",
+    "ar": "هافانا"
+  },
+  "America/Hermosillo": {
+    "en": "Hermosillo",
+    "tr": "Hermosillo",
+    "ar": "هيرموسيلو"
+  },
+  "America/Indiana/Indianapolis": {
+    "en": "Indianapolis",
+    "tr": "Indianapolis",
+    "ar": "إنديانابوليس"
+  },
+  "America/Indiana/Knox": {
+    "en": "Knox, Indiana",
+    "tr": "Knox, Indiana",
+    "ar": "كونكس"
+  },
+  "America/Indiana/Marengo": {
+    "en": "Marengo, Indiana",
+    "tr": "Marengo, Indiana",
+    "ar": "مارنجو"
+  },
+  "America/Indiana/Petersburg": {
+    "en": "Petersburg, Indiana",
+    "tr": "Petersburg, Indiana",
+    "ar": "بيترسبرغ"
+  },
+  "America/Indiana/Tell_City": {
+    "en": "Tell City, Indiana",
+    "tr": "Tell City, Indiana",
+    "ar": "مدينة تل، إنديانا"
+  },
+  "America/Indiana/Vevay": {
+    "en": "Vevay, Indiana",
+    "tr": "Vevay, Indiana",
+    "ar": "فيفاي"
+  },
+  "America/Indiana/Vincennes": {
+    "en": "Vincennes, Indiana",
+    "tr": "Vincennes, Indiana",
+    "ar": "فينسينس"
+  },
+  "America/Indiana/Winamac": {
+    "en": "Winamac, Indiana",
+    "tr": "Winamac, Indiana",
+    "ar": "ويناماك"
+  },
+  "America/Indianapolis": {
+    "en": "Indianapolis",
+    "tr": "Indianapolis",
+    "ar": "إنديانابوليس"
+  },
+  "America/Inuvik": {
+    "en": "Inuvik",
+    "tr": "Inuvik",
+    "ar": "اينوفيك"
+  },
+  "America/Iqaluit": {
+    "en": "Iqaluit",
+    "tr": "Iqaluit",
+    "ar": "اكويلت"
+  },
+  "America/Jamaica": {
+    "en": "Jamaica",
+    "tr": "Jamaika",
+    "ar": "جامايكا"
+  },
+  "America/Jujuy": {
+    "en": "Jujuy",
+    "tr": "Jujuy",
+    "ar": "جوجو"
+  },
+  "America/Juneau": {
+    "en": "Juneau",
+    "tr": "Juneau",
+    "ar": "جوني"
+  },
+  "America/Kentucky/Louisville": {
+    "en": "Louisville",
+    "tr": "Louisville",
+    "ar": "لويس فيل"
+  },
+  "America/Kentucky/Monticello": {
+    "en": "Monticello, Kentucky",
+    "tr": "Monticello, Kentucky",
+    "ar": "مونتيسيلو"
+  },
+  "America/Knox_IN": {
+    "en": "Knox, Indiana",
+    "tr": "Knox, Indiana",
+    "ar": "كونكس"
+  },
+  "America/Kralendijk": {
+    "en": "Kralendijk",
+    "tr": "Kralendijk",
+    "ar": "كرالنديك"
+  },
+  "America/La_Paz": {
+    "en": "La Paz",
+    "tr": "La Paz",
+    "ar": "لا باز"
+  },
+  "America/Lima": {
+    "en": "Lima",
+    "tr": "Lima",
+    "ar": "ليما"
+  },
+  "America/Los_Angeles": {
+    "en": "Los Angeles",
+    "tr": "Los Angeles",
+    "ar": "لوس انجلوس"
+  },
+  "America/Louisville": {
+    "en": "Louisville",
+    "tr": "Louisville",
+    "ar": "لويس فيل"
+  },
+  "America/Lower_Princes": {
+    "en": "Lower Prince’s Quarter",
+    "tr": "Lower Prince’s Quarter",
+    "ar": "حي الأمير السفلي"
+  },
+  "America/Maceio": {
+    "en": "Maceió",
+    "tr": "Maceió",
+    "ar": "ماشيو"
+  },
+  "America/Managua": {
+    "en": "Managua",
+    "tr": "Managua",
+    "ar": "ماناغوا"
+  },
+  "America/Manaus": {
+    "en": "Manaus",
+    "tr": "Manaus",
+    "ar": "ماناوس"
+  },
+  "America/Marigot": {
+    "en": "Marigot",
+    "tr": "Marigot",
+    "ar": "ماريغوت"
+  },
+  "America/Martinique": {
+    "en": "Martinique",
+    "tr": "Martinique",
+    "ar": "المارتينيك"
+  },
+  "America/Matamoros": {
+    "en": "Matamoros",
+    "tr": "Matamoros",
+    "ar": "ماتاموروس"
+  },
+  "America/Mazatlan": {
+    "en": "Mazatlán",
+    "tr": "Mazatlán",
+    "ar": "مازاتلان"
+  },
+  "America/Mendoza": {
+    "en": "Mendoza",
+    "tr": "Mendoza",
+    "ar": "ميندوزا"
+  },
+  "America/Menominee": {
+    "en": "Menominee",
+    "tr": "Menominee",
+    "ar": "مينوميني"
+  },
+  "America/Merida": {
+    "en": "Mérida",
+    "tr": "Merida",
+    "ar": "ميريدا"
+  },
+  "America/Metlakatla": {
+    "en": "Metlakatla",
+    "tr": "Metlakatla",
+    "ar": "ميتلاكاتلا"
+  },
+  "America/Mexico_City": {
+    "en": "Mexico City",
+    "tr": "Ciudad de México",
+    "ar": "مكسيكو سيتي"
+  },
+  "America/Miquelon": {
+    "en": "Saint-Pierre",
+    "tr": "Saint-Pierre",
+    "ar": "مكويلون"
+  },
+  "America/Moncton": {
+    "en": "Moncton",
+    "tr": "Moncton",
+    "ar": "وينكتون"
+  },
+  "America/Monterrey": {
+    "en": "Monterrey",
+    "tr": "Monterrey",
+    "ar": "مونتيري"
+  },
+  "America/Montevideo": {
+    "en": "Montevideo",
+    "tr": "Montevideo",
+    "ar": "مونتفيديو"
+  },
+  "America/Montreal": {
+    "en": "Toronto",
+    "tr": "Toronto",
+    "ar": "تورونتو"
+  },
+  "America/Montserrat": {
+    "en": "Montserrat",
+    "tr": "Montserrat",
+    "ar": "مونتسيرات"
+  },
+  "America/Nassau": {
+    "en": "Nassau",
+    "tr": "Nassau",
+    "ar": "ناسو"
+  },
+  "America/New_York": {
+    "en": "New York",
+    "tr": "New York",
+    "ar": "نيويورك"
+  },
+  "America/Nipigon": {
+    "en": "Toronto",
+    "tr": "Toronto",
+    "ar": "تورونتو"
+  },
+  "America/Nome": {
+    "en": "Nome",
+    "tr": "Nome",
+    "ar": "نوم"
+  },
+  "America/Noronha": {
+    "en": "Fernando de Noronha",
+    "tr": "Fernando de Noronha",
+    "ar": "نوروناه"
+  },
+  "America/North_Dakota/Beulah": {
+    "en": "Beulah, North Dakota",
+    "tr": "Beulah, Kuzey Dakota",
+    "ar": "بيولا، داكوتا الشمالية"
+  },
+  "America/North_Dakota/Center": {
+    "en": "Center, North Dakota",
+    "tr": "Merkez, Kuzey Dakota",
+    "ar": "سنتر"
+  },
+  "America/North_Dakota/New_Salem": {
+    "en": "New Salem, North Dakota",
+    "tr": "New Salem, Kuzey Dakota",
+    "ar": "نيو ساليم"
+  },
+  "America/Nuuk": {
+    "en": "Nuuk",
+    "tr": "Nuuk",
+    "ar": "غودثاب"
+  },
+  "America/Ojinaga": {
+    "en": "Ojinaga",
+    "tr": "Ojinaga",
+    "ar": "أوجيناجا"
+  },
+  "America/Panama": {
+    "en": "Panama",
+    "tr": "Panama",
+    "ar": "بنما"
+  },
+  "America/Pangnirtung": {
+    "en": "Iqaluit",
+    "tr": "Iqaluit",
+    "ar": "اكويلت"
+  },
+  "America/Paramaribo": {
+    "en": "Paramaribo",
+    "tr": "Paramaribo",
+    "ar": "باراماريبو"
+  },
+  "America/Phoenix": {
+    "en": "Phoenix",
+    "tr": "Phoenix",
+    "ar": "فينكس"
+  },
+  "America/Port-au-Prince": {
+    "en": "Port-au-Prince",
+    "tr": "Port-au-Prince",
+    "ar": "بورت أو برنس"
+  },
+  "America/Port_of_Spain": {
+    "en": "Port of Spain",
+    "tr": "Port of Spain",
+    "ar": "بورت أوف سبين"
+  },
+  "America/Porto_Acre": {
+    "en": "Rio Branco",
+    "tr": "Rio Branco",
+    "ar": "ريوبرانكو"
+  },
+  "America/Porto_Velho": {
+    "en": "Porto Velho",
+    "tr": "Porto Velho",
+    "ar": "بورتو فيلو"
+  },
+  "America/Puerto_Rico": {
+    "en": "Puerto Rico",
+    "tr": "Porto Riko",
+    "ar": "بورتوريكو"
+  },
+  "America/Punta_Arenas": {
+    "en": "Punta Arenas",
+    "tr": "Punta Arenas",
+    "ar": "بونتا أريناز"
+  },
+  "America/Rainy_River": {
+    "en": "Winnipeg",
+    "tr": "Winnipeg",
+    "ar": "وينيبيج"
+  },
+  "America/Rankin_Inlet": {
+    "en": "Rankin Inlet",
+    "tr": "Rankin Inlet",
+    "ar": "رانكن انلت"
+  },
+  "America/Recife": {
+    "en": "Recife",
+    "tr": "Recife",
+    "ar": "ريسيف"
+  },
+  "America/Regina": {
+    "en": "Regina",
+    "tr": "Regina",
+    "ar": "ريجينا"
+  },
+  "America/Resolute": {
+    "en": "Resolute",
+    "tr": "Resolute",
+    "ar": "ريزولوت"
+  },
+  "America/Rio_Branco": {
+    "en": "Rio Branco",
+    "tr": "Rio Branco",
+    "ar": "ريوبرانكو"
+  },
+  "America/Rosario": {
+    "en": "Córdoba",
+    "tr": "Córdoba",
+    "ar": "كوردوبا"
+  },
+  "America/Santa_Isabel": {
+    "en": "Tijuana",
+    "tr": "Tijuana",
+    "ar": "تيخوانا"
+  },
+  "America/Santarem": {
+    "en": "Santarém",
+    "tr": "Santarém",
+    "ar": "سانتاريم"
+  },
+  "America/Santiago": {
+    "en": "Santiago",
+    "tr": "Santiago",
+    "ar": "سانتياغو"
+  },
+  "America/Santo_Domingo": {
+    "en": "Santo Domingo",
+    "tr": "Santo Domingo",
+    "ar": "سانتو دومينغو"
+  },
+  "America/Sao_Paulo": {
+    "en": "São Paulo",
+    "tr": "São Paulo",
+    "ar": "ساو باولو"
+  },
+  "America/Scoresbysund": {
+    "en": "Ittoqqortoormiit",
+    "tr": "Ittoqqortoormiit",
+    "ar": "سكورسبيسند"
+  },
+  "America/Shiprock": {
+    "en": "Denver",
+    "tr": "Denver",
+    "ar": "دنفر"
+  },
+  "America/Sitka": {
+    "en": "Sitka",
+    "tr": "Sitka",
+    "ar": "سيتكا"
+  },
+  "America/St_Barthelemy": {
+    "en": "St. Barthélemy",
+    "tr": "Saint Barthelemy",
+    "ar": "سانت بارتيليمي"
+  },
+  "America/St_Johns": {
+    "en": "St. John’s",
+    "tr": "St. John’s",
+    "ar": "سانت جونس"
+  },
+  "America/St_Kitts": {
+    "en": "St. Kitts",
+    "tr": "St. Kitts",
+    "ar": "سانت كيتس"
+  },
+  "America/St_Lucia": {
+    "en": "St. Lucia",
+    "tr": "St. Lucia",
+    "ar": "سانت لوشيا"
+  },
+  "America/St_Thomas": {
+    "en": "St. Thomas",
+    "tr": "St. Thomas",
+    "ar": "سانت توماس"
+  },
+  "America/St_Vincent": {
+    "en": "St. Vincent",
+    "tr": "St. Vincent",
+    "ar": "سانت فنسنت"
+  },
+  "America/Swift_Current": {
+    "en": "Swift Current",
+    "tr": "Swift Current",
+    "ar": "سوفت كارنت"
+  },
+  "America/Tegucigalpa": {
+    "en": "Tegucigalpa",
+    "tr": "Tegucigalpa",
+    "ar": "تيغوسيغالبا"
+  },
+  "America/Thule": {
+    "en": "Thule",
+    "tr": "Thule",
+    "ar": "ثيل"
+  },
+  "America/Thunder_Bay": {
+    "en": "Toronto",
+    "tr": "Toronto",
+    "ar": "تورونتو"
+  },
+  "America/Tijuana": {
+    "en": "Tijuana",
+    "tr": "Tijuana",
+    "ar": "تيخوانا"
+  },
+  "America/Toronto": {
+    "en": "Toronto",
+    "tr": "Toronto",
+    "ar": "تورونتو"
+  },
+  "America/Tortola": {
+    "en": "Tortola",
+    "tr": "Tortola",
+    "ar": "تورتولا"
+  },
+  "America/Vancouver": {
+    "en": "Vancouver",
+    "tr": "Vancouver",
+    "ar": "فانكوفر"
+  },
+  "America/Virgin": {
+    "en": "St. Thomas",
+    "tr": "St. Thomas",
+    "ar": "سانت توماس"
+  },
+  "America/Whitehorse": {
+    "en": "Whitehorse",
+    "tr": "Whitehorse",
+    "ar": "وايت هورس"
+  },
+  "America/Winnipeg": {
+    "en": "Winnipeg",
+    "tr": "Winnipeg",
+    "ar": "وينيبيج"
+  },
+  "America/Yakutat": {
+    "en": "Yakutat",
+    "tr": "Yakutat",
+    "ar": "ياكوتات"
+  },
+  "America/Yellowknife": {
+    "en": "Edmonton",
+    "tr": "Edmonton",
+    "ar": "ايدمونتون"
+  },
+  "Antarctica/Casey": {
+    "en": "Casey Station",
+    "tr": "Casey Station",
+    "ar": "كاساي"
+  },
+  "Antarctica/Davis": {
+    "en": "Davis",
+    "tr": "Davis",
+    "ar": "دافيز"
+  },
+  "Antarctica/DumontDUrville": {
+    "en": "Dumont d’Urville Station",
+    "tr": "Dumont-d’Urville",
+    "ar": "دي مونت دو روفيل"
+  },
+  "Antarctica/Macquarie": {
+    "en": "Macquarie Island",
+    "tr": "Macquarie Island",
+    "ar": "ماكواري"
+  },
+  "Antarctica/Mawson": {
+    "en": "Mawson Station",
+    "tr": "Mawson Station",
+    "ar": "ماوسون"
+  },
+  "Antarctica/McMurdo": {
+    "en": "McMurdo Station",
+    "tr": "McMurdo Station",
+    "ar": "ماك موردو"
+  },
+  "Antarctica/Palmer": {
+    "en": "Palmer Land",
+    "tr": "Palmer Land",
+    "ar": "بالمير"
+  },
+  "Antarctica/Rothera": {
+    "en": "Rothera Station",
+    "tr": "Rothera Station",
+    "ar": "روثيرا"
+  },
+  "Antarctica/South_Pole": {
+    "en": "McMurdo Station",
+    "tr": "McMurdo Station",
+    "ar": "ماك موردو"
+  },
+  "Antarctica/Syowa": {
+    "en": "Showa Station",
+    "tr": "Showa",
+    "ar": "سايووا"
+  },
+  "Antarctica/Troll": {
+    "en": "Troll Station",
+    "tr": "Troll Station",
+    "ar": "ترول"
+  },
+  "Antarctica/Vostok": {
+    "en": "Vostok Station",
+    "tr": "Vostok Station",
+    "ar": "فوستوك"
+  },
+  "Arctic/Longyearbyen": {
+    "en": "Longyearbyen",
+    "tr": "Longyearbyen",
+    "ar": "لونجيربين"
+  },
+  "Asia/Aden": {
+    "en": "Aden",
+    "tr": "Aden",
+    "ar": "عدن"
+  },
+  "Asia/Almaty": {
+    "en": "Almaty",
+    "tr": "Almatı",
+    "ar": "ألماتي"
+  },
+  "Asia/Amman": {
+    "en": "Amman",
+    "tr": "Amman",
+    "ar": "عمّان"
+  },
+  "Asia/Anadyr": {
+    "en": "Anadyr",
+    "tr": "Anadır",
+    "ar": "أندير"
+  },
+  "Asia/Aqtau": {
+    "en": "Aktau",
+    "tr": "Aktav",
+    "ar": "أكتاو"
+  },
+  "Asia/Aqtobe": {
+    "en": "Aqtobe",
+    "tr": "Aktöbe",
+    "ar": "أكتوب"
+  },
+  "Asia/Ashgabat": {
+    "en": "Ashgabat",
+    "tr": "Aşkabat",
+    "ar": "عشق آباد"
+  },
+  "Asia/Ashkhabad": {
+    "en": "Ashgabat",
+    "tr": "Aşkabat",
+    "ar": "عشق آباد"
+  },
+  "Asia/Atyrau": {
+    "en": "Atyrau",
+    "tr": "Atırav",
+    "ar": "أتيراو"
+  },
+  "Asia/Baghdad": {
+    "en": "Baghdad",
+    "tr": "Bağdat",
+    "ar": "بغداد"
+  },
+  "Asia/Bahrain": {
+    "en": "Bahrain",
+    "tr": "Bahreyn",
+    "ar": "البحرين"
+  },
+  "Asia/Baku": {
+    "en": "Baku",
+    "tr": "Bakü",
+    "ar": "باكو"
+  },
+  "Asia/Bangkok": {
+    "en": "Bangkok",
+    "tr": "Bangkok",
+    "ar": "بانكوك"
+  },
+  "Asia/Barnaul": {
+    "en": "Barnaul",
+    "tr": "Barnaul",
+    "ar": "بارناول"
+  },
+  "Asia/Beirut": {
+    "en": "Beirut",
+    "tr": "Beyrut",
+    "ar": "بيروت"
+  },
+  "Asia/Bishkek": {
+    "en": "Bishkek",
+    "tr": "Bişkek",
+    "ar": "بشكيك"
+  },
+  "Asia/Brunei": {
+    "en": "Brunei",
+    "tr": "Brunei",
+    "ar": "بروناي"
+  },
+  "Asia/Calcutta": {
+    "en": "Kolkata",
+    "tr": "Kalküta",
+    "ar": "كالكتا"
+  },
+  "Asia/Chita": {
+    "en": "Chita",
+    "tr": "Çita",
+    "ar": "تشيتا"
+  },
+  "Asia/Choibalsan": {
+    "en": "Ulaanbaatar",
+    "tr": "Ulan Batur",
+    "ar": "آلانباتار"
+  },
+  "Asia/Chongqing": {
+    "en": "Shanghai",
+    "tr": "Şanghay",
+    "ar": "شنغهاي"
+  },
+  "Asia/Chungking": {
+    "en": "Shanghai",
+    "tr": "Şanghay",
+    "ar": "شنغهاي"
+  },
+  "Asia/Colombo": {
+    "en": "Colombo",
+    "tr": "Kolombo",
+    "ar": "كولومبو"
+  },
+  "Asia/Dacca": {
+    "en": "Dhaka",
+    "tr": "Dakka",
+    "ar": "دكا"
+  },
+  "Asia/Damascus": {
+    "en": "Damascus",
+    "tr": "Şam",
+    "ar": "دمشق"
+  },
+  "Asia/Dhaka": {
+    "en": "Dhaka",
+    "tr": "Dakka",
+    "ar": "دكا"
+  },
+  "Asia/Dili": {
+    "en": "Dili",
+    "tr": "Dili",
+    "ar": "ديلي"
+  },
+  "Asia/Dubai": {
+    "en": "Dubai",
+    "tr": "Dubai",
+    "ar": "دبي"
+  },
+  "Asia/Dushanbe": {
+    "en": "Dushanbe",
+    "tr": "Duşanbe",
+    "ar": "دوشانبي"
+  },
+  "Asia/Famagusta": {
+    "en": "Famagusta",
+    "tr": "Gazimağusa",
+    "ar": "فاماغوستا"
+  },
+  "Asia/Gaza": {
+    "en": "Gaza",
+    "tr": "Gazze",
+    "ar": "غزة"
+  },
+  "Asia/Harbin": {
+    "en": "Shanghai",
+    "tr": "Şanghay",
+    "ar": "شنغهاي"
+  },
+  "Asia/Hebron": {
+    "en": "Hebron",
+    "tr": "El Halil",
+    "ar": "هيبرون (مدينة الخليل)"
+  },
+  "Asia/Ho_Chi_Minh": {
+    "en": "Ho Chi Minh City",
+    "tr": "Ho Chi Minh Kenti",
+    "ar": "مدينة هو تشي منة"
+  },
+  "Asia/Hong_Kong": {
+    "en": "Hong Kong",
+    "tr": "Hong Kong",
+    "ar": "هونغ كونغ"
+  },
+  "Asia/Hovd": {
+    "en": "Khovd",
+    "tr": "Khovd",
+    "ar": "هوفد"
+  },
+  "Asia/Irkutsk": {
+    "en": "Irkutsk",
+    "tr": "İrkutsk",
+    "ar": "ايركيتسك"
+  },
+  "Asia/Istanbul": {
+    "en": "Istanbul",
+    "tr": "İstanbul",
+    "ar": "إسطنبول"
+  },
+  "Asia/Jakarta": {
+    "en": "Jakarta",
+    "tr": "Cakarta",
+    "ar": "جاكرتا"
+  },
+  "Asia/Jayapura": {
+    "en": "Jayapura",
+    "tr": "Jayapura",
+    "ar": "جايابيورا"
+  },
+  "Asia/Jerusalem": {
+    "en": "Jerusalem",
+    "tr": "Kudüs",
+    "ar": "القدس"
+  },
+  "Asia/Kabul": {
+    "en": "Kabul",
+    "tr": "Kabil",
+    "ar": "كابول"
+  },
+  "Asia/Kamchatka": {
+    "en": "Kamchatka",
+    "tr": "Kamçatka",
+    "ar": "كامتشاتكا"
+  },
+  "Asia/Karachi": {
+    "en": "Karachi",
+    "tr": "Karaçi",
+    "ar": "كراتشي"
+  },
+  "Asia/Kashgar": {
+    "en": "Ürümqi",
+    "tr": "Urumçi",
+    "ar": "أرومكي"
+  },
+  "Asia/Kathmandu": {
+    "en": "Kathmandu",
+    "tr": "Katmandu",
+    "ar": "كاتماندو"
+  },
+  "Asia/Katmandu": {
+    "en": "Kathmandu",
+    "tr": "Katmandu",
+    "ar": "كاتماندو"
+  },
+  "Asia/Khandyga": {
+    "en": "Khandyga",
+    "tr": "Handiga",
+    "ar": "خانديجا"
+  },
+  "Asia/Kolkata": {
+    "en": "Kolkata",
+    "tr": "Kalküta",
+    "ar": "كالكتا"
+  },
+  "Asia/Krasnoyarsk": {
+    "en": "Krasnoyarsk",
+    "tr": "Krasnoyarsk",
+    "ar": "كراسنويارسك"
+  },
+  "Asia/Kuala_Lumpur": {
+    "en": "Kuala Lumpur",
+    "tr": "Kuala Lumpur",
+    "ar": "كوالا لامبور"
+  },
+  "Asia/Kuching": {
+    "en": "Kuching",
+    "tr": "Kuçing",
+    "ar": "كيشينج"
+  },
+  "Asia/Kuwait": {
+    "en": "Kuwait",
+    "tr": "Kuveyt",
+    "ar": "الكويت"
+  },
+  "Asia/Macao": {
+    "en": "Macao",
+    "tr": "Makao",
+    "ar": "ماكاو"
+  },
+  "Asia/Macau": {
+    "en": "Macao",
+    "tr": "Makao",
+    "ar": "ماكاو"
+  },
+  "Asia/Magadan": {
+    "en": "Magadan",
+    "tr": "Magadan",
+    "ar": "مجادن"
+  },
+  "Asia/Makassar": {
+    "en": "Makassar",
+    "tr": "Makassar",
+    "ar": "ماكسار"
+  },
+  "Asia/Manila": {
+    "en": "Manila",
+    "tr": "Manila",
+    "ar": "مانيلا"
+  },
+  "Asia/Muscat": {
+    "en": "Muscat",
+    "tr": "Maskat",
+    "ar": "مسقط"
+  },
+  "Asia/Nicosia": {
+    "en": "Nicosia",
+    "tr": "Lefkoşa",
+    "ar": "نيقوسيا"
+  },
+  "Asia/Novokuznetsk": {
+    "en": "Novokuznetsk",
+    "tr": "Novokuznetsk",
+    "ar": "نوفوكوزنتسك"
+  },
+  "Asia/Novosibirsk": {
+    "en": "Novosibirsk",
+    "tr": "Novosibirsk",
+    "ar": "نوفوسبيرسك"
+  },
+  "Asia/Omsk": {
+    "en": "Omsk",
+    "tr": "Omsk",
+    "ar": "أومسك"
+  },
+  "Asia/Oral": {
+    "en": "Oral",
+    "tr": "Oral",
+    "ar": "أورال"
+  },
+  "Asia/Phnom_Penh": {
+    "en": "Phnom Penh",
+    "tr": "Phnom Penh",
+    "ar": "بنوم بنه"
+  },
+  "Asia/Pontianak": {
+    "en": "Pontianak",
+    "tr": "Pontianak",
+    "ar": "بونتيانك"
+  },
+  "Asia/Pyongyang": {
+    "en": "Pyongyang",
+    "tr": "Pyongyang",
+    "ar": "بيونغ يانغ"
+  },
+  "Asia/Qatar": {
+    "en": "Qatar",
+    "tr": "Katar",
+    "ar": "قطر"
+  },
+  "Asia/Qostanay": {
+    "en": "Kostanay",
+    "tr": "Kostanay",
+    "ar": "قوستاناي"
+  },
+  "Asia/Qyzylorda": {
+    "en": "Kyzylorda",
+    "tr": "Kızılorda",
+    "ar": "كيزيلوردا"
+  },
+  "Asia/Rangoon": {
+    "en": "Yangon",
+    "tr": "Yangon",
+    "ar": "رانغون"
+  },
+  "Asia/Riyadh": {
+    "en": "Riyadh",
+    "tr": "Riyad",
+    "ar": "الرياض"
+  },
+  "Asia/Saigon": {
+    "en": "Ho Chi Minh City",
+    "tr": "Ho Chi Minh Kenti",
+    "ar": "مدينة هو تشي منة"
+  },
+  "Asia/Sakhalin": {
+    "en": "Sakhalin",
+    "tr": "Sahalin",
+    "ar": "سكالين"
+  },
+  "Asia/Samarkand": {
+    "en": "Samarkand",
+    "tr": "Semerkant",
+    "ar": "سمرقند"
+  },
+  "Asia/Seoul": {
+    "en": "Seoul",
+    "tr": "Seul",
+    "ar": "سول"
+  },
+  "Asia/Shanghai": {
+    "en": "Shanghai",
+    "tr": "Şanghay",
+    "ar": "شنغهاي"
+  },
+  "Asia/Singapore": {
+    "en": "Singapore",
+    "tr": "Singapur",
+    "ar": "سنغافورة"
+  },
+  "Asia/Srednekolymsk": {
+    "en": "Srednekolymsk",
+    "tr": "Srednekolymsk",
+    "ar": "سريدنكوليمسك"
+  },
+  "Asia/Taipei": {
+    "en": "Taipei",
+    "tr": "Taipei",
+    "ar": "تايبيه"
+  },
+  "Asia/Tashkent": {
+    "en": "Tashkent",
+    "tr": "Taşkent",
+    "ar": "طشقند"
+  },
+  "Asia/Tbilisi": {
+    "en": "Tbilisi",
+    "tr": "Tiflis",
+    "ar": "تبليسي"
+  },
+  "Asia/Tehran": {
+    "en": "Tehran",
+    "tr": "Tahran",
+    "ar": "طهران"
+  },
+  "Asia/Tel_Aviv": {
+    "en": "Jerusalem",
+    "tr": "Kudüs",
+    "ar": "القدس"
+  },
+  "Asia/Thimbu": {
+    "en": "Thimphu",
+    "tr": "Thimphu",
+    "ar": "تيمفو"
+  },
+  "Asia/Thimphu": {
+    "en": "Thimphu",
+    "tr": "Thimphu",
+    "ar": "تيمفو"
+  },
+  "Asia/Tokyo": {
+    "en": "Tokyo",
+    "tr": "Tokyo",
+    "ar": "طوكيو"
+  },
+  "Asia/Tomsk": {
+    "en": "Tomsk",
+    "tr": "Tomsk",
+    "ar": "تومسك"
+  },
+  "Asia/Ujung_Pandang": {
+    "en": "Makassar",
+    "tr": "Makassar",
+    "ar": "ماكسار"
+  },
+  "Asia/Ulaanbaatar": {
+    "en": "Ulaanbaatar",
+    "tr": "Ulan Batur",
+    "ar": "آلانباتار"
+  },
+  "Asia/Ulan_Bator": {
+    "en": "Ulaanbaatar",
+    "tr": "Ulan Batur",
+    "ar": "آلانباتار"
+  },
+  "Asia/Urumqi": {
+    "en": "Ürümqi",
+    "tr": "Urumçi",
+    "ar": "أرومكي"
+  },
+  "Asia/Ust-Nera": {
+    "en": "Ust-Nera",
+    "tr": "Ust-Nera",
+    "ar": "أوست نيرا"
+  },
+  "Asia/Vientiane": {
+    "en": "Vientiane",
+    "tr": "Vientiane",
+    "ar": "فيانتيان"
+  },
+  "Asia/Vladivostok": {
+    "en": "Vladivostok",
+    "tr": "Vladivostok",
+    "ar": "فلاديفوستك"
+  },
+  "Asia/Yakutsk": {
+    "en": "Yakutsk",
+    "tr": "Yakutsk",
+    "ar": "ياكتسك"
+  },
+  "Asia/Yangon": {
+    "en": "Yangon",
+    "tr": "Yangon",
+    "ar": "رانغون"
+  },
+  "Asia/Yekaterinburg": {
+    "en": "Yekaterinburg",
+    "tr": "Yekaterinburg",
+    "ar": "يكاترنبيرج"
+  },
+  "Asia/Yerevan": {
+    "en": "Yerevan",
+    "tr": "Erivan",
+    "ar": "يريفان"
+  },
+  "Atlantic/Azores": {
+    "en": "Azores",
+    "tr": "Azor Adaları",
+    "ar": "أزورس"
+  },
+  "Atlantic/Bermuda": {
+    "en": "Bermuda",
+    "tr": "Bermuda",
+    "ar": "برمودا"
+  },
+  "Atlantic/Canary": {
+    "en": "Canaries",
+    "tr": "Kanarya Adaları",
+    "ar": "كناري"
+  },
+  "Atlantic/Cape_Verde": {
+    "en": "Cape Verde",
+    "tr": "Cape Verde",
+    "ar": "الرأس الأخضر"
+  },
+  "Atlantic/Faeroe": {
+    "en": "Faroes",
+    "tr": "Faroe",
+    "ar": "فارو"
+  },
+  "Atlantic/Faroe": {
+    "en": "Faroes",
+    "tr": "Faroe",
+    "ar": "فارو"
+  },
+  "Atlantic/Jan_Mayen": {
+    "en": "Longyearbyen",
+    "tr": "Longyearbyen",
+    "ar": "لونجيربين"
+  },
+  "Atlantic/Madeira": {
+    "en": "Madeira",
+    "tr": "Madeira Adaları",
+    "ar": "ماديرا"
+  },
+  "Atlantic/Reykjavik": {
+    "en": "Reykjavik",
+    "tr": "Reykjavik",
+    "ar": "ريكيافيك"
+  },
+  "Atlantic/South_Georgia": {
+    "en": "South Georgia",
+    "tr": "Güney Georgia",
+    "ar": "جورجيا الجنوبية"
+  },
+  "Atlantic/St_Helena": {
+    "en": "St. Helena",
+    "tr": "St. Helena",
+    "ar": "سانت هيلينا"
+  },
+  "Atlantic/Stanley": {
+    "en": "Stanley",
+    "tr": "Stanley",
+    "ar": "استانلي"
+  },
+  "Australia/ACT": {
+    "en": "Sydney",
+    "tr": "Sidney",
+    "ar": "سيدني"
+  },
+  "Australia/Adelaide": {
+    "en": "Adelaide",
+    "tr": "Adelaide",
+    "ar": "أديليد"
+  },
+  "Australia/Brisbane": {
+    "en": "Brisbane",
+    "tr": "Brisbane",
+    "ar": "برسيبان"
+  },
+  "Australia/Broken_Hill": {
+    "en": "Broken Hill",
+    "tr": "Broken Hill",
+    "ar": "بروكن هيل"
+  },
+  "Australia/Canberra": {
+    "en": "Sydney",
+    "tr": "Sidney",
+    "ar": "سيدني"
+  },
+  "Australia/Currie": {
+    "en": "Hobart",
+    "tr": "Hobart",
+    "ar": "هوبارت"
+  },
+  "Australia/Darwin": {
+    "en": "Darwin",
+    "tr": "Darwin",
+    "ar": "دارون"
+  },
+  "Australia/Eucla": {
+    "en": "Eucla",
+    "tr": "Eucla",
+    "ar": "أوكلا"
+  },
+  "Australia/Hobart": {
+    "en": "Hobart",
+    "tr": "Hobart",
+    "ar": "هوبارت"
+  },
+  "Australia/LHI": {
+    "en": "Lord Howe Island",
+    "tr": "Lord Howe Island",
+    "ar": "لورد هاو"
+  },
+  "Australia/Lindeman": {
+    "en": "Lindeman",
+    "tr": "Lindeman",
+    "ar": "ليندمان"
+  },
+  "Australia/Lord_Howe": {
+    "en": "Lord Howe Island",
+    "tr": "Lord Howe Island",
+    "ar": "لورد هاو"
+  },
+  "Australia/Melbourne": {
+    "en": "Melbourne",
+    "tr": "Melbourne",
+    "ar": "ميلبورن"
+  },
+  "Australia/NSW": {
+    "en": "Sydney",
+    "tr": "Sidney",
+    "ar": "سيدني"
+  },
+  "Australia/North": {
+    "en": "Darwin",
+    "tr": "Darwin",
+    "ar": "دارون"
+  },
+  "Australia/Perth": {
+    "en": "Perth",
+    "tr": "Perth",
+    "ar": "برثا"
+  },
+  "Australia/Queensland": {
+    "en": "Brisbane",
+    "tr": "Brisbane",
+    "ar": "برسيبان"
+  },
+  "Australia/South": {
+    "en": "Adelaide",
+    "tr": "Adelaide",
+    "ar": "أديليد"
+  },
+  "Australia/Sydney": {
+    "en": "Sydney",
+    "tr": "Sidney",
+    "ar": "سيدني"
+  },
+  "Australia/Tasmania": {
+    "en": "Hobart",
+    "tr": "Hobart",
+    "ar": "هوبارت"
+  },
+  "Australia/Victoria": {
+    "en": "Melbourne",
+    "tr": "Melbourne",
+    "ar": "ميلبورن"
+  },
+  "Australia/West": {
+    "en": "Perth",
+    "tr": "Perth",
+    "ar": "برثا"
+  },
+  "Australia/Yancowinna": {
+    "en": "Broken Hill",
+    "tr": "Broken Hill",
+    "ar": "بروكن هيل"
+  },
+  "Brazil/Acre": {
+    "en": "Rio Branco",
+    "tr": "Rio Branco",
+    "ar": "ريوبرانكو"
+  },
+  "Brazil/DeNoronha": {
+    "en": "Fernando de Noronha",
+    "tr": "Fernando de Noronha",
+    "ar": "نوروناه"
+  },
+  "Brazil/East": {
+    "en": "São Paulo",
+    "tr": "São Paulo",
+    "ar": "ساو باولو"
+  },
+  "Brazil/West": {
+    "en": "Manaus",
+    "tr": "Manaus",
+    "ar": "ماناوس"
+  },
+  "Canada/Atlantic": {
+    "en": "Halifax",
+    "tr": "Halifax",
+    "ar": "هاليفاكس"
+  },
+  "Canada/Central": {
+    "en": "Winnipeg",
+    "tr": "Winnipeg",
+    "ar": "وينيبيج"
+  },
+  "Canada/East-Saskatchewan": {
+    "en": "Regina",
+    "tr": "Regina",
+    "ar": "ريجينا"
+  },
+  "Canada/Eastern": {
+    "en": "Toronto",
+    "tr": "Toronto",
+    "ar": "تورونتو"
+  },
+  "Canada/Mountain": {
+    "en": "Edmonton",
+    "tr": "Edmonton",
+    "ar": "ايدمونتون"
+  },
+  "Canada/Newfoundland": {
+    "en": "St. John’s",
+    "tr": "St. John’s",
+    "ar": "سانت جونس"
+  },
+  "Canada/Pacific": {
+    "en": "Vancouver",
+    "tr": "Vancouver",
+    "ar": "فانكوفر"
+  },
+  "Canada/Saskatchewan": {
+    "en": "Regina",
+    "tr": "Regina",
+    "ar": "ريجينا"
+  },
+  "Canada/Yukon": {
+    "en": "Whitehorse",
+    "tr": "Whitehorse",
+    "ar": "وايت هورس"
+  },
+  "Chile/Continental": {
+    "en": "Santiago",
+    "tr": "Santiago",
+    "ar": "سانتياغو"
+  },
+  "Chile/EasterIsland": {
+    "en": "Easter Island",
+    "tr": "Paskalya Adası",
+    "ar": "جزيرة إيستر"
+  },
+  "Europe/Amsterdam": {
+    "en": "Amsterdam",
+    "tr": "Amsterdam",
+    "ar": "أمستردام"
+  },
+  "Europe/Andorra": {
+    "en": "Andorra",
+    "tr": "Andorra",
+    "ar": "أندورا"
+  },
+  "Europe/Astrakhan": {
+    "en": "Astrakhan",
+    "tr": "Astrahan",
+    "ar": "أستراخان"
+  },
+  "Europe/Athens": {
+    "en": "Athens",
+    "tr": "Atina",
+    "ar": "أثينا"
+  },
+  "Europe/Belfast": {
+    "en": "London",
+    "tr": "Londra",
+    "ar": "لندن"
+  },
+  "Europe/Belgrade": {
+    "en": "Belgrade",
+    "tr": "Belgrad",
+    "ar": "بلغراد"
+  },
+  "Europe/Berlin": {
+    "en": "Berlin",
+    "tr": "Berlin",
+    "ar": "برلين"
+  },
+  "Europe/Bratislava": {
+    "en": "Bratislava",
+    "tr": "Bratislava",
+    "ar": "براتيسلافا"
+  },
+  "Europe/Brussels": {
+    "en": "Brussels",
+    "tr": "Brüksel",
+    "ar": "بروكسل"
+  },
+  "Europe/Bucharest": {
+    "en": "Bucharest",
+    "tr": "Bükreş",
+    "ar": "بوخارست"
+  },
+  "Europe/Budapest": {
+    "en": "Budapest",
+    "tr": "Budapeşte",
+    "ar": "بودابست"
+  },
+  "Europe/Busingen": {
+    "en": "Büsingen",
+    "tr": "Büsingen",
+    "ar": "بوسنغن"
+  },
+  "Europe/Chisinau": {
+    "en": "Chișinău",
+    "tr": "Kişinev",
+    "ar": "تشيسيناو"
+  },
+  "Europe/Copenhagen": {
+    "en": "Copenhagen",
+    "tr": "Kopenhag",
+    "ar": "كوبنهاغن"
+  },
+  "Europe/Dublin": {
+    "en": "Dublin",
+    "tr": "Dublin",
+    "ar": "دبلن"
+  },
+  "Europe/Gibraltar": {
+    "en": "Gibraltar",
+    "tr": "Cebelitarık",
+    "ar": "جبل طارق"
+  },
+  "Europe/Guernsey": {
+    "en": "Guernsey",
+    "tr": "Guernsey",
+    "ar": "غيرنزي"
+  },
+  "Europe/Helsinki": {
+    "en": "Helsinki",
+    "tr": "Helsinki",
+    "ar": "هلسنكي"
+  },
+  "Europe/Isle_of_Man": {
+    "en": "Isle of Man",
+    "tr": "Man Adası",
+    "ar": "جزيرة مان"
+  },
+  "Europe/Istanbul": {
+    "en": "Istanbul",
+    "tr": "İstanbul",
+    "ar": "إسطنبول"
+  },
+  "Europe/Jersey": {
+    "en": "Jersey",
+    "tr": "Jersey",
+    "ar": "جيرسي"
+  },
+  "Europe/Kaliningrad": {
+    "en": "Kaliningrad",
+    "tr": "Kaliningrad",
+    "ar": "كالينجراد"
+  },
+  "Europe/Kiev": {
+    "en": "Kyiv",
+    "tr": "Kiev",
+    "ar": "كييف"
+  },
+  "Europe/Kirov": {
+    "en": "Kirov",
+    "tr": "Kirov",
+    "ar": "كيروف"
+  },
+  "Europe/Kyiv": {
+    "en": "Kyiv",
+    "tr": "Kiev",
+    "ar": "كييف"
+  },
+  "Europe/Lisbon": {
+    "en": "Lisbon",
+    "tr": "Lizbon",
+    "ar": "لشبونة"
+  },
+  "Europe/Ljubljana": {
+    "en": "Ljubljana",
+    "tr": "Ljubljana",
+    "ar": "ليوبليانا"
+  },
+  "Europe/London": {
+    "en": "London",
+    "tr": "Londra",
+    "ar": "لندن"
+  },
+  "Europe/Luxembourg": {
+    "en": "Luxembourg",
+    "tr": "Lüksemburg",
+    "ar": "لوكسمبورغ"
+  },
+  "Europe/Madrid": {
+    "en": "Madrid",
+    "tr": "Madrid",
+    "ar": "مدريد"
+  },
+  "Europe/Malta": {
+    "en": "Malta",
+    "tr": "Malta",
+    "ar": "مالطة"
+  },
+  "Europe/Mariehamn": {
+    "en": "Mariehamn",
+    "tr": "Mariehamn",
+    "ar": "ماريهامن"
+  },
+  "Europe/Minsk": {
+    "en": "Minsk",
+    "tr": "Minsk",
+    "ar": "مينسك"
+  },
+  "Europe/Monaco": {
+    "en": "Monaco",
+    "tr": "Monako",
+    "ar": "موناكو"
+  },
+  "Europe/Moscow": {
+    "en": "Moscow",
+    "tr": "Moskova",
+    "ar": "موسكو"
+  },
+  "Europe/Nicosia": {
+    "en": "Nicosia",
+    "tr": "Lefkoşa",
+    "ar": "نيقوسيا"
+  },
+  "Europe/Oslo": {
+    "en": "Oslo",
+    "tr": "Oslo",
+    "ar": "أوسلو"
+  },
+  "Europe/Paris": {
+    "en": "Paris",
+    "tr": "Paris",
+    "ar": "باريس"
+  },
+  "Europe/Podgorica": {
+    "en": "Podgorica",
+    "tr": "Podgorica",
+    "ar": "بودغوريكا"
+  },
+  "Europe/Prague": {
+    "en": "Prague",
+    "tr": "Prag",
+    "ar": "براغ"
+  },
+  "Europe/Riga": {
+    "en": "Riga",
+    "tr": "Riga",
+    "ar": "ريغا"
+  },
+  "Europe/Rome": {
+    "en": "Rome",
+    "tr": "Roma",
+    "ar": "روما"
+  },
+  "Europe/Samara": {
+    "en": "Samara",
+    "tr": "Samara",
+    "ar": "سمراء"
+  },
+  "Europe/San_Marino": {
+    "en": "San Marino",
+    "tr": "San Marino",
+    "ar": "سان مارينو"
+  },
+  "Europe/Sarajevo": {
+    "en": "Sarajevo",
+    "tr": "Saraybosna",
+    "ar": "سراييفو"
+  },
+  "Europe/Saratov": {
+    "en": "Saratov",
+    "tr": "Saratov",
+    "ar": "ساراتوف"
+  },
+  "Europe/Simferopol": {
+    "en": "Simferopol",
+    "tr": "Simferopol",
+    "ar": "سيمفروبول"
+  },
+  "Europe/Skopje": {
+    "en": "Skopje",
+    "tr": "Üsküp",
+    "ar": "سكوبي"
+  },
+  "Europe/Sofia": {
+    "en": "Sofia",
+    "tr": "Sofya",
+    "ar": "صوفيا"
+  },
+  "Europe/Stockholm": {
+    "en": "Stockholm",
+    "tr": "Stokholm",
+    "ar": "ستوكهولم"
+  },
+  "Europe/Tallinn": {
+    "en": "Tallinn",
+    "tr": "Tallinn",
+    "ar": "تالين"
+  },
+  "Europe/Tirane": {
+    "en": "Tirana",
+    "tr": "Tiran",
+    "ar": "تيرانا"
+  },
+  "Europe/Tiraspol": {
+    "en": "Chișinău",
+    "tr": "Kişinev",
+    "ar": "تشيسيناو"
+  },
+  "Europe/Ulyanovsk": {
+    "en": "Ulyanovsk",
+    "tr": "Ulyanovsk",
+    "ar": "أوليانوفسك"
+  },
+  "Europe/Uzhgorod": {
+    "en": "Kyiv",
+    "tr": "Kiev",
+    "ar": "كييف"
+  },
+  "Europe/Vaduz": {
+    "en": "Vaduz",
+    "tr": "Vaduz",
+    "ar": "فادوز"
+  },
+  "Europe/Vatican": {
+    "en": "Vatican",
+    "tr": "Vatikan",
+    "ar": "الفاتيكان"
+  },
+  "Europe/Vienna": {
+    "en": "Vienna",
+    "tr": "Viyana",
+    "ar": "فيينا"
+  },
+  "Europe/Vilnius": {
+    "en": "Vilnius",
+    "tr": "Vilnius",
+    "ar": "فيلنيوس"
+  },
+  "Europe/Volgograd": {
+    "en": "Volgograd",
+    "tr": "Volgograd",
+    "ar": "فولوجراد"
+  },
+  "Europe/Warsaw": {
+    "en": "Warsaw",
+    "tr": "Varşova",
+    "ar": "وارسو"
+  },
+  "Europe/Zagreb": {
+    "en": "Zagreb",
+    "tr": "Zagreb",
+    "ar": "زغرب"
+  },
+  "Europe/Zaporozhye": {
+    "en": "Kyiv",
+    "tr": "Kiev",
+    "ar": "كييف"
+  },
+  "Europe/Zurich": {
+    "en": "Zurich",
+    "tr": "Zürih",
+    "ar": "زيورخ"
+  },
+  "Indian/Antananarivo": {
+    "en": "Antananarivo",
+    "tr": "Antananarivo",
+    "ar": "أنتاناناريفو"
+  },
+  "Indian/Chagos": {
+    "en": "Chagos Archipelago",
+    "tr": "Chagos Archipelago",
+    "ar": "تشاغوس"
+  },
+  "Indian/Christmas": {
+    "en": "Christmas Island",
+    "tr": "Christmas Island",
+    "ar": "كريسماس"
+  },
+  "Indian/Cocos": {
+    "en": "Cocos Islands",
+    "tr": "Cocos Islands",
+    "ar": "كوكوس"
+  },
+  "Indian/Comoro": {
+    "en": "Comoros",
+    "tr": "Komor",
+    "ar": "جزر القمر"
+  },
+  "Indian/Kerguelen": {
+    "en": "Kerguelen Islands",
+    "tr": "Kerguelen Islands",
+    "ar": "كيرغويلين"
+  },
+  "Indian/Mahe": {
+    "en": "Mahé",
+    "tr": "Mahé",
+    "ar": "ماهي"
+  },
+  "Indian/Maldives": {
+    "en": "Maldives",
+    "tr": "Maldivler",
+    "ar": "المالديف"
+  },
+  "Indian/Mauritius": {
+    "en": "Mauritius",
+    "tr": "Mauritius",
+    "ar": "موريشيوس"
+  },
+  "Indian/Mayotte": {
+    "en": "Mayotte",
+    "tr": "Mayotte",
+    "ar": "مايوت"
+  },
+  "Indian/Reunion": {
+    "en": "Réunion",
+    "tr": "Réunion",
+    "ar": "ريونيون"
+  },
+  "Mexico/BajaNorte": {
+    "en": "Tijuana",
+    "tr": "Tijuana",
+    "ar": "تيخوانا"
+  },
+  "Mexico/BajaSur": {
+    "en": "Mazatlán",
+    "tr": "Mazatlán",
+    "ar": "مازاتلان"
+  },
+  "Mexico/General": {
+    "en": "Mexico City",
+    "tr": "Ciudad de México",
+    "ar": "مكسيكو سيتي"
+  },
+  "Pacific/Apia": {
+    "en": "Apia",
+    "tr": "Apia",
+    "ar": "أبيا"
+  },
+  "Pacific/Auckland": {
+    "en": "Auckland",
+    "tr": "Auckland",
+    "ar": "أوكلاند"
+  },
+  "Pacific/Bougainville": {
+    "en": "Bougainville",
+    "tr": "Bougainville",
+    "ar": "بوغانفيل"
+  },
+  "Pacific/Chatham": {
+    "en": "Chatham Islands",
+    "tr": "Chatham Islands",
+    "ar": "تشاثام"
+  },
+  "Pacific/Chuuk": {
+    "en": "Chuuk",
+    "tr": "Chuuk",
+    "ar": "ترك"
+  },
+  "Pacific/Easter": {
+    "en": "Easter Island",
+    "tr": "Paskalya Adası",
+    "ar": "جزيرة إيستر"
+  },
+  "Pacific/Efate": {
+    "en": "Efate",
+    "tr": "Efate",
+    "ar": "إيفات"
+  },
+  "Pacific/Enderbury": {
+    "en": "Canton Island",
+    "tr": "Canton Adası",
+    "ar": "كانتون"
+  },
+  "Pacific/Fakaofo": {
+    "en": "Fakaofo",
+    "tr": "Fakaofo",
+    "ar": "فاكاوفو"
+  },
+  "Pacific/Fiji": {
+    "en": "Fiji",
+    "tr": "Fiji",
+    "ar": "فيجي"
+  },
+  "Pacific/Funafuti": {
+    "en": "Funafuti",
+    "tr": "Funafuti",
+    "ar": "فونافوتي"
+  },
+  "Pacific/Galapagos": {
+    "en": "Galápagos Islands",
+    "tr": "Galápagos",
+    "ar": "جلاباجوس"
+  },
+  "Pacific/Gambier": {
+    "en": "Gambier",
+    "tr": "Gambier",
+    "ar": "جامبير"
+  },
+  "Pacific/Guadalcanal": {
+    "en": "Guadalcanal",
+    "tr": "Guadalcanal",
+    "ar": "غوادالكانال"
+  },
+  "Pacific/Guam": {
+    "en": "Guam",
+    "tr": "Guam",
+    "ar": "غوام"
+  },
+  "Pacific/Honolulu": {
+    "en": "Honolulu",
+    "tr": "Honolulu",
+    "ar": "هونولولو"
+  },
+  "Pacific/Johnston": {
+    "en": "Honolulu",
+    "tr": "Honolulu",
+    "ar": "هونولولو"
+  },
+  "Pacific/Kanton": {
+    "en": "Canton Island",
+    "tr": "Canton Adası",
+    "ar": "كانتون"
+  },
+  "Pacific/Kiritimati": {
+    "en": "Kiritimati",
+    "tr": "Kiritimati",
+    "ar": "كيريتي ماتي"
+  },
+  "Pacific/Kosrae": {
+    "en": "Kosrae",
+    "tr": "Kosrae",
+    "ar": "كوسرا"
+  },
+  "Pacific/Kwajalein": {
+    "en": "Kwajalein Atoll",
+    "tr": "Kwajalein Atoll",
+    "ar": "كواجالين"
+  },
+  "Pacific/Majuro": {
+    "en": "Majuro",
+    "tr": "Majuro",
+    "ar": "ماجورو"
+  },
+  "Pacific/Marquesas": {
+    "en": "Marquesas Islands",
+    "tr": "Markiz Adaları",
+    "ar": "ماركيساس"
+  },
+  "Pacific/Midway": {
+    "en": "Midway Atoll",
+    "tr": "Midway Atoll",
+    "ar": "ميدواي"
+  },
+  "Pacific/Nauru": {
+    "en": "Nauru",
+    "tr": "Nauru",
+    "ar": "ناورو"
+  },
+  "Pacific/Niue": {
+    "en": "Niue",
+    "tr": "Niue",
+    "ar": "نيوي"
+  },
+  "Pacific/Norfolk": {
+    "en": "Norfolk Island",
+    "tr": "Norfolk Island",
+    "ar": "نورفولك"
+  },
+  "Pacific/Noumea": {
+    "en": "Nouméa",
+    "tr": "Nouméa",
+    "ar": "نوميا"
+  },
+  "Pacific/Pago_Pago": {
+    "en": "Pago Pago",
+    "tr": "Pago Pago",
+    "ar": "باغو باغو"
+  },
+  "Pacific/Palau": {
+    "en": "Palau",
+    "tr": "Palau",
+    "ar": "بالاو"
+  },
+  "Pacific/Pitcairn": {
+    "en": "Pitcairn Islands",
+    "tr": "Pitcairn Islands",
+    "ar": "بيتكيرن"
+  },
+  "Pacific/Pohnpei": {
+    "en": "Pohnpei",
+    "tr": "Pohnpei",
+    "ar": "باناب"
+  },
+  "Pacific/Ponape": {
+    "en": "Pohnpei",
+    "tr": "Pohnpei",
+    "ar": "باناب"
+  },
+  "Pacific/Port_Moresby": {
+    "en": "Port Moresby",
+    "tr": "Port Moresby",
+    "ar": "بور مورسبي"
+  },
+  "Pacific/Rarotonga": {
+    "en": "Rarotonga",
+    "tr": "Rarotonga",
+    "ar": "راروتونغا"
+  },
+  "Pacific/Saipan": {
+    "en": "Saipan",
+    "tr": "Saipan",
+    "ar": "سايبان"
+  },
+  "Pacific/Samoa": {
+    "en": "Pago Pago",
+    "tr": "Pago Pago",
+    "ar": "باغو باغو"
+  },
+  "Pacific/Tahiti": {
+    "en": "Tahiti",
+    "tr": "Tahiti",
+    "ar": "تاهيتي"
+  },
+  "Pacific/Tarawa": {
+    "en": "Tarawa",
+    "tr": "Tarawa",
+    "ar": "تاراوا"
+  },
+  "Pacific/Tongatapu": {
+    "en": "Tongatapu",
+    "tr": "Tongatapu",
+    "ar": "تونغاتابو"
+  },
+  "Pacific/Truk": {
+    "en": "Chuuk",
+    "tr": "Chuuk",
+    "ar": "ترك"
+  },
+  "Pacific/Wake": {
+    "en": "Wake Island",
+    "tr": "Wake Island",
+    "ar": "واك"
+  },
+  "Pacific/Wallis": {
+    "en": "Wallis & Futuna",
+    "tr": "Wallis & Futuna",
+    "ar": "واليس"
+  },
+  "Pacific/Yap": {
+    "en": "Chuuk",
+    "tr": "Chuuk",
+    "ar": "ترك"
+  },
+  "US/Alaska": {
+    "en": "Anchorage",
+    "tr": "Anchorage",
+    "ar": "أنشوراج"
+  },
+  "US/Aleutian": {
+    "en": "Adak",
+    "tr": "Adak",
+    "ar": "أداك"
+  },
+  "US/Arizona": {
+    "en": "Phoenix",
+    "tr": "Phoenix",
+    "ar": "فينكس"
+  },
+  "US/Central": {
+    "en": "Chicago",
+    "tr": "Chicago",
+    "ar": "شيكاغو"
+  },
+  "US/East-Indiana": {
+    "en": "Indianapolis",
+    "tr": "Indianapolis",
+    "ar": "إنديانابوليس"
+  },
+  "US/Eastern": {
+    "en": "New York",
+    "tr": "New York",
+    "ar": "نيويورك"
+  },
+  "US/Hawaii": {
+    "en": "Honolulu",
+    "tr": "Honolulu",
+    "ar": "هونولولو"
+  },
+  "US/Indiana-Starke": {
+    "en": "Knox, Indiana",
+    "tr": "Knox, Indiana",
+    "ar": "كونكس"
+  },
+  "US/Michigan": {
+    "en": "Detroit",
+    "tr": "Detroit",
+    "ar": "ديترويت"
+  },
+  "US/Mountain": {
+    "en": "Denver",
+    "tr": "Denver",
+    "ar": "دنفر"
+  },
+  "US/Pacific": {
+    "en": "Los Angeles",
+    "tr": "Los Angeles",
+    "ar": "لوس انجلوس"
+  },
+  "US/Pacific-New": {
+    "en": "Los Angeles",
+    "tr": "Los Angeles",
+    "ar": "لوس انجلوس"
+  },
+  "US/Samoa": {
+    "en": "Pago Pago",
+    "tr": "Pago Pago",
+    "ar": "باغو باغو"
+  }
+}

@@ -265,6 +265,9 @@
     "olderError": "Eski etkinlikler yüklenemedi",
     "restarted": "En yeni etkinlikten başlanıyor",
     "operations": {
+      "activity_log": {
+        "exported": "<actor></actor> etkinlik günlüğünü dışa aktardı."
+      },
       "invitation": {
         "revoked": "<actor></actor> bir daveti geri aldı."
       },
@@ -273,6 +276,9 @@
         "joined": "<target></target> kuruluşa katıldı.",
         "removed": "<actor></actor>, <target></target> adlı üyeyi (<role></role>) kuruluştan çıkardı.",
         "role_changed": "<actor></actor>, <target></target> kişisinin rolünü <oldRole></oldRole> rolünden <newRole></newRole> rolüne değiştirdi."
+      },
+      "members": {
+        "exported": "<actor></actor> üyeleri dışa aktardı."
       },
       "plan": {
         "created": "<actor></actor> bir plan oluşturdu.",

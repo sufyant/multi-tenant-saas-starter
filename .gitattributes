@@ -3,6 +3,7 @@
 *.g.cs linguist-generated=true
 *.gen.ts linguist-generated=true
 *.gen.css linguist-generated=true
+*.gen.json linguist-generated=true
 apps/api/openapi/v1.json linguist-generated=true
 # EF Core writes the designer file and the model snapshot of a migration. The migration itself is reviewed: it holds row level security.
 *.Designer.cs linguist-generated=true

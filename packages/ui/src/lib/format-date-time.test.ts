@@ -206,7 +206,7 @@ describe("format-date-time", () => {
   });
 
   it("ZoneName_ArSa_WritesTheZonesNameWithWesternDigits", () => {
-    expect(zoneName(at, riyadh)).toMatch(/^Riyadh, \S/);
+    expect(zoneName(at, riyadh)).toMatch(/^الرياض, \S/);
     expect(zoneName(at, riyadh)).not.toMatch(/[٠-٩]/);
   });
 
@@ -215,7 +215,7 @@ describe("format-date-time", () => {
       UnnamedZoneFormat as never,
     );
 
-    expect(zoneName(at, istanbul)).toBe("Istanbul");
+    expect(zoneName(at, istanbul)).toBe("İstanbul");
   });
 
   it("BrowserTimeZone_AnyRuntime_IsAnIanaName", () => {

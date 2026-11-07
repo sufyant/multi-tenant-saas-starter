@@ -38,7 +38,7 @@ public sealed class SendInvitationEmailHandlerTests
             Language.Ar,
             "دعوة من Ayşe Yılmaz إلى Northwind Traders",
             "لديك دعوة من Ayşe Yılmaz للانضمام إلى Northwind Traders بصفة مشرف.",
-            "تنتهي صلاحية الدعوة في 1 نوفمبر 2026 الساعة 13:32 بتوقيت Dublin (UTC+0)."
+            "تنتهي صلاحية الدعوة في 1 نوفمبر 2026 الساعة 13:32 بتوقيت دبلن (UTC+0)."
         },
     };
 
