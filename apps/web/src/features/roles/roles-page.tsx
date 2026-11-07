@@ -226,7 +226,7 @@ export function RolesPage() {
     if (canUpdate && closed) items.push(edit);
     if (canDelete) {
       // The escalation reason wins: the viewer could not delete the role even when nobody used it (F51). A role in use opens
-      // the dialog of 9.13, which says who uses it (the rule of D4: the action stays and says why).
+      // the dialog of 9.13, which says who uses it (the maintainer's rule of 37a-frontend-2: a stopped action stays and says why).
       const used = role.memberCount > 0 || role.pendingInvitationCount > 0;
       items.push(
         { separator: true },

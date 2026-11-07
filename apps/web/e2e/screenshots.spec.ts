@@ -1643,7 +1643,7 @@ const rolesListAnswers =
 const editableTeam = () => {
   const team = northwindTeam();
   const mock = (page: Page) =>
-    page.route(`**/api/v1/tenants/${northwind.id}/roles*`, async (route) => {
+    page.route(`**/api/v1/tenants/${northwind.id}/roles**`, async (route) => {
       const request = route.request();
       if (request.method() === "GET") return route.fallback();
       const body = request.postDataJSON() as {

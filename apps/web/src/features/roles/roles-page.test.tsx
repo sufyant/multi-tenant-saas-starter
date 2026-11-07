@@ -197,7 +197,7 @@ describe("RolesPage", () => {
     },
   );
 
-  // A role in use keeps "Delete role", which opens a dialog that says who uses it and how to go on (9.13; the rule of D4).
+  // A role in use keeps "Delete role", which opens a dialog that says who uses it and how to go on (9.13; the maintainer's rule of 37a-frontend-2 that a stopped action stays and says why).
   it.each([
     [
       4,

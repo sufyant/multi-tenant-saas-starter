@@ -191,7 +191,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - The Activity log's file can be large. Measure the size that `apiDownload` holds in the browser's memory, and ask for a limit or a date range if it needs one (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
 - As built: a file row is about 105 bytes, so 100,000 entries are 10.5 MB in the browser and 1,000 pages of the API. The file holds the newest 100,000 entries, one constant (`activityFileCap`); the dialog names the cap, and the toast says when a file holds it (the maintainer's decision of 2026-11-07).
-- A role in use keeps "Delete role", which opens "{name} is in use" with its members or invitations (9.13, under D4 of 37a-frontend-2). A saved role stays open (9.16). The screen's sentence and the file's sentence come from one module, `activity-words.ts`.
+- A role in use keeps "Delete role", which opens "{name} is in use" with its members or invitations (9.13, under the maintainer's rule of 37a-frontend-2 that a stopped action stays and says why). A saved role stays open (9.16). The screen's sentence and the file's sentence come from one module, `activity-words.ts`.
 - Not built: Billing manager (40a), the billing entries of the log (step 40), and the custom roles limit dialog (9.14, 40a, F56). Done.
 
 37a-frontend-4, the personal pages without an organisation (the maintainer's decision of 2026-11-07):
