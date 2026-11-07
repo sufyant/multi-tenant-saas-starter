@@ -4,6 +4,7 @@ import { useClerk, useUser } from "@clerk/nextjs";
 import { AuthHeading, AuthScreen } from "@repo/ui/components/auth-layout";
 import { TextButton } from "@repo/ui/components/sign-in";
 import { buttonVariants } from "@repo/ui/components/ui/button";
+import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
 /**
@@ -28,10 +29,7 @@ export function NoAccess({ webAppUrl }: { webAppUrl?: string }) {
       {webAppUrl && (
         <a
           href={webAppUrl}
-          className={buttonVariants({
-            variant: "outline",
-            className: "w-full",
-          })}
+          className={cn(buttonVariants({ variant: "outline" }), "w-full")}
         >
           {t("access.openWebApp")}
         </a>

@@ -64,7 +64,7 @@ export function CodeStep({
           {t("signIn")}
         </Button>
       </form>
-      <div className="flex flex-wrap items-center justify-center gap-x-4">
+      <div className="flex flex-col items-center gap-4">
         <Button variant="ghost" onClick={onResend} disabled={pending}>
           {t("sendNewCode")}
         </Button>

@@ -668,6 +668,8 @@ test("Screenshot_Entry_1.08-not-a-system-admin-en-light-desktop", async ({
   await page
     .getByRole("heading", { name: "You don’t have access to the platform" })
     .waitFor();
+  // The address comes from Clerk's user, which loads after the page.
+  await page.locator("bdi").filter({ hasText: "@" }).waitFor();
   await still(page);
 
   await page.screenshot({

@@ -24,7 +24,7 @@ export function AuthScreen({
   children,
 }: AuthScreenProps) {
   return (
-    <main className="flex min-h-[calc(100dvh-var(--strip-height,0px))] flex-col items-center bg-background px-4 pt-20 pb-16 text-foreground tablet:justify-center tablet:bg-sidebar tablet:pt-16">
+    <main className="flex min-h-[calc(100dvh-var(--strip-height,0px))] flex-col items-center bg-card px-4 pt-20 pb-16 text-foreground tablet:justify-center tablet:bg-sidebar tablet:pt-16">
       <div className="flex w-full flex-col gap-4 tablet:max-w-auth-card-max tablet:rounded-xl tablet:border tablet:border-border tablet:bg-card tablet:p-8 tablet:shadow-md">
         <div className="flex flex-col items-center gap-2">
           <span
