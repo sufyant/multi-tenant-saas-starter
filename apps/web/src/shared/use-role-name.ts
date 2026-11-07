@@ -15,14 +15,14 @@ export function useRoleName() {
     roleNameOf(role, (builtIn) => t(builtIn));
 }
 
-/** The line under a role in a role list: a built-in role's description, a custom role's permission count. */
+/** The line under a role in a role list: a built-in role's description, "Custom role" and the permission count of a custom one. */
 export function useRoleDescription() {
   const t = useTranslations("members");
   return (role: RoleDetailResponse): string => {
     const builtIn = builtInRoleOf(role);
     return builtIn
       ? t(`roleDescriptions.${builtIn}`)
-      : t("permissionCount", { count: role.permissions.length });
+      : t("customRolePermissions", { count: role.permissions.length });
   };
 }
 

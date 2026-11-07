@@ -408,17 +408,47 @@ describe("InvitationsTable", () => {
     await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
   });
 
-  it("Invitations_None_SaysSoAndOffersToInvite", async () => {
+  // The empty state's Invite is secondary: the header keeps the one primary button (8.31).
+  it("Invitations_None_SaysSoAndOffersASecondaryInvite", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer([]));
 
     renderInTenant(<MembersPage />, { url });
 
+    const empty = (
+      await screen.findByRole("heading", { name: "No pending invitations" })
+    ).parentElement as HTMLElement;
+    expect(empty).toHaveTextContent(
+      "People you invite appear here until they join or the link expires.",
+    );
     expect(
-      await screen.findByRole("heading", { name: "No pending invitations" }),
-    ).toBeInTheDocument();
+      within(empty).getByRole("button", { name: "Invite member" }),
+    ).not.toHaveClass("bg-primary");
     expect(
       screen.getAllByRole("button", { name: "Invite member" }),
     ).toHaveLength(2);
+  });
+
+  // 8.29: the role is a Label, the status a Pill, the expiry a date (the maintainer's standing rule of 2026-11-07), the email one
+  // line that ends with "…" (8.30).
+  it("Invitations_Row_ShowsARoleLabelAStatusPillAndTheExpiryDate", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
+
+    renderInTenant(<MembersPage />, { url });
+
+    const cells = within((await rowOf("ali@northwind.io")) as HTMLElement)
+      .getAllByRole("cell")
+      .map((cell) => within(cell));
+    expect(cells[0]?.getByText("ali@northwind.io")).toHaveClass("truncate");
+    expect(cells[1]?.getByText("Member")).toHaveClass("border-border");
+    expect(cells[3]?.getByText(/^\d{1,2} \w{3} \d{4}$/)).toBeInTheDocument();
+    expect(
+      cells[4]?.getByText("Invited").closest("[data-tone]"),
+    ).toHaveAttribute("data-tone", "info");
+    expect(
+      within((await rowOf("conor@northwind.io")) as HTMLElement)
+        .getByText("Expires soon")
+        .closest("[data-tone]"),
+    ).toHaveAttribute("data-tone", "warning");
   });
 
   it("Invitations_TheUrl_DrivesSearchFilterAndSort", async () => {

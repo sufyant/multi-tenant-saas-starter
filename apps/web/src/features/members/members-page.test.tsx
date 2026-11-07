@@ -5,6 +5,8 @@ import {
   Permission,
 } from "@repo/api-client";
 import { brand } from "@repo/brand";
+import { browserTimeZone } from "@repo/ui/lib/format-date-time";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { delay, HttpResponse, http } from "msw";
@@ -51,7 +53,10 @@ const server = setupServer(
   ),
 );
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  vi.restoreAllMocks();
+});
 afterAll(() => server.close());
 
 const invitationsAnswer = (requests: URLSearchParams[] = [], total = 0) =>
@@ -121,6 +126,63 @@ const openMenu = async (name: string) => {
   );
 };
 
+const exportPath = `*/exports/tenants/${northwind.id}/members`;
+const fileName = "northwind-members-2026-11-07.csv";
+
+/** The members' CSV file of the web's server, and the query of each request. */
+const exportAnswer = (requests: URLSearchParams[] = []) =>
+  http.post(exportPath, ({ request }) => {
+    requests.push(new URL(request.url).searchParams);
+    return HttpResponse.text("\uFEFFName\r\nJohn Byrne\r\n", {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+      },
+    });
+  });
+
+/** An answer that the server cuts after a page failed: the body errors midway. */
+const cutExportAnswer = () =>
+  http.post(exportPath, () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("\uFEFFName\r\nJohn"));
+        controller.error(new Error("page 2 failed"));
+      },
+    });
+    return new HttpResponse(body, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+      },
+    });
+  });
+
+/** The names of the files the page saves. jsdom has no object URLs and no downloads. */
+const savedFiles = () => {
+  const names: string[] = [];
+  Object.assign(URL, {
+    createObjectURL: () => "blob:https://web.example.test/file",
+    revokeObjectURL: () => {},
+  });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    names.push(this.download);
+  });
+  return names;
+};
+
+const openExport = async () => {
+  await userEvent.click(
+    await screen.findByRole("button", { name: "More actions" }),
+  );
+  await userEvent.click(
+    await screen.findByRole("menuitem", { name: "Export CSV" }),
+  );
+  return screen.findByRole("alertdialog", { name: "Export members" });
+};
+
 describe("MembersPage", () => {
   it("MembersPage_Owner_SeesInviteTabsAndEveryAction", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
@@ -151,7 +213,7 @@ describe("MembersPage", () => {
     });
 
     expect(
-      await screen.findByRole("alertdialog", { name: "Invite a member" }),
+      await screen.findByRole("alertdialog", { name: "Invite member" }),
     ).toBeInTheDocument();
     await vi.waitFor(() => expect(window.location.search).toBe(""));
   });
@@ -686,7 +748,7 @@ describe("MembersPage", () => {
       screen.getAllByRole("button", { name: "Invite member" })[1] as Element,
     );
     expect(
-      await screen.findByRole("alertdialog", { name: "Invite a member" }),
+      await screen.findByRole("alertdialog", { name: "Invite member" }),
     ).toBeInTheDocument();
   });
 
@@ -752,7 +814,7 @@ describe("MembersPage", () => {
     );
     expect(dialog).not.toHaveTextContent(/billing|ask us/);
     expect(
-      screen.queryByRole("alertdialog", { name: "Invite a member" }),
+      screen.queryByRole("alertdialog", { name: "Invite member" }),
     ).not.toBeInTheDocument();
   });
 
@@ -993,5 +1055,196 @@ describe("MembersPage", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(
       "تسمح خطتك بـ10 من المقاعد: الأعضاء والدعوات المعلّقة. أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
     );
+  });
+
+  // 8.41, 8.08, 8.12: the file of the list as it is, under the server's name (D12), then a toast that names it.
+  it("MembersPage_Export_SavesTheFileUnderTheServersNameAndSaysSo", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+      exportAnswer(requests),
+    );
+    const saved = savedFiles();
+
+    renderInTenant(<MembersPage />);
+    await table();
+    const dialog = await openExport();
+    expect(dialog).toHaveTextContent(
+      "A CSV file with 4 members of Northwind Traders: name, email, role, joined date. Pending invitations are not in it.",
+    );
+    expect(dialog).toHaveTextContent(
+      "Filter: All roles. The file follows the list as you see it.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Export CSV" }),
+    );
+
+    await expectVisibleToast("Members exported");
+    expect(
+      screen.getByText(`${fileName} is in your downloads.`),
+    ).toBeInTheDocument();
+    expect(saved).toEqual([fileName]);
+    expect(
+      screen.queryByRole("alertdialog", { name: "Export members" }),
+    ).not.toBeInTheDocument();
+    expect(Object.fromEntries(requests[0] ?? [])).toEqual({
+      timeZone: browserTimeZone(),
+    });
+  });
+
+  // 8.10: the count and the role of the filter, which the file follows.
+  it("MembersPage_ExportFilteredByRole_SaysTheCountAndTheRoleAndSendsThem", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([mehmet]),
+      invitationsAnswer(),
+      exportAnswer(requests),
+    );
+    savedFiles();
+
+    renderInTenant(<MembersPage />, {
+      url: `/northwind/settings/members?roleId=${roleOf.admin.id}&sort=name`,
+    });
+    await table();
+    const dialog = await openExport();
+    expect(dialog).toHaveTextContent(
+      "A CSV file with 1 member: name, email, role, joined date.",
+    );
+    expect(dialog).toHaveTextContent(
+      "Filter: Admin. Clear the filter to export everyone.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Export CSV" }),
+    );
+
+    await expectVisibleToast("Members exported");
+    expect(Object.fromEntries(requests[0] ?? [])).toEqual({
+      roleId: roleOf.admin.id,
+      sort: "name",
+      timeZone: browserTimeZone(),
+    });
+  });
+
+  it("MembersPage_ExportASearch_SaysTheSearch", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([john]),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: "/northwind/settings/members?q=john",
+    });
+    await table();
+    const dialog = await openExport();
+
+    expect(dialog).toHaveTextContent(
+      "Search: “john”. Clear the search to export everyone.",
+    );
+  });
+
+  it("MembersPage_ExportASearchAndARole_SaysBoth", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([john]),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: `/northwind/settings/members?q=john&roleId=${roleOf.member.id}`,
+    });
+    await table();
+    const dialog = await openExport();
+
+    expect(dialog).toHaveTextContent(
+      "Search: “john”. Filter: Member. Clear the search and the filter to export everyone.",
+    );
+  });
+
+  // 8.16 with F4: a refusal shows its own text and reference; the dialog stays open to try again.
+  it("MembersPage_ExportRefused_ShowsTheProblemAndStaysOpen", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+      http.post(exportPath, () => problem(403, ErrorCode.AuthForbidden)),
+    );
+    const saved = savedFiles();
+
+    renderInTenant(<MembersPage />);
+    await table();
+    const dialog = await openExport();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Export CSV" }),
+    );
+
+    expect(
+      await within(dialog).findByText(/^Couldn’t create the file\./),
+    ).toHaveTextContent(
+      /You do not have permission to do this\. Ref 4bf92f3577b34da6a3ce929d0e0e4736/,
+    );
+    expect(
+      within(dialog).getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+    expect(saved).toEqual([]);
+  });
+
+  // Half a file is never a success (the maintainer's decision of 2026-11-07): a cut answer saves nothing and says so.
+  it("MembersPage_ExportAnswerCut_ShowsTheErrorAndSavesNoFile", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+      cutExportAnswer(),
+    );
+    const saved = savedFiles();
+
+    renderInTenant(<MembersPage />);
+    await table();
+    const dialog = await openExport();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Export CSV" }),
+    );
+
+    expect(
+      await within(dialog).findByText(/^Couldn’t create the file\./),
+    ).toHaveTextContent("Something went wrong on our side.");
+    expect(saved).toEqual([]);
+    expect(screen.queryByText("Members exported")).not.toBeInTheDocument();
+  });
+
+  // 8.14: with nobody in the list, Export stays and says why (F51's pattern).
+  it("MembersPage_SearchFindsNothing_DisablesExportAndSaysWhy", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([]),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: "/northwind/settings/members?q=zzq",
+    });
+    await screen.findByRole("heading", { name: "No members match “zzq”" });
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+
+    const item = await screen.findByRole("menuitem", { name: /Export CSV/ });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveTextContent("No member matches the search.");
+  });
+
+  // 8.11: whoever reads the members may export them (ExportMembers needs tenant.members.read).
+  it("MembersPage_Member_CanExport", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Member), membersAnswer());
+
+    renderInTenant(<MembersPage />);
+    await table();
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Export CSV" }),
+    ).not.toHaveAttribute("aria-disabled");
   });
 });

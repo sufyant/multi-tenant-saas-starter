@@ -47,7 +47,7 @@ const openRemove = async () => {
 };
 
 describe("RemoveMemberDialog", () => {
-  it("RemoveMember_Success_ClosesToastsAndRefreshesTheList", async () => {
+  it("RemoveMember_Success_ClosesToastsWhatStaysAndRefreshesTheList", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
@@ -66,6 +66,9 @@ describe("RemoveMemberDialog", () => {
 
     expect(
       await screen.findByText("John Byrne removed from Northwind Traders"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Their past activity stays in the log."),
     ).toBeInTheDocument();
     expect(listRequests(requests)).toHaveLength(2);
     await waitFor(() =>

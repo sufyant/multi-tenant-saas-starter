@@ -55,7 +55,7 @@ test("Members_InviteAMember_SendsItAndSaysSo", async ({ page: browser }) => {
   await open(browser);
 
   await browser.getByRole("button", { name: "Invite member" }).click();
-  const dialog = browser.getByRole("alertdialog", { name: "Invite a member" });
+  const dialog = browser.getByRole("alertdialog", { name: "Invite member" });
   await expect(dialog).toBeVisible();
   await expectAccessible(browser);
   await dialog
@@ -101,7 +101,7 @@ test("Members_OpenADialog_PutsItsBackdropOverTheEnvironmentStrip", async ({
 
   await browser.getByRole("button", { name: "Invite member" }).click();
   await expect(
-    browser.getByRole("alertdialog", { name: "Invite a member" }),
+    browser.getByRole("alertdialog", { name: "Invite member" }),
   ).toBeVisible();
 
   // The element on top at the environment strip's start is the backdrop, not the strip, which is a sticky layer too (F53). The

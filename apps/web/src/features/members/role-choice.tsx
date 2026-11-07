@@ -1,6 +1,7 @@
 "use client";
 
 import { FeatureKey, type RoleDetailResponse } from "@repo/api-client";
+import { Icon, LockIcon } from "@repo/ui/components/icon";
 import { RadioGroup, RadioGroupItem } from "@repo/ui/components/ui/radio-group";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
@@ -15,13 +16,15 @@ import { useRoleReach } from "./use-role-reach";
  * The role list of the ChangeRole and Invitations boards: every role of the organisation in list order, one radio each, with its
  * description or its permission count. A role the viewer cannot give stays, disabled, with its reason under it (F51). With
  * `roles.custom` off, a custom role stays, disabled, with the plan's reason; a built-in role is always given (the plan-limit
- * boards). A long list scrolls, so the dialog's buttons stay in view.
+ * boards). A disabled role is a muted card with a lock and its reason (8.38). A long list scrolls, so the dialog's buttons stay in
+ * view.
  */
 export function RoleChoice({
   roles,
   value,
   onChange,
   ownerReason,
+  lockedReason,
   label,
 }: {
   roles: readonly RoleDetailResponse[];
@@ -30,6 +33,8 @@ export function RoleChoice({
   onChange: (roleId: string) => void;
   /** Why the viewer cannot give the Owner role: the K1 text of this dialog. */
   ownerReason: string;
+  /** Every role but the chosen one is disabled with this reason: the last Owner's own role (8.20). */
+  lockedReason?: string;
   /** A visible label above the list; without it the legend is for screen readers only. */
   label?: string;
 }) {
@@ -56,20 +61,25 @@ export function RoleChoice({
         value={value}
         onValueChange={(roleId) => onChange(String(roleId))}
         aria-labelledby={`${id}-legend`}
-        className="flex max-h-85 flex-col gap-2 overflow-y-auto p-0.5 max-tablet:max-h-65"
+        className="flex max-h-85 flex-col gap-3 overflow-y-auto p-0.5 max-tablet:max-h-65"
       >
         {inListOrder(roles).map((role) => {
           const reason =
-            reach(role.id, ownerReason) ?? (role.builtIn ? null : featureOff);
+            (lockedReason !== undefined && role.id !== value
+              ? lockedReason
+              : null) ??
+            reach(role.id, ownerReason) ??
+            (role.builtIn ? null : featureOff);
           const off = reason !== null;
           return (
             <label
               key={role.id}
               htmlFor={`${id}-${role.id}-item`}
               className={cn(
-                "flex items-start gap-2.5 rounded-md border border-border px-3 py-2.5",
-                off ? "cursor-not-allowed" : "cursor-pointer",
-                role.id === value && "border-primary ring-1 ring-primary",
+                "flex items-start gap-2.5 rounded-lg border border-border px-3 py-2.5",
+                off ? "cursor-not-allowed bg-muted" : "cursor-pointer",
+                role.id === value &&
+                  "border-primary bg-primary-subtle ring-1 ring-primary",
               )}
             >
               <RadioGroupItem
@@ -86,7 +96,10 @@ export function RoleChoice({
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span
                   id={`${id}-${role.id}-name`}
-                  className={cn("font-medium", off && "text-muted-foreground")}
+                  className={cn(
+                    "text-small font-medium",
+                    off && "text-muted-foreground",
+                  )}
                 >
                   <bdi>{roleName(role)}</bdi>
                 </span>
@@ -99,8 +112,9 @@ export function RoleChoice({
                 {reason && (
                   <span
                     id={`${id}-${role.id}-reason`}
-                    className="text-small text-destructive-text"
+                    className="mt-1 flex items-center gap-1.5 text-status text-foreground"
                   >
+                    <Icon icon={LockIcon} size={12} className="shrink-0" />
                     {reason}
                   </span>
                 )}

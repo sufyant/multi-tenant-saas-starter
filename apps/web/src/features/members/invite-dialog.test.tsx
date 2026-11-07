@@ -112,7 +112,7 @@ const openInvite = async () => {
   await userEvent.click(
     await screen.findByRole("button", { name: "Invite member" }),
   );
-  return screen.findByRole("alertdialog", { name: "Invite a member" });
+  return screen.findByRole("alertdialog", { name: "Invite member" });
 };
 
 const send = (dialog: HTMLElement) =>
@@ -213,7 +213,7 @@ describe("InviteDialog", () => {
     const radio = await within(dialog).findByRole("radio", {
       name: "Billing lead",
     });
-    expect(radio).toHaveAccessibleDescription("3 permissions");
+    expect(radio).toHaveAccessibleDescription("Custom role · 3 permissions");
     await typeEmail(dialog, "khalid@northwind.io");
     await userEvent.click(radio);
     await send(dialog);
@@ -446,7 +446,8 @@ describe("InviteDialog", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("Invite_AlreadyAMember_SaysSoUnderTheEmail", async () => {
+  // 8.28: a banner above the Email field says why; the address itself is not wrong, so the field shows no error.
+  it("Invite_AlreadyAMember_SaysSoInABannerAboveTheEmail", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
@@ -458,11 +459,17 @@ describe("InviteDialog", () => {
     await typeEmail(dialog, "john@northwind.io");
     await send(dialog);
 
-    expect(
+    const banner = (
       await within(dialog).findByText(
         "john@northwind.io is already a member of Northwind Traders.",
-      ),
-    ).toBeInTheDocument();
+      )
+    ).closest("[role=status]") as HTMLElement;
+    expect(banner).toHaveTextContent("Invitation not sent");
+    const email = within(dialog).getByRole("textbox", { name: "Email" });
+    expect(email).not.toHaveAttribute("aria-invalid", "true");
+    expect(banner.compareDocumentPosition(email)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   it("Invite_ApiRefusesTheEmail_ShowsTheFieldError", async () => {

@@ -23,6 +23,7 @@ import {
   UserPlusIcon,
 } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
+import { RowMenu } from "@repo/ui/components/row-menu";
 import { Search } from "@repo/ui/components/search";
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Tabs } from "@repo/ui/components/tabs";
@@ -45,6 +46,7 @@ import { useCan, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
+import { ExportMembersDialog } from "./export-members-dialog";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
 import { invitationPagesOptions, memberPagesOptions } from "./list-pages";
@@ -64,7 +66,8 @@ const rowsIn = (data: { pages: { items: unknown[] }[] } | undefined) =>
  * Settings > Members (8.01 to 8.07): the Members tab, and the Invitations tab for whom may read them (F5), each with its total
  * without a filter. A list grows with Load more (F9). The plan (F56, through `usePlan`): "Invite member" stays enabled and opens
  * "No free seat" at and over the limit; the banner between the header and the tabs says the seats, and over the limit offers
- * "View invitations" while one is pending. A viewer who may not invite sees no banner.
+ * "View invitations" while one is pending. A viewer who may not invite sees no banner. The More menu beside the title exports the
+ * members for whoever reads them (8.41, 8.11).
  */
 export function MembersPage() {
   const t = useTranslations();
@@ -74,6 +77,7 @@ export function MembersPage() {
   const { tenant, detail } = useTenant();
   const [params, setParams] = useListParams();
   const [inviting, setInviting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [announcement, setAnnouncement] = useState<string | null>(null);
   // The command menu's "Invite member" opens the page with `?invite=1`: the dialog opens once, and the address forgets it, as the
   // dialog's state is the page's own (F8).
@@ -101,13 +105,13 @@ export function MembersPage() {
   const { q, roleId, sort } = params;
   const search = { q: q || undefined, roleId: roleId ?? undefined };
 
+  const memberSort = Object.values(ListMembersSort).find(
+    (value) => value === sort,
+  );
   const members = useInfiniteQuery({
     ...memberPagesOptions(
       tenant.id,
-      {
-        ...search,
-        sort: Object.values(ListMembersSort).find((value) => value === sort),
-      },
+      { ...search, sort: memberSort },
       readsMembers && tab === "members",
     ),
     placeholderData: keepPreviousData,
@@ -273,9 +277,10 @@ export function MembersPage() {
     if (rowCount === 0 && tab === "invitations")
       return (
         <EmptyState
+          icon={UserPlusIcon}
           title={t("members.noInvitations")}
           description={t("members.noInvitationsText")}
-          action={inviteButton("primary")}
+          action={inviteButton("secondary")}
         />
       );
     const table = {
@@ -323,17 +328,7 @@ export function MembersPage() {
     const rows = invitations.data.pages.flatMap((page) => page.items);
     return (
       <div className="flex flex-col">
-        {/* Every loaded row on one page: InvitationsTable still takes a page of the API. */}
-        <InvitationsTable
-          page={{
-            items: rows,
-            page: 1,
-            pageSize: rows.length,
-            total: rows.length,
-          }}
-          onPageChange={() => {}}
-          {...table}
-        />
+        <InvitationsTable rows={rows} {...table} />
         {more}
       </div>
     );
@@ -365,6 +360,24 @@ export function MembersPage() {
     ) : null;
   // No counts while the list loads or cannot load (8.02, 8.03).
   const counted = list.isSuccess;
+  // Export follows the Members tab's filter and sort; from the Invitations tab it is every member (8.08, 8.10). Its count is the
+  // list's total for that filter, and with nobody in it the item says why (8.14, F51).
+  const onMembers = tab === "members";
+  const exportCount = onMembers ? members.data?.pages[0]?.total : membersTotal;
+  const exportFilter = {
+    q: onMembers ? search.q : undefined,
+    roleId: onMembers ? search.roleId : undefined,
+    sort: onMembers ? memberSort : undefined,
+    roleName: (() => {
+      const role = onMembers
+        ? roles.data?.items.find((choice) => choice.id === roleId)
+        : undefined;
+      return role && roleName(role);
+    })(),
+  };
+  const noMatch = exportFilter.q
+    ? t("members.exportNoMatchSearch")
+    : t("members.exportNoMatchFilter");
 
   return (
     <Frame>
@@ -372,6 +385,18 @@ export function MembersPage() {
         <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex items-center gap-1">
             <h1 className="text-page-title">{t("members.title")}</h1>
+            <RowMenu
+              label={t("members.moreActions")}
+              items={[
+                {
+                  label: t("members.exportCsv"),
+                  onSelect: () => setExporting(true),
+                  // Still counting: the item waits, disabled.
+                  disabled: !exportCount,
+                  reason: exportCount === 0 ? noMatch : undefined,
+                },
+              ]}
+            />
           </div>
           <p className="text-body text-muted-foreground">
             {t("members.description", { organisation: detail.name })}
@@ -460,6 +485,13 @@ export function MembersPage() {
         )}
       </div>
       {body}
+      {exporting && exportCount !== undefined && (
+        <ExportMembersDialog
+          count={exportCount}
+          filter={exportFilter}
+          onClose={() => setExporting(false)}
+        />
+      )}
       {inviting &&
         (memberLimit.full ? (
           <NoFreeSeatDialog

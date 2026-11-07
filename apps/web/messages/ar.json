@@ -174,8 +174,8 @@
     "removeOwner": "لا يزيل المالك إلا مالك.",
     "roleDescriptions": {
       "owner": "كل شيء، بما في ذلك منح دور المالك وسحبه.",
-      "admin": "يدعو الأعضاء ويغيّر الأدوار ويزيل الأعضاء ويقرأ النشاط.",
-      "member": "يستخدم المنتج. يرى قائمة الأعضاء، لا النشاط ولا الدعوات."
+      "admin": "يدعو الأعضاء ويغيّر الأدوار ويزيل الأعضاء ويقرأ سجل النشاط.",
+      "member": "يستخدم المنتج. يرى قائمة الأعضاء، لا سجل النشاط ولا الدعوات."
     },
     "changeRoleTitle": "تغيير دور {name}",
     "changeRoleText": "{name} {role, select, owner {مالكًا} admin {مشرفًا} member {عضوًا} other {{roleName}}} في {organisation}. يسري التغيير فورًا.",
@@ -233,7 +233,7 @@
     "inviteOwner": "لا يدعو المالك إلا مالك.",
     "inviteOwnerText": "اختر مشرفًا أو عضوًا، أو اطلب من مالك إرسال هذه الدعوة.",
     "permissionCount": "{count, plural, zero {لا صلاحيات} one {صلاحية واحدة} two {صلاحيتان} few {# صلاحيات} many {# صلاحية} other {# صلاحية}}",
-    "giveOwner": "لا يمنح دور المالك إلا مالك.",
+    "giveOwner": "لا يمنح هذا الدور إلا مالك.",
     "roleOutOfReach": "لهذا الدور صلاحيات ليست في دورك.",
     "roleOutOfReachText": "اختر دورًا آخر، أو اطلب من مالك.",
     "roleOutOfReachAsk": "اطلب ذلك من مالك في {organisation}.",
@@ -250,7 +250,24 @@
     "moreMembersError": "تعذّر تحميل المزيد من الأعضاء",
     "moreInvitationsError": "تعذّر تحميل المزيد من الدعوات",
     "onlyYou": "أنت العضو الوحيد",
-    "onlyYouText": "ادعُ الأشخاص الذين تعمل معهم. يصلهم بريد إلكتروني فيه رابط للانضمام."
+    "onlyYouText": "ادعُ الأشخاص الذين تعمل معهم. يصلهم بريد إلكتروني فيه رابط للانضمام.",
+    "moreActions": "إجراءات أخرى",
+    "exportCsv": "تصدير CSV",
+    "exportNoMatchSearch": "لا يوجد عضو يطابق البحث.",
+    "exportNoMatchFilter": "لا يوجد عضو يطابق التصفية.",
+    "exportTitle": "تصدير الأعضاء",
+    "exportText": "ملف CSV فيه {count, plural, zero {لا أعضاء} one {عضو واحد} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}} من {organisation}: الاسم والبريد الإلكتروني والدور وتاريخ الانضمام. لا تدخل فيه الدعوات المعلّقة.",
+    "exportTextFiltered": "ملف CSV فيه {count, plural, zero {لا أعضاء} one {عضو واحد} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}}: الاسم والبريد الإلكتروني والدور وتاريخ الانضمام.",
+    "exportAll": "التصفية: كل الأدوار. يتبع الملف القائمة كما تراها.",
+    "exportRole": "التصفية: {role}. امسح التصفية لتصدير الجميع.",
+    "exportSearch": "البحث: “{q}”. امسح البحث لتصدير الجميع.",
+    "exportSearchRole": "البحث: “{q}”. التصفية: {role}. امسح البحث والتصفية لتصدير الجميع.",
+    "exportFailed": "تعذّر إنشاء الملف.",
+    "exportedTitle": "تم تصدير الأعضاء",
+    "exportedText": "{name} في مجلد التنزيلات.",
+    "changeYourRole": "تغيير دورك",
+    "removedText": "يبقى نشاطه السابق في السجل.",
+    "customRolePermissions": "دور مخصص · {count, plural, zero {لا صلاحيات} one {صلاحية واحدة} two {صلاحيتان} few {# صلاحيات} many {# صلاحية} other {# صلاحية}}"
   },
   "general": {
     "title": "عام",
