@@ -197,6 +197,12 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Account and security's `user.last_owner` text ends as Leave's does: "Make another member an Owner first, or contact support to close the organisation.", with "contact support" linking to `brand.json`'s `supportUrl`, in three languages (the maintainer's decision of 2026-11-07).
 - The Leave flow: 8.18, 8.23, 8.25 and the "You left" notice of 8.24. It waits for 37a-backend-leave (the maintainer's decision of 2026-11-07).
 
+37a-dialog-and-menu, one Dialog and one RowMenu (the maintainer's decision of 2026-11-07):
+
+- First the design session at the end of 37a makes one Dialog component and one RowMenu component in Figma, and links every dialog frame and every row menu frame to them. The sizes are settled in that session. The start is the majority of the frames: a Dialog 440 wide, padding 20 with 16 at the bottom, and a footer band; a RowMenu 240 wide, with 16 px icons and 32 px items.
+- Then a code pull request makes `packages/ui` follow them, with the shots of both apps.
+- Until then the dialogs and row menus of 37a-frontend-2 keep the sizes of `packages/ui`.
+
 37b, the platform's pages:
 
 - Organisations, Users, Plans, Activity log and System admins in the new design.
