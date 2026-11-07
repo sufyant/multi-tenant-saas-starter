@@ -82,7 +82,7 @@ test("Roles_CustomRolesOff_ListsThemWithCreateAndEditClosed", async ({
   await page.goto(base);
 
   const reason = "Your organisation’s plan doesn’t include custom roles.";
-  const create = page.getByRole("button", { name: "Create role" });
+  const create = page.getByRole("button", { name: "New role" });
   await expect(create).toBeDisabled();
   await expect(create).toHaveAccessibleDescription(reason);
   await expect(page.getByRole("row", { name: /Billing lead/ })).toBeVisible();

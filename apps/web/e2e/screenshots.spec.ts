@@ -7,6 +7,8 @@ import {
   InvitationResponseState,
   Language,
   MyTenantResponseStatus,
+  type Permission,
+  type RoleDetailResponse,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { lastOrganisationCookie } from "../src/shared/last-organisation-cookie";
@@ -16,6 +18,7 @@ import {
   invitationCode,
   manyMembers,
   me,
+  mockActivityFrame,
   mockApi,
   mockAuditLog,
   mockDataExport,
@@ -1620,6 +1623,312 @@ const shellShots: {
     open: openInvite(),
   },
 ];
+
+// Roles (9.01 to 9.20) and the Activity log (12.01 to 12.08), with the people of the Members frames (northwindTeam).
+const rolesRead = `**/api/v1/tenants/${northwind.id}/roles?*`;
+const auditLogRead = `**/api/v1/tenants/${northwind.id}/audit-log*`;
+const rolePage = (name: string) =>
+  `${roles}/${northwindTeam().customRoles.find((role) => role.name === name)?.id}`;
+
+/** The Roles list's pages answer so (50 a page). The settings menu's count reads the one page of 100 (F51), and still comes. */
+const rolesListAnswers =
+  (answer: (route: Route) => Promise<void> | void) => (page: Page) =>
+    page.route(rolesRead, (route) =>
+      new URL(route.request().url()).searchParams.get("pageSize") === "50"
+        ? answer(route)
+        : route.fallback(),
+    );
+
+/** A team whose custom roles CreateRole and UpdateRole change as the API does, so the list and the role read them back. */
+const editableTeam = () => {
+  const team = northwindTeam();
+  const mock = (page: Page) =>
+    page.route(`**/api/v1/tenants/${northwind.id}/roles*`, async (route) => {
+      const request = route.request();
+      if (request.method() === "GET") return route.fallback();
+      const body = request.postDataJSON() as {
+        name: string;
+        permissions: Permission[];
+      };
+      const id = new URL(request.url()).pathname.split("/").pop();
+      const old = team.customRoles.find((role) => role.id === id);
+      const saved: RoleDetailResponse = {
+        id: old?.id ?? "0198f0a2-0000-7000-8000-0000000002c9",
+        builtIn: false,
+        memberCount: 0,
+        pendingInvitationCount: 0,
+        ...body,
+      };
+      team.customRoles = old
+        ? team.customRoles.map((role) => (role === old ? saved : role))
+        : [...team.customRoles, saved];
+      return route.fulfill({ status: old ? 200 : 201, json: saved });
+    });
+  return { team, mock };
+};
+
+/** Types into the role's name field of the editor. */
+const roleName = (page: Page) =>
+  page.getByRole("main").getByRole("textbox", { name: "Name" });
+
+/** Opens the More menu of the log and Export CSV, and waits for its dialog (12.08). */
+const openLogExport = async (page: Page) => {
+  await page.getByRole("button", { name: "More actions" }).click();
+  await page.getByRole("menuitem", { name: "Export CSV" }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
+
+const created = editableTeam();
+const saved = editableTeam();
+
+shellShots.push(
+  {
+    file: "9.01-roles-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    team: northwindTeam(),
+  },
+  {
+    file: "9.02-roles-loading-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    team: northwindTeam(),
+    // The list never answers.
+    mock: async (page) => {
+      await still(page);
+      await rolesListAnswers(() => {})(page);
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading roles" }).waitFor(),
+  },
+  {
+    file: "9.03-roles-error-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    team: northwindTeam(),
+    // The list fails; the query tries three times more before the page says so (F8).
+    mock: rolesListAnswers((route) => route.fulfill(serverError)),
+    ready: (page) =>
+      page.getByRole("heading", { name: "Couldn’t load roles" }).waitFor(),
+  },
+  {
+    file: "9.04-roles-no-custom-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    team: { ...northwindTeam(), customRoles: [] },
+  },
+  {
+    file: "9.05-role-created-en-light-desktop",
+    size: "desktop",
+    path: `${roles}/new`,
+    team: created.team,
+    mock: created.mock,
+    open: async (page) => {
+      await roleName(page).fill("Maintenance planner");
+      await page.getByRole("button", { name: "Create role" }).click();
+      await page
+        .getByText("Maintenance planner is ready to give.")
+        .first()
+        .waitFor();
+    },
+  },
+  {
+    file: "9.06-roles-plan-off-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    plan: customRolesOff,
+    team: northwindTeam(),
+  },
+  {
+    file: "9.07-roles-over-the-limit-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    plan: planWith({ "roles.custom.max": 10 }, { "roles.custom.max": 12 }),
+    team: northwindTeam(),
+  },
+  {
+    file: "9.08-new-role-en-light-desktop",
+    size: "desktop",
+    path: `${roles}/new`,
+    team: northwindTeam(),
+    open: async (page) => {
+      await roleName(page).fill("Maintenance planner");
+      await page.getByRole("checkbox", { name: "See members" }).click();
+    },
+  },
+  {
+    file: "9.09-new-role-name-taken-en-light-desktop",
+    size: "desktop",
+    path: `${roles}/new`,
+    team: northwindTeam(),
+    open: async (page) => {
+      await roleName(page).fill("Admin");
+      await page.getByRole("button", { name: "Create role" }).click();
+      await page.getByText("A role named Admin already exists.").waitFor();
+    },
+  },
+  {
+    file: "9.10-role-built-in-en-light-desktop",
+    size: "desktop",
+    path: `${roles}/${builtInRoles.admin.id}`,
+    team: northwindTeam(),
+  },
+  {
+    file: "9.11-role-edit-en-light-desktop",
+    size: "desktop",
+    path: rolePage("Support lead"),
+    team: northwindTeam(),
+  },
+  {
+    file: "9.12-delete-role-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    team: northwindTeam(),
+    open: rowDialog("Auditor", "Delete role"),
+  },
+  {
+    file: "9.13-delete-role-in-use-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    team: northwindTeam(),
+    open: rowDialog("Support lead", "Delete role"),
+  },
+  {
+    file: "9.15-discard-changes-en-light-desktop",
+    size: "desktop",
+    path: rolePage("Support lead"),
+    team: northwindTeam(),
+    open: async (page) => {
+      await page.getByRole("checkbox", { name: "See invitations" }).click();
+      await page.getByRole("button", { name: "Back to Roles" }).click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+  {
+    file: "9.16-role-saved-en-light-desktop",
+    size: "desktop",
+    path: rolePage("Support lead"),
+    team: saved.team,
+    mock: saved.mock,
+    open: async (page) => {
+      await page.getByRole("checkbox", { name: "See invitations" }).click();
+      await page.getByRole("button", { name: "Save changes" }).click();
+      await page
+        .getByText(/^Support lead now has/)
+        .first()
+        .waitFor();
+    },
+  },
+  {
+    file: "9.17-roles-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: roles,
+    team: northwindTeam(),
+  },
+  {
+    file: "9.20-role-out-of-reach-en-light-desktop",
+    size: "desktop",
+    path: rolePage("Onboarding"),
+    team: northwindTeam(),
+    // The viewer holds Role manager, which lacks Onboarding's invitations (F51): GetMyTenant answers its permissions.
+    mock: (page) =>
+      page.route(`**/api/v1/tenants/${northwind.id}`, async (route) => {
+        const answer = await route.fetch();
+        const manager = northwindTeam().customRoles.find(
+          (role) => role.name === "Role manager",
+        );
+        return route.fulfill({
+          json: {
+            ...(await answer.json()),
+            role: { id: manager?.id, name: manager?.name, builtIn: false },
+            permissions: manager?.permissions,
+          },
+        });
+      }),
+  },
+  {
+    file: "12.01-activity-log-en-light-desktop",
+    size: "desktop",
+    fullPage: true,
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: (page) => mockActivityFrame(page),
+  },
+  {
+    file: "12.02-activity-log-loading-older-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: async (page) => {
+      await still(page);
+      await mockActivityFrame(page, "hold");
+    },
+    open: async (page) => {
+      await page.getByRole("button", { name: "Show older activity" }).click();
+      await page.getByText("Loading older activity…").waitFor();
+    },
+  },
+  {
+    file: "12.03-activity-log-loading-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: async (page) => {
+      await still(page);
+      await page.route(auditLogRead, () => {});
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading activity" }).waitFor(),
+  },
+  {
+    file: "12.04-activity-log-error-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: (page) =>
+      page.route(auditLogRead, (route) => route.fulfill(serverError)),
+    ready: (page) =>
+      page.getByRole("heading", { name: "Couldn’t load activity" }).waitFor(),
+  },
+  {
+    file: "12.05-activity-log-empty-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: (page) =>
+      page.route(auditLogRead, (route) =>
+        route.fulfill({ json: { items: [], nextCursor: null } }),
+      ),
+  },
+  {
+    file: "12.06-activity-log-older-failed-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: (page) => mockActivityFrame(page, "fail"),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Show older activity" }).click();
+      await page.getByText("Couldn’t load older activity.").waitFor();
+    },
+  },
+  {
+    file: "12.07-activity-log-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: (page) => mockActivityFrame(page),
+  },
+  {
+    file: "12.08-export-activity-log-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: (page) => mockActivityFrame(page),
+    open: openLogExport,
+  },
+);
 
 /** The page has loaded: its heading shows, and no list is busy. */
 const loaded = async (page: Page) => {
