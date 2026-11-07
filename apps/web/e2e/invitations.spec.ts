@@ -22,12 +22,10 @@ test("AcceptInvitation_KnownPerson_JoinsAndOpensTheOrganisation", async ({
   await page.goto(acceptPage);
 
   await expect(
-    page.getByRole("heading", {
-      name: "Ayşe Yılmaz invited you to join Northwind Traders",
-    }),
+    page.getByRole("heading", { name: "Join Northwind Traders" }),
   ).toBeVisible();
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Join Northwind Traders" }).click();
+  await page.getByRole("button", { name: "Accept and continue" }).click();
 
   await expect(page).toHaveURL(`/${northwind.slug}`);
   await expect(page.getByText("You joined Northwind Traders")).toBeVisible();
@@ -49,7 +47,7 @@ test("AcceptInvitation_Expired_SaysItExpired", async ({ page }) => {
   await page.goto(acceptPage);
 
   await expect(
-    page.getByRole("heading", { name: "This invitation expired" }),
+    page.getByRole("heading", { name: "This invitation has expired" }),
   ).toBeVisible();
   await expectAccessible(page);
 });
@@ -62,11 +60,11 @@ test("AcceptInvitation_AnotherEmail_OffersToSwitchAccount", async ({
 
   await expect(
     page.getByRole("heading", {
-      name: "This invitation is for a different email",
+      name: "This invitation is for another email",
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Switch account" }),
+    page.getByRole("button", { name: "Sign out and continue" }),
   ).toBeVisible();
   await expectAccessible(page);
 });

@@ -119,7 +119,7 @@ for (const { language, scheme, size, name } of menus)
     });
   });
 
-// The platform's bell and its list (the Notifications boards), and Settings › Notifications in Arabic.
+// The platform's bell and its list (the Notifications boards).
 test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });

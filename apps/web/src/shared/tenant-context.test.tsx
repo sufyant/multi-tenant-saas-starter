@@ -39,9 +39,17 @@ vi.mock("@clerk/nextjs", () => ({
     user: { primaryEmailAddress: { emailAddress: "ali.kaya@gmail.com" } },
   }),
 }));
+// The cookie of "last used" is a server action's (F30): the test checks the call, not Next.js's cookie store.
+const lastOrganisation = vi.hoisted(() => ({ remember: vi.fn() }));
+vi.mock("./last-organisation", () => ({
+  rememberOrganisation: lastOrganisation.remember,
+}));
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  lastOrganisation.remember.mockClear();
+});
 afterAll(() => server.close());
 
 const northwind: MyTenantResponse = {
@@ -167,6 +175,39 @@ describe("TenantProvider", () => {
     ).toBeInTheDocument();
   });
 
+  it("TenantProvider_OpenedOrganisation_RemembersItsSlugAsLastUsed", async () => {
+    server.use(
+      tenants([northwind]),
+      getGetMyTenantMockHandler(getGetMyTenantResponseMock({ ...northwind })),
+    );
+
+    renderWithProviders(
+      <TenantProvider slug="northwind">
+        <Probe />
+      </TenantProvider>,
+    );
+
+    await screen.findByText(/Northwind Traders/);
+    expect(lastOrganisation.remember).toHaveBeenCalledExactlyOnceWith(
+      "northwind",
+    );
+  });
+
+  it("TenantProvider_BlockedOrganisation_RemembersNothing", async () => {
+    server.use(tenants([atlas]));
+
+    renderWithProviders(
+      <TenantProvider slug="atlas-logistics">
+        <Probe />
+      </TenantProvider>,
+    );
+
+    await screen.findByRole("heading", {
+      name: "Atlas Logistics is suspended",
+    });
+    expect(lastOrganisation.remember).not.toHaveBeenCalled();
+  });
+
   it("TenantProvider_SlugNotInTheListOfAPersonWithoutOrganisations_SaysNoAccessYet", async () => {
     server.use(tenants([]));
 
@@ -221,14 +262,14 @@ describe("TenantProvider", () => {
         name: "Atlas Logistics is suspended",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Suspended")).toBeInTheDocument();
     expect(
       screen.getByText(
         "You cannot open this organisation right now. Your data and your membership are kept. Contact your organisation’s Owner if you need to know more.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("atlas-logistics")).toBeInTheDocument();
-    expect(screen.getByText("Admin")).toBeInTheDocument();
+    // Frame 2.13 draws the title, the sentence and the ways out: no status, no address and no role.
+    expect(screen.queryByText("atlas-logistics")).not.toBeInTheDocument();
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Sign out" }),
     ).toBeInTheDocument();
@@ -248,7 +289,7 @@ describe("TenantProvider", () => {
       name: "Atlas Logistics is suspended",
     });
     expect(
-      screen.queryByRole("button", { name: "Choose another organisation" }),
+      screen.queryByRole("button", { name: "Go to my organisations" }),
     ).not.toBeInTheDocument();
   });
 
@@ -287,7 +328,7 @@ describe("TenantProvider", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Choose another organisation" }),
+      screen.getByRole("button", { name: "Go to my organisations" }),
     ).toHaveAttribute("href", "/");
   });
 
@@ -426,7 +467,6 @@ describe("TenantProvider", () => {
       expect(
         await screen.findByRole("heading", { name: title }),
       ).toBeInTheDocument();
-      expect(screen.getByText("ali.kaya@gmail.com")).toBeInTheDocument();
     },
   );
 

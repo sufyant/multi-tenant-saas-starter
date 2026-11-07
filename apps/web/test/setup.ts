@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { dismissToasts } from "@repo/ui/components/toast";
 import { zodErrorMap } from "@repo/ui/lib/zod-error-map";
 import { cleanup, configure } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { z } from "zod";
 
 afterEach(() => {
@@ -40,3 +40,10 @@ document.elementFromPoint ??= () => null;
 
 // The app installs the one Zod error map in its providers (F12); a form under test needs it too.
 z.config({ customError: zodErrorMap });
+
+// The cookie of "last used" is a server action's, and Next.js's cookie store exists only in a request: every page of an
+// organisation calls it. Its own test reads the real module (last-organisation.test.ts).
+vi.mock("@/shared/last-organisation", () => ({
+  rememberOrganisation: async () => {},
+  forgetOrganisation: async () => {},
+}));
