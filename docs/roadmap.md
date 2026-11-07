@@ -174,6 +174,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - "No free seat" (8.43, 8.45) has no billing manager clause. Its way to support is only its "Request a plan change" button, which links to the support contact of `brand.json`; the text holds no link, so both dialogs end alike and 8.43 drops "or ask us for more seats" (the maintainer's decisions of 2026-11-06 and 2026-11-07).
 - Leave is not built: 8.18, 8.23 and 8.25 get no shot, because the API has no Leave yet. 37a-frontend-4 builds it (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
+- Done.
 
 37a-backend-leave, a member leaves an organisation by themselves (the maintainer's decisions of 2026-11-07):
 
