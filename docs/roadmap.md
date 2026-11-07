@@ -9,7 +9,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | done |
 | 36 | Personal pages | done |
-| 37a | The web's organisation pages | todo |
+| 37a | The web's organisation pages | in progress |
 | 37b | The platform's pages | todo |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
@@ -110,7 +110,7 @@ Status: done.
 
 ## 5. Step 37: Organisation pages
 
-Status: todo. It has two parts.
+Status: in progress. It has two parts.
 
 37a, the web's organisation pages:
 
@@ -140,6 +140,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Two small commands write the audit entries `members.exported` and `activity_log.exported` in the organisation's Activity log. The web calls each one before it writes the file (the maintainer's decision of 2026-11-06).
 - One generated JSON holds each time zone's city in English, Turkish and Arabic, from the `exemplarCity` of Unicode CLDR. The web, the platform and the API's emails read the same file. The file is committed, and the CI job "Generated files: current" checks it (the maintainer's decision of 2026-11-06).
 - The Unicode License v3 joins `.github/dependency-review-config.yml`. F18 gets an exception for the city names.
+- The parts as built: 37a-backend-1 (the five types `tenant.*_for_owners`, and the sender), 37a-backend-2 (`ExportMembers` and Audit's `ExportAuditLog`) and 37a-time-zone-cities (the CLDR file, with `cldr-bcp47` for the zones' other IANA names). The web's Activity log has a first sentence of each new operation, which its types need; 37a-frontend-3 may rewrite them. Done.
 
 37a-emails, the emails in the new design:
 

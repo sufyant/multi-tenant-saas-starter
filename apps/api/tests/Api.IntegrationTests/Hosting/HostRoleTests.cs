@@ -327,7 +327,7 @@ public sealed class HostRoleTests(Database database)
         closed.StatusCode.ShouldBe(HttpStatusCode.OK);
         runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
         runs.WithoutNotificationsIn("worker").Distinct().ShouldBe(HandlersOfThePurge, ignoreOrder: true);
-        worker.Email.Sent.Select(email => email.To).ShouldBe(["owner@acme.test"]);
+        worker.Email.Sent.Where(email => email.IdempotencyKey.StartsWith("purge-warning/", StringComparison.Ordinal)).Select(email => email.To).ShouldBe(["owner@acme.test"]);
         (await testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Purged");
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.purged")).ShouldBe(1L);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}'", name)).ShouldBe(0L);

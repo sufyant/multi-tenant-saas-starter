@@ -18,12 +18,17 @@ allow-licenses:
   - Python-2.0
   - CC0-1.0
   - Unlicense
+  - Unicode-3.0
 
 # A known vulnerability of high or critical severity fails the job.
 fail-on-severity: high
 
 # The job's token is read-only, so the summary goes to the job log and not to a comment.
 comment-summary-in-pr: never
+
+# Unicode-3.0 is the Unicode License v3, a permissive license of the MIT kind: cldr-dates-full and cldr-bcp47, the CLDR data of the
+# time zones' cities, which packages/ui reads only in the build (F18 in docs/frontend/ARCHITECTURE.md). The maintainer's decision
+# of 2026-11-06.
 
 # Exceptions by package, for a license outside allow-licenses. Each one names its reason (the action's README,
 # "allow-dependencies-licenses").

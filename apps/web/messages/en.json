@@ -265,6 +265,9 @@
     "olderError": "Couldn’t load older activity",
     "restarted": "Starting from the newest activity",
     "operations": {
+      "activity_log": {
+        "exported": "<actor></actor> exported the activity log."
+      },
       "invitation": {
         "revoked": "<actor></actor> revoked an invitation."
       },
@@ -273,6 +276,9 @@
         "joined": "<target></target> joined the organisation.",
         "removed": "<actor></actor> removed <target></target> (<role></role>) from the organisation.",
         "role_changed": "<actor></actor> changed the role of <target></target> from <oldRole></oldRole> to <newRole></newRole>."
+      },
+      "members": {
+        "exported": "<actor></actor> exported the members."
       },
       "plan": {
         "created": "<actor></actor> created a plan.",

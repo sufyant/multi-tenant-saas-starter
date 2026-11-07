@@ -2,8 +2,10 @@
 // email and language an HTML part (`<email>.<lang>.html`), a plain-text part (`<email>.<lang>.txt`) and a subject
 // (`<email>.<lang>.subject.txt`), each with a placeholder such as {{tenantName}} for every value the API fills. It also writes what the
 // API needs to fill them without ICU (`languages.json`: each language's built-in role names, month names and date patterns), the texts of
-// every notification type (`notifications.json`) and the brand (`brand.json`). The folder holds only this script's output, so the script empties it first.
-import { mkdir, rm, writeFile } from "node:fs/promises";
+// every notification type (`notifications.json`), the brand (`brand.json`) and each time zone's city in each language
+// (`time-zone-cities.json`, a copy of what packages/ui generates from CLDR, so the emails name a zone as the apps do). The folder holds
+// only this script's output, so the script empties it first.
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { pretty, render } from "@react-email/render";
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
@@ -207,3 +209,10 @@ await write(
   )}\n`,
 );
 await write("brand.json", `${JSON.stringify(brand, null, 2)}\n`);
+await write(
+  "time-zone-cities.json",
+  await readFile(
+    new URL("../../ui/src/lib/time-zone-cities.gen.json", import.meta.url),
+    "utf8",
+  ),
+);

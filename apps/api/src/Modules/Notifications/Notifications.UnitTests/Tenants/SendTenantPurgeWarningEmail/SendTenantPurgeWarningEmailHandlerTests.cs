@@ -89,15 +89,18 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
         _channel.Sent.ShouldHaveSingleItem().Html.ShouldContain("href=\"mailto:support@starter.example\"");
     }
 
-    // The moment in the Owner's zone, with the zone's city and its offset at that moment (F18 in the web app's architecture). The date is the
-    // zone's, so Honolulu's purge comes the day before, and so does the day of the subject.
+    // The moment in the Owner's zone, with the zone's city in the Owner's language, from CLDR as the web names it, and its offset at that
+    // moment (F18 in the web app's architecture). The date is the zone's, so Honolulu's purge comes the day before, and so does the day of
+    // the subject.
     [Theory]
     [InlineData("Europe/Istanbul", Language.En, "It will be deleted with all its data on 22 Nov 2026 at 12:30 Istanbul (UTC+3).")]
     [InlineData("Asia/Kolkata", Language.En, "It will be deleted with all its data on 22 Nov 2026 at 15:00 Kolkata (UTC+5:30).")]
     [InlineData("America/Argentina/Buenos_Aires", Language.En, "It will be deleted with all its data on 22 Nov 2026 at 06:30 Buenos Aires (UTC-3).")]
     [InlineData("Pacific/Honolulu", Language.En, "It will be deleted with all its data on 21 Nov 2026 at 23:30 Honolulu (UTC-10).")]
-    [InlineData("Europe/Istanbul", Language.Tr, "22 Kas 2026, saat 12:30 Istanbul (UTC+3) itibarıyla tüm verileriyle birlikte silinecek.")]
-    [InlineData("Europe/Istanbul", Language.Ar, "ستُحذف مع جميع بياناتها في 22 نوفمبر 2026 الساعة 12:30 بتوقيت Istanbul (UTC+3).")]
+    [InlineData("Europe/Istanbul", Language.Tr, "22 Kas 2026, saat 12:30 İstanbul (UTC+3) itibarıyla tüm verileriyle birlikte silinecek.")]
+    [InlineData("Europe/Istanbul", Language.Ar, "ستُحذف مع جميع بياناتها في 22 نوفمبر 2026 الساعة 12:30 بتوقيت إسطنبول (UTC+3).")]
+    [InlineData("Asia/Kolkata", Language.Ar, "ستُحذف مع جميع بياناتها في 22 نوفمبر 2026 الساعة 15:00 بتوقيت كالكتا (UTC+5:30).")]
+    [InlineData("Asia/Kolkata", Language.Tr, "22 Kas 2026, saat 15:00 Kalküta (UTC+5:30) itibarıyla tüm verileriyle birlikte silinecek.")]
     public async Task SendTenantPurgeWarningEmail_AnOwnerWithATimeZone_WritesTheMomentInItWithTheZoneAndItsOffset(
         string timeZone, Language language, string body)
     {

@@ -97,6 +97,31 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await PlatformLogAsync(aloneId)).ShouldBe($"user.deleted|Platform|-|User|{aloneId}|-");
     }
 
+    // The purge takes the memberships away, so it names the Owners before: an Owner who stays a user hears of it in the personal bell. An
+    // Admin is no Owner. The Owner's reopened, which leads into the tenant, goes with the tenant.
+    [Fact]
+    public async Task PurgeTenant_AnOwnerWithAnotherTenant_TellsTheOwnerInThePersonalBell()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@acme.test"), role: "Owner");
+        var admin = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@acme.test"), role: "Admin");
+        var elsewhere = (await _testData.AddTenantAsync()).Id;
+        await _testData.AddMemberAsync(elsewhere, owner);
+        await _testData.AddMemberAsync(elsewhere, admin);
+        var (ownerId, adminId) = (await _testData.UserIdOfAsync(owner), await _testData.UserIdOfAsync(admin));
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES (gen_random_uuid(), '{ownerId}', '{tenant.Id}', 'tenant.reopened_for_owners', 'Personal', jsonb_build_object('tenantName', 'Gone Ltd'), '{ClosedAt:O}')
+            """,
+            _databaseName);
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+        await Waiting.UntilAsync(async () => await NotificationsOfAsync(ownerId, adminId) is not null);
+
+        (await NotificationsOfAsync(ownerId, adminId)).ShouldBe($"{ownerId}|tenant.purged_for_owners|-|Personal|Gone Ltd");
+    }
+
     // A8: a purge deletes a user through the user deletion path, so a tenant the user left before loses the user's address too.
     [Fact]
     public async Task PurgeTenant_AMemberLeftWithoutATenantWhoLeftAnotherTenantBefore_ErasesTheirAddressThere()
@@ -163,7 +188,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             ("ayse@acme.test", "Acme Ltd 1 Eki 2026 tarihinde silinecek"),
             ("layla@acme.test", "ستُحذف Acme Ltd في 1 أكتوبر 2026"),
         ]);
-        emails[0].Text.ShouldContain("1 Eki 2026, saat 12:00 Istanbul (UTC+3) itibarıyla");
+        emails[0].Text.ShouldContain("1 Eki 2026, saat 12:00 İstanbul (UTC+3) itibarıyla");
         emails[1].Text.ShouldContain("في 1 أكتوبر 2026 الساعة 09:00 بالتوقيت العالمي (UTC)");
         (await TenantEntriesAsync(tenant.Id, "tenant.purge_warned")).ShouldBe(1L);
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
@@ -359,6 +384,15 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             $"""
             SELECT string_agg(status || ':' || coalesce(email, '-'), ', ' ORDER BY status, email)
             FROM control_plane.invitations WHERE tenant_id = '{tenantId}'
+            """,
+            _databaseName);
+
+    // The users' notifications as "user|type|tenant|bell|the tenant's name", with "-" for no tenant; null for none.
+    private Task<string?> NotificationsOfAsync(params Guid[] userIds) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(concat_ws('|', user_id, type, coalesce(tenant_id::text, '-'), bell, "values"->>'tenantName'), ', ' ORDER BY user_id, type)
+            FROM notifications.notifications WHERE user_id IN ({string.Join(", ", userIds.Select(id => $"'{id}'"))})
             """,
             _databaseName);
 

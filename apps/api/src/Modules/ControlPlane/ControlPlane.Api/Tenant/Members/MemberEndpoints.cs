@@ -2,6 +2,7 @@ using System.Security.Claims;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Members.ChangeMemberRole;
+using ControlPlane.Application.Members.ExportMembers;
 using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Contracts;
@@ -19,6 +20,7 @@ public static class MemberEndpoints
     public static void Map(RouteGroupBuilder tenant)
     {
         tenant.MapGet("/members", ListMembers).RequireAuthorization(Permissions.TenantMembersRead).WithMetadata(new NotPlanGated());
+        tenant.MapPost("/members/export", ExportMembers).RequireAuthorization(Permissions.TenantMembersRead).WithMetadata(new NotPlanGated());
         tenant.MapPatch("/members/{userId:guid}", ChangeMemberRole).RequireAuthorization(Permissions.TenantMembersUpdate).WithMetadata(new NotPlanGated());
         tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete).WithMetadata(new NotPlanGated());
     }
@@ -42,6 +44,11 @@ public static class MemberEndpoints
         var members = await bus.InvokeAsync<Result<ListPage<MemberView>>>(new ListMembersQuery(list.Value, roleId), cancellationToken);
         return members.Map(found => found.Map(ToResponse));
     }
+
+    // The web's server calls it before it writes the members' file, which it reads from ListMembers. Each export is one entry, so it
+    // takes no idempotency key.
+    private static async Task<Result> ExportMembers(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        await bus.InvokeAsync<Result>(new ExportMembersCommand(user.Id()), cancellationToken);
 
     // Changing a role sets a state, so it takes no idempotency key (I1): the role the member already has answers 200 again.
     private static async Task<Result<MemberResponse>> ChangeMemberRole(

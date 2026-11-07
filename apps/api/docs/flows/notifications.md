@@ -8,7 +8,7 @@ A notification about the person's account or access is transactional: the produc
 
 ## 1. The types
 
-A type tells of one event and has the name of its event's audit operation, so the same event carries one label in the audit log and in the bell (U9). The two exceptions, `tenant.owner_joined` and `user.data_export_ready`, say why in `NotificationCatalog.NamedApart`.
+A type tells of one event and has the name of its event's audit operation, so the same event carries one label in the audit log and in the bell (U9). The exceptions, `tenant.owner_joined`, `user.data_export_ready` and the five status types of the Owners, `tenant.*_for_owners`, say why in `NotificationCatalog.NamedApart`.
 
 | Type | Event | Recipients | Bell | Channels | Values | Link |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -22,16 +22,19 @@ A type tells of one event and has the name of its event's audit operation, so th
 | `tenant.suspended`, `tenant.reactivated`, `tenant.reopened` | `TenantSuspendedEvent`, `TenantReactivatedEvent`, `TenantReopenedEvent` | every system admin but the actor | the platform's | web and email | the actor | `platform_tenant` |
 | `tenant.closed` | `TenantClosedEvent` | every system admin but the actor | the platform's | web and email | the actor and the date the purge deletes the data (`ReopenableUntil`) | `platform_tenant` |
 | `tenant.purged` | `TenantPurgedEvent` | every system admin: the platform acted | the platform's | web and email | none beyond the tenant | `platform_tenant` |
+| `tenant.suspended_for_owners`, `tenant.closed_for_owners` | `TenantSuspendedEvent`, `TenantClosedEvent` | the tenant's Owners at that moment; the acting system admin is no member | personal: the tenant door refuses its members now | web and email | none beyond the tenant, and for the closure the date the purge deletes the data (`ReopenableUntil`); no system admin is named, as the tenant's Activity says "the platform" | `start` |
+| `tenant.reactivated_for_owners`, `tenant.reopened_for_owners` | `TenantReactivatedEvent`, `TenantReopenedEvent` | as above | personal, where the Owners heard of the suspension or the closure; it keeps the tenant it tells of | web and email | none beyond the tenant | `tenant_settings`: the organisation is open again |
+| `tenant.purged_for_owners` | `TenantPurgedEvent` with `OwnerIds` | the Owners the purge read before it took the memberships away | personal, which the purge keeps | web and email | none beyond the tenant | `start` |
 | `user.data_export_ready` | `DataExportReadyEvent` | the person who asked for the export: the worker completed it, so the person is told | personal | web and email | the date until which the file can be downloaded (`flows/personal-data-export.md`) | `account_security` |
 
-Every type about a tenant also keeps the tenant's name as it was at that moment.
+Every type about a tenant also keeps the tenant's name as it was at that moment. A personal notification is about no tenant, unless its type leads into the tenant: the Owners' reactivated and reopened keep the tenant they tell of, so the web builds the link to it; the CHECK `ck_notifications_tenant` and `Notification.Create` allow it for those types only (the maintainer's decision of 2026-11-06). The bells read by the bell, not by the tenant, and a personal signal names no tenant, so no read changes.
 
 Each type also has an area and an actor in the catalog (U1). The list shows them beside an item; they are display labels only.
 
 | Area | Words in English, Turkish, Arabic | Types | Actor |
 | --- | --- | --- | --- |
 | `members` | Members, Üyeler, الأعضاء | `member.joined` | the new member, who accepted the invitation |
-| `your_access` | Your access, Erişiminiz, وصولك | `member.role_changed`, `member.removed` | the one who changed the role or removed the member; none when the platform made an Owner |
+| `your_access` | Your access, Erişiminiz, وصولك | `member.role_changed`, `member.removed`, and the Owners' five status types | the one who changed the role or removed the member; none when the platform made an Owner or changed the status |
 | `organisation_plan` | Organisation plan, Kuruluş planı, خطة المؤسسة | `tenant.plan_changed`, `tenant.entitlement_override_set`, `tenant.entitlement_override_removed` | none: the platform acted |
 | `organisations` | Organisations, Kuruluşlar, المؤسسات | `tenant.owner_joined` and every status type | the new Owner, who accepted; the system admin who changed the status; none for `tenant.purged` |
 | `your_account` | Your account, Hesabınız, حسابك | `user.data_export_ready` | none: the worker completed the export |
@@ -43,7 +46,7 @@ Each type also has an area and an actor in the catalog (U1). The list shows them
 - The platform's Owner invitation tells no member: its acceptance sends `tenant.owner_joined` to the system admins and no `member.joined`. The platform removes a member only in the user's own deletion, which publishes no `MemberRemovedEvent`, so `member.removed` needs no text of the platform.
 - A failure, such as a stuck purge or a dead letter, is no notification: the error tracker alerts it (section 7, "Error tracking").
 - A plan's edit tells nobody. It would tell the Owners of every tenant on the plan; the platform's audit log records it, the known limit of `reading-the-audit-logs.md`.
-- An event field that a type needs is optional, so both versions read each other's events: `TenantName` on the three member events, `InvitedBy`, `FirstOwner`, `Role` and `RoleBuiltIn` on `MemberJoinedEvent`, `ReopenableUntil` on `TenantClosedEvent`, and `PlanValue` on `EntitlementOverrideRemovedEvent`. An event of a version without the field tells nobody of the type that needs it. `FirstOwner` is true when the member joined with a role that holds `tenant.owners.manage` and the tenant had no Owner: a new tenant's first Owner, or an Owner the platform invited into a tenant without one.
+- An event field that a type needs is optional, so both versions read each other's events: `TenantName` on the three member events, `InvitedBy`, `FirstOwner`, `Role` and `RoleBuiltIn` on `MemberJoinedEvent`, `ReopenableUntil` on `TenantClosedEvent`, `PlanValue` on `EntitlementOverrideRemovedEvent`, and `OwnerIds` on `TenantPurgedEvent` (step 37a). An event of a version without the field tells nobody of the type that needs it. `FirstOwner` is true when the member joined with a role that holds `tenant.owners.manage` and the tenant had no Owner: a new tenant's first Owner, or an Owner the platform invited into a tenant without one.
 
 ## 2. From the event to the bell
 
@@ -95,9 +98,9 @@ The live channel is `ILiveChannel` (U6). The worker writes the notification, and
 | `UserDeletedEvent` | ControlPlane, after a user's deletion (`user-deletion.md`) | Notifications, `DeleteUserNotificationsHandler` | Yes, Notifications', which declares the user |
 
 - The retention deletes the notifications older than `Notifications:Retention:Days` (90), read or not, in batches of 1000, one transaction each (U8).
-- The tenant purge deletes every notification about the tenant, in every recipient's list, the platform's included. A personal notification is about no tenant and stays.
+- The tenant purge deletes every notification about the tenant, in every recipient's list, the platform's included: the Owners' reactivated and reopened go too, because their link leads nowhere then. Any other personal notification is about no tenant and stays.
 - A user's deletion deletes their notifications.
 
-Tests: `NotificationFanOutTests` (each type, its recipients and its values, a person by user id, none for the actor, a later Owner, no `member.joined` of the platform's Owner invitation, no `member.removed` of a user's deletion, a copy of an event, a type of the web only, a type of the web and the email, a changed role by email), `StreamNotificationsTests`, `LiveChannelTests`, `HostRoleTests` (`StreamNotifications_OnAWebAndAWorkerHostWithValkey_TheWorkersNotificationReachesTheWebStream`), `ListNotificationsTests`, `ListMyNotificationsTests`, `MarkAllNotificationsReadTests`, `MarkNotificationReadTests`, `ListPlatformNotificationsTests`, `NotificationRetentionTests`, `TenantPurgeTests`, `DeleteUserTests`, `OwnNotificationsPolicyTests`, `NotificationCatalogTests`, `NotificationTextTests`, `SendNotificationEmailHandlerTests`, `MigrationStepTests` (`Migrate_OneNotificationTypePerEvent_DeletesEveryNotificationAndRefusesAnOldType`, `Migrate_RemoveNotificationPreferences_DropsBothPreferenceTablesAndKeepsTheNotifications`).
+Tests: `NotificationFanOutTests` (each type, its recipients and its values, the Owners' five status types, a person by user id, none for the actor, a later Owner, no `member.joined` of the platform's Owner invitation, no `member.removed` of a user's deletion, a copy of an event, a type of the web only, a type of the web and the email, a changed role by email), `StreamNotificationsTests`, `LiveChannelTests`, `HostRoleTests` (`StreamNotifications_OnAWebAndAWorkerHostWithValkey_TheWorkersNotificationReachesTheWebStream`), `ListNotificationsTests`, `ListMyNotificationsTests` (`ListMyNotifications_AnOwnersReopenedAndSuspendedOrganisation_LeadToItsSettingsAndToTheStartPage`), `MarkAllNotificationsReadTests`, `MarkNotificationReadTests`, `ListPlatformNotificationsTests`, `NotificationRetentionTests`, `TenantPurgeTests`, `DeleteUserTests`, `OwnNotificationsPolicyTests`, `NotificationCatalogTests`, `NotificationTextTests`, `SendNotificationEmailHandlerTests`, `MigrationStepTests` (`Migrate_OneNotificationTypePerEvent_DeletesEveryNotificationAndRefusesAnOldType`, `Migrate_RemoveNotificationPreferences_DropsBothPreferenceTablesAndKeepsTheNotifications`).
 
 Sources: Hohpe and Woolf, *Enterprise Integration Patterns*, "Publish-Subscribe Channel". Vernon, *Implementing Domain-Driven Design*, Chapter 8. Kleppmann, *Designing Data-Intensive Applications*, Chapter 1 (fan-out on write). Freeman and Pryce, *GOOS*, Chapter 8 (adapters). HTML Living Standard, "Server-sent events".

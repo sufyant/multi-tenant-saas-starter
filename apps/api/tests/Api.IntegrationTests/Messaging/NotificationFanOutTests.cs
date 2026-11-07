@@ -301,6 +301,108 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         (await _rows.ValueListOfAsync(adminId, "tenant.purged", purged.TenantId)).ShouldBe("tenantName=Acme Ltd");
     }
 
+    // The Owners hear of their organisation's status in the personal bell and by email, because the tenant door may refuse them (U5).
+    // The platform acts, so no system admin is named; an Admin is no Owner, and the acting system admin gets no Owner's notification.
+    [Fact]
+    public async Task NotifyTenantSuspendedForOwners_ASystemAdminSuspendsATenant_WritesAPersonalOneForEachOwnerAndEmailsThem()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = PlatformTenants.Email();
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email), role: "Owner");
+        var second = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Admin");
+        var actor = await _testData.AddSystemAdminAsync();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor, secondFactor: true).SuspendTenantAsync(tenant.Id));
+
+        var (ownerId, secondId, memberId, actorId) = (
+            await _testData.UserIdOfAsync(owner), await _testData.UserIdOfAsync(second), await _testData.UserIdOfAsync(member), await _testData.UserIdOfAsync(actor));
+        (await _rows.OfAsync(ownerId, secondId, memberId)).Order().ShouldBe(
+            new[]
+            {
+                NotificationRows.Row(ownerId, "tenant.suspended_for_owners", null, "Personal"),
+                NotificationRows.Row(secondId, "tenant.suspended_for_owners", null, "Personal"),
+            }.Order());
+        (await _rows.ValueListOfAsync(ownerId, "tenant.suspended_for_owners")).ShouldBe("tenantName=Acme Ltd");
+        (await _rows.OfAsync(actorId)).ShouldAllBe(row => !row.Contains("_for_owners"));
+        _api.Email.Sent.Where(sent => sent.To == email).Select(sent => sent.Subject).ShouldBe(["Acme Ltd was suspended"]);
+    }
+
+    // Reactivated leads into the organisation, so the personal notification keeps the tenant it tells of (the maintainer's decision of
+    // 2026-11-06).
+    [Fact]
+    public async Task NotifyTenantReactivatedForOwners_ASystemAdminReactivatesATenant_WritesAPersonalOneAboutTheTenantForEachOwner()
+    {
+        var tenant = await _testData.AddTenantAsync(status: "Suspended", suspensionReason: "Unpaid invoices");
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var actor = await _testData.AddSystemAdminAsync();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor, secondFactor: true).PostAsync($"/v1/platform/tenants/{tenant.Id}/reactivate", null, Cancellation));
+
+        var ownerId = await _testData.UserIdOfAsync(owner);
+        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "tenant.reactivated_for_owners", tenant.Id, "Personal")]);
+        (await _rows.ValueListOfAsync(ownerId, "tenant.reactivated_for_owners")).ShouldBe("tenantName=Acme Ltd");
+    }
+
+    [Fact]
+    public async Task NotifyTenantClosedForOwners_ASystemAdminClosesATenant_WritesAPersonalOneForEachOwnerWithTheDeletionDate()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var actor = await _testData.AddSystemAdminAsync();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor, secondFactor: true).CloseTenantAsync(tenant.Id));
+
+        var ownerId = await _testData.UserIdOfAsync(owner);
+        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "tenant.closed_for_owners", null, "Personal")]);
+        var reopenableUntil = await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT to_char((closed_at + interval '30 days') AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS') FROM control_plane.tenants WHERE id = '{tenant.Id}'");
+        var values = await _rows.ValueListOfAsync(ownerId, "tenant.closed_for_owners");
+        values.ShouldStartWith($"reopenableUntil={reopenableUntil}.");
+        values.ShouldEndWith("+00:00, tenantName=Acme Ltd");
+    }
+
+    [Fact]
+    public async Task NotifyTenantReopenedForOwners_ASystemAdminReopensATenant_WritesAPersonalOneAboutTheTenantForEachOwner()
+    {
+        var tenant = await _testData.AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow.AddDays(-1));
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var actor = await _testData.AddSystemAdminAsync();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(actor, secondFactor: true).ReopenTenantAsync(tenant.Id));
+
+        var ownerId = await _testData.UserIdOfAsync(owner);
+        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "tenant.reopened_for_owners", tenant.Id, "Personal")]);
+        (await _rows.ValueListOfAsync(ownerId, "tenant.reopened_for_owners")).ShouldBe("tenantName=Acme Ltd");
+    }
+
+    // The purge took the memberships away, so the event names the Owners it read before (TenantPurgedEvent.OwnerIds).
+    [Fact]
+    public async Task NotifyTenantPurgedForOwners_ThePurgeFinishes_WritesAPersonalOneForEachOwnerItNames()
+    {
+        var owner = await _testData.AddUserAsync();
+        var ownerId = await _testData.UserIdOfAsync(owner);
+        var purged = new TenantPurgedEvent(Guid.CreateVersion7(), DateTimeOffset.UtcNow, Guid.CreateVersion7(), "Acme Ltd", [ownerId]);
+
+        await PublishAsync(purged);
+
+        (await _rows.OfAsync(ownerId)).ShouldBe([NotificationRows.Row(ownerId, "tenant.purged_for_owners", null, "Personal")]);
+        (await _rows.ValueListOfAsync(ownerId, "tenant.purged_for_owners")).ShouldBe("tenantName=Acme Ltd");
+    }
+
+    // An event of the version before step 37a names no Owner, so it tells none.
+    [Fact]
+    public async Task NotifyTenantPurgedForOwners_AnEventWithoutOwners_WritesNone()
+    {
+        var purged = new TenantPurgedEvent(Guid.CreateVersion7(), DateTimeOffset.UtcNow, Guid.CreateVersion7(), $"Gone {Guid.NewGuid():N}");
+
+        await PublishAsync(purged);
+
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM notifications.notifications WHERE type = 'tenant.purged_for_owners' AND \"values\"->>'tenantName' = '{purged.TenantName}'"))
+            .ShouldBe(0);
+    }
+
     // O4: a copy of an event writes no second notification and sends no second email.
     [Fact]
     public async Task NotifyTenantPurged_TheEventArrivesTwice_WritesOne()

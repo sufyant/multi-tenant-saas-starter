@@ -25,11 +25,13 @@ export const ListAuditEntriesResponse = zod.object({
   "id": zod.uuid(),
   "occurredAt": zod.iso.datetime({"offset":true}),
   "operation": zod.enum({
+  ActivityLogExported: 'activity_log.exported',
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  MembersExported: 'members.exported',
   PlanCreated: 'plan.created',
   PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
@@ -283,4 +285,10 @@ export const ListAuditEntriesResponse = zod.object({
 }).describe('One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry\nkeeps: the shape of its operation, or null for an operation without details. Names are resolved when the log is read; a name is only\na person\'s real name. It holds no email address.')),
   "nextCursor": zod.string().nullable()
 })
+
+export const ExportAuditLogParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const ExportAuditLogResponse = zod.void()
 

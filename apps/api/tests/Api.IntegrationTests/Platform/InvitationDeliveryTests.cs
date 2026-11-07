@@ -23,7 +23,7 @@ public sealed class InvitationDeliveryTests(Database database)
     private static readonly Dictionary<string, string?> Resend = new()
     {
         ["Notifications:Resend:ApiKey"] = "re_test_key",
-        ["Notifications:Resend:From"] = "App <no-reply@app.test>",
+        ["Notifications:Resend:FromAddress"] = "no-reply@app.test",
         ["Notifications:Resend:ApiUrl"] = "https://api.resend.test/",
     };
 

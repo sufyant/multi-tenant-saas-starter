@@ -265,6 +265,9 @@
     "olderError": "تعذّر تحميل النشاط الأقدم",
     "restarted": "البدء من أحدث نشاط",
     "operations": {
+      "activity_log": {
+        "exported": "صدّر <actor></actor> سجل النشاط."
+      },
       "invitation": {
         "revoked": "<actor></actor> ألغى دعوة."
       },
@@ -273,6 +276,9 @@
         "joined": "<target></target> انضم إلى المؤسسة.",
         "removed": "<actor></actor> أزال <target></target> (<role></role>) من المؤسسة.",
         "role_changed": "{actorKind, select, platform {غيّرت} other {غيّر}} <actor></actor> دور <target></target> من <oldRole></oldRole> إلى <newRole></newRole>."
+      },
+      "members": {
+        "exported": "صدّر <actor></actor> قائمة الأعضاء."
       },
       "plan": {
         "created": "<actor></actor> أنشأ خطة.",

@@ -123,6 +123,11 @@ public sealed class NotificationCatalogTests
             "tenant.closed organisations actorName",
             "tenant.reopened organisations actorName",
             "tenant.purged organisations",
+            "tenant.suspended_for_owners your_access",
+            "tenant.reactivated_for_owners your_access",
+            "tenant.closed_for_owners your_access",
+            "tenant.reopened_for_owners your_access",
+            "tenant.purged_for_owners your_access",
             "user.data_export_ready your_account",
         ]);
     }
@@ -167,7 +172,13 @@ public sealed class NotificationCatalogTests
             "tenant.reactivated Web Email",
             "tenant.closed Web Email",
             "tenant.reopened Web Email",
-            "tenant.purged Web Email", "user.data_export_ready Web Email",
+            "tenant.purged Web Email",
+            "tenant.suspended_for_owners Web Email",
+            "tenant.reactivated_for_owners Web Email",
+            "tenant.closed_for_owners Web Email",
+            "tenant.reopened_for_owners Web Email",
+            "tenant.purged_for_owners Web Email",
+            "user.data_export_ready Web Email",
         ]);
     }
 

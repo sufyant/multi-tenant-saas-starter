@@ -46,8 +46,8 @@ test("Profile_ArabicForm_SavesTheTimeZone", async ({ page }) => {
   await page.getByRole("combobox", { name: "المنطقة الزمنية" }).click();
   await page
     .getByRole("combobox", { name: "ابحث عن مدينة أو منطقة" })
-    .fill("Riyadh");
-  await page.getByRole("option", { name: /^Riyadh/ }).click();
+    .fill("الرياض");
+  await page.getByRole("option", { name: /^الرياض/ }).click();
   await page.getByRole("button", { name: "حفظ التغييرات" }).click();
 
   await expect(page.getByText("تم حفظ الملف الشخصي")).toBeVisible();

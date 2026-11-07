@@ -1,5 +1,8 @@
 using Audit.Api.Statuses;
+using System.Security.Claims;
+using Audit.Api.Authentication;
 using Audit.Application.AuditLogs;
+using Audit.Application.AuditLogs.ExportAuditLog;
 using Audit.Application.AuditLogs.GetAuditEntryNames;
 using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
@@ -17,8 +20,11 @@ namespace Audit.Api.Tenant.AuditLogs;
 /// <summary>The audit log of the tenant in the route, which its Owners and Admins read. The screen calls it "Activity".</summary>
 public static class AuditLogEndpoints
 {
-    public static void Map(RouteGroupBuilder tenant) =>
+    public static void Map(RouteGroupBuilder tenant)
+    {
         tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
+        tenant.MapPost("/audit-log/export", ExportAuditLog).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
+    }
 
     internal static AuditEntryResponse ToResponse(AuditEntryView entry) => new(
         entry.Id,
@@ -76,6 +82,14 @@ public static class AuditLogEndpoints
 
     // An entry keeps the role as it was at that moment (K3).
     private static AuditRoleResponse RoleOf(string name, Guid id, bool builtIn) => new(id, name, builtIn);
+
+    // The web's server calls it before it writes the log's file, which it reads from ListAuditEntries. Each export is one entry, so it
+    // takes no idempotency key. The host declared the route's tenant, which the message carries in its envelope (T2).
+    private static async Task<Result> ExportAuditLog(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken)
+    {
+        await bus.InvokeAsync(new ExportAuditLogCommand(user.Id()), cancellationToken);
+        return Result.Success();
+    }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the log to it. K5's exception: a cursor,
     // newest first, and no total.

@@ -51,6 +51,12 @@ export const ListMembersResponse = zod.object({
   "total": zod.int()
 })
 
+export const ExportMembersParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const ExportMembersResponse = zod.void()
+
 export const ChangeMemberRoleParams = zod.object({
   "userId": zod.uuid(),
   "tenantId": zod.uuid()

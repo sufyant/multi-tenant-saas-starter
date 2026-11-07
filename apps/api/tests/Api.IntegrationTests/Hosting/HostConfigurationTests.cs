@@ -15,7 +15,7 @@ public sealed class HostConfigurationTests(Database database)
     private static readonly Dictionary<string, string?> Complete = new()
     {
         ["Notifications:Resend:ApiKey"] = "re_test_key",
-        ["Notifications:Resend:From"] = "no-reply@app.test",
+        ["Notifications:Resend:FromAddress"] = "no-reply@app.test",
     };
 
     // The first key of each row is the one the error names; the others are missing too.
@@ -33,7 +33,7 @@ public sealed class HostConfigurationTests(Database database)
         { Environments.Development, ["Host:Storage:SecretAccessKey"] },
         { Environments.Production, ["Host:Authentication:AuthorizedParties:0"] },
         { Environments.Production, ["Notifications:Resend:ApiKey"] },
-        { Environments.Production, ["Notifications:Resend:From"] },
+        { Environments.Production, ["Notifications:Resend:FromAddress"] },
     };
 
     public static TheoryData<string, string> WrongSettings => new()
@@ -53,6 +53,8 @@ public sealed class HostConfigurationTests(Database database)
         { "Host:RateLimiting:InvitationAccept:PermitLimit", "0" },
         { "Host:RateLimiting:InvitationAccept:Window", "00:00:00" },
         { "Notifications:Resend:Timeout", "-00:00:01" },
+        { "Notifications:Resend:FromAddress", "App <no-reply@app.test>" },
+        { "Notifications:Resend:FromAddress", "not an email" },
         { "Host:ShutdownTimeout", "00:00:00" },
         { "Host:ManagementPort", "0" },
         { "Host:ManagementPort", "65536" },

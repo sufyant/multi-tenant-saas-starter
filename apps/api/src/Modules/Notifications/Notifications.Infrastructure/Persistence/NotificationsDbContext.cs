@@ -31,7 +31,7 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
         foreach (var entry in ChangeTracker.Entries<Notification>().Where(entry => entry.State is EntityState.Added or EntityState.Modified))
         {
             var notification = entry.Entity;
-            _signals.Add((notification.UserId, new Inbox(notification.Bell, notification.Bell == NotificationBell.Platform ? null : notification.TenantId)));
+            _signals.Add((notification.UserId, new Inbox(notification.Bell, notification.Bell == NotificationBell.Tenant ? notification.TenantId : null)));
         }
 
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);

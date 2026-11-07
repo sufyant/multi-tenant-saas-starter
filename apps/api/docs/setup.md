@@ -97,7 +97,7 @@ Root system admins: `ControlPlane:SystemAdmins:RootEmails` lists their addresses
 
 ## 3. Email
 
-- Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:From`. The sender's domain must be verified at Resend.
+- Outside Development the API does not start without `Notifications:Resend:ApiKey` and `Notifications:Resend:FromAddress`. The sender's domain must be verified at Resend. The sender's name is the brand's, from `packages/brand/brand.json`.
 
 ## 4. Container platform
 

@@ -56,6 +56,17 @@ export const getListAuditEntriesMockHandler = (overrideResponse?: CursorPageOfAu
       })
   }, options)
 }
+
+export const getExportAuditLogMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/tenants/:tenantId/audit-log/export', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
 export const getTenantAuditlogsMock = () => [
-  getListAuditEntriesMockHandler()
+  getListAuditEntriesMockHandler(),
+  getExportAuditLogMockHandler()
 ]

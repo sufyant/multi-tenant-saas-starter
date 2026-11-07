@@ -22,4 +22,7 @@ public sealed record NotificationKind(
 
     /// <summary>The name of the value that keeps the tenant's name as it was at that moment.</summary>
     public const string TenantValue = "tenantName";
+
+    /// <summary>Whether the link leads to a page of the notification's tenant, which the web finds by the tenant's id.</summary>
+    public bool LeadsIntoATenant => Link is NotificationLinkKind.TenantMembers or NotificationLinkKind.TenantRoles or NotificationLinkKind.TenantSettings;
 }

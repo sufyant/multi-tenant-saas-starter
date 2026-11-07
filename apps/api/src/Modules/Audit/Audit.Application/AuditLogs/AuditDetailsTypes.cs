@@ -51,11 +51,13 @@ public static class AuditDetailsTypes
     /// <summary>Every operation, with the type of its details, or null for an operation without details.</summary>
     public static IReadOnlyDictionary<string, Type?> OfOperation { get; } = new Dictionary<string, Type?>(StringComparer.Ordinal)
     {
+        [AuditOperations.ActivityLogExported] = null,
         [AuditOperations.InvitationRevoked] = null,
         [AuditOperations.MemberInvited] = typeof(MemberInvitedDetails),
         [AuditOperations.MemberJoined] = null,
         [AuditOperations.MemberRemoved] = typeof(MemberRemovedDetails),
         [AuditOperations.MemberRoleChanged] = typeof(MemberRoleChangedDetails),
+        [AuditOperations.MembersExported] = null,
         [AuditOperations.PlanCreated] = typeof(PlanCreatedDetails),
         [AuditOperations.PlanUpdated] = typeof(PlanUpdatedDetails),
         [AuditOperations.RoleCreated] = typeof(RoleCreatedDetails),

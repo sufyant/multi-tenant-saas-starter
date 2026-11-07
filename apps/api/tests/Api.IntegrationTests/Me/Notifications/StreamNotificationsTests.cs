@@ -45,6 +45,22 @@ public sealed class StreamNotificationsTests(Database database) : IAsyncLifetime
             """);
     }
 
+    // An Owner's reopened organisation is personal and keeps the tenant it leads to; its signal still names the personal bell only.
+    [Fact]
+    public async Task StreamNotifications_APersonalNotificationAboutATenant_SignalsThePersonalBellWithoutTheTenant()
+    {
+        var tenant = await _testData.AddTenantAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow.AddDays(-1));
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await using var stream = await LiveStream.OpenAsync(_api.CreateClient(owner));
+
+        await _api.WaitingForMessagesAsync(async () => await _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true).ReopenTenantAsync(tenant.Id));
+
+        (await stream.NextEventAsync(Wait)).ShouldBe("""
+            event: notifications
+            data: {"scope":"personal"}
+            """);
+    }
+
     [Fact]
     public async Task StreamNotifications_ANotificationForAnotherUser_SendsOnlyCommentLines()
     {

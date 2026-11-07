@@ -394,11 +394,13 @@ export type AuditOperation = typeof AuditOperation[keyof typeof AuditOperation];
 
 
 export const AuditOperation = {
+  ActivityLogExported: 'activity_log.exported',
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
+  MembersExported: 'members.exported',
   PlanCreated: 'plan.created',
   PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
@@ -599,14 +601,19 @@ export const NotificationType = {
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
   TenantClosed: 'tenant.closed',
+  TenantClosedForOwners: 'tenant.closed_for_owners',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerJoined: 'tenant.owner_joined',
   TenantPlanChanged: 'tenant.plan_changed',
   TenantPurged: 'tenant.purged',
+  TenantPurgedForOwners: 'tenant.purged_for_owners',
   TenantReactivated: 'tenant.reactivated',
+  TenantReactivatedForOwners: 'tenant.reactivated_for_owners',
   TenantReopened: 'tenant.reopened',
+  TenantReopenedForOwners: 'tenant.reopened_for_owners',
   TenantSuspended: 'tenant.suspended',
+  TenantSuspendedForOwners: 'tenant.suspended_for_owners',
   UserDataExportReady: 'user.data_export_ready',
 } as const;
 

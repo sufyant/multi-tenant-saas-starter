@@ -56,8 +56,8 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Notifications:LiveStream:KeepAliveInterval` | Optional | `00:00:20` | How often a stream of live signals writes a comment line, so no proxy closes it, and asks again whether its user may read (U6). Positive and at most 30 seconds |
 | `Notifications:LiveStream:Lifetime` | Optional | `00:05:00` | How long a stream of live signals stays open; it then closes, and the client opens a new one with a fresh token (U6). Longer than the keep-alive interval and at most 10 minutes, under Railway's limit of 15 minutes for a request |
 | `Notifications:Retention:Days` | Optional | `90` | How many days a notification is kept, read or not. Each hour the worker deletes the older ones, in batches (U8). At least 1 |
-| `Notifications:Resend:ApiKey` | Required outside Development. **Development:** may be empty | none | Resend's API key. In Development without it, or without `From`, email is written to the log. With both set, email is really sent, in Development too |
-| `Notifications:Resend:From` | Required outside Development. **Development:** may be empty | none | The sender, such as `App <no-reply@example.com>`, on a domain verified at Resend |
+| `Notifications:Resend:ApiKey` | Required outside Development. **Development:** may be empty | none | Resend's API key. In Development without it, or without `FromAddress`, email is written to the log. With both set, email is really sent, in Development too |
+| `Notifications:Resend:FromAddress` | Required outside Development. **Development:** may be empty | none | The sender's address alone, such as `no-reply@example.com`, on a domain verified at Resend. An address with a name stops the start. The sender's name is `name` of `packages/brand/brand.json`, so an email comes from `Starter <no-reply@example.com>`. It replaced `Notifications:Resend:From` in step 37a |
 | `Notifications:Resend:ApiUrl` | Optional | `https://api.resend.com/` | Resend's API URL |
 | `Notifications:Resend:Timeout` | Optional | `00:00:10` | How long a send may take |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional | none | The OTLP collector's URL for logs, metrics and traces. Without it no telemetry is sent |
@@ -72,7 +72,7 @@ The API turns GSSAPI encryption off on every PostgreSQL connection. A connection
 ## 2. What Development relaxes
 
 - `Host:Authentication:AuthorizedParties` may be empty.
-- `Notifications:Resend:ApiKey` and `Notifications:Resend:From` may be empty; email then goes to the log.
+- `Notifications:Resend:ApiKey` and `Notifications:Resend:FromAddress` may be empty; email then goes to the log.
 - The web process serves the OpenAPI document (`/openapi/v1.json`) and Scalar (`/scalar`). Outside Development both answer 404.
 
 Development does not relax the token's signature, issuer and lifetime, the second factor for the system door, or the check of the database role (R10).

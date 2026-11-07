@@ -10,7 +10,7 @@ public sealed class HostEndpointTests(Database database) : IAsyncLifetime
     private static readonly Dictionary<string, string?> Resend = new()
     {
         ["Notifications:Resend:ApiKey"] = "re_test_key",
-        ["Notifications:Resend:From"] = "no-reply@app.test",
+        ["Notifications:Resend:FromAddress"] = "no-reply@app.test",
     };
 
     private ApiFactory _api = null!;

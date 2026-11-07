@@ -67,6 +67,31 @@
         "body": "The platform finished deleting {{tenantName}} and its data. Its name and slug stay in the list.",
         "footer": "You got this email because you are a system admin and an organisation’s status changed."
       },
+      "tenant.suspended_for_owners": {
+        "title": "{{tenantName}} was suspended",
+        "body": "The platform suspended {{tenantName}}. Its members can’t open it until it is reactivated.",
+        "footer": "You got this email because you are an Owner of this organisation and its status changed."
+      },
+      "tenant.reactivated_for_owners": {
+        "title": "{{tenantName}} was reactivated",
+        "body": "The platform reactivated {{tenantName}}. Its members can open it again.",
+        "footer": "You got this email because you are an Owner of this organisation and its status changed."
+      },
+      "tenant.closed_for_owners": {
+        "title": "{{tenantName}} was closed",
+        "body": "The platform closed {{tenantName}}. It will be deleted with all its data on {{reopenableUntil}} unless the platform reopens it before then.",
+        "footer": "You got this email because you are an Owner of this organisation and its status changed."
+      },
+      "tenant.reopened_for_owners": {
+        "title": "{{tenantName}} was reopened",
+        "body": "The platform reopened {{tenantName}}. Its members can open it again.",
+        "footer": "You got this email because you are an Owner of this organisation and its status changed."
+      },
+      "tenant.purged_for_owners": {
+        "title": "{{tenantName}} was deleted",
+        "body": "The platform deleted {{tenantName}} and all its data. You can no longer open it.",
+        "footer": "You got this email because you are an Owner of this organisation and its status changed."
+      },
       "user.data_export_ready": {
         "title": "Your data file is ready",
         "body": "Download it from Account and security until {{expiresAt}}. You need to be signed in to download it.",
@@ -166,6 +191,31 @@
         "body": "Platform, {{tenantName}} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
         "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
       },
+      "tenant.suspended_for_owners": {
+        "title": "{{tenantName}} askıya alındı",
+        "body": "Platform, {{tenantName}} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+      },
+      "tenant.reactivated_for_owners": {
+        "title": "{{tenantName}} yeniden etkinleştirildi",
+        "body": "Platform, {{tenantName}} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+      },
+      "tenant.closed_for_owners": {
+        "title": "{{tenantName}} kapatıldı",
+        "body": "Platform, {{tenantName}} kuruluşunu kapattı. Platform onu daha önce yeniden açmazsa, kuruluş tüm verileriyle birlikte {{reopenableUntil}} tarihinde silinecek.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+      },
+      "tenant.reopened_for_owners": {
+        "title": "{{tenantName}} yeniden açıldı",
+        "body": "Platform, {{tenantName}} kuruluşunu yeniden açtı. Üyeleri onu yeniden açabilir.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+      },
+      "tenant.purged_for_owners": {
+        "title": "{{tenantName}} silindi",
+        "body": "Platform, {{tenantName}} kuruluşunu ve tüm verilerini sildi. Artık bu kuruluşu açamazsınız.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
+      },
       "user.data_export_ready": {
         "title": "Veri dosyanız hazır",
         "body": "{{expiresAt}} tarihine kadar Hesap ve güvenlik sayfasından indirebilirsiniz. İndirmek için oturum açmış olmanız gerekir.",
@@ -264,6 +314,31 @@
         "title": "حُذفت {{tenantName}}",
         "body": "أنهت المنصة حذف {{tenantName}} وبياناتها. يبقى اسمها ومعرّفها في القائمة.",
         "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
+      },
+      "tenant.suspended_for_owners": {
+        "title": "عُلّقت {{tenantName}}",
+        "body": "علّقت المنصة مؤسسة {{tenantName}}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة وتغيّرت حالتها."
+      },
+      "tenant.reactivated_for_owners": {
+        "title": "أُعيد تفعيل {{tenantName}}",
+        "body": "أعادت المنصة تفعيل {{tenantName}}. يستطيع أعضاؤها فتحها مجددًا.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة وتغيّرت حالتها."
+      },
+      "tenant.closed_for_owners": {
+        "title": "أُغلقت {{tenantName}}",
+        "body": "أغلقت المنصة مؤسسة {{tenantName}}. ستُحذف مع جميع بياناتها في {{reopenableUntil}} ما لم تُعِد المنصة فتحها قبل ذلك.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة وتغيّرت حالتها."
+      },
+      "tenant.reopened_for_owners": {
+        "title": "أُعيد فتح {{tenantName}}",
+        "body": "أعادت المنصة فتح {{tenantName}}. يستطيع أعضاؤها فتحها مجددًا.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة وتغيّرت حالتها."
+      },
+      "tenant.purged_for_owners": {
+        "title": "حُذفت {{tenantName}}",
+        "body": "حذفت المنصة {{tenantName}} وجميع بياناتها. لم يعد بإمكانك فتحها.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة وتغيّرت حالتها."
       },
       "user.data_export_ready": {
         "title": "ملف بياناتك جاهز",

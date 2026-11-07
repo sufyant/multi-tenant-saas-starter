@@ -79,7 +79,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
     // K4: a reopening cancels no scheduled message. The first closure's warning and purge find the tenant closed at another moment and do
     // nothing; the second closure schedules its own, and its warning reaches the Owner. The closure and the reopening also email the other
-    // system admins (U5), so only the Owner's emails count.
+    // system admins and the Owner (U5), so only the Owner's warnings count.
     [Fact]
     public async Task CloseTenant_ReopenedAndClosedAgain_SchedulesItsOwnAndTheFirstClosuresDoNothing()
     {
@@ -95,13 +95,13 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         var ownerEmail = (await _testData.UserOfAsync(owner)).Email;
 
         await DeliverAsync(tenant.Id, first.Select(message => message.Message));
-        var firstsWarnedNobody = (_api.Email.Sent.Count(sent => sent.To == ownerEmail), await PurgeWarningsAsync(tenant.Id), await _testData.TenantStatusOfAsync(tenant.Id));
+        var firstsWarnedNobody = (WarningsTo(ownerEmail), await PurgeWarningsAsync(tenant.Id), await _testData.TenantStatusOfAsync(tenant.Id));
         await DeliverAsync(tenant.Id, second.Select(message => message.Message).OfType<WarnTenantPurgeCommand>());
 
         second.Select(message => message.Message).ShouldBe(
             [new WarnTenantPurgeCommand(tenant.Id, _time.GetUtcNow()), new StartTenantPurgeCommand(tenant.Id, _time.GetUtcNow())], ignoreOrder: true);
         firstsWarnedNobody.ShouldBe((0, 0L, "Closed"));
-        _api.Email.Sent.Where(sent => sent.To == ownerEmail).ShouldHaveSingleItem();
+        WarningsTo(ownerEmail).ShouldBe(1);
         (await PurgeWarningsAsync(tenant.Id)).ShouldBe(1L);
     }
 
@@ -321,4 +321,8 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
+
+    // The purge warnings to the address, by the warning's idempotency key.
+    private int WarningsTo(string? email) =>
+        _api.Email.Sent.Count(sent => sent.To == email && sent.IdempotencyKey.StartsWith("purge-warning/", StringComparison.Ordinal));
 }

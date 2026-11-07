@@ -6,9 +6,15 @@ namespace Audit.Domain;
 /// </summary>
 public static class AuditOperations
 {
+    /// <summary>A member exported the Activity log to a file. The screen's name of the log is the operation's.</summary>
+    public const string ActivityLogExported = "activity_log.exported";
+
     public const string InvitationRevoked = "invitation.revoked";
 
     public const string MemberInvited = "member.invited";
+
+    /// <summary>A member exported the members to a file.</summary>
+    public const string MembersExported = "members.exported";
 
     public const string MemberJoined = "member.joined";
 

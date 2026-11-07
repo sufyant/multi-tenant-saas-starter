@@ -38,8 +38,8 @@ internal sealed class Notification
     public DateTimeOffset? ReadAt { get; private set; }
 
     /// <summary>
-    /// The notification of a type of the catalog, with exactly the values its texts use; an optional value may be missing. A tenant notification is about a tenant, and a
-    /// personal one about none: anything else is a mistake of ours.
+    /// The notification of a type of the catalog, with exactly the values its texts use; an optional value may be missing. A tenant notification is about a tenant. A
+    /// personal one is about none, unless its type leads into a tenant: it then keeps the tenant it tells of. Anything else is a mistake of ours.
     /// </summary>
     public static Notification Create(
         Guid id,
@@ -60,7 +60,7 @@ internal sealed class Notification
             throw new InvalidOperationException($"A notification of type {type} needs exactly the values {string.Join(", ", expected)}.");
         }
 
-        if ((kind.Bell == NotificationBell.Tenant && tenantId is null) || (kind.Bell == NotificationBell.Personal && tenantId is not null))
+        if ((kind.Bell == NotificationBell.Tenant && tenantId is null) || (kind.Bell == NotificationBell.Personal && (tenantId is not null) != kind.LeadsIntoATenant))
         {
             throw new InvalidOperationException($"A notification of type {type} for the {kind.Bell} bell has the wrong tenant.");
         }
