@@ -40,12 +40,26 @@ public sealed partial record NotificationText(string Title, string Body)
     /// <summary>Whether the type has the footer of its email in the language, for the architecture test of the catalog (U5).</summary>
     public static bool HasFooter(Language language, string type) => ByLanguage[language].Types[type].Footer is not null;
 
+    /// <summary>The names of the values that a type's footer uses in the language, for the architecture test of the catalog (U5).</summary>
+    public static IReadOnlySet<string> FooterPlaceholdersOf(Language language, string type) =>
+        Placeholder().Matches(ByLanguage[language].Types[type].Footer ?? "").Select(match => match.Groups[1].Value).ToHashSet(StringComparer.Ordinal);
+
     /// <summary>
-    /// The footer of a type's email in the language: why the email came (U5). A type of the email without one is a mistake of ours.
+    /// The footer of a type's email in the language: why the email came (U5), with the values it names written as in the title and the body.
+    /// A type of the email without one is a mistake of ours.
     /// </summary>
-    public static string FooterOf(Language language, string type) =>
-        ByLanguage[language].Types.GetValueOrDefault(type)?.Footer
+    public static string FooterOf(
+        string type,
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlyDictionary<Guid, UserName> people,
+        Language language,
+        string? timeZone)
+    {
+        var texts = ByLanguage[language];
+        var footer = texts.Types.GetValueOrDefault(type)?.Footer
             ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no footer of {type}.");
+        return Fill(footer, Written(NotificationCatalog.Of(type), values, people, texts, language, timeZone));
+    }
 
     /// <summary>The words of a closed list in the language, for the architecture test of the catalog (U1).</summary>
     public static IReadOnlyCollection<string> WordsOf(Language language, string list) =>
@@ -83,9 +97,7 @@ public sealed partial record NotificationText(string Title, string Body)
             text = new TypeTexts(without.Title ?? text.Title, without.Body, null, null);
         }
 
-        var written = kind.Values
-            .Where(value => values.ContainsKey(value.Name))
-            .ToDictionary(value => value.Name, value => Write(value, values, people, texts, language, timeZone), StringComparer.Ordinal);
+        var written = Written(kind, values, people, texts, language, timeZone);
         return new(Fill(text.Title!, written), Fill(text.Body, written));
     }
 
@@ -101,6 +113,18 @@ public sealed partial record NotificationText(string Title, string Body)
         NotificationCatalog.Of(type).Actor is { } actor && values.TryGetValue(actor, out var stored)
             ? NameOf(stored, people, ByLanguage[language], language)
             : null;
+
+    // Each stored value of the type, written in the language.
+    private static Dictionary<string, string> Written(
+        NotificationKind kind,
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlyDictionary<Guid, UserName> people,
+        Texts texts,
+        Language language,
+        string? timeZone) =>
+        kind.Values
+            .Where(value => values.ContainsKey(value.Name))
+            .ToDictionary(value => value.Name, value => Write(value, values, people, texts, language, timeZone), StringComparer.Ordinal);
 
     private static string Write(
         NotificationValue value,

@@ -4,7 +4,9 @@ Starter
 
 It will be deleted with all its data on {{purgesAt}}.
 
-Contact us to reopen it before that date.
+Contact support to reopen it before that date.
+
+Contact support:
 {{supportUrl}}
 
 You received this because you are an Owner of {{tenantName}}.

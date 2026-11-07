@@ -151,6 +151,19 @@ public sealed class NotificationCatalogTests
         ]);
     }
 
+    // U5: a footer may name a value of its type, and only one the type always has, so no email goes out with a hole.
+    [Fact]
+    public void DeclareNotificationTypes_APlantedFooterWithAnOptionalValue_IsFound()
+    {
+        // The tenant is the first value of a changed role.
+        var kind = NotificationCatalog.Of(NotificationCatalog.MemberRoleChanged);
+        var planted = kind with { Values = [kind.Values[0] with { Optional = true }, .. kind.Values.Skip(1)] };
+
+        var gaps = Gaps([planted], HandlerTypes(typeof(NotificationText).Assembly), TextsOf);
+
+        gaps.ShouldContain("member.role_changed: the footer in en uses tenantName, which is no value the type always has");
+    }
+
     // U4, U5: the product fixes each type's channels in the catalog, and delivery reads them from there only (the maintainer's decision of
     // 2026-11-01). When a person's access or the organisation's status changes, the email goes too: that person may not be able to open
     // the app and see the bell. Team news goes to the bell only.
@@ -216,7 +229,8 @@ public sealed class NotificationCatalogTests
             ? new Texts(
                 without => NotificationText.PlaceholdersOf(language, type, without),
                 list => NotificationText.WordsOf(language, list),
-                NotificationText.HasFooter(language, type))
+                NotificationText.HasFooter(language, type),
+                NotificationText.FooterPlaceholdersOf(language, type))
             : null;
 
     private static List<string> Gaps(
@@ -270,8 +284,12 @@ public sealed class NotificationCatalogTests
             .Where(word => !found.Words(word.Item1).Contains(word.word))
             .Select(word => $"{kind.Type}: no word {word.word} of {word.Item1} in {tag}");
         var footerGaps = kind.Channels.Contains(NotificationChannel.Email) && !found.HasFooter ? [$"{kind.Type}: no footer in {tag}"] : Array.Empty<string>();
+        var always = kind.Values.Where(value => !value.Optional).Select(value => value.Name).ToHashSet(StringComparer.Ordinal);
+        var footerValueGaps = found.FooterPlaceholders
+            .Where(name => !always.Contains(name))
+            .Select(name => $"{kind.Type}: the footer in {tag} uses {name}, which is no value the type always has");
         var areaGaps = found.Words(NotificationText.AreaWords).Contains(kind.Area) ? [] : new[] { $"{kind.Type}: no word {kind.Area} of area in {tag}" };
-        return placeholderGaps.Concat(withoutGaps).Concat(wordGaps).Concat(footerGaps).Concat(areaGaps).Distinct();
+        return placeholderGaps.Concat(withoutGaps).Concat(wordGaps).Concat(footerGaps).Concat(footerValueGaps).Concat(areaGaps).Distinct();
     }
 
     private static IEnumerable<string> PlaceholderGaps(string what, string tag, IEnumerable<string> declared, IReadOnlySet<string>? used)
@@ -301,5 +319,9 @@ public sealed class NotificationCatalogTests
         _ => NotificationText.PersonWords,
     };
 
-    private sealed record Texts(Func<string?, IReadOnlySet<string>?> Placeholders, Func<string, IReadOnlyCollection<string>> Words, bool HasFooter);
+    private sealed record Texts(
+        Func<string?, IReadOnlySet<string>?> Placeholders,
+        Func<string, IReadOnlyCollection<string>> Words,
+        bool HasFooter,
+        IReadOnlySet<string> FooterPlaceholders);
 }

@@ -18,7 +18,8 @@ public static class SendNotificationEmailHandler
         IOptions<NotificationLinkOptions> links,
         CancellationToken cancellationToken)
     {
-        var text = NotificationText.Render(send.Type, send.Values, send.People ?? new Dictionary<Guid, UserName>(), send.Language, send.TimeZone);
+        var people = send.People ?? new Dictionary<Guid, UserName>();
+        var text = NotificationText.Render(send.Type, send.Values, people, send.Language, send.TimeZone);
         var kind = NotificationCatalog.Of(send.Type);
         var link = (kind.Bell == NotificationBell.Platform ? links.Value.PlatformUrl : links.Value.WebUrl)!;
         List<EmailValue> values =
@@ -26,7 +27,7 @@ public static class SendNotificationEmailHandler
             EmailValue.Text("title", text.Title),
             EmailValue.Text("body", text.Body),
             EmailValue.Link("link", link),
-            EmailValue.Text("footer", NotificationText.FooterOf(send.Language, send.Type)),
+            EmailValue.Text("footer", NotificationText.FooterOf(send.Type, send.Values, people, send.Language, send.TimeZone)),
         ];
 
         // The key is the notification's, so a copy of the message sends one email.

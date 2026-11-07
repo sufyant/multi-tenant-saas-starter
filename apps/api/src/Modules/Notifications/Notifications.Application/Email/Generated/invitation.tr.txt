@@ -7,4 +7,4 @@ Daveti kabul et:
 
 Son geçerlilik: {{expiresAt}}.
 
-Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız görmezden gelebilirsiniz.
+Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız yok sayabilirsiniz.

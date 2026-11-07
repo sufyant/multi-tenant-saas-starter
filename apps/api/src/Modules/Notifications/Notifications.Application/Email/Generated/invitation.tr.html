@@ -11,7 +11,6 @@
       @media (prefers-color-scheme: dark) {
         .e-canvas { background-color: #232220 !important; }
         .e-card { background-color: #1c1b19 !important; border-color: #2e2c29 !important; }
-        .e-rule { border-color: #2e2c29 !important; }
         .e-text { color: #eeece8 !important; }
         .e-muted { color: #a29e96 !important; }
         .e-link { color: #5a5fdb !important; }
@@ -50,7 +49,7 @@
                 <tr>
                   <td
                     class="e-canvas"
-                    style="padding:40px 0;background-color:#f3f2ee">
+                    style="padding:40px 16px;background-color:#f3f2ee">
                     <table
                       align="center"
                       width="100%"
@@ -58,7 +57,7 @@
                       cellpadding="0"
                       cellspacing="0"
                       role="presentation"
-                      style="max-width:600px;width:100%">
+                      style="max-width:562px;width:100%">
                       <tbody>
                         <tr style="width:100%">
                           <td>
@@ -68,32 +67,35 @@
                               cellpadding="0"
                               cellspacing="0"
                               border="0"
-                              style="border-collapse:collapse">
+                              style="border-collapse:separate">
                               <tbody>
                                 <tr>
                                   <td
-                                    class="e-text"
-                                    style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;text-align:left;padding:0 4px 16px;font-size:18px;line-height:24px;font-weight:600;color:#1c1b19">
-                                    Starter
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
                                     class="e-card"
-                                    style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;text-align:left;background-color:#ffffff;border:1px solid #e8e6e1;border-radius:8px;padding:40px">
+                                    style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;text-align:left;background-color:#ffffff;border:1px solid #e8e6e1;border-radius:8px;padding:32px">
+                                    <p
+                                      class="e-text"
+                                      style="font-size:14px;line-height:20px;margin:0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;font-weight:500;color:#1c1b19;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Starter
+                                    </p>
                                     <h1
                                       class="e-text"
-                                      style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;margin:0;font-size:22px;line-height:30px;font-weight:600;color:#1c1b19">
+                                      style="margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;font-size:20px;line-height:28px;font-weight:600;color:#1c1b19">
                                       {{inviterName}} sizi {{tenantName}}
                                       kuruluşuna {{roleName}} olarak katılmaya
                                       davet etti.
                                     </h1>
+                                    <p
+                                      class="e-text"
+                                      style="font-size:14px;line-height:20px;margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;color:#1c1b19;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      Son geçerlilik: {{expiresAt}}.
+                                    </p>
                                     <table
                                       role="presentation"
                                       cellpadding="0"
                                       cellspacing="0"
                                       border="0"
-                                      style="margin-top:28px;border-collapse:separate">
+                                      style="margin-top:16px;border-collapse:separate">
                                       <tbody>
                                         <tr>
                                           <td
@@ -102,15 +104,15 @@
                                             <a
                                               href="{{link}}"
                                               class="e-button"
-                                              style="line-height:20px;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;box-sizing:border-box;padding:12px 24px;font-size:16px;font-weight:600;color:#ffffff;background-color:#4e54d4;border-radius:6px;padding-top:12px;padding-right:24px;padding-bottom:12px;padding-left:24px"
+                                              style="line-height:18px;text-decoration:none;display:inline-block;max-width:100%;mso-padding-alt:0px;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;box-sizing:border-box;padding:7px 12px;font-size:13px;font-weight:500;color:#ffffff;background-color:#4e54d4;border-radius:6px;padding-top:7px;padding-right:12px;padding-bottom:7px;padding-left:12px"
                                               target="_blank"
                                               ><span
-                                                ><!--[if mso]><i style="mso-font-width:400%;mso-text-raise:18px" hidden>&#8202;&#8202;&#8202;</i><![endif]--></span
+                                                ><!--[if mso]><i style="mso-font-width:300%;mso-text-raise:10.5px" hidden>&#8202;&#8202;</i><![endif]--></span
                                               ><span
-                                                style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:9px"
+                                                style="max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0px;mso-text-raise:5.25px"
                                                 >Daveti kabul et</span
                                               ><span
-                                                ><!--[if mso]><i style="mso-font-width:400%" hidden>&#8202;&#8202;&#8202;&#8203;</i><![endif]--></span
+                                                ><!--[if mso]><i style="mso-font-width:300%" hidden>&#8202;&#8202;&#8203;</i><![endif]--></span
                                               ></a
                                             >
                                           </td>
@@ -119,18 +121,13 @@
                                     </table>
                                     <p
                                       class="e-muted"
-                                      style="font-size:14px;line-height:20px;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;margin:16px 0 0;color:#69655d;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
-                                      Son geçerlilik: {{expiresAt}}.
-                                    </p>
-                                    <p
-                                      class="e-muted"
-                                      style="font-size:13px;line-height:20px;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;margin:28px 0 0;color:#69655d;margin-top:28px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      style="font-size:13px;line-height:18px;margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;color:#69655d;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
                                       Düğme çalışmazsa bu bağlantıyı kopyalayıp
                                       tarayıcınıza yapıştırın:
                                     </p>
                                     <p
                                       dir="ltr"
-                                      style="font-size:13px;line-height:18px;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;margin:4px 0 0;text-align:left;word-break:break-all;margin-top:4px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      style="font-size:13px;line-height:18px;margin:4px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;text-align:left;word-break:break-all;margin-top:4px;margin-right:0;margin-bottom:0;margin-left:0">
                                       <a
                                         href="{{link}}"
                                         class="e-link"
@@ -139,25 +136,13 @@
                                         >{{link}}</a
                                       >
                                     </p>
-                                    <table
-                                      role="presentation"
-                                      width="100%"
-                                      cellpadding="0"
-                                      cellspacing="0"
-                                      border="0"
-                                      style="margin-top:32px;border-collapse:collapse">
-                                      <tbody>
-                                        <tr>
-                                          <td
-                                            class="e-rule e-muted"
-                                            style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;text-align:left;border-top:1px solid #e8e6e1;padding-top:20px;font-size:12px;line-height:18px;color:#69655d">
-                                            Bu e-postayı, biri bu adresi davet
-                                            ettiği için aldınız. Beklemiyorsanız
-                                            görmezden gelebilirsiniz.
-                                          </td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
+                                    <p
+                                      class="e-muted"
+                                      style="font-size:13px;line-height:18px;margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;color:#69655d;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      Bu e-postayı, biri bu adresi davet ettiği
+                                      için aldınız. Beklemiyorsanız yok
+                                      sayabilirsiniz.
+                                    </p>
                                   </td>
                                 </tr>
                               </tbody>

@@ -37,7 +37,7 @@ public sealed class SendNotificationEmailHandlerTests
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@example.com", "You were removed from Acme", $"notification/{notificationId}"));
         email.Text.ShouldBe(
             "Starter\n\nYou were removed from Acme\n\nAda Lovelace removed you from Acme. You can no longer open it or see its notifications.\n\nOpen Starter:\nhttps://app.example/\n\n"
-            + "You got this email because your access to an organisation changed.");
+            + "You received this because your access to an organisation changed.");
         email.Html.ShouldContain("href=\"https://app.example/\"");
     }
 
@@ -83,7 +83,7 @@ public sealed class SendNotificationEmailHandlerTests
             TestContext.Current.CancellationToken);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Text.EndsWith("https://platform.example/\n\nYou got this email because you are a system admin and an organisation’s status changed.", StringComparison.Ordinal),
+        (email.Text.EndsWith("https://platform.example/\n\nYou received this because you are a system admin and an organisation’s status changed.", StringComparison.Ordinal),
             email.Html.Contains("settings", StringComparison.Ordinal)).ShouldBe((true, false));
     }
 
@@ -99,7 +99,34 @@ public sealed class SendNotificationEmailHandlerTests
             Links,
             TestContext.Current.CancellationToken);
 
-        _channel.Sent.ShouldHaveSingleItem().Text.ShouldEndWith("https://app.example/\n\nYou got this email because you are an Owner of this organisation.");
+        _channel.Sent.ShouldHaveSingleItem().Text.ShouldEndWith("https://app.example/\n\nYou received this because you are an Owner of this organisation.");
+    }
+
+    // U5: a changed role's footer names the organisation where it changed, as the email boards write it (13.05).
+    [Theory]
+    [InlineData(Language.En, "You received this because your role in Acme changed.")]
+    [InlineData(Language.Tr, "Bu e-postayı, Acme kuruluşundaki rolünüz değiştiği için aldınız.")]
+    [InlineData(Language.Ar, "وصلتك هذه الرسالة لأن دورك في Acme تغيّر.")]
+    public async Task SendNotificationEmail_AChangedRole_NamesTheOrganisationInTheFooter(Language language, string footer)
+    {
+        var values = new Dictionary<string, string>
+        {
+            ["tenantName"] = "Acme",
+            ["actorName"] = Ada.ToString(),
+            ["oldRoleName"] = "member",
+            ["oldRoleNameBuiltIn"] = "true",
+            ["newRoleName"] = "admin",
+            ["newRoleNameBuiltIn"] = "true",
+        };
+
+        await SendNotificationEmailHandler.HandleAsync(
+            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.MemberRoleChanged, values, "ada@example.com", language, People: People),
+            _channel,
+            Links,
+            TestContext.Current.CancellationToken);
+
+        var email = _channel.Sent.ShouldHaveSingleItem();
+        (email.Text.Split("\n\n")[^1], email.Html.Contains(footer, StringComparison.Ordinal)).ShouldBe((footer, true));
     }
 
     // The email writes a date in the recipient's time zone: noon in UTC on 29 November is 30 November in Auckland.
