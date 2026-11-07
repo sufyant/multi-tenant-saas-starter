@@ -130,12 +130,22 @@ export function OrganisationShell({
   notFound?: boolean;
   children: ReactNode;
 }) {
+  const roleName = useRoleName();
   return (
     <TenantProvider
       slug={slug}
       pending={<PendingTenantShell slug={slug} />}
-      failed={(error) => (
-        <TenantFrame slug={slug}>
+      failed={(error, tenant) => (
+        // What ListMyTenants answered stays: the name and the role; GetMyTenant's permissions are not known (7.03).
+        <TenantFrame
+          slug={slug}
+          known={{
+            tenant,
+            role: roleName(tenant.role),
+            can: () => false,
+            counts: {},
+          }}
+        >
           <ProblemScreen error={error} />
         </TenantFrame>
       )}
@@ -245,9 +255,14 @@ function TenantFrame({
   const currentItem = [...main, ...myAccount, ...organisation].find(
     (item) => item.id === current,
   );
+  // The page the address names, while its permission is not known yet (7.02, 7.03): the crumb names it all the same.
+  const addressedPage = organisationPages.find((item) => item.id === current);
   const pageName = notFound
     ? t("problems.notFoundTitle")
-    : (currentItem?.label ?? t("shell.settings"));
+    : (currentItem?.label ??
+      (addressedPage
+        ? t(`shell.${addressedPage.label}`)
+        : t("shell.settings")));
   const name = known?.tenant.name;
 
   const others = (tenants.data?.items ?? []).map((item) => ({

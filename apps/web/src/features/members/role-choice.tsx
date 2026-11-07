@@ -16,8 +16,8 @@ import { useRoleReach } from "./use-role-reach";
  * The role list of the ChangeRole and Invitations boards: every role of the organisation in list order, one radio each, with its
  * description or its permission count. A role the viewer cannot give stays, disabled, with its reason under it (F51). With
  * `roles.custom` off, a custom role stays, disabled, with the plan's reason; a built-in role is always given (the plan-limit
- * boards). A disabled role is a muted card with a lock and its reason (8.38). A long list scrolls, so the dialog's buttons stay in
- * view.
+ * boards). A disabled role is a muted card with a lock and its reason (8.38). The list has no scroll of its own: the dialog's
+ * body scrolls, so its buttons stay in view (F61).
  */
 export function RoleChoice({
   roles,
@@ -61,7 +61,7 @@ export function RoleChoice({
         value={value}
         onValueChange={(roleId) => onChange(String(roleId))}
         aria-labelledby={`${id}-legend`}
-        className="flex max-h-85 flex-col gap-3 overflow-y-auto p-0.5 max-tablet:max-h-65"
+        className="flex flex-col gap-3 p-0.5"
       >
         {inListOrder(roles).map((role) => {
           const reason =

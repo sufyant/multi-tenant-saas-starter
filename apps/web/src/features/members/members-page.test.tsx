@@ -455,6 +455,47 @@ describe("MembersPage", () => {
     expect(invitationRequests).toEqual([]);
   });
 
+  // 8.29 draws no role filter on the Invitations tab; a role in the address still filters it (F51's "See its invitations").
+  it("MembersPage_InvitationsTab_DrawsNoRoleFilterButKeepsTheAddresssRole", async () => {
+    const invitationRequests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(invitationRequests, 1),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: `/northwind/settings/members?tab=invitations&roleId=${roleOf.member.id}`,
+    });
+
+    expect(
+      await screen.findByRole("button", { name: "Clear filter" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("combobox", { name: "Filter by role" }),
+    ).not.toBeInTheDocument();
+    expect(
+      invitationRequests.some(
+        (params) => params.get("roleId") === roleOf.member.id,
+      ),
+    ).toBe(true);
+  });
+
+  // On a phone the top bar names the page (8.34); the main region keeps the title for screen readers. jsdom draws no breakpoint.
+  it("MembersPage_Title_IsForScreenReadersOnlyOnAPhone", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Members" }),
+    ).toHaveClass("max-tablet:sr-only");
+  });
+
   it("MembersPage_NoReadPermission_SaysPermissionDenied", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Member, [Permission.TenantProfileRead]),
@@ -737,6 +778,29 @@ describe("MembersPage", () => {
       "2",
     ]);
     expect(window.location.search).toBe("");
+  });
+
+  // 8.02: the first load keeps the table's header above its ten rows, so the columns are there before the people.
+  it("MembersPage_FirstLoad_ShowsTheColumnsAboveTheRows", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      http.get(`*/v1/tenants/${northwind.id}/members`, async ({ request }) => {
+        if (new URL(request.url).searchParams.get("pageSize") !== "1")
+          await delay("infinite");
+        return HttpResponse.json({ items: [], page: 1, pageSize: 1, total: 4 });
+      }),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    const loading = within(
+      await screen.findByRole("status", { name: "Loading members" }),
+    );
+    expect(loading.getByText("Name")).toBeInTheDocument();
+    expect(loading.getByText("Email")).toBeInTheDocument();
+    expect(loading.getByText("Role")).toBeInTheDocument();
+    expect(loading.getByText("Joined")).toBeInTheDocument();
   });
 
   it("MembersPage_NextPageOnItsWay_ShowsLoadingMoreInPlaceOfTheButton", async () => {
