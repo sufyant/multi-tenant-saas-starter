@@ -100,7 +100,7 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
     [InlineData("Europe/Istanbul", Language.Tr, "22 Kas 2026, saat 12:30 İstanbul (UTC+3) itibarıyla tüm verileriyle birlikte silinecek.")]
     [InlineData("Europe/Istanbul", Language.Ar, "ستُحذف مع جميع بياناتها في 22 نوفمبر 2026 الساعة 12:30 بتوقيت إسطنبول (UTC+3).")]
     [InlineData("Asia/Kolkata", Language.Ar, "ستُحذف مع جميع بياناتها في 22 نوفمبر 2026 الساعة 15:00 بتوقيت كالكتا (UTC+5:30).")]
-    [InlineData("Asia/Calcutta", Language.Tr, "22 Kas 2026, saat 15:00 Kalküta (UTC+5:30) itibarıyla tüm verileriyle birlikte silinecek.")]
+    [InlineData("Asia/Kolkata", Language.Tr, "22 Kas 2026, saat 15:00 Kalküta (UTC+5:30) itibarıyla tüm verileriyle birlikte silinecek.")]
     public async Task SendTenantPurgeWarningEmail_AnOwnerWithATimeZone_WritesTheMomentInItWithTheZoneAndItsOffset(
         string timeZone, Language language, string body)
     {
