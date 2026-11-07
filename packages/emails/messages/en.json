@@ -10,10 +10,11 @@
   },
   "deletionWarning": {
     "subject": "{tenantName} will be deleted on {purgesOn}",
-    "preheader": "It is closed. Contact us to reopen it before that date.",
+    "preheader": "It is closed. Contact support to reopen it before that date.",
     "heading": "{tenantName} is closed.",
     "body": "It will be deleted with all its data on {purgesAt}.",
-    "contact": "<link>Contact us</link> to reopen it before that date.",
+    "contact": "Contact support to reopen it before that date.",
+    "button": "Contact support",
     "footer": "You received this because you are an Owner of {tenantName}."
   },
   "account": {
@@ -84,7 +85,7 @@
           "body": "The platform changed your role from {oldRoleName} to {newRoleName}."
         }
       },
-      "footer": "You got this email because your access to an organisation changed."
+      "footer": "You received this because your role in {tenantName} changed."
     },
     "member.removed": {
       "title": "You were removed from {tenantName}",

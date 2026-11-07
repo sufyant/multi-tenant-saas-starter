@@ -4,7 +4,9 @@ Starter
 
 {{purgesAt}} itibarıyla tüm verileriyle birlikte silinecek.
 
-Bu tarihten önce yeniden açmak için bize ulaşın.
+Bu tarihten önce yeniden açmak için destekle iletişime geçin.
+
+Destekle iletişime geçin:
 {{supportUrl}}
 
 Bu e-postayı, {{tenantName}} kuruluşunun Sahibi olduğunuz için aldınız.

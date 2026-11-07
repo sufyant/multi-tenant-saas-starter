@@ -1,8 +1,6 @@
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
-import { Button, Heading, Link, Text } from "react-email";
-import { colours } from "../layout/colours";
-import { Layout, lookOf } from "../layout/layout";
+import { Button, Fallback, Heading, Layout, Paragraph } from "../layout/layout";
 import { format, messages } from "../texts";
 
 /**
@@ -44,112 +42,20 @@ export function notificationText(props: NotificationProps): string {
   ].join("\n\n");
 }
 
-/** A notification by email: its title, its body and one button, in the brand's layout. */
+/** A notification by email: its title, its body and one button, in the brand's layout (13.03 to 13.06, 13.10 to 13.13). */
 export function Notification(props: NotificationProps) {
   const texts = textsOf(props);
-  const look = lookOf(props.language);
+  const { language } = props;
   return (
-    <Layout
-      language={props.language}
-      preheader={props.body}
-      footer={props.footer}
-    >
-      <Heading
-        as="h1"
-        className="e-text"
-        style={{
-          fontFamily: look.font,
-          margin: 0,
-          fontSize: "22px",
-          lineHeight: look.line.heading,
-          fontWeight: 600,
-          color: colours.text.light,
-        }}
-      >
-        {props.title}
-      </Heading>
-      <Text
-        className="e-text"
-        style={{
-          fontFamily: look.font,
-          margin: "12px 0 0",
-          fontSize: "16px",
-          lineHeight: look.line.body,
-          color: colours.text.light,
-        }}
-      >
-        {props.body}
-      </Text>
-      <table
-        role="presentation"
-        cellPadding={0}
-        cellSpacing={0}
-        border={0}
-        style={{ marginTop: "24px", borderCollapse: "separate" }}
-      >
-        <tbody>
-          <tr>
-            <td
-              className="e-button"
-              style={{
-                backgroundColor: colours.primary.light,
-                borderRadius: "6px",
-              }}
-            >
-              <Button
-                href={props.link}
-                className="e-button"
-                style={{
-                  fontFamily: look.font,
-                  display: "inline-block",
-                  boxSizing: "border-box",
-                  padding: "12px 24px",
-                  fontSize: "16px",
-                  lineHeight: "20px",
-                  fontWeight: 600,
-                  color: colours.onPrimary.light,
-                  backgroundColor: colours.primary.light,
-                  textDecoration: "none",
-                  borderRadius: "6px",
-                }}
-              >
-                {texts.button}
-              </Button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <Text
-        className="e-muted"
-        style={{
-          fontFamily: look.font,
-          margin: "28px 0 0",
-          fontSize: "13px",
-          lineHeight: look.line.small,
-          color: colours.muted.light,
-        }}
-      >
+    <Layout language={language} preheader={props.body} footer={props.footer}>
+      <Heading language={language}>{props.title}</Heading>
+      <Paragraph language={language}>{props.body}</Paragraph>
+      <Button language={language} href={props.link}>
+        {texts.button}
+      </Button>
+      <Fallback language={language} href={props.link}>
         {texts.fallback}
-      </Text>
-      <Text
-        dir="ltr"
-        style={{
-          fontFamily: look.font,
-          margin: "4px 0 0",
-          fontSize: "13px",
-          lineHeight: "18px",
-          textAlign: look.align,
-          wordBreak: "break-all",
-        }}
-      >
-        <Link
-          href={props.link}
-          className="e-link"
-          style={{ color: colours.primary.light, textDecoration: "underline" }}
-        >
-          {props.link}
-        </Link>
-      </Text>
+      </Fallback>
     </Layout>
   );
 }

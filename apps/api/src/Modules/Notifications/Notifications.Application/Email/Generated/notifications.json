@@ -4,7 +4,7 @@
       "member.role_changed": {
         "title": "Your role in {{tenantName}} changed",
         "body": "{{actorName}} changed your role from {{oldRoleName}} to {{newRoleName}}.",
-        "footer": "You got this email because your access to an organisation changed.",
+        "footer": "You received this because your role in {{tenantName}} changed.",
         "without": {
           "actorName": {
             "body": "The platform changed your role from {{oldRoleName}} to {{newRoleName}}."
@@ -128,7 +128,7 @@
       "member.role_changed": {
         "title": "{{tenantName}} kuruluşundaki rolünüz değişti",
         "body": "{{actorName}} rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi.",
-        "footer": "Bu e-postayı, bir kuruluştaki erişiminiz değiştiği için aldınız.",
+        "footer": "Bu e-postayı, {{tenantName}} kuruluşundaki rolünüz değiştiği için aldınız.",
         "without": {
           "actorName": {
             "body": "Platform, rolünüzü {{oldRoleName}} rolünden {{newRoleName}} rolüne değiştirdi."
@@ -252,7 +252,7 @@
       "member.role_changed": {
         "title": "تغيّر دورك في {{tenantName}}",
         "body": "غُيّر دورك من {{oldRoleName}} إلى {{newRoleName}} بواسطة {{actorName}}.",
-        "footer": "وصلتك هذه الرسالة لأن صلاحية وصولك إلى مؤسسة تغيّرت.",
+        "footer": "وصلتك هذه الرسالة لأن دورك في {{tenantName}} تغيّر.",
         "without": {
           "actorName": {
             "body": "غيّرت المنصة دورك من {{oldRoleName}} إلى {{newRoleName}}."

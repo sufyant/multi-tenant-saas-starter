@@ -10,10 +10,11 @@
   },
   "deletionWarning": {
     "subject": "{tenantName} {purgesOn} tarihinde silinecek",
-    "preheader": "Kuruluş kapatıldı. Bu tarihten önce yeniden açmak için bize ulaşın.",
+    "preheader": "Kuruluş kapatıldı. Bu tarihten önce yeniden açmak için destekle iletişime geçin.",
     "heading": "{tenantName} kapatıldı.",
     "body": "{purgesAt} itibarıyla tüm verileriyle birlikte silinecek.",
-    "contact": "Bu tarihten önce yeniden açmak için <link>bize ulaşın</link>.",
+    "contact": "Bu tarihten önce yeniden açmak için destekle iletişime geçin.",
+    "button": "Destekle iletişime geçin",
     "footer": "Bu e-postayı, {tenantName} kuruluşunun Sahibi olduğunuz için aldınız."
   },
   "account": {
@@ -84,7 +85,7 @@
           "body": "Platform, rolünüzü {oldRoleName} rolünden {newRoleName} rolüne değiştirdi."
         }
       },
-      "footer": "Bu e-postayı, bir kuruluştaki erişiminiz değiştiği için aldınız."
+      "footer": "Bu e-postayı, {tenantName} kuruluşundaki rolünüz değiştiği için aldınız."
     },
     "member.removed": {
       "title": "{tenantName} kuruluşundan çıkarıldınız",

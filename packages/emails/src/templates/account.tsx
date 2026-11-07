@@ -1,8 +1,6 @@
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
-import { Heading, Link, Text } from "react-email";
-import { colours } from "../layout/colours";
-import { Layout, lookOf } from "../layout/layout";
+import { Code, Heading, InlineLink, Layout, Paragraph } from "../layout/layout";
 import { format, linkParts, messages, withoutLinkTags } from "../texts";
 
 /**
@@ -61,72 +59,29 @@ export function accountEmailText(props: AccountEmailProps): string {
   ].join("\n\n");
 }
 
-/** An email about the person's own account (the email boards). */
+/** An email about the person's own account, in the layout of every email. */
 export function AccountEmail(props: AccountEmailProps) {
   const texts = textsOf(props);
-  const look = lookOf(props.language);
-  const paragraph = {
-    fontFamily: look.font,
-    fontSize: "16px",
-    lineHeight: look.line.body,
-    color: colours.text.light,
-  };
+  const { language } = props;
   const [before, link, after] = hasLink(texts.body)
     ? linkParts(texts.body)
     : [texts.body, "", ""];
   return (
     <Layout
-      language={props.language}
+      language={language}
       preheader={texts.preheader}
       footer={texts.footer}
     >
-      <Heading
-        as="h1"
-        className="e-text"
-        style={{
-          fontFamily: look.font,
-          margin: 0,
-          fontSize: "22px",
-          lineHeight: look.line.heading,
-          fontWeight: 600,
-          color: colours.text.light,
-        }}
-      >
-        {texts.heading}
-      </Heading>
-      <Text className="e-text" style={{ ...paragraph, margin: "12px 0 0" }}>
+      <Heading language={language}>{texts.heading}</Heading>
+      <Paragraph language={language}>
         {before}
         {link === "" ? null : (
-          <Link
-            href={props.supportUrl}
-            className="e-link"
-            style={{
-              color: colours.primary.light,
-              textDecoration: "underline",
-            }}
-          >
-            {link}
-          </Link>
+          <InlineLink href={props.supportUrl}>{link}</InlineLink>
         )}
         {after}
-      </Text>
+      </Paragraph>
       {props.verificationCode === undefined ? null : (
-        <Text
-          className="e-text"
-          dir="ltr"
-          style={{
-            ...paragraph,
-            margin: "24px 0 0",
-            fontFamily:
-              "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-            fontSize: "32px",
-            lineHeight: "40px",
-            fontWeight: 600,
-            letterSpacing: "8px",
-          }}
-        >
-          {props.verificationCode}
-        </Text>
+        <Code language={language}>{props.verificationCode}</Code>
       )}
     </Layout>
   );

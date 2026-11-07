@@ -11,7 +11,6 @@
       @media (prefers-color-scheme: dark) {
         .e-canvas { background-color: #232220 !important; }
         .e-card { background-color: #1c1b19 !important; border-color: #2e2c29 !important; }
-        .e-rule { border-color: #2e2c29 !important; }
         .e-text { color: #eeece8 !important; }
         .e-muted { color: #a29e96 !important; }
         .e-link { color: #5a5fdb !important; }
@@ -50,7 +49,7 @@
                 <tr>
                   <td
                     class="e-canvas"
-                    style="padding:40px 0;background-color:#f3f2ee">
+                    style="padding:40px 16px;background-color:#f3f2ee">
                     <table
                       align="center"
                       width="100%"
@@ -58,7 +57,7 @@
                       cellpadding="0"
                       cellspacing="0"
                       role="presentation"
-                      style="max-width:600px;width:100%">
+                      style="max-width:562px;width:100%">
                       <tbody>
                         <tr style="width:100%">
                           <td>
@@ -68,27 +67,25 @@
                               cellpadding="0"
                               cellspacing="0"
                               border="0"
-                              style="border-collapse:collapse">
+                              style="border-collapse:separate">
                               <tbody>
                                 <tr>
                                   <td
-                                    class="e-text"
-                                    style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;text-align:right;padding:0 4px 16px;font-size:18px;line-height:24px;font-weight:600;color:#1c1b19">
-                                    Starter
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td
                                     class="e-card"
-                                    style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;text-align:right;background-color:#ffffff;border:1px solid #e8e6e1;border-radius:8px;padding:40px">
+                                    style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;text-align:right;background-color:#ffffff;border:1px solid #e8e6e1;border-radius:8px;padding:32px">
+                                    <p
+                                      class="e-text"
+                                      style="font-size:14px;line-height:20px;margin:0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Roboto, Helvetica, Arial, sans-serif;font-weight:500;color:#1c1b19;margin-top:0;margin-bottom:0;margin-left:0;margin-right:0">
+                                      Starter
+                                    </p>
                                     <h1
                                       class="e-text"
-                                      style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;margin:0;font-size:22px;line-height:36px;font-weight:600;color:#1c1b19">
+                                      style="margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;font-size:22px;line-height:34px;font-weight:600;color:#1c1b19">
                                       تم تغيير عنوان بريدك الإلكتروني
                                     </h1>
                                     <p
                                       class="e-text"
-                                      style="font-size:16px;line-height:28px;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;color:#1c1b19;margin:12px 0 0;margin-top:12px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      style="font-size:14px;line-height:24px;margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;color:#1c1b19;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
                                       تم تغيير عنوان بريدك الإلكتروني إلى
                                       {{newEmail}}. إن لم تكن أنت،
                                       <a
@@ -99,24 +96,12 @@
                                         >تواصل معنا</a
                                       >.
                                     </p>
-                                    <table
-                                      role="presentation"
-                                      width="100%"
-                                      cellpadding="0"
-                                      cellspacing="0"
-                                      border="0"
-                                      style="margin-top:32px;border-collapse:collapse">
-                                      <tbody>
-                                        <tr>
-                                          <td
-                                            class="e-rule e-muted"
-                                            style="font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;text-align:right;border-top:1px solid #e8e6e1;padding-top:20px;font-size:12px;line-height:20px;color:#69655d">
-                                            وصلتك هذه الرسالة لأن هذا العنوان
-                                            كان عنوان البريد الإلكتروني لحسابك.
-                                          </td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
+                                    <p
+                                      class="e-muted"
+                                      style="font-size:13px;line-height:22px;margin:16px 0 0;font-family:-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Tahoma, &#x27;Geeza Pro&#x27;, Arial, sans-serif;color:#69655d;margin-top:16px;margin-right:0;margin-bottom:0;margin-left:0">
+                                      وصلتك هذه الرسالة لأن هذا العنوان كان
+                                      عنوان البريد الإلكتروني لحسابك.
+                                    </p>
                                   </td>
                                 </tr>
                               </tbody>

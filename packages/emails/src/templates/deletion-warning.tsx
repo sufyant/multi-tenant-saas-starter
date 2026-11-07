@@ -1,9 +1,7 @@
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
-import { Heading, Link, Text } from "react-email";
-import { colours } from "../layout/colours";
-import { Layout, lookOf } from "../layout/layout";
-import { format, linkParts, messages, withoutLinkTags } from "../texts";
+import { Button, Heading, Layout, Paragraph } from "../layout/layout";
+import { format, messages } from "../texts";
 
 /** The values of the warning before a closed tenant's purge. The render script passes a placeholder for each, which the API fills. */
 export type DeletionWarningProps = {
@@ -29,6 +27,7 @@ const textsOf = ({
     heading: format(texts.heading, values),
     body: format(texts.body, values),
     contact: texts.contact,
+    button: texts.button,
     footer: format(texts.footer, values),
   };
 };
@@ -36,63 +35,36 @@ const textsOf = ({
 export const deletionWarningSubject = (props: DeletionWarningProps): string =>
   textsOf(props).subject;
 
-/** The plain-text part: the same texts in the same order, the brand first, the contact sentence and the support address under it. */
+/** The plain-text part: the same texts in the same order, the brand first, the button as its label, a colon and the support address. */
 export function deletionWarningText(props: DeletionWarningProps): string {
   const texts = textsOf(props);
   return [
     brand.name,
     texts.heading,
     texts.body,
-    `${withoutLinkTags(texts.contact)}\n${props.supportUrl}`,
+    texts.contact,
+    `${texts.button}:\n${props.supportUrl}`,
     texts.footer,
   ].join("\n\n");
 }
 
-/** The warning to each Owner before a closed tenant's purge (the email boards). */
+/** The warning to each Owner before a closed tenant's purge (13.07, 13.14). */
 export function DeletionWarning(props: DeletionWarningProps) {
   const texts = textsOf(props);
-  const look = lookOf(props.language);
-  const [before, contact, after] = linkParts(texts.contact);
-  const paragraph = {
-    fontFamily: look.font,
-    fontSize: "16px",
-    lineHeight: look.line.body,
-    color: colours.text.light,
-  };
+  const { language } = props;
   return (
     <Layout
-      language={props.language}
+      language={language}
       preheader={texts.preheader}
       footer={texts.footer}
     >
-      <Heading
-        as="h1"
-        className="e-text"
-        style={{
-          fontFamily: look.font,
-          margin: 0,
-          fontSize: "22px",
-          lineHeight: look.line.heading,
-          fontWeight: 600,
-          color: colours.text.light,
-        }}
-      >
-        {texts.heading}
-      </Heading>
-      <Text className="e-text" style={{ ...paragraph, margin: "12px 0 0" }}>
-        {texts.body}
-      </Text>
-      <Text className="e-text" style={{ ...paragraph, margin: "16px 0 0" }}>
-        {before}
-        <Link
-          href={props.supportUrl}
-          className="e-link"
-          style={{ color: colours.primary.light, textDecoration: "underline" }}
-        >
-          {contact}
-        </Link>
-        {after}
-      </Text>
+      <Heading language={language}>{texts.heading}</Heading>
+      <Paragraph language={language}>
+        {texts.body} {texts.contact}
+      </Paragraph>
+      <Button language={language} href={props.supportUrl}>
+        {texts.button}
+      </Button>
     </Layout>
   );
 }

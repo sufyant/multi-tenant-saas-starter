@@ -128,7 +128,8 @@ const emails: Email[] = [
 const apiPlaceholders = (text: string) =>
   text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
 
-// A type's title and body, its texts without each optional value, which may keep the main title (U2), and the footer of its email (U5).
+// A type's title and body, its texts without each optional value, which may keep the main title (U2), and the footer of its email, which
+// may name a value the type always has (U5).
 type NotificationTexts = {
   title?: string;
   body: string;
@@ -138,7 +139,9 @@ type NotificationTexts = {
 const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
   ...(texts.title === undefined ? {} : { title: apiPlaceholders(texts.title) }),
   body: apiPlaceholders(texts.body),
-  ...(texts.footer === undefined ? {} : { footer: texts.footer }),
+  ...(texts.footer === undefined
+    ? {}
+    : { footer: apiPlaceholders(texts.footer) }),
   ...(texts.without === undefined
     ? {}
     : {
