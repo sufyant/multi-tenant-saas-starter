@@ -93,7 +93,7 @@ test("Screenshot_Profile_TurkishLightTablet", async ({ page }) => {
   await page.setViewportSize({ width: 834, height: 1112 });
   await mockApi(page, Language.Tr);
 
-  await page.goto(`/${northwind.slug}/settings/profile`);
+  await page.goto("/settings/profile");
   await page
     .getByRole("main")
     .getByRole("heading", { level: 1, name: "Profil" })
@@ -883,6 +883,48 @@ const sendInvitation = (email: string, says: string) => async (page: Page) => {
   await page.getByText(says, { exact: true }).first().waitFor();
 };
 
+/** The person is in no organisation: ListMyTenants answers none, and GetMe names the frame's Lena Fischer (5.11, 6.33, 2.45). */
+const withoutAnOrganisation = async (page: Page) => {
+  await memberOf([])(page);
+  await lena(page);
+};
+
+/** ListMembers filtered by the Owner role answers `count` Owners: the read that tells whether the viewer is the last Owner (8.46). */
+const ownersAre = (count: number) => (page: Page) =>
+  page.route(`**/api/v1/tenants/${northwind.id}/members?*`, (route) =>
+    new URL(route.request().url()).searchParams.get("roleId") ===
+    builtInRoles.owner.id
+      ? route.fulfill({
+          json: { items: [], page: 1, pageSize: 1, total: count },
+        })
+      : route.fallback(),
+  );
+
+/** LeaveTenant answers success, and ListMyTenants answers none from then on (8.24); or the given problem (8.25). */
+const leaveAnswers =
+  (refusal?: { status: number; code: ErrorCode }) => async (page: Page) => {
+    let left = false;
+    await page.route(
+      `**/api/v1/tenants/${northwind.id}/membership`,
+      (route) => {
+        if (refusal)
+          return route.fulfill({
+            status: refusal.status,
+            json: { ...refusal, title: "Refused", traceId: "00-e2e" },
+          });
+        left = true;
+        return route.fulfill({ status: 204 });
+      },
+    );
+    await page.route("**/api/v1/me/tenants*", (route) =>
+      left
+        ? route.fulfill({
+            json: { items: [], page: 1, pageSize: 100, total: 0 },
+          })
+        : route.fallback(),
+    );
+  };
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -1041,26 +1083,26 @@ const shellShots: {
   {
     file: "5.01-profile-en-light-desktop",
     size: "desktop",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: showTheme,
   },
   {
     file: "5.08-profile-en-light-tablet",
     size: "tablet",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: showTheme,
   },
   {
     file: "5.09-profile-en-light-phone",
     size: "phone",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: showTheme,
   },
   {
     file: "5.07-profile-en-dark-desktop",
     size: "desktop",
     scheme: "dark",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: async (page) => {
       await page.getByRole("radio", { name: "Dark" }).click();
       await showTheme(page);
@@ -1070,27 +1112,99 @@ const shellShots: {
     file: "5.10-profile-ar-light-desktop",
     size: "desktop",
     language: Language.Ar,
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: showTheme,
   },
   {
     file: "5.02-profile-edited-en-light-desktop",
     size: "desktop",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: editName,
   },
   {
     file: "5.03-profile-name-empty-en-light-desktop",
     size: "desktop",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     open: emptyName,
   },
   {
     file: "5.04-profile-saved-en-light-desktop",
     size: "desktop",
-    path: `${settings}/profile`,
+    path: "/settings/profile",
     mock: (page) => mockRename(page, Language.En),
     open: saveName,
+  },
+  // The pages without an organisation (5.11 to 5.14, 6.33 to 6.35, 2.45): Lena Fischer is in no organisation.
+  {
+    file: "5.11-profile-no-organisation-en-light-desktop",
+    size: "desktop",
+    fullPage: true,
+    path: "/settings/profile",
+    mock: withoutAnOrganisation,
+  },
+  {
+    file: "5.12-profile-no-organisation-en-light-phone",
+    size: "phone",
+    path: "/settings/profile",
+    mock: withoutAnOrganisation,
+  },
+  {
+    file: "5.13-profile-no-organisation-en-dark-desktop",
+    size: "desktop",
+    fullPage: true,
+    scheme: "dark",
+    path: "/settings/profile",
+    mock: withoutAnOrganisation,
+    open: (page) => page.getByRole("radio", { name: "Dark" }).click(),
+  },
+  {
+    file: "5.14-profile-no-organisation-ar-light-desktop",
+    size: "desktop",
+    fullPage: true,
+    language: Language.Ar,
+    path: "/settings/profile",
+    mock: withoutAnOrganisation,
+  },
+  {
+    file: "6.33-account-no-organisation-en-light-desktop",
+    size: "desktop",
+    fullPage: true,
+    path: "/settings/account",
+    mock: async (page) => {
+      await withoutAnOrganisation(page);
+      await fullState(page);
+    },
+    open: otherSessionsShown,
+  },
+  {
+    file: "6.34-account-no-organisation-en-light-phone",
+    size: "phone",
+    fullPage: true,
+    path: "/settings/account",
+    mock: async (page) => {
+      await withoutAnOrganisation(page);
+      await fullState(page);
+    },
+    open: otherSessionsShown,
+  },
+  {
+    file: "6.35-account-no-organisation-en-dark-desktop",
+    size: "desktop",
+    fullPage: true,
+    scheme: "dark",
+    path: "/settings/account",
+    mock: async (page) => {
+      await withoutAnOrganisation(page);
+      await fullState(page);
+    },
+    open: otherSessionsShown,
+  },
+  {
+    file: "2.45-settings-drawer-no-organisation-en-light-phone",
+    size: "phone",
+    path: "/settings/profile",
+    mock: withoutAnOrganisation,
+    open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
   // The Dates and times pattern: a time's line on hover, the city and its offset (F18, F60).
   {
@@ -1111,7 +1225,7 @@ const shellShots: {
     file: "6.01-account-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: otherSessionsShown,
   },
@@ -1119,7 +1233,7 @@ const shellShots: {
     file: "6.05-account-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: (page) => mockIdentity(page, {}),
     open: sessionsShown,
   },
@@ -1128,7 +1242,7 @@ const shellShots: {
     fullPage: true,
     size: "desktop",
     scheme: "dark",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: otherSessionsShown,
   },
@@ -1136,21 +1250,21 @@ const shellShots: {
     file: "6.07-account-en-light-phone",
     fullPage: true,
     size: "phone",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: otherSessionsShown,
   },
   {
     file: "6.08-change-email-en-light-desktop",
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: changeEmail(),
   },
   {
     file: "6.09-email-code-en-light-desktop",
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: changeEmail("ayse.demir@northwind-traders.example"),
   },
@@ -1159,7 +1273,7 @@ const shellShots: {
     file: "6.25-two-step-set-up-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: settableState,
     open: setUp(),
   },
@@ -1167,7 +1281,7 @@ const shellShots: {
     file: "6.26-backup-codes-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: settableState,
     open: setUp(1),
   },
@@ -1175,7 +1289,7 @@ const shellShots: {
     file: "6.27-two-step-on-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: settableState,
     open: setUp(2),
   },
@@ -1183,7 +1297,7 @@ const shellShots: {
     file: "6.19-export-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: exportData(),
   },
@@ -1191,7 +1305,7 @@ const shellShots: {
     file: "6.20-export-requested-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: exportData(true),
   },
@@ -1199,7 +1313,7 @@ const shellShots: {
     file: "6.21-export-ready-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: async (page) => {
       await fullState(page);
       await mockDataExport(page, readyExport);
@@ -1210,7 +1324,7 @@ const shellShots: {
     file: "6.22-delete-refused-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: deleteAccount(true),
   },
@@ -1218,7 +1332,7 @@ const shellShots: {
     file: "6.23-delete-code-en-light-desktop",
     fullPage: true,
     size: "desktop",
-    path: `${settings}/account`,
+    path: "/settings/account",
     mock: fullState,
     open: deleteAccount(false),
   },
@@ -1431,6 +1545,77 @@ const shellShots: {
     open: async (page) => {
       await openRowMenu("Omar Haddad")(page);
       await page.getByRole("menuitem", { name: "Change role" }).hover();
+    },
+  },
+  // 8.18: the own row offers Change role and Leave. The frame's team has one Owner, so the shot answers two, as the frame draws
+  // Leave enabled; 8.46 draws the one Owner.
+  {
+    file: "8.18-own-row-actions-en-light-desktop",
+    size: "desktop",
+    hovers: true,
+    path: members,
+    team: northwindTeam(),
+    mock: ownersAre(2),
+    open: async (page) => {
+      await openRowMenu("Ayşe Demir")(page);
+      await page.getByRole("menuitem", { name: "Leave organisation" }).hover();
+    },
+  },
+  {
+    file: "8.46-own-row-actions-last-owner-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: async (page) => {
+      await openRowMenu("Ayşe Demir")(page);
+      await page
+        .getByText("You are the last Owner.", { exact: false })
+        .waitFor();
+    },
+  },
+  {
+    file: "8.23-leave-organisation-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Lena Fischer", "Leave organisation"),
+  },
+  {
+    file: "8.24-left-no-access-yet-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+    path: members,
+    team: northwindTeam(),
+    mock: leaveAnswers(),
+    open: async (page) => {
+      await rowDialog("Lena Fischer", "Leave organisation")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Leave organisation" })
+        .click();
+      await page.getByRole("heading", { name: "No access yet" }).waitFor();
+      await page.getByText("You left Northwind Traders").first().waitFor();
+    },
+  },
+  {
+    file: "8.25-leave-last-owner-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    mock: async (page) => {
+      await ownersAre(2)(page);
+      await leaveAnswers({ status: 409, code: ErrorCode.MemberLastOwner })(
+        page,
+      );
+    },
+    open: async (page) => {
+      await rowDialog("Ayşe Demir", "Leave organisation")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Leave organisation" })
+        .click();
+      await page.getByRole("button", { name: "Close" }).first().waitFor();
     },
   },
   {

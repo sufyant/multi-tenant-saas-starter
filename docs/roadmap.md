@@ -203,6 +203,9 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - The email button and the bell's link of the `account_security` type lead to `/settings/account`.
 - Account and security's `user.last_owner` text ends as Leave's does: "Make another member an Owner first, or contact support to close the organisation.", with "contact support" linking to `brand.json`'s `supportUrl`, in three languages (the maintainer's decision of 2026-11-07).
 - The Leave flow: 8.18, 8.23, 8.25 and the "You left" notice of 8.24. It waits for 37a-backend-leave (the maintainer's decision of 2026-11-07).
+- Settings in the organisation's shell opens General, because Profile opens without an organisation (the maintainer's decision of 2026-11-07).
+- A notification of the kind `start`, or of a kind the web does not know, stays in the open organisation and leads to its Home: the bug of staging, where the shell unmounted.
+- Done.
 
 37a-shared-components, one Figma component for each shared part (the maintainer's decisions of 2026-11-07):
 
