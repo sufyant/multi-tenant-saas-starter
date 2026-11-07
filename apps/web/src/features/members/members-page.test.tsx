@@ -697,15 +697,17 @@ describe("MembersPage", () => {
     );
 
     renderInTenant(<MembersPage />);
-    expect(await (await table()).findByText("Person 50")).toBeInTheDocument();
-    expect((await table()).queryByText("Person 51")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Load more" }));
+    // Sixty rows of buttons make a role query slow on a busy runner: the table is found once, the rest by text.
+    const rows = await table();
+    expect(await rows.findByText("Person 50")).toBeInTheDocument();
+    expect(rows.queryByText("Person 51")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("Load more"));
 
-    expect(await (await table()).findByText("Person 60")).toBeInTheDocument();
-    expect(screen.getByText("10 more members loaded.")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Load more" }),
-    ).not.toBeInTheDocument();
+      await screen.findByText("10 more members loaded."),
+    ).toBeInTheDocument();
+    expect(rows.getByText("Person 60")).toBeInTheDocument();
+    expect(screen.queryByText("Load more")).not.toBeInTheDocument();
     expect(listRequests(requests).map((params) => params.get("page"))).toEqual([
       "1",
       "2",
@@ -1057,7 +1059,7 @@ describe("MembersPage", () => {
     );
   });
 
-  // 8.41, 8.08, 8.12: the file of the list as it is, under the server's name (D12), then a toast that names it.
+  // 8.41, 8.08, 8.12: the file of the list as it is, under the server's name, then a toast that names it.
   it("MembersPage_Export_SavesTheFileUnderTheServersNameAndSaysSo", async () => {
     const requests: URLSearchParams[] = [];
     server.use(

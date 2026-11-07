@@ -50,7 +50,7 @@ export async function readPage<T>(api: ExportApi, path: string): Promise<T> {
 
 /**
  * An export's answer (the members' file, the Activity log's): the audit command first, and no file when it fails, whose problem
- * passes as it came (F4); then the CSV, written while the rows are read. The name is the one place of the file's name (D12).
+ * passes as it came (F4); then the CSV, written while the rows are read. The name is the one place of the file's name.
  */
 export async function exportFile(
   api: ExportApi,

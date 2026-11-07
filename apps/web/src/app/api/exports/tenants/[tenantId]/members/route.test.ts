@@ -216,7 +216,7 @@ describe("Export members", () => {
     await expect(text(answer)).rejects.toThrow();
   });
 
-  // The file's name has the day in the person's time zone (D12): 23:30 in UTC is already the next day in Istanbul.
+  // The file's name has the day in the person's time zone (the maintainer's decision of 2026-11-07): 23:30 in UTC is already the next day in Istanbul.
   it("ExportMembers_LateUtcEvening_NamesTheFileWithTheNextDayInIstanbul", async () => {
     vi.setSystemTime(new Date("2026-11-07T23:30:00Z"));
     server.use(me("Europe/Istanbul"), tenant, audit(), members(1));

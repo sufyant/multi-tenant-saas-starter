@@ -26,7 +26,7 @@ type Texts = {
 
 /**
  * The members' CSV file (8.08 to 8.16): the list as the screen filters and sorts it, every page, in the reader's language. Its
- * name is `<address>-members-<day>.csv`, the day in the person's time zone, else the browser's, which the screen sends (D12, F18).
+ * name is `<address>-members-<day>.csv`, the day in the person's time zone, else the browser's, which the screen sends (F18).
  */
 export async function membersFile(
   api: ExportApi,

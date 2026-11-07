@@ -254,7 +254,7 @@ describe("apiFetch", () => {
   });
 });
 
-// An export's file (the members' CSV): the web's server names it in Content-Disposition, the browser keeps the name (D12).
+// An export's file (the members' CSV): the web's server names it in Content-Disposition, the browser keeps the name.
 describe("apiDownload", () => {
   const path = `/exports/tenants/${tenantId}/members`;
   const csv = "﻿Name\r\nOmar Haddad\r\n";

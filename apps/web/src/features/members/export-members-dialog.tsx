@@ -19,7 +19,7 @@ export type ExportFilter = {
   roleName: string | undefined;
 };
 
-/** Saves the file under the server's name (D12): the browser makes no second name. */
+/** Saves the file under the server's name (the maintainer's decision of 2026-11-07): the browser makes no second name. */
 function save({ blob, name }: { blob: Blob; name: string }) {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -31,7 +31,7 @@ function save({ blob, name }: { blob: Blob; name: string }) {
 
 /**
  * Export members (8.08, 8.10, 8.12, 8.16): the CSV file of the list as the screen filters and sorts it, from the web's server,
- * which records the export first (D11). `count` is the list's total for the filter. On success the file is saved and a toast
+ * which records the export first. `count` is the list's total for the filter. On success the file is saved and a toast
  * names it; on any failure, a refusal or an answer cut midway, the dialog stays open with the problem's own text (F4).
  */
 export function ExportMembersDialog({

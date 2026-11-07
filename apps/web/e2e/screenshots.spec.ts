@@ -1223,7 +1223,7 @@ const shellShots: {
         ),
       ),
   },
-  // General (7.01 to 7.05). 7.02 is the shell's own skeleton while GetMyTenant comes (D7); 7.03 its problem in the content.
+  // General (7.01 to 7.05). 7.02 is the shell's own skeleton while GetMyTenant comes (the maintainer's decision of 2026-11-07); 7.03 its problem in the content.
   {
     file: "7.01-general-en-light-desktop",
     size: "desktop",

@@ -896,7 +896,7 @@ async function mockTeam(
   });
 }
 
-/** The web's members export (D11): the file under its name, or a problem of the server. */
+/** The web's members export (the maintainer's decision of 2026-11-07): the file under its name, or a problem of the server. */
 export async function mockMembersExport(
   page: Page,
   answer: "file" | "problem",
