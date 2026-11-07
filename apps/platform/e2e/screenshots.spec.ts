@@ -479,7 +479,7 @@ for (const shot of shellShots.map(withDefaults))
 // Clerk: the locked account of 1.07, which a real lock would keep for the setup's user for the rest of the run.
 const toTheCode = async (page: Page) => {
   await page.getByRole("textbox", { name: "Email" }).fill(enrolledUser().email);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("heading", { name: "Check your email" }).waitFor();
 };
 

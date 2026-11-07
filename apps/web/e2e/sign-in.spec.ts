@@ -21,7 +21,7 @@ test("SignIn_EmailCode_ShowsTheCodeStep", async ({ page }) => {
   await page.goto("/sign-in");
 
   await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
 
   await expect(
     page.getByRole("heading", { name: "Check your email" }),
@@ -72,7 +72,7 @@ test("SignIn_Arabic_IsMirroredAndKeepsTheCodeLeftToRight", async ({
   await page
     .getByRole("textbox", { name: "البريد الإلكتروني" })
     .fill(e2eUserEmail());
-  await page.getByRole("button", { name: "متابعة" }).click();
+  await page.getByRole("button", { name: "متابعة", exact: true }).click();
 
   await expect(
     page.getByRole("heading", { name: "تحقّق من بريدك الإلكتروني" }),

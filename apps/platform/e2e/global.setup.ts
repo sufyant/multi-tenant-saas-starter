@@ -57,7 +57,7 @@ setup(
     await expectAccessible(page);
     saveUser({ id, email, secret, backupCodes: await codes.allInnerTexts() });
     await page.getByRole("checkbox").check();
-    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await leaveTwoStep(page, secret);
 
     await clerk.signOut({ page });

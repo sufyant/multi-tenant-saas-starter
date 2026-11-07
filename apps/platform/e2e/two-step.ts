@@ -62,7 +62,7 @@ export async function signInWithEmailCode(
   email: string,
 ): Promise<void> {
   await page.getByRole("textbox", { name: "Email" }).fill(email);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Check your email" }),
   ).toBeVisible();
@@ -81,7 +81,7 @@ export async function passTheChallenge(
   await page
     .getByRole("textbox", { name: "Code" })
     .pressSequentially(await totpCode(secret));
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
 }
 
 /**

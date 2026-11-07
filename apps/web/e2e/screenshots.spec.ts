@@ -1190,7 +1190,7 @@ const asksForASecondFactor = (page: Page) =>
 
 const toTheCodeStep = async (page: Page) => {
   await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("heading", { name: "Check your email" }).waitFor();
 };
 
@@ -1210,7 +1210,7 @@ const signInShots: {
     size: "desktop",
     open: async (page) => {
       await page.getByRole("textbox", { name: "Email" }).fill("ayse@northwind");
-      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
     },
   },
   {
@@ -1222,7 +1222,7 @@ const signInShots: {
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
-      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
       await page.getByRole("button", { name: "Sending the code…" }).waitFor();
     },
   },
@@ -1234,7 +1234,7 @@ const signInShots: {
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
-      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
       await page.getByText("We could not send the code").waitFor();
     },
   },
