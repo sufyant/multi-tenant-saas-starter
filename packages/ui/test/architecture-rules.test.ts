@@ -397,7 +397,7 @@ describe("architecture rules", () => {
     const root = folder({
       "layout.tsx": "",
       "(app)/[tenantSlug]/members/page.tsx": "",
-      "(app)/(shell)/settings/notifications/page.tsx": "",
+      "(app)/(shell)/settings/profile/page.tsx": "",
       "(public)/invitations/accept/page.tsx": "",
       "_parts/a.tsx": "",
       "@modal/default.tsx": "",

@@ -4,9 +4,8 @@ import {
   type InvitationPreviewResponse,
   InvitationResponseState,
 } from "@repo/api-client";
-import { AuthCard } from "@repo/ui/components/auth-layout";
+import { AuthHeading } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
-import { Status } from "@repo/ui/components/status";
 import { formatDate } from "@repo/ui/lib/format-date-time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -17,8 +16,9 @@ type Ended =
   | "notFound";
 
 /**
- * An invitation that cannot be accepted (the AcceptEnded board): expired, withdrawn, already accepted, or a link that does not
- * work. An unknown link says only that; the others name the organisation and who can invite again.
+ * An invitation that cannot be accepted (frame 1.16): expired, withdrawn, already accepted, or a link that does not work. An
+ * expired one names its end date in the person's time zone (F18), in place of the frame's "7 days", and who can invite again; a
+ * withdrawn one has its own text (the roadmap, 37a-frontend-1).
  */
 export function InvitationEnded({
   preview,
@@ -45,30 +45,26 @@ export function InvitationEnded({
       : "",
   };
   const state: Ended = preview?.state ?? "notFound";
-  const tone =
-    state === InvitationResponseState.Accepted ? "success" : "neutral";
   const accepted = state === InvitationResponseState.Accepted;
   return (
-    <AuthCard>
-      <Status tone={tone}>{t(`invitations.${state}Status`)}</Status>
-      <h1 className="text-page-title">{t(`invitations.${state}Title`)}</h1>
-      <p className="text-body text-muted-foreground">
-        {t(`invitations.${state}Text`, values)}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="primary"
-          render={<Link href="/" />}
-          nativeButton={false}
-        >
-          {accepted
-            ? t("invitations.open", values)
-            : t("invitations.goToOrganisations")}
-        </Button>
-        <Button variant="ghost" onClick={onSignOut}>
-          {t("common.signOut")}
-        </Button>
-      </div>
-    </AuthCard>
+    <>
+      <AuthHeading
+        title={t(`invitations.${state}Title`)}
+        text={t(`invitations.${state}Text`, values)}
+      />
+      <Button
+        variant={accepted ? "primary" : "secondary"}
+        className="w-full"
+        render={<Link href="/" />}
+        nativeButton={false}
+      >
+        {accepted
+          ? t("invitations.open", values)
+          : t("invitations.goToOrganisations")}
+      </Button>
+      <Button variant="ghost" className="self-center" onClick={onSignOut}>
+        {t("common.signOut")}
+      </Button>
+    </>
   );
 }

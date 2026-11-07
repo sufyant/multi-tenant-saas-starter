@@ -45,7 +45,12 @@ vi.mock("@clerk/nextjs", () => ({
   }),
   useClerk: () => ({ signOut: clerk.signOut }),
   useSignUp: () => ({ signUp: clerk.signUp }),
+  useSignIn: () => ({
+    signIn: { status: "needs_identifier" },
+    fetchStatus: "idle",
+  }),
 }));
+vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: push.fn,
@@ -108,7 +113,8 @@ function setUp() {
   sessionStorage.clear();
 }
 
-const signInAndBack = "/sign-in?redirect_url=%2Finvitations%2Faccept";
+/** This page without its code: a sign-out comes back here, and the page signs the person in (F44). */
+const acceptPage = "/invitations/accept";
 
 describe("AcceptInvitationPage", () => {
   it("AcceptInvitationPage_KnownPerson_JoinsInOneClickAndOpensTheOrganisation", async () => {
@@ -131,13 +137,15 @@ describe("AcceptInvitationPage", () => {
     const user = userEvent.setup();
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
+    // Frame 1.13: the organisation in the title, who invited and the role under it, and one button.
     expect(
-      await screen.findByRole("heading", {
-        name: "Ayşe Yılmaz invited you to join Northwind Traders",
-      }),
+      await screen.findByRole("heading", { name: "Join Northwind Traders" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Ayşe Yılmaz invited you as a Member."),
     ).toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind Traders" }),
+      screen.getByRole("button", { name: "Accept and continue" }),
     );
 
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
@@ -165,16 +173,14 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     expect(
-      await screen.findByRole("heading", {
-        name: "Ayşe Yılmaz invited you to join Northwind Traders as a Member",
-      }),
+      await screen.findByRole("heading", { name: "Join Northwind Traders" }),
     ).toBeInTheDocument();
     await user.type(
       screen.getByRole("textbox", { name: "Name" }),
       "  Ali Kaya ",
     );
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind Traders" }),
+      screen.getByRole("button", { name: "Accept and continue" }),
     );
 
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
@@ -203,7 +209,7 @@ describe("AcceptInvitationPage", () => {
       "   ",
     );
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind Traders" }),
+      screen.getByRole("button", { name: "Accept and continue" }),
     );
 
     expect(
@@ -238,7 +244,7 @@ describe("AcceptInvitationPage", () => {
       "Ali Kaya",
     );
     await user.click(
-      screen.getByRole("button", { name: "Join Northwind Traders" }),
+      screen.getByRole("button", { name: "Accept and continue" }),
     );
 
     expect(
@@ -247,7 +253,7 @@ describe("AcceptInvitationPage", () => {
   });
 
   it.each([
-    [InvitationResponseState.Expired, "This invitation expired"],
+    [InvitationResponseState.Expired, "This invitation has expired"],
     [InvitationResponseState.Cancelled, "This invitation was withdrawn"],
     [InvitationResponseState.Accepted, "You already accepted this invitation"],
   ])("AcceptInvitationPage_State_%s_SaysItEnded", async (state, title) => {
@@ -263,13 +269,13 @@ describe("AcceptInvitationPage", () => {
       await screen.findByRole("heading", { name: title }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Join Northwind Traders" }),
+      screen.queryByRole("button", { name: "Accept and continue" }),
     ).not.toBeInTheDocument();
   });
 
   // A finished invitation whose custom role was deleted has no role (the API's step r4b).
   it.each([
-    [InvitationResponseState.Expired, "This invitation expired"],
+    [InvitationResponseState.Expired, "This invitation has expired"],
     [InvitationResponseState.Cancelled, "This invitation was withdrawn"],
     [InvitationResponseState.Accepted, "You already accepted this invitation"],
   ])(
@@ -286,7 +292,7 @@ describe("AcceptInvitationPage", () => {
       expect(
         await screen.findByRole("heading", { name: title }),
       ).toBeInTheDocument();
-      expect(screen.queryByText("Your role")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Member/)).not.toBeInTheDocument();
     },
   );
 
@@ -300,9 +306,10 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     expect(
-      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+      await screen.findByText(
+        "Ayşe Yılmaz invited you to join Northwind Traders.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Your role")).not.toBeInTheDocument();
   });
 
   it("AcceptInvitationPage_Pending_ShowsTheExpiryRelativeToExpiresAt", async () => {
@@ -321,7 +328,7 @@ describe("AcceptInvitationPage", () => {
 
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
-    expect(await screen.findByText("in 3 days")).toBeInTheDocument();
+    expect(await screen.findByText("Expires in 3 days")).toBeInTheDocument();
     vi.useRealTimers();
   });
 
@@ -332,7 +339,7 @@ describe("AcceptInvitationPage", () => {
         name: null,
         deleted: null,
       },
-      "Ask the platform to invite you again.",
+      "Ask the platform for a new one.",
     ],
     [
       {
@@ -340,9 +347,9 @@ describe("AcceptInvitationPage", () => {
         name: null,
         deleted: true,
       },
-      "Ask the person who invited you to invite you again.",
+      "Ask the person who invited you for a new one.",
     ],
-    [pending.inviterName, "Ask Ayşe Yılmaz to invite you again."],
+    [pending.inviterName, "Ask Ayşe Yılmaz for a new one."],
   ])(
     "AcceptInvitationPage_ExpiredFromInviter_%j_NamesWhoCanInviteAgain",
     async (inviterName, ask) => {
@@ -360,9 +367,7 @@ describe("AcceptInvitationPage", () => {
       renderWithProviders(<AcceptInvitationPage code={code} />);
 
       expect(
-        await screen.findByText(
-          `The link to join Northwind Traders expired on 9 Oct 2026. ${ask}`,
-        ),
+        await screen.findByText(`It expired on 9 Oct 2026. ${ask}`),
       ).toBeInTheDocument();
     },
   );
@@ -397,12 +402,26 @@ describe("AcceptInvitationPage", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "This invitation is for a different email",
+        name: "This invitation is for another email",
       }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Switch account" }));
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element?.tagName === "P" &&
+          element.textContent ===
+            "You are signed in as ali@northwind.io. Sign in with the email that received the invitation.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go back" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Sign out and continue" }),
+    );
 
-    expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: signInAndBack });
+    expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: acceptPage });
     expect(sessionStorage.getItem("invitation-code")).toBe(code);
   });
 
@@ -435,7 +454,7 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.click(
-      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+      await screen.findByRole("button", { name: "Accept and continue" }),
     );
 
     expect(
@@ -443,9 +462,15 @@ describe("AcceptInvitationPage", () => {
         name: "System admins can’t join an organisation",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Use another account.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Switch account" }));
-    expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: signInAndBack });
+    expect(
+      screen.getByText("Sign in with another email to accept this invitation."),
+    ).toBeInTheDocument();
+    // Frame 1.48: "Need help? Contact support", to the brand's support address.
+    expect(
+      screen.getByRole("link", { name: "Contact support" }),
+    ).toHaveAttribute("href", expect.stringMatching(/^mailto:/));
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: acceptPage });
     expect(sessionStorage.getItem("invitation-code")).toBe(code);
   });
 
@@ -462,7 +487,7 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.click(
-      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+      await screen.findByRole("button", { name: "Accept and continue" }),
     );
 
     expect(
@@ -474,7 +499,7 @@ describe("AcceptInvitationPage", () => {
       screen.getByText("You can join when it is active again."),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Join Northwind Traders" }),
+      screen.queryByRole("button", { name: "Accept and continue" }),
     ).not.toBeInTheDocument();
   });
 
@@ -507,15 +532,27 @@ describe("AcceptInvitationPage", () => {
     expect(decorateUrl).toHaveBeenCalledWith("/invitations/accept");
   });
 
-  it("AcceptInvitationPage_SignedOutWithoutATicket_KeepsTheCodeAndGoesToSignIn", async () => {
+  // The maintainer's decision C of 2026-11-07: the page signs the person in itself, with a title of its own and no names, because
+  // the preview answers only the invited address. The code waits in the tab and goes to no address.
+  it("AcceptInvitationPage_SignedOutWithoutATicket_KeepsTheCodeAndSignsInOnThePage", async () => {
     setUp();
     clerk.isSignedIn = false;
 
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
-    await vi.waitFor(() =>
-      expect(push.replace).toHaveBeenCalledWith(signInAndBack),
-    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "Sign in to accept your invitation",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Use the email that received the invitation."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with Google" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Northwind Traders")).not.toBeInTheDocument();
+    expect(push.replace).not.toHaveBeenCalled();
     expect(sessionStorage.getItem("invitation-code")).toBe(code);
   });
 
@@ -534,7 +571,7 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code="" />);
 
     expect(
-      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+      await screen.findByRole("button", { name: "Accept and continue" }),
     ).toBeInTheDocument();
     expect(previewed).toHaveBeenCalledWith({ code });
   });
@@ -552,14 +589,16 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.click(
-      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+      await screen.findByRole("button", { name: "Accept and continue" }),
     );
 
     expect(
       await screen.findByRole("heading", { name: "Your account is suspended" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("You cannot sign in right now. Contact support."),
+      screen.getByText(
+        "You cannot open your organisations or accept an invitation right now. Your data and your memberships are kept. Contact support if you need to know more.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -576,7 +615,7 @@ describe("AcceptInvitationPage", () => {
     renderWithProviders(<AcceptInvitationPage code={code} />);
 
     await user.click(
-      await screen.findByRole("button", { name: "Join Northwind Traders" }),
+      await screen.findByRole("button", { name: "Accept and continue" }),
     );
 
     expect(

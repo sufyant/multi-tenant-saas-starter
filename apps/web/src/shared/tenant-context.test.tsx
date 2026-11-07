@@ -221,14 +221,14 @@ describe("TenantProvider", () => {
         name: "Atlas Logistics is suspended",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Suspended")).toBeInTheDocument();
     expect(
       screen.getByText(
         "You cannot open this organisation right now. Your data and your membership are kept. Contact your organisation’s Owner if you need to know more.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("atlas-logistics")).toBeInTheDocument();
-    expect(screen.getByText("Admin")).toBeInTheDocument();
+    // Frame 2.13 draws the title, the sentence and the ways out: no status, no address and no role.
+    expect(screen.queryByText("atlas-logistics")).not.toBeInTheDocument();
+    expect(screen.queryByText("Admin")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Sign out" }),
     ).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe("TenantProvider", () => {
       name: "Atlas Logistics is suspended",
     });
     expect(
-      screen.queryByRole("button", { name: "Choose another organisation" }),
+      screen.queryByRole("button", { name: "Go to my organisations" }),
     ).not.toBeInTheDocument();
   });
 
@@ -287,7 +287,7 @@ describe("TenantProvider", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Choose another organisation" }),
+      screen.getByRole("button", { name: "Go to my organisations" }),
     ).toHaveAttribute("href", "/");
   });
 
@@ -426,7 +426,6 @@ describe("TenantProvider", () => {
       expect(
         await screen.findByRole("heading", { name: title }),
       ).toBeInTheDocument();
-      expect(screen.getByText("ali.kaya@gmail.com")).toBeInTheDocument();
     },
   );
 

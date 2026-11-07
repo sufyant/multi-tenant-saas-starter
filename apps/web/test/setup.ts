@@ -2,7 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { dismissToasts } from "@repo/ui/components/toast";
 import { zodErrorMap } from "@repo/ui/lib/zod-error-map";
 import { cleanup, configure } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { z } from "zod";
 
 afterEach(() => {
@@ -40,3 +40,12 @@ document.elementFromPoint ??= () => null;
 
 // The app installs the one Zod error map in its providers (F12); a form under test needs it too.
 z.config({ customError: zodErrorMap });
+
+// Next.js's cookie store exists only in a request; the server actions of the pages write into this fake one.
+vi.mock("next/headers", async () => {
+  const { cookieStore } = await import("./cookies");
+  return { cookies: async () => cookieStore };
+});
+afterEach(async () => {
+  (await import("./cookies")).resetCookies();
+});

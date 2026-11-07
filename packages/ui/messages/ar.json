@@ -55,7 +55,7 @@
     "startTitle": "تعذّر بدء {product}",
     "startText": "تحقّق من اتصالك وأعد تحميل الصفحة. إذا تكرّر ذلك، تواصل مع الدعم.",
     "reload": "إعادة التحميل",
-    "contactSupport": "التواصل مع الدعم",
+    "contactSupport": "تواصل مع الدعم",
     "suspendedOpenTitle": "عُلّقت {organisation}",
     "suspendedOpenText": "لا يمكنك فتحها حتى يُعاد تفعيلها. لم يضِع شيء مما فعلته.",
     "closedOpenTitle": "أُغلقت {organisation}",

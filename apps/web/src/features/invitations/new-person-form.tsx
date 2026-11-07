@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type InvitationPreviewResponse, schemas } from "@repo/api-client";
-import { AuthCard } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { useTranslations } from "next-intl";
@@ -18,7 +17,7 @@ const names = schemas.AcceptInvitationBody.pick({ name: true }).extend({
 
 export type Names = z.infer<typeof names>;
 
-/** A new person types their name before they join (the AcceptNewPerson board): the identity provider keeps none (A7). */
+/** A new person types their name before they join (the AcceptNewPerson board, in frame 1.13's card): the identity provider keeps none (A7). */
 export function NewPersonForm({
   preview,
   email,
@@ -45,8 +44,8 @@ export function NewPersonForm({
     return key && t(key as "validation.required");
   };
   return (
-    <AuthCard>
-      <InvitationHeading preview={preview} withRole />
+    <>
+      <InvitationHeading preview={preview} />
       <p className="text-body text-muted-foreground">
         {t("invitations.newPersonText")}
       </p>
@@ -64,11 +63,10 @@ export function NewPersonForm({
         <Button
           type="submit"
           variant="primary"
-          size="lg"
           className="w-full"
           disabled={pending}
         >
-          {t("invitations.join", { tenant: preview.tenantName })}
+          {t("invitations.accept")}
         </Button>
         {error && (
           <p role="alert" className="text-small text-destructive-text">
@@ -76,11 +74,11 @@ export function NewPersonForm({
           </p>
         )}
       </form>
-      <p className="text-small text-muted-foreground">
+      <p className="text-center text-small text-muted-foreground">
         {t.rich("invitations.joinsWith", {
           email: () => <bdi dir="ltr">{email}</bdi>,
         })}
       </p>
-    </AuthCard>
+    </>
   );
 }

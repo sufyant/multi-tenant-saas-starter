@@ -41,6 +41,8 @@ export type SignInProps = {
   privacyUrl: string;
   /** The app's error tracking: a Clerk error code without a message, once per code (F41, F55). */
   onUnexpectedError?: (error: Error) => void;
+  /** The page after sign-in, a path of this app, in place of the address's `redirect_url`: the invitation's page (F44). */
+  redirectTo?: string;
 };
 
 /** The query parameter that `SsoCallback` sets when an SSO sign-in could not finish. */
@@ -69,6 +71,7 @@ export function SignIn({
   onLanguageChange,
   privacyUrl,
   onUnexpectedError,
+  redirectTo,
 }: SignInProps) {
   const t = useTranslations("signIn");
   const { signIn, fetchStatus } = useSignIn();
@@ -78,6 +81,10 @@ export function SignIn({
   const [resent, setResent] = useState(false);
   const [ended, setEnded] = useState(false);
   const pending = fetchStatus === "fetching";
+  const after = () =>
+    redirectTo
+      ? safeRedirect(redirectTo, window.location.origin)
+      : destination();
   const keyOf = (error: unknown, step: SignInStep) =>
     signInErrorKey(error, step, onUnexpectedError);
 
@@ -94,7 +101,7 @@ export function SignIn({
     const { error } = await signIn.finalize({
       navigate: ({ decorateUrl }) => {
         // decorateUrl may give an absolute address of this origin (Safari's tracking protection), so the browser loads it.
-        window.location.assign(decorateUrl(destination()));
+        window.location.assign(decorateUrl(after()));
       },
     });
     if (error) setError(keyOf(error, "code"));
@@ -148,10 +155,10 @@ export function SignIn({
 
   const sso = async (provider: Provider) => {
     setError(undefined);
-    const back = encodeURIComponent(destination());
+    const back = encodeURIComponent(after());
     const { error } = await signIn.sso({
       strategy: provider,
-      redirectUrl: destination(),
+      redirectUrl: after(),
       redirectCallbackUrl: `/sso-callback?${redirectParameter}=${back}`,
     });
     if (error) setError(keyOf(error, "email"));

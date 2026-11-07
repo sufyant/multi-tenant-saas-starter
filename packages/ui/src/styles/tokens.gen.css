@@ -89,6 +89,7 @@
   --code-slot-width: 44px;
   --code-slot-height: 48px;
   --auth-card-max: 424px;
+  --notice-card-max: 480px;
   --content-max: 1280px;
   --bp-tablet: 768px;
   --bp-desktop: 1280px;
@@ -305,6 +306,7 @@
   --spacing-code-slot-width: var(--code-slot-width);
   --spacing-code-slot-height: var(--code-slot-height);
   --container-auth-card-max: var(--auth-card-max);
+  --container-notice-card-max: var(--notice-card-max);
   --container-content-max: var(--content-max);
 
   --shadow-xs: var(--shadow-xs);

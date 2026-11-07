@@ -98,3 +98,46 @@ test("Organisation_Closed_ShowsItsPage", async ({ page }) => {
   ).toBeVisible();
   await expectAccessible(page);
 });
+
+// Frame 1.18 and the roadmap: an organisation that opened is "last used" on the start page, from a cookie that holds only its
+// slug, which no script of the page can read.
+test("ChooseOrganisation_AfterAnOrganisationOpened_SaysLastUsedFromAnHttpOnlyCookie", async ({
+  page,
+  context,
+}) => {
+  await mockMembers(page);
+  const atlas = {
+    ...northwind,
+    id: "0198f0a2-0000-7000-8000-0000000000b4",
+    slug: "atlas-logistics",
+    name: "Atlas Logistics",
+  };
+  await page.route("**/api/v1/me/tenants*", (route) =>
+    route.fulfill({
+      json: { items: [atlas, northwind], page: 1, pageSize: 100, total: 2 },
+    }),
+  );
+  await open(page, `/${northwind.slug}`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: /Welcome/ }),
+  ).toBeVisible();
+  await expect
+    .poll(async () =>
+      (await context.cookies()).find(
+        (cookie) => cookie.name === "last-organisation",
+      ),
+    )
+    .toMatchObject({
+      value: northwind.slug,
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+    });
+
+  await page.goto("/");
+
+  const links = page.getByRole("main").getByRole("link");
+  await expect(links.first()).toHaveText(/Northwind Traders.*last used/);
+  await expect(links.nth(1)).toHaveText(/Atlas Logistics/);
+  await expectAccessible(page);
+});

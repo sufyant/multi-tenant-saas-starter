@@ -31,13 +31,14 @@
   },
   "organisations": {
     "chooseTitle": "اختر مؤسسة",
-    "chooseText": "أنت عضو في {count, plural, zero {# مؤسسة} one {مؤسسة واحدة} two {مؤسستين} few {# مؤسسات} many {# مؤسسة} other {# مؤسسة}}.",
+    "chooseText": "أنت عضو في {count, plural, zero {# مؤسسة} one {مؤسسة واحدة} two {مؤسستين} few {# مؤسسات} many {# مؤسسة} other {# مؤسسة}}. يمكنك التبديل لاحقًا من الشريط الجانبي.",
     "status": {
       "suspended": "موقوفة",
       "closed": "مغلقة",
       "active": "نشطة",
       "purging": "قيد الحذف"
-    }
+    },
+    "lastUsed": "{role} · آخر استخدام"
   },
   "home": {
     "welcome": "مرحبًا، <name></name>",
@@ -86,10 +87,9 @@
       "platform": "المنصّة",
       "deletedUser": "الشخص الذي دعاك"
     },
-    "invited": "دعاك {inviter} للانضمام إلى {tenant}",
-    "invitedAs": "دعاك {inviter} للانضمام إلى {tenant} بدور {role, select, owner {مالك} admin {مشرف} member {عضو} other {{roleName}}}",
-    "yourRole": "دورك",
-    "expires": "تنتهي",
+    "invited": "دعاك {inviter} للانضمام إلى {tenant}.",
+    "invitedAs": "دعاك {inviter} بدور {role, select, owner {مالك} admin {مشرف} member {عضو} other {{roleName}}}.",
+    "expires": "تنتهي: {when}",
     "join": "انضم إلى {tenant}",
     "joinsWith": "تنضم بالبريد الإلكتروني <email></email>. تعمل الدعوة لهذا العنوان فقط.",
     "newPersonText": "عرّف زملاءك بنفسك. يظهر اسمك في قائمة الأعضاء وفي النشاط.",
@@ -97,27 +97,26 @@
     "joined": "انضممت إلى {tenant}",
     "goToOrganisations": "اذهب إلى مؤسساتي",
     "open": "افتح {tenant}",
-    "expiredStatus": "منتهية",
     "expiredTitle": "انتهت صلاحية هذه الدعوة",
-    "expiredText": "انتهت صلاحية رابط الانضمام إلى {tenant} في {date}. اطلب من {inviter} دعوتك مرة أخرى.",
-    "cancelledStatus": "مسحوبة",
+    "expiredText": "انتهت صلاحيتها في {date}. اطلب من {inviter} دعوة جديدة.",
     "cancelledTitle": "سُحبت هذه الدعوة",
-    "cancelledText": "سُحبت دعوة الانضمام إلى {tenant} أو استُبدلت بدعوة أحدث. ابحث في بريدك عن رسالة أحدث، أو اطلب من {inviter} دعوتك مرة أخرى.",
-    "acceptedStatus": "مقبولة",
+    "cancelledText": "سُحبت أو استُبدلت بدعوة أحدث. ابحث في بريدك عن رسالة أحدث، أو اطلب من {inviter} دعوة جديدة.",
     "acceptedTitle": "قبلت هذه الدعوة من قبل",
     "acceptedText": "أنت عضو في {tenant}. افتحها للمتابعة.",
-    "notFoundStatus": "غير صالح",
     "notFoundTitle": "هذا الرابط لا يعمل",
     "notFoundText": "اطلب دعوة جديدة.",
     "wrongEmailTitle": "هذه الدعوة لبريد إلكتروني آخر",
     "wrongEmailText": "أنت مسجّل الدخول باسم <email></email>. سجّل الدخول بالبريد الذي وصلته الدعوة.",
-    "switchAccount": "تبديل الحساب",
-    "backHome": "العودة إلى الصفحة الرئيسية",
-    "systemAdminStatus": "غير ممكن",
     "systemAdminTitle": "لا يمكن لمسؤولي النظام الانضمام إلى مؤسسة",
-    "systemAdminText": "استخدم حسابًا آخر.",
+    "systemAdminText": "سجّل الدخول ببريد إلكتروني آخر لقبول هذه الدعوة.",
     "tenantSuspendedTitle": "هذه المؤسسة موقوفة",
-    "tenantSuspendedText": "يمكنك الانضمام عندما تعود نشطة."
+    "tenantSuspendedText": "يمكنك الانضمام عندما تعود نشطة.",
+    "signInTitle": "سجّل الدخول لقبول دعوتك",
+    "signInText": "استخدم البريد الإلكتروني الذي وصلته الدعوة.",
+    "accept": "اقبل وتابع",
+    "signOutAndContinue": "سجّل الخروج وتابع",
+    "goBack": "رجوع",
+    "needHelp": "تحتاج إلى مساعدة؟ <link>تواصل مع الدعم</link>"
   },
   "settings": {
     "organisation": "المؤسسة",
@@ -332,21 +331,17 @@
     "suspendedText": "لا يمكنك فتح هذه المؤسسة الآن. بياناتك وعضويتك محفوظة. تواصل مع مالك مؤسستك إذا احتجت إلى معرفة المزيد.",
     "closedTitle": "{organisation} مغلقة",
     "closedText": "أُغلقت هذه المؤسسة ولا يمكن فتحها. بياناتك محفوظة حاليًا. تواصل مع مالك مؤسستك إذا احتجت إلى معرفة المزيد.",
-    "organisation": "المؤسسة",
-    "chooseAnother": "اختر مؤسسة أخرى"
+    "chooseAnother": "اذهب إلى مؤسساتي"
   },
   "account": {
     "user": {
       "suspended": {
-        "status": "معلّق",
         "title": "حسابك معلّق",
-        "text": "لا يمكنك تسجيل الدخول الآن. تواصل مع الدعم.",
-        "action": "تسجيل الخروج"
+        "text": "لا يمكنك فتح مؤسساتك أو قبول دعوة الآن. بياناتك وعضوياتك محفوظة. تواصل مع الدعم إذا احتجت إلى معرفة المزيد."
       },
       "deleted": {
-        "status": "محذوف",
         "title": "حُذف هذا الحساب",
-        "text": "سجّل الدخول ببريد إلكتروني آخر.",
+        "text": "لم يعد بإمكانك استخدامه. للعودة، تحتاج إلى دعوة جديدة.",
         "action": "استخدام بريد آخر"
       }
     }
