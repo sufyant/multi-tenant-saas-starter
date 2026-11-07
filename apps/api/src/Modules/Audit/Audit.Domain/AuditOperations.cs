@@ -18,6 +18,9 @@ public static class AuditOperations
 
     public const string MemberJoined = "member.joined";
 
+    /// <summary>A member left the tenant by themselves.</summary>
+    public const string MemberLeft = "member.left";
+
     public const string MemberRemoved = "member.removed";
 
     public const string MemberRoleChanged = "member.role_changed";

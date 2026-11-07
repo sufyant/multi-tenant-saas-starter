@@ -276,6 +276,7 @@
       "member": {
         "invited": "<actor></actor> دعا شخصًا بدور <role></role>.",
         "joined": "<target></target> انضم إلى المؤسسة.",
+        "left": "<actor></actor> غادر المؤسسة.",
         "removed": "<actor></actor> أزال <target></target> (<role></role>) من المؤسسة.",
         "role_changed": "{actorKind, select, platform {غيّرت} other {غيّر}} <actor></actor> دور <target></target> من <oldRole></oldRole> إلى <newRole></newRole>."
       },

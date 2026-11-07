@@ -490,6 +490,21 @@ internal sealed class Tenant
     }
 
     /// <summary>
+    /// The member leaves the tenant by themselves, under the rule of K1: the last member whose role holds <c>tenant.owners.manage</c>
+    /// stays, so a tenant's only member stays too (A1). The facts are the member's own, read under the tenant's lock (K6j). Returns the
+    /// membership to remove; the caller removes it, with what follows from it (R13).
+    /// </summary>
+    public Result<Membership> Leave(MemberFacts facts)
+    {
+        if (MemberOf(facts) is not { } member)
+        {
+            return Membership.NotFound;
+        }
+
+        return ManagesOwners(facts.Roles.Of(member.RoleId)) && facts.Owners <= 1 ? LastOwner : member;
+    }
+
+    /// <summary>
     /// A system admin's deletion of the user takes the target's membership away (docs/flows/user-deletion.md), under the rule of
     /// <see cref="CheckUserDeletion"/>, asked again under the tenant's lock (K6l). A user who became the tenant's last Owner since the check
     /// stays, and the error names this tenant. The user's address goes from the tenant's invitations of the user, those the user accepted

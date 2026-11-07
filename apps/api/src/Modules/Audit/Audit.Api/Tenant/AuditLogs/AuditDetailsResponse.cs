@@ -9,6 +9,7 @@ namespace Audit.Api.Tenant.AuditLogs;
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "operation")]
 [JsonDerivedType(typeof(MemberInvitedDetailsResponse), AuditDetailsTypes.MemberInvited)]
+[JsonDerivedType(typeof(MemberLeftDetailsResponse), AuditDetailsTypes.MemberLeft)]
 [JsonDerivedType(typeof(MemberRemovedDetailsResponse), AuditDetailsTypes.MemberRemoved)]
 [JsonDerivedType(typeof(MemberRoleChangedDetailsResponse), AuditDetailsTypes.MemberRoleChanged)]
 [JsonDerivedType(typeof(PlanCreatedDetailsResponse), AuditDetailsTypes.PlanCreated)]

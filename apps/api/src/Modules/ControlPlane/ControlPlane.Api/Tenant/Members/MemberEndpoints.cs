@@ -3,6 +3,7 @@ using ControlPlane.Api.Authentication;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.ExportMembers;
+using ControlPlane.Application.Members.LeaveTenant;
 using ControlPlane.Application.Members.ListMembers;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Contracts;
@@ -23,6 +24,9 @@ public static class MemberEndpoints
         tenant.MapPost("/members/export", ExportMembers).RequireAuthorization(Permissions.TenantMembersRead).WithMetadata(new NotPlanGated());
         tenant.MapPatch("/members/{userId:guid}", ChangeMemberRole).RequireAuthorization(Permissions.TenantMembersUpdate).WithMetadata(new NotPlanGated());
         tenant.MapDelete("/members/{userId:guid}", RemoveMember).RequireAuthorization(Permissions.TenantMembersDelete).WithMetadata(new NotPlanGated());
+
+        // Every role reads the tenant's profile, so every member may leave.
+        tenant.MapDelete("/membership", LeaveTenant).RequireAuthorization(Permissions.TenantProfileRead).WithMetadata(new NotPlanGated());
     }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the list to it.
@@ -65,6 +69,11 @@ public static class MemberEndpoints
     // Removing sets a state, so it takes no idempotency key (I1).
     private static async Task<Result> RemoveMember(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         await bus.InvokeAsync<Result>(new RemoveMemberCommand(user.Id(), userId), cancellationToken);
+
+    // The path names the caller's own membership and no user id, so nobody can name another member. Leaving sets a state, so it takes no
+    // idempotency key (I1).
+    private static async Task<Result> LeaveTenant(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
+        await bus.InvokeAsync<Result>(new LeaveTenantCommand(user.Id()), cancellationToken);
 
     private static MemberResponse ToResponse(MemberView member) =>
         new(member.UserId, member.Email, member.Name, RoleEndpoints.ToResponse(member.Role), member.Deleted, member.JoinedAt);
