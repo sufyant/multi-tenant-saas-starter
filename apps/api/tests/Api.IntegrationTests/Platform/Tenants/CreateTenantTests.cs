@@ -13,6 +13,7 @@ using Microsoft.Extensions.Time.Testing;
 using Npgsql;
 using SharedKernel;
 using Tenancy;
+using Wolverine;
 using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform.Tenants;
@@ -643,7 +644,9 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var messages = await _api.TrackMessagesAsync(async () => created = await CreateTenantAsync(admin, slug, owner));
 
         created.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
-        messages.Sent.AllMessages().ShouldBeEmpty();
+        // The host's node answers a command of another node of the message store, such as the leader's agent assignment, with
+        // Wolverine's acknowledgement at any moment, and the tracked session records it. Only the application's own messages count.
+        messages.Sent.AllMessages().Where(message => message.GetType().Assembly != typeof(Envelope).Assembly).ShouldBeEmpty();
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.invitations WHERE email = '{owner}'")).ShouldBe(0);
     }
