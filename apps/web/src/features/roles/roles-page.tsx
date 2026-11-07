@@ -148,7 +148,7 @@ export function RolesPage() {
     ));
 
   const name = (role: RoleDetailResponse) => (
-    <bdi className="block truncate font-medium">{roleName(role)}</bdi>
+    <bdi className="block truncate">{roleName(role)}</bdi>
   );
   const columns: TableColumn<RoleDetailResponse>[] = [
     { key: "name", header: t("roles.name"), render: name },

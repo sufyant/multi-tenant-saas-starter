@@ -1831,21 +1831,24 @@ shellShots.push(
     size: "desktop",
     path: rolePage("Onboarding"),
     team: northwindTeam(),
-    // The viewer holds Role manager, which lacks Onboarding's invitations (F51): GetMyTenant answers its permissions.
-    mock: (page) =>
-      page.route(`**/api/v1/tenants/${northwind.id}`, async (route) => {
-        const answer = await route.fetch();
-        const manager = northwindTeam().customRoles.find(
-          (role) => role.name === "Role manager",
-        );
-        return route.fulfill({
+    // The viewer holds Role manager, which lacks Onboarding's invitations (F51): GetMyTenant answers its role and permissions,
+    // as the team's mock answers the rest.
+    mock: (page) => {
+      const manager = northwindTeam().customRoles.find(
+        (role) => role.name === "Role manager",
+      );
+      return page.route(`**/api/v1/tenants/${northwind.id}`, (route) =>
+        route.fulfill({
           json: {
-            ...(await answer.json()),
+            ...northwind,
             role: { id: manager?.id, name: manager?.name, builtIn: false },
+            createdAt: northwindTeam().createdAt,
+            ...pro,
             permissions: manager?.permissions,
           },
-        });
-      }),
+        }),
+      );
+    },
   },
   {
     file: "12.01-activity-log-en-light-desktop",
