@@ -1,4 +1,5 @@
 import { BuiltInRole, ErrorCode } from "@repo/api-client";
+import { Toaster } from "@repo/ui/components/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -63,7 +64,12 @@ const codeSent = () =>
 
 /** The card on Account and security, which opens without an organisation (`/settings/account`). */
 async function start() {
-  renderWithProviders(<DeleteAccount email="lena@northwind.example" />);
+  renderWithProviders(
+    <>
+      <DeleteAccount email="lena@northwind.example" />
+      <Toaster dir="ltr" closeLabel="Close" regionLabel="Notifications" />
+    </>,
+  );
   await userEvent.click(
     await screen.findByRole("button", { name: "Delete my account" }),
   );

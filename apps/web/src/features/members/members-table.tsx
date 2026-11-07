@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  getListMembersQueryOptions,
   ListMembersSort,
   type MemberResponse,
   Permission,
@@ -24,11 +25,13 @@ import {
 } from "@repo/ui/components/table";
 import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { useCan } from "@/shared/tenant-context";
+import { useCan, useTenant } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";
 import { ChangeRoleDialog } from "./change-role-dialog";
+import { LeaveDialog } from "./leave-dialog";
 import { nameOf } from "./person";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 import { useRoleReach } from "./use-role-reach";
@@ -52,8 +55,9 @@ const header = (icon: LucideIcon, label: string) => (
 
 /**
  * The Members tab's table (8.01): Name with the avatar, Email, Role as a Label, Joined. The rows are every page loaded so far
- * (F9, F10); the header still sorts by Name and Role. The row menu follows F5 and F51; nobody removes themselves. A viewer who
- * may neither change nor remove sees no menu. A disabled item says why.
+ * (F9, F10); the header still sorts by Name and Role. The row menu follows F5 and F51; nobody removes themselves: the person's own
+ * row offers Leave in its place, to every role (8.18). Another row without an action the viewer may take has no menu. A disabled
+ * item says why: the last Owner cannot leave, which ListMembers filtered by the Owner role tells before the click (8.46).
  */
 export function MembersTable({
   rows,
@@ -74,8 +78,21 @@ export function MembersTable({
   const reach = useRoleReach();
   const [changing, setChanging] = useState<MemberResponse | null>(null);
   const [removing, setRemoving] = useState<MemberResponse | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const canChange = can(Permission.TenantMembersUpdate);
   const canRemove = can(Permission.TenantMembersDelete);
+  const { tenant, detail } = useTenant();
+  // Only the Owner role manages Owners (F51), so the viewer is an Owner, and their role is the Owner role. The Owners' total is one
+  // item of the list filtered by that role, read only then.
+  const selfOwner = can(Permission.TenantOwnersManage);
+  const owners = useQuery(
+    getListMembersQueryOptions(
+      tenant.id,
+      { roleId: detail.role.id, pageSize: 1 },
+      { query: { enabled: selfOwner } },
+    ),
+  );
+  const lastOwner = selfOwner && owners.data?.total === 1;
   const nameText = (member: MemberResponse) =>
     nameOf(member) ?? t("members.deletedUser");
   const roleText = (member: MemberResponse) => roleName(member.role);
@@ -142,11 +159,9 @@ export function MembersTable({
   ];
 
   const itemsFor = (member: MemberResponse): RowMenuItem[] => {
-    const self = member.userId === meId;
+    const own = member.userId === meId;
     const changeReason = reach(member.role.id, t("members.changeOwner"));
-    const removeReason = self
-      ? t("members.removeSelf")
-      : reach(member.role.id, t("members.removeOwner"));
+    const removeReason = reach(member.role.id, t("members.removeOwner"));
     const items: RowMenuItem[] = [];
     if (canChange)
       items.push({
@@ -155,15 +170,28 @@ export function MembersTable({
         disabled: changeReason !== null,
         reason: changeReason ?? undefined,
       });
-    if (canChange && canRemove) items.push({ separator: true });
-    if (canRemove)
-      items.push({
-        label: t("members.remove"),
-        tone: "destructive",
-        onSelect: () => setRemoving(member),
-        disabled: removeReason !== null,
-        reason: removeReason ?? undefined,
-      });
+    const last: RowMenuItem | null = own
+      ? {
+          label: t("members.leave"),
+          tone: "destructive",
+          onSelect: () => setLeaving(true),
+          // The Owners' count still loads: the item waits, disabled.
+          disabled: lastOwner || (selfOwner && !owners.data),
+          reason: lastOwner ? t("members.leaveLastOwner") : undefined,
+        }
+      : canRemove
+        ? {
+            label: t("members.remove"),
+            tone: "destructive",
+            onSelect: () => setRemoving(member),
+            disabled: removeReason !== null,
+            reason: removeReason ?? undefined,
+          }
+        : null;
+    if (last) {
+      if (items.length > 0) items.push({ separator: true });
+      items.push(last);
+    }
     return items;
   };
 
@@ -174,16 +202,17 @@ export function MembersTable({
         rows={rows}
         rowKey="userId"
         label={t("members.title")}
-        actions={
-          canChange || canRemove
-            ? (member) => (
-                <RowMenu
-                  label={t("members.actionsFor", { name: nameText(member) })}
-                  items={itemsFor(member)}
-                />
-              )
-            : undefined
-        }
+        actions={(member) => {
+          const items = itemsFor(member);
+          return (
+            items.length > 0 && (
+              <RowMenu
+                label={t("members.actionsFor", { name: nameText(member) })}
+                items={items}
+              />
+            )
+          );
+        }}
         actionsLabel={t("members.actions")}
         cardLead={(member) => <Avatar person={member} className="size-9" />}
         // Every loaded row is on the one page: the list grows with Load more, so the pager never shows (F9, F10).
@@ -211,6 +240,7 @@ export function MembersTable({
           onClose={() => setRemoving(null)}
         />
       )}
+      {leaving && <LeaveDialog onClose={() => setLeaving(false)} />}
     </>
   );
 }

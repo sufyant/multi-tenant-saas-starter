@@ -50,7 +50,7 @@ async function tenantBellWithStream() {
   renderInTenant(
     <>
       <NotificationStream />
-      <TenantBell tenantId={northwind.id} />
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />
       <ServerBar />
     </>,
   );

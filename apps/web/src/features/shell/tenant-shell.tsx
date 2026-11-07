@@ -23,10 +23,8 @@ import { Banner } from "@repo/ui/components/banner";
 import {
   ArrowRightLeftIcon,
   HomeIcon,
-  LockIcon,
   PlusIcon,
   SettingsIcon,
-  UserIcon,
 } from "@repo/ui/components/icon";
 import { OrgSwitcher } from "@repo/ui/components/org-switcher";
 import { Pill } from "@repo/ui/components/pill";
@@ -40,6 +38,7 @@ import { rememberOrganisation } from "@/shared/last-organisation";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
 import { organisationPages } from "@/shared/organisation-pages";
+import { myAccountPages, personalPages } from "@/shared/personal-pages";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
 import { TenantProvider, useTenant } from "@/shared/tenant-context";
@@ -218,20 +217,7 @@ function TenantFrame({
   const base = `/${slug}`;
   const settings = `${base}/settings`;
   const can = known?.can ?? (() => false);
-  const myAccount: NavItem[] = [
-    {
-      id: "profile",
-      label: t("appShell.profile"),
-      icon: UserIcon,
-      href: `${settings}/profile`,
-    },
-    {
-      id: "account",
-      label: t("appShell.accountAndSecurity"),
-      icon: LockIcon,
-      href: `${settings}/account`,
-    },
-  ];
+  const myAccount = myAccountPages(t);
   // Billing and Usage join in step 40, with their permission (the Billing is for billing managers pattern).
   const organisation: NavItem[] = organisationPages
     .filter((page) => can(page.permission))
@@ -351,8 +337,8 @@ function TenantFrame({
           id: "settings",
           label: t("shell.settings"),
           icon: SettingsIcon,
-          // Profile: the first page of Settings that every person can open (F5).
-          href: `${settings}/profile`,
+          // General: the organisation's page of Settings that every role can open (F5). Profile opens without an organisation.
+          href: `${settings}/general`,
         }}
         settingsMenu={
           inSettings
@@ -378,7 +364,13 @@ function TenantFrame({
         }
         current={current}
         bell={(place) =>
-          known && <TenantBell tenantId={known.tenant.id} place={place} />
+          known && (
+            <TenantBell
+              tenantId={known.tenant.id}
+              slug={known.tenant.slug}
+              place={place}
+            />
+          )
         }
         account={(place) =>
           me.data && (
@@ -386,8 +378,8 @@ function TenantFrame({
               name={me.data.name ?? ""}
               email={me.data.email ?? ""}
               person={{ name: me.data.name }}
-              profileHref={`${settings}/profile`}
-              accountAndSecurityHref={`${settings}/account`}
+              profileHref={personalPages.profile}
+              accountAndSecurityHref={personalPages.account}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}
               variant={place}

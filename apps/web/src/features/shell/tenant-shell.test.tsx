@@ -479,7 +479,7 @@ describe("TenantShell", () => {
       const menu = screen.getByRole("navigation", { name: "Main menu" });
       expect(
         within(menu).getByRole("link", { name: "Settings" }),
-      ).toHaveAttribute("href", "/northwind/settings/profile");
+      ).toHaveAttribute("href", "/northwind/settings/general");
       expect(
         screen.getByRole("navigation", { name: "Breadcrumb" }),
       ).toHaveTextContent("Home");

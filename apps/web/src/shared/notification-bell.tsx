@@ -47,18 +47,24 @@ import { useServerReach } from "./server-bar";
 /** The bell inside an organisation: that tenant's notifications and the personal ones (`GET /v1/tenants/{tenantId}/notifications`). */
 export function TenantBell({
   tenantId,
+  slug,
   place,
 }: {
   tenantId: string;
+  /** The organisation's slug: a link that would leave the shell stays in this organisation (`notificationHref`). */
+  slug: string;
   /** Where the shell draws it: a sidebar row, a rail icon or the phone's top bar. */
   place?: BellPlace;
 }) {
-  return <BellOf bell={tenantBell(tenantId)} place={place} />;
+  return <BellOf bell={tenantBell(tenantId)} current={slug} place={place} />;
 }
 
-/** The bell of "No access yet" and Choose an organisation: the personal notifications only (`GET /v1/me/notifications`). */
-export function PersonalBell() {
-  return <BellOf bell={personalBell()} />;
+/**
+ * The bell of "No access yet", Choose an organisation and the pages without an organisation: the personal notifications only
+ * (`GET /v1/me/notifications`).
+ */
+export function PersonalBell({ place }: { place?: BellPlace }) {
+  return <BellOf bell={personalBell()} place={place} />;
 }
 
 /**
@@ -67,7 +73,15 @@ export function PersonalBell() {
  * marks it read and follows its link at once, without waiting for the answer. Mark all as read waits for the answer, then reads
  * the bell again and shows All, or says why it failed (F47). The live stream keeps both current (`notification-stream.tsx`).
  */
-function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
+function BellOf({
+  bell,
+  current,
+  place,
+}: {
+  bell: Bell;
+  current?: string;
+  place?: BellPlace;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations();
@@ -130,7 +144,7 @@ function BellOf({ bell, place }: { bell: Bell; place?: BellPlace }) {
 
   const entryOf = (item: NotificationResponse) => ({
     ...item,
-    href: notificationHref(item.link, tenants.data?.items ?? []),
+    href: notificationHref(item.link, tenants.data?.items ?? [], current),
     organisation: item.tenantName ?? undefined,
     area: item.area,
   });

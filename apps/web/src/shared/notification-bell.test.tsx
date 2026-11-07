@@ -89,7 +89,9 @@ describe("TenantBell", () => {
   it("TenantBell_Count_ReadsTheTenantsUnreadCount", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
 
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
 
     expect(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
@@ -98,7 +100,9 @@ describe("TenantBell", () => {
 
   it("TenantBell_Opened_ListsTheTenantsNotifications", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
@@ -120,7 +124,9 @@ describe("TenantBell", () => {
         page([{ ...joined, tenantName: "Northwind Trading Co." }]),
       ),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
@@ -149,7 +155,9 @@ describe("TenantBell", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
     );
@@ -174,7 +182,9 @@ describe("TenantBell", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
     );
@@ -196,7 +206,9 @@ describe("TenantBell tabs", () => {
       ...tenantAnswers(BuiltInRole.Owner),
       ...tenantBell({ count: 0 }, filters),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
@@ -216,7 +228,9 @@ describe("TenantBell tabs", () => {
       ...tenantAnswers(BuiltInRole.Owner),
       ...tenantBell({ count: 0 }, filters, 0),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications" }),
@@ -235,7 +249,9 @@ describe("TenantBell tabs", () => {
       ...tenantAnswers(BuiltInRole.Owner),
       ...tenantBell({ count: 0 }, filters),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
     );
@@ -255,7 +271,9 @@ describe("TenantBell tabs", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
     );
@@ -272,7 +290,9 @@ describe("TenantBell tabs", () => {
   // The tenant web's line: the organisation, the area and the time; the person who acted stays in the title (3.01).
   it("TenantBell_Opened_ShowsTheOrganisationAndTheAreaWithoutTheActor", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
@@ -297,7 +317,9 @@ describe("TenantBell failures", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
     );
@@ -328,7 +350,9 @@ describe("TenantBell failures", () => {
         ),
       ),
     );
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", { name: "Notifications, 3 unread" }),
     );
@@ -372,7 +396,9 @@ describe("Bell offline", () => {
   it("TenantBell_BrowserSaysOfflineWhileTheCallsAnswer_KeepsMarkAll", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     server.use(...tenantAnswers(BuiltInRole.Owner), ...tenantBell());
-    renderInTenant(<TenantBell tenantId={northwind.id} />);
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
     await userEvent.click(
       await screen.findByRole("button", {
         name: /^Notifications, \d+ unread$/,
