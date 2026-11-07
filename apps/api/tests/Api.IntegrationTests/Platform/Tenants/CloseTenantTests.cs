@@ -183,6 +183,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("RevokeInvitation")]
     [InlineData("ChangeMemberRole")]
     [InlineData("RemoveMember")]
+    [InlineData("LeaveTenant")]
     [InlineData("CreateRole")]
     [InlineData("UpdateRole")]
     [InlineData("DeleteRole")]
@@ -214,6 +215,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     [InlineData("RevokeInvitation")]
     [InlineData("ChangeMemberRole")]
     [InlineData("RemoveMember")]
+    [InlineData("LeaveTenant")]
     [InlineData("CreateRole")]
     [InlineData("UpdateRole")]
     [InlineData("DeleteRole")]
@@ -262,6 +264,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
         "RevokeInvitation" => owner.DeleteAsync($"/v1/tenants/{tenantId}/invitations/{invitation}", Cancellation),
         "ChangeMemberRole" => owner.ChangeMemberRoleAsync(tenantId, member, "admin"),
         "RemoveMember" => owner.RemoveMemberAsync(tenantId, member),
+        "LeaveTenant" => owner.LeaveTenantAsync(tenantId),
         _ => throw new ArgumentOutOfRangeException(nameof(command), command, null),
     };
 
