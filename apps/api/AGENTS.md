@@ -16,7 +16,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
   - `what-the-screens-read.md`: the fields and the endpoints that the tenant web and the platform app read.
   - `user-deletion.md`: a system admin deletes a user, or the user their own account after a code, in steps across the user's tenants.
   - `system-admins.md`: the root system admins from configuration, the system door, and the grant and revocation of system admins.
-  - `member-management.md`: an Owner or an Admin changes a member's role and removes a member.
+  - `member-management.md`: an Owner or an Admin changes a member's role and removes a member, and a member leaves by themselves.
   - `custom-roles.md`: a tenant creates, updates and deletes its own roles.
   - `language-and-time-zone.md`: the languages of the web and the emails, and a user's language and time zone.
   - `reading-the-audit-logs.md`: an Owner, an Admin or a system admin reads an audit log.
