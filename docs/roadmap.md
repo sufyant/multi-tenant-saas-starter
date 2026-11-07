@@ -193,6 +193,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - The design session at the end of 37a draws their frames first.
 - Then 1.19's account menu gets Profile.
 - The email button and the bell's link of the `account_security` type lead to `/settings/account`.
+- Account and security's `user.last_owner` text ends as Leave's does: "Make another member an Owner first, or contact support to close the organisation.", with "contact support" linking to `brand.json`'s `supportUrl`, in three languages (the maintainer's decision of 2026-11-07).
 
 37b, the platform's pages:
 
