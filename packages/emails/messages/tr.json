@@ -6,7 +6,7 @@
     "button": "Daveti kabul et",
     "expiry": "Son geçerlilik: {expiresAt}.",
     "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:",
-    "footer": "Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız görmezden gelebilirsiniz."
+    "footer": "Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız yok sayabilirsiniz."
   },
   "deletionWarning": {
     "subject": "{tenantName} {purgesOn} tarihinde silinecek",
