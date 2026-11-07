@@ -48,6 +48,15 @@ const membersWith = (owners: number, items: MemberResponse[] = people) =>
     return HttpResponse.json({ items, page: 1, pageSize: 20, total });
   });
 
+/** ListMembers whose Owners' total is read at each request: a test changes it while the page is open. */
+const membersCounting = (owners: { count: number }) =>
+  http.get(`*/v1/tenants/${northwind.id}/members`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const total =
+      params.get("roleId") === roleOf.owner.id ? owners.count : people.length;
+    return HttpResponse.json({ items: people, page: 1, pageSize: 20, total });
+  });
+
 /** ListInvitations without a pending one: the Invitations tab's count of an Owner. */
 const noInvitations = http.get(`*/v1/tenants/${northwind.id}/invitations`, () =>
   HttpResponse.json({ items: [], page: 1, pageSize: 20, total: 0 }),
@@ -182,10 +191,45 @@ describe("LeaveDialog", () => {
     expect(
       within(banner).getByRole("link", { name: "contact support" }),
     ).toHaveAttribute("href", "mailto:support@starter.example");
-    expect(
+    await userEvent.click(
       within(refused).getByRole("button", { name: "Close" }),
-    ).toBeInTheDocument();
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  // F47: the refusal says the Owners changed meanwhile, so the list and the Owners' count are read again, and Leave follows (8.46).
+  it("Leave_RefusedLastOwner_ReadsTheOwnersAgainAndDisablesLeave", async () => {
+    const owners = { count: 2 };
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      noInvitations,
+      membersCounting(owners),
+      leaveAnswer(() => {
+        owners.count = 1;
+        return problem(409, ErrorCode.MemberLastOwner);
+      }),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openLeave("Ayşe Yılmaz");
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Leave organisation" }),
+    );
+    const refused = await screen.findByRole("alertdialog", {
+      name: "Leave Northwind Traders?",
+    });
+    await userEvent.click(
+      within(refused).getByRole("button", { name: "Close" }),
+    );
+    const menu = await ownRowMenu("Ayşe Yılmaz");
+
+    const leave = await within(menu).findByRole("menuitem", {
+      name: /Leave organisation/,
+    });
+    await waitFor(() => expect(leave).toHaveAttribute("aria-disabled", "true"));
   });
 
   it("Leave_RefusedOtherwise_SaysWhyInTheDialog", async () => {
