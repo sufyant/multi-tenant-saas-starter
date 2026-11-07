@@ -16,6 +16,10 @@ public sealed class ObjectStorage : IAsyncLifetime
 {
     public const string Bucket = "starter-test";
 
+    // A bucket for the tests of the storage's readiness check alone: every host that answers a readiness check writes under health/ of
+    // its bucket, and the tests that look for what the check left must not see another host's file.
+    public const string HealthBucket = "starter-test-health";
+
     // The identity of apps/api/storage/s3-identities.json: a local key with no secret value.
     private const string AccessKeyId = "local-access-key";
 
@@ -36,9 +40,9 @@ public sealed class ObjectStorage : IAsyncLifetime
     private static AmazonS3Client? Client { get; set; }
 
     // The keys under a prefix, as the bucket holds them.
-    public static async Task<IReadOnlyList<string>> KeysAsync(string prefix)
+    public static async Task<IReadOnlyList<string>> KeysAsync(string prefix, string bucket = Bucket)
     {
-        var page = await Client!.ListObjectsV2Async(new ListObjectsV2Request { BucketName = Bucket, Prefix = prefix });
+        var page = await Client!.ListObjectsV2Async(new ListObjectsV2Request { BucketName = bucket, Prefix = prefix });
         return [.. (page.S3Objects ?? []).Select(file => file.Key).Order(StringComparer.Ordinal)];
     }
 
@@ -63,6 +67,7 @@ public sealed class ObjectStorage : IAsyncLifetime
             new BasicAWSCredentials(AccessKeyId, SecretAccessKey),
             new AmazonS3Config { ServiceURL = endpoint.ToString(), AuthenticationRegion = "auto", ForcePathStyle = true });
         await Client.PutBucketAsync(Bucket);
+        await Client.PutBucketAsync(HealthBucket);
         Settings = new Dictionary<string, string?>
         {
             ["Host:Storage:Endpoint"] = endpoint.ToString(),
