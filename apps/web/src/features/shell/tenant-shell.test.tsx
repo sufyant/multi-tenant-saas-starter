@@ -205,6 +205,23 @@ describe("TenantShell", () => {
     ).toHaveAttribute("href", "/settings/account");
   });
 
+  it("TenantShell_AccountMenu_LeadsToThePagesWithoutAnOrganisation", async () => {
+    server.use(...answers(1));
+    const user = userEvent.setup();
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    await user.click(screen.getByRole("button", { name: /Ayşe Yılmaz/ }));
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu).getByRole("menuitem", { name: "Profile" }),
+    ).toHaveAttribute("href", "/settings/profile");
+    expect(
+      within(menu).getByRole("menuitem", { name: "Account and security" }),
+    ).toHaveAttribute("href", "/settings/account");
+  });
+
   it("TenantShell_Breadcrumb_IsTheOrganisationThenTheHome", async () => {
     server.use(...answers(1));
 

@@ -175,8 +175,8 @@ export function MembersTable({
           label: t("members.leave"),
           tone: "destructive",
           onSelect: () => setLeaving(true),
-          // The Owners' count still loads: the item waits, disabled.
-          disabled: lastOwner || (selfOwner && !owners.data),
+          // The Owners' count still loads: the item waits, disabled. When the count fails, the API decides (8.25).
+          disabled: lastOwner || (selfOwner && owners.isPending),
           reason: lastOwner ? t("members.leaveLastOwner") : undefined,
         }
       : canRemove

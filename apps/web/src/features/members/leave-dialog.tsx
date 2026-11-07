@@ -14,7 +14,7 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { afterRefusal } from "@/shared/refresh";
+import { afterRefusal, refreshMembers } from "@/shared/refresh";
 import { SupportLink } from "@/shared/support-link";
 import { useTenant } from "@/shared/tenant-context";
 
@@ -33,7 +33,12 @@ export function LeaveDialog({ onClose }: { onClose: () => void }) {
 
   const leave = useMutation({
     mutationFn: () => leaveTenant(tenant.id),
-    onError: (error) => afterRefusal(queryClient, tenant.id, error),
+    onError: (error) => {
+      afterRefusal(queryClient, tenant.id, error);
+      // Another Owner left after the list was read: the list and the Owners' count are read again, and Leave follows (F47, 8.46).
+      if (problemOf(error)?.code === ErrorCode.MemberLastOwner)
+        void refreshMembers(queryClient, tenant.id);
+    },
   });
 
   const left = () => {
@@ -57,6 +62,7 @@ export function LeaveDialog({ onClose }: { onClose: () => void }) {
         onOpenChange={(open) => !open && onClose()}
         title={t("members.leaveTitle", { organisation })}
         actionLabel={t("common.close")}
+        onConfirm={onClose}
       >
         <Banner
           tone="destructive"

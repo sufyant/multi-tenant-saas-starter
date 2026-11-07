@@ -113,6 +113,30 @@ describe("TenantBell", () => {
     ).toHaveAttribute("href", "/northwind/settings/members");
   });
 
+  // Inside an organisation a start link stays there: `/` is outside the tenant layout, so the shell would unmount (the bug of staging).
+  it("TenantBell_AStartLink_LeadsToTheOrganisationsHome", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () =>
+        HttpResponse.json({ unread: 1 }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/notifications`, () =>
+        page([removed]),
+      ),
+    );
+    renderInTenant(
+      <TenantBell tenantId={northwind.id} slug={northwind.slug} />,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Notifications, 1 unread" }),
+    );
+
+    expect(
+      await screen.findByRole("link", { name: /You were removed/ }),
+    ).toHaveAttribute("href", "/northwind");
+  });
+
   // The name the API gives with the item, as it was at that moment; the list of organisations may name it otherwise now.
   it("TenantBell_Opened_NamesEachItemsOrganisationAndLeavesTheBody", async () => {
     server.use(
