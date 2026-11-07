@@ -31,13 +31,14 @@
   },
   "organisations": {
     "chooseTitle": "Bir kuruluş seçin",
-    "chooseText": "{count} kuruluşa üyesiniz.",
+    "chooseText": "{count} kuruluşa üyesiniz. Daha sonra kenar çubuğundan geçiş yapabilirsiniz.",
     "status": {
       "suspended": "Askıda",
       "closed": "Kapalı",
       "active": "Etkin",
       "purging": "Siliniyor"
-    }
+    },
+    "lastUsed": "{role} · son kullanılan"
   },
   "home": {
     "welcome": "Hoş geldiniz, <name></name>",
@@ -86,10 +87,9 @@
       "platform": "platform",
       "deletedUser": "sizi davet eden kişi"
     },
-    "invited": "{inviter} sizi {tenant} kuruluşuna katılmaya davet etti",
-    "invitedAs": "{inviter} sizi {tenant} kuruluşuna {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}} olarak katılmaya davet etti",
-    "yourRole": "Rolünüz",
-    "expires": "Bitiş",
+    "invited": "{inviter} sizi {tenant} kuruluşuna katılmaya davet etti.",
+    "invitedAs": "{inviter} sizi {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}} olarak davet etti.",
+    "expires": "Bitiş: {when}",
     "join": "{tenant} kuruluşuna katıl",
     "joinsWith": "<email></email> e-postasıyla katılırsınız. Davet yalnızca bu adres için geçerlidir.",
     "newPersonText": "Ekip arkadaşlarınıza kim olduğunuzu söyleyin. Adınız üye listesinde ve Etkinlik'te görünür.",
@@ -97,27 +97,26 @@
     "joined": "{tenant} kuruluşuna katıldınız",
     "goToOrganisations": "Kuruluşlarıma git",
     "open": "{tenant} kuruluşunu aç",
-    "expiredStatus": "Süresi doldu",
     "expiredTitle": "Bu davetin süresi doldu",
-    "expiredText": "{tenant} kuruluşuna katılma bağlantısının süresi {date} tarihinde doldu. Yeni bir davet için başvurun: {inviter}.",
-    "cancelledStatus": "Geri çekildi",
+    "expiredText": "Süresi {date} tarihinde doldu. Yeni bir davet için başvurun: {inviter}.",
     "cancelledTitle": "Bu davet geri çekildi",
-    "cancelledText": "{tenant} kuruluşuna katılma daveti geri çekildi veya yerine daha yeni bir davet geldi. Gelen kutunuzda daha yeni bir e-posta arayın veya yeni bir davet için başvurun: {inviter}.",
-    "acceptedStatus": "Kabul edildi",
+    "cancelledText": "Geri çekildi veya yerine daha yeni bir davet geldi. Gelen kutunuzda daha yeni bir e-posta arayın veya yeni bir davet için başvurun: {inviter}.",
     "acceptedTitle": "Bu daveti zaten kabul ettiniz",
     "acceptedText": "{tenant} kuruluşunun üyesisiniz. Devam etmek için kuruluşu açın.",
-    "notFoundStatus": "Geçersiz",
     "notFoundTitle": "Bu bağlantı çalışmıyor",
     "notFoundText": "Yeni bir davet isteyin.",
     "wrongEmailTitle": "Bu davet başka bir e-posta için",
     "wrongEmailText": "<email></email> olarak giriş yaptınız. Daveti alan e-postayla giriş yapın.",
-    "switchAccount": "Hesap değiştir",
-    "backHome": "Ana sayfaya dön",
-    "systemAdminStatus": "Mümkün değil",
     "systemAdminTitle": "Sistem yöneticileri bir kuruluşa katılamaz",
-    "systemAdminText": "Başka bir hesap kullanın.",
+    "systemAdminText": "Bu daveti kabul etmek için başka bir e-postayla giriş yapın.",
     "tenantSuspendedTitle": "Bu kuruluş askıya alındı",
-    "tenantSuspendedText": "Yeniden etkin olduğunda katılabilirsiniz."
+    "tenantSuspendedText": "Yeniden etkin olduğunda katılabilirsiniz.",
+    "signInTitle": "Davetinizi kabul etmek için giriş yapın",
+    "signInText": "Daveti alan e-postayı kullanın.",
+    "accept": "Kabul et ve devam et",
+    "signOutAndContinue": "Oturumu kapat ve devam et",
+    "goBack": "Geri dön",
+    "needHelp": "Yardım mı gerekiyor? <link>Destekle iletişime geçin</link>"
   },
   "settings": {
     "organisation": "Kuruluş",
@@ -332,21 +331,17 @@
     "suspendedText": "Bu kuruluşu şu anda açamazsınız. Verileriniz ve üyeliğiniz korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
     "closedTitle": "{organisation} kapatıldı",
     "closedText": "Bu kuruluş kapatıldı ve açılamaz. Verileriniz şimdilik korunuyor. Daha fazla bilgi için kuruluşunuzun Sahibine başvurun.",
-    "organisation": "Kuruluş",
-    "chooseAnother": "Başka bir kuruluş seçin"
+    "chooseAnother": "Kuruluşlarıma git"
   },
   "account": {
     "user": {
       "suspended": {
-        "status": "Askıda",
         "title": "Hesabınız askıya alındı",
-        "text": "Şu anda oturum açamazsınız. Destek ekibiyle iletişime geçin.",
-        "action": "Oturumu kapat"
+        "text": "Şu anda kuruluşlarınızı açamaz veya bir daveti kabul edemezsiniz. Verileriniz ve üyelikleriniz korunuyor. Daha fazla bilgi için destek ekibiyle iletişime geçin."
       },
       "deleted": {
-        "status": "Silindi",
         "title": "Bu hesap silindi",
-        "text": "Başka bir e-postayla oturum açın.",
+        "text": "Bu hesabı artık kullanamazsınız. Geri dönmek için yeni bir davete ihtiyacınız var.",
         "action": "Başka bir e-posta kullan"
       }
     }

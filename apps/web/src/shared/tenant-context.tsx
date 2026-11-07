@@ -31,6 +31,7 @@ import {
   BlockedOrganisation,
   type BlockedStatus,
 } from "./blocked-organisation";
+import { rememberOrganisation } from "./last-organisation";
 import { NoAccess } from "./no-access";
 import { accountBlockOf } from "./problem";
 import { ProblemScreen } from "./problem-screen";
@@ -104,6 +105,12 @@ export function TenantProvider({
       query: { enabled: active },
     }),
   );
+
+  // An organisation that opened is the "last used" of Choose an organisation (frame 1.18): its slug goes into the cookie.
+  const opened = active && Boolean(detail.data);
+  useEffect(() => {
+    if (opened) void rememberOrganisation(slug);
+  }, [opened, slug]);
 
   const [accountError, setAccountError] = useState<Error | null>(null);
   // The last organisation this provider showed: when it stops while open, its page stays under the dialog until Close.

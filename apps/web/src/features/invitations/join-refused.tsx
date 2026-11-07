@@ -1,39 +1,49 @@
 "use client";
 
-import { AuthCard } from "@repo/ui/components/auth-layout";
+import { brand } from "@repo/brand";
+import { useAppFrame } from "@repo/ui/components/app-frame";
+import { AuthHeading } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
-import { Status } from "@repo/ui/components/status";
+import { supportLink } from "@repo/ui/lib/support-link";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 /**
- * 422 `invitation.system_admin_cannot_join` (the AcceptSystemAdmin board): a system admin never joins an organisation (T5). Switch
- * account signs out and comes back to this page through sign-in.
+ * 422 `invitation.system_admin_cannot_join` (frame 1.48): a system admin never joins an organisation (T5). Sign out comes back to
+ * this page, which signs the person in with another email. "Contact support" names the version.
  */
 export function SystemAdminCannotJoin({
   onSwitchAccount,
-  onSignOut,
 }: {
   onSwitchAccount: () => void;
-  onSignOut: () => void;
 }) {
   const t = useTranslations();
+  const { version } = useAppFrame();
   return (
-    <AuthCard>
-      <Status tone="neutral">{t("invitations.systemAdminStatus")}</Status>
-      <h1 className="text-page-title">{t("invitations.systemAdminTitle")}</h1>
-      <p className="text-body text-muted-foreground">
-        {t("invitations.systemAdminText")}
+    <>
+      <AuthHeading
+        title={t("invitations.systemAdminTitle")}
+        text={t("invitations.systemAdminText")}
+      />
+      <Button variant="primary" className="w-full" onClick={onSwitchAccount}>
+        {t("common.signOut")}
+      </Button>
+      <p className="text-center text-small text-muted-foreground">
+        {t.rich("invitations.needHelp", {
+          link: (chunks) => (
+            <a
+              href={supportLink(
+                brand.supportUrl,
+                version && t("appShell.supportBody", { version }),
+              )}
+              className="rounded-sm text-link underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {chunks}
+            </a>
+          ),
+        })}
       </p>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="primary" onClick={onSwitchAccount}>
-          {t("invitations.switchAccount")}
-        </Button>
-        <Button variant="ghost" onClick={onSignOut}>
-          {t("common.signOut")}
-        </Button>
-      </div>
-    </AuthCard>
+    </>
   );
 }
 
@@ -41,26 +51,21 @@ export function SystemAdminCannotJoin({
 export function TenantSuspended({ onSignOut }: { onSignOut: () => void }) {
   const t = useTranslations();
   return (
-    <AuthCard>
-      <Status tone="warning">{t("organisations.status.suspended")}</Status>
-      <h1 className="text-page-title">
-        {t("invitations.tenantSuspendedTitle")}
-      </h1>
-      <p className="text-body text-muted-foreground">
-        {t("invitations.tenantSuspendedText")}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="primary"
-          render={<Link href="/" />}
-          nativeButton={false}
-        >
-          {t("invitations.goToOrganisations")}
-        </Button>
-        <Button variant="ghost" onClick={onSignOut}>
-          {t("common.signOut")}
-        </Button>
-      </div>
-    </AuthCard>
+    <>
+      <AuthHeading
+        title={t("invitations.tenantSuspendedTitle")}
+        text={t("invitations.tenantSuspendedText")}
+      />
+      <Button
+        className="w-full"
+        render={<Link href="/" />}
+        nativeButton={false}
+      >
+        {t("invitations.goToOrganisations")}
+      </Button>
+      <Button variant="ghost" className="self-center" onClick={onSignOut}>
+        {t("common.signOut")}
+      </Button>
+    </>
   );
 }

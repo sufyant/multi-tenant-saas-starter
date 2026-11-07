@@ -13,8 +13,9 @@ import {
   type MyTenantResponse,
   ProblemDetailsError,
 } from "@repo/api-client";
+import { brand } from "@repo/brand";
 import {
-  redirectParameter,
+  SignIn,
   type SignInErrorKey,
   signInErrorKey,
 } from "@repo/ui/components/sign-in";
@@ -25,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { reportError } from "@/error-tracking/report-error";
+import { setLocale } from "@/i18n/set-locale";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { InvitationEnded } from "./invitation-ended";
 import { InvitationFrame } from "./invitation-frame";
@@ -40,7 +42,6 @@ const codeOf = (error: Error | null) =>
  * URL we build, nor to Clerk as a redirect address. */
 const page = "/invitations/accept";
 const storedCode = "invitation-code";
-const signInAndBack = `/sign-in?${redirectParameter}=${encodeURIComponent(page)}`;
 
 /** The code of the link, else the one this tab kept before sign-in; undefined until the browser has read it. */
 function useInvitationCode(fromLink: string): string | undefined {
@@ -66,7 +67,9 @@ const keepCode = (code: string) => {
 
 /**
  * `/invitations/accept?code=...` (F44). A new person arrives from Clerk's invitation with `__clerk_ticket`: the ticket signs
- * them up and verifies the invited address. A signed-out person without a ticket signs in and comes back. A signed-in person sees
+ * them up and verifies the invited address. A signed-out person without a ticket signs in on this page, which names no
+ * organisation, because the preview answers only the invited address (frame 1.13; the maintainer's decision of 2026-11-07), and
+ * comes back to it. A signed-in person sees
  * the invitation (GetInvitationPreview) and joins (AcceptInvitation). The code is the invitation's secret: it goes only into the
  * bodies of those two calls, never into a log, a toast or a message.
  */
@@ -95,10 +98,7 @@ export function AcceptInvitationPage({
   useEffect(() => {
     if (!signedOut || signingUp.current || code === undefined) return;
     keepCode(code);
-    if (!ticket) {
-      router.replace(signInAndBack);
-      return;
-    }
+    if (!ticket) return;
     signingUp.current = true;
     void (async () => {
       const { error } = await signUp.ticket({ ticket });
@@ -144,6 +144,11 @@ export function AcceptInvitationPage({
   });
 
   const leave = () => void signOut({ redirectUrl: "/sign-in" });
+  // Another account: the page keeps the code, signs out and signs the person in again here.
+  const switchAccount = () => {
+    if (code) keepCode(code);
+    void signOut({ redirectUrl: page });
+  };
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
 
   if (ticketError)
@@ -157,9 +162,23 @@ export function AcceptInvitationPage({
   if (code === undefined) return <Skeleton label={t("common.loading")} />;
   if (code === "")
     return (
-      <InvitationFrame>
+      <InvitationFrame footer>
         <InvitationEnded onSignOut={leave} />
       </InvitationFrame>
+    );
+  if (signedOut && !ticket)
+    return (
+      <SignIn
+        title={t("invitations.signInTitle")}
+        text={t("invitations.signInText")}
+        secondFactorTitle={t("signInPage.secondFactorTitle")}
+        secondFactorText={t("signInPage.secondFactorText")}
+        brand={t("meta.title")}
+        onLanguageChange={setLocale}
+        privacyUrl={brand.privacyUrl}
+        redirectTo={page}
+        onUnexpectedError={reportError}
+      />
     );
   if (!isSignedIn)
     return (
@@ -174,13 +193,7 @@ export function AcceptInvitationPage({
   if (previewCode === ErrorCode.InvitationEmailMismatch)
     return (
       <InvitationFrame>
-        <WrongEmail
-          email={email}
-          onSwitchAccount={() => {
-            keepCode(code);
-            void signOut({ redirectUrl: signInAndBack });
-          }}
-        />
+        <WrongEmail email={email} onSwitchAccount={switchAccount} />
       </InvitationFrame>
     );
   if (
@@ -188,7 +201,7 @@ export function AcceptInvitationPage({
     previewCode === ErrorCode.InvitationCodeRequired
   )
     return (
-      <InvitationFrame>
+      <InvitationFrame footer>
         <InvitationEnded onSignOut={leave} />
       </InvitationFrame>
     );
@@ -202,7 +215,7 @@ export function AcceptInvitationPage({
   const { state } = preview.data;
   if (state !== InvitationResponseState.Pending)
     return (
-      <InvitationFrame>
+      <InvitationFrame footer>
         <InvitationEnded
           preview={{ ...preview.data, state }}
           timeZone={timeZone}
@@ -226,13 +239,7 @@ export function AcceptInvitationPage({
   if (joinCode === ErrorCode.InvitationSystemAdminCannotJoin)
     return (
       <InvitationFrame>
-        <SystemAdminCannotJoin
-          onSwitchAccount={() => {
-            keepCode(code);
-            void signOut({ redirectUrl: signInAndBack });
-          }}
-          onSignOut={leave}
-        />
+        <SystemAdminCannotJoin onSwitchAccount={switchAccount} />
       </InvitationFrame>
     );
   if (joinCode === ErrorCode.TenantSuspended)
@@ -259,7 +266,7 @@ export function AcceptInvitationPage({
       : t("problems.errorText"));
 
   return (
-    <InvitationFrame>
+    <InvitationFrame footer account>
       {notAUserYet ? (
         <NewPersonForm
           preview={preview.data}
@@ -272,7 +279,6 @@ export function AcceptInvitationPage({
       ) : (
         <JoinCard
           preview={preview.data}
-          email={me.data?.email ?? email}
           timeZone={timeZone}
           onJoin={() => join.mutate(undefined)}
           pending={join.isPending}

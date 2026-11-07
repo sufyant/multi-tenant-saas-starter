@@ -3,13 +3,7 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react";
 import { type ReactNode, useId } from "react";
 import { cn } from "../../lib/utils";
-import {
-  ChevronDownIcon,
-  ChevronsUpDownIcon,
-  Icon,
-  type LucideIcon,
-  SearchIcon,
-} from "../icon";
+import { ChevronDownIcon, Icon, type LucideIcon, SearchIcon } from "../icon";
 import {
   ComboboxContent,
   ComboboxEmpty,
@@ -128,18 +122,13 @@ export function Combobox({
           <span lang={selected?.lang} dir={selected?.dir} className="truncate">
             {selected?.label}
           </span>
-          {variant === "field" && (
-            <Icon icon={ChevronsUpDownIcon} className="text-muted-foreground" />
-          )}
-          {variant !== "field" && (
-            <Icon
-              icon={ChevronDownIcon}
-              className={cn(
-                "text-muted-foreground",
-                variant === "filter" && "ms-auto",
-              )}
-            />
-          )}
+          <Icon
+            icon={ChevronDownIcon}
+            className={cn(
+              "text-muted-foreground",
+              variant === "filter" && "ms-auto",
+            )}
+          />
         </ComboboxPrimitive.Trigger>
         <ComboboxContent className="min-w-64">
           <div className="m-1 flex h-control-md items-center gap-2 rounded-md border border-input bg-card px-3">
