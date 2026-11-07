@@ -50,7 +50,7 @@ On a push to `main`, after `ci.yml` passed:
 2. For `production`, it checks that the commit is not older than the commit that production runs (section 6). A rollback skips this check.
 3. It runs `migrate` with the API image's digest.
 4. It sets that digest as the image of `api-web` and `api-worker` in one Railway commit.
-5. It waits until the new deployment of each API service is `SUCCESS`.
+5. It waits until the new deployment of each API service is `SUCCESS`. Railway's health check asks `/health/ready`, whose checks reach the database and the environment's bucket: each process writes, reads and deletes a small file under `health/` (`apps/api/docs/ARCHITECTURE.md`, section 7, "File storage", rule 7). A deployment that cannot use its bucket does not become `SUCCESS`, and the old one keeps serving.
 6. It smoke-tests the API's public route: `GET /v1/me/tenants` without a token must answer 401, and `GET /health/ready` must answer 404. The 401 shows that the route reaches the web process and its authentication. The 404 shows that the public route does not reach the health endpoints: they answer only on the management port, 8081. Railway's health check covers readiness there.
 7. It sets the web app's digest on `web` and the platform app's digest on `platform`, one Railway commit for each. The web apps go after the API, so a web app never runs against an API older than the one it was tested with. One exception: a rollback to a release tagged before the web apps were deployed rolls back the API only (section 6).
 8. It waits until the new deployment of `web` and `platform` is `SUCCESS`. Railway's health check calls `GET /health` of each (section 13).
