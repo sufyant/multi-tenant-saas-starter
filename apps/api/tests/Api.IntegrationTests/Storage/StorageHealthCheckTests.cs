@@ -3,8 +3,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Storage;
 
-// Section 7, "File storage": a process is ready only once it has written, read and deleted a file in its bucket. Railway sends no traffic
-// to a new deployment until it is ready, and deploy.yml waits for that, so a deploy that cannot use its bucket fails.
+// Section 7, "File storage", rule 7: a process is ready only once it has written, read and deleted a file in its bucket.
 public sealed class StorageHealthCheckTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;

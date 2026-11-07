@@ -10,11 +10,9 @@ using SharedKernel;
 
 namespace Api.UnitTests.Storage;
 
-// Section 7, "File storage": the requests that the host's file store sends, as the host registers it, to an endpoint on https, as R2's is.
-// R2 implements no chunked signing of a body and no trailing checksum (Cloudflare R2 documentation, "S3 API compatibility"), and answers
-// 501 "STREAMING-AWS4-HMAC-SHA256-PAYLOAD not implemented". SeaweedFS accepts both, so S3FileStoreTests cannot see it: these tests pin the
-// requests themselves. No request leaves the process.
-public sealed class S3FileStoreRequestTests : IDisposable
+// Section 7, "File storage", rule 1: the requests that the host's file store sends, as the host registers it, to an https endpoint, as R2's
+// is. SeaweedFS accepts what R2 refuses, so the integration tests cannot see it: these tests pin the requests. No request leaves the process.
+public sealed class S3FileStoreTests : IDisposable
 {
     private readonly RecordingHandler _r2 = new();
 

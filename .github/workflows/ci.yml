@@ -228,7 +228,7 @@ jobs:
       - name: Print the container logs
         if: failure()
         run: |
-          for container in api-db api-web api-worker; do
+          for container in api-db api-storage api-web api-worker; do
             echo "::group::$container"
             docker logs "$container" || true
             echo "::endgroup::"
@@ -237,7 +237,7 @@ jobs:
       - name: Remove the containers and the network
         if: always()
         run: |
-          docker rm -f api-db api-web api-worker || true
+          docker rm -f api-db api-storage api-web api-worker || true
           docker network rm api-image || true
 
   web-image:

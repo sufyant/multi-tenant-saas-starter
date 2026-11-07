@@ -1,28 +1,30 @@
 #!/usr/bin/env bash
-# Runs the API image `api` against PostgreSQL in Docker: bootstrap.sql as a provider role (twice,
-# then once more with a changed role, which must fail), the migration with the owner role only, and
-# the web and the worker with every required setting. Both must answer the health path on their
-# management port, as .railway/api.json names them. The web's public port, 8080, must answer 404
-# for it.
+# Runs the API image `api` against PostgreSQL and SeaweedFS in Docker: bootstrap.sql as a provider
+# role (twice, then once more with a changed role, which must fail), the migration with the owner
+# role only, and the web and the worker with every required setting. Both must answer the health
+# path on their management port, as .railway/api.json names them. The web's public port, 8080,
+# must answer 404 for it.
 # No process may try to load the Kerberos library (libgssapi), which the image does not have.
 # The passwords are made for this run and printed nowhere. They protect nothing outside it.
 #
 # Inputs: RUNNER_TEMP (a directory for temporary files). The PostgreSQL image is the one of
-# apps/api/db/postgres-image, which the test fixtures run too.
+# apps/api/db/postgres-image, and the SeaweedFS image the one of apps/api/storage/seaweedfs-image,
+# which the test fixtures run too.
 # Exit codes: 0 when both processes are ready, the public port hides readiness and no output names
 # libgssapi; non-zero at the first failed command.
-# Leaves the containers api-db, api-web, api-worker and the network api-image; the workflow prints
-# their logs on failure and removes them.
+# Leaves the containers api-db, api-storage, api-web, api-worker and the network api-image; the
+# workflow prints their logs on failure and removes them.
 #
 # Run it locally from any folder, with Docker:
 #   docker build -t api apps/api
 #   RUNNER_TEMP="$(mktemp -d)" scripts/ci/run-api-image.sh
-#   docker rm -f api-db api-web api-worker; docker network rm api-image
+#   docker rm -f api-db api-storage api-web api-worker; docker network rm api-image
 set -euo pipefail
 
 : "${RUNNER_TEMP:?}"
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 postgres_image=$(cat apps/api/db/postgres-image)
+storage_image=$(cat apps/api/storage/seaweedfs-image)
 management_port=$(jq -r '.managementPort' .railway/api.json)
 health_path=$(jq -r '.healthPath' .railway/api.json)
 
@@ -34,6 +36,17 @@ application_password=$(openssl rand -hex 24)
 docker network create api-image
 docker run -d --name api-db --network api-image \
   -e POSTGRES_PASSWORD="$superuser_password" -e POSTGRES_DB=app "$postgres_image"
+
+# A process is ready only once it has written, read and deleted a file in its bucket
+# (apps/api/docs/ARCHITECTURE.md, section 7, "File storage", rule 7). The local key of
+# s3-identities.json has no secret value.
+docker run -d --name api-storage --network api-image -p 8333:8333 \
+  -v "$PWD/apps/api/storage/s3-identities.json:/etc/seaweedfs/s3-identities.json:ro" \
+  "$storage_image" server -s3 -s3.config=/etc/seaweedfs/s3-identities.json -master.volumeSizeLimitMB=64
+# curl signs the creation of the bucket itself (its --aws-sigv4), so no AWS CLI is needed.
+curl --silent --show-error --fail --max-time 5 --retry 30 --retry-delay 1 --retry-all-errors \
+  --aws-sigv4 "aws:amz:auto:s3" --user local-access-key:local-secret-key \
+  --request PUT http://localhost:8333/starter-ci
 
 # Over TCP: while the image sets up the database, the server listens only on its socket.
 for _ in $(seq 30); do
@@ -90,10 +103,10 @@ docker run --rm --network api-image \
   echo "Host__Authentication__AuthorizedParties__0=https://app.example.invalid"
   echo "ControlPlane__SystemAdmins__RootEmails__0=admin@example.invalid"
   echo "ControlPlane__Clerk__SecretKey=sk_test_fake_not_a_secret"
-  echo "Host__Storage__Endpoint=https://storage.example.invalid/"
+  echo "Host__Storage__Endpoint=http://api-storage:8333/"
   echo "Host__Storage__Bucket=starter-ci"
-  echo "Host__Storage__AccessKeyId=fake_not_a_secret"
-  echo "Host__Storage__SecretAccessKey=fake_not_a_secret"
+  echo "Host__Storage__AccessKeyId=local-access-key"
+  echo "Host__Storage__SecretAccessKey=local-secret-key"
   echo "ControlPlane__Clerk__BackendApiUrl=https://clerk.example.invalid/v1/"
   echo "ControlPlane__Invitations__AcceptUrl=https://app.example.invalid/invitations/accept"
   echo "Notifications__Links__WebUrl=https://app.example.invalid/"

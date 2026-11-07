@@ -21,7 +21,7 @@ internal static class StorageExtensions
             .ValidateOnStart();
 
         // The settings follow R2 (Cloudflare R2 documentation, "aws-sdk-net" and "S3 API compatibility"); SeaweedFS accepts each of them.
-        // S3FileStoreRequestTests pins the requests they give. An upload also signs its body in one part (S3FileStore.SaveAsync).
+        // S3FileStoreTests in Api.UnitTests pins the requests they give. An upload also signs its body in one part (S3FileStore.SaveAsync).
         services.AddSingleton<IAmazonS3>(provider =>
         {
             var settings = provider.GetRequiredService<IOptions<StorageOptions>>().Value;

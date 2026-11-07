@@ -4,12 +4,8 @@ using SharedKernel;
 
 namespace Api.Storage;
 
-// A process is ready only once it has used its bucket: it writes a small file under health/, reads it back and deletes it, through the
-// same store as the modules. Railway sends no traffic to a new deployment until it is ready, and deploy.yml waits for that, so a deploy
-// that cannot use its bucket fails with the API's own settings and no other secret (section 7, "File storage"). The check passes once per
-// process and then only remembers it, because the worker's heartbeat runs the readiness checks every interval. A failure throws, the
-// health check service reports it unhealthy, and the next check tries again. The bucket's lifecycle rule deletes a file that a failure
-// left (.cloudflare/).
+// The readiness check of the storage: one round trip to the bucket under health/, once per process (section 7, "File storage", rule 7).
+// A failure throws, the health check service reports it unhealthy, and the next check tries again.
 internal sealed class StorageHealthCheck(IFileStore files) : IHealthCheck
 {
     private volatile bool _passed;
