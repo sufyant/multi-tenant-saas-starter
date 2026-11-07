@@ -17,6 +17,7 @@ import { Button } from "@repo/ui/components/button";
 import { Combobox } from "@repo/ui/components/combobox";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import {
+  CircleXIcon,
   Icon,
   PlusIcon,
   SearchXIcon,
@@ -231,6 +232,7 @@ export function MembersPage() {
     if (list.isError)
       return (
         <ListError
+          icon={CircleXIcon}
           title={
             tab === "members"
               ? t("members.membersError")
@@ -386,6 +388,7 @@ export function MembersPage() {
             <h1 className="text-page-title">{t("members.title")}</h1>
             <RowMenu
               label={t("members.moreActions")}
+              align="start"
               items={[
                 {
                   label: t("members.exportCsv"),
@@ -411,32 +414,35 @@ export function MembersPage() {
           action={bannerAction}
         />
       )}
-      {seesInvitations && (
-        <Tabs
-          label={t("members.tabs")}
-          current={tab}
-          items={[
-            {
-              id: "members",
-              label: t("members.tabMembers"),
-              count: counted ? membersTotal : undefined,
-            },
-            {
-              id: "invitations",
-              label: t("members.tabInvitations"),
-              count: counted ? invitationCount.data?.total : undefined,
-            },
-          ]}
-          onValueChange={(next) =>
-            void setParams({
-              tab: next === "invitations" ? "invitations" : null,
-              q: null,
-              roleId: null,
-              sort: null,
-            })
-          }
-        />
-      )}
+      {/* A viewer who cannot read the invitations keeps the one Members tab with its count (8.11). */}
+      <Tabs
+        label={t("members.tabs")}
+        current={tab}
+        items={[
+          {
+            id: "members",
+            label: t("members.tabMembers"),
+            count: counted ? membersTotal : undefined,
+          },
+          ...(seesInvitations
+            ? [
+                {
+                  id: "invitations",
+                  label: t("members.tabInvitations"),
+                  count: counted ? invitationCount.data?.total : undefined,
+                },
+              ]
+            : []),
+        ]}
+        onValueChange={(next) =>
+          void setParams({
+            tab: next === "invitations" ? "invitations" : null,
+            q: null,
+            roleId: null,
+            sort: null,
+          })
+        }
+      />
       <div className="flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1 tablet:flex-none">
           <Search

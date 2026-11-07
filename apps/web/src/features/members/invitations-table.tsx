@@ -106,10 +106,12 @@ export function InvitationsTable({
       key: "email",
       header: t("members.email"),
       sortable: true,
+      // The email reads left to right inside a block of the page's direction (8.36); in the table a long one ends with "…" at
+      // 250 px, the frame's width (8.30).
       render: (invitation) => (
-        <bdi dir="ltr" className="block truncate font-medium">
-          {invitation.email}
-        </bdi>
+        <span className="block truncate font-medium @min-[640px]:max-w-62.5">
+          <bdi dir="ltr">{invitation.email}</bdi>
+        </span>
       ),
     },
     {

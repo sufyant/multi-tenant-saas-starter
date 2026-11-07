@@ -201,9 +201,11 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
             {banner.text}
           </Banner>
         )}
+        {/* The dialog opens on its first field (WAI-ARIA APG, Dialog pattern); on a phone it comes after the × (8.35). */}
         <Input
           label={t("members.email")}
           type="email"
+          autoFocus
           autoComplete="off"
           placeholder={t("members.inviteEmailPlaceholder")}
           maxLength={schemas.inviteMemberBodyEmailMax}

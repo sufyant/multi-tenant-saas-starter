@@ -107,7 +107,7 @@ function Row({
       <dt className="shrink-0 text-small font-medium text-muted-foreground tablet:w-50">
         {term}
       </dt>
-      <dd className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <dd className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
         {value}
         {hint && (
           <span className="text-small text-muted-foreground">{hint}</span>

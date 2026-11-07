@@ -110,6 +110,21 @@ describe("InvitationsTable", () => {
     expect(await rowOf("padraig@northwind.io")).toHaveTextContent("Expired");
   });
 
+  // The address reads left to right inside a cell that keeps the page's direction, so in Arabic it aligns with its header (8.36).
+  it("Invitations_Email_IsALeftToRightTextInACellOfThePagesDirection", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
+
+    renderInTenant(<MembersPage />, { url, locale: "ar" });
+
+    const email = await within(
+      await screen.findByRole("table", { name: "الدعوات" }),
+    ).findByText("ali@northwind.io");
+    expect(email.tagName).toBe("BDI");
+    expect(email).toHaveAttribute("dir", "ltr");
+    // The cell's block keeps the page's direction; only the address inside it is left to right.
+    expect(email.closest("td")?.firstElementChild).not.toHaveAttribute("dir");
+  });
+
   it("Invitations_InvitedBy_NamesThePersonOrSaysDeletedUser", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
 
@@ -438,7 +453,9 @@ describe("InvitationsTable", () => {
     const cells = within((await rowOf("ali@northwind.io")) as HTMLElement)
       .getAllByRole("cell")
       .map((cell) => within(cell));
-    expect(cells[0]?.getByText("ali@northwind.io")).toHaveClass("truncate");
+    expect(cells[0]?.getByText("ali@northwind.io").parentElement).toHaveClass(
+      "truncate",
+    );
     expect(cells[1]?.getByText("Member")).toHaveClass("border-border");
     expect(cells[3]?.getByText(/^\d{1,2} \w{3} \d{4}$/)).toBeInTheDocument();
     expect(

@@ -81,7 +81,7 @@ export function MembersTable({
   const roleText = (member: MemberResponse) => roleName(member.role);
 
   const name = (member: MemberResponse) => (
-    <span className="flex items-center gap-2">
+    <span className="flex min-w-0 items-center gap-2">
       <bdi className="truncate font-medium">{nameText(member)}</bdi>
       {member.userId === meId && <Tag variant="text">{t("members.you")}</Tag>}
     </span>
@@ -92,8 +92,10 @@ export function MembersTable({
       key: "name",
       header: header(UserIcon, t("members.name")),
       sortable: true,
+      // Name fills the table's free width and a long one ends with "…": its cell takes the full width with no width of its own
+      // (`max-w-0`), so the table never grows wider than the page (8.05).
       render: (member) => (
-        <span className="flex min-w-0 items-center gap-2">
+        <span className="flex min-w-0 items-center gap-2 [td:has(>&)]:w-full [td:has(>&)]:max-w-0">
           <Avatar person={member} className="size-5.5" />
           {name(member)}
         </span>
@@ -105,12 +107,13 @@ export function MembersTable({
       header: header(MailIcon, t("members.email")),
       secondary: true,
       card: "meta",
-      // The email reads left to right in every language; a long one ends with "…".
+      // The email reads left to right in every language, inside a block of the page's direction, so in Arabic it aligns with its
+      // header (8.36). In the table a long one ends with "…" at 250 px, the frame's width (8.05).
       render: (member) =>
         member.email && (
-          <bdi dir="ltr" className="block truncate text-small">
-            {member.email}
-          </bdi>
+          <span className="block truncate text-small @min-[640px]:max-w-62.5">
+            <bdi dir="ltr">{member.email}</bdi>
+          </span>
         ),
     },
     {

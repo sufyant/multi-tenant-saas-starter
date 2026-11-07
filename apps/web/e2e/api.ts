@@ -915,10 +915,13 @@ export async function mockMembersExport(
           })
         : route.fulfill({
             status: 500,
+            // As the API answers a fault: its code and the request's trace, so the dialog shows the reference (8.16).
             json: {
               status: 500,
               title: "Internal Server Error",
-              traceId: "00-e2e",
+              code: ErrorCode.ServerError,
+              traceId:
+                "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
             },
           }),
   );

@@ -165,6 +165,23 @@ describe("InviteDialog", () => {
     ]);
   });
 
+  // The dialog opens on its first field, the Email (WAI-ARIA APG, Dialog pattern), so the role list opens at its top (8.35).
+  it("Invite_OpensOnAPhone_FocusesTheEmailField", async () => {
+    // jsdom has no layout: the phone follows the breakpoint token and a matchMedia that never matches.
+    document.documentElement.style.setProperty("--bp-tablet", "768px");
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole("textbox", { name: "Email" }),
+      ).toHaveFocus(),
+    );
+    document.documentElement.style.removeProperty("--bp-tablet");
+  });
+
   it("Invite_TheViewersLanguage_IsTheDefaultEmailLanguage", async () => {
     server.use(
       http.get("*/v1/me", () =>

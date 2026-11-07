@@ -31,6 +31,8 @@ export type RowMenuProps = {
   label: string;
   /** Previews only: render the menu open. */
   open?: boolean;
+  /** Which edge of the button the menu lines up with. A row's menu ends at its button; a page header's opens from its start (8.41). */
+  align?: "start" | "end";
 };
 
 const labelBefore = (items: RowMenuItem[], index: number) => {
@@ -39,7 +41,7 @@ const labelBefore = (items: RowMenuItem[], index: number) => {
 };
 
 /** The one ⋯ button of a table row or phone card (the RowMenu README). A disabled item stays and says why. */
-export function RowMenu({ items, label, open }: RowMenuProps) {
+export function RowMenu({ items, label, open, align = "end" }: RowMenuProps) {
   return (
     <DropdownMenu defaultOpen={open}>
       <DropdownMenuTrigger
@@ -51,7 +53,7 @@ export function RowMenu({ items, label, open }: RowMenuProps) {
           />
         }
       />
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align={align} className="w-64">
         {items.map((item, index) =>
           item.separator ? (
             <DropdownMenuSeparator

@@ -763,9 +763,15 @@ const invitationsTab = `${members}?tab=invitations`;
 const tenantRead = `**/api/v1/tenants/${northwind.id}`;
 const membersRead = `**/api/v1/tenants/${northwind.id}/members?*`;
 const invitationsRead = `**/api/v1/tenants/${northwind.id}/invitations?*`;
+// The API's answer to a fault: its code and the request's trace, so a screen shows the message and the reference (7.03, 8.03).
 const serverError = {
   status: 500,
-  json: { status: 500, title: "Internal Server Error", traceId: "00-e2e" },
+  json: {
+    status: 500,
+    title: "Internal Server Error",
+    code: ErrorCode.ServerError,
+    traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  },
 };
 
 /** A plan with a members limit: the seats it gives, and the seats in use, members and pending invitations (F56). */
@@ -889,6 +895,8 @@ const shellShots: {
   /** What shows when the page has loaded, for a frame of a page that loads or fails: the page's heading and no busy list by default. */
   ready?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<void>;
+  /** The frame draws the pointer over something, so `open` leaves it there; else the pointer moves away after `open`. */
+  hovers?: true;
   /** The whole page, for a frame taller than the screen. */
   fullPage?: boolean;
 }[] = [
@@ -1085,6 +1093,7 @@ const shellShots: {
   {
     file: "pattern-time-en-light-desktop",
     size: "desktop",
+    hovers: true,
     path: `${settings}/activity`,
     mock: viewer(Language.En, BuiltInRole.Owner),
     open: async (page) => {
@@ -1389,6 +1398,7 @@ const shellShots: {
   {
     file: "8.15-members-focus-hover-en-light-desktop",
     size: "desktop",
+    hovers: true,
     path: members,
     team: northwindTeam(),
     // The keyboard's focus on Lena Fischer's ⋯ (a key press, so :focus-visible draws the ring), the pointer over Omar Haddad's row.
@@ -1412,6 +1422,7 @@ const shellShots: {
   {
     file: "8.17-row-actions-en-light-desktop",
     size: "desktop",
+    hovers: true,
     path: members,
     team: northwindTeam(),
     open: async (page) => {
@@ -1565,11 +1576,26 @@ const shellShots: {
     role: BuiltInRole.Admin,
     path: members,
     team: northwindTeam(),
-    open: rowDialog("Lena Fischer", "Change role"),
+    // The frame draws the locked Auditor card at the list's end, and the page behind at its top.
+    open: async (page) => {
+      await rowDialog("Lena Fischer", "Change role")(page);
+      await page
+        .getByRole("alertdialog")
+        .locator("label", {
+          has: page.getByRole("radio", { name: "Auditor" }),
+        })
+        .scrollIntoViewIfNeeded();
+      // The scroll lock may move the page's scroll onto <body>, so both go back to the top.
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+      });
+    },
   },
   {
     file: "8.41-more-menu-en-light-desktop",
     size: "desktop",
+    hovers: true,
     path: members,
     team: northwindTeam(),
     open: async (page) => {
@@ -1629,6 +1655,8 @@ for (const shot of shellShots.map(withDefaults))
     await page.goto(shot.path);
     await (shot.ready ?? loaded)(page);
     await shot.open?.(page);
+    // No pointer over a control unless the frame draws one: a click leaves its hover behind (8.12).
+    if (!shot.hovers) await page.mouse.move(0, 0);
     // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
     // animation starts only then. An endless animation, such as a skeleton's pulse, has no end to wait for.
     await page.evaluate(

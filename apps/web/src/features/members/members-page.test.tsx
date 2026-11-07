@@ -419,7 +419,8 @@ describe("MembersPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("MembersPage_Member_SeesAReadOnlyListWithoutTabsOrInvite", async () => {
+  // A Member keeps the one Members tab with its count, and no Invitations tab (8.11).
+  it("MembersPage_Member_SeesAReadOnlyListWithOnlyTheMembersTab", async () => {
     server.use(...tenantAnswers(BuiltInRole.Member), membersAnswer());
 
     renderInTenant(<MembersPage />);
@@ -428,7 +429,11 @@ describe("MembersPage", () => {
     expect(
       screen.queryByRole("button", { name: "Invite member" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("tablist"))
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent),
+    ).toEqual(["Members 4"]);
     expect(
       (await table()).queryByRole("button", { name: /Actions for/ }),
     ).not.toBeInTheDocument();
@@ -666,6 +671,25 @@ describe("MembersPage", () => {
       "john@northwind.io",
     );
     expect(within(john).getAllByRole("cell")[2]).toHaveTextContent(/^Member$/);
+  });
+
+  // The address reads left to right inside a cell that keeps the page's direction, so in Arabic it aligns with its header (8.36).
+  it("MembersPage_Email_IsALeftToRightTextInACellOfThePagesDirection", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, { locale: "ar" });
+
+    const email = await within(
+      await screen.findByRole("table", { name: "الأعضاء" }),
+    ).findByText("john@northwind.io");
+    expect(email.tagName).toBe("BDI");
+    expect(email).toHaveAttribute("dir", "ltr");
+    // The cell's block keeps the page's direction; only the address inside it is left to right.
+    expect(email.closest("td")?.firstElementChild).not.toHaveAttribute("dir");
   });
 
   // The counts are the lists' totals without a filter, so a search does not change them (8.06).
