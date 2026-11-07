@@ -40,7 +40,8 @@ export async function membersFile(
     roleId: true,
     sort: true,
   }).safeParse({
-    q: search.get("q") || undefined,
+    // The API trims the search before it counts its length (ListMembers' q), so the file does the same.
+    q: search.get("q")?.trim() || undefined,
     roleId: search.get("roleId") || undefined,
     sort: search.get("sort") || undefined,
   });

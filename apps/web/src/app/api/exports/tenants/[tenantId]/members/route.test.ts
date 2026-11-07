@@ -297,4 +297,23 @@ describe("Export members", () => {
       expect(requests.some((request) => request.method === "POST")).toBe(false);
     },
   );
+
+  // The API trims the search before it counts its length (ListMembers' q): spaces around 100 letters are no invalid search.
+  it("ExportMembers_SearchWithSpacesAround100Letters_TrimsItAndWritesTheFile", async () => {
+    server.use(me(), tenant, audit(), members(1));
+
+    const answer = await exportOf(
+      `?q=${encodeURIComponent(`  ${"x".repeat(100)}  `)}`,
+    );
+
+    await text(answer);
+
+    expect(answer.status).toBe(200);
+    const [page] = requests.filter((request) =>
+      new URL(request.url).pathname.endsWith("/members"),
+    );
+    expect(new URL(String(page?.url)).searchParams.get("q")).toBe(
+      "x".repeat(100),
+    );
+  });
 });
