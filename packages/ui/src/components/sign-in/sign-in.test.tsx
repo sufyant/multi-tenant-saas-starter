@@ -569,4 +569,23 @@ describe("SignIn", () => {
     ).toHaveAttribute("dir", "ltr");
     expect(signIn.mfa.verifyTOTP).not.toHaveBeenCalled();
   });
+
+  // Frame 1.08 draws only "Use your app instead": the way out comes back with the app's code.
+  it("SignIn_BackupCode_OffersOnlyTheWayBackToTheApp", async () => {
+    fakeSignIn("needs_second_factor");
+    const user = userEvent.setup();
+    renderSignIn();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Use a backup code instead" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Use your app instead" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Use another email" }),
+    ).not.toBeInTheDocument();
+  });
 });
+

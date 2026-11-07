@@ -82,4 +82,32 @@ describe("isExpectedClerkError", () => {
   ])("IsExpectedClerkError_%s_Is_%s", (_, expected, error) => {
     expect(isExpectedClerkError(error)).toBe(expected);
   });
+
+  // Frame 1.04: only the call that sends the code says that the code could not go out.
+  it("SignInErrorKey_NetworkFailureWhileSending_IsSendFailed", () => {
+    expect(signInErrorKey(new Error("Failed to fetch"), "send")).toBe(
+      "sendFailed",
+    );
+  });
+
+  it("SignInErrorKey_NetworkFailureOfGoogleOrMicrosoft_IsGeneric", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    expect(signInErrorKey(new Error("Failed to fetch"), "email")).toBe(
+      "generic",
+    );
+  });
+
+  it("SignInErrorKey_ApiErrorWithoutACodeWhileSending_IsGenericAndLogged", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onUnexpectedError = vi.fn();
+    const empty = new ClerkAPIResponseError("refused", {
+      data: [],
+      status: 500,
+    });
+
+    expect(signInErrorKey(empty, "send", onUnexpectedError)).toBe("generic");
+    expect(onUnexpectedError).toHaveBeenCalledTimes(1);
+  });
 });
+
