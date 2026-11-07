@@ -28,6 +28,14 @@ describe("BackupCodeList", () => {
       screen.getAllByRole("button").map((button) => button.textContent),
     ).toEqual(["Download", "Copy"]);
   });
+  // Platform frame 1.04: in the card before sign-in, Download and Copy sit in the middle.
+  it("BackupCodeList_Centred_PutsTheButtonsInTheMiddle", () => {
+    render(<BackupCodeList codes={["4f7k-2m9q"]} labels={labels} centred />);
+
+    expect(
+      screen.getByRole("button", { name: "Download" }).parentElement,
+    ).toHaveClass("justify-center");
+  });
 });
 
 describe("TotpFields", () => {

@@ -614,7 +614,10 @@ const still = async (page: Page) => {
 test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  for (const shot of entryShots)
+  for (const shot of entryShots.map((each) => ({
+    ...each,
+    path: each.path ?? "/sign-in",
+  })))
     test(`Screenshot_Entry_${shot.file}`, async ({
       page,
       context,
@@ -628,7 +631,7 @@ test.describe("signed out", () => {
       ]);
       await shot.mock?.(page);
 
-      await page.goto(shot.path ?? "/sign-in");
+      await page.goto(shot.path);
       await page.getByRole("heading", { level: 1 }).waitFor();
       await shot.open?.(page);
       await still(page);
