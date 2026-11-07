@@ -100,7 +100,7 @@ export function TenantProvider({
    * What shows when GetMyTenant fails: the shell with the problem in its content (7.03). "No access yet" and the account's page
    * still replace the shell.
    */
-  failed?: (error: Error) => ReactNode;
+  failed?: (error: Error, tenant: MyTenantResponse) => ReactNode;
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -193,7 +193,7 @@ export function TenantProvider({
     );
   if (detail.error)
     return failed && !replacesTheShell(detail.error) ? (
-      failed(detail.error)
+      failed(detail.error, tenant)
     ) : (
       <ProblemScreen error={detail.error} />
     );

@@ -227,6 +227,22 @@ export function MembersPage() {
               ? t("members.loadingMembers")
               : t("members.loadingInvitations")
           }
+          columns={
+            tab === "members"
+              ? [
+                  t("members.name"),
+                  t("members.email"),
+                  t("members.role"),
+                  t("members.joined"),
+                ]
+              : [
+                  t("members.email"),
+                  t("members.role"),
+                  t("members.invitedBy"),
+                  t("members.expires"),
+                  t("members.status"),
+                ]
+          }
         />
       );
     if (list.isError)
@@ -385,7 +401,10 @@ export function MembersPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-0.5">
           <div className="flex items-center gap-1">
-            <h1 className="text-page-title">{t("members.title")}</h1>
+            {/* On a phone the top bar names the page (8.34); the title stays for screen readers. */}
+            <h1 className="text-page-title max-tablet:sr-only">
+              {t("members.title")}
+            </h1>
             <RowMenu
               label={t("members.moreActions")}
               align="start"
@@ -457,7 +476,8 @@ export function MembersPage() {
             onSearch={onSearch}
           />
         </div>
-        {readsRoles && (
+        {/* 8.29 draws no role filter on the Invitations tab; a role in the address still filters it, with Clear filter (F51). */}
+        {readsRoles && tab === "members" && (
           <Combobox
             variant="filter"
             label={t("members.roleFilter")}

@@ -22,3 +22,15 @@ export function useFailureText() {
     return `${t(`errors.${problem.code}`)} ${reference}`;
   };
 }
+
+/** The reference of a failure, "Ref {id} · {time}", that a screen shows under its message (F4); none without a problem. */
+export function useReferenceText() {
+  const t = useTranslations();
+  return (problem: Problem, at: Date): string | undefined =>
+    problem
+      ? t("common.reference", {
+          id: problem.reference,
+          time: formatUtc(at, { locale: t("locale.format") }),
+        })
+      : undefined;
+}

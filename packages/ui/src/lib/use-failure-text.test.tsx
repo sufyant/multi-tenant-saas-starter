@@ -4,7 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../messages/en.json";
-import { useFailureText } from "./use-failure-text";
+import { useFailureText, useReferenceText } from "./use-failure-text";
 
 // Each app holds the locale's format; the hook reads it as the app's pages do.
 const messages = { ...en, locale: { format: "en-IE" } };
@@ -39,5 +39,24 @@ describe("useFailureText", () => {
     const { result } = renderHook(() => useFailureText(), { wrapper });
 
     expect(result.current(null)).toBe(en.errors.server.error);
+  });
+});
+
+describe("useReferenceText", () => {
+  it("UseReferenceText_Problem_IsItsReferenceAtTheTime", () => {
+    const { result } = renderHook(() => useReferenceText(), { wrapper });
+
+    expect(
+      result.current(
+        { code: ErrorCode.ServerError, reference },
+        new Date("2026-10-16T09:05:00Z"),
+      ),
+    ).toBe("Ref 4bf92f3577b34da6a3ce929d0e0e4736 · 09:05 UTC");
+  });
+
+  it("UseReferenceText_NoProblem_IsNone", () => {
+    const { result } = renderHook(() => useReferenceText(), { wrapper });
+
+    expect(result.current(null, new Date())).toBeUndefined();
   });
 });

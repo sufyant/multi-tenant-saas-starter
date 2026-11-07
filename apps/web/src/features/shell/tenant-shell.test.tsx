@@ -603,6 +603,29 @@ describe("TenantShell", () => {
       expect(screen.queryByText("Content")).not.toBeInTheDocument();
     });
 
+    // 7.03: the shell keeps what ListMyTenants answered, the organisation's name, and the problem says its reference (F4).
+    it("OrganisationShell_GetMyTenantFails_NamesTheOrganisationAndTheProblemsReference", async () => {
+      server.use(
+        tenantsOf(1),
+        http.get("*/v1/tenants/:tenantId", () =>
+          problem(500, ErrorCode.ServerError),
+        ),
+        getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      );
+
+      renderWithProviders(
+        <OrganisationShell slug="northwind">Content</OrganisationShell>,
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: "Something went wrong" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/^Ref 4bf92f35/)).toBeInTheDocument();
+      expect(screen.getAllByText("Northwind Traders").length).toBeGreaterThan(
+        0,
+      );
+    });
+
     it("OrganisationShell_GetMyTenantSaysSuspendedUser_ReplacesTheShellWithTheAccountPage", async () => {
       server.use(
         tenantsOf(1),

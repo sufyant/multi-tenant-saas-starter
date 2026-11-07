@@ -52,7 +52,7 @@ export function NoFreeSeatDialog({
       onOpenChange={(open) => !open && onClose()}
       title={t("noSeat")}
       description={text}
-      // The Dialog of packages/ui has one second button, in the place of Back (37a-dialog-and-menu draws the footer again).
+      // The Dialog of packages/ui has one second button, in the place of Back (37a-shared-components draws the footer again).
       back={
         onViewInvitations
           ? { label: t("requestChange"), onBack: requestChange }
