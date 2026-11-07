@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import en from "../../../messages/en.json";
 import { SsoCallback } from "./sso-callback";
 
@@ -27,6 +27,10 @@ const renderCallback = () =>
 
 beforeEach(() => {
   decorateUrl.mockClear();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("SsoCallback", () => {
@@ -56,20 +60,46 @@ describe("SsoCallback", () => {
     expect(decorateUrl).toHaveBeenCalledWith("/");
   });
 
-  // Frame 1.38: while Clerk ends the callback, the card says what happens.
-  it("SsoCallback_WhileClerkFinishes_SaysSignInIsFinishing", () => {
+  // Frames 1.38 and platform 1.13: while Clerk ends the callback, the card says what happens.
+  it("SsoCallback_WhileClerkFinishes_SaysItSignsYouIn", () => {
     clerk.exit = "none";
 
     renderCallback();
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Finishing sign-in…" }),
+      screen.getByRole("heading", { level: 1, name: "Signing you in…" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Google or Microsoft sent you back. This takes a moment.",
+    );
     expect(
-      screen.getByText(
-        "Google or Microsoft sent you back. This takes a moment.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toBeInTheDocument();
+      screen.queryByRole("link", { name: "Try again" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // Frames 1.52 and platform 1.14: after 10 seconds the card says so, and Try again goes back to sign-in with the same page to return to.
+  it("SsoCallback_After10Seconds_SaysItTakesLongerAndOffersSignInAgain", () => {
+    vi.useFakeTimers();
+    clerk.exit = "none";
+    window.history.replaceState(
+      {},
+      "",
+      "/sso-callback?redirect_url=%2Fnorthwind",
+    );
+
+    renderCallback();
+    act(() => vi.advanceTimersByTime(9_999));
+    expect(
+      screen.queryByRole("link", { name: "Try again" }),
+    ).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This is taking longer than usual.",
+    );
+    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute(
+      "href",
+      "/sign-in?redirect_url=%2Fnorthwind",
+    );
   });
 });
