@@ -8,7 +8,8 @@
 # variable is missing or an app's tests fail; the build's exit code when a build fails. Both apps run, also when the first fails.
 # Each app writes its HTML report to apps/<app>/playwright-report. Then each app takes its screenshots (e2e/screenshots.spec.ts)
 # into apps/<app>/test-results/screenshots, which ci.yml uploads as the workflow artifact "screenshots" for the review against the
-# design. A screenshot that cannot be taken fails the run too.
+# design. A screenshot that cannot be taken fails the run too. Last, packages/emails takes a screenshot of each email of the email
+# boards into packages/emails/test-results/screenshots, which the same artifact holds.
 #
 # Run it locally, with the keys of the development instance:
 #   CI=1 CLERK_PUBLISHABLE_KEY=pk_test_... CLERK_SECRET_KEY=sk_test_... scripts/ci/test-e2e.sh
@@ -49,4 +50,10 @@ for app in web platform; do
   fi
   echo "::endgroup::"
 done
+
+echo "::group::Screenshots: emails"
+if ! pnpm --filter @repo/emails screenshots; then
+  failed=1
+fi
+echo "::endgroup::"
 exit "$failed"

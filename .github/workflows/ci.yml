@@ -425,6 +425,7 @@ jobs:
           path: |
             apps/web/test-results/screenshots
             apps/platform/test-results/screenshots
+            packages/emails/test-results/screenshots
           if-no-files-found: ignore
           retention-days: 7
 
