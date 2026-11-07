@@ -163,6 +163,9 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - The stale mentions of "Settings › Notifications" go.
 - Step 36's leftover: the Profile's language and time zone fields have the chevron the frames draw, down and not up-down.
 - It waits for 37a-design.
+- The invitation's page signs a signed-out person in itself, with a title of its own and no organisation, inviter or address, because the preview answers only the invited address (1.13, 1.16, 1.23; the maintainer's decision C of 2026-11-07).
+- "No access yet" has no Profile in its account menu until 37a-frontend-4 (1.19; the maintainer's decision A of 2026-11-07).
+- Done.
 
 37a-frontend-2, General and Members:
 
@@ -175,6 +178,14 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 
 - Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
 - It waits for 37a-backend.
+
+37a-frontend-4, the personal pages without an organisation (the maintainer's decision of 2026-11-07):
+
+- The web opens Profile and Account and security at `/settings/profile` and `/settings/account` too, without an organisation, as the platform does (decision 69). `settings` is a reserved slug already, so the API does not change.
+- The old addresses under `/[tenantSlug]/settings/` lead to the new ones.
+- The design session at the end of 37a draws their frames first.
+- Then 1.19's account menu gets Profile.
+- The email button and the bell's link of the `account_security` type lead to `/settings/account`.
 
 37b, the platform's pages:
 
