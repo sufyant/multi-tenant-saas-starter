@@ -1166,7 +1166,7 @@ for (const shot of shellShots.map(withDefaults))
     });
   });
 
-// The sign-in frames of the Entry section (1.01 to 1.08, 1.20 to 1.22, 1.35 to 1.39). Each shot runs signed out, through Clerk's
+// The sign-in frames of the Entry section (1.01 to 1.08, 1.20 to 1.22, 1.35 to 1.39, 1.52). Each shot runs signed out, through Clerk's
 // test mode: the setup's address takes the code 424242 and a wrong code gets Clerk's own refusal. Playwright holds, breaks or
 // changes Clerk's answers only to reach a state that the real flow passes too quickly (sending), cannot reach without a failure
 // (the network) or reaches only with an authenticator app, which the web's user has not (the second factor).
@@ -1343,6 +1343,20 @@ const signInShots: {
     size: "desktop",
     path: "/sso-callback",
     mock: (page) => page.route("**/clerk.browser.js", (route) => route.abort()),
+  },
+  // The same card after 10 seconds: Playwright's clock moves the page's time on.
+  {
+    file: "1.52-signing-you-in-taking-longer-en-light-desktop",
+    size: "desktop",
+    path: "/sso-callback",
+    mock: async (page) => {
+      await page.clock.install();
+      await page.route("**/clerk.browser.js", (route) => route.abort());
+    },
+    open: async (page) => {
+      await page.clock.fastForward(10_000);
+      await page.getByRole("link", { name: "Try again" }).waitFor();
+    },
   },
   {
     file: "1.39-phone-sign-in-ar-light-phone",

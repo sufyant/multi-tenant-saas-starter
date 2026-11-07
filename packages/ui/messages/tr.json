@@ -239,8 +239,9 @@
     "sessionEndedText": "Bu cihazda oturumunuz kapatıldı. Bulunduğunuz sayfaya dönmek için yeniden giriş yapın.",
     "sendingCode": "Kod gönderiliyor…",
     "backupCodeSignInText": "Her yedek kod bir kez çalışır. Giriş yaptıktan sonra Hesap ve güvenlik sayfasında yeni kodlar oluşturun.",
-    "finishingTitle": "Giriş tamamlanıyor…",
-    "finishingText": "Google veya Microsoft sizi geri gönderdi. Bu biraz sürer."
+    "finishingTitle": "Giriş yapılıyor…",
+    "finishingText": "Google veya Microsoft sizi geri gönderdi. Bu biraz sürer.",
+    "finishingSlow": "Bu her zamankinden uzun sürüyor."
   },
   "confirmIdentity": {
     "title": "Kimliğinizi doğrulayın",

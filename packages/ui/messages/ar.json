@@ -239,8 +239,9 @@
     "sessionEndedText": "تم تسجيل خروجك على هذا الجهاز. سجّل الدخول مرة أخرى للعودة إلى الصفحة التي كنت عليها.",
     "sendingCode": "جارٍ إرسال الرمز…",
     "backupCodeSignInText": "يعمل كل رمز احتياطي مرة واحدة. بعد تسجيل الدخول، أنشئ رموزًا جديدة في الحساب والأمان.",
-    "finishingTitle": "جارٍ إكمال تسجيل الدخول…",
-    "finishingText": "أعادتك Google أو Microsoft. يستغرق هذا لحظة."
+    "finishingTitle": "جارٍ تسجيل دخولك…",
+    "finishingText": "أعادتك Google أو Microsoft. يستغرق هذا لحظة.",
+    "finishingSlow": "يستغرق هذا وقتًا أطول من المعتاد."
   },
   "confirmIdentity": {
     "title": "تأكيد هويتك",

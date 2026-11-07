@@ -500,6 +500,7 @@ const entryShots: {
   file: string;
   size: keyof typeof frames;
   scheme?: "light" | "dark";
+  path?: string;
   mock?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<unknown>;
 }[] = [
@@ -573,6 +574,27 @@ const entryShots: {
     size: "phone",
     open: toTheSecondFactor,
   },
+  // Without Clerk's script the callback never ends, so the card stays as it shows while Clerk works.
+  {
+    file: "1.13-signing-you-in-en-light-desktop",
+    size: "desktop",
+    path: "/sso-callback",
+    mock: (page) => page.route("**/clerk.browser.js", (route) => route.abort()),
+  },
+  // The same card after 10 seconds: Playwright's clock moves the page's time on.
+  {
+    file: "1.14-signing-you-in-taking-longer-en-light-desktop",
+    size: "desktop",
+    path: "/sso-callback",
+    mock: async (page) => {
+      await page.clock.install();
+      await page.route("**/clerk.browser.js", (route) => route.abort());
+    },
+    open: async (page) => {
+      await page.clock.fastForward(10_000);
+      await page.getByRole("link", { name: "Try again" }).waitFor();
+    },
+  },
 ];
 
 /** The screen at rest: no pointer over a control, and every opening animation has finished. */
@@ -606,7 +628,7 @@ test.describe("signed out", () => {
       ]);
       await shot.mock?.(page);
 
-      await page.goto("/sign-in");
+      await page.goto(shot.path ?? "/sign-in");
       await page.getByRole("heading", { level: 1 }).waitFor();
       await shot.open?.(page);
       await still(page);

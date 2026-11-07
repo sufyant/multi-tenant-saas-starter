@@ -239,8 +239,9 @@
     "sessionEndedText": "You were signed out on this device. Sign in again to go back to the page you were on.",
     "sendingCode": "Sending the code…",
     "backupCodeSignInText": "Each backup code works once. After you sign in, make new codes in Account and security.",
-    "finishingTitle": "Finishing sign-in…",
-    "finishingText": "Google or Microsoft sent you back. This takes a moment."
+    "finishingTitle": "Signing you in…",
+    "finishingText": "Google or Microsoft sent you back. This takes a moment.",
+    "finishingSlow": "This is taking longer than usual."
   },
   "confirmIdentity": {
     "title": "Confirm it’s you",
