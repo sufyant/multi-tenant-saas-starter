@@ -26,21 +26,21 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
             Language.En,
             "Acme Ltd will be deleted on 22 Nov 2026",
             "Starter\n\nAcme Ltd is closed.\n\nIt will be deleted with all its data on 22 Nov 2026 at 09:30 UTC.\n\n"
-            + "Contact us to reopen it before that date.\nmailto:support@starter.example\n\n"
+            + "Contact support to reopen it before that date.\n\nContact support:\nmailto:support@starter.example\n\n"
             + "You received this because you are an Owner of Acme Ltd."
         },
         {
             Language.Tr,
             "Acme Ltd 22 Kas 2026 tarihinde silinecek",
             "Starter\n\nAcme Ltd kapatıldı.\n\n22 Kas 2026, saat 09:30 UTC itibarıyla tüm verileriyle birlikte silinecek.\n\n"
-            + "Bu tarihten önce yeniden açmak için bize ulaşın.\nmailto:support@starter.example\n\n"
+            + "Bu tarihten önce yeniden açmak için destekle iletişime geçin.\n\nDestekle iletişime geçin:\nmailto:support@starter.example\n\n"
             + "Bu e-postayı, Acme Ltd kuruluşunun Sahibi olduğunuz için aldınız."
         },
         {
             Language.Ar,
             "ستُحذف Acme Ltd في 22 نوفمبر 2026",
             "Starter\n\nأُغلقت Acme Ltd.\n\nستُحذف مع جميع بياناتها في 22 نوفمبر 2026 الساعة 09:30 بالتوقيت العالمي (UTC).\n\n"
-            + "تواصل معنا لإعادة فتحها قبل هذا التاريخ.\nmailto:support@starter.example\n\n"
+            + "تواصل مع الدعم لإعادة فتحها قبل هذا التاريخ.\n\nتواصل مع الدعم:\nmailto:support@starter.example\n\n"
             + "وصلتك هذه الرسالة لأنك مالك في Acme Ltd."
         },
     };
@@ -79,14 +79,16 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
         $"{email.Subject}{email.Html}{email.Text}".ShouldNotContain("{{");
     }
 
-    // "Contact us" links to the brand's support contact (packages/brand).
+    // The button "Contact support" leads to the brand's support contact (packages/brand), as the email boards draw it (13.07).
     [Theory]
-    [MemberData(nameof(Languages))]
-    public async Task SendTenantPurgeWarningEmail_EveryLanguage_LinksContactUsToTheSupportContact(Language language)
+    [InlineData(Language.En, "Contact support")]
+    [InlineData(Language.Tr, "Destekle iletişime geçin")]
+    [InlineData(Language.Ar, "تواصل مع الدعم")]
+    public async Task SendTenantPurgeWarningEmail_EveryLanguage_HasAButtonToTheSupportContact(Language language, string button)
     {
         await SendAsync(Ready(language));
 
-        _channel.Sent.ShouldHaveSingleItem().Html.ShouldContain("href=\"mailto:support@starter.example\"");
+        _channel.Sent.ShouldHaveSingleItem().Html.ShouldMatch($@"href=""mailto:support@starter\.example""\s+class=""e-button""[\s\S]*?{button}</span");
     }
 
     // The moment in the Owner's zone, with the zone's city in the Owner's language, from CLDR as the web names it, and its offset at that
