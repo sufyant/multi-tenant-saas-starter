@@ -218,7 +218,7 @@
     "inviteText": "يصله بريد إلكتروني فيه رابط للانضمام. إذا كانت لهذا العنوان دعوة معلّقة، تحل الجديدة محلها.",
     "inviteEmailPlaceholder": "name@company.com",
     "revokeOwnerHint": "لا يسحب هذه الدعوة إلا مالك.",
-    "inviteLanguage": "لغة البريد",
+    "inviteLanguage": "لغة البريد الإلكتروني",
     "inviteLanguageHint": "تستخدم رسالة الدعوة وشاشاته الأولى هذه اللغة. يمكنه تغييرها لاحقًا.",
     "languageSearch": "ابحث عن لغة",
     "languageEmpty": "لم يُعثر على لغة",
