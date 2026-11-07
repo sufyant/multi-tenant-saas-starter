@@ -43,7 +43,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Error.Code.Value.ShouldBe("tenant.name_invalid");
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Error.Code.Value.ShouldBe("tenant.slug_taken");
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBe(0);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Error.Code.Value.ShouldBe("invitation.not_found");
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         result.Error.Code.Value.ShouldBe("invitation.email_mismatch");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
         result.Error.Code.Value.ShouldBe("member.exists");
         (await PendingInvitationsAsync(tenantId)).ShouldBe(1);
         (await database.ScalarInTenantAsync<long>(tenantId, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
 
     // A query has nothing to reject: the endpoint has checked the list request. It changes nothing and sends nothing either.
@@ -118,7 +118,7 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Value.Items.ShouldBeEmpty();
         (await database.ScalarInTenantAsync<long>(tenant.Id, "SELECT count(*) FROM control_plane.memberships")).ShouldBe(1);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
 
     [Fact]
@@ -132,13 +132,8 @@ public sealed class RejectionTests(Database database) : IAsyncLifetime
 
         result.Value.Items.ShouldBeEmpty();
         (await _testData.CountAsync($"SELECT count(*) FROM control_plane.users WHERE external_id = '{user}'")).ShouldBe(0);
-        OwnMessagesSent(session).ShouldBeEmpty();
+        session.OwnMessagesSent().ShouldBeEmpty();
     }
-
-    // The host's node answers a command of another node of the message store, such as the leader's agent assignment, with
-    // Wolverine's acknowledgement at any moment, and the tracked session records it. Only the application's own messages count.
-    private static IEnumerable<object> OwnMessagesSent(ITrackedSession session) =>
-        session.Sent.AllMessages().Where(message => message.GetType().Assembly != typeof(Envelope).Assembly);
 
     private static string Slug() => $"tenant-{Guid.NewGuid():N}"[..20];
 
