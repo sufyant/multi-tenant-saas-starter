@@ -1240,10 +1240,18 @@ const signInShots: {
   {
     file: "1.04-sign-in-failed-en-light-desktop",
     size: "desktop",
-    // Offline: under Playwright Clerk takes every failed request for an offline browser (navigator.webdriver), so this is the
-    // failure it can reach.
+    // The request that sends the code breaks. Under Playwright Clerk takes a failed request for an offline browser
+    // (navigator.webdriver) and answers nothing, so the page says it is no webdriver, as a person's browser does.
+    mock: async (page) => {
+      await page.addInitScript(() =>
+        Object.defineProperty(Navigator.prototype, "webdriver", {
+          get: () => false,
+        }),
+      );
+      await page.route(clerkApi, (route) => route.abort());
+    },
     open: async (page) => {
-      // TEMPORARY diagnostics for the 1.04 failure: what Clerk logs and what the card says. Removed before merge.
+      // TEMPORARY diagnostics for the 1.04 failure: what Clerk logs and what the card holds. Removed before merge.
       page.on("console", (message) =>
         console.log(`[1.04] ${message.type()}: ${message.text()}`),
       );
@@ -1253,10 +1261,11 @@ const signInShots: {
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
-      await page.context().setOffline(true);
       await page.getByRole("button", { name: "Continue", exact: true }).click();
-      await page.waitForTimeout(5_000);
-      console.log(`[1.04] card: ${await page.locator("main").innerText()}`);
+      await page.waitForTimeout(3_000);
+      console.log(
+        `[1.04] card: ${(await page.locator("main").innerHTML()).slice(0, 4000)}`,
+      );
       // Only the banner: Next's route announcer is an empty alert that is there at once.
       await page.getByText("We could not send the code").waitFor();
     },
