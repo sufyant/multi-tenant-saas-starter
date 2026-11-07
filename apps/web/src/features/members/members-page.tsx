@@ -158,9 +158,8 @@ export function MembersPage() {
   const memberLimit = plan.limit(LimitKey.MembersMax);
   const membersTotal = memberCount.data?.total;
   const pending =
-    membersTotal === undefined
-      ? 0
-      : plan.seats(LimitKey.MembersMax, membersTotal).invitations;
+    membersTotal !== undefined &&
+    plan.pending(LimitKey.MembersMax, membersTotal);
   const viewInvitations = () =>
     void setParams({ tab: "invitations", q: null, roleId: null, sort: null });
 
@@ -355,7 +354,7 @@ export function MembersPage() {
   })();
   // Over the limit, the banner offers the invitations while one is pending, for whom may read them (F56).
   const bannerAction =
-    memberLimit.overLimit && seesInvitations && pending > 0 ? (
+    memberLimit.overLimit && seesInvitations && pending ? (
       <Button onClick={viewInvitations}>{t("plans.viewInvitations")}</Button>
     ) : null;
   // No counts while the list loads or cannot load (8.02, 8.03).

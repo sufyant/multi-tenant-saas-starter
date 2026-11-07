@@ -57,11 +57,15 @@ export function usePlan(): {
   limit: (key: LimitKey) => LimitState;
   /** The seats of a limit that counts the members and the pending invitations, from ListMembers' `total`. */
   seats: (key: LimitKey, members: number) => Seats;
+  /** Whether a pending invitation counts in those seats: what "View invitations" waits for. */
+  pending: (key: LimitKey, members: number) => boolean;
 } {
   const { detail } = useTenant();
   return {
     on: (key) => featureOn(detail, key),
     limit: (key) => limitOf(detail, key),
     seats: (key, members) => seatsOf(limitOf(detail, key), members),
+    pending: (key, members) =>
+      seatsOf(limitOf(detail, key), members).invitations > 0,
   };
 }

@@ -1,4 +1,24 @@
+import { ErrorCode } from "@repo/api-client";
+import { z } from "zod";
 import { csvStream } from "./csv";
+
+const uuid = z.uuid();
+
+/**
+ * Whether a route's id is an id, before it goes into an API path. Next decodes a route segment, so `%2F` or `..` would reach the
+ * path decoded and pass by the BFF's own checks of the address (F6); anything but a UUID answers 404, as the BFF does.
+ */
+export function routeNotFoundUnlessUuid(id: string): Response | null {
+  return uuid.safeParse(id).success
+    ? null
+    : Response.json(
+        { status: 404, code: ErrorCode.RouteNotFound },
+        {
+          status: 404,
+          headers: { "Content-Type": "application/problem+json" },
+        },
+      );
+}
 
 /** A call of the API as the signed-in person, through the BFF and its checks (F6). It answers the API's status and body. */
 export type ExportApi = (
@@ -13,7 +33,12 @@ export const exportApi =
     forward: (request: Request) => Promise<Response>,
   ): ExportApi =>
   (path, method = "GET") =>
-    forward(new Request(new URL(`/api${path}`, request.url), { method }));
+    forward(
+      new Request(new URL(`/api${path}`, request.url), {
+        method,
+        signal: request.signal,
+      }),
+    );
 
 /** A page of a list for the file. An error answer throws, so the stream errors and the answer is cut: no half file. */
 export async function readPage<T>(api: ExportApi, path: string): Promise<T> {

@@ -25,7 +25,8 @@ function save({ blob, name }: { blob: Blob; name: string }) {
   link.href = URL.createObjectURL(blob);
   link.download = name;
   link.click();
-  URL.revokeObjectURL(link.href);
+  // A browser may still read the address after the click starts the download, so it goes on the next task.
+  setTimeout(() => URL.revokeObjectURL(link.href));
 }
 
 /**

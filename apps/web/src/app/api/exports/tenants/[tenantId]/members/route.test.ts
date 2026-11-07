@@ -85,12 +85,12 @@ const tenant = http.get(`${api}/v1/tenants/:tenantId`, () =>
   }),
 );
 
-const exportOf = (query = "") =>
+const exportOf = (query = "", id = tenantId) =>
   POST(
-    new Request(`${web}/api/exports/tenants/${tenantId}/members${query}`, {
+    new Request(`${web}/api/exports/tenants/${id}/members${query}`, {
       method: "POST",
     }),
-    { params: Promise.resolve({ tenantId }) },
+    { params: Promise.resolve({ tenantId: id }) },
   );
 
 const text = async (answer: Response) =>
@@ -174,10 +174,10 @@ describe("Export members", () => {
 
     await text(await exportOf("?q=omar&roleId=r-lead&sort=-name"));
 
-    const page = requests.find((request) =>
+    const [page] = requests.filter((request) =>
       new URL(request.url).pathname.endsWith("/members"),
     );
-    const params = new URL(page?.url ?? "").searchParams;
+    const params = new URL(String(page?.url)).searchParams;
     expect(params.get("q")).toBe("omar");
     expect(params.get("roleId")).toBe("r-lead");
     expect(params.get("sort")).toBe("-name");
@@ -190,18 +190,22 @@ describe("Export members", () => {
       me(),
       tenant,
       audit(),
-      http.get(`${api}/v1/tenants/:tenantId/members`, ({ request }) =>
-        new URL(request.url).searchParams.get("page") === "1"
-          ? HttpResponse.json({
-              items: [member(1)],
-              page: 1,
-              pageSize: 1,
-              total: 2,
-            })
-          : HttpResponse.json(
-              { status: 500, code: "server.error", traceId: "00-trace" },
-              { status: 500 },
-            ),
+      http.get(
+        `${api}/v1/tenants/:tenantId/members`,
+        () =>
+          HttpResponse.json({
+            items: [member(1)],
+            page: 1,
+            pageSize: 1,
+            total: 2,
+          }),
+        { once: true },
+      ),
+      http.get(`${api}/v1/tenants/:tenantId/members`, () =>
+        HttpResponse.json(
+          { status: 500, code: "server.error", traceId: "00-trace" },
+          { status: 500 },
+        ),
       ),
     );
 
@@ -261,4 +265,16 @@ describe("Export members", () => {
     );
     expect(lines[2]).toBe("Deleted user,,Support lead,2026-03-12");
   });
+
+  // Next decodes the route's segment, so an id with a separator would reach the API path decoded: anything but a UUID is
+  // refused before any call, as the BFF refuses an encoded separator (F6).
+  it.each(["../me", "x/../../platform", "not-an-id"])(
+    "ExportMembers_TenantIdIsNoUuid_%s_Answers404AndCallsNothing",
+    async (id) => {
+      const answer = await exportOf("", id);
+
+      expect(answer.status).toBe(404);
+      expect(requests).toEqual([]);
+    },
+  );
 });

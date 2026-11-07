@@ -187,6 +187,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 
 - Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
 - Roles and the Activity log drop their Freshness line, as F59 says (the maintainer's decision of 2026-11-07).
+- Roles and the Activity log grow with Load more, with the Loading more row and the live region, as F9 says (the maintainer's decision of 2026-11-07).
 - The Activity log's file can be large. Measure the size that `apiDownload` holds in the browser's memory, and ask for a limit or a date range if it needs one (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
 

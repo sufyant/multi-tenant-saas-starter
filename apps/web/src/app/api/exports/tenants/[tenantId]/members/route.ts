@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { membersFile } from "@/features/members/members-file";
 import { bffWith } from "@/shared/bff";
-import { exportApi } from "@/shared/export-file";
+import { exportApi, routeNotFoundUnlessUuid } from "@/shared/export-file";
 
 // The members' CSV file (F6): the audit command, then the file from the API's pages, as a stream.
 export async function POST(
@@ -9,6 +9,8 @@ export async function POST(
   { params }: RouteContext<"/api/exports/tenants/[tenantId]/members">,
 ): Promise<Response> {
   const { tenantId } = await params;
+  const notFound = routeNotFoundUnlessUuid(tenantId);
+  if (notFound) return notFound;
   return membersFile(
     exportApi(request, bffWith(fetch)),
     tenantId,

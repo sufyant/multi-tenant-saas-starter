@@ -10,7 +10,7 @@ export type AppFrame = {
   environment: Environment;
   /** The image's commit, seven characters; none in a run without `SOURCE_REVISION`. */
   version?: string;
-  /** `WEB_APP_URL`, the web app's origin: the host of an organisation's address, and the platform's "Open the web app" (F7). */
+  /** `WEB_APP_URL`, the web app's origin: the web writes the host of an organisation's address from it (F7). */
   webAppUrl?: string;
 };
 

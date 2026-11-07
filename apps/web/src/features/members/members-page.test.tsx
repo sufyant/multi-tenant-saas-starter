@@ -1089,7 +1089,7 @@ describe("MembersPage", () => {
     expect(
       screen.queryByRole("alertdialog", { name: "Export members" }),
     ).not.toBeInTheDocument();
-    expect(Object.fromEntries(requests[0] ?? [])).toEqual({
+    expect(Object.fromEntries(requests[0] as URLSearchParams)).toEqual({
       timeZone: browserTimeZone(),
     });
   });
@@ -1121,7 +1121,7 @@ describe("MembersPage", () => {
     );
 
     await expectVisibleToast("Members exported");
-    expect(Object.fromEntries(requests[0] ?? [])).toEqual({
+    expect(Object.fromEntries(requests[0] as URLSearchParams)).toEqual({
       roleId: roleOf.admin.id,
       sort: "name",
       timeZone: browserTimeZone(),
