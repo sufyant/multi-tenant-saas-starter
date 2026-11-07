@@ -157,6 +157,15 @@ describe("Combobox", () => {
     );
     expect(trigger.lastElementChild).toHaveClass("lucide-chevron-down");
   });
+  // The Select of the Components page draws a chevron down, as the Profile's language and time zone (frame 5.01, step 36).
+  it("Combobox_Field_EndsWithAChevronDown", () => {
+    render(<Combobox {...props} options={languages} value="en-IE" />);
+
+    const trigger = screen.getByRole("combobox", {
+      name: "Language and format",
+    });
+    expect(trigger.lastElementChild).toHaveClass("lucide-chevron-down");
+  });
   // The Auth footer's language (frames 1.01 and 1.35): the globe, the name and a chevron at the end.
   it("Combobox_Compact_HasTheGlobeTheNameAndAChevron", () => {
     render(

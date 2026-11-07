@@ -1,10 +1,12 @@
 "use client";
 
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useClerk } from "@clerk/nextjs";
 import { ErrorCode } from "@repo/api-client";
-import { AuthCard, AuthLayout } from "@repo/ui/components/auth-layout";
+import { brand } from "@repo/brand";
+import { useAppFrame } from "@repo/ui/components/app-frame";
+import { AuthHeading, AuthScreen } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
-import { Status } from "@repo/ui/components/status";
+import { supportLink } from "@repo/ui/lib/support-link";
 import { useTranslations } from "next-intl";
 
 /** The code of the API's refusal, which names the page's texts: `account.user.suspended.title`. */
@@ -13,46 +15,47 @@ export type AccountBlock =
   | typeof ErrorCode.UserDeleted;
 
 /**
- * The page of a user the API refuses on every request (the AccountBlocked board): 403 `user.suspended` or `user.deleted` (A9). It
- * shows who is signed in, from Clerk, and the one way out: Sign out, or Use another email, which also signs out.
+ * The page of a user the API refuses on every request (frames 1.40 to 1.47): 403 `user.suspended` or `user.deleted` (A9). A
+ * suspended account can ask support, whose email names the version, and sign out; a deleted one has one way out, another email,
+ * which signs out.
  */
 export function AccountBlocked({ block }: { block: AccountBlock }) {
   const t = useTranslations();
-  const { user } = useUser();
   const { signOut } = useClerk();
-  const email = user?.primaryEmailAddress?.emailAddress;
+  const { version } = useAppFrame();
+  const leave = () => void signOut({ redirectUrl: "/sign-in" });
   return (
-    <AuthLayout brand={t("meta.title")}>
-      <AuthCard>
-        <Status
-          tone={block === ErrorCode.UserSuspended ? "warning" : "neutral"}
-        >
-          {t(`account.${block}.status`)}
-        </Status>
-        <h1 className="text-page-title">{t(`account.${block}.title`)}</h1>
-        <p className="text-body text-muted-foreground">
-          {t(`account.${block}.text`)}
-        </p>
-        {email && (
-          <p className="text-small text-muted-foreground">
-            {t.rich("signIn.signedInAs", {
-              email: () => (
-                <bdi dir="ltr" className="font-medium text-foreground">
-                  {email}
-                </bdi>
-              ),
-            })}
-          </p>
-        )}
-        <div>
+    <AuthScreen brand={t("meta.title")}>
+      <AuthHeading
+        title={t(`account.${block}.title`)}
+        text={t(`account.${block}.text`)}
+      />
+      {block === ErrorCode.UserSuspended ? (
+        <>
           <Button
             variant="primary"
-            onClick={() => void signOut({ redirectUrl: "/sign-in" })}
+            className="w-full"
+            render={
+              <a
+                href={supportLink(
+                  brand.supportUrl,
+                  version && t("appShell.supportBody", { version }),
+                )}
+              />
+            }
+            nativeButton={false}
           >
-            {t(`account.${block}.action`)}
+            {t("problems.contactSupport")}
           </Button>
-        </div>
-      </AuthCard>
-    </AuthLayout>
+          <Button variant="ghost" className="self-center" onClick={leave}>
+            {t("common.signOut")}
+          </Button>
+        </>
+      ) : (
+        <Button variant="primary" className="w-full" onClick={leave}>
+          {t("account.user.deleted.action")}
+        </Button>
+      )}
+    </AuthScreen>
   );
 }

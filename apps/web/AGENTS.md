@@ -19,4 +19,5 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - What the user may do comes from `GetMyTenant.permissions` (F5).
 - Settings opens Profile, the page every person can open. Inside Settings the sidebar shows the settings menu: My account (Profile, Account and security) and Organisation (General, Members, Roles, Activity log), each page only with its read permission (F5, F59).
 - `/account/deleted` is open in the proxy: the page after Delete my account, which names the address from the tab's storage (F62).
-- `/invitations/accept?code=...` is open in the proxy: it signs a new person up with Clerk's ticket, or sends a signed-out person to sign-in and back (F44).
+- `/invitations/accept?code=...` is open in the proxy: it signs a new person up with Clerk's ticket, or signs a signed-out person in on the page itself (F44).
+- `/` names the organisation of the cookie `last-organisation` "last used" and lists it first; the shell writes the cookie once Clerk has loaded (F30, F13).

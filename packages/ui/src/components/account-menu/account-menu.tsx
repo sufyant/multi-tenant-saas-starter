@@ -29,8 +29,8 @@ export type AccountMenuProps = {
   email: string;
   /** The signed-in person: the avatar draws their initials. */
   person: Person;
-  /** The person's Profile page. */
-  profileHref: string;
+  /** The person's Profile page; without it the item does not show, as on "No access yet", which has no organisation (1.19). */
+  profileHref?: string;
   /** Account and security; without it the item does not show, as a page a person cannot open is not in their menu. */
   accountAndSecurityHref?: string;
   /** The platform's own item, "Open the web app": the web app's origin, opened in a new tab. Without it the item does not show. */
@@ -40,8 +40,11 @@ export type AccountMenuProps = {
   version?: string;
   /** The link element: Next.js's Link in the apps. */
   linkComponent?: ElementType;
-  /** rail: the sidebar's place, the avatar alone on a tablet's icon rail and the avatar and the name from bp-desktop; row: always both. */
-  variant?: "row" | "rail";
+  /**
+   * rail: the sidebar's place, the avatar alone on a tablet's icon rail and the avatar and the name from bp-desktop; row: always
+   * both; chip: the round button at the top of a page without the shell, with the menu under it (1.19).
+   */
+  variant?: "row" | "rail" | "chip";
   /** Previews only: render the menu open. */
   open?: boolean;
 };
@@ -73,6 +76,7 @@ export function AccountMenu({
     return () => clearTimeout(timer);
   }, [copied]);
   const rail = variant === "rail";
+  const chip = variant === "chip";
   const item = "max-tablet:min-h-touch-target";
   return (
     <>
@@ -83,8 +87,10 @@ export function AccountMenu({
       <DropdownMenu defaultOpen={open}>
         <DropdownMenuTrigger
           className={cn(
-            "flex min-w-0 items-center gap-2.5 rounded-md py-1 text-small font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent max-tablet:h-12 max-tablet:px-2",
-            "w-full ps-1.5 pe-2",
+            "flex min-w-0 items-center text-small font-medium outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent",
+            chip
+              ? "h-9 max-w-60 gap-2 rounded-full border border-border bg-card ps-1 pe-2.5 max-tablet:h-control-lg"
+              : "w-full gap-2.5 rounded-md py-1 ps-1.5 pe-2 max-tablet:h-12 max-tablet:px-2",
             rail &&
               "max-desktop:size-12 max-desktop:justify-center max-desktop:p-0",
           )}
@@ -92,7 +98,8 @@ export function AccountMenu({
           <Avatar
             person={person}
             className={cn(
-              "size-5.5 shrink-0 max-tablet:size-7",
+              "shrink-0",
+              chip ? "size-7" : "size-5.5 max-tablet:size-7",
               rail && "max-desktop:size-8",
             )}
           />
@@ -105,14 +112,16 @@ export function AccountMenu({
           >
             {name}
           </bdi>
-          <Icon
-            icon={ChevronsUpDownIcon}
-            size={14}
-            className={cn(
-              "text-muted-foreground",
-              rail && "max-desktop:hidden",
-            )}
-          />
+          {!chip && (
+            <Icon
+              icon={ChevronsUpDownIcon}
+              size={14}
+              className={cn(
+                "text-muted-foreground",
+                rail && "max-desktop:hidden",
+              )}
+            />
+          )}
           {rail && (
             <span className="sr-only desktop:hidden">
               {initialsOf(person)} {t("common.account")}
@@ -120,8 +129,8 @@ export function AccountMenu({
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          side="top"
-          align="start"
+          side={chip ? "bottom" : "top"}
+          align={chip ? "end" : "start"}
           sideOffset={6}
           className="w-60 max-w-[calc(100vw-var(--space-8))]"
         >
@@ -136,13 +145,15 @@ export function AccountMenu({
               </bdi>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
-          <DropdownMenuItem
-            render={<Link href={profileHref} />}
-            className={item}
-          >
-            <Icon icon={UserIcon} />
-            {t("appShell.profile")}
-          </DropdownMenuItem>
+          {profileHref && (
+            <DropdownMenuItem
+              render={<Link href={profileHref} />}
+              className={item}
+            >
+              <Icon icon={UserIcon} />
+              {t("appShell.profile")}
+            </DropdownMenuItem>
+          )}
           {accountAndSecurityHref && (
             <DropdownMenuItem
               render={<Link href={accountAndSecurityHref} />}

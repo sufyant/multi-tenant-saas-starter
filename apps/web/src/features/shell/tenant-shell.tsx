@@ -36,6 +36,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { rememberOrganisation } from "@/shared/last-organisation";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
 import { organisationPages } from "@/shared/organisation-pages";
@@ -62,6 +63,12 @@ export function TenantShell({
   const roleName = useRoleName();
   const pathname = usePathname();
   const { tenant, detail } = useTenant();
+  // The organisation opened, so it is the "last used" of Choose an organisation (frame 1.18; F30). A server action that sets a
+  // cookie renders the page again, so it waits until Clerk's script has loaded, as LocaleSync does (F13).
+  const { loaded } = useClerk();
+  useEffect(() => {
+    if (loaded) void rememberOrganisation(tenant.slug);
+  }, [loaded, tenant.slug]);
   const permissions = detail.permissions;
   const role = roleName(detail.role);
   const can = (permission: Permission) => permissions.includes(permission);

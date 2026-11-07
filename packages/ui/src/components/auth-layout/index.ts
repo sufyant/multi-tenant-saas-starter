@@ -5,3 +5,4 @@ export {
   AuthScreen,
   type AuthScreenProps,
 } from "./auth-screen";
+export { NoticeScreen, type NoticeScreenProps } from "./notice-screen";

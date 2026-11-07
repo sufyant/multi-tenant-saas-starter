@@ -377,6 +377,44 @@ describe("SignIn", () => {
     expect(decorateUrl).toHaveBeenCalledWith("/northwind/settings?tab=one");
   });
 
+  // The invitation's page holds the sign-in and comes back to itself, without the code in any address (F44).
+  it("SignIn_RedirectTo_FinalizesToThatPathAndNotToTheAddresssRedirect", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/invitations/accept?code=secret&redirect_url=%2Fnorthwind",
+    );
+    fakeSignIn();
+    render(
+      <NextIntlClientProvider
+        locale="en"
+        messages={en}
+        timeZone="Europe/Dublin"
+      >
+        <SignIn
+          title="Sign in to accept your invitation"
+          text="Use the email that received the invitation."
+          secondFactorTitle="Two-step verification"
+          secondFactorText="Open your authenticator app."
+          brand="Starter"
+          onLanguageChange={async () => {}}
+          privacyUrl="https://starter.example/privacy"
+          redirectTo="/invitations/accept"
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: "Sign in to accept your invitation",
+      }),
+    ).toBeInTheDocument();
+    const user = await sendCodeTo("ali@northwind.io");
+
+    await enterCode(user);
+
+    expect(decorateUrl).toHaveBeenCalledWith("/invitations/accept");
+  });
+
   it("SignIn_RedirectToAnotherOrigin_FinalizesToHome", async () => {
     window.history.replaceState(
       {},

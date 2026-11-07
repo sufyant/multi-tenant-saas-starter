@@ -4,23 +4,28 @@ import {
   BuiltInRole,
   DataExportResponseStatus,
   ErrorCode,
+  InvitationResponseState,
   Language,
   MyTenantResponseStatus,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
+import { lastOrganisationCookie } from "../src/shared/last-organisation-cookie";
 import {
   roles as builtInRoles,
   customRoles,
+  invitationCode,
   me,
   mockApi,
   mockAuditLog,
   mockDataExport,
+  mockInvitation,
   mockMembers,
   mockNotifications,
   mockRename,
   mockTenantStatus,
   northwind,
   type Plan,
+  pendingInvitation,
   pro,
   roleChanged,
 } from "./api";
@@ -531,8 +536,7 @@ for (const { language, scheme, size } of reviewVariants)
       });
     });
 
-// The bell and its list (the Notifications boards): the popover on a desktop, the full screen on a phone in Arabic, and
-// Settings › Notifications on a tablet in Turkish.
+// The bell and its list (the Notifications boards): the popover on a desktop and the full screen on a phone in Arabic.
 test("Screenshot_Notifications_EnglishLightDesktop", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await page.emulateMedia({ colorScheme: "light" });
@@ -1166,6 +1170,318 @@ for (const shot of shellShots.map(withDefaults))
     });
   });
 
+// The pages before an organisation opens (the Entry frames 1.13 to 1.19 and 1.40 to 1.51, and 2.13 and 2.14), signed in, at the
+// frames' sizes. The name gives the frame.
+const acceptPage = `/invitations/accept?code=${encodeURIComponent(invitationCode)}`;
+const harbour = {
+  ...northwind,
+  id: "0198f0a2-0000-7000-8000-0000000000b3",
+  slug: "harbour-logistics",
+  name: "Harbour Logistics",
+  role: {
+    id: builtInRoles.member.id,
+    name: builtInRoles.member.name,
+    builtIn: builtInRoles.member.builtIn,
+  },
+};
+
+/** ListMyTenants answers these organisations. */
+const memberOf = (items: (typeof northwind)[]) => (page: Page) =>
+  page.route("**/api/v1/me/tenants*", (route) =>
+    route.fulfill({
+      json: { items, page: 1, pageSize: 100, total: items.length },
+    }),
+  );
+
+/** GetMe refuses the account (A9), on every page. */
+const accountRefused = (code: ErrorCode) => (page: Page) =>
+  page.route("**/api/v1/me", (route) =>
+    route.fulfill({
+      status: 403,
+      json: { status: 403, title: "Refused", code, traceId: "00-e2e" },
+    }),
+  );
+
+/** The frame's person: Lena Fischer, with no organisation (1.19). */
+const lena = (page: Page) =>
+  page.route("**/api/v1/me", (route) =>
+    route.fulfill({
+      json: {
+        ...me(Language.En),
+        name: "Lena Fischer",
+        email: "lena@northwind.example",
+      },
+    }),
+  );
+
+const omar = {
+  ...pendingInvitation,
+  inviterName: { ...pendingInvitation.inviterName, name: "Omar Haddad" },
+};
+
+const entryShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  path: string;
+  mock: (page: Page) => Promise<unknown>;
+  cookies?: { name: string; value: string }[];
+  open?: (page: Page) => Promise<unknown>;
+}[] = [
+  {
+    file: "1.13-accept-invitation-en-light-desktop",
+    size: "desktop",
+    path: acceptPage,
+    mock: (page) => mockInvitation(page, omar),
+  },
+  {
+    file: "1.16-invitation-expired-en-light-desktop",
+    size: "desktop",
+    path: acceptPage,
+    mock: (page) =>
+      mockInvitation(page, {
+        ...omar,
+        state: InvitationResponseState.Expired,
+        expiresAt: "2026-10-30T13:32:00Z",
+      }),
+  },
+  {
+    file: "1.16-invitation-cancelled-en-light-desktop",
+    size: "desktop",
+    path: acceptPage,
+    mock: (page) =>
+      mockInvitation(page, {
+        ...omar,
+        state: InvitationResponseState.Cancelled,
+      }),
+  },
+  {
+    file: "1.17-invitation-for-another-email-en-light-desktop",
+    size: "desktop",
+    path: acceptPage,
+    mock: (page) => mockInvitation(page, ErrorCode.InvitationEmailMismatch),
+  },
+  {
+    file: "1.18-choose-an-organisation-en-light-desktop",
+    size: "desktop",
+    path: "/",
+    mock: async (page) => {
+      await mockApi(page);
+      await memberOf([harbour, northwind])(page);
+    },
+    cookies: [{ name: lastOrganisationCookie, value: northwind.slug }],
+  },
+  {
+    file: "1.19-no-access-yet-account-menu-en-light-desktop",
+    size: "desktop",
+    path: "/",
+    mock: async (page) => {
+      await mockApi(page);
+      await memberOf([])(page);
+      await lena(page);
+    },
+    open: async (page) => {
+      await page.getByRole("button", { name: /Lena Fischer/ }).click();
+      await page.getByRole("menu").waitFor();
+    },
+  },
+  ...(
+    [
+      [
+        "1.40-blocked-account-suspended-en-light-desktop",
+        "desktop",
+        "light",
+        Language.En,
+      ],
+      [
+        "1.41-blocked-account-suspended-en-dark-desktop",
+        "desktop",
+        "dark",
+        Language.En,
+      ],
+      [
+        "1.42-phone-blocked-account-suspended-en-light-phone",
+        "phone",
+        "light",
+        Language.En,
+      ],
+      [
+        "1.43-phone-blocked-account-suspended-ar-light-phone",
+        "phone",
+        "light",
+        Language.Ar,
+      ],
+    ] as const
+  ).map(([file, size, scheme, language]) => ({
+    file,
+    size,
+    scheme,
+    language,
+    path: "/",
+    mock: async (page: Page) => {
+      await mockApi(page);
+      await accountRefused(ErrorCode.UserSuspended)(page);
+    },
+  })),
+  ...(
+    [
+      [
+        "1.44-blocked-account-deleted-en-light-desktop",
+        "desktop",
+        "light",
+        Language.En,
+      ],
+      [
+        "1.45-blocked-account-deleted-en-dark-desktop",
+        "desktop",
+        "dark",
+        Language.En,
+      ],
+      [
+        "1.46-phone-blocked-account-deleted-en-light-phone",
+        "phone",
+        "light",
+        Language.En,
+      ],
+      [
+        "1.47-phone-blocked-account-deleted-ar-light-phone",
+        "phone",
+        "light",
+        Language.Ar,
+      ],
+    ] as const
+  ).map(([file, size, scheme, language]) => ({
+    file,
+    size,
+    scheme,
+    language,
+    path: "/",
+    mock: async (page: Page) => {
+      await mockApi(page);
+      await accountRefused(ErrorCode.UserDeleted)(page);
+    },
+  })),
+  ...(
+    [
+      [
+        "1.48-refused-join-system-admin-en-light-desktop",
+        "desktop",
+        "light",
+        Language.En,
+      ],
+      [
+        "1.49-refused-join-system-admin-en-dark-desktop",
+        "desktop",
+        "dark",
+        Language.En,
+      ],
+      [
+        "1.50-phone-refused-join-system-admin-en-light-phone",
+        "phone",
+        "light",
+        Language.En,
+      ],
+      [
+        "1.51-phone-refused-join-system-admin-ar-light-phone",
+        "phone",
+        "light",
+        Language.Ar,
+      ],
+    ] as const
+  ).map(([file, size, scheme, language]) => ({
+    file,
+    size,
+    scheme,
+    language,
+    path: acceptPage,
+    mock: async (page: Page) => {
+      await mockInvitation(page, omar);
+      await page.route("**/api/v1/me/invitations/accept", (route) =>
+        route.fulfill({
+          status: 422,
+          json: {
+            status: 422,
+            title: "Refused",
+            code: ErrorCode.InvitationSystemAdminCannotJoin,
+            traceId: "00-e2e",
+          },
+        }),
+      );
+    },
+    open: async (page: Page) => {
+      await page
+        .getByRole("button", { name: /^(Accept and continue|اقبل وتابع)$/ })
+        .click();
+      await page
+        .getByRole("heading", { name: /System admins|مسؤولي النظام/ })
+        .waitFor();
+    },
+  })),
+  {
+    file: "2.13-organisation-suspended-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}`,
+    mock: async (page) => {
+      await mockApi(page);
+      await memberOf([
+        { ...northwind, status: MyTenantResponseStatus.Suspended },
+        harbour,
+      ])(page);
+    },
+  },
+  {
+    file: "2.14-organisation-closed-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}`,
+    mock: async (page) => {
+      await mockApi(page);
+      await memberOf([
+        { ...northwind, status: MyTenantResponseStatus.Closed },
+        harbour,
+      ])(page);
+    },
+  },
+];
+
+/** A shot's language, theme and cookies when it names none: English, light, none. */
+const entryDefaults = (shot: (typeof entryShots)[number]) => ({
+  ...shot,
+  language: shot.language ?? Language.En,
+  scheme: shot.scheme ?? "light",
+  cookies: shot.cookies ?? [],
+});
+
+for (const shot of entryShots.map(entryDefaults))
+  test(`Screenshot_Entry_${shot.file}`, async ({ page, context, baseURL }) => {
+    await setupClerkTestingToken({ page });
+    await page.emulateMedia({ colorScheme: shot.scheme });
+    await page.setViewportSize(frames[shot.size]);
+    await context.addCookies(
+      [{ name: localeCookie, value: shot.language }, ...shot.cookies].map(
+        (cookie) => ({ ...cookie, url: baseURL }),
+      ),
+    );
+    await shot.mock(page);
+
+    await page.goto(shot.path);
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await shot.open?.(page);
+    await page.mouse.move(0, 0);
+    await page.evaluate(
+      () =>
+        new Promise((done) =>
+          requestAnimationFrame(() => requestAnimationFrame(done)),
+        ),
+    );
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((each) => each.finished)),
+    );
+
+    await page.screenshot({ path: `${folder}/entry-${shot.file}.png` });
+  });
+
 // The sign-in frames of the Entry section (1.01 to 1.08, 1.20 to 1.22, 1.35 to 1.39, 1.52). Each shot runs signed out, through Clerk's
 // test mode: the setup's address takes the code 424242 and a wrong code gets Clerk's own refusal. Playwright holds, breaks or
 // changes Clerk's answers only to reach a state that the real flow passes too quickly (sending), cannot reach without a failure
@@ -1367,6 +1683,17 @@ const signInShots: {
       await page.clock.fastForward(10_000);
       await page.getByRole("link", { name: "Try again" }).waitFor();
     },
+  },
+  // Signed out, the invitation's page signs the person in itself, without the frame's names (the maintainer's decision C).
+  {
+    file: "1.13-accept-invitation-signed-out-en-light-desktop",
+    size: "desktop",
+    path: acceptPage,
+  },
+  {
+    file: "1.23-phone-accept-invitation-signed-out-en-light-phone",
+    size: "phone",
+    path: acceptPage,
   },
   {
     file: "1.39-phone-sign-in-ar-light-phone",
