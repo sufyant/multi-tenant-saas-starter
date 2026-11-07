@@ -146,6 +146,8 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 
 - The invitation, the removal, the data file, the generic notification, the closed organisation and the deletion warning, in light and dark, in three languages (13.01, 13.03 to 13.08, 13.10 to 13.15).
 - It waits for 37a-backend.
+- As built: one layout for every email, the account emails included. A changed role's footer names the organisation (13.05), and a footer may name a value its type always has. The deletion warning has a "Contact support" button (13.07). `pnpm --filter @repo/emails screenshots` takes the shots, and CI keeps them with the apps' shots.
+- The data file's email keeps the generic button and no greeting or request date: the recipient's name and the date of the request have no source, and the web has no Account and security page without an organisation (the maintainer's decisions of 2026-11-07). Done.
 
 37a-frontend-sign-in, the sign-in screens of both apps:
 
@@ -172,6 +174,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 37a-frontend-3, Roles and Activity log:
 
 - Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
+- The web opens `/account`, an address without an organisation. It leads to the Account and security page of the last used organisation, or to the start page when there is none. The email button and the bell's link of the kind `account_security` move to this address (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
 
 37b, the platform's pages:
