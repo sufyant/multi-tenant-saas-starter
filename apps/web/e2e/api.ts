@@ -376,7 +376,14 @@ export async function mockMembers(
     role = BuiltInRole.Owner,
     language = Language.En,
     plan = pro,
-  }: { role?: BuiltInRole; language?: Language; plan?: Plan } = {},
+    team,
+  }: {
+    role?: BuiltInRole;
+    language?: Language;
+    plan?: Plan;
+    /** The team of a section of the design, in place of the boards' members, invitations and roles. */
+    team?: Team;
+  } = {},
 ): Promise<void> {
   await mockApi(page, language);
   const viewer = members.find((member) => member.role.id === roles[role].id);
@@ -445,6 +452,475 @@ export async function mockMembers(
   });
   await page.route(`**/api/v1/tenants/${northwind.id}/invitations/*`, (route) =>
     route.fulfill({ status: 204 }),
+  );
+  if (team) await mockTeam(page, team, { role, language, plan });
+}
+
+/** A team that a section of the design draws: the organisation's name and creation, its members, invitations and custom roles. */
+export type Team = {
+  organisation: string;
+  createdAt: string;
+  members: MemberResponse[];
+  invitations: InvitationResponse[];
+  customRoles: RoleDetailResponse[];
+};
+
+const teamCustom = (n: number, name: string, permissions: Permission[]) =>
+  custom(`0198f0a2-0000-7000-8000-0000000002c${n}`, name, permissions);
+
+/** The custom roles of the Members frames, in the names of a language: Support lead and Onboarding an Admin may give; Role manager and Auditor not. */
+const teamRoles = (names: [string, string, string, string]) => [
+  teamCustom(1, names[0], [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantMembersUpdate,
+    Permission.TenantInvitationsRead,
+    Permission.TenantInvitationsCreate,
+    Permission.TenantRolesRead,
+    Permission.TenantAuditRead,
+  ]),
+  teamCustom(2, names[1], [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantRolesRead,
+    Permission.TenantRolesCreate,
+    Permission.TenantRolesUpdate,
+    Permission.TenantRolesDelete,
+  ]),
+  teamCustom(
+    3,
+    names[2],
+    tenantPermissions.filter((name) => name !== Permission.TenantOwnersManage),
+  ),
+  teamCustom(4, names[3], [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantInvitationsRead,
+    Permission.TenantInvitationsCreate,
+  ]),
+];
+
+/** A member of a frame; the first one is the signed-in person of `me`. */
+const teammate = (
+  n: number,
+  name: string,
+  email: string,
+  role: RoleDetailResponse,
+  joinedOn: string,
+): MemberResponse => ({
+  userId:
+    n === 1
+      ? me(Language.En).id
+      : `0198f0a2-0000-7000-8000-0000000002${String(n).padStart(2, "0")}`,
+  name,
+  email,
+  role: roleOf(role),
+  deleted: false,
+  joinedAt: `${joinedOn}T09:00:00Z`,
+});
+
+const northwindRoles = teamRoles([
+  "Support lead",
+  "Role manager",
+  "Auditor",
+  "Onboarding",
+]);
+const [supportLead, roleManager] = northwindRoles as [
+  RoleDetailResponse,
+  RoleDetailResponse,
+];
+
+/**
+ * Northwind as the Members frames draw it (8.01): 11 people, then four more for the frames at and over a limit (8.43, 8.45). Grace
+ * Okafor is a Member: the frames' Billing manager is step 40's.
+ */
+const northwindPeople = [
+  teammate(
+    1,
+    "Ayşe Demir",
+    "ayse@northwind.example",
+    roles.owner,
+    "2026-03-12",
+  ),
+  teammate(
+    2,
+    "Omar Haddad",
+    "omar@northwind.example",
+    roles.admin,
+    "2026-03-14",
+  ),
+  teammate(
+    3,
+    "Lena Fischer",
+    "lena@northwind.example",
+    roles.member,
+    "2026-04-02",
+  ),
+  teammate(
+    4,
+    "Kenji Sato",
+    "kenji@northwind.example",
+    supportLead,
+    "2026-05-09",
+  ),
+  teammate(
+    5,
+    "Maria Santos",
+    "maria@northwind.example",
+    roles.member,
+    "2026-06-21",
+  ),
+  teammate(
+    6,
+    "Liam O’Connor",
+    "liam@northwind.example",
+    roleManager,
+    "2026-08-03",
+  ),
+  teammate(
+    7,
+    "Sofia Rossi",
+    "sofia@northwind.example",
+    roles.member,
+    "2026-09-18",
+  ),
+  teammate(
+    8,
+    "Jonas Berg",
+    "jonas@northwind.example",
+    roles.admin,
+    "2026-09-22",
+  ),
+  teammate(
+    9,
+    "Priya Nair",
+    "priya@northwind.example",
+    roles.member,
+    "2026-10-01",
+  ),
+  teammate(
+    10,
+    "Tomás García",
+    "tomas@northwind.example",
+    roles.member,
+    "2026-10-09",
+  ),
+  teammate(
+    11,
+    "Grace Okafor",
+    "grace@northwind.example",
+    roles.member,
+    "2026-10-20",
+  ),
+  teammate(
+    12,
+    "Niamh Walsh",
+    "niamh@northwind.example",
+    roles.member,
+    "2026-10-22",
+  ),
+  teammate(
+    13,
+    "Ahmed Saleh",
+    "ahmed@northwind.example",
+    roles.member,
+    "2026-10-24",
+  ),
+  teammate(
+    14,
+    "Chloé Martin",
+    "chloe@northwind.example",
+    roles.member,
+    "2026-10-27",
+  ),
+  teammate(
+    15,
+    "Daniel Park",
+    "daniel@northwind.example",
+    roles.member,
+    "2026-10-29",
+  ),
+];
+
+/** An invitation of a frame, sent by the member. */
+const invitedBy = (
+  invitation: InvitationResponse,
+  by: MemberResponse,
+): InvitationResponse => ({
+  ...invitation,
+  invitedBy: by.userId,
+  invitedByName: { name: by.name, deleted: false },
+});
+
+/** The two pending invitations of the Invitations frame (8.29): David's for a week, Inès's for half a day, so it expires soon. */
+const northwindInvitations = [
+  invitedBy(
+    invited(
+      "0198f0a2-0000-7000-8000-0000000002a1",
+      "david.okafor@harbour.example",
+      8,
+    ),
+    northwindPeople[0] as MemberResponse,
+  ),
+  invitedBy(
+    invited(
+      "0198f0a2-0000-7000-8000-0000000002a2",
+      "ines.moreau@northwind.example",
+      0.5,
+      roles.admin,
+    ),
+    northwindPeople[1] as MemberResponse,
+  ),
+];
+
+/** Northwind as the Members frames draw it, with the first `count` people (11 in most frames). */
+export const northwindTeam = (count = 11): Team => ({
+  organisation: northwind.name,
+  createdAt: "2026-03-12T09:00:00Z",
+  members: northwindPeople.slice(0, count),
+  invitations: northwindInvitations,
+  customRoles: northwindRoles,
+});
+
+/** The rows of 500 members, loading more (8.05): a long name with a long email, and two Arabic names. */
+export const manyMembers = [
+  ...northwindPeople.slice(0, 3),
+  teammate(
+    16,
+    "Maximiliane Alexandra von Hohenzollern-Sigmaringen",
+    "maximiliane.von-hohenzollern@internationale-handelsgesellschaft.example",
+    supportLead,
+    "2026-05-09",
+  ),
+  teammate(
+    17,
+    "عبد الرحمن الهاشمي",
+    "abdulrahman@northwind.example",
+    roles.member,
+    "2026-06-21",
+  ),
+  teammate(
+    18,
+    "فاطمة الزهراء القحطاني",
+    "fatima@northwind.example",
+    roleManager,
+    "2026-08-03",
+  ),
+  ...northwindPeople.slice(6, 9),
+];
+
+const ufukRoles = teamRoles(["قائد الدعم", "مدير الأدوار", "مدقق", "التهيئة"]);
+const ufukSupportLead = ufukRoles[0] as RoleDetailResponse;
+
+/** The organisation of the Arabic frame (8.36): its name, ten members, the Owner first. */
+export const ufukTeam: Team = {
+  organisation: "شركة الأفق للتجارة",
+  createdAt: "2026-03-12T09:00:00Z",
+  members: [
+    teammate(
+      1,
+      "عبد الرحمن الهاشمي",
+      "abdulrahman@ufuk.example",
+      roles.owner,
+      "2026-03-12",
+    ),
+    teammate(2, "Omar Haddad", "omar@ufuk.example", roles.admin, "2026-03-14"),
+    teammate(
+      3,
+      "فاطمة الزهراء القحطاني",
+      "fatima@ufuk.example",
+      roles.member,
+      "2026-04-02",
+    ),
+    teammate(
+      4,
+      "Kenji Sato",
+      "kenji@ufuk.example",
+      ufukSupportLead,
+      "2026-05-09",
+    ),
+    teammate(
+      5,
+      "يوسف بن خالد",
+      "yusuf@ufuk.example",
+      roles.member,
+      "2026-06-21",
+    ),
+    teammate(
+      6,
+      "Lena Fischer",
+      "lena@ufuk.example",
+      roles.member,
+      "2026-08-03",
+    ),
+    teammate(
+      7,
+      "Sofia Rossi",
+      "sofia@ufuk.example",
+      roles.member,
+      "2026-09-18",
+    ),
+    teammate(8, "Jonas Berg", "jonas@ufuk.example", roles.admin, "2026-09-22"),
+    teammate(9, "Priya Nair", "priya@ufuk.example", roles.member, "2026-10-01"),
+    teammate(
+      10,
+      "Tomás García",
+      "tomas@ufuk.example",
+      roles.member,
+      "2026-10-09",
+    ),
+  ],
+  invitations: northwindInvitations,
+  customRoles: ufukRoles,
+};
+
+/**
+ * The team's answers over `mockMembers`'s: the organisation's name and creation, GetMe as the team's first person of the role,
+ * the roles with their counts, the lists with the API's search, role filter and page size, and two commands that change the
+ * lists as the API does. Remove takes the member out; Invite refuses a member's address (409 `member.exists`) and puts the new
+ * invitation first.
+ */
+async function mockTeam(
+  page: Page,
+  team: Team,
+  {
+    role,
+    language,
+    plan,
+  }: { role: BuiltInRole; language: Language; plan: Plan },
+): Promise<void> {
+  const viewer = team.members.find(
+    (member) => member.role.id === roles[role].id,
+  );
+  let people = team.members;
+  const sent: InvitationResponse[] = [];
+  const counted = (choice: RoleDetailResponse): RoleDetailResponse => ({
+    ...choice,
+    memberCount: people.filter((member) => member.role.id === choice.id).length,
+    pendingInvitationCount: team.invitations.filter(
+      (invitation) => invitation.role.id === choice.id,
+    ).length,
+  });
+  const tenantRoles = () =>
+    [...Object.values(roles), ...team.customRoles].map(counted);
+  const tenant = {
+    ...northwind,
+    name: team.organisation,
+    role: roleOf(roles[role]),
+  };
+  /** A page of the list, as the API answers the request's `page` and `pageSize`. */
+  const pageOf = <T>(route: Route, items: T[]) => {
+    const query = new URL(route.request().url()).searchParams;
+    const size = Number(query.get("pageSize") ?? 20);
+    const number = Number(query.get("page") ?? 1);
+    return route.fulfill({
+      json: {
+        items: items.slice((number - 1) * size, number * size),
+        page: number,
+        pageSize: size,
+        total: items.length,
+      },
+    });
+  };
+
+  await page.route("**/api/v1/me", (route) =>
+    route.fulfill({
+      json: {
+        ...me(language),
+        id: viewer?.userId,
+        name: viewer?.name,
+        email: viewer?.email,
+      },
+    }),
+  );
+  await page.route("**/api/v1/me/tenants*", (route) =>
+    route.fulfill({
+      json: { items: [tenant], page: 1, pageSize: 100, total: 1 },
+    }),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}`, (route) =>
+    route.fulfill({
+      json: {
+        ...tenant,
+        createdAt: team.createdAt,
+        ...plan,
+        permissions: roles[role].permissions,
+      },
+    }),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}/roles*`, (route) =>
+    pageOf(route, tenantRoles()),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}/members?*`, (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    const q = query.get("q")?.toLocaleLowerCase();
+    const roleId = query.get("roleId");
+    return pageOf(
+      route,
+      people.filter(
+        (member) =>
+          (!q ||
+            `${member.name} ${member.email}`.toLocaleLowerCase().includes(q)) &&
+          (!roleId || member.role.id === roleId),
+      ),
+    );
+  });
+  await page.route(`**/api/v1/tenants/${northwind.id}/members/*`, (route) => {
+    if (route.request().method() !== "DELETE") return route.fallback();
+    const userId = new URL(route.request().url()).pathname.split("/").pop();
+    people = people.filter((member) => member.userId !== userId);
+    return route.fulfill({ status: 204 });
+  });
+  await page.route(`**/api/v1/tenants/${northwind.id}/invitations?*`, (route) =>
+    pageOf(route, [...sent, ...team.invitations]),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}/invitations`, (route) => {
+    const body = route.request().postDataJSON() as InviteMemberRequest;
+    if (people.some((member) => member.email === body.email))
+      return route.fulfill(problem(409, ErrorCode.MemberExists));
+    const given = tenantRoles().find((choice) => choice.id === body.roleId);
+    if (!given || !viewer)
+      return route.fulfill(problem(404, ErrorCode.RoleNotFound));
+    const invitation = invitedBy(
+      invited(
+        "0198f0a2-0000-7000-8000-0000000002a5",
+        body.email,
+        7,
+        given,
+        body.language ?? Language.En,
+      ),
+      viewer,
+    );
+    sent.unshift(invitation);
+    return route.fulfill({ status: 201, json: invitation });
+  });
+}
+
+/** The web's members export (D11): the file under its name, or a problem of the server. */
+export async function mockMembersExport(
+  page: Page,
+  answer: "file" | "problem",
+): Promise<void> {
+  await page.route(
+    `**/api/exports/tenants/${northwind.id}/members*`,
+    (route) =>
+      answer === "file"
+        ? route.fulfill({
+            headers: {
+              "Content-Type": "text/csv; charset=utf-8",
+              "Content-Disposition":
+                'attachment; filename="northwind-members-2026-11-01.csv"',
+            },
+            body: "Name,Email,Role,Joined\nAyşe Demir,ayse@northwind.example,Owner,2026-03-12\n",
+          })
+        : route.fulfill({
+            status: 500,
+            json: {
+              status: 500,
+              title: "Internal Server Error",
+              traceId: "00-e2e",
+            },
+          }),
   );
 }
 

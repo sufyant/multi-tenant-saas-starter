@@ -1,5 +1,5 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 import {
   BuiltInRole,
   DataExportResponseStatus,
@@ -14,20 +14,25 @@ import {
   roles as builtInRoles,
   customRoles,
   invitationCode,
+  manyMembers,
   me,
   mockApi,
   mockAuditLog,
   mockDataExport,
   mockInvitation,
   mockMembers,
+  mockMembersExport,
   mockNotifications,
   mockRename,
   mockTenantStatus,
   northwind,
+  northwindTeam,
   type Plan,
   pendingInvitation,
   pro,
   roleChanged,
+  type Team,
+  ufukTeam,
 } from "./api";
 import { mockIdentity } from "./identity";
 import { e2eUserEmail } from "./sign-in";
@@ -122,16 +127,6 @@ const shots: {
   open?: (page: Page) => Promise<void>;
 }[] = [
   {
-    name: "Members_OwnerEnglishLightDesktop",
-    file: "members-owner-en-light-desktop",
-    role: BuiltInRole.Owner,
-    language: Language.En,
-    scheme: "light",
-    width: 1440,
-    height: 900,
-    query: "",
-  },
-  {
     name: "Members_AdminEnglishDarkDesktop",
     file: "members-admin-en-dark-desktop",
     role: BuiltInRole.Admin,
@@ -162,16 +157,6 @@ const shots: {
     query: "",
   },
   {
-    name: "Invitations_OwnerEnglishLightDesktop",
-    file: "invitations-owner-en-light-desktop",
-    role: BuiltInRole.Owner,
-    language: Language.En,
-    scheme: "light",
-    width: 1440,
-    height: 900,
-    query: "?tab=invitations",
-  },
-  {
     name: "Invitations_OwnerTurkishDarkPhone",
     file: "invitations-owner-tr-dark-phone",
     role: BuiltInRole.Owner,
@@ -180,17 +165,6 @@ const shots: {
     width: 390,
     height: 844,
     query: "?tab=invitations",
-  },
-  {
-    name: "ChangeRole_AdminEnglishLightDesktop",
-    file: "change-role-admin-en-light-desktop",
-    role: BuiltInRole.Admin,
-    language: Language.En,
-    scheme: "light",
-    width: 1440,
-    height: 900,
-    query: "",
-    open: rowAction("Actions for John Byrne", "Change role"),
   },
   {
     name: "ChangeRole_AdminArabicDarkDesktop",
@@ -349,7 +323,6 @@ const viewer =
 
 const pages = variants.flatMap(({ language, scheme, size }) =>
   [
-    ["general", `${settings}/general`, viewer(language, BuiltInRole.Owner)],
     ["activity", `${settings}/activity`, viewer(language, BuiltInRole.Owner)],
     [
       "activity-member",
@@ -783,6 +756,124 @@ const deleteAccount = (lastOwner: boolean) => async (page: Page) => {
   await page.getByRole("alertdialog").waitFor();
 };
 
+// The General and Members frames of step 37a-frontend-2 (7.01 to 8.45), with the people, counts and dates that the frames draw
+// (northwindTeam and ufukTeam of e2e/api.ts).
+const general = `${settings}/general`;
+const invitationsTab = `${members}?tab=invitations`;
+const tenantRead = `**/api/v1/tenants/${northwind.id}`;
+const membersRead = `**/api/v1/tenants/${northwind.id}/members?*`;
+const invitationsRead = `**/api/v1/tenants/${northwind.id}/invitations?*`;
+const serverError = {
+  status: 500,
+  json: { status: 500, title: "Internal Server Error", traceId: "00-e2e" },
+};
+
+/** A plan with a members limit: the seats it gives, and the seats in use, members and pending invitations (F56). */
+const seats = (limit: number, used: number): Plan => ({
+  ...pro,
+  entitlements: { ...pro.entitlements, "members.max": limit },
+  usage: { ...pro.usage, "members.max": used },
+});
+
+/** Reduced motion stops a skeleton's pulse, so a loading frame is the same in every run. */
+const still = (page: Page) => page.emulateMedia({ reducedMotion: "reduce" });
+
+/** The Members tab's list answers so. The tabs' and the settings menu's counts read one item a page, and still come. */
+const membersListAnswers =
+  (answer: (route: Route) => Promise<void> | void) => (page: Page) =>
+    page.route(membersRead, (route) =>
+      new URL(route.request().url()).searchParams.get("pageSize") === "1"
+        ? route.fallback()
+        : answer(route),
+    );
+
+/** 500 members, of which the first page is the frame's nine rows; the second page never comes, so "Loading more" stays (8.05). */
+const fiveHundredMembers = async (page: Page) => {
+  await still(page);
+  await page.route(membersRead, (route) =>
+    new URL(route.request().url()).searchParams.get("page") === "2"
+      ? undefined
+      : route.fulfill({
+          json: {
+            items: manyMembers,
+            page: 1,
+            pageSize: manyMembers.length,
+            total: 500,
+          },
+        }),
+  );
+  await page.route(invitationsRead, (route) =>
+    route.fulfill({ json: { items: [], page: 1, pageSize: 1, total: 48 } }),
+  );
+};
+
+/** Opens the ⋯ menu of a row: in the table, or in the person's card on a phone, where the table is hidden. */
+const openRowMenu = (name: string) => (page: Page) =>
+  page
+    .getByRole("button", { name: `Actions for ${name}` })
+    .filter({ visible: true })
+    .click();
+
+/** Opens a row's menu, picks the item and waits for its dialog. */
+const rowDialog = (name: string, item: string) => async (page: Page) => {
+  await openRowMenu(name)(page);
+  await page.getByRole("menuitem", { name: item }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
+
+/** Opens the menu beside the title (8.41). */
+const openMoreMenu = (page: Page) =>
+  page.getByRole("button", { name: "More actions" }).click();
+
+/** Opens Export members from the menu beside the title (8.08). */
+const openExport = async (page: Page) => {
+  await openMoreMenu(page);
+  await page.getByRole("menuitem", { name: "Export CSV" }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
+
+/** Exports the file; the mocked route answers it, or a problem (8.12, 8.16). */
+const exportFile = (done: string) => async (page: Page) => {
+  await openExport(page);
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Export CSV" })
+    .click();
+  // A toast's text may show twice: on screen and in its live region.
+  await page.getByText(done).first().waitFor();
+};
+
+/** Opens the invite dialog, or "No free seat" at and over the limit, with the button of the page's language. */
+const openInvite =
+  (label = "Invite member") =>
+  async (page: Page) => {
+    await page.getByRole("button", { name: label }).first().click();
+    await page.getByRole("alertdialog").waitFor();
+  };
+
+/** The invite dialog's Email field, its first text field in every language. */
+const inviteEmail = (page: Page) =>
+  page.getByRole("alertdialog").getByRole("textbox").first();
+
+/** Opens the invite dialog with the Email field in focus, as the frames draw it (8.26, 8.35, 8.37). */
+const inviteFocused =
+  (label = "Invite member") =>
+  async (page: Page) => {
+    await openInvite(label)(page);
+    await inviteEmail(page).focus();
+  };
+
+/** Sends the invitation to the address and waits for what the dialog or the page then says (8.27, 8.28, 8.30). */
+const sendInvitation = (email: string, says: string) => async (page: Page) => {
+  await openInvite()(page);
+  await inviteEmail(page).fill(email);
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Send invitation" })
+    .click();
+  await page.getByText(says, { exact: true }).first().waitFor();
+};
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -790,7 +881,13 @@ const shellShots: {
   scheme?: "light" | "dark";
   role?: BuiltInRole;
   path?: string;
+  /** The organisation's plan, Pro by default. */
+  plan?: Plan;
+  /** The frame's people, in place of the boards' (e2e/api.ts). */
+  team?: Team;
   mock?: (page: Page) => Promise<unknown>;
+  /** What shows when the page has loaded, for a frame of a page that loads or fails: the page's heading and no busy list by default. */
+  ready?: (page: Page) => Promise<unknown>;
   open?: (page: Page) => Promise<void>;
   /** The whole page, for a frame taller than the screen. */
   fullPage?: boolean;
@@ -1126,7 +1223,383 @@ const shellShots: {
         ),
       ),
   },
+  // General (7.01 to 7.05). 7.02 is the shell's own skeleton while GetMyTenant comes (D7); 7.03 its problem in the content.
+  {
+    file: "7.01-general-en-light-desktop",
+    size: "desktop",
+    path: general,
+    team: northwindTeam(),
+  },
+  {
+    file: "7.02-general-loading-en-light-desktop",
+    size: "desktop",
+    path: general,
+    team: northwindTeam(),
+    // GetMyTenant never answers.
+    mock: async (page) => {
+      await still(page);
+      await page.route(tenantRead, () => {});
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading", exact: true }).waitFor(),
+  },
+  {
+    file: "7.03-general-error-en-light-desktop",
+    size: "desktop",
+    path: general,
+    team: northwindTeam(),
+    // GetMyTenant fails; the query tries three times more before the page says so (F8).
+    mock: (page) =>
+      page.route(tenantRead, (route) => route.fulfill(serverError)),
+    ready: (page) =>
+      page.getByRole("heading", { name: "Something went wrong" }).waitFor(),
+  },
+  {
+    file: "7.04-general-member-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+    path: general,
+    team: northwindTeam(),
+  },
+  {
+    file: "7.05-general-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: general,
+    team: northwindTeam(),
+  },
+  // Members (8.01 to 8.45).
+  {
+    file: "8.01-members-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+  },
+  {
+    file: "8.02-members-loading-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    // The list never answers.
+    mock: async (page) => {
+      await still(page);
+      await membersListAnswers(() => {})(page);
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading members" }).waitFor(),
+  },
+  {
+    file: "8.03-members-error-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    // The list fails; the query tries three times more before the page says so (F8).
+    mock: membersListAnswers((route) => route.fulfill(serverError)),
+    ready: (page) =>
+      page.getByRole("heading", { name: "Couldn’t load members" }).waitFor(),
+  },
+  {
+    file: "8.04-members-only-you-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: { ...northwindTeam(1), invitations: [] },
+  },
+  {
+    file: "8.05-members-loading-more-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    mock: fiveHundredMembers,
+    open: async (page) => {
+      await page.getByRole("button", { name: "Load more" }).click();
+      await page.getByText("Loading more members").waitFor();
+    },
+  },
+  {
+    file: "8.06-members-no-match-en-light-desktop",
+    size: "desktop",
+    path: `${members}?q=zzq`,
+    team: northwindTeam(),
+    open: (page) =>
+      page.getByRole("searchbox", { name: "Search by name or email" }).focus(),
+  },
+  {
+    file: "8.07-filter-by-role-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: async (page) => {
+      await page.getByRole("combobox", { name: "Filter by role" }).click();
+      await page.getByRole("option", { name: "All roles" }).waitFor();
+    },
+  },
+  {
+    file: "8.08-export-members-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: openExport,
+  },
+  {
+    file: "8.09-members-over-limit-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(15, 17),
+    team: northwindTeam(15),
+  },
+  {
+    file: "8.10-export-members-filtered-en-light-desktop",
+    size: "desktop",
+    path: `${members}?roleId=${builtInRoles.admin.id}`,
+    team: northwindTeam(),
+    open: openExport,
+  },
+  {
+    file: "8.11-members-member-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Member,
+    path: members,
+    team: northwindTeam(),
+  },
+  {
+    file: "8.12-export-members-downloaded-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    mock: (page) => mockMembersExport(page, "file"),
+    open: exportFile("Members exported"),
+  },
+  {
+    file: "8.13-members-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: members,
+    team: northwindTeam(),
+  },
+  {
+    file: "8.14-export-nothing-en-light-desktop",
+    size: "desktop",
+    path: `${members}?q=zzq`,
+    team: northwindTeam(),
+    open: async (page) => {
+      await openMoreMenu(page);
+      await page.getByText("No member matches the search.").waitFor();
+    },
+  },
+  {
+    file: "8.15-members-focus-hover-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    // The keyboard's focus on Lena Fischer's ⋯ (a key press, so :focus-visible draws the ring), the pointer over Omar Haddad's row.
+    open: async (page) => {
+      await page
+        .getByRole("button", { name: "Actions for Lena Fischer" })
+        .focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+      await page.getByRole("row", { name: /Omar Haddad/ }).hover();
+    },
+  },
+  {
+    file: "8.16-export-members-error-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    mock: (page) => mockMembersExport(page, "problem"),
+    open: exportFile("Couldn’t create the file."),
+  },
+  {
+    file: "8.17-row-actions-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: async (page) => {
+      await openRowMenu("Omar Haddad")(page);
+      await page.getByRole("menuitem", { name: "Change role" }).hover();
+    },
+  },
+  {
+    file: "8.19-change-role-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Omar Haddad", "Change role"),
+  },
+  {
+    file: "8.20-change-role-last-owner-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Ayşe Demir", "Change role"),
+  },
+  {
+    file: "8.21-remove-member-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Omar Haddad", "Remove from organisation"),
+  },
+  {
+    file: "8.22-member-removed-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: async (page) => {
+      await rowDialog("Omar Haddad", "Remove from organisation")(page);
+      await page.getByRole("button", { name: "Remove member" }).click();
+      await page
+        .getByText("Omar Haddad removed from Northwind Traders")
+        .first()
+        .waitFor();
+      await expect(page.getByRole("row", { name: /Omar Haddad/ })).toHaveCount(
+        0,
+      );
+    },
+  },
+  {
+    file: "8.26-invite-member-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(16, 13),
+    team: northwindTeam(),
+    open: inviteFocused(),
+  },
+  {
+    file: "8.27-invite-invalid-email-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(16, 13),
+    team: northwindTeam(),
+    open: sendInvitation(
+      "lena@northwind",
+      "Enter an email address like name@company.com.",
+    ),
+  },
+  {
+    file: "8.28-invite-already-member-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(16, 13),
+    team: northwindTeam(),
+    open: sendInvitation("lena@northwind.example", "Invitation not sent"),
+  },
+  {
+    file: "8.29-invitations-en-light-desktop",
+    size: "desktop",
+    path: invitationsTab,
+    team: northwindTeam(),
+  },
+  {
+    file: "8.30-invitation-sent-en-light-desktop",
+    size: "desktop",
+    path: invitationsTab,
+    team: northwindTeam(),
+    open: async (page) => {
+      await sendInvitation(
+        "maximiliane.von-hohenzollern@internationale-handelsgesellschaft.example",
+        "Invitation sent",
+      )(page);
+      await page.getByRole("row", { name: /maximiliane/ }).waitFor();
+    },
+  },
+  {
+    file: "8.31-invitations-empty-en-light-desktop",
+    size: "desktop",
+    path: invitationsTab,
+    team: { ...northwindTeam(), invitations: [] },
+  },
+  {
+    file: "8.32-revoke-invitation-en-light-desktop",
+    size: "desktop",
+    path: invitationsTab,
+    team: northwindTeam(),
+    open: rowDialog("david.okafor@harbour.example", "Revoke invitation"),
+  },
+  {
+    file: "8.33-members-en-light-tablet",
+    size: "tablet",
+    path: members,
+    team: northwindTeam(),
+  },
+  {
+    file: "8.34-members-en-light-phone",
+    size: "phone",
+    path: members,
+    team: northwindTeam(),
+  },
+  {
+    file: "8.35-invite-member-en-light-phone",
+    size: "phone",
+    path: members,
+    plan: seats(16, 13),
+    team: northwindTeam(),
+    open: inviteFocused(),
+  },
+  {
+    file: "8.36-members-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: members,
+    team: ufukTeam,
+  },
+  {
+    file: "8.36-remove-member-en-light-phone",
+    size: "phone",
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Omar Haddad", "Remove from organisation"),
+  },
+  {
+    file: "8.37-invite-member-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: members,
+    plan: seats(15, 12),
+    team: ufukTeam,
+    open: inviteFocused("دعوة عضو"),
+  },
+  {
+    file: "8.38-change-role-admin-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.Admin,
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Lena Fischer", "Change role"),
+  },
+  {
+    file: "8.41-more-menu-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: async (page) => {
+      await openMoreMenu(page);
+      await page.getByRole("menuitem", { name: "Export CSV" }).hover();
+    },
+  },
+  {
+    file: "8.43-no-free-seat-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(15, 15),
+    team: northwindTeam(13),
+    open: openInvite(),
+  },
+  {
+    file: "8.45-no-free-seat-over-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(15, 17),
+    team: northwindTeam(15),
+    open: openInvite(),
+  },
 ];
+
+/** The page has loaded: its heading shows, and no list is busy. */
+const loaded = async (page: Page) => {
+  await page.getByRole("main").getByRole("heading").first().waitFor();
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+};
 
 /** A shot's language, theme, role and page when it names none: English, light, the owner, the start page. */
 const withDefaults = (shot: (typeof shellShots)[number]) => ({
@@ -1145,15 +1618,19 @@ for (const shot of shellShots.map(withDefaults))
     await context.addCookies([
       { name: localeCookie, value: shot.language, url: baseURL },
     ]);
-    await mockMembers(page, { language: shot.language, role: shot.role });
+    await mockMembers(page, {
+      language: shot.language,
+      role: shot.role,
+      plan: shot.plan,
+      team: shot.team,
+    });
     await shot.mock?.(page);
 
     await page.goto(shot.path);
-    await page.getByRole("main").getByRole("heading").first().waitFor();
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await (shot.ready ?? loaded)(page);
     await shot.open?.(page);
     // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
-    // animation starts only then.
+    // animation starts only then. An endless animation, such as a skeleton's pulse, has no end to wait for.
     await page.evaluate(
       () =>
         new Promise((done) =>
@@ -1161,7 +1638,15 @@ for (const shot of shellShots.map(withDefaults))
         ),
     );
     await page.evaluate(() =>
-      Promise.all(document.getAnimations().map((each) => each.finished)),
+      Promise.all(
+        document
+          .getAnimations()
+          .filter(
+            (each) =>
+              each.effect?.getTiming().iterations !== Number.POSITIVE_INFINITY,
+          )
+          .map((each) => each.finished),
+      ),
     );
 
     await page.screenshot({
