@@ -98,16 +98,15 @@ describe("isExpectedClerkError", () => {
     );
   });
 
-  it("SignInErrorKey_ApiErrorWithoutACodeWhileSending_IsGenericAndLogged", () => {
+  // Clerk answered, so the network did not fail: an answer without a code is an unknown one (F41).
+  it("SignInErrorKey_ApiErrorWithoutACodeWhileSending_IsGeneric", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const onUnexpectedError = vi.fn();
     const empty = new ClerkAPIResponseError("refused", {
       data: [],
       status: 500,
     });
 
-    expect(signInErrorKey(empty, "send", onUnexpectedError)).toBe("generic");
-    expect(onUnexpectedError).toHaveBeenCalledTimes(1);
+    expect(signInErrorKey(empty, "send")).toBe("generic");
   });
 });
 

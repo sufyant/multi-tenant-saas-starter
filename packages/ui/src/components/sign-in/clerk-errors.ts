@@ -1,7 +1,14 @@
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 
 /** Where in the flow the error came: the same code means another thing in another step. */
-export type SignInStep = "email" | "code" | "totp" | "backupCode" | "ticket";
+/** `send` is the call that sends the email code; `email` is the rest of the first step, such as Google or Microsoft. */
+export type SignInStep =
+  | "email"
+  | "send"
+  | "code"
+  | "totp"
+  | "backupCode"
+  | "ticket";
 
 /** A key under `signIn.errors` of packages/ui/messages. */
 export type SignInErrorKey =
@@ -48,6 +55,10 @@ const everywhere: Record<string, SignInErrorKey> = {
 
 const byStep: Record<SignInStep, Record<string, SignInErrorKey>> = {
   email: {
+    form_param_nil: "emailRequired",
+    form_param_format_invalid: "emailInvalid",
+  },
+  send: {
     form_param_nil: "emailRequired",
     form_param_format_invalid: "emailInvalid",
   },
@@ -110,7 +121,12 @@ export function signInErrorKey(
 ): SignInErrorKey {
   const code = clerkErrorCode(error);
   // A call that got no answer of Clerk's API has no code: the network failed, and the address stays for another try (frame 1.04).
-  if (step === "email" && error instanceof Error && code === undefined)
+  if (
+    step === "send" &&
+    error instanceof Error &&
+    !isClerkAPIResponseError(error) &&
+    code === undefined
+  )
     return "sendFailed";
   const key = code && (byStep[step][code] ?? everywhere[code]);
   if (key) return key;

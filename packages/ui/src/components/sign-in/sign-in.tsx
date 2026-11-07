@@ -116,7 +116,7 @@ export function SignIn({
     const { error } = await signIn.emailCode.sendCode({
       emailAddress: address,
     });
-    if (error) return setError(keyOf(error, "email"));
+    if (error) return setError(keyOf(error, "send"));
     setEmail(address);
     setStep("code");
   };
