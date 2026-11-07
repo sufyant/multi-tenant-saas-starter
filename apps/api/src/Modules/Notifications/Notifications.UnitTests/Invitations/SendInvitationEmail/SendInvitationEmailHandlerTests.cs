@@ -281,8 +281,8 @@ public sealed class SendInvitationEmailHandlerTests
     private static (string Button, string Footer) Messages(Language language) => new Dictionary<Language, (string, string)>
     {
         [Language.En] = ("Accept invitation", "You received this because someone invited this address. If you weren’t expecting it, you can ignore it."),
-        [Language.Tr] = ("Daveti kabul et", "Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız görmezden gelebilirsiniz."),
-        [Language.Ar] = ("قبول الدعوة", "وصلتك هذه الرسالة لأن أحدهم دعا هذا العنوان. إذا لم تكن تتوقعها، فيمكنك تجاهلها."),
+        [Language.Tr] = ("Daveti kabul et", "Bu e-postayı, biri bu adresi davet ettiği için aldınız. Beklemiyorsanız yok sayabilirsiniz."),
+        [Language.Ar] = ("قبول الدعوة", "وصلتك هذه الرسالة لأن أحدًا دعا هذا العنوان. إذا لم تكن تتوقعها، فيمكنك تجاهلها."),
     }[language];
 
     private Task SendAsync(InvitationReadyEvent ready) => SendInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
