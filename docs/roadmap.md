@@ -202,6 +202,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Organisations, Users, Plans, Activity log and System admins in the new design.
 - At its end, Status, Tag and SubNav are deleted.
 - The platform's organisation initial (`apps/platform/src/shared/initial.tsx`) becomes the shared tile of `packages/ui` where its frames draw the same tile, or the pull request says how they differ (the maintainer's decision of 2026-11-07).
+- The platform's lists follow the same F9 and F10 rule (a "Load more" button, no page in the URL), or 37b-start asks when their frames differ (the maintainer's decision of 2026-11-07).
 
 ## 6. Step 38: Terms of use
 
