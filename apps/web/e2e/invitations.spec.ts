@@ -94,7 +94,8 @@ test("AcceptInvitation_Arabic_IsMirrored", async ({
 
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(
-    page.getByRole("button", { name: "انضم إلى Northwind Traders" }),
+    page.getByRole("heading", { name: "انضم إلى Northwind Traders" }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "اقبل وتابع" })).toBeVisible();
   await expectAccessible(page);
 });
