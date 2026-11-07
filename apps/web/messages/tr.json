@@ -240,11 +240,26 @@
     "roleGone": "Bu rol artık yok.",
     "roleGoneText": "Liste yenilendi.",
     "filteredBy": "Rol: {role}",
-    "rolesUnreadable": "Rolünüz rolleri okuyamadığı için bunu yapamaz."
+    "rolesUnreadable": "Rolünüz rolleri okuyamadığı için bunu yapamaz.",
+    "description": "{organisation} içindeki kişiler ve neler yapabildikleri.",
+    "loadMore": "Daha fazla yükle",
+    "loadingMoreMembers": "Daha fazla üye yükleniyor",
+    "loadingMoreInvitations": "Daha fazla davet yükleniyor",
+    "loadedMembers": "{count, plural, one {# üye daha yüklendi.} other {# üye daha yüklendi.}}",
+    "loadedInvitations": "{count, plural, one {# davet daha yüklendi.} other {# davet daha yüklendi.}}",
+    "moreMembersError": "Daha fazla üye yüklenemedi",
+    "moreInvitationsError": "Daha fazla davet yüklenemedi",
+    "onlyYou": "Tek üye sizsiniz",
+    "onlyYouText": "Birlikte çalıştığınız kişileri davet edin. Katılmak için bir bağlantı içeren e-posta alırlar."
   },
   "general": {
     "title": "Genel",
+    "description": "{organisation} kuruluşunun bilgileri.",
     "name": "Ad",
+    "nameHint": "Bir kuruluşu yalnızca platform yeniden adlandırabilir.",
+    "address": "Adres",
+    "addressHint": "Hiç değişmez.",
+    "copyAddress": "Adresi kopyala",
     "status": "Durum",
     "created": "Oluşturulma",
     "yourRole": "Rolünüz",
@@ -454,12 +469,9 @@
     "rolesCount": "{count} / {limit} özel rol",
     "rolesOver": "{count} özel rolünüz var; planınız {limit} özel role izin veriyor.",
     "rolesOverText": "Yenilerini oluşturmak için rol silin. Her rol ve üyeleri çalışmaya devam eder.",
-    "membersLimit": "Kuruluşunuzun planı, davetler dahil {limit} üyeye izin veriyor.",
+    "membersLimit": "Planınız {limit} yere izin veriyor: üyeler ve bekleyen davetler.",
     "membersLimitAction": "Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin.",
-    "membersCount": "{count} / {limit} üye, davetler dahil",
-    "membersOver": "{count} üyeniz ve bekleyen davetiniz var; planınız {limit} üyeye izin veriyor.",
-    "membersOverRemover": "Yeni kişileri davet etmek için üye çıkarın veya davetleri iptal edin. Kimse erişimini kaybetmez.",
-    "membersOverInviter": "Üye çıkarabilen biri yer açabilir. Kimse erişimini kaybetmez.",
+    "membersOver": "Planınız {limit} yer veriyor. {count} yer kullanıyorsunuz.",
     "contact": "Bize ulaşın",
     "keys": {
       "rolesCustom": "Özel roller",
@@ -470,6 +482,13 @@
       "on": "açık",
       "off": "kapalı",
       "unlimited": "sınırsız"
-    }
+    },
+    "membersOverText": "{members} üye ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
+    "noSeat": "Boş yer yok",
+    "noSeatText": "{organisation}, {limit} yerin {count} tanesini kullanıyor: {members} üye ve {invitations} bekleyen davet. Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin.",
+    "noSeatOverText": "Planınız {limit} yer veriyor. {count} yer kullanıyorsunuz: {members} üye ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
+    "requestChange": "Plan değişikliği iste",
+    "viewInvitations": "Davetleri görüntüle",
+    "seatsLeft": "{count, plural, one {# yer kaldı.} other {# yer kaldı.}}"
   }
 }

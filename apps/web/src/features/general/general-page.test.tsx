@@ -1,5 +1,6 @@
 import { BuiltInRole } from "@repo/api-client";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { free, renderInTenant, tenantAnswers } from "../../../test/tenant";
@@ -30,6 +31,67 @@ describe("GeneralPage", () => {
     expect(valueBeside("Created")).toHaveTextContent("5 Jan 2026");
     expect(valueBeside("Your role")).toHaveTextContent("Owner");
     expect(valueBeside("Plan")).toHaveTextContent("Pro");
+  });
+
+  it("GeneralPage_Owner_DescribesTheOrganisationUnderTheTitle", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    renderInTenant(<GeneralPage />, { url });
+
+    expect(
+      await screen.findByText("Northwind Traders’s details."),
+    ).toBeVisible();
+  });
+
+  it("GeneralPage_Owner_SaysOnlyThePlatformRenamesTheOrganisation", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    renderInTenant(<GeneralPage />, { url });
+
+    expect(await screen.findByText("Name", { selector: "dt" })).toBeVisible();
+    expect(valueBeside("Name")).toHaveTextContent(
+      "Only the platform can rename an organisation.",
+    );
+  });
+
+  it("GeneralPage_Owner_ShowsTheAddressThatNeverChanges", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    renderInTenant(<GeneralPage />, { url });
+
+    expect(
+      await screen.findByText("Address", { selector: "dt" }),
+    ).toBeVisible();
+    expect(valueBeside("Address")).toHaveTextContent(
+      "app.example.test/northwind",
+    );
+    expect(valueBeside("Address")).toHaveTextContent("It never changes.");
+    expect(screen.queryByText(/slug/i)).not.toBeInTheDocument();
+  });
+
+  it("GeneralPage_CopyTheAddress_PutsTheAddressOnTheClipboard", async () => {
+    const user = userEvent.setup();
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+    renderInTenant(<GeneralPage />, { url });
+
+    await user.click(
+      await screen.findByRole("button", { name: "Copy the address" }),
+    );
+
+    expect(await navigator.clipboard.readText()).toBe(
+      "app.example.test/northwind",
+    );
+  });
+
+  it("GeneralPage_ActiveOrganisation_ShowsTheStatusAsASuccessPill", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    renderInTenant(<GeneralPage />, { url });
+
+    expect(await screen.findByText("Active")).toHaveAttribute(
+      "data-tone",
+      "success",
+    );
   });
 
   it("GeneralPage_Member_ShowsThePlanReadOnly", async () => {

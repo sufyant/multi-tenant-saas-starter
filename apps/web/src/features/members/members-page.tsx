@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  actionFor,
   getGetMeQueryOptions,
   getListInvitationsQueryOptions,
   getListMembersQueryOptions,
@@ -8,50 +9,72 @@ import {
   ListInvitationsSort,
   ListMembersSort,
   Permission,
+  ProblemDetailsError,
   problemOf,
   schemas,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { Combobox } from "@repo/ui/components/combobox";
 import { EmptyState } from "@repo/ui/components/empty-state";
-import { Freshness } from "@repo/ui/components/freshness";
+import {
+  Icon,
+  PlusIcon,
+  SearchXIcon,
+  UserPlusIcon,
+} from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
 import { Search } from "@repo/ui/components/search";
-import { Skeleton } from "@repo/ui/components/skeleton";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Tabs } from "@repo/ui/components/tabs";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { type ReactNode, useCallback, useEffect, useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
-import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
+import { PlanBanner } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
-import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
+import { usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
+import { invitationPagesOptions, memberPagesOptions } from "./list-pages";
+import { LoadMore } from "./load-more";
 import { MembersTable } from "./members-table";
+import { NoFreeSeatDialog } from "./no-free-seat-dialog";
+import { TableSkeleton } from "./table-skeleton";
 import { sortValue, type Tab, useListParams } from "./use-list-params";
 
 const allRoles = "all";
 
+/** The rows of every page loaded so far. */
+const rowsIn = (data: { pages: { items: unknown[] }[] } | undefined) =>
+  data?.pages.reduce((count, page) => count + page.items.length, 0);
+
 /**
- * Settings > Members (the Members boards): the Members tab, and the Invitations tab for whom may read them (F5). The plan (the
- * plan-limit boards, through `usePlan`): a viewer who may invite sees the count of `members.max`, invitations included (none when
- * unlimited); at the limit "Invite member" is disabled with the reason, over it with the banner, whose text says how to make
- * room to a viewer who may remove members and who can to one who may not. A viewer who may not invite sees neither.
+ * Settings > Members (8.01 to 8.07): the Members tab, and the Invitations tab for whom may read them (F5), each with its total
+ * without a filter. A list grows with Load more (F9). The plan (F56, through `usePlan`): "Invite member" stays enabled and opens
+ * "No free seat" at and over the limit; the banner between the header and the tabs says the seats, and over the limit offers
+ * "View invitations" while one is pending. A viewer who may not invite sees no banner.
  */
 export function MembersPage() {
   const t = useTranslations();
   const roleName = useRoleName();
   const can = useCan();
-  const { tenant } = useTenant();
+  const failureText = useFailureText();
+  const { tenant, detail } = useTenant();
   const [params, setParams] = useListParams();
   const [inviting, setInviting] = useState(false);
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   // The command menu's "Invite member" opens the page with `?invite=1`: the dialog opens once, and the address forgets it, as the
   // dialog's state is the page's own (F8).
   const [invite, setInvite] = useQueryState("invite", { history: "replace" });
@@ -63,10 +86,9 @@ export function MembersPage() {
   const me = useQuery(getGetMeQueryOptions());
   const plan = usePlan();
   const planReason = usePlanReason();
-  const counterId = useId();
   const bannerId = useId();
   const onSearch = useCallback(
-    (next: string) => void setParams({ q: next || null, page: null }),
+    (next: string) => void setParams({ q: next || null }),
     [setParams],
   );
   const seesInvitations = can(Permission.TenantInvitationsRead);
@@ -76,30 +98,22 @@ export function MembersPage() {
   const roles = useTenantRoles();
   // A person without the Invitations tab who opens ?tab=invitations sees the Members tab.
   const tab: Tab = seesInvitations ? params.tab : "members";
-  const { q, roleId, page, sort } = params;
-  const search = {
-    q: q || undefined,
-    roleId: roleId ?? undefined,
-    page,
-  };
+  const { q, roleId, sort } = params;
+  const search = { q: q || undefined, roleId: roleId ?? undefined };
 
-  const members = useQuery(
-    getListMembersQueryOptions(
+  const members = useInfiniteQuery({
+    ...memberPagesOptions(
       tenant.id,
       {
         ...search,
         sort: Object.values(ListMembersSort).find((value) => value === sort),
       },
-      {
-        query: {
-          enabled: readsMembers && tab === "members",
-          placeholderData: keepPreviousData,
-        },
-      },
+      readsMembers && tab === "members",
     ),
-  );
-  const invitations = useQuery(
-    getListInvitationsQueryOptions(
+    placeholderData: keepPreviousData,
+  });
+  const invitations = useInfiniteQuery({
+    ...invitationPagesOptions(
       tenant.id,
       {
         ...search,
@@ -107,12 +121,24 @@ export function MembersPage() {
           (value) => value === sort,
         ),
       },
-      {
-        query: {
-          enabled: seesInvitations && tab === "invitations",
-          placeholderData: keepPreviousData,
-        },
-      },
+      seesInvitations && tab === "invitations",
+    ),
+    placeholderData: keepPreviousData,
+  });
+  // The tabs' counts are the totals without a filter, so a search does not change them (8.06). The one item of the members' count
+  // is the settings menu's read (F59).
+  const memberCount = useQuery(
+    getListMembersQueryOptions(
+      tenant.id,
+      { pageSize: 1 },
+      { query: { enabled: readsMembers } },
+    ),
+  );
+  const invitationCount = useQuery(
+    getListInvitationsQueryOptions(
+      tenant.id,
+      { pageSize: 1 },
+      { query: { enabled: seesInvitations } },
     ),
   );
   const list = tab === "members" ? members : invitations;
@@ -126,39 +152,72 @@ export function MembersPage() {
 
   const canInvite = can(Permission.TenantInvitationsCreate);
   const memberLimit = plan.limit(LimitKey.MembersMax);
-  const counter = (() => {
-    if (memberLimit.limit === null) return null;
-    if (memberLimit.atLimit)
-      return sentenceOf(planReason.limit(LimitKey.MembersMax));
-    return t("plans.membersCount", {
-      count: memberLimit.count,
-      limit: memberLimit.limit,
-    });
-  })();
-  // Nothing new that counts is added at or over the limit; removing and cancelling stay (E4). Over it, the banner is the reason.
-  const reasonId = memberLimit.overLimit ? reasonIdsOf(bannerId) : counterId;
-  const inviteButton = canInvite && (
-    <Button
-      variant="primary"
-      onClick={() => setInviting(true)}
-      disabled={memberLimit.full}
-      aria-describedby={memberLimit.full ? reasonId : undefined}
-    >
-      {t("members.invite")}
-    </Button>
-  );
+  const membersTotal = memberCount.data?.total;
+  const pending =
+    membersTotal === undefined
+      ? 0
+      : plan.seats(LimitKey.MembersMax, membersTotal).invitations;
+  const viewInvitations = () =>
+    void setParams({ tab: "invitations", q: null, roleId: null, sort: null });
+
+  const inviteButton = (variant: "primary" | "secondary") =>
+    canInvite && (
+      <Button
+        variant={variant}
+        icon={variant === "primary" ? <Icon icon={PlusIcon} /> : undefined}
+        onClick={() => setInviting(true)}
+        className={variant === "primary" ? "max-tablet:w-full" : undefined}
+      >
+        {t("members.invite")}
+      </Button>
+    );
 
   const filtered = Boolean(q || roleId);
+  const rowCount = rowsIn(list.data);
   // The empty state of a filtered list offers its own clear button.
-  const emptyFiltered = filtered && list.data?.items.length === 0;
-  const clear = () => void setParams({ q: null, roleId: null, page: null });
+  const emptyFiltered = filtered && rowCount === 0;
+  const clear = () => void setParams({ q: null, roleId: null });
   const timeZone = me.data?.timeZone;
+
+  // The next page: a 401 goes to sign-in (F4), a 403 of a stopped organisation is the tenant layout's (F47), and any other
+  // failure says so and keeps the rows that came.
+  const loadMore = async () => {
+    const before = rowCount ?? 0;
+    const result = await list.fetchNextPage();
+    if (!result.isFetchNextPageError) {
+      const after = rowsIn(result.data) ?? 0;
+      setAnnouncement(
+        t(
+          tab === "members"
+            ? "members.loadedMembers"
+            : "members.loadedInvitations",
+          { count: after - before },
+        ),
+      );
+      return;
+    }
+    const action =
+      result.error instanceof ProblemDetailsError
+        ? actionFor(result.error.status, result.error.problem).kind
+        : null;
+    if (action === "sign-in")
+      return window.location.assign(signInAgainUrl(window.location));
+    if (action === "tenant-blocked") return;
+    showToast({
+      title: t(
+        tab === "members"
+          ? "members.moreMembersError"
+          : "members.moreInvitationsError",
+      ),
+      description: failureText(problemOf(result.error)),
+      tone: "destructive",
+    });
+  };
 
   const body = (() => {
     if (list.isPending)
       return (
-        <Skeleton
-          rows={4}
+        <TableSkeleton
           label={
             tab === "members"
               ? t("members.loadingMembers")
@@ -180,10 +239,11 @@ export function MembersPage() {
           onRetry={() => void list.refetch()}
         />
       );
-    if (list.data.items.length === 0 && filtered)
+    if (rowCount === 0 && filtered)
       return (
         <EmptyState
           kind="no-results"
+          icon={SearchXIcon}
           title={
             q
               ? t(
@@ -210,109 +270,151 @@ export function MembersPage() {
           }
         />
       );
-    if (list.data.items.length === 0 && tab === "invitations")
+    if (rowCount === 0 && tab === "invitations")
       return (
         <EmptyState
           title={t("members.noInvitations")}
           description={t("members.noInvitationsText")}
-          action={inviteButton}
+          action={inviteButton("primary")}
         />
       );
     const table = {
       sort,
       timeZone,
       onSortChange: (next: string | null) =>
-        void setParams({ sort: sortValue(next), page: null }),
-      onPageChange: (next: number) => void setParams({ page: next }),
+        void setParams({ sort: sortValue(next) }),
     };
-    return tab === "members" && members.data ? (
-      <MembersTable page={members.data} meId={me.data?.id} {...table} />
-    ) : invitations.data ? (
-      <InvitationsTable page={invitations.data} {...table} />
-    ) : null;
-  })();
-
-  return (
-    <Frame>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-page-title">{t("members.title")}</h1>
-          {list.dataUpdatedAt > 0 && (
-            <Freshness
-              at={new Date(list.dataUpdatedAt)}
-              locale={t("locale.format")}
-              timeZone={timeZone}
-              label={t("common.updated")}
+    const more = (
+      <LoadMore
+        hasMore={list.hasNextPage}
+        loading={list.isFetchingNextPage}
+        onMore={() => void loadMore()}
+        label={t("members.loadMore")}
+        loadingLabel={
+          tab === "members"
+            ? t("members.loadingMoreMembers")
+            : t("members.loadingMoreInvitations")
+        }
+        announcement={announcement}
+      />
+    );
+    if (tab === "members" && members.data) {
+      const rows = members.data.pages.flatMap((page) => page.items);
+      // Only the viewer, with no filter (8.04): the table, then what to do next.
+      const onlyYou = !filtered && members.data.pages[0]?.total === 1;
+      return (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col">
+            <MembersTable rows={rows} meId={me.data?.id} {...table} />
+            {more}
+          </div>
+          {onlyYou && (
+            <EmptyState
+              icon={UserPlusIcon}
+              title={t("members.onlyYou")}
+              description={t("members.onlyYouText")}
+              action={inviteButton("secondary")}
             />
           )}
         </div>
-        {canInvite && (
-          <div className="flex flex-col items-end gap-1">
-            {inviteButton}
-            {counter && (
-              <span
-                id={counterId}
-                className="max-w-90 text-end text-small text-muted-foreground"
-              >
-                {counter}
-              </span>
-            )}
-          </div>
-        )}
+      );
+    }
+    if (!invitations.data) return null;
+    const rows = invitations.data.pages.flatMap((page) => page.items);
+    return (
+      <div className="flex flex-col">
+        {/* Every loaded row on one page: InvitationsTable still takes a page of the API. */}
+        <InvitationsTable
+          page={{
+            items: rows,
+            page: 1,
+            pageSize: rows.length,
+            total: rows.length,
+          }}
+          onPageChange={() => {}}
+          {...table}
+        />
+        {more}
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        {seesInvitations && (
-          <Tabs
-            label={t("members.tabs")}
-            current={tab}
-            items={[
-              { id: "members", label: t("members.tabMembers") },
-              { id: "invitations", label: t("members.tabInvitations") },
-            ]}
-            onValueChange={(next) =>
-              void setParams({
-                tab: next === "invitations" ? "invitations" : null,
-                q: null,
-                roleId: null,
-                page: null,
-                sort: null,
-              })
-            }
-          />
-        )}
-        <div className="flex flex-1 flex-wrap items-end justify-end gap-2">
-          {readsRoles && (
-            <Combobox
-              variant="filter"
-              label={t("members.roleFilter")}
-              value={roleId ?? allRoles}
-              options={[
-                { id: allRoles, label: t("members.allRoles") },
-                ...inListOrder(roles.data?.items ?? []).map((choice) => ({
-                  id: choice.id,
-                  label: t("members.filteredBy", { role: roleName(choice) }),
-                })),
-              ]}
-              onValueChange={(id) =>
-                void setParams({
-                  roleId:
-                    roles.data?.items.find((choice) => choice.id === id)?.id ??
-                    null,
-                  page: null,
-                })
-              }
-              searchPlaceholder={t("members.roleSearch")}
-              emptyLabel={t("members.roleEmpty")}
-            />
-          )}
-          {roleId && !emptyFiltered && (
-            <Button
-              variant="ghost"
-              onClick={() => void setParams({ roleId: null, page: null })}
-            >
-              {t("members.clearFilter")}
-            </Button>
-          )}
+    );
+  })();
+
+  // The banner's text (8.09, 8.43): at the limit the limit's reason; over it the seats and what still works.
+  const banner = (() => {
+    if (!canInvite || !memberLimit.full || memberLimit.limit === null)
+      return null;
+    if (memberLimit.atLimit) return planReason.limit(LimitKey.MembersMax);
+    return {
+      title: t("plans.membersOver", {
+        count: memberLimit.count,
+        limit: memberLimit.limit,
+      }),
+      text:
+        membersTotal === undefined
+          ? null
+          : t("plans.membersOverText", {
+              ...plan.seats(LimitKey.MembersMax, membersTotal),
+              limit: memberLimit.limit,
+            }),
+    };
+  })();
+  // Over the limit, the banner offers the invitations while one is pending, for whom may read them (F56).
+  const bannerAction =
+    memberLimit.overLimit && seesInvitations && pending > 0 ? (
+      <Button onClick={viewInvitations}>{t("plans.viewInvitations")}</Button>
+    ) : null;
+  // No counts while the list loads or cannot load (8.02, 8.03).
+  const counted = list.isSuccess;
+
+  return (
+    <Frame>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex items-center gap-1">
+            <h1 className="text-page-title">{t("members.title")}</h1>
+          </div>
+          <p className="text-body text-muted-foreground">
+            {t("members.description", { organisation: detail.name })}
+          </p>
+        </div>
+        {inviteButton("primary")}
+      </div>
+      {banner && (
+        <PlanBanner
+          id={bannerId}
+          title={banner.title}
+          text={banner.text ?? ""}
+          action={bannerAction}
+        />
+      )}
+      {seesInvitations && (
+        <Tabs
+          label={t("members.tabs")}
+          current={tab}
+          items={[
+            {
+              id: "members",
+              label: t("members.tabMembers"),
+              count: counted ? membersTotal : undefined,
+            },
+            {
+              id: "invitations",
+              label: t("members.tabInvitations"),
+              count: counted ? invitationCount.data?.total : undefined,
+            },
+          ]}
+          onValueChange={(next) =>
+            void setParams({
+              tab: next === "invitations" ? "invitations" : null,
+              q: null,
+              roleId: null,
+              sort: null,
+            })
+          }
+        />
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex-1 tablet:flex-none">
           <Search
             key={tab}
             value={q}
@@ -325,23 +427,56 @@ export function MembersPage() {
             onSearch={onSearch}
           />
         </div>
+        {readsRoles && (
+          <Combobox
+            variant="filter"
+            label={t("members.roleFilter")}
+            value={roleId ?? allRoles}
+            options={[
+              { id: allRoles, label: t("members.allRoles") },
+              ...inListOrder(roles.data?.items ?? []).map((choice) => ({
+                id: choice.id,
+                label: t("members.filteredBy", { role: roleName(choice) }),
+              })),
+            ]}
+            onValueChange={(id) =>
+              void setParams({
+                roleId:
+                  roles.data?.items.find((choice) => choice.id === id)?.id ??
+                  null,
+              })
+            }
+            searchPlaceholder={t("members.roleSearch")}
+            emptyLabel={t("members.roleEmpty")}
+          />
+        )}
+        {roleId && !emptyFiltered && (
+          <Button
+            variant="ghost"
+            onClick={() => void setParams({ roleId: null })}
+          >
+            {t("members.clearFilter")}
+          </Button>
+        )}
       </div>
-      {canInvite && memberLimit.overLimit && memberLimit.limit !== null && (
-        <PlanBanner
-          id={bannerId}
-          title={t("plans.membersOver", {
-            count: memberLimit.count,
-            limit: memberLimit.limit,
-          })}
-          text={
-            can(Permission.TenantMembersDelete)
-              ? t("plans.membersOverRemover")
-              : t("plans.membersOverInviter")
-          }
-        />
-      )}
       {body}
-      {inviting && <InviteDialog onClose={() => setInviting(false)} />}
+      {inviting &&
+        (memberLimit.full ? (
+          <NoFreeSeatDialog
+            members={membersTotal}
+            onViewInvitations={
+              seesInvitations
+                ? () => {
+                    setInviting(false);
+                    viewInvitations();
+                  }
+                : undefined
+            }
+            onClose={() => setInviting(false)}
+          />
+        ) : (
+          <InviteDialog onClose={() => setInviting(false)} />
+        ))}
     </Frame>
   );
 }

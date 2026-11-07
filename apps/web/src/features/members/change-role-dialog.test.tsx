@@ -56,6 +56,10 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+/** The list's own requests, without the one item that the tab's count reads. */
+const listRequests = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.get("pageSize") !== "1");
+
 const changeAnswer = (answer: () => Response, bodies: unknown[] = []) =>
   http.patch(
     `*/v1/tenants/${northwind.id}/members/${john.userId}`,
@@ -156,7 +160,7 @@ describe("ChangeRoleDialog", () => {
     expect(await screen.findByText("Role changed")).toBeInTheDocument();
     expect(screen.getByText("John Byrne is now an Admin.")).toBeInTheDocument();
     expect(bodies).toEqual([{ roleId: roleOf.admin.id }]);
-    expect(requests).toHaveLength(2);
+    expect(listRequests(requests)).toHaveLength(2);
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
@@ -394,7 +398,7 @@ describe("ChangeRoleDialog", () => {
       within(dialog).getByRole("button", { name: "Change role" }),
     );
 
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
   });
 
   it("ChangeRole_RefusedEscalation_ReadsYourPermissionsAgain", async () => {

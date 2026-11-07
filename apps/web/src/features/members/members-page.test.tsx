@@ -1,8 +1,13 @@
-import { BuiltInRole, ErrorCode, Permission } from "@repo/api-client";
+import {
+  BuiltInRole,
+  ErrorCode,
+  type MemberResponse,
+  Permission,
+} from "@repo/api-client";
 import { brand } from "@repo/brand";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { HttpResponse, http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -39,15 +44,72 @@ vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({ user: null }),
 }));
 
-const server = setupServer();
+// The invitations' count reads ListInvitations for whom may read them; a test that looks at the invitations answers its own.
+const server = setupServer(
+  http.get(`*/v1/tenants/${northwind.id}/invitations`, () =>
+    HttpResponse.json({ items: [], page: 1, pageSize: 20, total: 0 }),
+  ),
+);
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const invitationsAnswer = (requests: URLSearchParams[] = []) =>
+const invitationsAnswer = (requests: URLSearchParams[] = [], total = 0) =>
   http.get(`*/v1/tenants/${northwind.id}/invitations`, ({ request }) => {
     requests.push(new URL(request.url).searchParams);
-    return HttpResponse.json({ items: [], page: 1, pageSize: 20, total: 0 });
+    return HttpResponse.json({ items: [], page: 1, pageSize: 20, total });
+  });
+
+/** The list's own requests, without the one item that the tab's count reads. */
+const listRequests = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.get("pageSize") !== "1");
+
+const person = (index: number): MemberResponse => ({
+  ...john,
+  userId: `0198f0a2-0000-7000-8000-1${String(index).padStart(11, "0")}`,
+  name: `Person ${index}`,
+  email: `person${index}@northwind.io`,
+});
+
+/** ListMembers of `count` people, each page of the size the request asks for. */
+const pagedMembersAnswer = (count: number, requests: URLSearchParams[] = []) =>
+  http.get(`*/v1/tenants/${northwind.id}/members`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    requests.push(params);
+    const page = Number(params.get("page") ?? 1);
+    const pageSize = Number(params.get("pageSize") ?? 20);
+    const all = Array.from({ length: count }, (_, index) => person(index + 1));
+    return HttpResponse.json({
+      items: all.slice((page - 1) * pageSize, page * pageSize),
+      page,
+      pageSize,
+      total: count,
+    });
+  });
+
+/** ListMembers of two people, one on each page; the second page never comes. */
+const secondPageNeverComesAnswer = () =>
+  http.get(`*/v1/tenants/${northwind.id}/members`, async ({ request }) => {
+    if (new URL(request.url).searchParams.get("page") === "2")
+      await delay("infinite");
+    return HttpResponse.json({
+      items: [person(1)],
+      page: 1,
+      pageSize: 1,
+      total: 2,
+    });
+  });
+
+/** ListMembers: every person without a search, John alone with one. */
+const searchedMembersAnswer = () =>
+  http.get(`*/v1/tenants/${northwind.id}/members`, ({ request }) => {
+    const items = new URL(request.url).searchParams.has("q") ? [john] : people;
+    return HttpResponse.json({
+      items,
+      page: 1,
+      pageSize: 20,
+      total: items.length,
+    });
   });
 
 const table = async () =>
@@ -69,7 +131,7 @@ describe("MembersPage", () => {
       await screen.findByRole("button", { name: "Invite member" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("tab", { name: "Invitations" }),
+      screen.getByRole("tab", { name: /^Invitations/ }),
     ).toBeInTheDocument();
     await openMenu("John Byrne");
     expect(
@@ -263,7 +325,7 @@ describe("MembersPage", () => {
     });
 
     await waitFor(() =>
-      expect(requests.at(-1)?.get("roleId")).toBe(billingLead.id),
+      expect(listRequests(requests).at(-1)?.get("roleId")).toBe(billingLead.id),
     );
     await waitFor(() =>
       expect(
@@ -287,7 +349,9 @@ describe("MembersPage", () => {
     );
 
     await waitFor(() => expect(window.location.search).toBe(""));
-    await waitFor(() => expect(requests.at(-1)?.has("roleId")).toBe(false));
+    await waitFor(() =>
+      expect(listRequests(requests).at(-1)?.has("roleId")).toBe(false),
+    );
     expect(
       screen.queryByRole("button", { name: "Clear filter" }),
     ).not.toBeInTheDocument();
@@ -360,24 +424,29 @@ describe("MembersPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("MembersPage_TheUrl_DrivesSearchFilterPageAndSort", async () => {
+  // The URL holds the filters, the tab and the sort, never the page (F9): an old address with ?page= starts at the first page.
+  it("MembersPage_TheUrl_DrivesSearchFilterAndSortButNeverThePage", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(people, requests),
+      invitationsAnswer(),
     );
 
     renderInTenant(<MembersPage />, {
       url: `/northwind/settings/members?q=byrne&roleId=${roleOf.member.id}&page=2&sort=-name`,
     });
 
-    await waitFor(() => expect(requests).toHaveLength(1));
-    expect(requests.map((params) => Object.fromEntries(params))).toEqual([
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(1));
+    expect(
+      listRequests(requests).map((params) => Object.fromEntries(params)),
+    ).toEqual([
       {
         q: "byrne",
         roleId: roleOf.member.id,
-        page: "2",
         sort: "-name",
+        page: "1",
+        pageSize: "50",
       },
     ]);
     expect(
@@ -418,10 +487,10 @@ describe("MembersPage", () => {
 
     renderInTenant(<MembersPage />);
     await userEvent.click(
-      await screen.findByRole("tab", { name: "Invitations" }),
+      await screen.findByRole("tab", { name: /^Invitations/ }),
     );
     await waitFor(() =>
-      expect(screen.getByRole("tab", { name: "Invitations" })).toHaveAttribute(
+      expect(screen.getByRole("tab", { name: /^Invitations/ })).toHaveAttribute(
         "aria-selected",
         "true",
       ),
@@ -429,14 +498,14 @@ describe("MembersPage", () => {
 
     window.history.back();
     await waitFor(() =>
-      expect(screen.getByRole("tab", { name: "Members" })).toHaveAttribute(
+      expect(screen.getByRole("tab", { name: /^Members/ })).toHaveAttribute(
         "aria-selected",
         "true",
       ),
     );
     window.history.forward();
     await waitFor(() =>
-      expect(screen.getByRole("tab", { name: "Invitations" })).toHaveAttribute(
+      expect(screen.getByRole("tab", { name: /^Invitations/ })).toHaveAttribute(
         "aria-selected",
         "true",
       ),
@@ -475,6 +544,8 @@ describe("MembersPage", () => {
     expect(
       within(alert).getByRole("button", { name: "Try again" }),
     ).toBeInTheDocument();
+    // No counts while the list cannot load.
+    expect(screen.getByRole("tab", { name: "Members" })).toBeInTheDocument();
   });
 
   it("MembersPage_SuspendedUser_ShowsTheSuspendedScreen", async () => {
@@ -495,7 +566,148 @@ describe("MembersPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("MembersPage_UnderTheLimit_CountsMembersWithInvitationsAndSaysSo", async () => {
+  it("MembersPage_Header_SaysWhoIsInTheOrganisationAndHasNoFreshness", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    expect(
+      await screen.findByText(
+        "People in Northwind Traders and what they can do.",
+      ),
+    ).toBeVisible();
+    await table();
+    expect(screen.queryByText(/^Updated/)).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_Columns_ShowTheEmailInItsOwnColumnAndTheRoleAsALabel", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    const rows = within(await screen.findByRole("table", { name: "Members" }));
+    expect(
+      rows.getAllByRole("columnheader").map((header) => header.textContent),
+    ).toEqual(["Name", "Email", "Role", "Joined", "Actions"]);
+    const john = (await rows.findByText("John Byrne")).closest(
+      "tr",
+    ) as HTMLElement;
+    expect(within(john).getAllByRole("cell")[1]).toHaveTextContent(
+      "john@northwind.io",
+    );
+    expect(within(john).getAllByRole("cell")[2]).toHaveTextContent(/^Member$/);
+  });
+
+  // The counts are the lists' totals without a filter, so a search does not change them (8.06).
+  it("MembersPage_Tabs_CountTheTotalsWithoutTheSearch", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      searchedMembersAnswer(),
+      invitationsAnswer([], 2),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: "/northwind/settings/members?q=john",
+    });
+
+    expect(
+      await screen.findByRole("tab", { name: "Members 4" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tab", { name: "Invitations 2" }),
+    ).toBeInTheDocument();
+  });
+
+  it("MembersPage_MoreThanOnePage_LoadMoreAddsTheNextPageAndSaysHowMany", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      pagedMembersAnswer(60, requests),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    expect(await (await table()).findByText("Person 50")).toBeInTheDocument();
+    expect((await table()).queryByText("Person 51")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Load more" }));
+
+    expect(await (await table()).findByText("Person 60")).toBeInTheDocument();
+    expect(screen.getByText("10 more members loaded.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Load more" }),
+    ).not.toBeInTheDocument();
+    expect(listRequests(requests).map((params) => params.get("page"))).toEqual([
+      "1",
+      "2",
+    ]);
+    expect(window.location.search).toBe("");
+  });
+
+  it("MembersPage_NextPageOnItsWay_ShowsLoadingMoreInPlaceOfTheButton", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      secondPageNeverComesAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    expect(await screen.findByText("Loading more members")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Load more" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_OnlyYou_InvitesThePeopleYouWorkWith", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([ayse]),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    expect(await (await table()).findByText("Ayşe Yılmaz")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "You’re the only member" }),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getAllByRole("button", { name: "Invite member" })[1] as Element,
+    );
+    expect(
+      await screen.findByRole("alertdialog", { name: "Invite a member" }),
+    ).toBeInTheDocument();
+  });
+
+  it("MembersPage_OnlyYouAndASearch_SaysNothingAboutInviting", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer([ayse]),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, {
+      url: "/northwind/settings/members?q=ayse",
+    });
+
+    expect(await (await table()).findByText("Ayşe Yılmaz")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "You’re the only member" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_UnderTheLimit_ShowsNoCountBesideInviteAndNoBanner", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
@@ -504,59 +716,131 @@ describe("MembersPage", () => {
         planWith({ "members.max": 15 }, { "members.max": 10 }),
       ),
       membersAnswer(),
+      invitationsAnswer(),
     );
 
     renderInTenant(<MembersPage />);
 
-    expect(
-      await screen.findByText("10 of 15 members, invitations included"),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Invite member" }),
-    ).not.toBeDisabled();
     await table();
-    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/seats/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("MembersPage_Unlimited_ShowsNoCount", async () => {
+  it("MembersPage_AtTheLimit_InviteOpensNoFreeSeatWithTheSeats", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
         undefined,
         [],
-        planWith({ "members.max": null }, { "members.max": 10 }),
+        planWith({ "members.max": 6 }, { "members.max": 6 }),
       ),
       membersAnswer(),
+      invitationsAnswer([], 2),
     );
 
     renderInTenant(<MembersPage />);
+    await screen.findByRole("tab", { name: "Members 4" });
+    const invite = screen.getByRole("button", { name: "Invite member" });
+    expect(invite).toBeEnabled();
+    await userEvent.click(invite);
 
-    await table();
-    expect(screen.queryByText(/invitations included/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/null/)).not.toBeInTheDocument();
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "No free seat",
+    });
+    expect(dialog).toHaveTextContent(
+      "Northwind Traders uses 6 of 6 seats: 4 members and 2 pending invitations. Remove a member or cancel an invitation to invite someone.",
+    );
+    expect(dialog).not.toHaveTextContent(/billing|ask us/);
+    expect(
+      screen.queryByRole("alertdialog", { name: "Invite a member" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("MembersPage_AtTheLimit_DisablesInviteWithTheReason", async () => {
+  it("MembersPage_NoFreeSeat_ViewInvitationsOpensTheInvitationsTab", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
         undefined,
         [],
-        planWith({ "members.max": 10 }, { "members.max": 10 }),
+        planWith({ "members.max": 6 }, { "members.max": 6 }),
       ),
       membersAnswer(),
+      invitationsAnswer([], 2),
+    );
+
+    renderInTenant(<MembersPage />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Invite member" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "No free seat",
+    });
+    expect(
+      within(dialog).getByRole("button", { name: "Request a plan change" }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "View invitations" }),
+    );
+
+    await waitFor(() =>
+      expect(window.location.search).toBe("?tab=invitations"),
+    );
+    expect(
+      screen.queryByRole("alertdialog", { name: "No free seat" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_NoFreeSeat_RequestAPlanChangeOpensTheSupportContact", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 6 }, { "members.max": 6 }),
+      ),
+      membersAnswer(),
+      invitationsAnswer([], 2),
+    );
+
+    renderInTenant(<MembersPage />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Invite member" }),
+    );
+    await userEvent.click(
+      within(
+        await screen.findByRole("alertdialog", { name: "No free seat" }),
+      ).getByRole("button", { name: "Request a plan change" }),
+    );
+
+    expect(open).toHaveBeenCalledWith(brand.supportUrl, "_self");
+    open.mockRestore();
+  });
+
+  it("MembersPage_AtTheLimit_ShowsTheBannerWithNoAction", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 6 }, { "members.max": 6 }),
+      ),
+      membersAnswer(),
+      invitationsAnswer([], 2),
     );
 
     renderInTenant(<MembersPage />);
 
-    const reason =
-      "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.";
-    const invite = await screen.findByRole("button", { name: "Invite member" });
-    expect(invite).toBeDisabled();
-    expect(invite).toHaveAccessibleDescription(reason);
-    expect(screen.getByText(reason)).toBeVisible();
-    await table();
-    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent(
+      "Your plan allows 6 seats: members and pending invitations. Remove a member or cancel an invitation to invite someone.",
+    );
+    expect(within(banner).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(banner).queryByRole("link")).not.toBeInTheDocument();
+    // The banner sits between the header and the tabs.
+    expect(banner.compareDocumentPosition(screen.getByRole("tablist"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
     // At the limit, removing stays allowed.
     await openMenu("John Byrne");
     expect(
@@ -564,42 +848,68 @@ describe("MembersPage", () => {
     ).not.toHaveAttribute("aria-disabled");
   });
 
-  it("MembersPage_OverTheLimitForAnOwner_ShowsTheBannerToMakeRoom", async () => {
+  it("MembersPage_OverTheLimitWithPendingInvitations_OffersViewInvitations", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
         undefined,
         [],
-        planWith({ "members.max": 5 }, { "members.max": 10 }),
+        planWith({ "members.max": 5 }, { "members.max": 6 }),
       ),
       membersAnswer(),
+      invitationsAnswer([], 2),
     );
 
     renderInTenant(<MembersPage />);
 
     const banner = await screen.findByRole("status");
-    expect(banner).toHaveTextContent(
-      "You have 10 members and pending invitations; your plan allows 5. Remove members or cancel invitations to invite new people. Nobody loses access.",
+    await waitFor(() =>
+      expect(banner).toHaveTextContent(
+        "Your plan gives 5 seats. You use 6. 4 members and 2 pending invitations. The 2 invitations can still be accepted. You can’t invite anyone new until you’re under 5. Nobody loses access.",
+      ),
     );
-    expect(
-      within(banner).getByRole("link", { name: "Contact us" }),
-    ).toHaveAttribute("href", brand.supportUrl);
-    expect(
-      screen.getByText("10 of 5 members, invitations included"),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Invite member" }),
-    ).toBeDisabled();
+    expect(banner).not.toHaveTextContent(/after a plan change/);
+    expect(within(banner).queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Invite member" })).toBeEnabled();
+    await userEvent.click(
+      within(banner).getByRole("button", { name: "View invitations" }),
+    );
+    await waitFor(() =>
+      expect(window.location.search).toBe("?tab=invitations"),
+    );
   });
 
-  it("MembersPage_OverTheLimitForAnInviterWhoCannotRemove_SaysWhoCanMakeRoom", async () => {
+  // The members can outnumber the seats' count for a moment (two reads): the invitations never go below 0, and then nothing to view.
+  it("MembersPage_OverTheLimitWithoutPendingInvitations_ShowsNoAction", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 2 }, { "members.max": 3 }),
+      ),
+      membersAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+
+    const banner = await screen.findByRole("status");
+    await waitFor(() =>
+      expect(banner).toHaveTextContent(
+        "4 members and 0 pending invitations. You can’t invite anyone new",
+      ),
+    );
+    expect(within(banner).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_OverTheLimitForAViewerWhoCannotReadInvitations_ShowsNoAction", async () => {
     const inviter = customRole(
       "0198f0a2-0000-7000-8000-0000000000c5",
       "Inviter",
       [
         Permission.TenantProfileRead,
         Permission.TenantMembersRead,
-        Permission.TenantInvitationsRead,
         Permission.TenantInvitationsCreate,
         Permission.TenantRolesRead,
       ],
@@ -610,19 +920,46 @@ describe("MembersPage", () => {
         inviter.permissions,
         { ...mehmet, role: inviter },
         [inviter],
-        planWith({ "members.max": 5 }, { "members.max": 10 }),
+        planWith({ "members.max": 5 }, { "members.max": 6 }),
       ),
       membersAnswer(),
     );
 
     renderInTenant(<MembersPage />);
 
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "You have 10 members and pending invitations; your plan allows 5. Someone who can remove members can make room. Nobody loses access.",
+    const banner = await screen.findByRole("status");
+    await waitFor(() =>
+      expect(banner).toHaveTextContent("4 members and 2 pending invitations."),
+    );
+    expect(within(banner).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("MembersPage_OverTheLimit_NoFreeSeatSaysTheSeatsAndWhatStillWorks", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 5 }, { "members.max": 6 }),
+      ),
+      membersAnswer(),
+      invitationsAnswer([], 2),
+    );
+
+    renderInTenant(<MembersPage />);
+    await screen.findByRole("tab", { name: "Members 4" });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Invite member" }),
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", { name: "No free seat" }),
+    ).toHaveTextContent(
+      "Your plan gives 5 seats. You use 6: 4 members and 2 pending invitations. The 2 invitations can still be accepted. You can’t invite anyone new until you’re under 5. Nobody loses access.",
     );
   });
 
-  it("MembersPage_OverTheLimitForAMember_ShowsNoBannerAndNoCount", async () => {
+  it("MembersPage_OverTheLimitForAMember_ShowsNoBanner", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Member,
@@ -636,11 +973,10 @@ describe("MembersPage", () => {
     renderInTenant(<MembersPage />);
 
     await table();
-    expect(screen.queryByText(/your plan allows/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/invitations included/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("MembersPage_ArabicAtTheLimit_ShowsTheReason", async () => {
+  it("MembersPage_ArabicAtTheLimit_ShowsTheBanner", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
@@ -649,14 +985,13 @@ describe("MembersPage", () => {
         planWith({ "members.max": 10 }, { "members.max": 10 }),
       ),
       membersAnswer(),
+      invitationsAnswer(),
     );
 
     renderInTenant(<MembersPage />, { locale: "ar" });
 
-    expect(
-      await screen.findByText(
-        "تسمح خطة مؤسستك بـ10 من الأعضاء، بما في ذلك الدعوات. أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
-      ),
-    ).toBeVisible();
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "تسمح خطتك بـ10 من المقاعد: الأعضاء والدعوات المعلّقة. أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
+    );
   });
 });

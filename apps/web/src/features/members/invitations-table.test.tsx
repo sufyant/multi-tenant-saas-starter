@@ -87,6 +87,10 @@ const listAnswer = (
     });
   });
 
+/** The list's own requests, without the one item that the tab's count reads. */
+const listRequests = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.get("pageSize") !== "1");
+
 const url = "/northwind/settings/members?tab=invitations";
 const rowOf = async (email: string) =>
   (
@@ -311,7 +315,7 @@ describe("InvitationsTable", () => {
     expect(
       (await screen.findAllByText("Invitation revoked"))[0],
     ).toBeInTheDocument();
-    expect(requests).toHaveLength(2);
+    expect(listRequests(requests)).toHaveLength(2);
   });
 
   it("Invitations_CancelExpired_SaysItsLinkAlreadyStopped", async () => {
@@ -367,7 +371,7 @@ describe("InvitationsTable", () => {
     expect(
       (await screen.findAllByText("ali@northwind.io already joined"))[0],
     ).toBeInTheDocument();
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
@@ -401,7 +405,7 @@ describe("InvitationsTable", () => {
     expect(banner).toHaveTextContent(
       "Ask an Owner of Northwind Traders to do this.",
     );
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
   });
 
   it("Invitations_None_SaysSoAndOffersToInvite", async () => {
@@ -428,13 +432,16 @@ describe("InvitationsTable", () => {
       url: `${url}&q=ali&roleId=${roleOf.admin.id}&sort=-expiresAt`,
     });
 
-    await waitFor(() => expect(requests).toHaveLength(1));
-    expect(requests.map((params) => Object.fromEntries(params))).toEqual([
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(1));
+    expect(
+      listRequests(requests).map((params) => Object.fromEntries(params)),
+    ).toEqual([
       {
         q: "ali",
         roleId: roleOf.admin.id,
-        page: "1",
         sort: "-expiresAt",
+        page: "1",
+        pageSize: "50",
       },
     ]);
   });
@@ -463,7 +470,7 @@ describe("InvitationsTable", () => {
     expect(
       (await screen.findAllByText("That invitation no longer exists"))[0],
     ).toBeInTheDocument();
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );

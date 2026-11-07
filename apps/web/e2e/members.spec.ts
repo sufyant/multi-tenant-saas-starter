@@ -204,9 +204,7 @@ test("Members_Phone_ShowsCardsAndABottomSheet", async ({ page: browser }) => {
   ).toBe(844);
 });
 
-test("Members_AtTheLimit_DisablesInviteWithTheReason", async ({
-  page: browser,
-}) => {
+test("Members_AtTheLimit_InviteOpensNoFreeSeat", async ({ page: browser }) => {
   await open(browser, {
     plan: {
       planName: "Free",
@@ -215,14 +213,20 @@ test("Members_AtTheLimit_DisablesInviteWithTheReason", async ({
     },
   });
 
-  const reason =
-    "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.";
+  await expect(
+    browser
+      .getByRole("status")
+      .getByText("Your plan allows 10 seats: members and pending invitations."),
+  ).toBeVisible();
   const invite = browser.getByRole("button", { name: "Invite member" });
-  await expect(invite).toBeDisabled();
-  await expect(invite).toHaveAccessibleDescription(reason);
-  await expect(browser.getByText(reason)).toBeVisible();
+  await expect(invite).toBeEnabled();
   await expect(
     browser.getByRole("table", { name: "Members" }).getByText("John Byrne"),
+  ).toBeVisible();
+  await expectAccessible(browser);
+  await invite.click();
+  await expect(
+    browser.getByRole("alertdialog", { name: "No free seat" }),
   ).toBeVisible();
   await expectAccessible(browser);
 });

@@ -11,7 +11,9 @@ const outputPath = "packages/ui/src/styles/tokens.gen.css";
  * The CSS of the tokens: light colours and shadows on :root, dark ones on .dark, and every other token on :root. A colour value
  * `{name}` names another token and becomes `var(--name)`. The breakpoints also go into a Tailwind `@theme` block, because a media
  * query cannot read a variable. That block first removes Tailwind's own breakpoints (sm to 2xl): they are in rem and ours in px, so
- * Tailwind cannot sort them and wrote `sm:` after `tablet:`, and the code uses only the design's (F49). The `@theme inline` block maps the tokens into Tailwind's theme (themeLines).
+ * Tailwind cannot sort them and wrote `sm:` after `tablet:`, and the code uses only the design's (F49). The container widths go into
+ * the same block for the same reason: a container query cannot read a variable either. The `@theme inline` block maps the tokens
+ * into Tailwind's theme (themeLines).
  * @param {any} tokens The content of tokens.json.
  * @returns {string}
  */
@@ -44,7 +46,14 @@ export function buildTokensCss(tokens) {
   }
 
   const other = [];
-  for (const group of ["spacing", "radius", "size", "breakpoint", "zIndex"]) {
+  for (const group of [
+    "spacing",
+    "radius",
+    "size",
+    "breakpoint",
+    "container",
+    "zIndex",
+  ]) {
     for (const token of tokens[group].tokens)
       other.push(line(token.name, token.value));
   }
@@ -64,6 +73,10 @@ export function buildTokensCss(tokens) {
     (/** @type {{ name: string, value: string }} */ token) =>
       line(`breakpoint-${token.name.replace(/^bp-/, "")}`, token.value),
   );
+  const containers = tokens.container.tokens.map(
+    (/** @type {{ name: string, value: string }} */ token) =>
+      line(`container-${token.name.replace(/^cq-/, "")}`, token.value),
+  );
 
   return `/* Generated from ${sourcePath} by packages/ui/scripts/build-tokens.mjs. Do not edit.
    Change tokens.json, then run \`pnpm generate\` (or \`pnpm ui:tokens\`) at the repository root. */
@@ -78,7 +91,7 @@ ${dark.join("\n")}
 
 @theme {
   --breakpoint-*: initial;
-${breakpoints.join("\n")}
+${[...breakpoints, ...containers].join("\n")}
 }
 
 /* shadcn's variable names are the token names, so each Tailwind theme variable reads the token of the same meaning. A token whose

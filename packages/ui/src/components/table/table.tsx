@@ -38,6 +38,8 @@ export type TableColumn<Row extends RowData> = {
   card?: "title" | "meta" | "end" | "hide";
   /** A shorter cell for the phone card, such as the name without the email. */
   cardRender?: (row: Row) => ReactNode;
+  /** wide: the column shows only from `cq-table-wide` of the table's own width, such as "Joined" on a tablet. The card ignores it. */
+  show?: "wide";
 };
 
 export type TableSort = { key: string; desc: boolean };
@@ -157,6 +159,7 @@ export function Table<Row extends RowData>({
                   className={cn(
                     "h-row-header px-3 text-status text-muted-foreground",
                     column.align === "end" && "text-end",
+                    column.show === "wide" && "hidden @table-wide:table-cell",
                   )}
                 >
                   {column.sortable ? (
@@ -199,6 +202,7 @@ export function Table<Row extends RowData>({
                     "px-3",
                     column.align === "end" && "text-end",
                     column.secondary && "text-muted-foreground",
+                    column.show === "wide" && "hidden @table-wide:table-cell",
                   )}
                 >
                   {cellText(column, row.original)}

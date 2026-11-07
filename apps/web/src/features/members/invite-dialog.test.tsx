@@ -298,8 +298,66 @@ describe("InviteDialog", () => {
     await send(dialog);
 
     expect(await within(dialog).findByRole("status")).toHaveTextContent(
-      "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.",
+      "Your plan allows 10 seats: members and pending invitations. Remove a member or cancel an invitation to invite someone.",
     );
+  });
+
+  it("Invite_UnderTheLimit_SaysHowManySeatsAreLeft", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    expect(within(dialog).getByText("3 seats left.")).toBeVisible();
+    expect(dialog).not.toHaveTextContent(/bill/);
+  });
+
+  it("Invite_SeatsLeftInArabic_SaysThemInArabic", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, { locale: "ar" });
+    await userEvent.click(
+      await screen.findByRole("button", { name: "دعوة عضو" }),
+    );
+
+    expect(
+      within(await screen.findByRole("alertdialog")).getByText(
+        "3 مقاعد متبقية.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("Invite_Unlimited_SaysNoSeatLine", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": null }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    expect(dialog).not.toHaveTextContent(/seats? left/);
   });
 
   it("Invite_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeatureInTheDialog", async () => {

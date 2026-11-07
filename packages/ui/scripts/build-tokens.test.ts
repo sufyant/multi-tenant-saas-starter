@@ -128,6 +128,7 @@ const tokens = (colors: { name: string; value: Record<string, string> }[]) => ({
   shadow: { tokens: [] },
   size: { tokens: [] },
   breakpoint: { tokens: [] },
+  container: { tokens: [] },
   zIndex: { tokens: [] },
 });
 
@@ -201,6 +202,18 @@ describe("buildTokensCss", () => {
     expect(buildTokensCss(source)).toContain(
       "@theme {\n  --breakpoint-*: initial;\n  --breakpoint-tablet: 768px;\n}",
     );
+  });
+
+  it("BuildTokensCss_Container_GoesIntoTheThemeAsAValue", () => {
+    const source = {
+      ...tokens([]),
+      container: { tokens: [{ name: "cq-table-wide", value: "960px" }] },
+    };
+
+    const css = buildTokensCss(source);
+
+    expect(css).toContain("--cq-table-wide: 960px;");
+    expect(css).toContain("  --container-table-wide: 960px;\n}");
   });
 
   it("BuildTokensCss_Shadow_HasALightAndADarkValue", () => {
