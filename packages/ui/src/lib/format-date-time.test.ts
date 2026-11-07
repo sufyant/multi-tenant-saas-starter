@@ -68,10 +68,33 @@ describe("format-date-time", () => {
     expect(zoneLabel("2026-12-03T09:14:00Z", dublin)).toBe("Dublin (UTC+0)");
   });
 
-  it("ZoneLabel_ArabicIstanbul_IsTheCityAndItsOffsetInWesternDigits", () => {
+  // The city is CLDR's in the language (time-zone-cities.gen.json; the exception of F18 for the city names).
+  it("ZoneLabel_ArabicIstanbul_IsTheCityInArabicAndItsOffsetInWesternDigits", () => {
     expect(
       zoneLabel(at, { locale: "ar-SA", timeZone: "Europe/Istanbul" }),
-    ).toBe("Istanbul (UTC+3)");
+    ).toBe("إسطنبول (UTC+3)");
+  });
+
+  it("ZoneLabel_TurkishIstanbul_IsTheCityInTurkish", () => {
+    expect(
+      zoneLabel(at, { locale: "tr-TR", timeZone: "Europe/Istanbul" }),
+    ).toBe("İstanbul (UTC+3)");
+  });
+
+  // A browser may name Kolkata by its older name.
+  it.each(["Asia/Kolkata", "Asia/Calcutta"])(
+    "ZoneLabel_ArabicKolkataAs%s_IsTheSameCity",
+    (timeZone) => {
+      expect(zoneLabel(at, { locale: "ar-SA", timeZone })).toBe(
+        "كالكتا (UTC+5:30)",
+      );
+    },
+  );
+
+  it("ZoneLabel_AZoneWithoutACity_IsItsIanaName", () => {
+    expect(zoneLabel(at, { locale: "ar-SA", timeZone: "Etc/GMT+5" })).toBe(
+      "GMT+5 (UTC-5)",
+    );
   });
 
   it("ZoneLabel_ZoneOfSeveralWords_WritesTheCityWithSpaces", () => {
@@ -161,6 +184,12 @@ describe("format-date-time", () => {
     ["America/New_York", "2026-10-16T13:32:00Z", "UTC-4"],
   ])("UtcOffset_%sAt%s_Is %s", (timeZone, instant, expected) => {
     expect(utcOffset(instant, timeZone)).toBe(expected);
+  });
+
+  it("ZoneName_ArabicIstanbul_StartsWithTheCityInArabic", () => {
+    expect(
+      zoneName(at, { locale: "ar-SA", timeZone: "Europe/Istanbul" }),
+    ).toMatch(/^إسطنبول/);
   });
 
   it("ZoneName_DublinInEnIe_IsTheCityAndTheZonesName", () => {
