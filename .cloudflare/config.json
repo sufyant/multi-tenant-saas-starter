@@ -12,6 +12,14 @@
         }
       },
       {
+        "id": "delete-health-after-1-day",
+        "enabled": true,
+        "conditions": { "prefix": "health/" },
+        "deleteObjectsTransition": {
+          "condition": { "type": "Age", "maxAge": 86400 }
+        }
+      },
+      {
         "id": "abort-multipart-uploads-after-7-days",
         "enabled": true,
         "conditions": { "prefix": "" },

@@ -10,6 +10,7 @@ The file holds no value: no account id, no token and no key. The script reads th
 - `r2.bucket_prefix`: each environment has one private bucket, `starter-staging` and `starter-production`. `.railway/railway.ts` gives the API the same name, and the endpoint of the EU jurisdiction, `https://<account id>.eu.r2.cloudflarestorage.com`.
 - `r2.lifecycle_rules`: the rules of each bucket, which the script writes as the bucket's whole list.
   - `delete-exports-after-7-days`: deletes every file under `exports/` 7 days after its upload. The API deletes an export's file itself when its 7 days end; this rule is the second guard. A rule matches a prefix only, with no wildcard, so the exports have a prefix of their own, `exports/users/{userId}/` (the maintainer's decision in step 36). Source: Cloudflare R2 docs, "Object lifecycles".
+  - `delete-health-after-1-day`: deletes every file under `health/` a day after its upload. The API's readiness check writes a small file there when a process starts, reads it back and deletes it itself (`apps/api/docs/ARCHITECTURE.md`, section 7, "File storage"); this rule removes a file that a failed check left. Source: Cloudflare R2 docs, "Object lifecycles".
   - `abort-multipart-uploads-after-7-days`: R2's default rule, which every new bucket has. The script writes the whole list, so the list keeps it.
 
 ## What the API manages

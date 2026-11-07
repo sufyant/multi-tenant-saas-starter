@@ -48,6 +48,10 @@ internal static class StorageExtensions
                 });
         });
         services.AddSingleton<IFileStore, S3FileStore>();
+
+        // One instance for the process, so the check remembers that it passed.
+        services.AddSingleton<StorageHealthCheck>();
+        services.AddHealthChecks().AddCheck<StorageHealthCheck>("storage", tags: [ApiPipeline.ReadyTag]);
         return services;
     }
 }
