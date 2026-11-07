@@ -92,6 +92,16 @@ describe("signInErrorKey without a code", () => {
     );
   });
 
+  // Offline, Clerk answers no error of the network: its request gives nothing, and the step after it finds no email factor.
+  it("SignInErrorKey_OfflineWhileSending_IsSendFailed", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    const noFactor = Object.assign(new Error("Email code factor not found"), {
+      code: "factor_not_found",
+    });
+
+    expect(signInErrorKey(noFactor, "send")).toBe("sendFailed");
+  });
+
   it("SignInErrorKey_NetworkFailureOfGoogleOrMicrosoft_IsGeneric", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
 
