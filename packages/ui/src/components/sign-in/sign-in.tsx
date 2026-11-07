@@ -113,9 +113,10 @@ export function SignIn({
 
   const sendCode = async (address: string) => {
     setError(undefined);
-    const { error } = await signIn.emailCode.sendCode({
-      emailAddress: address,
-    });
+    // A fetch that fails may reject instead of returning Clerk's error (frame 1.04).
+    const { error } = await signIn.emailCode
+      .sendCode({ emailAddress: address })
+      .catch((thrown: unknown) => ({ error: thrown }));
     if (error) return setError(keyOf(error, "send"));
     setEmail(address);
     setStep("code");

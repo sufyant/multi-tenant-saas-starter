@@ -1235,7 +1235,12 @@ const signInShots: {
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
       await page.getByRole("button", { name: "Continue", exact: true }).click();
-      await page.getByText("We could not send the code").waitFor();
+      // The banner, or the message Clerk's answer gave, so the shot shows what the screen says.
+      await page
+        .getByText("We could not send the code")
+        .or(page.getByRole("alert"))
+        .first()
+        .waitFor();
     },
   },
   {
@@ -1361,8 +1366,18 @@ test.describe("signed out", () => {
             requestAnimationFrame(() => requestAnimationFrame(done)),
           ),
       );
+      // An endless animation, such as the busy bar of 1.38, has no end to wait for.
       await page.evaluate(() =>
-        Promise.all(document.getAnimations().map((each) => each.finished)),
+        Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (each) =>
+                each.effect?.getTiming().iterations !==
+                Number.POSITIVE_INFINITY,
+            )
+            .map((each) => each.finished),
+        ),
       );
 
       await page.screenshot({ path: `${folder}/sign-in-${shot.file}.png` });
