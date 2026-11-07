@@ -82,7 +82,9 @@ describe("isExpectedClerkError", () => {
   ])("IsExpectedClerkError_%s_Is_%s", (_, expected, error) => {
     expect(isExpectedClerkError(error)).toBe(expected);
   });
+});
 
+describe("signInErrorKey without a code", () => {
   // Frame 1.04: only the call that sends the code says that the code could not go out.
   it("SignInErrorKey_NetworkFailureWhileSending_IsSendFailed", () => {
     expect(signInErrorKey(new Error("Failed to fetch"), "send")).toBe(
@@ -109,4 +111,3 @@ describe("isExpectedClerkError", () => {
     expect(signInErrorKey(empty, "send")).toBe("generic");
   });
 });
-
