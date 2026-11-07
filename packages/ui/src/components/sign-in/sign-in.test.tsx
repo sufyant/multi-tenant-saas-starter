@@ -587,4 +587,24 @@ describe("SignIn", () => {
       screen.queryByRole("button", { name: "Use another email" }),
     ).not.toBeInTheDocument();
   });
+
+  // A fetch that fails may reject instead of returning Clerk's error: the screen says so all the same (frame 1.04).
+  it("SignIn_SendingRejects_ShowsTheBanner", async () => {
+    const signIn = fakeSignIn();
+    signIn.emailCode.sendCode.mockRejectedValueOnce(
+      new TypeError("Failed to fetch"),
+    );
+    const user = userEvent.setup();
+    renderSignIn();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Email" }),
+      "ayse@northwind.example",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "We could not send the code",
+    );
+  });
 });
