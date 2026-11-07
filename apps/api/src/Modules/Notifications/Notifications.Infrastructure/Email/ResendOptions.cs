@@ -21,5 +21,6 @@ internal sealed class ResendOptions
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey) && !string.IsNullOrWhiteSpace(FromAddress);
 
     // An address without a name: the name comes from the brand, so a name here would be a second one.
-    public bool HasABareAddress => FromAddress is null || (MailAddress.TryCreate(FromAddress, out var address) && address.Address == FromAddress);
+    // An empty value is no address, as Development allows.
+    public bool HasABareAddress => string.IsNullOrEmpty(FromAddress) || (MailAddress.TryCreate(FromAddress, out var address) && address.Address == FromAddress);
 }

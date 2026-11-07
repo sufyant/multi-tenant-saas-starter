@@ -47,7 +47,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler.HandleAsync(exportAuditLogCommand, userDirectory, _timeProvider, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler.HandleAsync(exportAuditLogCommand, context, userDirectory, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

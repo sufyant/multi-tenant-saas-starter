@@ -98,7 +98,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     }
 
     // The purge takes the memberships away, so it names the Owners before: an Owner who stays a user hears of it in the personal bell. An
-    // Admin is no Owner.
+    // Admin is no Owner. The Owner's reopened, which leads into the tenant, goes with the tenant.
     [Fact]
     public async Task PurgeTenant_AnOwnerWithAnotherTenant_TellsTheOwnerInThePersonalBell()
     {
@@ -109,6 +109,12 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await _testData.AddMemberAsync(elsewhere, owner);
         await _testData.AddMemberAsync(elsewhere, admin);
         var (ownerId, adminId) = (await _testData.UserIdOfAsync(owner), await _testData.UserIdOfAsync(admin));
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES (gen_random_uuid(), '{ownerId}', '{tenant.Id}', 'tenant.reopened_for_owners', 'Personal', jsonb_build_object('tenantName', 'Gone Ltd'), '{ClosedAt:O}')
+            """,
+            _databaseName);
 
         await PurgeAsync(tenant.Id, ClosedAt);
         await Waiting.UntilAsync(async () => await NotificationsOfAsync(ownerId, adminId) is not null);

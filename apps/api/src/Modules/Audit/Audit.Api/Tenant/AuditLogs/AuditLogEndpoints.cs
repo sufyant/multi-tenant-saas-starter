@@ -84,10 +84,10 @@ public static class AuditLogEndpoints
     private static AuditRoleResponse RoleOf(string name, Guid id, bool builtIn) => new(id, name, builtIn);
 
     // The web's server calls it before it writes the log's file, which it reads from ListAuditEntries. Each export is one entry, so it
-    // takes no idempotency key. The tenant door proved the route's tenant.
-    private static async Task<Result> ExportAuditLog(Guid tenantId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken)
+    // takes no idempotency key. The host declared the route's tenant, which the message carries in its envelope (T2).
+    private static async Task<Result> ExportAuditLog(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken)
     {
-        await bus.InvokeAsync(new ExportAuditLogCommand(user.Id(), tenantId), cancellationToken);
+        await bus.InvokeAsync(new ExportAuditLogCommand(user.Id()), cancellationToken);
         return Result.Success();
     }
 
