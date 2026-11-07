@@ -60,6 +60,60 @@ describe("notificationHref", () => {
     expect(reportError).toHaveBeenCalledOnce();
   });
 
+  it("NotificationHref_AccountSecurity_LeadsToAccountAndSecurityWithoutAnOrganisation", () => {
+    expect(
+      notificationHref(
+        about(NotificationLinkResponseKind.AccountSecurity, null),
+        tenants,
+        northwind.slug,
+      ),
+    ).toBe("/settings/account");
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  // Inside an organisation the start page would leave the shell and come back to the last organisation used: the person stays in
+  // the organisation that is open, on its Home.
+  it("NotificationHref_StartInsideAnOrganisation_LeadsToThatOrganisationsHome", () => {
+    expect(
+      notificationHref(
+        about(NotificationLinkResponseKind.Start, null),
+        tenants,
+        northwind.slug,
+      ),
+    ).toBe("/northwind");
+  });
+
+  it("NotificationHref_ATenantThePersonLeftInsideAnOrganisation_LeadsToThatOrganisationsHome", () => {
+    expect(
+      notificationHref(
+        about(NotificationLinkResponseKind.TenantMembers, "another-tenant"),
+        tenants,
+        northwind.slug,
+      ),
+    ).toBe("/northwind");
+  });
+
+  it("NotificationHref_AKindTheWebDoesNotKnowInsideAnOrganisation_LeadsToThatOrganisationsHome", () => {
+    const unknown = {
+      kind: "tenant_usage",
+      tenantId: northwind.id,
+    } as unknown as NotificationLinkResponse;
+
+    expect(notificationHref(unknown, tenants, northwind.slug)).toBe(
+      "/northwind",
+    );
+  });
+
+  it("NotificationHref_StartInsideAnOrganisationNoLongerInTheList_LeadsToTheStartPage", () => {
+    expect(
+      notificationHref(
+        about(NotificationLinkResponseKind.Start, null),
+        [],
+        northwind.slug,
+      ),
+    ).toBe("/");
+  });
+
   it("NotificationHref_APlatformLink_LeadsToTheStartPage", () => {
     expect(
       notificationHref(

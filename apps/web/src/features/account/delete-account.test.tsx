@@ -12,7 +12,8 @@ import {
   it,
   vi,
 } from "vitest";
-import { northwind, renderInTenant, tenantAnswers } from "../../../test/tenant";
+import { renderWithProviders } from "../../../test/render";
+import { northwind, tenantAnswers } from "../../../test/tenant";
 import { DeleteAccount } from "./delete-account";
 import { deletedEmailKey } from "./deleted-account";
 
@@ -31,7 +32,6 @@ afterEach(() => {
 afterAll(() => server.close());
 
 const traceId = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
-const url = "/northwind/settings/account";
 
 /** RequestAccountDeletion and ConfirmAccountDeletion, with the answers given, recording the keys and the codes. */
 function deletion(
@@ -61,8 +61,9 @@ const codeSent = () =>
     { status: 201 },
   );
 
+/** The card on Account and security, which opens without an organisation (`/settings/account`). */
 async function start() {
-  renderInTenant(<DeleteAccount email="lena@northwind.example" />, { url });
+  renderWithProviders(<DeleteAccount email="lena@northwind.example" />);
   await userEvent.click(
     await screen.findByRole("button", { name: "Delete my account" }),
   );
@@ -80,12 +81,17 @@ describe("DeleteAccount", () => {
 
     await start();
 
-    // The name sits in its own <bdi> (F15), so the sentence is read from the dialog's whole text.
+    // The name sits in its own <bdi> (F15), so the sentence is read from the dialog's whole text. It ends as Leave's does: the
+    // person cannot close the organisation, so support does (#219, section 3).
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "You can’t delete your account yet",
+    });
+    expect(dialog).toHaveTextContent(
+      "You are the last Owner of Northwind Traders. Make another member an Owner first, or contact support to close the organisation.",
+    );
     expect(
-      await screen.findByRole("alertdialog", {
-        name: "You can’t delete your account yet",
-      }),
-    ).toHaveTextContent("You are the last Owner of Northwind Traders.");
+      within(dialog).getByRole("link", { name: "contact support" }),
+    ).toHaveAttribute("href", "mailto:support@starter.example");
     expect(sent.codes).toEqual([]);
   });
 
@@ -94,8 +100,13 @@ describe("DeleteAccount", () => {
     server.use(...handlers);
 
     await start();
-    const step = within(
-      await screen.findByRole("alertdialog", { name: "Delete your account?" }),
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Delete your account?",
+    });
+    const step = within(dialog);
+    // The page opens without an organisation, so the dialog names none.
+    expect(dialog).toHaveTextContent(
+      "You lose access at once to every organisation you are in. Your activity stays, under “Deleted user”. This cannot be undone.",
     );
     expect(step.getByText("lena@northwind.example")).toBeInTheDocument();
     await userEvent.type(step.getByRole("textbox", { name: "Code" }), "381906");

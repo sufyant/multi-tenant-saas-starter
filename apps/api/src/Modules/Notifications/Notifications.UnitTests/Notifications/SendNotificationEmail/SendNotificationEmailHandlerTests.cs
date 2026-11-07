@@ -56,6 +56,23 @@ public sealed class SendNotificationEmailHandlerTests
         (email.Subject, email.Html.Contains("href=\"https://platform.example/\"", StringComparison.Ordinal)).ShouldBe(("Acme askıya alındı", true));
     }
 
+    // A notification of the link kind AccountSecurity leads to Account and security, which the web opens without an organisation.
+    [Fact]
+    public async Task SendNotificationEmail_ADataExportReady_LeadsToAccountAndSecurityOfTheWebApp()
+    {
+        var values = new Dictionary<string, string> { ["expiresAt"] = "2026-11-14T12:00:00.0000000+00:00" };
+
+        await SendNotificationEmailHandler.HandleAsync(
+            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.UserDataExportReady, values, "ada@example.com", Language.En),
+            _channel,
+            Links,
+            TestContext.Current.CancellationToken);
+
+        var email = _channel.Sent.ShouldHaveSingleItem();
+        (email.Text.Contains("Open Starter:\nhttps://app.example/settings/account\n", StringComparison.Ordinal),
+            email.Html.Contains("href=\"https://app.example/settings/account\"", StringComparison.Ordinal)).ShouldBe((true, true));
+    }
+
     // A value is HTML-encoded in the HTML part, as in every email (section 7, "Email").
     [Fact]
     public async Task SendNotificationEmail_ATenantNameWithHtml_EscapesItInTheHtml()

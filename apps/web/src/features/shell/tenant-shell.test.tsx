@@ -174,7 +174,9 @@ describe("TenantShell", () => {
     ).toEqual(["Home", "Settings"]);
   });
 
-  it("TenantShell_Settings_OpensProfile", async () => {
+  // Profile opens without an organisation now, so Settings opens General, the organisation's page that every role can open
+  // (the maintainer's decision of 2026-11-07, F59).
+  it("TenantShell_Settings_OpensGeneral", async () => {
     server.use(...answers(1));
 
     renderWithProviders(shell());
@@ -182,7 +184,25 @@ describe("TenantShell", () => {
     const menu = await screen.findByRole("navigation", { name: "Main menu" });
     expect(
       within(menu).getByRole("link", { name: "Settings" }),
-    ).toHaveAttribute("href", "/northwind/settings/profile");
+    ).toHaveAttribute("href", "/northwind/settings/general");
+  });
+
+  // Profile and Account and security are the person's pages, at the platform's paths (decision 69).
+  it("TenantShell_InSettings_MyAccountLeadsToThePagesWithoutAnOrganisation", async () => {
+    route.pathname = "/northwind/settings/members";
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(within(menu).getByRole("link", { name: "Profile" })).toHaveAttribute(
+      "href",
+      "/settings/profile",
+    );
+    expect(
+      within(menu).getByRole("link", { name: "Account and security" }),
+    ).toHaveAttribute("href", "/settings/account");
   });
 
   it("TenantShell_Breadcrumb_IsTheOrganisationThenTheHome", async () => {
