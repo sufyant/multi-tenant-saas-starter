@@ -493,7 +493,7 @@
       "roles": "الأدوار",
       "activity": "النشاط"
     },
-    "custom": "مخصّص",
+    "customType": "مخصّص",
     "summary": "{type} · {permissions} · {users}",
     "notInUseLower": "غير مستخدم",
     "inUseTitle": "{name} مستخدم",

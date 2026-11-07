@@ -43,7 +43,7 @@ export function RoleHeader({
         {role && (
           <p className="text-body text-muted-foreground">
             {t("roles.summary", {
-              type: role.builtIn ? t("roles.builtIn") : t("roles.custom"),
+              type: role.builtIn ? t("roles.builtIn") : t("roles.customType"),
               permissions: t("members.permissionCount", {
                 count: role.permissions.length,
               }),

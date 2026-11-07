@@ -157,7 +157,9 @@ export function RolesPage() {
       header: t("roles.type"),
       card: "end",
       render: (role) => (
-        <Label>{role.builtIn ? t("roles.builtIn") : t("roles.custom")}</Label>
+        <Label>
+          {role.builtIn ? t("roles.builtIn") : t("roles.customType")}
+        </Label>
       ),
     },
     {

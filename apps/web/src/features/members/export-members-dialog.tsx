@@ -8,6 +8,7 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { afterRefusal } from "@/shared/refresh";
+import { saveFile } from "@/shared/save-file";
 import { useTenant } from "@/shared/tenant-context";
 
 /** The list's filter as the screen shows it: the file follows it. */
@@ -18,16 +19,6 @@ export type ExportFilter = {
   /** The name of the filter's role, or none without a role filter. */
   roleName: string | undefined;
 };
-
-/** Saves the file under the server's name (the maintainer's decision of 2026-11-07): the browser makes no second name. */
-function save({ blob, name }: { blob: Blob; name: string }) {
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = name;
-  link.click();
-  // A browser may still read the address after the click starts the download, so it goes on the next task.
-  setTimeout(() => URL.revokeObjectURL(link.href));
-}
 
 /**
  * Export members (8.08, 8.10, 8.12, 8.16): the CSV file of the list as the screen filters and sorts it, from the web's server,
@@ -90,7 +81,7 @@ export function ExportMembersDialog({
       onConfirm={() =>
         exportFile.mutate(undefined, {
           onSuccess: (file) => {
-            save(file);
+            saveFile(file);
             onClose();
             showToast({
               title: t("members.exportedTitle"),

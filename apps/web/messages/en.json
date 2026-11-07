@@ -493,7 +493,7 @@
       "roles": "Roles",
       "activity": "Activity"
     },
-    "custom": "Custom",
+    "customType": "Custom",
     "summary": "{type} · {permissions} · {users}",
     "notInUseLower": "not in use",
     "inUseTitle": "{name} is in use",

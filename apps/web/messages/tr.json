@@ -493,7 +493,7 @@
       "roles": "Roller",
       "activity": "Etkinlik"
     },
-    "custom": "Özel",
+    "customType": "Özel",
     "summary": "{type} · {permissions} · {users}",
     "notInUseLower": "kullanılmıyor",
     "inUseTitle": "{name} kullanımda",
