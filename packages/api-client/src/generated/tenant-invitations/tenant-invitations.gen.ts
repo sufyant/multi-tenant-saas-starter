@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -123,12 +128,88 @@ export const listInvitations = async (tenantId: string,
 
 
 
+export const getListInvitationsInfiniteQueryKey = (tenantId: string,
+    params?: ListInvitationsParams,) => {
+    return [
+    'infinite', "listInvitations", ...(tenantId ? [tenantId] : []), ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListInvitationsQueryKey = (tenantId: string,
     params?: ListInvitationsParams,) => {
     return [
     "listInvitations", ...(tenantId ? [tenantId] : []), ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListInvitationsInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listInvitations>>, ListInvitationsParams['page']>, TError = ErrorType<ProblemDetails>>(tenantId: string,
+    params?: ListInvitationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInvitationsInfiniteQueryKey(tenantId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInvitations>>, QueryKey, ListInvitationsParams['page']> = ({ signal, pageParam }) => listInvitations(tenantId,{...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListInvitationsInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listInvitations>>>
+export type ListInvitationsInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListInvitationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listInvitations>>, ListInvitationsParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params: undefined |  ListInvitationsParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof listInvitations>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInvitationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listInvitations>>, ListInvitationsParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListInvitationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof listInvitations>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListInvitationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listInvitations>>, ListInvitationsParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListInvitationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListInvitationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listInvitations>>, ListInvitationsParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListInvitationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListInvitationsInfiniteQueryOptions(tenantId,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof listInvitations>>, TError = ErrorType<ProblemDetails>>(tenantId: string,

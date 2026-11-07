@@ -8,6 +8,7 @@ import {
   formatRelative,
   formatTime,
   formatUtc,
+  isTimeZone,
   startOfDay,
   utcOffset,
   zoneLabel,
@@ -247,5 +248,18 @@ describe("format-date-time", () => {
     expect(
       calendarDay(startOfDay("2026-10-16", { timeZone }), { timeZone }),
     ).toBe("2026-10-16");
+  });
+});
+
+describe("isTimeZone", () => {
+  it.each(["Europe/Istanbul", "UTC", "America/Los_Angeles"])(
+    "IsTimeZone_%s_True",
+    (name) => {
+      expect(isTimeZone(name)).toBe(true);
+    },
+  );
+
+  it.each(["Mars/Olympus", "", "+03:00x"])("IsTimeZone_%s_False", (name) => {
+    expect(isTimeZone(name)).toBe(false);
   });
 });

@@ -11,14 +11,15 @@ const uuid = z.uuid();
 export function routeNotFoundUnlessUuid(id: string): Response | null {
   return uuid.safeParse(id).success
     ? null
-    : Response.json(
-        { status: 404, code: ErrorCode.RouteNotFound },
-        {
-          status: 404,
-          headers: { "Content-Type": "application/problem+json" },
-        },
-      );
+    : problem(404, ErrorCode.RouteNotFound);
 }
+
+/** An export's own refusal, in the shape of the API's problems (F4). */
+export const problem = (status: number, code: ErrorCode): Response =>
+  Response.json(
+    { status, code },
+    { status, headers: { "Content-Type": "application/problem+json" } },
+  );
 
 /** A call of the API as the signed-in person, through the BFF and its checks (F6). It answers the API's status and body. */
 export type ExportApi = (

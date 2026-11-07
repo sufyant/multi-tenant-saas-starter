@@ -1,17 +1,22 @@
 import {
+  ErrorCode,
   getExportMembersUrl,
   getGetMeUrl,
   getGetMyTenantUrl,
   getListMembersUrl,
-  type ListMembersSort,
   type ListPageOfMemberResponse,
   type MeResponse,
   type MyTenantDetailResponse,
   schemas,
 } from "@repo/api-client";
-import { calendarDay } from "@repo/ui/lib/format-date-time";
+import { calendarDay, isTimeZone } from "@repo/ui/lib/format-date-time";
 import type { getTranslations } from "next-intl/server";
-import { type ExportApi, exportFile, readPage } from "@/shared/export-file";
+import {
+  type ExportApi,
+  exportFile,
+  problem,
+  readPage,
+} from "@/shared/export-file";
 import { roleNameOf } from "@/shared/roles";
 
 type Texts = {
@@ -29,6 +34,20 @@ export async function membersFile(
   search: URLSearchParams,
   { members: t, roleNames }: Texts,
 ): Promise<Response> {
+  // A value the list does not take answers 400 before any call, so no audit entry says that a file left (F4).
+  const filter = schemas.ListMembersQueryParams.pick({
+    q: true,
+    roleId: true,
+    sort: true,
+  }).safeParse({
+    q: search.get("q") || undefined,
+    roleId: search.get("roleId") || undefined,
+    sort: search.get("sort") || undefined,
+  });
+  const browserZone = search.get("timeZone");
+  if (!filter.success || (browserZone && !isTimeZone(browserZone)))
+    return problem(400, ErrorCode.RequestInvalid);
+
   const [me, tenant] = await Promise.all([
     api(getGetMeUrl()),
     api(getGetMyTenantUrl(tenantId)),
@@ -37,12 +56,7 @@ export async function membersFile(
   if (!tenant.ok) return tenant;
   const { timeZone } = (await me.json()) as MeResponse;
   const { slug } = (await tenant.json()) as MyTenantDetailResponse;
-  const zone = timeZone ?? search.get("timeZone") ?? "UTC";
-  const filter = {
-    q: search.get("q") ?? undefined,
-    roleId: search.get("roleId") ?? undefined,
-    sort: (search.get("sort") ?? undefined) as ListMembersSort | undefined,
-  };
+  const zone = timeZone ?? browserZone ?? "UTC";
 
   async function* rows() {
     const pageSize = schemas.listMembersQueryPageSizeMax;
@@ -50,7 +64,7 @@ export async function membersFile(
     for (let page = 1; ; page++) {
       const list = await readPage<ListPageOfMemberResponse>(
         api,
-        getListMembersUrl(tenantId, { ...filter, page, pageSize }),
+        getListMembersUrl(tenantId, { ...filter.data, page, pageSize }),
       );
       for (const member of list.items)
         yield [

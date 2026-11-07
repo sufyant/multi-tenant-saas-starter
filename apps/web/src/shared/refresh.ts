@@ -3,7 +3,9 @@ import {
   ErrorCode,
   getGetMeQueryKey,
   getGetMyTenantQueryKey,
+  getListInvitationsInfiniteQueryKey,
   getListInvitationsQueryKey,
+  getListMembersInfiniteQueryKey,
   getListMembersQueryKey,
   getListMyTenantsQueryKey,
   getListRolesQueryKey,
@@ -24,6 +26,10 @@ export const refreshMembers = (queryClient: QueryClient, tenantId: string) =>
     queryClient.invalidateQueries({
       queryKey: getListMembersQueryKey(tenantId),
     }),
+    // The list's pages that Load more added (F9), under Orval's infinite key.
+    queryClient.invalidateQueries({
+      queryKey: getListMembersInfiniteQueryKey(tenantId),
+    }),
     refreshUsage(queryClient, tenantId),
   ]);
 
@@ -34,6 +40,9 @@ export const refreshInvitations = (
   Promise.all([
     queryClient.invalidateQueries({
       queryKey: getListInvitationsQueryKey(tenantId),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: getListInvitationsInfiniteQueryKey(tenantId),
     }),
     refreshUsage(queryClient, tenantId),
   ]);

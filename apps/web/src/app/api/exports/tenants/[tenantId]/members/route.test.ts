@@ -28,7 +28,8 @@ const server = setupServer();
 const requests: Request[] = [];
 
 const owner = { id: "r-owner", name: "owner", builtIn: true };
-const lead = { id: "r-lead", name: "Support lead", builtIn: false };
+const leadId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e30";
+const lead = { id: leadId, name: "Support lead", builtIn: false };
 const member = (index: number) => ({
   userId: `u-${index}`,
   name: `Member ${index}`,
@@ -172,14 +173,14 @@ describe("Export members", () => {
   it("ExportMembers_SearchRoleAndSort_PassesThemToEveryPage", async () => {
     server.use(me(), tenant, audit(), members(3));
 
-    await text(await exportOf("?q=omar&roleId=r-lead&sort=-name"));
+    await text(await exportOf(`?q=omar&roleId=${leadId}&sort=-name`));
 
     const [page] = requests.filter((request) =>
       new URL(request.url).pathname.endsWith("/members"),
     );
     const params = new URL(String(page?.url)).searchParams;
     expect(params.get("q")).toBe("omar");
-    expect(params.get("roleId")).toBe("r-lead");
+    expect(params.get("roleId")).toBe(leadId);
     expect(params.get("sort")).toBe("-name");
     expect(params.get("pageSize")).toBe("100");
   });
@@ -275,6 +276,25 @@ describe("Export members", () => {
 
       expect(answer.status).toBe(404);
       expect(requests).toEqual([]);
+    },
+  );
+
+  // A value the list does not take answers 400 before the audit call, so no audit entry says that a file left (F4).
+  it.each([
+    ["sort", "?sort=joined"],
+    ["roleId", "?roleId=r-lead"],
+    ["q", `?q=${"x".repeat(101)}`],
+    ["timeZone", "?timeZone=Mars/Olympus"],
+  ])(
+    "ExportMembers_Invalid_%s_Answers400AndWritesNoAuditEntry",
+    async (_, query) => {
+      server.use(me(null), tenant, audit(), members(1));
+
+      const answer = await exportOf(query);
+
+      expect(answer.status).toBe(400);
+      expect(await answer.json()).toMatchObject({ code: "request.invalid" });
+      expect(requests.some((request) => request.method === "POST")).toBe(false);
     },
   );
 });

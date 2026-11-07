@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -82,12 +87,88 @@ export const listMembers = async (tenantId: string,
 
 
 
+export const getListMembersInfiniteQueryKey = (tenantId: string,
+    params?: ListMembersParams,) => {
+    return [
+    'infinite', "listMembers", ...(tenantId ? [tenantId] : []), ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListMembersQueryKey = (tenantId: string,
     params?: ListMembersParams,) => {
     return [
     "listMembers", ...(tenantId ? [tenantId] : []), ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListMembersInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listMembers>>, ListMembersParams['page']>, TError = ErrorType<ProblemDetails>>(tenantId: string,
+    params?: ListMembersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMembersInfiniteQueryKey(tenantId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMembers>>, QueryKey, ListMembersParams['page']> = ({ signal, pageParam }) => listMembers(tenantId,{...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListMembersInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listMembers>>>
+export type ListMembersInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListMembersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMembers>>, ListMembersParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params: undefined |  ListMembersParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listMembers>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMembersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMembers>>, ListMembersParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListMembersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMembers>>,
+          TError,
+          Awaited<ReturnType<typeof listMembers>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMembersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMembers>>, ListMembersParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListMembersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListMembersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMembers>>, ListMembersParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListMembersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMembersInfiniteQueryOptions(tenantId,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListMembersQueryOptions = <TData = Awaited<ReturnType<typeof listMembers>>, TError = ErrorType<ProblemDetails>>(tenantId: string,
