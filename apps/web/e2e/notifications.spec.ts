@@ -1,15 +1,20 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { mockApi, mockNotifications, northwind } from "./api";
+import { NotificationLinkResponseKind } from "@repo/api-client";
+import { mockApi, mockNotifications, northwind, roleChanged } from "./api";
 import { expectAccessible } from "./axe";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
   page.getByRole("tablist", { name: "Which notifications" });
 
-const open = async (page: Page, path = `/${northwind.slug}`) => {
+const open = async (
+  page: Page,
+  path = `/${northwind.slug}`,
+  items = [roleChanged],
+) => {
   await mockApi(page);
-  const notifications = await mockNotifications(page);
+  const notifications = await mockNotifications(page, { items });
   await setupClerkTestingToken({ page });
   await page.goto(path);
   return notifications;
@@ -92,4 +97,31 @@ test("Bell_Tabs_ShowTheUnreadOnesThenEveryOne", async ({ page }) => {
     page.getByText(/^Northwind Traders · Your access · /),
   ).toBeVisible();
   await expectAccessible(page);
+});
+
+// The bug of staging: a link of the kind start went to "/", outside the tenant layout, so the shell unmounted and "/" sent the person
+// back. Opening a notification inside an organisation keeps the shell: the sidebar that was marked before the click is still there.
+test("Bell_AStartLinkInsideAnOrganisation_KeepsTheShellMounted", async ({
+  page,
+}) => {
+  const removed = {
+    ...roleChanged,
+    title: "You were removed from Harbour Logistics",
+    tenantName: "Harbour Logistics",
+    link: { kind: NotificationLinkResponseKind.Start, tenantId: null },
+  };
+  await open(page, `/${northwind.slug}`, [removed]);
+  await page
+    .getByRole("navigation", { name: "Main menu" })
+    .evaluate((element) => {
+      element.setAttribute("data-e2e-mounted", "before");
+    });
+
+  await bell(page, 1).click();
+  await page
+    .getByRole("link", { name: /You were removed from Harbour Logistics/ })
+    .click();
+
+  await expect(page).toHaveURL(`/${northwind.slug}`);
+  await expect(page.locator("[data-e2e-mounted=before]")).toHaveCount(1);
 });
