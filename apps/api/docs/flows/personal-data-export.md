@@ -32,6 +32,6 @@ A person asks for a copy of their data (GDPR, Articles 15 and 20). The worker pr
 
 What the screens read (Figma, "6 · Settings › Account and security", 6.19 to 6.21 and 6.30 to 6.32): `GET /v1/me/data-exports/latest` answers the status (`preparing`, `ready`, `failed`, `expired`), `requestedAt`, `readyAt`, `expiresAt` and `sizeBytes`; 404 `data_export.not_found` is the state "Export my data". The email says the expiry in the person's language and time zone; its footer says why it came.
 
-Tests: `RequestDataExportTests`, `GetMyDataExportTests`, `RequestDataExport_OnAWebAndAWorkerHost_PreparesTheFileInTheWorker` (`HostRoleTests`), `DownloadDataExportTests`, `ExpireDataExportTests`, `OwnFilesPolicyTests`, `OwnActionsPolicyTests`, `StoredFileTests`, `S3FileStoreTests`, `RecordDataExportRequestedTests` and `RecordDataExportDownloadedTests` in Audit.
+Tests: `RequestDataExportTests`, `GetMyDataExportTests`, `RequestDataExport_OnAWebAndAWorkerHost_PreparesTheFileInTheWorker` (`HostRoleTests`), `DownloadDataExportTests`, `ExpireDataExportTests`, `OwnFilesPolicyTests`, `OwnActionsPolicyTests`, `StoredFileTests`, `S3FileStoreTests` (in `Api.IntegrationTests` and `Api.UnitTests`), `RecordDataExportRequestedTests` and `RecordDataExportDownloadedTests` in Audit.
 
 Source: GDPR, Articles 12, 15 and 20. Nygard, *Release It!*, Chapter 5 (Timeouts). Hohpe and Woolf, *Enterprise Integration Patterns*, "Idempotent Receiver".

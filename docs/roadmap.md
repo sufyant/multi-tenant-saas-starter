@@ -106,6 +106,8 @@ Status: done.
 
 36-backend-name (the maintainer's decision of 2026-11-06): a person has one name, `name`, trimmed, 1 to 100 characters, in place of a first and a last name. It changes the users table, every contract, the export and the screens. A greeting uses the whole name, and the avatar's initials are the first letters of the name's first and last word. Done.
 
+36-fix-r2-upload (the maintainer's decisions of 2026-11-07): R2 refused the data export's upload, because the SDK signed its body in chunks. The upload now signs its whole body in one part, and a unit test pins the requests that R2 accepts. The readiness check of each API process writes, reads and deletes a file under `health/` of the environment's bucket, so a deploy that cannot use its bucket fails. Done.
+
 ## 5. Step 37: Organisation pages
 
 Status: todo. It has two parts.

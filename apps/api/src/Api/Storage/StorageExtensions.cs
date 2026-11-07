@@ -20,9 +20,8 @@ internal static class StorageExtensions
             .Validate(settings => settings.Timeout > TimeSpan.Zero, $"{StorageOptions.Section}:Timeout must be positive.")
             .ValidateOnStart();
 
-        // R2 asks for the region "auto" and for addresses by path; SeaweedFS accepts both. The SDK's own retries are bounded and within the time
-        // limit of each call. R2 does not take the checksums the SDK adds by default, so the SDK sends and checks one only where the API
-        // requires it (Cloudflare R2 documentation, "aws-sdk-net").
+        // The settings follow R2 (Cloudflare R2 documentation, "aws-sdk-net" and "S3 API compatibility"); SeaweedFS accepts each of them.
+        // S3FileStoreTests in Api.UnitTests pins the requests they give. An upload also signs its body in one part (S3FileStore.SaveAsync).
         services.AddSingleton<IAmazonS3>(provider =>
         {
             var settings = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
@@ -31,15 +30,28 @@ internal static class StorageExtensions
                 new AmazonS3Config
                 {
                     ServiceURL = settings.Endpoint!.ToString(),
+
+                    // R2 has one region, "auto", and signs with it.
                     AuthenticationRegion = "auto",
+
+                    // The bucket goes into the path, not into the host name, so the endpoint of the account serves every bucket.
                     ForcePathStyle = true,
+
+                    // The SDK's own retries are bounded and within the time limit of each call (section 7, "File storage", rule 1).
                     Timeout = settings.Timeout,
                     MaxErrorRetry = 2,
+
+                    // R2 does not take the checksums that the SDK adds by default, which an upload sends in a trailer. So the SDK sends and
+                    // checks one only where the S3 API requires it, such as the deletion of many keys.
                     RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
                     ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
                 });
         });
         services.AddSingleton<IFileStore, S3FileStore>();
+
+        // One instance for the process, so the check remembers that it passed.
+        services.AddSingleton<StorageHealthCheck>();
+        services.AddHealthChecks().AddCheck<StorageHealthCheck>("storage", tags: [ApiPipeline.ReadyTag]);
         return services;
     }
 }

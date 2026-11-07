@@ -5,10 +5,13 @@ namespace SharedKernel;
 /// files are under <c>users/{userId}/</c>, and their data exports under <c>exports/users/{userId}/</c>, because the bucket's lifecycle rule,
 /// the second guard of an export's deletion, matches a prefix only. A tenant's files are under <c>tenants/{tenantId}/</c>. So a deletion
 /// deletes whole prefixes (section 7, "File storage"). A tenant's file will be <c>tenants/{tenantId}/{module}/{fileId}</c>; no module keeps
-/// one yet.
+/// one yet. The host's readiness check writes its file under <c>health/</c>.
 /// </summary>
 public static class FileKeys
 {
+    /// <summary>The prefix of the files of the storage's readiness check, which the bucket's lifecycle rule deletes after a day.</summary>
+    public const string Health = "health/";
+
     /// <summary>The prefix of every export, which the bucket's lifecycle rule deletes after 7 days.</summary>
     public const string Exports = "exports/";
 
@@ -26,4 +29,7 @@ public static class FileKeys
 
     /// <summary>The file of one data export of the user.</summary>
     public static string UserExport(Guid userId, Guid exportId) => $"{UserExports(userId)}{exportId}.zip";
+
+    /// <summary>The file of one run of the storage's readiness check.</summary>
+    public static string HealthCheck(Guid checkId) => $"{Health}{checkId}";
 }
