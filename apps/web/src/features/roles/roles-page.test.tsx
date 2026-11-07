@@ -225,7 +225,7 @@ describe("RolesPage", () => {
         screen.getByRole("menuitem", { name: "Delete role" }),
       );
 
-      const dialog = await screen.findByRole("dialog", {
+      const dialog = await screen.findByRole("alertdialog", {
         name: "Reviewer is in use",
       });
       expect(dialog).toHaveTextContent(text);
@@ -250,14 +250,14 @@ describe("RolesPage", () => {
 
     renderInTenant(<RolesPage />, { url });
     await pickFromRowMenu("Roles", "Reviewer", "Delete role");
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Reviewer is in use",
     });
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Close" }),
     );
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(deleted).not.toHaveBeenCalled();
   });
 
@@ -289,7 +289,7 @@ describe("RolesPage", () => {
     await userEvent.click(
       screen.getByRole("menuitem", { name: "Delete role" }),
     );
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Reviewer is in use",
     });
     expect(dialog).toHaveTextContent(
@@ -381,7 +381,7 @@ describe("RolesPage", () => {
     await userEvent.click(
       screen.getByRole("menuitem", { name: "Delete role" }),
     );
-    const dialog = await screen.findByRole("dialog", {
+    const dialog = await screen.findByRole("alertdialog", {
       name: "Profile only is in use",
     });
     // Without a list to open, the dialog only informs.
@@ -743,14 +743,16 @@ describe("DeleteRoleDialog", () => {
     renderInTenant(<RolesPage />, { url });
     const dialog = await openDelete();
     expect(dialog).toHaveTextContent(
-      "People can no longer get this role. Activity keeps its name.",
+      "People can no longer get this role. The Activity log keeps its name.",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Delete role" }),
     );
 
     expect(await screen.findByText("Role deleted")).toBeInTheDocument();
-    expect(screen.getByText("Activity keeps its name.")).toBeInTheDocument();
+    expect(
+      screen.getByText("The Activity log keeps its name."),
+    ).toBeInTheDocument();
     await waitFor(() => expect(reads).toBe(2));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });

@@ -38,11 +38,14 @@ import {
 import { useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { type ReactNode, useCallback, useEffect, useId, useState } from "react";
+import { LoadMore } from "@/shared/load-more";
+import { rowsIn } from "@/shared/pages";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { PlanBanner } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
+import { TableSkeleton } from "@/shared/table-skeleton";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
@@ -51,17 +54,15 @@ import { ExportMembersDialog } from "./export-members-dialog";
 import { InvitationsTable } from "./invitations-table";
 import { InviteDialog } from "./invite-dialog";
 import { invitationPagesOptions, memberPagesOptions } from "./list-pages";
-import { LoadMore } from "./load-more";
 import { MembersTable } from "./members-table";
 import { NoFreeSeatDialog } from "./no-free-seat-dialog";
-import { TableSkeleton } from "./table-skeleton";
 import { sortValue, type Tab, useListParams } from "./use-list-params";
 
 const allRoles = "all";
 
 /** The rows of every page loaded so far. */
-const rowsIn = (data: { pages: { items: unknown[] }[] } | undefined) =>
-  data?.pages.reduce((count, page) => count + page.items.length, 0);
+/** The bars of the first load, by column: Name, Email, Role, Joined (8.02). */
+const skeletonBars = ["w-37.5", "w-45", "w-17.5", "w-20"];
 
 /**
  * Settings > Members (8.01 to 8.07): the Members tab, and the Invitations tab for whom may read them (F5), each with its total
@@ -222,6 +223,8 @@ export function MembersPage() {
     if (list.isPending)
       return (
         <TableSkeleton
+          bars={skeletonBars}
+          rows={10}
           label={
             tab === "members"
               ? t("members.loadingMembers")

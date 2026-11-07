@@ -1,19 +1,22 @@
 import { Skeleton as SkeletonBlock } from "@repo/ui/components/ui/skeleton";
 
-/** The bars of a row, by column, as 8.02 draws Name, Email, Role and Joined; a list with more columns repeats them. */
-const bars = ["w-37.5", "w-45", "w-17.5", "w-20"];
-
 /**
- * The first load of a list: the table's header with its columns, then ten rows shaped like the table's (8.02), each a bar per
- * column, and the empty actions cell. It says what loads to assistive technology and stays still with reduced motion.
+ * The first load of a list: the table's header with its columns, then rows shaped like the table's (Members 8.02, Roles 9.02),
+ * each a bar per column, and the empty actions cell. It says what loads to assistive technology and stays still with reduced
+ * motion.
  */
 export function TableSkeleton({
   label,
   columns,
+  bars,
+  rows,
 }: {
   label: string;
   /** The table's column names, as its header shows them. */
   columns: readonly string[];
+  /** The width of each column's bar: Members' Name, Email, Role and Joined are `["w-37.5", "w-45", "w-17.5", "w-20"]`. */
+  bars: readonly string[];
+  rows: number;
 }) {
   return (
     <div
@@ -33,7 +36,7 @@ export function TableSkeleton({
         ))}
         <span className="size-7 shrink-0" />
       </div>
-      {Array.from({ length: 10 }, (_, row) => (
+      {Array.from({ length: rows }, (_, row) => (
         <div
           // The rows are identical placeholders that never reorder, so their index is a stable key.
           // biome-ignore lint/suspicious/noArrayIndexKey: see above

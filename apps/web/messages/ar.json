@@ -296,7 +296,7 @@
     "empty": "لا يوجد نشاط بعد",
     "emptyText": "تظهر هنا التغييرات على الأعضاء والدعوات والمؤسسة.",
     "error": "تعذّر تحميل النشاط",
-    "olderError": "تعذّر تحميل النشاط الأقدم",
+    "olderError": "تعذّر تحميل النشاط الأقدم.",
     "restarted": "البدء من أحدث نشاط",
     "operations": {
       "activity_log": {
@@ -357,7 +357,22 @@
       }
     },
     "morePermissions": "{count, plural, one {صلاحية أخرى} two {صلاحيتان أخريان} few {# صلاحيات أخرى} other {# صلاحية أخرى}}",
-    "roleRenamed": "غيّر <actor></actor> اسم الدور <name>{oldName}</name> إلى <name>{newName}</name>."
+    "roleRenamed": "غيّر <actor></actor> اسم الدور <name>{oldName}</name> إلى <name>{newName}</name>.",
+    "description": "التغييرات على الأعضاء والدعوات والأدوار والمؤسسة.",
+    "loadingOlder": "جارٍ تحميل النشاط الأقدم…",
+    "loadedOlder": "تم تحميل {count} من الإدخالات الإضافية.",
+    "moreActions": "إجراءات أخرى",
+    "exportCsv": "تصدير CSV",
+    "exportTitle": "تصدير سجل النشاط",
+    "exportText": "ملف CSV فيه إدخالات {organisation}، الأحدث أولًا، حتى {cap} إدخال. الأعمدة: الوقت (UTC)، من، ماذا.",
+    "exportFormat": "الأوقات بتنسيق ISO 8601 بتوقيت UTC، مثل 2026-11-01T14:32:00Z. تقول إدخالات الأشخاص المحذوفين “مستخدم محذوف”.",
+    "exportFailed": "تعذّر إنشاء الملف.",
+    "exportedTitle": "تم تصدير سجل النشاط",
+    "exportedText": "{name} في مجلد التنزيلات.",
+    "exportedCapped": "يحتوي الملف على أحدث {cap} إدخال.",
+    "fileTime": "الوقت (UTC)",
+    "fileWho": "من",
+    "fileWhat": "ماذا"
   },
   "blocked": {
     "suspendedTitle": "{organisation} موقوفة",
@@ -464,9 +479,9 @@
     "discard": "تجاهل",
     "keepEditing": "متابعة التعديل",
     "deleteTitle": "حذف {name}؟",
-    "deleteText": "لن يحصل أحد على هذا الدور بعد الآن. يحتفظ النشاط باسمه.",
+    "deleteText": "لن يحصل أحد على هذا الدور بعد الآن. يحتفظ سجل النشاط باسمه.",
     "deleted": "حُذف الدور",
-    "deletedText": "يحتفظ النشاط باسمه.",
+    "deletedText": "يحتفظ سجل النشاط باسمه.",
     "deleteFailed": "تعذّر حذف {name}",
     "inUse": "{name} مستخدم الآن.",
     "inUseText": "منحه أحدهم لعضو أو دعوة قبل لحظات. حُدّثت القائمة.",
@@ -477,7 +492,18 @@
       "invitations": "الدعوات",
       "roles": "الأدوار",
       "activity": "النشاط"
-    }
+    },
+    "custom": "مخصّص",
+    "summary": "{type} · {permissions} · {users}",
+    "notInUseLower": "غير مستخدم",
+    "inUseTitle": "{name} مستخدم",
+    "inUseDialog": "هذا الدور مستخدم: {users}. {kind, select, members {امنح {total, plural, one {عضوه} two {عضوَيه} other {أعضاءه}}} invitations {امنح {total, plural, one {دعوته} two {دعوتَيه} other {دعواته}}} other {امنحهم}} دورًا آخر أولًا.",
+    "savedText": "أصبح لـ{name} {count, plural, one {صلاحية واحدة} two {صلاحيتان} few {# صلاحيات} many {# صلاحية} other {# صلاحية}}.",
+    "outOfReachText": "يمكنك رؤيته، لكن لا يستطيع تغييره أو حذفه إلا من يملك كل هذه الصلاحيات. اسأل مالكًا.",
+    "loadMore": "تحميل المزيد",
+    "loadingMore": "جارٍ تحميل المزيد من الأدوار…",
+    "loadedRoles": "تم تحميل {count} من الأدوار الإضافية.",
+    "moreError": "تعذّر تحميل المزيد من الأدوار"
   },
   "plans": {
     "rolesCustomOff": "لا تتضمن خطة مؤسستك الأدوار المخصصة.",

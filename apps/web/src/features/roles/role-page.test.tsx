@@ -152,10 +152,9 @@ describe("RolePage", () => {
     expect(
       screen.getByText("Built in · 2 permissions · not in use"),
     ).toBeVisible();
-    expect(screen.getByRole("link", { name: "Back to Roles" })).toHaveAttribute(
-      "href",
-      "/northwind/settings/roles",
-    );
+    expect(
+      screen.getByRole("button", { name: "Back to Roles" }),
+    ).toHaveAttribute("href", "/northwind/settings/roles");
   });
 
   // A role out of the viewer's reach reads with the reason and who can change it (9.20, F51).

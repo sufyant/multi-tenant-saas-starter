@@ -680,7 +680,7 @@ describe("Editor pages", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("RolePage_CustomRoleOutOfReach_ReadsWithoutAForm", async () => {
+  it("RolePage_CustomRoleOutOfReach_ReadsWithADisabledName", async () => {
     const roleEditor = customRole(
       "0198f0a2-0000-7000-8000-0000000000c4",
       "Role editor",
@@ -705,7 +705,7 @@ describe("Editor pages", () => {
     expect(
       await screen.findByRole("heading", { name: "Billing lead" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
     expect(await box("See Activity")).toBeDisabled();
   });
 

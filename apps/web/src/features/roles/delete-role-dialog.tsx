@@ -3,7 +3,6 @@
 import {
   deleteRole,
   ErrorCode,
-  getListRolesQueryKey,
   problemOf,
   type RoleDetailResponse,
 } from "@repo/api-client";
@@ -13,7 +12,12 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { afterRefusal, refreshRoles, refreshTenant } from "@/shared/refresh";
+import {
+  afterRefusal,
+  refreshRoleList,
+  refreshRoles,
+  refreshTenant,
+} from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
 
 /**
@@ -37,10 +41,7 @@ export function DeleteRoleDialog({
 
   const remove = useMutation({
     mutationFn: () => deleteRole(tenant.id, role.id),
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: getListRolesQueryKey(tenant.id),
-      }),
+    onSuccess: () => refreshRoleList(queryClient, tenant.id),
     onError: (error) => {
       afterRefusal(queryClient, tenant.id, error);
       const code = problemOf(error)?.code;

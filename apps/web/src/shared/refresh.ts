@@ -8,6 +8,7 @@ import {
   getListMembersInfiniteQueryKey,
   getListMembersQueryKey,
   getListMyTenantsQueryKey,
+  getListRolesInfiniteQueryKey,
   getListRolesQueryKey,
   ProblemDetailsError,
 } from "@repo/api-client";
@@ -56,10 +57,19 @@ export const refreshTenant = (queryClient: QueryClient, tenantId: string) =>
     queryClient.invalidateQueries({ queryKey: getListMyTenantsQueryKey() }),
   ]);
 
+/** The tenant's roles: the one page of F51 and the Roles list's pages that Load more added (F9), under Orval's infinite key. */
+export const refreshRoleList = (queryClient: QueryClient, tenantId: string) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: getListRolesQueryKey(tenantId) }),
+    queryClient.invalidateQueries({
+      queryKey: getListRolesInfiniteQueryKey(tenantId),
+    }),
+  ]);
+
 /** The roles, their permissions and the lists that show them: after a refusal that says the roles changed meanwhile (F51). */
 export const refreshRoles = (queryClient: QueryClient, tenantId: string) =>
   Promise.all([
-    queryClient.invalidateQueries({ queryKey: getListRolesQueryKey(tenantId) }),
+    refreshRoleList(queryClient, tenantId),
     queryClient.invalidateQueries({
       queryKey: getGetMyTenantQueryKey(tenantId),
     }),

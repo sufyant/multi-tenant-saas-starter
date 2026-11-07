@@ -296,7 +296,7 @@
     "empty": "No activity yet",
     "emptyText": "Changes to members, invitations and the organisation appear here.",
     "error": "Couldn’t load activity",
-    "olderError": "Couldn’t load older activity",
+    "olderError": "Couldn’t load older activity.",
     "restarted": "Starting from the newest activity",
     "operations": {
       "activity_log": {
@@ -357,7 +357,22 @@
       }
     },
     "morePermissions": "{count} more",
-    "roleRenamed": "<actor></actor> renamed the role <name>{oldName}</name> to <name>{newName}</name>."
+    "roleRenamed": "<actor></actor> renamed the role <name>{oldName}</name> to <name>{newName}</name>.",
+    "description": "Changes to members, invitations, roles and the organisation.",
+    "loadingOlder": "Loading older activity…",
+    "loadedOlder": "{count, plural, one {# more entry loaded.} other {# more entries loaded.}}",
+    "moreActions": "More actions",
+    "exportCsv": "Export CSV",
+    "exportTitle": "Export the activity log",
+    "exportText": "A CSV file with every entry of {organisation}, newest first, up to {cap} entries. Columns: Time (UTC), Who, What.",
+    "exportFormat": "Times are in ISO 8601 UTC, for example 2026-11-01T14:32:00Z. Entries of deleted people say “Deleted user”.",
+    "exportFailed": "Couldn’t create the file.",
+    "exportedTitle": "Activity log exported",
+    "exportedText": "{name} is in your downloads.",
+    "exportedCapped": "The file holds the newest {cap} entries.",
+    "fileTime": "Time (UTC)",
+    "fileWho": "Who",
+    "fileWhat": "What"
   },
   "blocked": {
     "suspendedTitle": "{organisation} is suspended",
@@ -464,9 +479,9 @@
     "discard": "Discard",
     "keepEditing": "Keep editing",
     "deleteTitle": "Delete {name}?",
-    "deleteText": "People can no longer get this role. Activity keeps its name.",
+    "deleteText": "People can no longer get this role. The Activity log keeps its name.",
     "deleted": "Role deleted",
-    "deletedText": "Activity keeps its name.",
+    "deletedText": "The Activity log keeps its name.",
     "deleteFailed": "Couldn’t delete {name}",
     "inUse": "{name} is in use now.",
     "inUseText": "Someone gave it to a member or an invitation a moment ago. The list has been refreshed.",
@@ -477,7 +492,18 @@
       "invitations": "Invitations",
       "roles": "Roles",
       "activity": "Activity"
-    }
+    },
+    "custom": "Custom",
+    "summary": "{type} · {permissions} · {users}",
+    "notInUseLower": "not in use",
+    "inUseTitle": "{name} is in use",
+    "inUseDialog": "{users} {total, plural, one {has} other {have}} this role. Give {kind, select, members {{total, plural, one {its member} other {its members}}} invitations {{total, plural, one {its invitation} other {its invitations}}} other {them}} another role first.",
+    "savedText": "{name} now has {count, plural, one {# permission} other {# permissions}}.",
+    "outOfReachText": "You can see it, but only someone who holds all of them can change or delete it. Ask an Owner.",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more roles…",
+    "loadedRoles": "{count, plural, one {# more role loaded.} other {# more roles loaded.}}",
+    "moreError": "Couldn’t load more roles"
   },
   "plans": {
     "rolesCustomOff": "Your organisation’s plan doesn’t include custom roles.",
