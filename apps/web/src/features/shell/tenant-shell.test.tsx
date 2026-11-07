@@ -24,7 +24,9 @@ import {
   it,
   vi,
 } from "vitest";
+import { lastOrganisationCookie } from "@/shared/last-organisation-cookie";
 import { TenantProvider } from "@/shared/tenant-context";
+import { cookieStore } from "../../../test/cookies";
 import { renderWithProviders } from "../../../test/render";
 import { problem, roleOf } from "../../../test/tenant";
 import { PendingTenantShell, TenantShell } from "./tenant-shell";
@@ -34,8 +36,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
   usePathname: () => route.pathname,
 }));
+// Clerk is not ours: the test fakes its hooks. `loaded` tells whether Clerk's script has loaded (F13).
+const clerk = vi.hoisted(() => ({ loaded: true }));
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ signOut: vi.fn() }),
+  useClerk: () => ({ signOut: vi.fn(), loaded: clerk.loaded }),
   useUser: () => ({
     user: { primaryEmailAddress: { emailAddress: "ayse@northwind.io" } },
   }),
@@ -47,6 +51,7 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   route.pathname = "/northwind";
+  clerk.loaded = true;
 });
 afterAll(() => server.close());
 
@@ -123,6 +128,29 @@ const shell = () => (
 );
 
 describe("TenantShell", () => {
+  it("TenantShell_OrganisationOpened_RemembersItsSlugAsLastUsed", async () => {
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    await vi.waitFor(() =>
+      expect(cookieStore.values.get(lastOrganisationCookie)).toBe("northwind"),
+    );
+  });
+
+  // A server action that sets a cookie renders the page again; before Clerk's script has loaded, that render can reach the proxy
+  // without the dev browser cookie and leave for sign-in (F13). So the slug waits for Clerk.
+  it("TenantShell_ClerkNotLoaded_RemembersNothingYet", async () => {
+    clerk.loaded = false;
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    expect(cookieStore.set).not.toHaveBeenCalled();
+  });
+
   it("TenantShell_MainMenu_ShowsTheOrganisationsBellHomeAndSettings", async () => {
     server.use(...answers(1));
 

@@ -25,10 +25,8 @@ import {
   it,
   vi,
 } from "vitest";
-import { cookieStore } from "../../test/cookies";
 import { renderWithProviders } from "../../test/render";
 import { problem, roleOf } from "../../test/tenant";
-import { lastOrganisationCookie } from "./last-organisation-cookie";
 import { TenantProvider, useCan, useTenant } from "./tenant-context";
 
 // "No access yet" holds the personal bell, whose items follow their links with the router.
@@ -167,39 +165,6 @@ describe("TenantProvider", () => {
     expect(
       await screen.findByText("Northwind Traders true false"),
     ).toBeInTheDocument();
-  });
-
-  it("TenantProvider_OpenedOrganisation_RemembersItsSlugAsLastUsed", async () => {
-    server.use(
-      tenants([northwind]),
-      getGetMyTenantMockHandler(getGetMyTenantResponseMock({ ...northwind })),
-    );
-
-    renderWithProviders(
-      <TenantProvider slug="northwind">
-        <Probe />
-      </TenantProvider>,
-    );
-
-    await screen.findByText(/Northwind Traders/);
-    await vi.waitFor(() =>
-      expect(cookieStore.values.get(lastOrganisationCookie)).toBe("northwind"),
-    );
-  });
-
-  it("TenantProvider_BlockedOrganisation_RemembersNothing", async () => {
-    server.use(tenants([atlas]));
-
-    renderWithProviders(
-      <TenantProvider slug="atlas-logistics">
-        <Probe />
-      </TenantProvider>,
-    );
-
-    await screen.findByRole("heading", {
-      name: "Atlas Logistics is suspended",
-    });
-    expect(cookieStore.set).not.toHaveBeenCalled();
   });
 
   it("TenantProvider_SlugNotInTheListOfAPersonWithoutOrganisations_SaysNoAccessYet", async () => {
