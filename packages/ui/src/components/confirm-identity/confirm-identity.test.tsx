@@ -170,7 +170,7 @@ describe("ConfirmIdentity", () => {
 
     expect(
       await step.findByText(
-        "That code is not right. Check the email and try again.",
+        "This code is wrong or expired. Check it, or send a new one.",
       ),
     ).toBeInTheDocument();
     expect(onVerified).not.toHaveBeenCalled();
@@ -189,7 +189,9 @@ describe("ConfirmIdentity", () => {
     );
 
     expect(session.prepareFirstFactorVerification).toHaveBeenCalledTimes(2);
-    expect(await step.findByText("We sent a new code.")).toBeInTheDocument();
+    expect(
+      await step.findByText("We sent a new code. It replaces the old one."),
+    ).toBeInTheDocument();
   });
 
   it("ConfirmIdentity_AStateNoStepServes_SaysItDidNotWork", async () => {
@@ -245,7 +247,7 @@ describe("ConfirmIdentity", () => {
       }),
     );
     await userEvent.click(
-      step.getByRole("button", { name: "Use a backup code" }),
+      step.getByRole("button", { name: "Use a backup code instead" }),
     );
     expect(
       step.getByText("Enter a code from your app or a backup code."),

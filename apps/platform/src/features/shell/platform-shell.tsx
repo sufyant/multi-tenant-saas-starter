@@ -121,7 +121,7 @@ export function PlatformShell({
   // Until GetMe and the door answer, the shell shows with what the route knows and the content waits (the ListStates boards).
   if (!askTheDoor && me.error) return <ProblemScreen error={me.error} />;
   const admin = askTheDoor ? undefined : me.data;
-  if (admin && !admin.isSystemAdmin) return <NoAccess />;
+  if (admin && !admin.isSystemAdmin) return <NoAccess webAppUrl={webAppUrl} />;
 
   const main: NavItem[] = [
     {

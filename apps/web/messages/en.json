@@ -71,7 +71,10 @@
     "goToSignIn": "Go to sign-in"
   },
   "signInPage": {
-    "title": "Sign in to Starter"
+    "title": "Sign in to your account",
+    "text": "Use your work email. We send you a 6-digit code. No password.",
+    "secondFactorTitle": "Two-step verification",
+    "secondFactorText": "Open your authenticator app and enter the 6-digit code for this account."
   },
   "invitations": {
     "settingUp": "Setting up your account",

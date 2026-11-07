@@ -1,10 +1,12 @@
 "use client";
 
 import { useClerk, useSession, useUser } from "@clerk/nextjs";
-import { AuthLayout } from "@repo/ui/components/auth-layout";
+import { brand } from "@repo/brand";
+import { AuthFooter, AuthScreen } from "@repo/ui/components/auth-layout";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { setLocale } from "@/i18n/set-locale";
 import { hasVerifiedSecondFactor } from "@/shared/second-factor";
 import { SignedInAs } from "@/shared/signed-in-as";
 import { BackupCodes } from "./backup-codes";
@@ -54,10 +56,16 @@ export function TwoStepPage() {
   const current = phase ?? (user.totpEnabled ? "challenge" : "enrol");
 
   return (
-    <AuthLayout
+    <AuthScreen
       brand={t("meta.title")}
       platformLabel={t("shell.platform")}
-      account={
+      footer={
+        <AuthFooter
+          onLanguageChange={setLocale}
+          privacyUrl={brand.privacyUrl}
+        />
+      }
+      below={
         <SignedInAs
           email={user.primaryEmailAddress?.emailAddress ?? ""}
           onSignOut={leave}
@@ -79,6 +87,6 @@ export function TwoStepPage() {
       {current === "challenge" && (
         <TotpChallenge session={session} onVerified={go} onSignOut={leave} />
       )}
-    </AuthLayout>
+    </AuthScreen>
   );
 }

@@ -88,9 +88,18 @@ describe("the browser's breadcrumbs", () => {
 
   it("InputBreadcrumb_BackupCode_NamesTheElementNotTheCode", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<SecondFactorStep onSubmit={vi.fn()} exit={null} />);
+    renderWithProviders(
+      <SecondFactorStep
+        title="Two-step verification"
+        text="Open your authenticator app."
+        onSubmit={vi.fn()}
+        exit={null}
+      />,
+    );
 
-    await user.click(screen.getByRole("button", { name: "Use a backup code" }));
+    await user.click(
+      screen.getByRole("button", { name: "Use a backup code instead" }),
+    );
     await user.type(
       screen.getByRole("textbox", { name: "Backup code" }),
       "k7p2-9xq4",

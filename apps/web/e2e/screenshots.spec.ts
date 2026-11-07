@@ -25,6 +25,7 @@ import {
   roleChanged,
 } from "./api";
 import { mockIdentity } from "./identity";
+import { e2eUserEmail } from "./sign-in";
 
 /** The bell's tabs; a page may have tabs of its own. */
 const bellTabs = (page: Page) =>
@@ -1164,3 +1165,263 @@ for (const shot of shellShots.map(withDefaults))
       fullPage: shot.fullPage,
     });
   });
+
+// The sign-in frames of the Entry section (1.01 to 1.08, 1.20 to 1.22, 1.35 to 1.39, 1.52). Each shot runs signed out, through Clerk's
+// test mode: the setup's address takes the code 424242 and a wrong code gets Clerk's own refusal. Playwright holds, breaks or
+// changes Clerk's answers only to reach a state that the real flow passes too quickly (sending), cannot reach without a failure
+// (the network) or reaches only with an authenticator app, which the web's user has not (the second factor).
+const clerkApi = "**/v1/client/sign_ins**";
+
+/** Clerk answers the first factor as for an account with an authenticator app: the sign-in then asks for the second factor. */
+const asksForASecondFactor = (page: Page) =>
+  page.route(
+    "**/v1/client/sign_ins/*/attempt_first_factor**",
+    async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      for (const signIn of [body.response, body.client?.sign_in])
+        if (signIn) {
+          signIn.status = "needs_second_factor";
+          signIn.supported_second_factors = [{ strategy: "totp" }];
+        }
+      await route.fulfill({ response, json: body });
+    },
+  );
+
+/** The address a frame shows, typed in the focused field. */
+const typeTheFramesAddress =
+  (address = "ayse@northwind.example") =>
+  (page: Page) =>
+    // The page's only field, whose name is in the page's language.
+    page.getByRole("textbox").fill(address);
+
+const toTheCodeStep = async (page: Page) => {
+  await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("heading", { name: "Check your email" }).waitFor();
+};
+
+const signInShots: {
+  file: string;
+  size: keyof typeof frames;
+  language?: Language;
+  scheme?: "light" | "dark";
+  path?: string;
+  /** Holds or changes Clerk's answers before the page loads. */
+  mock?: (page: Page) => Promise<unknown>;
+  open?: (page: Page) => Promise<unknown>;
+}[] = [
+  {
+    file: "1.01-sign-in-en-light-desktop",
+    size: "desktop",
+    open: typeTheFramesAddress(),
+  },
+  {
+    file: "1.02-sign-in-invalid-email-en-light-desktop",
+    size: "desktop",
+    open: async (page) => {
+      await page.getByRole("textbox", { name: "Email" }).fill("ayse@northwind");
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+    },
+  },
+  {
+    file: "1.03-sign-in-sending-en-light-desktop",
+    size: "desktop",
+    // The code never goes out, so the screen stays in its sending state.
+    mock: (page) => page.route(clerkApi, () => {}),
+    open: async (page) => {
+      await page
+        .getByRole("textbox", { name: "Email" })
+        .fill("ayse@northwind.example");
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      await page.getByRole("button", { name: "Sending the code…" }).waitFor();
+    },
+  },
+  {
+    file: "1.04-sign-in-failed-en-light-desktop",
+    size: "desktop",
+    // The request that sends the code breaks. Under Playwright Clerk takes a failed request for an offline browser
+    // (navigator.webdriver) and answers nothing, so the page says it is no webdriver, as a person's browser does.
+    mock: async (page) => {
+      await page.addInitScript(() =>
+        Object.defineProperty(Navigator.prototype, "webdriver", {
+          get: () => false,
+        }),
+      );
+      await page.route(clerkApi, (route) => route.abort());
+    },
+    open: async (page) => {
+      await page
+        .getByRole("textbox", { name: "Email" })
+        .fill("ayse@northwind.example");
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      // Only the banner: Next's route announcer is an empty alert that is there at once.
+      await page.getByText("We could not send the code").waitFor();
+    },
+  },
+  {
+    file: "1.05-enter-the-code-en-light-desktop",
+    size: "desktop",
+    open: toTheCodeStep,
+  },
+  {
+    file: "1.06-code-wrong-en-light-desktop",
+    size: "desktop",
+    open: async (page) => {
+      await toTheCodeStep(page);
+      await page
+        .getByRole("textbox", { name: "Code" })
+        .pressSequentially("381946");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await page.getByRole("alert").filter({ hasText: "wrong" }).waitFor();
+    },
+  },
+  {
+    file: "1.07-two-step-verification-en-light-desktop",
+    size: "desktop",
+    mock: asksForASecondFactor,
+    open: async (page) => {
+      await toTheCodeStep(page);
+      await page
+        .getByRole("textbox", { name: "Code" })
+        .pressSequentially("424242");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await page
+        .getByRole("heading", { name: "Two-step verification" })
+        .waitFor();
+    },
+  },
+  {
+    file: "1.08-backup-code-en-light-desktop",
+    size: "desktop",
+    mock: asksForASecondFactor,
+    open: async (page) => {
+      await toTheCodeStep(page);
+      await page
+        .getByRole("textbox", { name: "Code" })
+        .pressSequentially("424242");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await page
+        .getByRole("button", { name: "Use a backup code instead" })
+        .click();
+      await page
+        .getByRole("textbox", { name: "Backup code" })
+        .fill("4f7k-2m9q");
+    },
+  },
+  {
+    file: "1.20-sign-in-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    open: typeTheFramesAddress(),
+  },
+  {
+    file: "1.21-phone-sign-in-en-light-phone",
+    size: "phone",
+    open: typeTheFramesAddress(),
+  },
+  {
+    file: "1.22-phone-enter-the-code-en-light-phone",
+    size: "phone",
+    open: toTheCodeStep,
+  },
+  {
+    file: "1.35-sign-in-language-list-en-light-desktop",
+    size: "desktop",
+    open: (page) => page.getByRole("combobox").click(),
+  },
+  {
+    file: "1.36-sign-in-no-language-matches-en-light-desktop",
+    size: "desktop",
+    open: async (page) => {
+      await page.getByRole("combobox").click();
+      await page.getByPlaceholder("Search languages").fill("Deutsch");
+    },
+  },
+  {
+    file: "1.37-enter-the-code-new-code-sent-en-light-desktop",
+    size: "desktop",
+    open: async (page) => {
+      await toTheCodeStep(page);
+      await page.getByRole("button", { name: "Send a new code" }).click();
+      await page.getByRole("status").filter({ hasText: "new code" }).waitFor();
+    },
+  },
+  // Without Clerk's script the callback never ends, so the card stays as it shows while Clerk works.
+  {
+    file: "1.38-finishing-sign-in-en-light-desktop",
+    size: "desktop",
+    path: "/sso-callback",
+    mock: (page) => page.route("**/clerk.browser.js", (route) => route.abort()),
+  },
+  // The same card after 10 seconds: Playwright's clock moves the page's time on.
+  {
+    file: "1.52-signing-you-in-taking-longer-en-light-desktop",
+    size: "desktop",
+    path: "/sso-callback",
+    mock: async (page) => {
+      await page.clock.install();
+      await page.route("**/clerk.browser.js", (route) => route.abort());
+    },
+    open: async (page) => {
+      await page.clock.fastForward(10_000);
+      await page.getByRole("link", { name: "Try again" }).waitFor();
+    },
+  },
+  {
+    file: "1.39-phone-sign-in-ar-light-phone",
+    size: "phone",
+    language: Language.Ar,
+    open: typeTheFramesAddress("yusuf@al-ufuq.example"),
+  },
+];
+
+test.describe("signed out", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  for (const shot of signInShots)
+    test(`Screenshot_SignIn_${shot.file}`, async ({
+      page,
+      context,
+      baseURL,
+    }) => {
+      await setupClerkTestingToken({ page });
+      await page.emulateMedia({ colorScheme: shot.scheme ?? "light" });
+      await page.setViewportSize(frames[shot.size]);
+      await context.addCookies([
+        {
+          name: localeCookie,
+          value: shot.language ?? Language.En,
+          url: baseURL,
+        },
+      ]);
+      await shot.mock?.(page);
+
+      await page.goto(shot.path ?? "/sign-in");
+      await page.getByRole("heading", { level: 1 }).waitFor();
+      await shot.open?.(page);
+      // No pointer over a control: a click leaves its hover behind.
+      await page.mouse.move(0, 0);
+      await page.evaluate(
+        () =>
+          new Promise((done) =>
+            requestAnimationFrame(() => requestAnimationFrame(done)),
+          ),
+      );
+      // An endless animation, such as the busy bar of 1.38, has no end to wait for.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (each) =>
+                each.effect?.getTiming().iterations !==
+                Number.POSITIVE_INFINITY,
+            )
+            .map((each) => each.finished),
+        ),
+      );
+
+      await page.screenshot({ path: `${folder}/sign-in-${shot.file}.png` });
+    });
+});

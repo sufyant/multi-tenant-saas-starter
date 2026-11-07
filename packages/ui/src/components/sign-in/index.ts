@@ -24,5 +24,5 @@ export {
   type SecondFactorStepProps,
 } from "./second-factor-step";
 export { destination, SignIn, type SignInProps } from "./sign-in";
-export { SsoCallback } from "./sso-callback";
+export { SsoCallback, type SsoCallbackProps } from "./sso-callback";
 export { TextButton } from "./text-button";

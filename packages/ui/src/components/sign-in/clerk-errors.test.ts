@@ -83,3 +83,41 @@ describe("isExpectedClerkError", () => {
     expect(isExpectedClerkError(error)).toBe(expected);
   });
 });
+
+describe("signInErrorKey without a code", () => {
+  // Frame 1.04: only the call that sends the code says that the code could not go out.
+  it("SignInErrorKey_NetworkFailureWhileSending_IsSendFailed", () => {
+    expect(signInErrorKey(new Error("Failed to fetch"), "send")).toBe(
+      "sendFailed",
+    );
+  });
+
+  // Offline, Clerk answers no error of the network: its request gives nothing, and the step after it finds no email factor.
+  it("SignInErrorKey_OfflineWhileSending_IsSendFailed", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    const noFactor = Object.assign(new Error("Email code factor not found"), {
+      code: "factor_not_found",
+    });
+
+    expect(signInErrorKey(noFactor, "send")).toBe("sendFailed");
+  });
+
+  it("SignInErrorKey_NetworkFailureOfGoogleOrMicrosoft_IsGeneric", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    expect(signInErrorKey(new Error("Failed to fetch"), "email")).toBe(
+      "generic",
+    );
+  });
+
+  // Clerk answered, so the network did not fail: an answer without a code is an unknown one (F41).
+  it("SignInErrorKey_ApiErrorWithoutACodeWhileSending_IsGeneric", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const empty = new ClerkAPIResponseError("refused", {
+      data: [],
+      status: 500,
+    });
+
+    expect(signInErrorKey(empty, "send")).toBe("generic");
+  });
+});

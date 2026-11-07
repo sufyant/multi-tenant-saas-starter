@@ -1,38 +1,47 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { AuthCard, AuthLayout } from "@repo/ui/components/auth-layout";
-import { Button } from "@repo/ui/components/button";
+import { AuthHeading, AuthScreen } from "@repo/ui/components/auth-layout";
+import { TextButton } from "@repo/ui/components/sign-in";
+import { buttonVariants } from "@repo/ui/components/ui/button";
+import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
 
 /**
- * "You don't have access" (the NoAccess board): a signed-in person who is no system admin, or not a user at all (GetMe 404). It
- * shows who is signed in, from Clerk, because such a person has no user of ours.
+ * "You don't have access to the platform" (platform frame 1.08): a signed-in person who is no system admin, or not a user at all
+ * (GetMe 404). It shows who is signed in, from Clerk, because such a person has no user of ours. The web app is the way on, and
+ * another account the way out.
  */
-export function NoAccess() {
+export function NoAccess({ webAppUrl }: { webAppUrl?: string }) {
   const t = useTranslations();
   const { user } = useUser();
   const { signOut } = useClerk();
   return (
-    <AuthLayout brand={t("meta.title")} platformLabel={t("shell.platform")}>
-      <AuthCard>
-        <h1 className="text-page-title">{t("access.noAccessTitle")}</h1>
-        <p className="text-body text-muted-foreground">
-          {t.rich("access.noAccessText", {
-            email: () => (
-              <bdi dir="ltr">{user?.primaryEmailAddress?.emailAddress}</bdi>
-            ),
-          })}
-        </p>
-        <div>
-          <Button
-            variant="primary"
-            onClick={() => void signOut({ redirectUrl: "/sign-in" })}
-          >
-            {t("common.signOut")}
-          </Button>
-        </div>
-      </AuthCard>
-    </AuthLayout>
+    <AuthScreen brand={t("meta.title")} platformLabel={t("shell.platform")}>
+      <AuthHeading
+        title={t("access.noAccessTitle")}
+        text={t.rich("access.noAccessText", {
+          email: () => (
+            <bdi dir="ltr">{user?.primaryEmailAddress?.emailAddress}</bdi>
+          ),
+        })}
+      />
+      {webAppUrl && (
+        <a
+          href={webAppUrl}
+          className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+        >
+          {t("access.openWebApp")}
+        </a>
+      )}
+      <p className="text-center text-small font-medium">
+        <TextButton
+          className="text-foreground"
+          onClick={() => void signOut({ redirectUrl: "/sign-in" })}
+        >
+          {t("access.anotherAccount")}
+        </TextButton>
+      </p>
+    </AuthScreen>
   );
 }

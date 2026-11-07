@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { GlobeIcon } from "../icon";
 import { Combobox } from "./combobox";
 
 const languages = [
@@ -155,5 +156,45 @@ describe("Combobox", () => {
       "min-w-35",
     );
     expect(trigger.lastElementChild).toHaveClass("lucide-chevron-down");
+  });
+  // The Auth footer's language (frames 1.01 and 1.35): the globe, the name and a chevron at the end.
+  it("Combobox_Compact_HasTheGlobeTheNameAndAChevron", () => {
+    render(
+      <Combobox
+        {...props}
+        variant="compact"
+        icon={GlobeIcon}
+        options={languages}
+        value="en-IE"
+      />,
+    );
+
+    const trigger = screen.getByRole("combobox", {
+      name: "Language and format",
+    });
+    expect(trigger.firstElementChild).toHaveClass("lucide-globe");
+    expect(trigger).toHaveTextContent(/^English \(Ireland\)$/);
+    expect(trigger.lastElementChild).toHaveClass("lucide-chevron-down");
+  });
+
+  // Frame 1.35: the search field starts with its icon, and العربية keeps its direction but starts where the list starts.
+  it("Combobox_Open_ShowsTheSearchIconAndStartsEachOptionAtTheListsStart", async () => {
+    const user = userEvent.setup();
+    render(<Combobox {...props} options={languages} value="en-IE" />);
+
+    await user.click(
+      screen.getByRole("combobox", { name: "Language and format" }),
+    );
+
+    const search = await screen.findByRole("combobox", {
+      name: "Search languages",
+    });
+    expect(search.previousElementSibling).toHaveClass("lucide-search");
+    const arabic = within(
+      await screen.findByRole("option", { name: /العربية/ }),
+    ).getByText("العربية");
+    expect(arabic).toHaveAttribute("dir", "rtl");
+    expect(arabic.parentElement).not.toHaveAttribute("dir");
+    expect(arabic.parentElement).toHaveClass("flex-1");
   });
 });

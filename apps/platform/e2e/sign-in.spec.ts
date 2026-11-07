@@ -11,7 +11,7 @@ test("SignIn_SignedOutVisitor_IsSentToSignIn", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Sign in to the platform" }),
   ).toBeVisible();
-  await expect(page.getByRole("banner")).toContainText("Platform");
+  await expect(page.getByText("Platform", { exact: true })).toBeVisible();
   await expectAccessible(page);
 });
 

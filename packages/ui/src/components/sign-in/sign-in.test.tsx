@@ -92,6 +92,9 @@ function renderSignIn(
     >
       <SignIn
         title="Sign in to Starter"
+        text="Use your work email. We send you a 6-digit code. No password."
+        secondFactorTitle="Two-step verification"
+        secondFactorText="Open your authenticator app and enter the 6-digit code for this account."
         brand="Starter"
         onLanguageChange={async () => {}}
         privacyUrl="https://starter.example/privacy"
@@ -104,7 +107,7 @@ function renderSignIn(
 async function sendCodeTo(email: string) {
   const user = userEvent.setup();
   await user.type(screen.getByRole("textbox", { name: "Email" }), email);
-  await user.click(screen.getByRole("button", { name: "Email me a code" }));
+  await user.click(screen.getByRole("button", { name: "Continue" }));
   await screen.findByRole("heading", { name: "Check your email" });
   return user;
 }
@@ -153,6 +156,11 @@ describe("SignIn", () => {
       screen.getByRole("heading", { level: 1, name: "Sign in to Starter" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByText(
+        "Use your work email. We send you a 6-digit code. No password.",
+      ),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("button", { name: "Continue with Google" }),
     ).toBeInTheDocument();
     expect(
@@ -170,12 +178,71 @@ describe("SignIn", () => {
     const user = userEvent.setup();
     renderSignIn();
 
-    await user.click(screen.getByRole("button", { name: "Email me a code" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(
       screen.getByRole("textbox", { name: "Email" }),
     ).toHaveAccessibleDescription("Enter your email address.");
     expect(signIn.emailCode.sendCode).not.toHaveBeenCalled();
+  });
+
+  // Frame 1.02: an address without a domain's dot is refused before Clerk is called.
+  it("SignIn_AddressWithoutADomain_SaysHowToWriteItAndCallsNothing", async () => {
+    const signIn = fakeSignIn();
+    const user = userEvent.setup();
+    renderSignIn();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Email" }),
+      "ayse@northwind",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(
+      screen.getByRole("textbox", { name: "Email" }),
+    ).toHaveAccessibleDescription(
+      "Enter a full email address, such as name@company.com.",
+    );
+    expect(signIn.emailCode.sendCode).not.toHaveBeenCalled();
+  });
+
+  // Frame 1.03: while the code goes out, the address and the button wait, and the button says why.
+  it("SignIn_Sending_DisablesTheAddressAndSaysTheCodeIsGoingOut", () => {
+    fakeSignIn();
+    clerk.fetchStatus = "fetching";
+
+    renderSignIn();
+
+    expect(screen.getByRole("textbox", { name: "Email" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Sending the code…" }),
+    ).toBeDisabled();
+    clerk.fetchStatus = "idle";
+  });
+
+  // Frame 1.04: a call that gets no answer from Clerk is a network failure, shown as a banner that keeps the address.
+  it("SignIn_CodeCouldNotBeSent_ShowsTheBannerAndKeepsTheAddress", async () => {
+    const signIn = fakeSignIn();
+    signIn.emailCode.sendCode.mockResolvedValueOnce({
+      error: new Error("Failed to fetch"),
+    });
+    const onUnexpectedError = vi.fn();
+    const user = userEvent.setup();
+    renderSignIn("en", onUnexpectedError);
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Email" }),
+      "ayse@northwind.example",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "We could not send the code",
+    );
+    expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue(
+      "ayse@northwind.example",
+    );
+    expect(onUnexpectedError).not.toHaveBeenCalled();
   });
 
   it("SignIn_CodeSent_ShowsTheCodeStepWithTheAddress", async () => {
@@ -198,11 +265,16 @@ describe("SignIn", () => {
     const user = userEvent.setup();
     renderSignIn();
 
-    await user.type(screen.getByRole("textbox", { name: "Email" }), "ali");
-    await user.click(screen.getByRole("button", { name: "Email me a code" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "Email" }),
+      "ali@northwind.io",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(
-      await screen.findByText("Enter an email address like name@company.com."),
+      await screen.findByText(
+        "Enter a full email address, such as name@company.com.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -219,7 +291,7 @@ describe("SignIn", () => {
 
     expect(
       await screen.findByText(
-        "That code is not right. Check the email and try again.",
+        "This code is wrong or expired. Check it, or send a new one.",
       ),
     ).toBeInTheDocument();
   });
@@ -333,7 +405,7 @@ describe("SignIn", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: "Enter your authenticator code",
+        name: "Two-step verification",
       }),
     ).toBeInTheDocument();
     expect(finalize).not.toHaveBeenCalled();
@@ -387,7 +459,7 @@ describe("SignIn", () => {
 
     expect(
       await screen.findByText(
-        "Too many wrong codes. Wait a few minutes and try again, or use a backup code.",
+        "Too many wrong codes. Try again later, or use a backup code.",
       ),
     ).toBeInTheDocument();
   });
@@ -398,8 +470,11 @@ describe("SignIn", () => {
     renderSignIn();
 
     await user.click(
-      await screen.findByRole("button", { name: "Use a backup code" }),
+      await screen.findByRole("button", { name: "Use a backup code instead" }),
     );
+    expect(
+      screen.getByRole("heading", { name: "Use a backup code" }),
+    ).toBeInTheDocument();
     await user.type(
       screen.getByRole("textbox", { name: "Backup code" }),
       "a1b2c3d4",
@@ -452,7 +527,7 @@ describe("SignIn", () => {
 
     expect(signIn.emailCode.sendCode).toHaveBeenLastCalledWith();
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "We sent a new code.",
+      "We sent a new code. It replaces the old one.",
     );
   });
 
@@ -487,11 +562,49 @@ describe("SignIn", () => {
     renderSignIn("ar");
 
     expect(
-      await screen.findByRole("heading", { name: "أدخل رمز تطبيق المصادقة" }),
+      await screen.findByRole("heading", { name: "Two-step verification" }),
     ).toBeInTheDocument();
     expect(
       document.querySelector("[data-slot='input-otp-group']"),
     ).toHaveAttribute("dir", "ltr");
     expect(signIn.mfa.verifyTOTP).not.toHaveBeenCalled();
+  });
+
+  // Frame 1.08 draws only "Use your app instead": the way out comes back with the app's code.
+  it("SignIn_BackupCode_OffersOnlyTheWayBackToTheApp", async () => {
+    fakeSignIn("needs_second_factor");
+    const user = userEvent.setup();
+    renderSignIn();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Use a backup code instead" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Use your app instead" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Use another email" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // A fetch that fails may reject instead of returning Clerk's error: the screen says so all the same (frame 1.04).
+  it("SignIn_SendingRejects_ShowsTheBanner", async () => {
+    const signIn = fakeSignIn();
+    signIn.emailCode.sendCode.mockRejectedValueOnce(
+      new TypeError("Failed to fetch"),
+    );
+    const user = userEvent.setup();
+    renderSignIn();
+
+    await user.type(
+      screen.getByRole("textbox", { name: "Email" }),
+      "ayse@northwind.example",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "We could not send the code",
+    );
   });
 });

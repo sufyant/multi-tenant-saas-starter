@@ -71,7 +71,10 @@
     "goToSignIn": "Girişe git"
   },
   "signInPage": {
-    "title": "Starter'a giriş yapın"
+    "title": "Hesabınıza giriş yapın",
+    "text": "İş e-postanızı kullanın. Size 6 haneli bir kod göndeririz. Parola yok.",
+    "secondFactorTitle": "İki adımlı doğrulama",
+    "secondFactorText": "Doğrulama uygulamanızı açın ve bu hesabın 6 haneli kodunu girin."
   },
   "invitations": {
     "settingUp": "Hesabınız hazırlanıyor",

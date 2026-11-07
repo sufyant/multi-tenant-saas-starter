@@ -31,30 +31,35 @@
     "twoStep": "Platformda zorunludur. E-posta kodundan, Google'dan veya Microsoft'tan sonra bir kimlik doğrulayıcı uygulamadan 6 haneli bir kod da girersiniz."
   },
   "access": {
-    "noAccessTitle": "Erişiminiz yok",
-    "noAccessText": "<email></email> olarak giriş yaptınız. Bu hesabın burada erişimi yok."
+    "noAccessTitle": "Platforma erişiminiz yok",
+    "noAccessText": "<email></email> bir sistem yöneticisi değil. Başka bir hesapla giriş yapın veya web uygulamasını açın.",
+    "openWebApp": "Web uygulamasını aç",
+    "anotherAccount": "Başka bir hesapla giriş yap"
   },
   "signInPage": {
-    "title": "Platforma giriş yapın"
+    "title": "Platforma giriş yapın",
+    "text": "{brand} uygulamasını yürütenler için. Size 6 haneli bir kod göndeririz. Parola yok.",
+    "secondFactorTitle": "Uygulamanızdaki kodu girin",
+    "secondFactorText": "Platforma her yeni girişte bu kod istenir."
   },
   "twoStep": {
-    "enrolTitle": "Doğrulama uygulamanızı kurun",
-    "enrolText": "Platform çalışanları ikinci bir adımla giriş yapar. Bu iki dakika sürer ve yalnızca bir kez yapılır.",
+    "enrolTitle": "İki adımlı doğrulamayı kurun",
+    "enrolText": "Platform bunu zorunlu tutar. QR kodu bir doğrulama uygulamasıyla tarayın veya anahtarı yazın. Sonra uygulamanın gösterdiği kodu girin.",
     "scan": "Telefonunuzda bir doğrulama uygulaması açın ve bu kodu tarayın.",
     "qrLabel": "Doğrulama uygulamanız için QR kodu",
-    "cannotScan": "Tarayamıyor musunuz? Bunun yerine bu anahtarı yazın:",
+    "cannotScan": "Anahtar:",
     "copyKey": "Anahtarı kopyala",
     "copied": "Kopyalandı",
     "enterCode": "Uygulamanın gösterdiği 6 haneli kodu girin",
     "turnOn": "İki adımlı girişi aç",
     "backupTitle": "Yedek kodlarınızı kaydedin",
-    "backupText": "Telefonunuzu kaybederseniz her kod sizi bir kez içeri alır. Kodları güvenli ve çevrim dışı bir yerde saklayın. Kodlar yalnızca bu kez tam olarak gösterilir.",
+    "backupText": "Telefonunuzu kullanamadığınızda her kod bir kez çalışır. Kodları yalnızca şimdi gösteririz.",
     "backupCodes": "Yedek kodlar",
-    "copyCodes": "Kodları kopyala",
-    "download": "Metin olarak indir",
+    "copyCodes": "Kopyala",
+    "download": "İndir",
     "fileName": "yedek-kodlar.txt",
-    "saved": "Bu kodları kaydettim. Kodları bir daha göremeyeceğimi, yalnızca yenilerini oluşturabileceğimi anlıyorum.",
-    "continue": "Platforma devam et"
+    "saved": "Yedek kodlarımı kaydettim",
+    "continue": "Devam et"
   },
   "organisations": {
     "title": "Kuruluşlar",

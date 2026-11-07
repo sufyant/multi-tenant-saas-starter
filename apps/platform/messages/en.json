@@ -31,30 +31,35 @@
     "twoStep": "Required on the platform. After the email code, Google or Microsoft, you also enter a 6-digit code from an authenticator app."
   },
   "access": {
-    "noAccessTitle": "You don’t have access",
-    "noAccessText": "You are signed in as <email></email>. This account has no access here."
+    "noAccessTitle": "You don’t have access to the platform",
+    "noAccessText": "<email></email> isn’t a system admin. Sign in with another account, or open the web app.",
+    "openWebApp": "Open the web app",
+    "anotherAccount": "Sign in with another account"
   },
   "signInPage": {
-    "title": "Sign in to the platform"
+    "title": "Sign in to the platform",
+    "text": "For the people who run {brand}. We send you a 6-digit code. No password.",
+    "secondFactorTitle": "Enter the code from your app",
+    "secondFactorText": "Every new sign-in to the platform asks for it."
   },
   "twoStep": {
-    "enrolTitle": "Set up your authenticator app",
-    "enrolText": "Platform staff sign in with a second step. This takes two minutes and you only do it once.",
+    "enrolTitle": "Set up two-step verification",
+    "enrolText": "The platform requires it. Scan the QR code with an authenticator app, or type the key. Then enter the code it shows.",
     "scan": "Open an authenticator app on your phone and scan this code.",
     "qrLabel": "QR code for your authenticator app",
-    "cannotScan": "Cannot scan? Type this key instead:",
+    "cannotScan": "Key:",
     "copyKey": "Copy key",
     "copied": "Copied",
     "enterCode": "Enter the 6-digit code the app shows",
     "turnOn": "Turn on two-step sign-in",
     "backupTitle": "Save your backup codes",
-    "backupText": "Each code signs you in once if you lose your phone. Keep them somewhere safe and offline. This is the only time they are shown in full.",
+    "backupText": "Each code works once, when you can’t use your phone. We show them only now.",
     "backupCodes": "Backup codes",
-    "copyCodes": "Copy codes",
-    "download": "Download as text",
+    "copyCodes": "Copy",
+    "download": "Download",
     "fileName": "backup-codes.txt",
-    "saved": "I saved these codes. I understand I cannot see them again, only make new ones.",
-    "continue": "Continue to the platform"
+    "saved": "I saved my backup codes",
+    "continue": "Continue"
   },
   "organisations": {
     "title": "Organisations",

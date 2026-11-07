@@ -4,8 +4,9 @@ import { useSignIn } from "@clerk/nextjs";
 import type { Language } from "@repo/api-client";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { AuthFooter, AuthLayout } from "../auth-layout";
+import { AuthFooter, AuthScreen } from "../auth-layout";
 import { Banner } from "../banner";
+import { Button } from "../button";
 import type { Provider } from "../provider-buttons";
 import {
   type SignInErrorKey,
@@ -21,11 +22,15 @@ import {
   sessionEnded,
 } from "./safe-redirect";
 import { type SecondFactor, SecondFactorStep } from "./second-factor-step";
-import { TextButton } from "./text-button";
 
 export type SignInProps = {
-  /** "Sign in to Starter", "Sign in to the platform". */
+  /** "Sign in to your account", "Sign in to the platform". */
   title: string;
+  /** The sentence under the title: who signs in here, and how. */
+  text: string;
+  /** The app's own title and sentence of the authenticator code. */
+  secondFactorTitle: string;
+  secondFactorText: string;
   /** The product's name: the logo and the header. */
   brand: string;
   /** The platform app's ink label. */
@@ -51,11 +56,14 @@ export const destination = () =>
 
 /**
  * Our own sign-in, on Clerk's custom-flow hooks (Core 3): an email code, Google or Microsoft, then the second factor when the
- * account has one. Both apps render it; only the title and the Platform label differ. Sign-up is by invitation only, and no step
+ * account has one. Both apps render it; only the app's own words and the Platform label differ. Sign-up is by invitation only, and no step
  * tells whether an address has an account (strict enumeration protection).
  */
 export function SignIn({
   title,
+  text,
+  secondFactorTitle,
+  secondFactorText,
   brand,
   platformLabel,
   onLanguageChange,
@@ -105,10 +113,11 @@ export function SignIn({
 
   const sendCode = async (address: string) => {
     setError(undefined);
-    const { error } = await signIn.emailCode.sendCode({
-      emailAddress: address,
-    });
-    if (error) return setError(keyOf(error, "email"));
+    // A fetch that fails may reject instead of returning Clerk's error (frame 1.04).
+    const { error } = await signIn.emailCode
+      .sendCode({ emailAddress: address })
+      .catch((thrown: unknown) => ({ error: thrown }));
+    if (error) return setError(keyOf(error, "send"));
     setEmail(address);
     setStep("code");
   };
@@ -156,7 +165,7 @@ export function SignIn({
   };
 
   return (
-    <AuthLayout
+    <AuthScreen
       brand={brand}
       platformLabel={platformLabel}
       footer={
@@ -166,12 +175,17 @@ export function SignIn({
         />
       }
     >
-      {step === "email" && ended && (
-        <Banner title={t("sessionEndedTitle")}>{t("sessionEndedText")}</Banner>
-      )}
       {step === "email" && (
         <EmailStep
           title={title}
+          text={text}
+          banner={
+            ended && (
+              <Banner title={t("sessionEndedTitle")}>
+                {t("sessionEndedText")}
+              </Banner>
+            )
+          }
           onSubmit={(address) => void sendCode(address)}
           onProvider={(provider) => void sso(provider)}
           pending={pending}
@@ -191,17 +205,23 @@ export function SignIn({
       )}
       {step === "secondFactor" && (
         <SecondFactorStep
+          title={secondFactorTitle}
+          text={secondFactorText}
           onSubmit={(code, factor) => void verifySecondFactor(code, factor)}
           onFactorChange={() => setError(undefined)}
           exit={
-            <TextButton onClick={() => void startOver()}>
+            <Button
+              variant="ghost"
+              onClick={() => void startOver()}
+              disabled={pending}
+            >
               {t("useAnotherEmail")}
-            </TextButton>
+            </Button>
           }
           pending={pending}
           error={error}
         />
       )}
-    </AuthLayout>
+    </AuthScreen>
   );
 }

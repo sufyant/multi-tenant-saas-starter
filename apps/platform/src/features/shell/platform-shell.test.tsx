@@ -452,7 +452,9 @@ describe("PlatformShell", () => {
     renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
-      await screen.findByRole("heading", { name: "You don’t have access" }),
+      await screen.findByRole("heading", {
+        name: "You don’t have access to the platform",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByText("ali.kaya@gmail.com")).toHaveAttribute(
       "dir",
@@ -463,6 +465,31 @@ describe("PlatformShell", () => {
     expect(meCalls).toHaveBeenCalledOnce();
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  // Frame 1.08: the web app is the way on, and another account the way out.
+  it("PlatformShell_NoSystemAdmin_OffersTheWebAppAndAnotherAccount", async () => {
+    server.use(
+      getGetMeMockHandler(() =>
+        getGetMeResponseMock({ isSystemAdmin: false, language: "en" }),
+      ),
+      http.get("*/v1/platform/tenants", () =>
+        HttpResponse.json(refused, { status: 403 }),
+      ),
+    );
+
+    renderWithProviders(
+      <PlatformShell webAppUrl="https://app.starter.example">
+        Content
+      </PlatformShell>,
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "Open the web app" }),
+    ).toHaveAttribute("href", "https://app.starter.example");
+    expect(
+      screen.getByRole("button", { name: "Sign in with another account" }),
+    ).toBeInTheDocument();
   });
 
   it("PlatformShell_RootSystemAdminAlreadyAUser_AsksTheDoorThenReadsGetMeAgain", async () => {
@@ -501,7 +528,9 @@ describe("PlatformShell", () => {
     renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
-      await screen.findByRole("heading", { name: "You don’t have access" }),
+      await screen.findByRole("heading", {
+        name: "You don’t have access to the platform",
+      }),
     ).toBeInTheDocument();
     expect(doorCalls).toHaveBeenCalledOnce();
     expect(meCalls).toHaveBeenCalledTimes(2);
@@ -534,7 +563,9 @@ describe("PlatformShell", () => {
     renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
-      await screen.findByRole("heading", { name: "You don’t have access" }),
+      await screen.findByRole("heading", {
+        name: "You don’t have access to the platform",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -549,7 +580,9 @@ describe("PlatformShell", () => {
     renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
     expect(
-      await screen.findByRole("heading", { name: "You don’t have access" }),
+      await screen.findByRole("heading", {
+        name: "You don’t have access to the platform",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -630,7 +663,9 @@ describe("PlatformShell", () => {
       renderWithProviders(<PlatformShell>Content</PlatformShell>);
 
       expect(
-        await screen.findByRole("heading", { name: "You don’t have access" }),
+        await screen.findByRole("heading", {
+          name: "You don’t have access to the platform",
+        }),
       ).toBeInTheDocument();
       expect(
         screen.queryByRole("navigation", { name: "Main menu" }),
