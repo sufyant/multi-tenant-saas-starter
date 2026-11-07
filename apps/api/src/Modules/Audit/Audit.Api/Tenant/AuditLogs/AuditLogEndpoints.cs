@@ -40,6 +40,7 @@ public static class AuditLogEndpoints
     {
         null => null,
         MemberInvitedDetails invited => new MemberInvitedDetailsResponse(RoleOf(invited.Role, invited.RoleId, invited.RoleBuiltIn), invited.ReplacedInvitationId),
+        MemberLeftDetails left => new MemberLeftDetailsResponse(RoleOf(left.Role, left.RoleId, left.RoleBuiltIn)),
         MemberRemovedDetails removed => new MemberRemovedDetailsResponse(RoleOf(removed.Role, removed.RoleId, removed.RoleBuiltIn)),
         MemberRoleChangedDetails changed => new MemberRoleChangedDetailsResponse(
             RoleOf(changed.OldRole, changed.OldRoleId, changed.OldRoleBuiltIn),

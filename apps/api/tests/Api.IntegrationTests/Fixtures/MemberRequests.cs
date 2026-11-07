@@ -15,6 +15,9 @@ internal static class MemberRequests
     public static Task<HttpResponseMessage> RemoveMemberAsync(this HttpClient client, Guid tenantId, Guid userId) =>
         client.DeleteAsync($"/v1/tenants/{tenantId}/members/{userId}", TestContext.Current.CancellationToken);
 
+    public static Task<HttpResponseMessage> LeaveTenantAsync(this HttpClient client, Guid tenantId) =>
+        client.DeleteAsync($"/v1/tenants/{tenantId}/membership", TestContext.Current.CancellationToken);
+
     // Two requests at the same moment (K6). A holder takes the tenant's row and every membership row of the tenant, then sends both
     // requests and lets go only when both wait behind it. With the tenant lock in the handlers, both wait for the tenant row and then run
     // one after the other. Without it, both read the memberships and count the Owners, then wait to write a membership row; both then

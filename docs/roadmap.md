@@ -174,6 +174,13 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - "No free seat" ends with "ask us for more seats", which links to the support contact of `brand.json` (8.43, 8.45, without the billing manager; the maintainer's decision of 2026-11-06).
 - It waits for 37a-backend.
 
+37a-backend-leave, a member leaves an organisation by themselves (the maintainer's decisions of 2026-11-07):
+
+- `LeaveTenant`, `DELETE /v1/tenants/{tenantId}/membership`: a member leaves an active organisation. The last Owner cannot leave, and so neither can an organisation's only member: 409 `member.last_owner`. A suspended or a closed organisation answers 403, as the door does.
+- Nobody is told. The Activity log records `member.left`, with the role the member had.
+- The web's Activity log has a first sentence of `member.left`; 37a-frontend-3 may rewrite it.
+- 37a-frontend-4 builds the Leave flow (8.18, 8.23, 8.25, and 8.24's "You left" toast) on it.
+
 37a-frontend-3, Roles and Activity log:
 
 - Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
@@ -186,6 +193,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - The design session at the end of 37a draws their frames first.
 - Then 1.19's account menu gets Profile.
 - The email button and the bell's link of the `account_security` type lead to `/settings/account`.
+- Account and security's `user.last_owner` text ends as Leave's does: "Make another member an Owner first, or contact support to close the organisation.", with "contact support" linking to `brand.json`'s `supportUrl`, in three languages (the maintainer's decision of 2026-11-07).
 
 37b, the platform's pages:
 

@@ -241,3 +241,24 @@ export const removeMember = async (tenantId: string,
 
 
 
+export const getLeaveTenantUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/membership`
+}
+
+export const leaveTenant = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getLeaveTenantUrl(tenantId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+

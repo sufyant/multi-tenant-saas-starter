@@ -276,6 +276,7 @@
       "member": {
         "invited": "<actor></actor> invited someone as <role></role>.",
         "joined": "<target></target> joined the organisation.",
+        "left": "<actor></actor> left the organisation.",
         "removed": "<actor></actor> removed <target></target> (<role></role>) from the organisation.",
         "role_changed": "<actor></actor> changed the role of <target></target> from <oldRole></oldRole> to <newRole></newRole>."
       },

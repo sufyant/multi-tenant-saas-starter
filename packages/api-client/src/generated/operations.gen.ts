@@ -333,6 +333,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "LeaveTenant",
+    "method": "DELETE",
+    "path": "/v1/tenants/{tenantId}/membership",
+    "tag": "Tenant/Members",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ListAuditEntries",
     "method": "GET",
     "path": "/v1/tenants/{tenantId}/audit-log",

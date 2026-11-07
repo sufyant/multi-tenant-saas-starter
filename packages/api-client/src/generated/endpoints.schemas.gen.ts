@@ -71,6 +71,21 @@ export interface MemberInvitedDetailsResponse {
   replacedInvitationId: string | null;
 }
 
+export type MemberLeftDetailsResponseOperation = typeof MemberLeftDetailsResponseOperation[keyof typeof MemberLeftDetailsResponseOperation];
+
+
+export const MemberLeftDetailsResponseOperation = {
+  MemberLeft: 'member.left',
+} as const;
+
+/**
+ * The details of `member.left`: the role the member had.
+ */
+export interface MemberLeftDetailsResponse {
+  operation: MemberLeftDetailsResponseOperation;
+  role: AuditRoleResponse;
+}
+
 export type MemberRemovedDetailsResponseOperation = typeof MemberRemovedDetailsResponseOperation[keyof typeof MemberRemovedDetailsResponseOperation];
 
 
@@ -385,7 +400,7 @@ export interface TenantSuspendedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -398,6 +413,7 @@ export const AuditOperation = {
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
+  MemberLeft: 'member.left',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
   MembersExported: 'members.exported',

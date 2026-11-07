@@ -86,3 +86,9 @@ export const RemoveMemberParams = zod.object({
 
 export const RemoveMemberResponse = zod.void()
 
+export const LeaveTenantParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const LeaveTenantResponse = zod.void()
+

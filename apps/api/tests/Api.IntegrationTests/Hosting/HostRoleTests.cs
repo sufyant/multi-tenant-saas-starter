@@ -4,6 +4,7 @@ using System.Text.Json;
 using Audit.Application.Invitations.RecordInvitationRevoked;
 using Audit.Application.Invitations.RecordOwnerInvited;
 using Audit.Application.Members.RecordMemberInvited;
+using Audit.Application.Members.RecordMemberLeft;
 using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
 using Audit.Application.Members.RecordOwnerMade;
@@ -36,6 +37,7 @@ using ControlPlane.Application.Invitations.RevokeInvitation;
 using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Members.ChangeMemberRole;
 using ControlPlane.Application.Members.MakeOwner;
+using ControlPlane.Application.Members.LeaveTenant;
 using ControlPlane.Application.Members.RemoveMember;
 using ControlPlane.Application.Roles.CreateRole;
 using ControlPlane.Application.Roles.DeleteRole;
@@ -866,6 +868,29 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldBe([new HandlerRun(typeof(RemoveMemberCommand), typeof(RemoveMemberHandler))]);
         runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(MemberRemovedEvent), typeof(RecordMemberRemovedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "member.removed")).ShouldBe(1L);
+    }
+
+    // O3: a leave is announced from the web host, and its Audit handler runs in the worker, once.
+    [Fact]
+    public async Task LeaveTenant_OnAWebAndAWorkerHost_WritesOneAuditEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = web.CreateClient(await testData.AddMemberAsync(tenant.Id));
+
+        var left = await member.LeaveTenantAsync(tenant.Id);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.left") > 0);
+
+        left.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("web").ShouldBe([new HandlerRun(typeof(LeaveTenantCommand), typeof(LeaveTenantHandler))]);
+        runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(MemberLeftEvent), typeof(RecordMemberLeftHandler))]);
+        (await AuditEntriesAsync(name, tenant.Id, "member.left")).ShouldBe(1L);
     }
 
     // O3: a reactivation is announced from the web host, and its Audit handler runs in the worker, once.

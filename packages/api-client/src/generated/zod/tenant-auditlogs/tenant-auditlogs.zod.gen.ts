@@ -29,6 +29,7 @@ export const ListAuditEntriesResponse = zod.object({
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
+  MemberLeft: 'member.left',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
   MembersExported: 'members.exported',
@@ -74,6 +75,15 @@ export const ListAuditEntriesResponse = zod.object({
 }).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).'),
   "replacedInvitationId": zod.uuid().nullable()
 }).describe('The details of `member.invited`: the role the invitation gives, and the pending invitation it replaced, if any.'),zod.object({
+  "operation": zod.enum({
+  MemberLeft: 'member.left',
+}),
+  "role": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).')
+}).describe('The details of `member.left`: the role the member had.'),zod.object({
   "operation": zod.enum({
   MemberRemoved: 'member.removed',
 }),

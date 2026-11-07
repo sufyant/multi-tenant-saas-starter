@@ -18,6 +18,8 @@ public static class AuditDetailsTypes
     // Domain (section 2).
     public const string MemberInvited = AuditOperations.MemberInvited;
 
+    public const string MemberLeft = AuditOperations.MemberLeft;
+
     public const string MemberRemoved = AuditOperations.MemberRemoved;
 
     public const string MemberRoleChanged = AuditOperations.MemberRoleChanged;
@@ -55,6 +57,7 @@ public static class AuditDetailsTypes
         [AuditOperations.InvitationRevoked] = null,
         [AuditOperations.MemberInvited] = typeof(MemberInvitedDetails),
         [AuditOperations.MemberJoined] = null,
+        [AuditOperations.MemberLeft] = typeof(MemberLeftDetails),
         [AuditOperations.MemberRemoved] = typeof(MemberRemovedDetails),
         [AuditOperations.MemberRoleChanged] = typeof(MemberRoleChangedDetails),
         [AuditOperations.MembersExported] = null,

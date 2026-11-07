@@ -2,7 +2,7 @@
 
 This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
 
-An Owner or an Admin changes a member's role and removes a member (api-catalog, K1). This is not a saga: ControlPlane changes the tenant aggregate in one transaction (S1).
+An Owner or an Admin changes a member's role and removes a member, and a member leaves by themselves (api-catalog, K1). This is not a saga: ControlPlane changes the tenant aggregate in one transaction (S1).
 
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
@@ -10,6 +10,8 @@ An Owner or an Admin changes a member's role and removes a member (api-catalog, 
 | `MemberRoleChangedEvent` | `ChangeMemberRoleHandler`, only when the role changed | Audit, `RecordMemberRoleChangedHandler` (`member.role_changed`, tenant log) | Yes |
 | `RemoveMemberCommand` | `DELETE /v1/tenants/{tenantId}/members/{userId}` | ControlPlane, `RemoveMemberHandler` | Yes |
 | `MemberRemovedEvent` | `RemoveMemberHandler` | Audit, `RecordMemberRemovedHandler` (`member.removed`, tenant log) | Yes |
+| `LeaveTenantCommand` | `DELETE /v1/tenants/{tenantId}/membership` | ControlPlane, `LeaveTenantHandler` | Yes |
+| `MemberLeftEvent` | `LeaveTenantHandler` | Audit, `RecordMemberLeftHandler` (`member.left`, tenant log) | Yes |
 
 - Both commands lock the tenant row (K6). They then read the actor's and the target's memberships and count the Owners, in this order:
   1. The actor is no longer a member, because a change that held the lock before removed them: 404 `tenant.not_found`. The tenant door answers a non-member the same 404 `tenant.not_found` (T3). `InviteMember` and `RevokeInvitation` check the same first (`invitations.md`, section 2, "Member invitation").
@@ -28,5 +30,14 @@ An Owner or an Admin changes a member's role and removes a member (api-catalog, 
 - `ChangeMemberRole` answers the member, as `ListMembers` shows them. `RemoveMember` answers 204. Neither takes an idempotency key: both set a state (I1).
 - A removed member loses access at once: the tenant door reads the membership on every request (T7). No cache holds it.
 - Each new message type comes with all its handlers in the same release, so the gap of W12 does not apply.
+
+A member leaves (the maintainer's decisions of 2026-11-07):
+
+- `LeaveTenant` passes the tenant door with `tenant.profile.read`, which every role holds, so every member may leave. The door refuses a suspended or a closed tenant, so a member leaves an active tenant only.
+- It locks the tenant row (K6) and starts as every tenant command, with `TenantActor.LockAsync`: checks 1 and 2 above. It then reads the member's own facts under the lock (`ITenantRepository.FindMemberFactsAsync`) and asks `Tenant.Leave`.
+- The last Owner stays: 409 `member.last_owner`. A tenant's only member is its last Owner, so they stay too. The only two Owners who leave at once run one after the other, and the second gets the 409.
+- The removal is `RemoveMember`'s: `ITenantRepository.RemoveMembershipAsync` saves the tenant's summary (R12) and counts the membership down on the user (K11). The member loses access at once (T7). A second leave finds no tenant: 404 `tenant.not_found` (T3).
+- `MemberLeftEvent` gives `member.left` in the tenant's log: the member acted and is the target, with the role they had (K3). It notifies nobody: the member acted (U3), and the Owners and the Admins read the Activity log.
+- `RemoveMember` on yourself stays 403 `member.cannot_remove_self`: a member leaves through `LeaveTenant`.
 
 Source: Evans, Chapter 6, "Aggregates". Vernon, "Effective Aggregate Design". Kleppmann, Chapter 7, "Write Skew and Phantoms".

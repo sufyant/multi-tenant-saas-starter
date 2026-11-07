@@ -1060,6 +1060,39 @@ public sealed class TenantTests
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
     }
 
+    // K1: a member leaves by themselves while the tenant keeps an Owner.
+    [Theory]
+    [InlineData("Member", 1)]
+    [InlineData("Admin", 1)]
+    [InlineData("Owner", 2)]
+    public void LeaveTenant_AMemberWhoIsNotTheLastOwner_AnswersTheMembershipToRemove(string role, int owners)
+    {
+        var member = Membership(role);
+
+        var result = Active().Leave(new MemberFacts(member, owners, Roles));
+
+        result.Value.ShouldBeSameAs(member);
+    }
+
+    // K1: the last Owner stays, also as the tenant's only member.
+    [Fact]
+    public void LeaveTenant_TheLastOwner_IsConflict()
+    {
+        var result = Active().Leave(new MemberFacts(Membership("Owner"), 1, Roles));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
+    }
+
+    [Fact]
+    public void LeaveTenant_AMembershipOfAnotherTenant_IsNotFound()
+    {
+        var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
+
+        var result = Active().Leave(new MemberFacts(other, 1, Roles));
+
+        result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
+    }
+
     // Owner recovery (docs/flows/owner-recovery.md): the platform makes a member an Owner, with or without an Owner there. The old Owner keeps their role.
     [Theory]
     [InlineData("Admin", 0)]

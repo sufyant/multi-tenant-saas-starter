@@ -276,6 +276,7 @@
       "member": {
         "invited": "<actor></actor> birini <role></role> rolüyle davet etti.",
         "joined": "<target></target> kuruluşa katıldı.",
+        "left": "<actor></actor> kuruluştan ayrıldı.",
         "removed": "<actor></actor>, <target></target> adlı üyeyi (<role></role>) kuruluştan çıkardı.",
         "role_changed": "<actor></actor>, <target></target> kişisinin rolünü <oldRole></oldRole> rolünden <newRole></newRole> rolüne değiştirdi."
       },
