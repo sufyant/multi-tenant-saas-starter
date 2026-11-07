@@ -14,6 +14,7 @@ const variables = {
   CLERK_PUBLISHABLE_KEY: "pk_test_x",
   CLERK_SECRET_KEY: "sk_test_x",
   APP_ENVIRONMENT: "local",
+  WEB_APP_URL: "http://localhost:3000",
 };
 
 beforeEach(() => {

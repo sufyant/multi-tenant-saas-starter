@@ -5,9 +5,13 @@ import { NextIntlClientProvider } from "next-intl";
 import { NuqsAdapter } from "nuqs/adapters/react";
 import type { ReactNode } from "react";
 import { messages } from "@/i18n/messages";
+import { WebAppUrlProvider } from "@/shared/organisation-address";
 
 /** The test's origin. The mutator needs an absolute base in Node; MSW answers on it. */
 export const origin = "https://web.example.test";
+
+/** The test's `WEB_APP_URL`: the host of every organisation's address. */
+export const webAppUrl = "https://app.example.test";
 
 /**
  * Renders a screen with the providers of the root layout, in a language of the contract. nuqs reads and writes jsdom's own
@@ -28,7 +32,9 @@ export function renderWithProviders(
       timeZone="Europe/Dublin"
     >
       <QueryClientProvider client={queryClient}>
-        <NuqsAdapter>{ui}</NuqsAdapter>
+        <NuqsAdapter>
+          <WebAppUrlProvider value={webAppUrl}>{ui}</WebAppUrlProvider>
+        </NuqsAdapter>
       </QueryClientProvider>
     </NextIntlClientProvider>,
   );

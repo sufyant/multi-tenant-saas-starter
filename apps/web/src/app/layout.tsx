@@ -82,6 +82,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     ERROR_TRACKING_ENVIRONMENT,
     APP_ENVIRONMENT,
     SOURCE_REVISION,
+    WEB_APP_URL,
   } = env();
   return (
     <html
@@ -108,6 +109,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 environment: environmentOf(APP_ENVIRONMENT),
                 version: shortRevision(SOURCE_REVISION),
               }}
+              webAppUrl={WEB_APP_URL}
             >
               {children}
             </Providers>

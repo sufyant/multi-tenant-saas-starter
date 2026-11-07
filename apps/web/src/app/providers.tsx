@@ -12,6 +12,7 @@ import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { type ReactNode, useState } from "react";
 import { z } from "zod";
+import { WebAppUrlProvider } from "@/shared/organisation-address";
 
 // The browser calls the API only through the BFF on this origin (F6). The one Zod error map gives message keys (F12).
 configureApiClient({ baseUrl: "/api" });
@@ -37,11 +38,14 @@ export const newQueryClient = () =>
 export function Providers({
   dir,
   frame,
+  webAppUrl,
   children,
 }: {
   dir: Direction;
   /** The environment and the version, which the server read at start. */
   frame: AppFrame;
+  /** `WEB_APP_URL`, which the server read at start. */
+  webAppUrl: string;
   children: ReactNode;
 }) {
   const t = useTranslations("common");
@@ -58,7 +62,9 @@ export function Providers({
       <QueryClientProvider client={queryClient}>
         <NuqsAdapter>
           <AppFrameProvider value={frame}>
-            <TooltipProvider delay={300}>{children}</TooltipProvider>
+            <WebAppUrlProvider value={webAppUrl}>
+              <TooltipProvider delay={300}>{children}</TooltipProvider>
+            </WebAppUrlProvider>
           </AppFrameProvider>
           <Toaster
             dir={dir}

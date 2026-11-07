@@ -12,6 +12,7 @@ const valid = {
   CLERK_PUBLISHABLE_KEY: "pk_test_x",
   CLERK_SECRET_KEY: "sk_test_x",
   APP_ENVIRONMENT: "local",
+  WEB_APP_URL: "https://app.example.test",
 };
 
 describe("env", () => {
@@ -40,6 +41,17 @@ describe("env", () => {
       expect(
         readEnv({ ...valid, APP_ENVIRONMENT: environment }).APP_ENVIRONMENT,
       ).toBe(environment);
+    },
+  );
+
+  // Without the web app's origin General and "Organisation not found" could not write an organisation's address: the app does
+  // not start.
+  it.each([undefined, "", "app.example.test"])(
+    "ReadEnv_WebAppUrl_%s_FailsWithItsName",
+    (url) => {
+      expect(() => readEnv({ ...valid, WEB_APP_URL: url })).toThrow(
+        "WEB_APP_URL",
+      );
     },
   );
 
@@ -191,6 +203,13 @@ describe("env in railway.ts", () => {
     );
     expect(service.variables.CLERK_PUBLISHABLE_KEY).toEqual(
       shared("CLERK_PUBLISHABLE_KEY"),
+    );
+  });
+
+  // The web app's origin has one source: the API's authorized party of the web app, as for the platform.
+  it("DefineService_TheApp_ReadsTheWebAppFromTheWebAppsAuthorizedParty", () => {
+    expect(service.variables.WEB_APP_URL).toEqual(
+      shared("Host__Authentication__AuthorizedParties__0"),
     );
   });
 

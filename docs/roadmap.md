@@ -172,6 +172,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - General (7.01 to 7.05) and Members (8.01 to 8.23, 8.25 to 8.38, 8.41, 8.43, 8.45), with the CSV export of the members.
 - The web's server writes the CSV file from the API's pages, as a stream, after the audit call of 37a-backend. A cell that starts with `=`, `+`, `-` or `@` is escaped (OWASP, "CSV Injection"; the maintainer's decision of 2026-11-06).
 - "No free seat" ends with "ask us for more seats", which links to the support contact of `brand.json` (8.43, 8.45, without the billing manager; the maintainer's decision of 2026-11-06).
+- Leave is not built: 8.18, 8.23 and 8.25 get no shot, because the API has no Leave yet. 37a-frontend-4 builds it (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
 
 37a-backend-leave, a member leaves an organisation by themselves (the maintainer's decisions of 2026-11-07):
@@ -194,6 +195,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Then 1.19's account menu gets Profile.
 - The email button and the bell's link of the `account_security` type lead to `/settings/account`.
 - Account and security's `user.last_owner` text ends as Leave's does: "Make another member an Owner first, or contact support to close the organisation.", with "contact support" linking to `brand.json`'s `supportUrl`, in three languages (the maintainer's decision of 2026-11-07).
+- The Leave flow: 8.18, 8.23, 8.25 and the "You left" notice of 8.24. It waits for 37a-backend-leave (the maintainer's decision of 2026-11-07).
 
 37b, the platform's pages:
 
@@ -246,6 +248,7 @@ The model:
 - A new permission, `tenant.billing.manage`. The Owner holds it by default.
 - A fourth built-in role, Billing manager, with `tenant.profile.read`, `tenant.members.read` and `tenant.billing.manage`. It is free: it takes no seat and no fee per person. Product modules never add permissions to it.
 - Members' "No free seat" says "ask us for more seats" since step 37a. This text changes with the plan: an organisation that pays by card can change its plan (8.39, 8.40), a Contract organisation keeps the text (8.43, 8.45).
+- When Billing comes, the maintainer decides whether the Plan row stays on General (F56, 7.01).
 
 40b, Stripe:
 

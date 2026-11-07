@@ -25,13 +25,13 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import {
   BlockedOrganisation,
   type BlockedStatus,
 } from "./blocked-organisation";
 import { NoAccess } from "./no-access";
+import { useOrganisationAddress } from "./organisation-address";
 import { accountBlockOf } from "./problem";
 import { ProblemScreen } from "./problem-screen";
 
@@ -216,20 +216,14 @@ function StoppedWhileOpen({
   );
 }
 
-const subscribeToNothing = () => () => {};
-
 /** "Organisation not found": an address that no organisation of the person has (the Organisation not found screen). */
 function OrganisationNotFound({ slug }: { slug: string }) {
-  const host = useSyncExternalStore(
-    subscribeToNothing,
-    () => window.location.host,
-    () => "",
-  );
+  const address = useOrganisationAddress(slug);
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
       <NotFound
         kind="organisation"
-        address={host ? `${host}/${slug}` : undefined}
+        address={address}
         href="/"
         linkComponent={Link}
       />
