@@ -546,11 +546,23 @@ describe("UpdateRole", () => {
     );
   });
 
-  it("UpdateRole_Success_SendsTheNameAndEveryPermissionAfterwards", async () => {
+  it("UpdateRole_Success_SendsEveryPermissionAndStaysOnTheRole", async () => {
     const sent: unknown[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
-      updateAnswer(() => HttpResponse.json(reviewer), sent),
+      updateAnswer(
+        () =>
+          HttpResponse.json({
+            ...reviewer,
+            name: "Auditor",
+            permissions: [
+              Permission.TenantProfileRead,
+              Permission.TenantMembersRead,
+              Permission.TenantAuditRead,
+            ],
+          }),
+        sent,
+      ),
     );
     const field = await openReviewer();
 
@@ -570,7 +582,11 @@ describe("UpdateRole", () => {
         ],
       },
     ]);
-    expect(push).toHaveBeenCalledWith(list);
+    // The role stays open after a save (9.16); only a new role goes back to the list (9.05).
+    expect(
+      screen.getByText("Auditor now has 3 permissions."),
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it.each([

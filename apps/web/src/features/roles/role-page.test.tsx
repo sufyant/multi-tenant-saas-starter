@@ -11,11 +11,14 @@ import {
   vi,
 } from "vitest";
 import {
+  billingLead,
   customRole,
   free,
+  mehmet,
   renderInTenant,
   roleOf,
   tenantAnswers,
+  viewerAnswers,
 } from "../../../test/tenant";
 import { RolePage } from "./role-page";
 
@@ -51,7 +54,8 @@ const open = (roleId: string, role: BuiltInRole = BuiltInRole.Owner) => {
 };
 
 describe("RolePage", () => {
-  it("RolePage_BuiltInOwner_ShowsTheBannerEveryPermissionAndNoForm", async () => {
+  // A role that opens read-only shows its name in a disabled field, as the editor's card does (9.10, 9.20).
+  it("RolePage_BuiltInOwner_ShowsTheBannerEveryPermissionAndADisabledName", async () => {
     open(roleOf.owner.id);
 
     expect(
@@ -60,7 +64,8 @@ describe("RolePage", () => {
     expect(
       screen.getByText("Built-in roles can’t be edited or deleted."),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Owner");
     expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
     expect(states()).toEqual(
       [
@@ -101,7 +106,7 @@ describe("RolePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Reviewer" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
     expect(
       screen.queryByText("Built-in roles can’t be edited or deleted."),
     ).not.toBeInTheDocument();
@@ -128,7 +133,7 @@ describe("RolePage", () => {
     expect(
       await screen.findByRole("heading", { name: "Reviewer" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
     expect(
       screen.getByText(
         "Your organisation’s plan doesn’t include custom roles.",
@@ -137,6 +142,56 @@ describe("RolePage", () => {
     expect(
       screen.getByRole("checkbox", { name: "See members" }),
     ).toBeDisabled();
+  });
+
+  // Under the title: the type, the permissions and who uses the role, and a way back to the list (9.10).
+  it("RolePage_BuiltInRole_ShowsBackToRolesAndItsSummary", async () => {
+    open(roleOf.member.id);
+
+    await screen.findByRole("heading", { name: "Member" });
+    expect(
+      screen.getByText("Built in · 2 permissions · not in use"),
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Back to Roles" })).toHaveAttribute(
+      "href",
+      "/northwind/settings/roles",
+    );
+  });
+
+  // A role out of the viewer's reach reads with the reason and who can change it (9.20, F51).
+  it("RolePage_RoleOutOfReach_SaysWhyAndAsksAnOwner", async () => {
+    const keeper = customRole(
+      "0198f0a2-0000-7000-8000-0000000000c4",
+      "Role editor",
+      [
+        Permission.TenantProfileRead,
+        Permission.TenantMembersRead,
+        Permission.TenantRolesRead,
+        Permission.TenantRolesUpdate,
+        Permission.TenantRolesDelete,
+      ],
+    );
+    server.use(
+      ...viewerAnswers(keeper, keeper.permissions, mehmet, [
+        keeper,
+        { ...billingLead, memberCount: 1, pendingInvitationCount: 0 },
+      ]),
+    );
+    renderInTenant(<RolePage roleId={billingLead.id} />, {
+      url: `/northwind/settings/roles/${billingLead.id}`,
+    });
+
+    await screen.findByRole("heading", { name: "Billing lead" });
+    expect(screen.getByText("Custom · 3 permissions · 1 member")).toBeVisible();
+    expect(
+      screen.getByText("This role has permissions your role doesn’t have."),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "You can see it, but only someone who holds all of them can change or delete it. Ask an Owner.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
   });
 
   it("RolePage_UnknownId_SaysTheRoleIsGone", async () => {

@@ -5,6 +5,7 @@ import {
   ErrorCode,
   TenantPurgeWarnedDetailsResponseOperation,
 } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -20,6 +21,7 @@ import {
   vi,
 } from "vitest";
 import { auditLogAnswer, detailsOf, entry } from "../../../test/activity";
+import { savedFiles } from "../../../test/download";
 import {
   meOf,
   northwind,
@@ -161,8 +163,15 @@ describe("ActivityPage", () => {
       ["1 Oct 2026", ["Ayşe Yılmaz created this organisation."]],
     ]);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Activity" }),
+      screen.getByRole("heading", { level: 1, name: "Activity log" }),
     ).toBeInTheDocument();
+    // No Freshness under the title (F59): the frame's description sentence stands there (12.01).
+    expect(
+      screen.getByText(
+        "Changes to members, invitations, roles and the organisation.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText(/Updated/)).not.toBeInTheDocument();
   });
 
   it("ActivityPage_Entry_ShowsItsLocalTime", async () => {
@@ -383,8 +392,10 @@ describe("ActivityPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("ActivityPage_OlderPageFails_SaysSoAndKeepsTheEntries", async () => {
-    server.use(...answer(BuiltInRole.Owner), refusesEveryCursor([], 500));
+  // A failed older page says so under the entries, with Try again, and keeps them (12.06).
+  it("ActivityPage_OlderPageFails_SaysSoUnderTheEntriesAndTriesAgain", async () => {
+    const cursors: (string | null)[] = [];
+    server.use(...answer(BuiltInRole.Owner), refusesEveryCursor(cursors, 500));
     renderInTenant(<ActivityPage />, { url });
 
     await userEvent.click(
@@ -392,11 +403,46 @@ describe("ActivityPage", () => {
     );
 
     expect(
-      await screen.findByText("Couldn’t load older activity"),
-    ).toBeInTheDocument();
+      await screen.findByText("Couldn’t load older activity."),
+    ).toBeVisible();
     expect(
       getSentence("Khalid Al-Harbi joined the organisation."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Show older activity" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await vi.waitFor(() => expect(cursors).toHaveLength(3));
+  });
+
+  // While the older page comes, a row says so in the button's place, and a live region says how many came (12.02, F9).
+  it("ActivityPage_ShowOlderActivity_SaysItLoadsAndHowManyCame", async () => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      ...answer(BuiltInRole.Owner),
+      http.get("*/v1/tenants/:tenantId/audit-log", async ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get("cursor");
+        if (!cursor)
+          return HttpResponse.json({
+            items: [invited, joined],
+            nextCursor: "page-2",
+          });
+        await held;
+        return HttpResponse.json({ items: [created], nextCursor: null });
+      }),
+    );
+    renderInTenant(<ActivityPage />, { url });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Show older activity" }),
+    );
+
+    expect(await screen.findByText("Loading older activity…")).toBeVisible();
+    release();
+    expect(await screen.findByText("1 more entry loaded.")).toBeInTheDocument();
   });
 
   it("ActivityPage_OlderPageSignedOut_GoesToSignIn", async () => {
@@ -415,5 +461,106 @@ describe("ActivityPage", () => {
       ),
     );
     vi.unstubAllGlobals();
+  });
+});
+
+const exportPath = `*/exports/tenants/${northwind.id}/audit-log`;
+const fileName = "northwind-activity-log-2026-10-16.csv";
+
+/** The log's CSV file of the web's server with `records` entries, and the query of each request. */
+const exportAnswer = (records: number, requests: URLSearchParams[] = []) =>
+  http.post(exportPath, ({ request }) => {
+    requests.push(new URL(request.url).searchParams);
+    return HttpResponse.text(
+      `\uFEFFTime (UTC),Who,What\r\n${"2026-10-16T08:40:00.000Z,Khalid,joined\r\n".repeat(records)}`,
+      {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${fileName}"`,
+        },
+      },
+    );
+  });
+
+const openExport = async () => {
+  await userEvent.click(
+    await screen.findByRole("button", { name: "More actions" }),
+  );
+  await userEvent.click(
+    await screen.findByRole("menuitem", { name: "Export CSV" }),
+  );
+  return screen.findByRole("alertdialog", { name: "Export the activity log" });
+};
+
+describe("Export the activity log", () => {
+  // The dialog says what the file holds (12.08); the server names the file, and the toast names it.
+  it("ExportActivityLog_Confirm_SavesTheServersFileAndSaysSo", async () => {
+    const requests: URLSearchParams[] = [];
+    const saved = savedFiles();
+    server.use(
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+      exportAnswer(2, requests),
+    );
+    renderInTenant(<ActivityPage />, { url });
+
+    const dialog = await openExport();
+    expect(dialog).toHaveTextContent(
+      "A CSV file with every entry of Northwind Traders, newest first, up to 100,000 entries. Columns: Time (UTC), Who, What.",
+    );
+    expect(dialog).toHaveTextContent(
+      "Times are in ISO 8601 UTC, for example 2026-11-01T14:32:00Z. Entries of deleted people say “Deleted user”.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Export CSV" }),
+    );
+
+    await expectVisibleToast("Activity log exported");
+    expect(
+      screen.getByText(`${fileName} is in your downloads.`),
+    ).toBeInTheDocument();
+    expect(saved).toEqual([fileName]);
+    expect(requests[0]?.get("timeZone")).toBeTruthy();
+  });
+
+  // The file stops at its cap (the maintainer's decision of 2026-11-07): a file that holds the cap says so.
+  it("ExportActivityLog_FileAtTheCap_SaysItHoldsTheNewestEntries", async () => {
+    savedFiles();
+    server.use(
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+      exportAnswer(100_000),
+    );
+    renderInTenant(<ActivityPage />, { url });
+
+    await userEvent.click(
+      within(await openExport()).getByRole("button", { name: "Export CSV" }),
+    );
+
+    await expectVisibleToast("Activity log exported");
+    expect(
+      screen.getByText("The file holds the newest 100,000 entries."),
+    ).toBeInTheDocument();
+  });
+
+  // A refusal keeps the dialog open with the problem's own text (F4), and saves nothing.
+  it("ExportActivityLog_Refused_ShowsTheProblemAndSavesNothing", async () => {
+    const saved = savedFiles();
+    server.use(
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+      http.post(exportPath, () => problem(403, ErrorCode.AuthForbidden)),
+    );
+    renderInTenant(<ActivityPage />, { url });
+
+    const dialog = await openExport();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Export CSV" }),
+    );
+
+    expect(
+      await within(dialog).findByText(/^Couldn’t create the file\./),
+    ).toBeVisible();
+    expect(saved).toEqual([]);
   });
 });
