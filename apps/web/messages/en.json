@@ -436,7 +436,6 @@
     "usageBoth": "{members} · {invitations}",
     "notInUse": "Not in use",
     "inUseBoth": "{members} and {invitations}",
-    "inUseReason": "Give its {users} another role first.",
     "seeMembers": "See its members",
     "seeInvitations": "See its invitations",
     "builtIn": "Built in",

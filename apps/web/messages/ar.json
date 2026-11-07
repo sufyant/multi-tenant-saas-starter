@@ -436,7 +436,6 @@
     "usageBoth": "{members} · {invitations}",
     "notInUse": "غير مستخدم",
     "inUseBoth": "{members} و{invitations}",
-    "inUseReason": "هذا الدور مستخدم: {users}. امنحهم دورًا آخر أولًا.",
     "seeMembers": "عرض أعضائه",
     "seeInvitations": "عرض دعواته",
     "builtIn": "مضمّن",

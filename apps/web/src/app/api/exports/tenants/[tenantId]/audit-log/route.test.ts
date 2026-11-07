@@ -172,7 +172,7 @@ describe("Export the activity log", () => {
   });
 
   // The cap is one constant (the maintainer's decision of 2026-11-07).
-  it("ActivityFileCap_IsTheNewest100000Entries", () => {
+  it("ActivityFileCap_Value_IsTheNewest100000Entries", () => {
     expect(activityFileCap).toBe(100_000);
   });
 

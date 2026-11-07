@@ -436,7 +436,6 @@
     "usageBoth": "{members} · {invitations}",
     "notInUse": "Kullanılmıyor",
     "inUseBoth": "{members} ve {invitations}",
-    "inUseReason": "Önce {users} için başka bir rol seçin.",
     "seeMembers": "Üyelerini gör",
     "seeInvitations": "Davetlerini gör",
     "builtIn": "Yerleşik",

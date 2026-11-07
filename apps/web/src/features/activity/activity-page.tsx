@@ -24,15 +24,13 @@ import {
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 import { LoadMore } from "@/shared/load-more";
+import { pageSize, rowsIn } from "@/shared/pages";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { ActivitySentence } from "./activity-sentence";
 import { ActivitySkeleton } from "./activity-skeleton";
 import { ExportActivityDialog } from "./export-activity-dialog";
-
-/** The entries of one page of the log. The API's limit is 1 to 100. */
-const pageSize = 50;
 
 /**
  * Settings > Activity log (12.01 to 12.08): the tenant log, newest first, grouped by day in the viewer's zone, under the frame's
@@ -73,16 +71,16 @@ export function ActivityPage() {
   const timeZone = me.data?.timeZone;
   const locale = t("locale.format");
 
-  const entryCount = (data: typeof log.data) =>
-    data?.pages.reduce((count, page) => count + page.items.length, 0) ?? 0;
   // A cursor the API no longer reads (paging.cursor_invalid) starts the log again from the newest entry (the Messages board).
   const showOlder = async () => {
-    const before = entryCount(log.data);
+    const before = rowsIn(log.data) ?? 0;
     setOlderFailed(false);
     const result = await log.fetchNextPage();
     if (!result.isFetchNextPageError) {
       setAnnouncement(
-        t("activity.loadedOlder", { count: entryCount(result.data) - before }),
+        t("activity.loadedOlder", {
+          count: (rowsIn(result.data) ?? 0) - before,
+        }),
       );
       return;
     }
