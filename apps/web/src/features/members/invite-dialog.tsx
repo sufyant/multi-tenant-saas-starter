@@ -7,6 +7,7 @@ import {
   getGetMeQueryOptions,
   inviteMember,
   Language,
+  LimitKey,
   ProblemDetailsError,
   problemOf,
   schemas,
@@ -25,6 +26,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { usePlan } from "@/shared/plan";
 import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
@@ -35,10 +37,11 @@ import { RoleChoice } from "./role-choice";
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
 
 /**
- * Invite a member (the Invitations board): Email, Role, Email language, with the generated schema of InviteMember (F11). The
+ * Invite a member (8.26 to 8.28): Email, Role, Email language, with the generated schema of InviteMember (F11). The
  * role list holds every role of the tenant (ListRoles); a role the viewer's role does not fully hold is disabled, with its reason
  * (F51). The role starts as Member, and the language as the viewer's own (GetMe). One Idempotency-Key per intent (F48):
- * a new key when the dialog opens and when the email, the role or the language changes; the same key for a retry.
+ * a new key when the dialog opens and when the email, the role or the language changes; the same key for a retry. Under a
+ * limit of `members.max` it says how many seats are left, and nothing when unlimited (F56).
  */
 export function InviteDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations();
@@ -49,6 +52,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const me = useQuery(getGetMeQueryOptions());
   const { key, renew } = useIntentKey();
   const planReason = usePlanReason();
+  const { left } = usePlan().limit(LimitKey.MembersMax);
   const canActOn = useCanActOn();
   const tenantRoles = useTenantRoles();
   const roles = tenantRoles.data?.items ?? [];
@@ -100,20 +104,21 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         for (const [field, [code]] of Object.entries(action.fields))
           if (field === "email" && code)
             form.setError("email", { message: `validation.${code}` });
-      if (error.problem?.code === ErrorCode.MemberExists)
-        form.setError("email", {
-          message: t("members.alreadyMember", {
-            email: form.getValues("email"),
-            organisation: tenant.name,
-          }),
-        });
     },
   });
 
   const banner = (() => {
     if (!invite.error) return null;
     const code = problemOf(invite.error)?.code;
-    if (code === ErrorCode.MemberExists) return null;
+    // The address is right, so the field shows no error: the banner says why (8.28).
+    if (code === ErrorCode.MemberExists)
+      return {
+        title: t("members.notSent"),
+        text: t("members.alreadyMember", {
+          email: invite.variables?.invitation.email,
+          organisation: tenant.name,
+        }),
+      };
     if (code === ErrorCode.RequestValidationFailed) return null;
     if (code === ErrorCode.InvitationDailyLimitReached)
       return {
@@ -184,11 +189,23 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
       <form
         noValidate
         onSubmit={(event) => void submit(event)}
-        className="flex flex-col gap-3.5"
+        className="flex flex-col gap-3"
       >
+        {left !== null && (
+          <p className="text-small text-muted-foreground">
+            {t("plans.seatsLeft", { count: left })}
+          </p>
+        )}
+        {banner && (
+          <Banner tone="destructive" title={banner.title}>
+            {banner.text}
+          </Banner>
+        )}
+        {/* The dialog opens on its first field (WAI-ARIA APG, Dialog pattern); on a phone it comes after the × (8.35). */}
         <Input
           label={t("members.email")}
           type="email"
+          autoFocus
           autoComplete="off"
           placeholder={t("members.inviteEmailPlaceholder")}
           maxLength={schemas.inviteMemberBodyEmailMax}
@@ -229,11 +246,6 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
           searchPlaceholder={t("members.languageSearch")}
           emptyLabel={t("members.languageEmpty")}
         />
-        {banner && (
-          <Banner tone="destructive" title={banner.title}>
-            {banner.text}
-          </Banner>
-        )}
       </form>
     </Dialog>
   );

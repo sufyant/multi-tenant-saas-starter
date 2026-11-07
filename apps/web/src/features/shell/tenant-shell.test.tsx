@@ -29,7 +29,11 @@ import { TenantProvider } from "@/shared/tenant-context";
 import { cookieStore } from "../../../test/cookies";
 import { renderWithProviders } from "../../../test/render";
 import { problem, roleOf } from "../../../test/tenant";
-import { PendingTenantShell, TenantShell } from "./tenant-shell";
+import {
+  OrganisationShell,
+  PendingTenantShell,
+  TenantShell,
+} from "./tenant-shell";
 
 const route = vi.hoisted(() => ({ pathname: "/northwind" }));
 vi.mock("next/navigation", () => ({
@@ -568,6 +572,75 @@ describe("TenantShell", () => {
         await screen.findByRole("heading", {
           name: "Northwind Traders is closed",
         }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main menu" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("OrganisationShell_GetMyTenantFails_ShowsTheProblemInTheShellsContent", async () => {
+      server.use(
+        tenantsOf(1),
+        http.get("*/v1/tenants/:tenantId", () =>
+          problem(500, ErrorCode.ServerError),
+        ),
+        getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      );
+
+      renderWithProviders(
+        <OrganisationShell slug="northwind">Content</OrganisationShell>,
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: "Something went wrong" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("main")).toContainElement(
+        screen.getByRole("alert"),
+      );
+      expect(
+        screen.getByRole("navigation", { name: "Main menu" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Content")).not.toBeInTheDocument();
+    });
+
+    it("OrganisationShell_GetMyTenantSaysSuspendedUser_ReplacesTheShellWithTheAccountPage", async () => {
+      server.use(
+        tenantsOf(1),
+        http.get("*/v1/tenants/:tenantId", () =>
+          problem(403, ErrorCode.UserSuspended),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(
+        <OrganisationShell slug="northwind">Content</OrganisationShell>,
+      );
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Your account is suspended",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Main menu" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("OrganisationShell_GetMyTenantNotFound_ReplacesTheShellWithNoAccessYet", async () => {
+      server.use(
+        tenantsOf(1),
+        http.get("*/v1/tenants/:tenantId", () =>
+          problem(404, ErrorCode.TenantNotFound),
+        ),
+        meWaits(),
+      );
+
+      renderWithProviders(
+        <OrganisationShell slug="northwind">Content</OrganisationShell>,
+      );
+
+      expect(
+        await screen.findByRole("heading", { name: "No access yet" }),
       ).toBeInTheDocument();
       expect(
         screen.queryByRole("navigation", { name: "Main menu" }),

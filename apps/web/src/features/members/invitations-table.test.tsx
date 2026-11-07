@@ -87,6 +87,10 @@ const listAnswer = (
     });
   });
 
+/** The list's own requests, without the one item that the tab's count reads. */
+const listRequests = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.get("pageSize") !== "1");
+
 const url = "/northwind/settings/members?tab=invitations";
 const rowOf = async (email: string) =>
   (
@@ -104,6 +108,21 @@ describe("InvitationsTable", () => {
     expect(await rowOf("ali@northwind.io")).toHaveTextContent("Invited");
     expect(await rowOf("conor@northwind.io")).toHaveTextContent("Expires soon");
     expect(await rowOf("padraig@northwind.io")).toHaveTextContent("Expired");
+  });
+
+  // The address reads left to right inside a cell that keeps the page's direction, so in Arabic it aligns with its header (8.36).
+  it("Invitations_Email_IsALeftToRightTextInACellOfThePagesDirection", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
+
+    renderInTenant(<MembersPage />, { url, locale: "ar" });
+
+    const email = await within(
+      await screen.findByRole("table", { name: "الدعوات" }),
+    ).findByText("ali@northwind.io");
+    expect(email.tagName).toBe("BDI");
+    expect(email).toHaveAttribute("dir", "ltr");
+    // The cell's block keeps the page's direction; only the address inside it is left to right.
+    expect(email.closest("td")?.firstElementChild).not.toHaveAttribute("dir");
   });
 
   it("Invitations_InvitedBy_NamesThePersonOrSaysDeletedUser", async () => {
@@ -311,7 +330,7 @@ describe("InvitationsTable", () => {
     expect(
       (await screen.findAllByText("Invitation revoked"))[0],
     ).toBeInTheDocument();
-    expect(requests).toHaveLength(2);
+    expect(listRequests(requests)).toHaveLength(2);
   });
 
   it("Invitations_CancelExpired_SaysItsLinkAlreadyStopped", async () => {
@@ -367,7 +386,7 @@ describe("InvitationsTable", () => {
     expect(
       (await screen.findAllByText("ali@northwind.io already joined"))[0],
     ).toBeInTheDocument();
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
@@ -401,20 +420,52 @@ describe("InvitationsTable", () => {
     expect(banner).toHaveTextContent(
       "Ask an Owner of Northwind Traders to do this.",
     );
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
   });
 
-  it("Invitations_None_SaysSoAndOffersToInvite", async () => {
+  // The empty state's Invite is secondary: the header keeps the one primary button (8.31).
+  it("Invitations_None_SaysSoAndOffersASecondaryInvite", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer([]));
 
     renderInTenant(<MembersPage />, { url });
 
+    const empty = (
+      await screen.findByRole("heading", { name: "No pending invitations" })
+    ).parentElement as HTMLElement;
+    expect(empty).toHaveTextContent(
+      "People you invite appear here until they join or the link expires.",
+    );
     expect(
-      await screen.findByRole("heading", { name: "No pending invitations" }),
-    ).toBeInTheDocument();
+      within(empty).getByRole("button", { name: "Invite member" }),
+    ).not.toHaveClass("bg-primary");
     expect(
       screen.getAllByRole("button", { name: "Invite member" }),
     ).toHaveLength(2);
+  });
+
+  // 8.29: the role is a Label, the status a Pill, the expiry a date (the maintainer's standing rule of 2026-11-07), the email one
+  // line that ends with "…" (8.30).
+  it("Invitations_Row_ShowsARoleLabelAStatusPillAndTheExpiryDate", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), listAnswer());
+
+    renderInTenant(<MembersPage />, { url });
+
+    const cells = within((await rowOf("ali@northwind.io")) as HTMLElement)
+      .getAllByRole("cell")
+      .map((cell) => within(cell));
+    expect(cells[0]?.getByText("ali@northwind.io").parentElement).toHaveClass(
+      "truncate",
+    );
+    expect(cells[1]?.getByText("Member")).toHaveClass("border-border");
+    expect(cells[3]?.getByText(/^\d{1,2} \w{3} \d{4}$/)).toBeInTheDocument();
+    expect(
+      cells[4]?.getByText("Invited").closest("[data-tone]"),
+    ).toHaveAttribute("data-tone", "info");
+    expect(
+      within((await rowOf("conor@northwind.io")) as HTMLElement)
+        .getByText("Expires soon")
+        .closest("[data-tone]"),
+    ).toHaveAttribute("data-tone", "warning");
   });
 
   it("Invitations_TheUrl_DrivesSearchFilterAndSort", async () => {
@@ -428,13 +479,16 @@ describe("InvitationsTable", () => {
       url: `${url}&q=ali&roleId=${roleOf.admin.id}&sort=-expiresAt`,
     });
 
-    await waitFor(() => expect(requests).toHaveLength(1));
-    expect(requests.map((params) => Object.fromEntries(params))).toEqual([
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(1));
+    expect(
+      listRequests(requests).map((params) => Object.fromEntries(params)),
+    ).toEqual([
       {
         q: "ali",
         roleId: roleOf.admin.id,
-        page: "1",
         sort: "-expiresAt",
+        page: "1",
+        pageSize: "50",
       },
     ]);
   });
@@ -463,7 +517,7 @@ describe("InvitationsTable", () => {
     expect(
       (await screen.findAllByText("That invitation no longer exists"))[0],
     ).toBeInTheDocument();
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );

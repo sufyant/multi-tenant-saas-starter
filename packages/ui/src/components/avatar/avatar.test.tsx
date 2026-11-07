@@ -12,6 +12,17 @@ describe("initialsOf", () => {
     expect(initialsOf({ name: "María  José García" })).toBe("MG");
   });
 
+  // The Arabic article "ال" joins the word it defines, so the letter after it names the word (8.36).
+  it("InitialsOf_ArabicWordsWithTheArticle_SkipTheArticle", () => {
+    expect(initialsOf({ name: "عبد الرحمن الهاشمي" })).toBe("عه");
+    expect(initialsOf({ name: "فاطمة الزهراء القحطاني" })).toBe("فق");
+  });
+
+  it("InitialsOf_LatinWordsThatStartWithAl_KeepTheirFirstLetters", () => {
+    expect(initialsOf({ name: "Alia Al Hashimi" })).toBe("AH");
+    expect(initialsOf({ name: "Alan Alvarez" })).toBe("AA");
+  });
+
   it("InitialsOf_OneWord_IsItsFirstLetter", () => {
     expect(initialsOf({ name: "Ayşe" })).toBe("A");
   });

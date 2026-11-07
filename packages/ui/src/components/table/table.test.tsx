@@ -91,6 +91,26 @@ describe("Table", () => {
     );
   });
 
+  it("Table_WideColumn_ShowsOnlyInAContainerFromTheTableWideToken", () => {
+    render(
+      <Table
+        {...props}
+        columns={[...columns, { key: "email", header: "Email", show: "wide" }]}
+      />,
+    );
+
+    const table = screen.getByRole("table", { name: "Members" });
+    expect(
+      within(table).getByRole("columnheader", { name: "Email" }),
+    ).toHaveClass("hidden", "@table-wide:table-cell");
+    expect(
+      within(table).getByRole("cell", { name: "ayse@northwind.io" }),
+    ).toHaveClass("hidden", "@table-wide:table-cell");
+    expect(
+      within(table).getByRole("columnheader", { name: "Role" }),
+    ).not.toHaveClass("hidden");
+  });
+
   it("Table_ClickASortableHeader_AsksTheApiForThatSort", async () => {
     const onSortChange = vi.fn();
     render(<Table {...props} onSortChange={onSortChange} />);

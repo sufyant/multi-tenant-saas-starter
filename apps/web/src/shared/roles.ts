@@ -11,6 +11,15 @@ type Role = Pick<RoleResponse, "name" | "builtIn">;
 
 const builtInRoles = Object.values(BuiltInRole);
 
+/** A role's name: a built-in role by its translated name, a custom role by its own (`use-role-name.ts`, and the server's files). */
+export const roleNameOf = (
+  role: Role,
+  builtInName: (role: BuiltInRole) => string,
+): string => {
+  const builtIn = builtInRoleOf(role);
+  return builtIn ? builtInName(builtIn) : role.name;
+};
+
 /** The roles in the order a list shows them: Owner, Admin and Member first, then the custom roles in the order they came. */
 export const inListOrder = <T extends Role>(roles: readonly T[]): T[] => {
   const rank = (role: T) => {

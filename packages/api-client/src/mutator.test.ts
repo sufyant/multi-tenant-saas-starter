@@ -12,6 +12,7 @@ import {
 } from "vitest";
 import {
   acceptInvitation,
+  apiDownload,
   configureApiClient,
   createTenant,
   getMe,
@@ -250,5 +251,101 @@ describe("apiFetch", () => {
     const status: TenantResponse["status"] = "archived";
 
     expectTypeOf(status).toEqualTypeOf<TenantResponse["status"]>();
+  });
+});
+
+// An export's file (the members' CSV): the web's server names it in Content-Disposition, the browser keeps the name.
+describe("apiDownload", () => {
+  const path = `/exports/tenants/${tenantId}/members`;
+  const csv = "﻿Name\r\nOmar Haddad\r\n";
+
+  it("ApiDownload_File_ReturnsItsBytesAndTheServersName", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.post(`${baseUrl}${path}`, () =>
+        HttpResponse.text(csv, {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition":
+              'attachment; filename="northwind-members-2026-11-07.csv"',
+          },
+        }),
+      ),
+    );
+
+    const file = await apiDownload(path, { method: "POST" });
+
+    expect(file.name).toBe("northwind-members-2026-11-07.csv");
+    expect(
+      new TextDecoder("utf-8", { ignoreBOM: true }).decode(
+        await file.blob.arrayBuffer(),
+      ),
+    ).toBe(csv);
+  });
+
+  // A refused audit call answers its problem, and no file comes (F4).
+  it("ApiDownload_Refused_ThrowsTheProblem", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.post(`${baseUrl}${path}`, () =>
+        HttpResponse.json(
+          {
+            status: 403,
+            code: "auth.forbidden",
+            title: "Forbidden",
+            traceId: "00-trace-01",
+          },
+          {
+            status: 403,
+            headers: { "Content-Type": "application/problem+json" },
+          },
+        ),
+      ),
+    );
+
+    const error = await apiDownload(path, { method: "POST" }).catch(
+      (thrown: unknown) => thrown,
+    );
+
+    expect(error).toBeInstanceOf(ProblemDetailsError);
+    expect((error as ProblemDetailsError).status).toBe(403);
+    expect((error as ProblemDetailsError).problem?.code).toBe("auth.forbidden");
+  });
+
+  // A page that fails midway cuts the answer: half a file is never a success (the maintainer's decision of 2026-11-07).
+  it("ApiDownload_AnswerCutMidway_Throws", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.post(`${baseUrl}${path}`, () => {
+        const body = new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode("﻿Name\r\nOmar"));
+            controller.error(new Error("page 2 failed"));
+          },
+        });
+        return new HttpResponse(body, {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": 'attachment; filename="x.csv"',
+          },
+        });
+      }),
+    );
+
+    await expect(apiDownload(path, { method: "POST" })).rejects.toThrow();
+  });
+
+  // The server always names the file; an answer without a name is no export.
+  it("ApiDownload_NoFileName_Throws", async () => {
+    configureApiClient({ baseUrl });
+    server.use(
+      http.post(`${baseUrl}${path}`, () =>
+        HttpResponse.text(csv, { headers: { "Content-Type": "text/csv" } }),
+      ),
+    );
+
+    await expect(apiDownload(path, { method: "POST" })).rejects.toThrow(
+      "Content-Disposition",
+    );
   });
 });

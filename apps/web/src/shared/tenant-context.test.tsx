@@ -202,9 +202,7 @@ describe("TenantProvider", () => {
     expect(
       await screen.findByRole("heading", { name: "Organisation not found" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(`${window.location.host}/northwnd`),
-    ).toBeInTheDocument();
+    expect(screen.getByText("app.example.test/northwnd")).toBeInTheDocument();
   });
 
   it("TenantProvider_SuspendedInTheList_ShowsTheSuspendedPageWithNoReason", async () => {

@@ -6,24 +6,23 @@ import {
   type RoleResponse,
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
+import { roleNameOf } from "./roles";
 
 /** The name of a role in the user's language: a built-in role from the messages, a custom role by its own name. */
 export function useRoleName() {
   const t = useTranslations("shell.roleNames");
-  return (role: Pick<RoleResponse, "name" | "builtIn">): string => {
-    const builtIn = builtInRoleOf(role);
-    return builtIn ? t(builtIn) : role.name;
-  };
+  return (role: Pick<RoleResponse, "name" | "builtIn">): string =>
+    roleNameOf(role, (builtIn) => t(builtIn));
 }
 
-/** The line under a role in a role list: a built-in role's description, a custom role's permission count. */
+/** The line under a role in a role list: a built-in role's description, "Custom role" and the permission count of a custom one. */
 export function useRoleDescription() {
   const t = useTranslations("members");
   return (role: RoleDetailResponse): string => {
     const builtIn = builtInRoleOf(role);
     return builtIn
       ? t(`roleDescriptions.${builtIn}`)
-      : t("permissionCount", { count: role.permissions.length });
+      : t("customRolePermissions", { count: role.permissions.length });
   };
 }
 

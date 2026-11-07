@@ -17,7 +17,8 @@ import { useTenant } from "@/shared/tenant-context";
 import { nameOf } from "./person";
 
 /**
- * Remove a member (the RemoveMember and PhoneRemove boards): it names the person and the organisation. The API decides; each
+ * Remove a member (8.21, and the phone sheet with the same texts, 8.36): it names the person and the organisation; the toast says
+ * what stays (8.22). The API decides; each
  * refusal shows its text in the dialog (F47).
  */
 export function RemoveMemberDialog({
@@ -89,7 +90,10 @@ export function RemoveMemberDialog({
         remove.mutate(undefined, {
           onSuccess: () => {
             onClose();
-            showToast({ title: t("members.removed", { name, organisation }) });
+            showToast({
+              title: t("members.removed", { name, organisation }),
+              description: t("members.removedText"),
+            });
           },
         })
       }

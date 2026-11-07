@@ -1,7 +1,7 @@
 import { FeatureKey, LimitKey } from "@repo/api-client";
 import { describe, expect, it } from "vitest";
 import { free, planWith, pro } from "../../test/tenant";
-import { featureOn, limitOf } from "./plan";
+import { featureOn, limitOf, seatsOf } from "./plan";
 
 describe("featureOn", () => {
   it("FeatureOn_FeatureTrue_On", () => {
@@ -26,6 +26,7 @@ describe("limitOf", () => {
     expect(limitOf(plan, LimitKey.MembersMax)).toEqual({
       limit: 15,
       count: 10,
+      left: 5,
       atLimit: false,
       overLimit: false,
       full: false,
@@ -38,6 +39,7 @@ describe("limitOf", () => {
     expect(limitOf(plan, LimitKey.MembersMax)).toEqual({
       limit: 10,
       count: 10,
+      left: 0,
       atLimit: true,
       overLimit: false,
       full: true,
@@ -50,6 +52,7 @@ describe("limitOf", () => {
     expect(limitOf(plan, LimitKey.MembersMax)).toEqual({
       limit: 5,
       count: 10,
+      left: 0,
       atLimit: false,
       overLimit: true,
       full: true,
@@ -62,6 +65,7 @@ describe("limitOf", () => {
     expect(limitOf(plan, LimitKey.MembersMax)).toEqual({
       limit: null,
       count: 900,
+      left: null,
       atLimit: false,
       overLimit: false,
       full: false,
@@ -74,9 +78,30 @@ describe("limitOf", () => {
     ).toEqual({
       limit: 0,
       count: 0,
+      left: 0,
       atLimit: true,
       overLimit: false,
       full: true,
+    });
+  });
+});
+
+describe("seatsOf", () => {
+  it("SeatsOf_MembersUnderTheCount_TheRestArePendingInvitations", () => {
+    const plan = planWith({ "members.max": 15 }, { "members.max": 17 });
+
+    expect(seatsOf(limitOf(plan, LimitKey.MembersMax), 15)).toEqual({
+      members: 15,
+      invitations: 2,
+    });
+  });
+
+  it("SeatsOf_MoreMembersThanTheCount_NoInvitationsBelowZero", () => {
+    const plan = planWith({ "members.max": 15 }, { "members.max": 14 });
+
+    expect(seatsOf(limitOf(plan, LimitKey.MembersMax), 16)).toEqual({
+      members: 16,
+      invitations: 0,
     });
   });
 });

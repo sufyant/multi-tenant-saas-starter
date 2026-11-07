@@ -209,4 +209,31 @@ describe("Dialog", () => {
     expect(dialog.querySelector("[data-slot=sheet-handle]")).not.toBeNull();
     expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(1);
   });
+  // A long dialog stays inside the viewport from bp-tablet: the body scrolls, the title and the buttons stay in view (8.27).
+  it("Dialog_LongBody_StaysInTheViewportAndScrollsTheBodyBetweenTitleAndButtons", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        title="Invite member"
+        actionLabel="Send invitation"
+        cancelLabel="Cancel"
+      >
+        <p>A long form</p>
+      </Dialog>,
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Invite member",
+    });
+    const body = screen.getByText("A long form").parentElement as HTMLElement;
+
+    expect(dialog).toHaveClass("tablet:max-h-[calc(100dvh-var(--space-12))]");
+    expect(body).toHaveAttribute("data-slot", "dialog-body");
+    expect(body).toHaveClass("tablet:min-h-0", "tablet:overflow-y-auto");
+    expect(body).not.toContainElement(
+      screen.getByRole("button", { name: "Send invitation" }),
+    );
+    expect(body).not.toContainElement(
+      screen.getByRole("heading", { name: "Invite member" }),
+    );
+  });
 });

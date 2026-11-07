@@ -131,7 +131,15 @@ export function OrganisationShell({
   children: ReactNode;
 }) {
   return (
-    <TenantProvider slug={slug} pending={<PendingTenantShell slug={slug} />}>
+    <TenantProvider
+      slug={slug}
+      pending={<PendingTenantShell slug={slug} />}
+      failed={(error) => (
+        <TenantFrame slug={slug}>
+          <ProblemScreen error={error} />
+        </TenantFrame>
+      )}
+    >
       <TenantShell notFound={notFound}>{children}</TenantShell>
     </TenantProvider>
   );

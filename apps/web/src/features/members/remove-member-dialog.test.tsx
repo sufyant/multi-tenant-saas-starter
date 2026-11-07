@@ -32,6 +32,10 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+/** The list's own requests, without the one item that the tab's count reads. */
+const listRequests = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.get("pageSize") !== "1");
+
 const removeAnswer = (answer: () => Response) =>
   http.delete(`*/v1/tenants/${northwind.id}/members/${john.userId}`, answer);
 
@@ -43,7 +47,7 @@ const openRemove = async () => {
 };
 
 describe("RemoveMemberDialog", () => {
-  it("RemoveMember_Success_ClosesToastsAndRefreshesTheList", async () => {
+  it("RemoveMember_Success_ClosesToastsWhatStaysAndRefreshesTheList", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
@@ -63,7 +67,10 @@ describe("RemoveMemberDialog", () => {
     expect(
       await screen.findByText("John Byrne removed from Northwind Traders"),
     ).toBeInTheDocument();
-    expect(requests).toHaveLength(2);
+    expect(
+      screen.getByText("Their past activity stays in the log."),
+    ).toBeInTheDocument();
+    expect(listRequests(requests)).toHaveLength(2);
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
@@ -103,7 +110,7 @@ describe("RemoveMemberDialog", () => {
       within(dialog).getByRole("button", { name: "Remove member" }),
     );
 
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
   });
 
   it.each([

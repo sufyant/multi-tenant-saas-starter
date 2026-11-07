@@ -53,6 +53,39 @@ describe("RowMenu", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
+  it("RowMenu_NoAlign_OpensAlignedToTheButtonsEnd", async () => {
+    render(
+      <RowMenu label="Actions for Ayşe Yılmaz" items={[{ label: "Edit" }]} />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Actions for Ayşe Yılmaz" }),
+    );
+
+    expect(await screen.findByRole("menu")).toHaveAttribute(
+      "data-align",
+      "end",
+    );
+  });
+
+  // A page header's ⋯ opens under the button towards the end of the reading direction (8.41).
+  it("RowMenu_AlignStart_OpensAlignedToTheButtonsStart", async () => {
+    render(
+      <RowMenu
+        label="More actions"
+        align="start"
+        items={[{ label: "Export as CSV" }]}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "More actions" }));
+
+    expect(await screen.findByRole("menu")).toHaveAttribute(
+      "data-align",
+      "start",
+    );
+  });
+
   it("RowMenu_InRtl_HasItsLabel", () => {
     render(
       <div dir="rtl">

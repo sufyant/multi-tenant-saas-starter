@@ -56,6 +56,10 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+/** The list's own requests, without the one item that the tab's count reads. */
+const listRequests = (requests: URLSearchParams[]) =>
+  requests.filter((params) => params.get("pageSize") !== "1");
+
 const changeAnswer = (answer: () => Response, bodies: unknown[] = []) =>
   http.patch(
     `*/v1/tenants/${northwind.id}/members/${john.userId}`,
@@ -64,6 +68,23 @@ const changeAnswer = (answer: () => Response, bodies: unknown[] = []) =>
       return answer();
     },
   );
+
+/** ListRoles in which the viewer is the only Owner (8.20). */
+const lastOwnerRolesAnswer = () =>
+  http.get(`*/v1/tenants/${northwind.id}/roles`, () => {
+    const items = Object.values(BuiltInRole).map((name) => ({
+      ...roleOf[name],
+      permissions: permissionsOf[name],
+      memberCount: name === BuiltInRole.Owner ? 1 : 2,
+      pendingInvitationCount: 0,
+    }));
+    return HttpResponse.json({
+      items,
+      page: 1,
+      pageSize: 100,
+      total: items.length,
+    });
+  });
 
 const openChangeRole = async () => {
   await pickFromRowMenu("Members", "John Byrne", "Change role");
@@ -156,7 +177,7 @@ describe("ChangeRoleDialog", () => {
     expect(await screen.findByText("Role changed")).toBeInTheDocument();
     expect(screen.getByText("John Byrne is now an Admin.")).toBeInTheDocument();
     expect(bodies).toEqual([{ roleId: roleOf.admin.id }]);
-    expect(requests).toHaveLength(2);
+    expect(listRequests(requests)).toHaveLength(2);
     await waitFor(() =>
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
@@ -178,12 +199,12 @@ describe("ChangeRoleDialog", () => {
     expect(
       within(dialog).getByRole("radio", { name: "Admin" }),
     ).toHaveAccessibleDescription(
-      "Invites members, changes roles, removes members, reads Activity.",
+      "Invites members, changes roles, removes members, reads the Activity log.",
     );
     expect(
       within(dialog).getByRole("radio", { name: "Member" }),
     ).toHaveAccessibleDescription(
-      "Uses the product. Sees the member list, not Activity or Invitations.",
+      "Uses the product. Sees the member list, not the Activity log or Invitations.",
     );
     expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
   });
@@ -210,12 +231,12 @@ describe("ChangeRoleDialog", () => {
     expect(
       within(dialog).getByRole("radio", { name: "مشرف" }),
     ).toHaveAccessibleDescription(
-      "يدعو الأعضاء ويغيّر الأدوار ويزيل الأعضاء ويقرأ النشاط.",
+      "يدعو الأعضاء ويغيّر الأدوار ويزيل الأعضاء ويقرأ سجل النشاط.",
     );
     expect(
       within(dialog).getByRole("radio", { name: "عضو" }),
     ).toHaveAccessibleDescription(
-      "يستخدم المنتج. يرى قائمة الأعضاء، لا النشاط ولا الدعوات.",
+      "يستخدم المنتج. يرى قائمة الأعضاء، لا سجل النشاط ولا الدعوات.",
     );
   });
 
@@ -228,7 +249,7 @@ describe("ChangeRoleDialog", () => {
     const owner = within(dialog).getByRole("radio", { name: "Owner" });
     expect(owner).toBeDisabled();
     expect(owner).toHaveAccessibleDescription(
-      expect.stringContaining("Only an Owner can give the Owner role."),
+      expect.stringContaining("Only an Owner can give this role."),
     );
     expect(within(dialog).getByRole("radio", { name: "Admin" })).toBeEnabled();
   });
@@ -249,7 +270,7 @@ describe("ChangeRoleDialog", () => {
     );
     expect(
       within(dialog).getByRole("radio", { name: "Billing lead" }),
-    ).toHaveAccessibleDescription("3 permissions");
+    ).toHaveAccessibleDescription("Custom role · 3 permissions");
   });
 
   it("ChangeRole_RoleTheViewerDoesNotFullyHold_DisabledWithTheEscalationText", async () => {
@@ -394,7 +415,7 @@ describe("ChangeRoleDialog", () => {
       within(dialog).getByRole("button", { name: "Change role" }),
     );
 
-    await waitFor(() => expect(requests).toHaveLength(2));
+    await waitFor(() => expect(listRequests(requests)).toHaveLength(2));
   });
 
   it("ChangeRole_RefusedEscalation_ReadsYourPermissionsAgain", async () => {
@@ -413,6 +434,61 @@ describe("ChangeRoleDialog", () => {
     );
 
     await waitFor(() => expect(reads).toHaveLength(2));
+  });
+
+  // 8.20: the last Owner's own row says so when the dialog opens; every other role stays, disabled, with its reason (F51), and
+  // the dialog only informs.
+  it("ChangeRole_LastOwnersOwnRow_SaysSoAtOnceAndOnlyCloses", async () => {
+    server.use(
+      lastOwnerRolesAnswer(),
+      ...tenantAnswers(BuiltInRole.Owner),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    await pickFromRowMenu("Members", "Ayşe Yılmaz", "Change role");
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Change your role",
+    });
+
+    expect(within(dialog).getByRole("status")).toHaveTextContent(
+      "Northwind Traders needs at least one Owner. Make someone else an Owner first, then change this role.",
+    );
+    const admin = await within(dialog).findByRole("radio", { name: "Admin" });
+    expect(admin).toBeDisabled();
+    expect(admin).toHaveAccessibleDescription(
+      expect.stringContaining(
+        "Make someone else an Owner first, then change this role.",
+      ),
+    );
+    expect(within(dialog).getByRole("radio", { name: "Owner" })).toBeChecked();
+    expect(
+      within(dialog).queryByRole("button", { name: "Change role" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Close" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+    );
+  });
+
+  // Another Owner is there: the viewer may give up the Owner role.
+  it("ChangeRole_YourOwnRoleWithAnotherOwner_OffersEveryRole", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />);
+    await pickFromRowMenu("Members", "Ayşe Yılmaz", "Change role");
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Change your role",
+    });
+
+    expect(
+      await within(dialog).findByRole("radio", { name: "Admin" }),
+    ).toBeEnabled();
+    expect(
+      within(dialog).getByRole("button", { name: "Change role" }),
+    ).toBeInTheDocument();
   });
 
   it("ChangeRole_YourOwnRole_RefreshesYourPermissions", async () => {

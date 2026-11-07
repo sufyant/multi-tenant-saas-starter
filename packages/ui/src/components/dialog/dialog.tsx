@@ -114,6 +114,8 @@ export function Dialog({
         data-kind={kind}
         className={cn(
           "group/dialog gap-4 rounded-xl p-6 shadow-lg ring-0 tablet:max-w-md data-[size=default]:max-w-md",
+          // From bp-tablet it never outgrows the viewport: a column whose body scrolls between the title and the buttons.
+          "tablet:flex tablet:max-h-[calc(100dvh-var(--space-12))] tablet:flex-col",
           // Under bp-tablet: a sheet from the bottom edge, or a form over the whole screen.
           "max-tablet:inset-x-0 max-tablet:start-0 max-tablet:max-w-none max-tablet:translate-x-0 max-tablet:translate-y-0 max-tablet:rtl:translate-x-0",
           "max-tablet:data-[kind=sheet]:top-auto max-tablet:data-[kind=sheet]:bottom-0 max-tablet:data-[kind=sheet]:rounded-b-none max-tablet:data-[kind=sheet]:pb-[max(var(--space-6),env(safe-area-inset-bottom))]",
@@ -145,7 +147,15 @@ export function Dialog({
             </AlertDialogDescription>
           )}
         </AlertDialogHeader>
-        {children}
+        {children && (
+          // The ring of a focused field needs the 4 px that the padding gives back inside the scrolling body.
+          <div
+            data-slot="dialog-body"
+            className="flex flex-col gap-4 tablet:-m-1 tablet:min-h-0 tablet:overflow-y-auto tablet:p-1"
+          >
+            {children}
+          </div>
+        )}
         {confirmText !== undefined && (
           <div className="flex flex-col gap-1.5">
             <label htmlFor={fieldId} className="text-body font-medium">

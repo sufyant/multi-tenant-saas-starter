@@ -11,6 +11,8 @@ type Plan = Pick<MyTenantDetailResponse, "entitlements" | "usage">;
 export type LimitState = {
   limit: number | null;
   count: number;
+  /** What the count may still grow by before the limit, never below 0; null when unlimited. */
+  left: number | null;
   /** The count is the limit. */
   atLimit: boolean;
   /** The count is above the limit, after a limit lowered later (E4). */
@@ -31,7 +33,19 @@ export function limitOf(plan: Plan, key: LimitKey): LimitState {
   const count = plan.usage[key] ?? 0;
   const atLimit = limit !== null && count === limit;
   const overLimit = limit !== null && count > limit;
-  return { limit, count, atLimit, overLimit, full: atLimit || overLimit };
+  const left = limit === null ? null : Math.max(0, limit - count);
+  return { limit, count, left, atLimit, overLimit, full: atLimit || overLimit };
+}
+
+/** The seats of `members.max`, whose count holds the members and the pending invitations. */
+export type Seats = { members: number; invitations: number };
+
+/**
+ * The count of `members.max` split by the members that ListMembers counts: the rest are the pending invitations. The two reads
+ * can disagree for a moment, so the invitations never go below 0.
+ */
+export function seatsOf(state: LimitState, members: number): Seats {
+  return { members, invitations: Math.max(0, state.count - members) };
 }
 
 /**
@@ -41,10 +55,17 @@ export function limitOf(plan: Plan, key: LimitKey): LimitState {
 export function usePlan(): {
   on: (key: FeatureKey) => boolean;
   limit: (key: LimitKey) => LimitState;
+  /** The seats of a limit that counts the members and the pending invitations, from ListMembers' `total`. */
+  seats: (key: LimitKey, members: number) => Seats;
+  /** Whether a pending invitation counts in those seats: what "View invitations" waits for. */
+  pending: (key: LimitKey, members: number) => boolean;
 } {
   const { detail } = useTenant();
   return {
     on: (key) => featureOn(detail, key),
     limit: (key) => limitOf(detail, key),
+    seats: (key, members) => seatsOf(limitOf(detail, key), members),
+    pending: (key, members) =>
+      seatsOf(limitOf(detail, key), members).invitations > 0,
   };
 }

@@ -112,7 +112,7 @@ const openInvite = async () => {
   await userEvent.click(
     await screen.findByRole("button", { name: "Invite member" }),
   );
-  return screen.findByRole("alertdialog", { name: "Invite a member" });
+  return screen.findByRole("alertdialog", { name: "Invite member" });
 };
 
 const send = (dialog: HTMLElement) =>
@@ -165,6 +165,23 @@ describe("InviteDialog", () => {
     ]);
   });
 
+  // The dialog opens on its first field, the Email (WAI-ARIA APG, Dialog pattern), so the role list opens at its top (8.35).
+  it("Invite_OpensOnAPhone_FocusesTheEmailField", async () => {
+    // jsdom has no layout: the phone follows the breakpoint token and a matchMedia that never matches.
+    document.documentElement.style.setProperty("--bp-tablet", "768px");
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole("textbox", { name: "Email" }),
+      ).toHaveFocus(),
+    );
+    document.documentElement.style.removeProperty("--bp-tablet");
+  });
+
   it("Invite_TheViewersLanguage_IsTheDefaultEmailLanguage", async () => {
     server.use(
       http.get("*/v1/me", () =>
@@ -213,7 +230,7 @@ describe("InviteDialog", () => {
     const radio = await within(dialog).findByRole("radio", {
       name: "Billing lead",
     });
-    expect(radio).toHaveAccessibleDescription("3 permissions");
+    expect(radio).toHaveAccessibleDescription("Custom role · 3 permissions");
     await typeEmail(dialog, "khalid@northwind.io");
     await userEvent.click(radio);
     await send(dialog);
@@ -298,8 +315,66 @@ describe("InviteDialog", () => {
     await send(dialog);
 
     expect(await within(dialog).findByRole("status")).toHaveTextContent(
-      "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.",
+      "Your plan allows 10 seats: members and pending invitations. Remove a member or cancel an invitation to invite someone.",
     );
+  });
+
+  it("Invite_UnderTheLimit_SaysHowManySeatsAreLeft", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    expect(within(dialog).getByText("3 seats left.")).toBeVisible();
+    expect(dialog).not.toHaveTextContent(/bill/);
+  });
+
+  it("Invite_SeatsLeftInArabic_SaysThemInArabic", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />, { locale: "ar" });
+    await userEvent.click(
+      await screen.findByRole("button", { name: "دعوة عضو" }),
+    );
+
+    expect(
+      within(await screen.findByRole("alertdialog")).getByText(
+        "3 مقاعد متبقية.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("Invite_Unlimited_SaysNoSeatLine", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": null }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    expect(dialog).not.toHaveTextContent(/seats? left/);
   });
 
   it("Invite_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeatureInTheDialog", async () => {
@@ -388,7 +463,8 @@ describe("InviteDialog", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("Invite_AlreadyAMember_SaysSoUnderTheEmail", async () => {
+  // 8.28: a banner above the Email field says why; the address itself is not wrong, so the field shows no error.
+  it("Invite_AlreadyAMember_SaysSoInABannerAboveTheEmail", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Owner),
       membersAnswer(),
@@ -400,11 +476,17 @@ describe("InviteDialog", () => {
     await typeEmail(dialog, "john@northwind.io");
     await send(dialog);
 
-    expect(
+    const banner = (
       await within(dialog).findByText(
         "john@northwind.io is already a member of Northwind Traders.",
-      ),
-    ).toBeInTheDocument();
+      )
+    ).closest("[role=status]") as HTMLElement;
+    expect(banner).toHaveTextContent("Invitation not sent");
+    const email = within(dialog).getByRole("textbox", { name: "Email" });
+    expect(email).not.toHaveAttribute("aria-invalid", "true");
+    expect(banner.compareDocumentPosition(email)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   it("Invite_ApiRefusesTheEmail_ShowsTheFieldError", async () => {

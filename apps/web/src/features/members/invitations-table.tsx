@@ -6,12 +6,12 @@ import {
   type InviteMemberRequest,
   inviteMember,
   ListInvitationsSort,
-  type ListPageOfInvitationResponse,
   Permission,
   problemOf,
 } from "@repo/api-client";
+import { Label } from "@repo/ui/components/label";
+import { Pill, type PillTone } from "@repo/ui/components/pill";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
-import { Status, type StatusTone } from "@repo/ui/components/status";
 import {
   sortFrom,
   sortOf,
@@ -44,29 +44,27 @@ const sorts = {
   },
 };
 
-const tones: Record<InvitationStatus, StatusTone> = {
+const tones: Record<InvitationStatus, PillTone> = {
   invited: "info",
   expiresSoon: "warning",
   [InvitationResponseState.Expired]: "neutral",
 };
 
 /**
- * The Invitations tab's table (the Invitations board): Email, Role, Invited by, Expires, Status. An expired invitation stays and
- * can be cancelled (decision 3 of step 21c). "Invite again" is a new InviteMember with a new Idempotency-Key, which replaces the
+ * The Invitations tab's table (8.29): Email on one line, Role as a Label, Invited by, Expires as a date, Status as a Pill. The rows
+ * are every page loaded so far (F9, F10). An expired invitation stays and can be cancelled (decision 3 of step 21c). "Invite again" is a new InviteMember with a new Idempotency-Key, which replaces the
  * pending one (K2, F48). The row menu follows F5 and F51; a disabled item says why.
  */
 export function InvitationsTable({
-  page,
+  rows,
   sort,
   timeZone,
   onSortChange,
-  onPageChange,
 }: {
-  page: ListPageOfInvitationResponse;
+  rows: InvitationResponse[];
   sort: string | null;
   timeZone: string | null | undefined;
   onSortChange: (sort: string | null) => void;
-  onPageChange: (page: number) => void;
 }) {
   const t = useTranslations();
   const roleName = useRoleName();
@@ -108,13 +106,19 @@ export function InvitationsTable({
       key: "email",
       header: t("members.email"),
       sortable: true,
+      // The email reads left to right inside a block of the page's direction (8.36); in the table a long one ends with "…" at
+      // 250 px, the frame's width (8.30).
       render: (invitation) => (
-        <bdi dir="ltr" className="font-medium">
-          {invitation.email}
-        </bdi>
+        <span className="block truncate font-medium @min-[640px]:max-w-62.5">
+          <bdi dir="ltr">{invitation.email}</bdi>
+        </span>
       ),
     },
-    { key: "role", header: t("members.role"), render: roleText },
+    {
+      key: "role",
+      header: t("members.role"),
+      render: (invitation) => <Label>{roleText(invitation)}</Label>,
+    },
     {
       key: "invitedBy",
       header: t("members.invitedBy"),
@@ -135,8 +139,7 @@ export function InvitationsTable({
       render: (invitation) => (
         <Time
           at={invitation.expiresAt}
-          show="relative"
-          now={now}
+          show="date"
           locale={locale}
           timeZone={timeZone}
         />
@@ -148,7 +151,7 @@ export function InvitationsTable({
       card: "end",
       render: (invitation) => {
         const status = statusOf(invitation);
-        return <Status tone={tones[status]}>{t(`members.${status}`)}</Status>;
+        return <Pill tone={tones[status]}>{t(`members.${status}`)}</Pill>;
       },
     },
   ];
@@ -201,7 +204,7 @@ export function InvitationsTable({
     <>
       <Table
         columns={columns}
-        rows={page.items}
+        rows={rows}
         rowKey="id"
         label={t("members.tabInvitations")}
         actions={
@@ -215,10 +218,10 @@ export function InvitationsTable({
             : undefined
         }
         actionsLabel={t("members.actions")}
-        rowCount={page.total}
-        page={page.page}
-        pageSize={page.pageSize}
-        onPageChange={onPageChange}
+        // Every loaded row is on the one page: the list grows with Load more, so the pager never shows (F9, F10).
+        rowCount={rows.length}
+        page={1}
+        pageSize={Math.max(1, rows.length)}
         sort={sortOf(sorts, sort)}
         onSortChange={(next) => onSortChange(sortFrom(sorts, next))}
         pager={{

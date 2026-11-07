@@ -171,8 +171,10 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 
 - General (7.01 to 7.05) and Members (8.01 to 8.23, 8.25 to 8.38, 8.41, 8.43, 8.45), with the CSV export of the members.
 - The web's server writes the CSV file from the API's pages, as a stream, after the audit call of 37a-backend. A cell that starts with `=`, `+`, `-` or `@` is escaped (OWASP, "CSV Injection"; the maintainer's decision of 2026-11-06).
-- "No free seat" ends with "ask us for more seats", which links to the support contact of `brand.json` (8.43, 8.45, without the billing manager; the maintainer's decision of 2026-11-06).
+- "No free seat" (8.43, 8.45) has no billing manager clause. Its way to support is only its "Request a plan change" button, which links to the support contact of `brand.json`; the text holds no link, so both dialogs end alike and 8.43 drops "or ask us for more seats" (the maintainer's decisions of 2026-11-06 and 2026-11-07).
+- Leave is not built: 8.18, 8.23 and 8.25 get no shot, because the API has no Leave yet. 37a-frontend-4 builds it (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
+- Done.
 
 37a-backend-leave, a member leaves an organisation by themselves (the maintainer's decisions of 2026-11-07):
 
@@ -184,6 +186,9 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 37a-frontend-3, Roles and Activity log:
 
 - Roles (9.01 to 9.17, 9.20) and Activity log (12.01 to 12.08), with the CSV export of the log, written as the members' file is. The log has sentences for `members.exported` and `activity_log.exported`.
+- Roles and the Activity log drop their Freshness line, as F59 says (the maintainer's decision of 2026-11-07).
+- Roles and the Activity log grow with Load more, with the Loading more row and the live region, as F9 says (the maintainer's decision of 2026-11-07).
+- The Activity log's file can be large. Measure the size that `apiDownload` holds in the browser's memory, and ask for a limit or a date range if it needs one (the maintainer's decision of 2026-11-07).
 - It waits for 37a-backend.
 
 37a-frontend-4, the personal pages without an organisation (the maintainer's decision of 2026-11-07):
@@ -194,12 +199,21 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Then 1.19's account menu gets Profile.
 - The email button and the bell's link of the `account_security` type lead to `/settings/account`.
 - Account and security's `user.last_owner` text ends as Leave's does: "Make another member an Owner first, or contact support to close the organisation.", with "contact support" linking to `brand.json`'s `supportUrl`, in three languages (the maintainer's decision of 2026-11-07).
+- The Leave flow: 8.18, 8.23, 8.25 and the "You left" notice of 8.24. It waits for 37a-backend-leave (the maintainer's decision of 2026-11-07).
+
+37a-dialog-and-menu, one Dialog and one RowMenu (the maintainer's decision of 2026-11-07):
+
+- First the design session at the end of 37a makes one Dialog component and one RowMenu component in Figma, and links every dialog frame and every row menu frame to them. The sizes are settled in that session. The start is the majority of the frames: a Dialog 440 wide, padding 20 with 16 at the bottom, and a footer band; a RowMenu 240 wide, with 16 px icons and 32 px items.
+- Then a code pull request makes `packages/ui` follow them, with the shots of both apps.
+- Until then the dialogs and row menus of 37a-frontend-2 keep the sizes of `packages/ui`.
 
 37b, the platform's pages:
 
 - Organisations, Users, Plans, Activity log and System admins in the new design.
 - At its end, Status, Tag and SubNav are deleted.
 - The platform's organisation initial (`apps/platform/src/shared/initial.tsx`) becomes the shared tile of `packages/ui` where its frames draw the same tile, or the pull request says how they differ (the maintainer's decision of 2026-11-07).
+- The platform's lists drop their Freshness line too (F59). When no screen uses the Freshness component any more, it is deleted from `packages/ui` and from the Figma Components page (the maintainer's decision of 2026-11-07).
+- The platform's lists follow the same F9 and F10 rule (a "Load more" button, no page in the URL), or 37b-start asks when their frames differ (the maintainer's decision of 2026-11-07).
 
 ## 6. Step 38: Terms of use
 
@@ -243,9 +257,11 @@ The model:
 - A plan has a base fee and a fee per person. Each can be 0, monthly and yearly.
 - A plan has usage meters (a quota, stop or charge, and a unit price) and limits.
 - The seeded plans: Free (3 seats), Team (15 seats, 5 custom roles) and Business (50 seats, 20 custom roles).
+- The custom-role limit follows the same F56 rule as Members: "Create role" stays enabled and opens a dialog that says the limit, the reason and what to do, its banner is as Members', and it shows no count beside "Create role" (the maintainer's decisions of 2026-11-07).
 - A new permission, `tenant.billing.manage`. The Owner holds it by default.
 - A fourth built-in role, Billing manager, with `tenant.profile.read`, `tenant.members.read` and `tenant.billing.manage`. It is free: it takes no seat and no fee per person. Product modules never add permissions to it.
-- Members' "No free seat" says "ask us for more seats" since step 37a. This text changes with the plan: an organisation that pays by card can change its plan (8.39, 8.40), a Contract organisation keeps the text (8.43, 8.45).
+- Members' "No free seat" offers "Request a plan change", to the support contact, since step 37a. This changes with the plan: an organisation that pays by card can change its plan (8.39, 8.40), a Contract organisation keeps the button (8.43, 8.45).
+- When Billing comes, the maintainer decides whether the Plan row stays on General (F56, 7.01).
 
 40b, Stripe:
 

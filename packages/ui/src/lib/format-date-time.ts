@@ -77,6 +77,16 @@ export function calendarDay(
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+/** Whether a name is a time zone that Intl knows, an IANA name such as `Europe/Istanbul`: a day can be written in it. */
+export function isTimeZone(name: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: name });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** The calendar day before a day of `calendarDay`: `2026-03-01` gives `2026-02-28`. */
 export function dayBefore(day: string): string {
   const [year = 0, month = 1, date = 1] = day.split("-").map(Number);

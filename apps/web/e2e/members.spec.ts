@@ -46,7 +46,9 @@ test("Members_Member_SeesAReadOnlyList", async ({ page: browser }) => {
   await expect(
     browser.getByRole("button", { name: "Invite member" }),
   ).toHaveCount(0);
-  await expect(browser.getByRole("tablist")).toHaveCount(0);
+  // A Member keeps the Members tab alone (8.11): Invitations need tenant.invitations.read.
+  await expect(browser.getByRole("tab")).toHaveCount(1);
+  await expect(browser.getByRole("tab", { name: /Members/ })).toBeVisible();
   await expect(rowMenu(browser, "John Byrne")).toHaveCount(0);
   await expectAccessible(browser);
 });
@@ -55,7 +57,7 @@ test("Members_InviteAMember_SendsItAndSaysSo", async ({ page: browser }) => {
   await open(browser);
 
   await browser.getByRole("button", { name: "Invite member" }).click();
-  const dialog = browser.getByRole("alertdialog", { name: "Invite a member" });
+  const dialog = browser.getByRole("alertdialog", { name: "Invite member" });
   await expect(dialog).toBeVisible();
   await expectAccessible(browser);
   await dialog
@@ -101,7 +103,7 @@ test("Members_OpenADialog_PutsItsBackdropOverTheEnvironmentStrip", async ({
 
   await browser.getByRole("button", { name: "Invite member" }).click();
   await expect(
-    browser.getByRole("alertdialog", { name: "Invite a member" }),
+    browser.getByRole("alertdialog", { name: "Invite member" }),
   ).toBeVisible();
 
   // The element on top at the environment strip's start is the backdrop, not the strip, which is a sticky layer too (F53). The
@@ -204,9 +206,7 @@ test("Members_Phone_ShowsCardsAndABottomSheet", async ({ page: browser }) => {
   ).toBe(844);
 });
 
-test("Members_AtTheLimit_DisablesInviteWithTheReason", async ({
-  page: browser,
-}) => {
+test("Members_AtTheLimit_InviteOpensNoFreeSeat", async ({ page: browser }) => {
   await open(browser, {
     plan: {
       planName: "Free",
@@ -215,14 +215,20 @@ test("Members_AtTheLimit_DisablesInviteWithTheReason", async ({
     },
   });
 
-  const reason =
-    "Your organisation’s plan allows 10 members, invitations included. Remove a member or cancel an invitation to invite someone.";
+  await expect(
+    browser
+      .getByRole("status")
+      .getByText("Your plan allows 10 seats: members and pending invitations."),
+  ).toBeVisible();
   const invite = browser.getByRole("button", { name: "Invite member" });
-  await expect(invite).toBeDisabled();
-  await expect(invite).toHaveAccessibleDescription(reason);
-  await expect(browser.getByText(reason)).toBeVisible();
+  await expect(invite).toBeEnabled();
   await expect(
     browser.getByRole("table", { name: "Members" }).getByText("John Byrne"),
+  ).toBeVisible();
+  await expectAccessible(browser);
+  await invite.click();
+  await expect(
+    browser.getByRole("alertdialog", { name: "No free seat" }),
   ).toBeVisible();
   await expectAccessible(browser);
 });

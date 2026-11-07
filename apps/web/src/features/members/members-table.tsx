@@ -2,11 +2,19 @@
 
 import {
   ListMembersSort,
-  type ListPageOfMemberResponse,
   type MemberResponse,
   Permission,
 } from "@repo/api-client";
 import { Avatar } from "@repo/ui/components/avatar";
+import {
+  CalendarIcon,
+  Icon,
+  type LucideIcon,
+  MailIcon,
+  ShieldIcon,
+  UserIcon,
+} from "@repo/ui/components/icon";
+import { Label } from "@repo/ui/components/label";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
 import {
   sortFrom,
@@ -34,25 +42,31 @@ const sorts = {
   role: { asc: ListMembersSort.Role, desc: ListMembersSort.RoleDescending },
 };
 
+/** A column's header: its 13 px icon before the label (8.01). */
+const header = (icon: LucideIcon, label: string) => (
+  <span className="inline-flex items-center gap-1.5">
+    <Icon icon={icon} size={13} />
+    {label}
+  </span>
+);
+
 /**
- * The Members tab's table (the MembersOwner, MembersAdmin and MembersMember boards): Name with the email, Role, Joined. The row
- * menu follows F5 and F51; nobody removes themselves. A viewer who may neither change nor remove sees no menu. A disabled item
- * says why.
+ * The Members tab's table (8.01): Name with the avatar, Email, Role as a Label, Joined. The rows are every page loaded so far
+ * (F9, F10); the header still sorts by Name and Role. The row menu follows F5 and F51; nobody removes themselves. A viewer who
+ * may neither change nor remove sees no menu. A disabled item says why.
  */
 export function MembersTable({
-  page,
+  rows,
   sort,
   meId,
   timeZone,
   onSortChange,
-  onPageChange,
 }: {
-  page: ListPageOfMemberResponse;
+  rows: MemberResponse[];
   sort: string | null;
   meId: string | undefined;
   timeZone: string | null | undefined;
   onSortChange: (sort: string | null) => void;
-  onPageChange: (page: number) => void;
 }) {
   const t = useTranslations();
   const roleName = useRoleName();
@@ -67,7 +81,7 @@ export function MembersTable({
   const roleText = (member: MemberResponse) => roleName(member.role);
 
   const name = (member: MemberResponse) => (
-    <span className="flex items-center gap-2">
+    <span className="flex min-w-0 items-center gap-2">
       <bdi className="truncate font-medium">{nameText(member)}</bdi>
       {member.userId === meId && <Tag variant="text">{t("members.you")}</Tag>}
     </span>
@@ -76,37 +90,45 @@ export function MembersTable({
   const columns: TableColumn<MemberResponse>[] = [
     {
       key: "name",
-      header: t("members.name"),
+      header: header(UserIcon, t("members.name")),
       sortable: true,
+      // Name fills the table's free width and a long one ends with "…": its cell takes the full width with no width of its own
+      // (`max-w-0`), so the table never grows wider than the page (8.05).
       render: (member) => (
-        <span className="flex min-w-0 items-center gap-3">
-          <Avatar person={member} />
-          <span className="flex min-w-0 flex-col">
-            {name(member)}
-            {member.email && (
-              <bdi
-                dir="ltr"
-                className="truncate text-small text-muted-foreground"
-              >
-                {member.email}
-              </bdi>
-            )}
-          </span>
+        <span className="flex min-w-0 items-center gap-2 [td:has(>&)]:w-full [td:has(>&)]:max-w-0">
+          <Avatar person={member} className="size-5.5" />
+          {name(member)}
         </span>
       ),
       cardRender: name,
     },
     {
+      key: "email",
+      header: header(MailIcon, t("members.email")),
+      secondary: true,
+      card: "meta",
+      // The email reads left to right in every language, inside a block of the page's direction, so in Arabic it aligns with its
+      // header (8.36). In the table a long one ends with "…" at 250 px, the frame's width (8.05).
+      render: (member) =>
+        member.email && (
+          <span className="block truncate text-small @min-[640px]:max-w-62.5">
+            <bdi dir="ltr">{member.email}</bdi>
+          </span>
+        ),
+    },
+    {
       key: "role",
-      header: t("members.role"),
+      header: header(ShieldIcon, t("members.role")),
       sortable: true,
       card: "end",
-      render: roleText,
+      render: (member) => <Label>{roleText(member)}</Label>,
     },
     {
       key: "joined",
-      header: t("members.joined"),
+      header: header(CalendarIcon, t("members.joined")),
       secondary: true,
+      // Joined hides in a table narrower than the desktop's (8.33).
+      show: "wide",
       card: "hide",
       render: (member) => (
         <Time
@@ -149,7 +171,7 @@ export function MembersTable({
     <>
       <Table
         columns={columns}
-        rows={page.items}
+        rows={rows}
         rowKey="userId"
         label={t("members.title")}
         actions={
@@ -163,11 +185,11 @@ export function MembersTable({
             : undefined
         }
         actionsLabel={t("members.actions")}
-        cardLead={(member) => <Avatar person={member} />}
-        rowCount={page.total}
-        page={page.page}
-        pageSize={page.pageSize}
-        onPageChange={onPageChange}
+        cardLead={(member) => <Avatar person={member} className="size-9" />}
+        // Every loaded row is on the one page: the list grows with Load more, so the pager never shows (F9, F10).
+        rowCount={rows.length}
+        page={1}
+        pageSize={Math.max(1, rows.length)}
         sort={sortOf(sorts, sort)}
         onSortChange={(next) => onSortChange(sortFrom(sorts, next))}
         pager={{

@@ -25,13 +25,13 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import {
   BlockedOrganisation,
   type BlockedStatus,
 } from "./blocked-organisation";
 import { NoAccess } from "./no-access";
+import { useOrganisationAddress } from "./organisation-address";
 import { accountBlockOf } from "./problem";
 import { ProblemScreen } from "./problem-screen";
 
@@ -65,6 +65,14 @@ function blockedBy(error: unknown): BlockedStatus | null {
   return action.kind === "tenant-blocked" ? action.status : null;
 }
 
+/** The failures whose page replaces the shell (ProblemScreen): 404 "No access yet" and the account's page (A9). */
+function replacesTheShell(error: Error): boolean {
+  return (
+    accountBlockOf(error) !== null ||
+    (error instanceof ProblemDetailsError && error.status === 404)
+  );
+}
+
 /** True when the value is the id, or an array or object that holds it at any depth. */
 function holds(value: unknown, id: string): boolean {
   if (value === id) return true;
@@ -82,11 +90,17 @@ function holds(value: unknown, id: string): boolean {
 export function TenantProvider({
   slug,
   pending = null,
+  failed,
   children,
 }: {
   slug: string;
   /** What shows while the first reads come: the shell with what the route knows (the ListStates boards). */
   pending?: ReactNode;
+  /**
+   * What shows when GetMyTenant fails: the shell with the problem in its content (7.03). "No access yet" and the account's page
+   * still replace the shell.
+   */
+  failed?: (error: Error) => ReactNode;
   children: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -177,7 +191,12 @@ export function TenantProvider({
         hasOthers={all.data.total > 1}
       />
     );
-  if (detail.error) return <ProblemScreen error={detail.error} />;
+  if (detail.error)
+    return failed && !replacesTheShell(detail.error) ? (
+      failed(detail.error)
+    ) : (
+      <ProblemScreen error={detail.error} />
+    );
   if (!detail.data) return pending;
   shown.current = {
     tenant,
@@ -216,20 +235,14 @@ function StoppedWhileOpen({
   );
 }
 
-const subscribeToNothing = () => () => {};
-
 /** "Organisation not found": an address that no organisation of the person has (the Organisation not found screen). */
 function OrganisationNotFound({ slug }: { slug: string }) {
-  const host = useSyncExternalStore(
-    subscribeToNothing,
-    () => window.location.host,
-    () => "",
-  );
+  const address = useOrganisationAddress(slug);
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl items-center p-6">
       <NotFound
         kind="organisation"
-        address={host ? `${host}/${slug}` : undefined}
+        address={address}
         href="/"
         linkComponent={Link}
       />

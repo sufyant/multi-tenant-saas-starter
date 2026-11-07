@@ -47,23 +47,14 @@ export function apiUrl(path: string): string {
 }
 
 /**
- * The one place in this package that calls `fetch`. It sends the request, returns the parsed body on success and throws a
+ * It sends the request through `send`, the one place in this package that calls `fetch`. It returns the parsed body on success and throws a
  * ProblemDetailsError on an error status. No retry, no cache, no token: the BFF adds the token.
  */
 export const apiFetch = async <T>(
   path: string,
   { onResponseHeaders, ...init }: ApiFetchInit = {},
 ): Promise<T> => {
-  const url = apiUrl(path);
-  const headers = new Headers(configured?.headers);
-  new Headers(init.headers).forEach((value, name) => {
-    headers.set(name, value);
-  });
-
-  const response = await fetch(url, {
-    ...init,
-    headers,
-  });
+  const response = await send(path, init);
   const body = await readBody(response);
   if (!response.ok)
     throw new ProblemDetailsError(
@@ -73,6 +64,46 @@ export const apiFetch = async <T>(
   onResponseHeaders?.(response.headers);
   return body as T;
 };
+
+/** An export's file: its bytes and the name the web's server gave it in `Content-Disposition` (RFC 6266). */
+export type DownloadedFile = { blob: Blob; name: string };
+
+const fileName = /filename="([^"]+)"/;
+
+/**
+ * The file of an export, through the same one `fetch`. An error status throws its ProblemDetailsError (F4). An answer that the
+ * server cuts midway, after a page failed, rejects while the body is read: half a file is never a success.
+ */
+export const apiDownload = async (
+  path: string,
+  init: RequestInit = {},
+): Promise<DownloadedFile> => {
+  const response = await send(path, init);
+  if (!response.ok) {
+    const body = await readBody(response);
+    throw new ProblemDetailsError(
+      response.status,
+      isProblemDetails(body) ? body : null,
+    );
+  }
+  const name = fileName.exec(
+    response.headers.get("Content-Disposition") ?? "",
+  )?.[1];
+  if (!name)
+    throw new Error(
+      "The export's answer has no file name in Content-Disposition.",
+    );
+  return { blob: await response.blob(), name };
+};
+
+/** Sends a call through the base, with the configured headers and the call's own. */
+function send(path: string, init: RequestInit): Promise<Response> {
+  const headers = new Headers(configured?.headers);
+  new Headers(init.headers).forEach((value, name) => {
+    headers.set(name, value);
+  });
+  return fetch(apiUrl(path), { ...init, headers });
+}
 
 async function readBody(response: Response): Promise<unknown> {
   const text = await response.text();

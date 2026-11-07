@@ -11,9 +11,11 @@ export { savedUnderKey } from "./idempotency";
 export {
   type ApiClientOptions,
   type ApiFetchInit,
+  apiDownload,
   apiFetch,
   apiUrl,
   configureApiClient,
+  type DownloadedFile,
   type ErrorType,
   ProblemDetailsError,
 } from "./mutator";

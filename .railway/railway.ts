@@ -182,9 +182,9 @@ export default defineRailway((ctx) => {
   // - ERROR_TRACKING_ENVIRONMENT: the environment tag of each error event, the API's ASP.NET Core name in lower case, so the
   //   three services tag their events alike.
   // - APP_ENVIRONMENT: the Railway environment's name, staging or production, for the environment strip and the tab title.
-  // - WEB_APP_URL, the platform's only: the web app's origin, for the account menu's "Open the web app". It is the origin the
-  //   API trusts as the web app's authorized party, so the origin has one source, as for the API's notification links.
-  const app = (settings: typeof web, own: Record<string, string> = {}) =>
+  // - WEB_APP_URL: the web app's origin, for the platform's "Open the web app" and the web's organisation addresses. It is the
+  //   origin the API trusts as the web app's authorized party, so the origin has one source, as for the API's notification links.
+  const app = (settings: typeof web) =>
     service(settings.service, {
       replicas: { [region]: 1 },
       healthcheck: settings.healthPath,
@@ -197,7 +197,7 @@ export default defineRailway((ctx) => {
           ctx.shared[`${settings.service.toUpperCase()}_ERROR_TRACKING_DSN`],
         ERROR_TRACKING_ENVIRONMENT: aspNetEnvironment.toLowerCase(),
         APP_ENVIRONMENT: aspNetEnvironment.toLowerCase(),
-        ...own,
+        WEB_APP_URL: ctx.shared.Host__Authentication__AuthorizedParties__0,
       },
     });
 
@@ -214,9 +214,7 @@ export default defineRailway((ctx) => {
         Host__Heartbeat__Url: ctx.shared.Host__Heartbeat__Url,
       }),
       app(web),
-      app(platform, {
-        WEB_APP_URL: ctx.shared.Host__Authentication__AuthorizedParties__0,
-      }),
+      app(platform),
     ],
   });
 });

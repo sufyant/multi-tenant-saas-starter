@@ -7,7 +7,6 @@ import {
 } from "@repo/api-client";
 import {
   createParser,
-  parseAsInteger,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
@@ -17,8 +16,8 @@ export const tabs = ["members", "invitations"] as const;
 export type Tab = (typeof tabs)[number];
 
 /**
- * The page's list state in the URL (F8, F9): `?tab=invitations&q=…&roleId=…&page=…&sort=…`. Each change pushes a history
- * entry, so back and forward restore it. A value the contract does not have reads as absent.
+ * The page's list state in the URL (F8, F9): `?tab=invitations&q=…&roleId=…&sort=…`, never the page: the list grows with Load
+ * more. Each change pushes a history entry, so back and forward restore it. A value the contract does not have reads as absent.
  */
 const sorts = [
   ...Object.values(ListMembersSort),
@@ -42,7 +41,6 @@ const parsers = {
   tab: parseAsStringLiteral(tabs).withDefault("members"),
   q: parseAsString.withDefault(""),
   roleId: roleIdParser,
-  page: parseAsInteger.withDefault(1),
   sort: parseAsStringLiteral(sorts),
 };
 

@@ -8,15 +8,25 @@ export type Person = {
   email?: string | null;
 };
 
+const arabicArticle = "ال";
+
 /**
  * The avatar's letters: the first letter of the name's first and last word, one letter for a name of one word, else the email's
- * first letter; nothing for a deleted user, who has neither. Only the drawing reads the words: the name itself stays whole.
+ * first letter; nothing for a deleted user, who has neither. A word's letter comes after the Arabic article "ال", which is
+ * written joined to the word it defines: "عبد الرحمن الهاشمي" is "عه". Only the drawing reads the words: the name itself stays whole.
  */
 export function initialsOf(person: Person): string {
   const words = (person.name ?? "").split(/\s+/).filter(Boolean);
   const ends = words.length > 1 ? [words[0], words.at(-1)] : words;
   return ends.length > 0
-    ? ends.map((word) => word?.charAt(0)).join("")
+    ? ends
+        .map((word = "") =>
+          (word.length > 2 && word.startsWith(arabicArticle)
+            ? word.slice(arabicArticle.length)
+            : word
+          ).charAt(0),
+        )
+        .join("")
     : (person.email ?? "").charAt(0).toLocaleUpperCase();
 }
 
