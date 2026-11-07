@@ -1251,21 +1251,10 @@ const signInShots: {
       await page.route(clerkApi, (route) => route.abort());
     },
     open: async (page) => {
-      // TEMPORARY diagnostics for the 1.04 failure: what Clerk logs and what the card holds. Removed before merge.
-      page.on("console", (message) =>
-        console.log(`[1.04] ${message.type()}: ${message.text()}`),
-      );
-      page.on("requestfailed", (request) =>
-        console.log(`[1.04] failed: ${request.method()} ${request.url()}`),
-      );
       await page
         .getByRole("textbox", { name: "Email" })
         .fill("ayse@northwind.example");
       await page.getByRole("button", { name: "Continue", exact: true }).click();
-      await page.waitForTimeout(3_000);
-      console.log(
-        `[1.04] card: ${(await page.locator("main").innerHTML()).slice(0, 4000)}`,
-      );
       // Only the banner: Next's route announcer is an empty alert that is there at once.
       await page.getByText("We could not send the code").waitFor();
     },
