@@ -16,6 +16,7 @@ public sealed class RootSystemAdminTests(Database database)
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
+    // The platform grants the root's first entry, so the grant names no system admin who granted it (step 37b).
     [Fact]
     public async Task VisitTheSystemDoor_AListedPersonWhileOtherSystemAdminsExist_BecomesASystemAdmin()
     {
@@ -28,18 +29,6 @@ public sealed class RootSystemAdminTests(Database database)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await IsSystemAdminAsync(person)).ShouldBeTrue();
-    }
-
-    // The platform granted the root's first entry, so the grant names no system admin who granted it.
-    [Fact]
-    public async Task VisitTheSystemDoor_AListedPerson_IsGrantedByNobody()
-    {
-        var root = RootEmail();
-        await using var api = WithRoots(root);
-        var person = Person(api, root);
-
-        await api.WaitingForMessagesAsync(() => api.CreateClient(person, secondFactor: true).GetAsync("/v1/platform/users", Cancellation));
-
         (await database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM control_plane.system_admins WHERE user_id = '{await _testData.UserIdOfAsync(person)}' AND granted_by IS NULL")).ShouldBe(1);
     }

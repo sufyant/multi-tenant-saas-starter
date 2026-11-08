@@ -66,6 +66,7 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(5);
         page.EnumerateObject().Select(field => field.Name).ShouldBe(["items", "page", "pageSize", "total", "statusCounts"], ignoreOrder: true);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"deleted":2}""");
     }
 
     // The tabs of the Users list count each status (the maintainer's decision of 2026-11-08). The counts follow the search and every
@@ -90,31 +91,28 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task ListUsers_AnIsSystemAdminFilter_CountsOnlyTheUsersItKeeps()
     {
-        await UseADatabaseOfItsOwnAsync();
-        await _testData.AddUserAsync(email: TestEmails.Of("user@example.com"));
-        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: TestEmails.Of("suspended@example.com")));
-        await _testData.AddSystemAdminAsync(email: TestEmails.Of("admin@example.com"));
+        await _testData.AddUserAsync(email: $"user.{_marker}@example.com");
+        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"suspended.{_marker}@example.com"));
+        await _testData.AddSystemAdminAsync(email: $"admin.{_marker}@example.com");
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/users?isSystemAdmin=false", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&isSystemAdmin=false", Cancellation);
 
         page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":0}""");
     }
 
-    // The status filter takes several values.
+    // The status filter takes several values. A deleted user keeps no address or name to search for, so the test searches the active
+    // and the suspended ones; the whole list's counts are in ListUsers_UsersInEveryStatus_ReturnsEachByEmailThenId.
     [Fact]
     public async Task ListUsers_SeveralStatuses_ReturnsTheUsersInAnyOfThem()
     {
-        await UseADatabaseOfItsOwnAsync();
-        var suspended = await _testData.AddUserAsync(email: TestEmails.Of("suspended@example.com"));
-        await _testData.SuspendUserAsync(suspended);
-        var deleted = await _testData.AddUserAsync(email: TestEmails.Of("deleted@example.com"));
-        await _testData.DeleteUserAsync(deleted);
+        await _testData.AddUserAsync(email: $"active.{_marker}@example.com");
+        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"suspended.{_marker}@example.com"));
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/users?status=suspended&status=deleted", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&status=suspended&status=active", Cancellation);
 
-        Users(page).Select(user => user.Status).ShouldBe(["suspended", "deleted"]);
+        Users(page).Select(user => user.Status).ShouldBe(["active", "suspended"]);
         page.GetProperty("total").GetInt32().ShouldBe(2);
-        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":1}""");
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":0}""");
     }
 
     // K5: the counts come with the total, so a list with a status filter sends as many commands as the list without one.

@@ -302,20 +302,20 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         ]);
     }
 
-    // The tabs of the Organisations list count each status (the maintainer's decision of 2026-11-08): the whole list counts every tenant
-    // in each status, a purged tenant's tombstone included.
+    // The tabs of the Organisations list count each status (the maintainer's decision of 2026-11-08): every tenant the search finds,
+    // in each status, a purged tenant's tombstone included. The search keeps the shared database's other tenants out, with no host of its
+    // own (section 9, rule 11).
     [Fact]
     public async Task ListTenants_TenantsInEveryStatus_AnswersACountForEachStatus()
     {
-        await UseADatabaseOfItsOwnAsync();
-        await _testData.AddTenantAsync(name: "Alpha Ltd");
-        await _testData.AddTenantAsync(name: "Bravo Ltd");
-        await _testData.AddTenantAsync(status: "Suspended", name: "Charlie Ltd");
-        await _testData.AddTenantAsync(status: "Closed", name: "Delta Ltd", closedAt: DateTimeOffset.UtcNow);
-        await _testData.AddTenantAsync(status: "Purging", name: "Echo Ltd", closedAt: DateTimeOffset.UtcNow);
-        await _testData.AddTenantRowAsync(status: "Purged", name: "Foxtrot Ltd");
+        await _testData.AddTenantAsync(name: $"{_marker} Alpha");
+        await _testData.AddTenantAsync(name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Delta", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purging", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantRowAsync(status: "Purged", name: $"{_marker} Foxtrot");
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
 
         page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"closed":1,"purging":1,"purged":1}""");
         page.GetProperty("total").GetInt32().ShouldBe(6);
