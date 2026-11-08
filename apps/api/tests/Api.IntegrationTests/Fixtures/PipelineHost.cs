@@ -123,8 +123,9 @@ internal sealed class PipelineHost : IAsyncDisposable
         return new PipelineHost(app);
     }
 
-    // A session that waits as long as ApiFactory's (ApiFactory.TrackingTimeout).
-    public TrackedSessionConfiguration Tracking() => _app.TrackActivity().Timeout(ApiFactory.TrackingTimeout);
+    // A session that waits as long as ApiFactory's (ApiFactory.TrackingTimeout), until every message it saw has been handled
+    // (SettledMessages).
+    public TrackedSessionConfiguration Tracking() => _app.TrackActivity().Timeout(ApiFactory.TrackingTimeout).WaitForCondition(new SettledMessages());
 
     public HttpClient CreateClient() => _app.GetTestClient();
 

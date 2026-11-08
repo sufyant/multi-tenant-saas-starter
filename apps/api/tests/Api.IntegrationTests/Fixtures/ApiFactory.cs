@@ -90,7 +90,7 @@ internal sealed class ApiFactory(
     public async Task<T> WaitingForMessagesAsync<T>(Func<Task<T>> action)
     {
         var result = default(T)!;
-        await Tracking().ExecuteAndWaitAsync(RunAsync);
+        await Settled().ExecuteAndWaitAsync(RunAsync);
 
         return result;
 
@@ -100,7 +100,7 @@ internal sealed class ApiFactory(
     // The same, for a test that expects a message to fail and inspects what became of it.
     public Task<ITrackedSession> TrackMessagesAsync(Func<Task> action)
     {
-        return Tracking().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(RunAsync);
+        return Settled().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(RunAsync);
 
         Task RunAsync(IMessageContext _) => action();
     }
@@ -212,6 +212,9 @@ internal sealed class ApiFactory(
     }
 
     private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TrackingTimeout);
+
+    // A session that ends when every message it saw has been handled (SettledMessages).
+    private TrackedSessionConfiguration Settled() => Tracking().WaitForCondition(new SettledMessages());
 
     // IHostLifetime.WaitForStartAsync is the host's own way to delay its start until an outside event.
     private sealed class StartsWhenTheFactoryWaits(IHostLifetime lifetime, Task factoryWaits) : IHostLifetime
