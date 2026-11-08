@@ -149,7 +149,7 @@ internal sealed class ApiFactory(
             ["Host:Authentication:Issuer"] = TestTokens.Issuer,
 
             // A test of the rate limiter turns it on. Outside development the limiter must run (Deviations, "Rate limiting off in test hosts").
-            ["Host:RateLimiting:Enabled"] = environment is null || environment == Environments.Development ? "false" : "true",
+            ["Host:RateLimiting:Enabled"] = environment is null || environment.Equals(Environments.Development, StringComparison.OrdinalIgnoreCase) ? "false" : "true",
         };
         foreach (var (party, index) in (authorizedParties ?? [TestTokens.AuthorizedParty]).Select((party, index) => (party, index)))
         {
