@@ -234,6 +234,9 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 - `ListTenants` and `GetTenant` answer `pendingInvitationCount`: the pending invitations that have not expired at the moment of the read, as the web counts them and as the seats count them. It is `TenantSummary.PendingInvitationsAt(now)` over the summary's `pending_invitation_expiries`, so it needs no new column and no write when an invitation expires (K10, R12; the maintainer's decision of 2026-11-08) (4.01, 4.09, 4.15).
 - `ListTenants` answers each tenant's plan, `{ id, name }` (4.43).
 - Each list stays one query for its page and one for its total (K5), and a test counts the SQL commands.
+- The status counts follow the search text and every other filter, and ignore only the status filter, as the Open and Closed counts of GitHub Issues do (the maintainer's decision of 2026-11-08).
+- Each "by" and "at" field is null for a seed and for every event before its column exists. The screen then shows no "by" part, or no row. Nothing is backfilled from the Activity log (the maintainer's decision of 2026-11-08).
+- The suspension reason is personal data about the user. It is in the user's data export, and it goes when the account is deleted. The suspended person does not see it, as the platform's reason for a tenant ("Only the platform sees it") (the maintainer's decision of 2026-11-08).
 
 37b-emails, the platform's emails against their frames:
 
