@@ -22,6 +22,20 @@ public sealed class SendNotificationEmailHandlerTests
 
     private readonly RecordingEmailChannel _channel = new();
 
+    // The footer of each status type of the platform, in each language.
+    public static TheoryData<string, Language, string> PlatformFooters => new()
+    {
+        { NotificationCatalog.TenantSuspended, Language.En, "You received this because you are a system admin." },
+        { NotificationCatalog.TenantReactivated, Language.En, "You received this because you are a system admin." },
+        { NotificationCatalog.TenantClosed, Language.En, "You received this because you are a system admin." },
+        { NotificationCatalog.TenantReopened, Language.En, "You received this because you are a system admin." },
+        { NotificationCatalog.TenantPurged, Language.En, "You received this because you are a system admin." },
+        { NotificationCatalog.TenantSuspended, Language.Tr, "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız." },
+        { NotificationCatalog.TenantPurged, Language.Tr, "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız." },
+        { NotificationCatalog.TenantSuspended, Language.Ar, "وصلتك هذه الرسالة لأنك مسؤول النظام." },
+        { NotificationCatalog.TenantPurged, Language.Ar, "وصلتك هذه الرسالة لأنك مسؤول النظام." },
+    };
+
     [Fact]
     public async Task SendNotificationEmail_ARemovedMember_EmailsTheTitleAndTheBodyWithAButtonToTheWebApp()
     {
@@ -87,21 +101,39 @@ public sealed class SendNotificationEmailHandlerTests
     }
 
     // U5: every email says why it came, in its type's own footer, and none links to a settings page. A system admin hears of an
-    // organisation's status because they are a system admin.
-    [Fact]
-    public async Task SendNotificationEmail_APlatformNotification_SaysWhyItCameWithoutALinkToSettings()
+    // organisation's status because they are a system admin, as the platform's email boards write it (14.03 to 14.05).
+    [Theory]
+    [MemberData(nameof(PlatformFooters))]
+    public async Task SendNotificationEmail_APlatformNotification_SaysItCameToASystemAdminWithoutALinkToSettings(
+        string type, Language language, string footer)
     {
-        var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["actorName"] = Ada.ToString() };
-
         await SendNotificationEmailHandler.HandleAsync(
-            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantSuspended, values, "ada@example.com", Language.En, People: People),
+            new SendNotificationEmailCommand(Guid.CreateVersion7(), type, StatusChange("Acme"), "ada@example.com", language, People: People),
             _channel,
             Links,
             TestContext.Current.CancellationToken);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
-        (email.Text.EndsWith("https://platform.example/\n\nYou received this because you are a system admin and an organisation’s status changed.", StringComparison.Ordinal),
-            email.Html.Contains("settings", StringComparison.Ordinal)).ShouldBe((true, false));
+        (email.Text.EndsWith($"https://platform.example/\n\n{footer}", StringComparison.Ordinal),
+            email.Html.Contains(footer, StringComparison.Ordinal),
+            email.Html.Contains("settings", StringComparison.Ordinal)).ShouldBe((true, true, false));
+    }
+
+    // A deleted organisation's name and address stay in the platform's list: the email says "address", the word of the screens, never
+    // "slug" (14.05).
+    [Theory]
+    [InlineData(Language.En, "The platform finished deleting Acme and its data. Its name and address stay in the list.")]
+    [InlineData(Language.Tr, "Platform, Acme kuruluşunu ve verilerini silmeyi tamamladı. Adı ve adresi listede kalır.")]
+    [InlineData(Language.Ar, "أنهت المنصة حذف Acme وبياناتها. يبقى اسمها وعنوانها في القائمة.")]
+    public async Task SendNotificationEmail_APurgedTenant_SaysItsNameAndAddressStayInTheList(Language language, string body)
+    {
+        await SendNotificationEmailHandler.HandleAsync(
+            new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantPurged, StatusChange("Acme"), "ada@example.com", language, People: People),
+            _channel,
+            Links,
+            TestContext.Current.CancellationToken);
+
+        _channel.Sent.ShouldHaveSingleItem().Text.Split("\n\n")[2].ShouldBe(body);
     }
 
     // U5: an Owner hears of the plan because they are an Owner.
@@ -180,6 +212,14 @@ public sealed class SendNotificationEmailHandlerTests
     }
 
     private static Dictionary<string, string> Removal(string tenantName) => new() { ["tenantName"] = tenantName, ["actorName"] = Ada.ToString() };
+
+    // The values of every status type of the platform: a type writes the ones its texts name.
+    private static Dictionary<string, string> StatusChange(string tenantName) => new()
+    {
+        ["tenantName"] = tenantName,
+        ["actorName"] = Ada.ToString(),
+        ["reopenableUntil"] = "2026-12-01T09:00:00.0000000+00:00",
+    };
 
     private sealed class RecordingEmailChannel : IEmailChannel
     {
