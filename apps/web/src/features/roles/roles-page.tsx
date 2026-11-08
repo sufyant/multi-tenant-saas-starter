@@ -274,7 +274,12 @@ export function RolesPage() {
     if (roles.isPending)
       return (
         <TableSkeleton
-          columns={columns.map((column) => column.header)}
+          columns={[
+            t("roles.name"),
+            t("roles.type"),
+            t("roles.usedBy"),
+            t("roles.permissions"),
+          ]}
           bars={skeletonBars}
           rows={7}
           label={t("roles.loading")}
