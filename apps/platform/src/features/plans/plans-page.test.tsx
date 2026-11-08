@@ -1,4 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -11,6 +12,7 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from "vitest";
 import { meAnswer, problem } from "../../../test/organisations";
 import { free, itemOf, partner, plansAnswer, pro } from "../../../test/plans";
@@ -170,5 +172,49 @@ describe("PlansPage", () => {
     expect(await screen.findByText("Couldn’t load plans")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("table", { name: "Plans" })).toBeVisible();
+  });
+
+  /** The first page of two; the second answers with the status given. */
+  const secondPageFails = (status: number, code: ErrorCode) =>
+    http.get("*/v1/platform/plans", ({ request }) =>
+      new URL(request.url).searchParams.get("page") === "2"
+        ? problem(status, code)
+        : HttpResponse.json({
+            items: [free, pro].map(itemOf),
+            page: 1,
+            pageSize: 2,
+            total: 3,
+          }),
+    );
+
+  it("PlansPage_LoadMoreFails_SaysSoAndKeepsThePlans", async () => {
+    server.use(secondPageFails(500, ErrorCode.ServerError));
+    renderWithProviders(<PlansPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    await expectVisibleToast("Couldn’t load more plans");
+    const table = screen.getByRole("table", { name: "Plans" });
+    expect(within(table).getByRole("link", { name: "Pro" })).toBeVisible();
+  });
+
+  it("PlansPage_LoadMoreSignedOut_GoesToSignIn", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    server.use(secondPageFails(401, ErrorCode.AuthUnauthenticated));
+    renderWithProviders(<PlansPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/sign-in\?reason=session-ended&redirect_url=/),
+      ),
+    );
+    vi.unstubAllGlobals();
   });
 });

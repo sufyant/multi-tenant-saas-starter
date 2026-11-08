@@ -561,8 +561,8 @@ const shellShots: {
   fullPage?: boolean;
   /** What the page shows once it has loaded, when it is not a heading of the content. */
   ready?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
-  /** The frame draws a loading state: a list stays busy. */
-  busy?: boolean;
+  /** When the page is still: by default no list is busy; a loading frame stays busy, so it waits for nothing more. */
+  settled?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
 }[] = [
   { file: "2.01-organisations-en-light-desktop", size: "desktop" },
   {
@@ -780,7 +780,7 @@ const shellShots: {
     file: "6.02-plans-loading-en-light-desktop",
     size: "desktop",
     path: "/plans",
-    busy: true,
+    settled: async () => {},
     // ListPlans never answers.
     mock: async (page) => {
       await reduceMotion(page);
@@ -960,7 +960,7 @@ const shellShots: {
     file: "7.03-activity-loading-en-light-desktop",
     size: "desktop",
     path: "/activity",
-    busy: true,
+    settled: async () => {},
     // The log never answers.
     mock: async (page) => {
       await reduceMotion(page);
@@ -1022,6 +1022,10 @@ const shellShots: {
   },
 ];
 
+/** No list of the page is busy. */
+const notBusy = (page: Page) =>
+  expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
 /** A shot's language, theme and page when it names none: English, light, the start page. */
 const withDefaults = (shot: (typeof shellShots)[number]) => ({
   ...shot,
@@ -1044,8 +1048,7 @@ for (const shot of shellShots.map(withDefaults))
     await page.goto(shot.path);
     await (shot.ready?.(page) ??
       page.getByRole("main").getByRole("heading").first().waitFor());
-    if (!shot.busy)
-      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await (shot.settled ?? notBusy)(page);
     await shot.open?.(page);
     // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
     // animation starts only then.

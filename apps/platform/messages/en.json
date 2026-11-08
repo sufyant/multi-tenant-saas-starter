@@ -333,7 +333,6 @@
     "rootCannotRemove": "Root admins can’t be removed here."
   },
   "activity": {
-    "title": "Activity",
     "today": "Today, {date}",
     "yesterday": "Yesterday, {date}",
     "older": "Load older activity",

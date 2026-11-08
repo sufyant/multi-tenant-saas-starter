@@ -333,7 +333,6 @@
     "rootCannotRemove": "لا يمكن إزالة المسؤولين الجذريين من هنا."
   },
   "activity": {
-    "title": "النشاط",
     "today": "اليوم، {date}",
     "yesterday": "أمس، {date}",
     "older": "عرض النشاط الأقدم",
