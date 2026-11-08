@@ -38,6 +38,8 @@ namespace Internal.Generated.WolverineHandlers
             {
                 // Application-specific Open Telemetry auditing
                 System.Diagnostics.Activity.Current?.SetTag("TenantId", completeTenantPurgeReply.TenantId);
+                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
+                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
                 System.Guid sagaId = completeTenantPurgeReply.TenantId;
                 if (sagaId == default && !System.Guid.TryParse(context.Envelope.SagaId, out sagaId)) sagaId = completeTenantPurgeReply.TenantId;
                 if (sagaId == System.Guid.Empty) throw new Wolverine.Persistence.Sagas.IndeterminateSagaStateIdException(context.Envelope, typeof(ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga), "TenantId");

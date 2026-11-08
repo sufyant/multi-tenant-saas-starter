@@ -19,7 +19,6 @@ using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
-using Tenancy;
 using JasperFx.CodeGeneration;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
@@ -198,7 +197,7 @@ internal static class ApiPipeline
             // never starts it; any other host without it does not start (PersistenceExtensions).
             if (!openApiBuild && PersistenceExtensions.MessagingConnectionOf(builder.Configuration) is { ConnectionString: var messaging })
             {
-                MessageStorage.Configure(options, DatabaseConnection.CreateDataSource(messaging), role);
+                MessageStorage.Configure(options, messaging, role);
             }
 
             // A stopping host stops taking messages and finishes the ones it has, within the host's shutdown time.
