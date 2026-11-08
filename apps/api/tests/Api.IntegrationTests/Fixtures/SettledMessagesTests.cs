@@ -1,14 +1,14 @@
 using Wolverine;
 using Wolverine.Tracking;
 
-namespace Api.IntegrationTests.Messaging;
+namespace Api.IntegrationTests.Fixtures;
 
 // The condition that ends a tracked session (SettledMessages). The records come in the order one host writes them; the first test is
 // the order of an invitation's sign-up, where the identity provider's answer cascades to the step that records it.
 public sealed class SettledMessagesTests
 {
     [Fact]
-    public void Record_ACascadeSentBeforeItsParentSucceeds_IsSettledOnlyWhenTheCascadeSucceeds()
+    public void EndSession_ACascadeSentBeforeItsParentSucceeds_WaitsUntilTheCascadeSucceeds()
     {
         var settled = new SettledMessages();
         var open = Local("open-sign-up");
@@ -34,7 +34,7 @@ public sealed class SettledMessagesTests
     }
 
     [Fact]
-    public void Record_AMessageForLaterAndOneForAnotherTransport_IsSettledOnceSent()
+    public void EndSession_AMessageForLaterAndOneForAnotherTransport_EndsOnceTheyAreSent()
     {
         var settled = new SettledMessages();
         var later = Local("expire-sign-up");
@@ -47,7 +47,7 @@ public sealed class SettledMessagesTests
     }
 
     [Fact]
-    public void Record_AnInvokedMessage_IsSettledWhenItsExecutionFinishes()
+    public void EndSession_AnInvokedMessage_WaitsUntilItsExecutionFinishes()
     {
         var settled = new SettledMessages();
         var invoked = new Envelope(new object());
@@ -61,7 +61,7 @@ public sealed class SettledMessagesTests
     }
 
     [Fact]
-    public void Record_AFailedMessageRequeued_IsNotSettled()
+    public void EndSession_AFailedMessageRequeued_KeepsWaiting()
     {
         var settled = new SettledMessages();
         var retried = Local("record-sign-up");
