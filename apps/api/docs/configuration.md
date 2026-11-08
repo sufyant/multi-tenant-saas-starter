@@ -17,7 +17,7 @@ Each process checks its settings when it starts. If a required setting is missin
 | `Host:Messaging:UnknownMessages:Delay` | Optional | `00:00:30` | How long a worker waits before a message it has no handler for is offered again. During a rolling deploy, an old worker puts back a message only the new version knows. Must be positive (W12) |
 | `Host:Messaging:UnknownMessages:Tries` | Optional | `10` | How many times a worker puts back a message it has no handler for. After that, the message goes to the dead letter queue. Delay times tries must be longer than a deploy. Must be positive (W12) |
 | `Host:Messaging:DeadLetters:Retention` | Optional | `14.00:00:00` | How long a message stays in the dead letter queue. Then a worker deletes it. An invitation email's message holds the address and the link with its secret. Must be positive (W13; `docs/deployment.md`, section 14) |
-| `Host:RateLimiting:Enabled` | Optional | `true` | Whether the pipeline runs the rate limiter. Only test hosts turn it off (`ARCHITECTURE.md`, section 11, "Rate limiting off in test hosts") |
+| `Host:RateLimiting:Enabled` | Optional | `true` | Whether the pipeline runs the rate limiter. Only test hosts turn it off. It may be `false` only in development: in any other environment the API does not start (`ARCHITECTURE.md`, section 11, "Rate limiting off in test hosts") |
 | `Host:RateLimiting:PermitLimit` | Optional | `1000` (`appsettings.json`) | Requests each user may make in a window, in each process |
 | `Host:RateLimiting:Window` | Optional | `00:01:00` (`appsettings.json`) | The rate limit's window |
 | `Host:RateLimiting:InvitationAccept:PermitLimit` | Optional | `10` | Invitation accepts each user may make in a window, on top of the general limit |
