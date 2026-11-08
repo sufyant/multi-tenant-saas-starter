@@ -73,13 +73,13 @@ export const ListTenantsQueryParams = zod.object({
   SlugDescending: '-slug',
 }).optional(),
   "q": zod.string().max(listTenantsQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
-  "status": zod.enum({
+  "status": zod.array(zod.enum({
   Active: 'active',
   Suspended: 'suspended',
   Closed: 'closed',
   Purging: 'purging',
   Purged: 'purged',
-}).optional()
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).')).optional()
 })
 
 export const ListTenantsResponse = zod.object({
@@ -114,13 +114,26 @@ export const ListTenantsResponse = zod.object({
   En: 'en',
   Tr: 'tr',
   Ar: 'ar',
-}).describe('A language the web speaks, by its BCP 47 language tag.')
-}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back.')])
-}).describe('A tenant in the platform\'s list: as TenantResponse, with when it was created, until when a closed tenant can be\nreopened, its members and Owners counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.\nA purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was\ncreated.')),
+}).describe('A language the web speaks, by its BCP 47 language tag.'),
+  "sentAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment.')]),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "pendingInvitationCount": zod.int()
+}).describe('A tenant in the platform\'s list: as TenantResponse, with its plan, when it was created, until when a closed tenant can be\nreopened, its members and Owners counted, its pending invitations that have not expired at the moment of the request, as the seats count\nthem, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.\nA purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was\ncreated.')),
   "page": zod.int(),
   "pageSize": zod.int(),
-  "total": zod.int()
-})
+  "total": zod.int(),
+  "statusCounts": zod.object({
+  "active": zod.int(),
+  "suspended": zod.int(),
+  "closed": zod.int(),
+  "purging": zod.int(),
+  "purged": zod.int()
+}).describe('How many tenants of the list are in each status, with the search and without the status filter: the tabs of the Organisations list.')
+}).describe('A page of the tenant list (K5), and how many tenants of the whole list are in each status.')
 
 export const GetTenantParams = zod.object({
   "tenantId": zod.uuid()
@@ -163,9 +176,25 @@ export const GetTenantResponse = zod.object({
   En: 'en',
   Tr: 'tr',
   Ar: 'ar',
-}).describe('A language the web speaks, by its BCP 47 language tag.')
-}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back.')])
-}).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise).')
+}).describe('A language the web speaks, by its BCP 47 language tag.'),
+  "sentAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment.')]),
+  "pendingInvitationCount": zod.int(),
+  "createdBy": zod.union([zod.null(),zod.object({
+  "name": zod.string().nullable(),
+  "deleted": zod.boolean()
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
+  "suspendedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "suspendedBy": zod.union([zod.null(),zod.object({
+  "name": zod.string().nullable(),
+  "deleted": zod.boolean()
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
+  "closedBy": zod.union([zod.null(),zod.object({
+  "name": zod.string().nullable(),
+  "deleted": zod.boolean()
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
+  "purgeStartedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise). It counts the pending invitations that have not expired at the moment of the request, and\nnames who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a\nseed, for an event the tenant is not in, and for an event before the API kept it.')
 
 export const RenameTenantParams = zod.object({
   "tenantId": zod.uuid()

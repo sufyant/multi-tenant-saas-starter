@@ -95,7 +95,7 @@ public sealed class StreamNotificationsTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(async () =>
         {
             await _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
-                .PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(user)}/suspend", null, TestContext.Current.CancellationToken);
+                .SuspendUserAsync(await _testData.UserIdOfAsync(user));
             return 0;
         });
 

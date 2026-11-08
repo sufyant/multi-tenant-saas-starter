@@ -25,7 +25,8 @@ public interface IUserQueries
     internal Task<MeView?> FindMeAsync(string externalUserId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The user with this id for the platform: as in the list, with the system admin who suspended them, and their memberships in
+    /// The user with this id for the platform: as in the list, with the system admin who suspended them and why, the system admin who
+    /// granted them system admin, and their memberships in
     /// every tenant by the tenant's name, then id, in one query. That query declares the user in the transaction (R11), so the
     /// own_memberships policy decides what is seen; the transaction then declares no tenant (R4). Whether the user is a tenant's last
     /// Owner comes from the tenant's summary (R12). Null when no user has the id.
@@ -39,13 +40,13 @@ public interface IUserQueries
     internal Task<InviterNameView?> FindInviterNameAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of every user in the status or every status, on the system admin list, off it or either, with the email address or any,
-    /// whose email address or name contains the search, with when each was granted system admin: by the sort field, users without a
-    /// value for it last, then by id.
+    /// A page of every user in any of the statuses or, with none, every status, on the system admin list, off it or either, with the
+    /// email address or any, whose email address or name contains the search, with when each was granted system admin: by the sort field,
+    /// users without a value for it last, then by id. With it, how many users the other filters and the search keep are in each status.
     /// </summary>
-    internal Task<ListPage<UserView>> ListUsersAsync(
+    internal Task<UserListView> ListUsersAsync(
         ListRequest<ListUsersSort> list,
-        UserStatus? status,
+        IReadOnlyList<UserStatus> statuses,
         bool? isSystemAdmin,
         EmailAddress? email,
         CancellationToken cancellationToken);

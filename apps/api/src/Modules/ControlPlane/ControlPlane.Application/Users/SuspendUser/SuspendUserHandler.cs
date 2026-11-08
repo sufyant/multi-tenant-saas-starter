@@ -30,7 +30,7 @@ public static class SuspendUserHandler
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         var now = time.GetUtcNow();
-        if (user.Suspend(now, actor) == StateChange.Unchanged)
+        if (user.Suspend(now, actor, command.Reason) == StateChange.Unchanged)
         {
             return (UserView.Of(user, systemAdminGrantedAt: null, systemAdmins), []);
         }

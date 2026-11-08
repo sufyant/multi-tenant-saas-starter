@@ -23,15 +23,15 @@ public static class GrantSystemAdminHandler
             return (Errors.UserNotFound, []);
         }
 
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         var now = time.GetUtcNow();
-        var granted = SystemAdmin.Grant(user, await users.IsSystemAdminAsync(user.Id, cancellationToken), now);
+        var granted = SystemAdmin.Grant(user, await users.IsSystemAdminAsync(user.Id, cancellationToken), now, actor);
         if (!granted.IsSuccess)
         {
             return (granted.Error, []);
         }
 
-        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a user.");
         users.AddSystemAdmin(granted.Value);
         await users.SaveChangesAsync(cancellationToken);
         return (UserView.Of(user, granted.Value.GrantedAt, systemAdmins), [new SystemAdminGrantedEvent(Guid.CreateVersion7(now), now, user.Id, actor)]);

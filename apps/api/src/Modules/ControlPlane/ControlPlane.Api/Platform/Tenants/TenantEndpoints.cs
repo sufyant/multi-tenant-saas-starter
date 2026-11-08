@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Api.Platform.Plans;
 using ControlPlane.Api.Statuses;
+using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
@@ -10,6 +12,7 @@ using ControlPlane.Application.Tenants.ReactivateTenant;
 using ControlPlane.Application.Tenants.RenameTenant;
 using ControlPlane.Application.Tenants.ReopenTenant;
 using ControlPlane.Application.Tenants.SuspendTenant;
+using ControlPlane.Application.Users;
 using ControlPlane.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -55,14 +58,14 @@ public static class TenantEndpoints
         return created.Map(ToResponse);
     }
 
-    // The list reads across tenants, so it runs without one. Each item comes from the tenant's row, with its summary (R12), and the user
-    // of its first Owner: one query for the page.
-    private static async Task<Result<ListPage<TenantListItemResponse>>> ListTenants(
+    // The list reads across tenants, so it runs without one. Each item comes from the tenant's row, with its plan and its summary (R12):
+    // one query for the page, and one for the counts of the statuses, which give the total.
+    private static async Task<Result<TenantListPageResponse>> ListTenants(
         int? page,
         int? pageSize,
         ListSort<ListTenantsSort>? sort,
         string? q,
-        ListFilter<TenantResponseStatus>? status,
+        ListFilter<TenantResponseStatus>[]? status,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -72,16 +75,22 @@ public static class TenantEndpoints
             return list.Error;
         }
 
-        var filter = ListFilter.Read(status, nameof(status));
+        var filter = ListFilter.ReadAll(status, nameof(status));
         if (!filter.IsSuccess)
         {
             return filter.Error;
         }
 
-        var tenants = await bus.InvokeAsync<Result<ListPage<TenantListItemView>>>(
-            new ListTenantsQuery(list.Value, filter.Value is { } chosen ? ResponseStatus.OfTenant(chosen) : null),
+        var tenants = await bus.InvokeAsync<Result<TenantListView>>(
+            new ListTenantsQuery(list.Value, [.. filter.Value.Select(ResponseStatus.OfTenant)]),
             cancellationToken);
-        return tenants.Map(found => found.Map(ToResponse));
+        return tenants.Map(found => new TenantListPageResponse(
+            [.. found.Page.Items.Select(ToResponse)],
+            found.Page.Page,
+            found.Page.PageSize,
+            found.Page.Total,
+            new TenantStatusCountsResponse(
+                found.StatusCounts.Active, found.StatusCounts.Suspended, found.StatusCounts.Closed, found.StatusCounts.Purging, found.StatusCounts.Purged)));
     }
 
     // One tenant is read inside the tenant the route names, as suspension does (W3); an id no tenant has is not found.
@@ -144,7 +153,9 @@ public static class TenantEndpoints
         item.ReopenableUntil,
         item.MemberCount,
         item.OwnerCount,
-        item.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
+        item.OwnerInvitation is { } invitation ? ToResponse(invitation) : null,
+        new PlanNameResponse(item.Plan.Id, item.Plan.Name),
+        item.PendingInvitationCount);
 
     private static TenantDetailResponse ToResponse(TenantDetailView tenant) => new(
         tenant.Tenant.Id,
@@ -160,10 +171,18 @@ public static class TenantEndpoints
         tenant.MemberCount,
         tenant.OwnerCount,
         [.. tenant.Owners.Select(ToResponse)],
-        tenant.OwnerInvitation is { } invitation ? ToResponse(invitation) : null);
+        tenant.OwnerInvitation is { } invitation ? ToResponse(invitation) : null,
+        tenant.PendingInvitationCount,
+        NameOf(tenant.CreatedBy),
+        tenant.SuspendedAt,
+        NameOf(tenant.SuspendedBy),
+        NameOf(tenant.ClosedBy),
+        tenant.PurgeStartedAt);
 
     private static TenantOwnerResponse ToResponse(TenantOwnerView owner) => new(owner.UserId, owner.Name, owner.Email);
 
     private static OwnerInvitationResponse ToResponse(OwnerInvitationView invitation) =>
-        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfInvitation(invitation.State), invitation.Language);
+        new(invitation.Email, invitation.ExpiresAt, ResponseStatus.OfInvitation(invitation.State), invitation.Language, invitation.SentAt);
+
+    private static UserNameResponse? NameOf(UserNameView? name) => name is null ? null : InvitationEndpoints.ToResponse(name);
 }

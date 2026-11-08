@@ -167,6 +167,31 @@ public sealed class ListRequestTests
         filter.Error.Code.ShouldBe(PagingErrorCodes.FilterInvalid);
     }
 
+    // A filter of several values (step 37b): each value once, in the order sent, and an empty value is no value. The total of a list
+    // adds the count of each value, so a value sent twice counts once.
+    [Fact]
+    public void ReadFilters_AValueTwiceAndAnEmptyOne_GivesEachValueOnce()
+    {
+        var filters = ListFilter.ReadAll<ThingStatus>(
+            [new("active"), new(string.Empty), new("on-hold"), new("active")], "status");
+
+        filters.Value.ShouldBe([ThingStatus.Active, ThingStatus.OnHold]);
+    }
+
+    [Fact]
+    public void ReadFilters_LeftOut_GivesNoValue()
+    {
+        ListFilter.ReadAll<ThingStatus>(null, "status").Value.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void ReadFilters_AnUnknownValueAmongThem_IsRejected()
+    {
+        var filters = ListFilter.ReadAll<ThingStatus>([new("active"), new("deleted")], "status");
+
+        filters.Error.Code.ShouldBe(PagingErrorCodes.FilterInvalid);
+    }
+
     [Fact]
     public void DescribeFilter_OfAnEnum_IsTheJsonNameOfEachValue()
     {

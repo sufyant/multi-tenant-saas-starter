@@ -417,7 +417,7 @@ public sealed class HostRoleTests(Database database)
         var userId = await testData.UserIdOfAsync(await testData.AddUserAsync());
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
-        var suspended = await admin.PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation);
+        var suspended = await admin.SuspendUserAsync(userId);
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, userId, "user.suspended") > 0);
 
         suspended.StatusCode.ShouldBe(HttpStatusCode.OK);

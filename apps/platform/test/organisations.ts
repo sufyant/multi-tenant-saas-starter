@@ -3,9 +3,9 @@ import {
   type FieldErrorCode,
   InvitationResponseState,
   Language,
-  type ListPageOfTenantListItemResponse,
   type TenantDetailResponse,
   type TenantListItemResponse,
+  type TenantListPageResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
 import {
@@ -43,6 +43,8 @@ const item = (
   memberCount: 7,
   ownerCount: 1,
   ownerInvitation: null,
+  plan: { id: "0198f0a2-0000-7000-8000-0000000000f1", name: "Team" },
+  pendingInvitationCount: 0,
   ...values,
 });
 
@@ -70,6 +72,7 @@ export const liffey = item(
       expiresAt: inDays(7),
       state: InvitationResponseState.Pending,
       language: Language.Tr,
+      sentAt: inDays(-7),
     },
   },
 );
@@ -85,6 +88,7 @@ export const burren = item(
       expiresAt: inDays(-7),
       state: InvitationResponseState.Expired,
       language: Language.En,
+      sentAt: inDays(-7),
     },
   },
 );
@@ -146,18 +150,19 @@ export const everyOrganisation = [
 /** One page of ListTenants. */
 export const pageOf = (
   items: TenantListItemResponse[],
-  values: Partial<ListPageOfTenantListItemResponse> = {},
-): ListPageOfTenantListItemResponse => ({
+  values: Partial<TenantListPageResponse> = {},
+): TenantListPageResponse => ({
   items,
   page: 1,
   pageSize: 20,
   total: items.length,
+  statusCounts: { active: 0, suspended: 0, closed: 0, purging: 0, purged: 0 },
   ...values,
 });
 
 /** ListTenants: it records each request's parameters and answers the page. */
 export const listAnswer = (
-  page: ListPageOfTenantListItemResponse = pageOf(everyOrganisation),
+  page: TenantListPageResponse = pageOf(everyOrganisation),
   requests: URLSearchParams[] = [],
 ) =>
   http.get("*/v1/platform/tenants", ({ request }) => {
@@ -169,21 +174,29 @@ export const listAnswer = (
 export const detailOf = (
   organisation: TenantListItemResponse,
   values: Partial<TenantDetailResponse> = {},
-): TenantDetailResponse => ({
-  ...organisation,
-  purgeWarningAt: null,
-  owners:
-    organisation.ownerCount > 0
-      ? [
-          {
-            userId: "0198f0a2-0000-7000-8000-0000000000a1",
-            name: "Ayşe Yılmaz",
-            email: "ayse@northwind.example",
-          },
-        ]
-      : [],
-  ...values,
-});
+): TenantDetailResponse => {
+  const { plan: _, ...tenant } = organisation;
+  return {
+    ...tenant,
+    purgeWarningAt: null,
+    createdBy: null,
+    suspendedAt: null,
+    suspendedBy: null,
+    closedBy: null,
+    purgeStartedAt: null,
+    owners:
+      organisation.ownerCount > 0
+        ? [
+            {
+              userId: "0198f0a2-0000-7000-8000-0000000000a1",
+              name: "Ayşe Yılmaz",
+              email: "ayse@northwind.example",
+            },
+          ]
+        : [],
+    ...values,
+  };
+};
 
 /** GetTenant: it counts the reads and answers the detail. */
 export const detailAnswer = (

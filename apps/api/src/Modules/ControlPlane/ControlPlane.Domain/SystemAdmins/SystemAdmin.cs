@@ -8,17 +8,23 @@ namespace ControlPlane.Domain.SystemAdmins;
 /// recorded with when it was granted. The system door grants a root system admin, whom the configuration names; a system admin grants
 /// and revokes any other (docs/flows/system-admins.md).
 /// </summary>
-internal sealed class SystemAdmin(Guid userId, DateTimeOffset grantedAt)
+internal sealed class SystemAdmin(Guid userId, DateTimeOffset grantedAt, Guid? grantedBy)
 {
     public Guid UserId { get; private init; } = userId;
 
     public DateTimeOffset GrantedAt { get; private init; } = grantedAt;
 
     /// <summary>
-    /// The grant for a user, at this moment. A deleted user has no account to sign in with, and a suspended one is reactivated first;
-    /// a system admin is one already.
+    /// The user id of the system admin who granted it; none when the platform granted it, at a root's first entry, and for a grant before
+    /// the column.
     /// </summary>
-    public static Result<SystemAdmin> Grant(User user, bool isSystemAdmin, DateTimeOffset now)
+    public Guid? GrantedBy { get; private init; } = grantedBy;
+
+    /// <summary>
+    /// The grant for a user, at this moment, by the system admin, or by the platform when none is given. A deleted user has no account
+    /// to sign in with, and a suspended one is reactivated first; a system admin is one already.
+    /// </summary>
+    public static Result<SystemAdmin> Grant(User user, bool isSystemAdmin, DateTimeOffset now, Guid? grantedBy)
     {
         if (user.Status == UserStatus.Deleted)
         {
@@ -35,7 +41,7 @@ internal sealed class SystemAdmin(Guid userId, DateTimeOffset grantedAt)
             return Error.Conflict(ControlPlaneErrorCodes.SystemAdminExists, "The user is a system admin already.");
         }
 
-        return new SystemAdmin(user.Id, now);
+        return new SystemAdmin(user.Id, now, grantedBy);
     }
 
     /// <summary>

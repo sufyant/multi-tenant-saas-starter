@@ -7,6 +7,8 @@ namespace ControlPlane.UnitTests.Users;
 
 public sealed class UserTests
 {
+    private const string Reason = "Shared account";
+
     private static readonly DateTimeOffset Now = new(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
 
     private static readonly Guid ActorId = new("0199a8f0-0000-7000-8000-000000000901");
@@ -19,7 +21,7 @@ public sealed class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
         (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, ActorId));
     }
@@ -28,9 +30,9 @@ public sealed class UserTests
     public void SuspendUser_TwiceByTwoSystemAdmins_KeepsTheFirst()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
-        user.Suspend(Now.AddHours(1), OtherAdminId);
+        user.Suspend(Now.AddHours(1), OtherAdminId, Reason);
 
         (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, ActorId));
     }
@@ -39,11 +41,56 @@ public sealed class UserTests
     public void ReactivateUser_Suspended_ForgetsWhoSuspendedThem()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
         user.Reactivate();
 
         user.SuspendedBy.ShouldBeNull();
+    }
+
+    // The user's page shows why the user is suspended, without the spaces around it (the maintainer's decision of 2026-11-08).
+    [Fact]
+    public void SuspendUser_WithAReason_KeepsItWithoutTheSpacesAround()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+
+        user.Suspend(Now, ActorId, "  Shared account ");
+
+        user.SuspensionReason.ShouldBe("Shared account");
+    }
+
+    [Fact]
+    public void SuspendUser_Twice_KeepsTheFirstReason()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, ActorId, Reason);
+
+        user.Suspend(Now.AddHours(1), OtherAdminId, "Another reason");
+
+        user.SuspensionReason.ShouldBe(Reason);
+    }
+
+    [Fact]
+    public void ReactivateUser_Suspended_ForgetsTheReason()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, ActorId, Reason);
+
+        user.Reactivate();
+
+        user.SuspensionReason.ShouldBeNull();
+    }
+
+    // The reason is personal data about the user: the deletion erases it, as it erases the names (A8).
+    [Fact]
+    public void DeleteUser_Suspended_ErasesTheReason()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, ActorId, Reason);
+
+        user.Delete(Now);
+
+        user.SuspensionReason.ShouldBeNull();
     }
 
     // A person who joins through an invitation is created at that moment. ControlPlane adds and counts the membership of the tenant they
@@ -61,7 +108,7 @@ public sealed class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
         user.SuspendedAt.ShouldBe(Now);
     }
@@ -71,9 +118,9 @@ public sealed class UserTests
     public void SuspendUser_Twice_KeepsTheFirstTime()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
-        user.Suspend(Now.AddHours(1), ActorId);
+        user.Suspend(Now.AddHours(1), ActorId, Reason);
 
         user.SuspendedAt.ShouldBe(Now);
     }
@@ -82,7 +129,7 @@ public sealed class UserTests
     public void ReactivateUser_Suspended_IsNoLongerSuspended()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
         user.Reactivate();
 
@@ -95,8 +142,8 @@ public sealed class UserTests
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
 
-        var first = user.Suspend(Now, ActorId);
-        var second = user.Suspend(Now.AddHours(1), ActorId);
+        var first = user.Suspend(Now, ActorId, Reason);
+        var second = user.Suspend(Now.AddHours(1), ActorId, Reason);
 
         (first, second).ShouldBe((StateChange.Changed, StateChange.Unchanged));
     }
@@ -105,7 +152,7 @@ public sealed class UserTests
     public void ReactivateUser_NotSuspended_ChangesNothing()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
         var first = user.Reactivate();
         var second = user.Reactivate();
@@ -278,7 +325,7 @@ public sealed class UserTests
     public void DeleteUser_Suspended_IsDeletedToTheUserAndToAQuery()
     {
         var user = new User(Guid.CreateVersion7(), "user_1");
-        user.Suspend(Now, ActorId);
+        user.Suspend(Now, ActorId, Reason);
 
         user.Delete(Now);
 

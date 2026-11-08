@@ -40,7 +40,7 @@ public static class GrantRootSystemAdminHandler
             users.Add(user);
         }
 
-        var granted = SystemAdmin.Grant(user, isSystemAdmin, now);
+        var granted = SystemAdmin.Grant(user, isSystemAdmin, now, grantedBy: null);
         if (!granted.IsSuccess || !SystemDoor.IsRoot(user.Email, systemAdmins.Roots))
         {
             return [];

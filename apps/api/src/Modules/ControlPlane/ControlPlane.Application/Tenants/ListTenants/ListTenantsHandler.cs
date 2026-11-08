@@ -5,7 +5,7 @@ namespace ControlPlane.Application.Tenants.ListTenants;
 
 public static class ListTenantsHandler
 {
-    public static async Task<Result<ListPage<TenantListItemView>>> HandleAsync(
+    public static async Task<Result<TenantListView>> HandleAsync(
         ListTenantsQuery query,
         ITenantQueries tenants,
         TenantOptions settings,
@@ -13,7 +13,7 @@ public static class ListTenantsHandler
         CancellationToken cancellationToken) =>
         await tenants.ListTenantsAsync(
             query.List,
-            query.Status is { } status ? Enum.Parse<TenantStatus>(status) : null,
+            [.. query.Statuses.Select(Enum.Parse<TenantStatus>)],
             settings.ReopenPeriod,
             time.GetUtcNow(),
             cancellationToken);

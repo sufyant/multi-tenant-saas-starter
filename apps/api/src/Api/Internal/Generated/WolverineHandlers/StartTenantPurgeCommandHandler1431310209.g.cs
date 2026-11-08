@@ -2,6 +2,7 @@
 #pragma warning disable
 using ControlPlane.Application.Tenants;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
@@ -14,13 +15,15 @@ namespace Internal.Generated.WolverineHandlers
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<ControlPlane.Contracts.Tenants.TenantPurgeParticipant> _tenantPurgeParticipantIEnumerable;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
+        private readonly System.TimeProvider _timeProvider;
 
-        public StartTenantPurgeCommandHandler1431310209(ControlPlane.Application.Tenants.TenantOptions tenantOptions, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<ControlPlane.Contracts.Tenants.TenantPurgeParticipant> tenantPurgeParticipantIEnumerable, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public StartTenantPurgeCommandHandler1431310209(ControlPlane.Application.Tenants.TenantOptions tenantOptions, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<ControlPlane.Contracts.Tenants.TenantPurgeParticipant> tenantPurgeParticipantIEnumerable, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider)
         {
             _tenantOptions = tenantOptions;
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _tenantPurgeParticipantIEnumerable = tenantPurgeParticipantIEnumerable;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
+            _timeProvider = timeProvider;
         }
 
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
@@ -46,7 +49,7 @@ namespace Internal.Generated.WolverineHandlers
                 System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler");
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler.HandleAsync(startTenantPurgeCommand, tenantRepository, _tenantPurgeParticipantIEnumerable, _tenantOptions, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler.HandleAsync(startTenantPurgeCommand, tenantRepository, _tenantPurgeParticipantIEnumerable, _tenantOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 if (outgoing1 != null)
                 {

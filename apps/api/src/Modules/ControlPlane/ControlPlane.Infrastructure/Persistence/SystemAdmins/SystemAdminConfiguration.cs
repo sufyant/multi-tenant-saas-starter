@@ -12,5 +12,7 @@ internal sealed class SystemAdminConfiguration : IEntityTypeConfiguration<System
         admin.HasKey(a => a.UserId);
         // R16: a grant goes only through RevokeSystemAdmin, which records it (K3).
         admin.HasOne<User>().WithOne().HasForeignKey<SystemAdmin>(a => a.UserId).OnDelete(DeleteBehavior.Restrict);
+        // The system admin who granted it; none when the platform did (docs/flows/system-admins.md).
+        admin.HasOne<User>().WithMany().HasForeignKey(a => a.GrantedBy).OnDelete(DeleteBehavior.Restrict);
     }
 }

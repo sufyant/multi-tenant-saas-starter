@@ -18,10 +18,12 @@ public sealed class MigrationStepTests(Database database)
     private const string MessageStorageExists = "SELECT to_regclass('wolverine.wolverine_incoming_envelopes') IS NOT NULL";
 
     // A row as text without the columns that a later migration adds or replaces, so a test of an earlier migration compares the columns
-    // it knew: step 32's tenant plan and the summary's counts of custom roles and pending invitations, and step 36's one name of a user in
-    // place of the first and the last name.
+    // it knew: step 32's tenant plan and the summary's counts of custom roles and pending invitations, step 36's one name of a user in
+    // place of the first and the last name, and step 37b's who and when of a tenant's events, a user's reason and the Owner invitation's
+    // sending.
     private const string LaterColumnsLeftOut =
-        "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries', 'first_name', 'last_name', 'name'])::text";
+        "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries', 'first_name', 'last_name', 'name', "
+        + "'created_by', 'suspended_at', 'suspended_by', 'closed_by', 'purge_started_at', 'suspension_reason', 'owner_invitation_sent_at'])::text";
 
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
     [Fact]

@@ -7,6 +7,6 @@ namespace ControlPlane.Api.Platform.Tenants;
 /// The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
 /// <c>pending</c>, <c>expired</c> once its expiry has passed, or <c>cancelled</c>. It is never <c>accepted</c>, because it is shown only
 /// while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
-/// again can send it back.
+/// again can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment.
 /// </summary>
-public sealed record OwnerInvitationResponse(string Email, DateTimeOffset ExpiresAt, InvitationResponseState State, Language Language);
+public sealed record OwnerInvitationResponse(string Email, DateTimeOffset ExpiresAt, InvitationResponseState State, Language Language, DateTimeOffset? SentAt);

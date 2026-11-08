@@ -101,6 +101,31 @@ public static class ListFilter
             ? value
             : Error.Validation(PagingErrorCodes.FilterInvalid, $"The filter {name} is one of: {string.Join(", ", ValuesOf<TValue>())}.");
     }
+
+    /// <summary>
+    /// The values the client chose for a filter of several values, sent as the parameter once for each, each at most once; none when the
+    /// filter is left out or each value is empty, as an empty filter of one value is no filter.
+    /// </summary>
+    public static Result<IReadOnlyList<TValue>> ReadAll<TValue>(IReadOnlyList<ListFilter<TValue>>? filters, string name)
+        where TValue : struct, Enum
+    {
+        var values = new List<TValue>();
+        foreach (var filter in filters ?? [])
+        {
+            var value = Read<TValue>(filter, name);
+            if (!value.IsSuccess)
+            {
+                return value.Error;
+            }
+
+            if (value.Value is { } chosen && !values.Contains(chosen))
+            {
+                values.Add(chosen);
+            }
+        }
+
+        return values;
+    }
 }
 
 /// <summary>

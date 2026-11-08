@@ -52,6 +52,31 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
     }
 
+    // K4: the tombstone keeps none of the "who and when" of the tenant's events: not who created it, suspended it or closed it, and not
+    // when it was suspended or its purge started.
+    [Fact]
+    public async Task PurgeTenant_ATenantWithItsEvents_KeepsNoneOfThemInTheTombstone()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var admin = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenants SET created_by = '{admin}', suspended_at = '{ClosedAt:O}', suspended_by = '{admin}', closed_by = '{admin}'
+            WHERE id = '{tenant.Id}'
+            """,
+            _databaseName);
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT concat_ws('|', status, coalesce(created_by::text, '-'), coalesce(suspended_at::text, '-'), coalesce(suspended_by::text, '-'),
+                coalesce(closed_by::text, '-'), coalesce(purge_started_at::text, '-'))
+            FROM control_plane.tenants WHERE id = '{tenant.Id}'
+            """,
+            _databaseName)).ShouldBe("Purged|-|-|-|-|-");
+    }
+
     // The file store takes part in the purge: every file under the tenant's prefix goes, and another tenant's stays (section 7, "File
     // storage"). No module keeps a tenant's file yet, so the test puts them in the bucket as a later module would.
     [Fact]

@@ -5,7 +5,9 @@ namespace Api.ArchitectureTests;
 // K5: every list uses one contract, read from the committed OpenAPI document. A List operation takes page, pageSize, sort and q, and
 // only filters whose values are an enum, an id (a uuid, such as the role filter of the member and the invitation lists, step r4b), a
 // boolean field of the response (isSystemAdmin of the user list, step r12) or an email address that this test names (email of the user
-// list, step r13), so no list takes a free-text filter by accident; its sort is an enum; its answer holds exactly items, page, pageSize and total. The audit logs
+// list, step r13), so no list takes a free-text filter by accident; its sort is an enum; its answer holds exactly items, page, pageSize and total.
+// The platform's tenant and user lists are named apart: their status filter takes several values, and their answer counts each status
+// (step 37b). The audit logs
 // are the one exception: a List operation with a cursor takes exactly cursor and limit, and the platform's log also the tenant it is
 // about, and answers exactly items and nextCursor, and only those two operations may.
 public sealed class ListContractTests : IAsyncLifetime
@@ -23,6 +25,11 @@ public sealed class ListContractTests : IAsyncLifetime
     // Step r13: the System admins "Add" dialog finds a person by the whole address. An email filter is plain equality on the address in
     // its one form, never a search; q searches.
     private static readonly string[] EmailFilters = ["ListUsers: email"];
+
+    // Step 37b: the tabs of the platform's Organisations and Users lists. Each tab is one status or several, and shows its count.
+    private static readonly string[] MultiValueFilters = ["ListTenants: status", "ListUsers: status"];
+
+    private static readonly string[] StatusCountedLists = ["ListTenants", "ListUsers"];
 
     private JsonElement _document;
 
@@ -51,6 +58,7 @@ public sealed class ListContractTests : IAsyncLifetime
         var notEnums = PageLists().SelectMany(list => QueryParametersOf(list.Operation)
             .Where(parameter => !ContractParameters.Contains(parameter.Name)
                 && !IsEnum(parameter.Schema)
+                && !IsEnumArray(parameter.Schema)
                 && !IsId(parameter.Schema)
                 && !IsBoolean(parameter.Schema)
                 && !IsEmail(parameter.Schema))
@@ -70,6 +78,22 @@ public sealed class ListContractTests : IAsyncLifetime
 
         Lists().ShouldNotBeEmpty();
         inline.ShouldBeEmpty();
+    }
+
+    // Step 37b: a filter of several values is an array of its enum, sent as the parameter once for each value, and only the named
+    // filters are one; every other filter takes one value.
+    [Fact]
+    public void BuildOpenApiDocument_FiltersOfSeveralValues_AreTheNamedOnesOnlyAndEachAnArrayOfItsEnum()
+    {
+        var arrays = Lists().SelectMany(list => QueryParametersOf(list.Operation)
+            .Where(parameter => parameter.Schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "array")
+            .Select(parameter => $"{list.Id}: {parameter.Name}"));
+        var notReferences = Lists().SelectMany(list => QueryParametersOf(list.Operation)
+            .Where(parameter => IsEnumArray(parameter.Schema) && !parameter.Schema.GetProperty("items").TryGetProperty("$ref", out _))
+            .Select(parameter => $"{list.Id}: {parameter.Name}"));
+
+        arrays.ShouldBe(MultiValueFilters, ignoreOrder: true);
+        notReferences.ShouldBeEmpty();
     }
 
     // Step r13: an email filter is a kind of its own, so each one is named here, and a new one fails this test until someone decides it.
@@ -100,7 +124,7 @@ public sealed class ListContractTests : IAsyncLifetime
         var answers = PageLists().Select(list => $"{list.Id}: {string.Join(", ", AnswerPropertiesOf(list.Operation).Order(StringComparer.Ordinal))}");
 
         answers.ShouldNotBeEmpty();
-        answers.ShouldBe(PageLists().Select(list => $"{list.Id}: items, page, pageSize, total"));
+        answers.ShouldBe(PageLists().Select(list => ExpectedAnswerOf(list.Id)));
     }
 
     [Fact]
@@ -138,6 +162,9 @@ public sealed class ListContractTests : IAsyncLifetime
         answers.ShouldBe(CursorListsOf().Select(list => $"{list.Id}: items, nextCursor"));
     }
 
+    private static string ExpectedAnswerOf(string list) =>
+        StatusCountedLists.Contains(list) ? $"{list}: items, page, pageSize, statusCounts, total" : $"{list}: items, page, pageSize, total";
+
     // An id filter takes one id, which the same field of the response holds (roleId: role.id).
     private static bool IsId(JsonElement schema) =>
         schema.TryGetProperty("format", out var format) && format.GetString() == "uuid";
@@ -171,6 +198,10 @@ public sealed class ListContractTests : IAsyncLifetime
             .Select(operation => (operation.GetProperty("operationId").GetString()!, operation));
 
     private bool IsEnum(JsonElement schema) => Resolve(schema).TryGetProperty("enum", out var values) && values.GetArrayLength() > 0;
+
+    private bool IsEnumArray(JsonElement schema) =>
+        schema.TryGetProperty("type", out var type) && type.ValueKind == JsonValueKind.String && type.GetString() == "array"
+        && schema.TryGetProperty("items", out var items) && IsEnum(items);
 
     private IEnumerable<string> AnswerPropertiesOf(JsonElement operation) =>
         Resolve(operation.GetProperty("responses").GetProperty("200").GetProperty("content").GetProperty("application/json").GetProperty("schema"))

@@ -65,6 +65,70 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(5);
+        page.EnumerateObject().Select(field => field.Name).ShouldBe(["items", "page", "pageSize", "total", "statusCounts"], ignoreOrder: true);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"deleted":2}""");
+    }
+
+    // The tabs of the Users list count each status (the maintainer's decision of 2026-11-08). The counts follow the search and every
+    // other filter, and ignore only the status filter, as the Open and Closed counts of GitHub Issues do. The total counts what the
+    // filter keeps.
+    [Fact]
+    public async Task ListUsers_ASearchAndAStatusFilter_CountsTheSearchInEachStatusAndTotalsTheFilter()
+    {
+        await AddUsersAsync("Ball", "Cole", "Dunn", "Eyre");
+        var suspended = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: $"{_marker} Fox");
+        await _testData.SuspendUserAsync(suspended);
+        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Another Person"));
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&status=suspended", Cancellation);
+
+        Users(page).Select(user => user.Name).ShouldBe([$"{_marker} Fox"]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":4,"suspended":1,"deleted":0}""");
+    }
+
+    // The counts follow the isSystemAdmin filter as they follow the search.
+    [Fact]
+    public async Task ListUsers_AnIsSystemAdminFilter_CountsOnlyTheUsersItKeeps()
+    {
+        await _testData.AddUserAsync(email: $"user.{_marker}@example.com");
+        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"suspended.{_marker}@example.com"));
+        await _testData.AddSystemAdminAsync(email: $"admin.{_marker}@example.com");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&isSystemAdmin=false", Cancellation);
+
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":0}""");
+    }
+
+    // The status filter takes several values. A deleted user keeps no address or name to search for, so the test searches the active
+    // and the suspended ones; the whole list's counts are in ListUsers_UsersInEveryStatus_ReturnsEachByEmailThenId.
+    [Fact]
+    public async Task ListUsers_SeveralStatuses_ReturnsTheUsersInAnyOfThem()
+    {
+        await _testData.AddUserAsync(email: $"active.{_marker}@example.com");
+        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"suspended.{_marker}@example.com"));
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&status=suspended&status=active", Cancellation);
+
+        Users(page).Select(user => user.Status).ShouldBe(["active", "suspended"]);
+        page.GetProperty("total").GetInt32().ShouldBe(2);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":0}""");
+    }
+
+    // K5: the counts come with the total, so a list with a status filter sends as many commands as the list without one.
+    [Fact]
+    public async Task ListUsers_AStatusFilter_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        await AddUsersAsync("Gray");
+        var admin = await _testData.AddSystemAdminAsync();
+
+        var all = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/users?q={_marker}", Cancellation));
+        var filtered = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/users?q={_marker}&status=active&status=suspended", Cancellation));
+
+        filtered.ShouldBe(all);
     }
 
     [Fact]

@@ -38,7 +38,7 @@ public static class CreateTenantHandler
         }
 
         var now = time.GetUtcNow();
-        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, planId, now);
+        var created = Tenant.Create(tenants.TenantId, command.Name, command.Slug, planId, now, actor.Id);
         if (!created.IsSuccess)
         {
             return (created.Error, []);
