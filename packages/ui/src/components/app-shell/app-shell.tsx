@@ -324,7 +324,7 @@ export function AppShell({
         )}
 
         <div className="flex min-w-0 flex-1 flex-col tablet:py-2 tablet:pe-2">
-          <div className="flex min-w-0 flex-1 flex-col bg-card tablet:overflow-hidden tablet:rounded-lg tablet:border tablet:border-border tablet:shadow-md">
+          <div className="flex min-w-0 flex-1 flex-col bg-card tablet:overflow-clip tablet:rounded-lg tablet:border tablet:border-border tablet:shadow-md">
             {phone && (
               <header className="sticky top-(--strip-height) z-sticky flex h-[52px] shrink-0 items-center gap-1 border-b border-border bg-card px-1">
                 <Button

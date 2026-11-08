@@ -1,7 +1,6 @@
 "use client";
 
 import { Permission } from "@repo/api-client";
-import { Icon, LockIcon } from "@repo/ui/components/icon";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { cn } from "@repo/ui/lib/utils";
 import { useTranslations } from "next-intl";
@@ -159,7 +158,7 @@ function PermissionRow({
     return null;
   })();
   return (
-    <div className="flex min-h-11 items-start gap-3 border-t border-border px-5 py-2.5">
+    <div className="flex min-h-11 items-start gap-4 border-t border-border ps-6 pe-5 py-2.5">
       <Checkbox
         id={id}
         className="mt-0.5"
@@ -176,14 +175,11 @@ function PermissionRow({
         <label
           htmlFor={id}
           className={cn(
-            "flex items-center gap-1.5",
+            "text-body",
             (lacks || reason === "ownerOnly") && "text-muted-foreground",
           )}
         >
           {t.has(key) ? t(key) : <bdi dir="ltr">{permission}</bdi>}
-          {(reason === "everyRole" || reason === "rolesReadNeeded") && (
-            <Icon icon={LockIcon} size={14} className="text-muted-foreground" />
-          )}
         </label>
         {line && (
           <p

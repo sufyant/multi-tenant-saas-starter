@@ -1817,6 +1817,8 @@ shellShots.push(
         .getByText(/^Support lead now has/)
         .first()
         .waitFor();
+      // The frame shows the role from its top, with the save bar at the window's foot.
+      await page.evaluate(() => window.scrollTo(0, 0));
     },
   },
   {
@@ -1831,13 +1833,27 @@ shellShots.push(
     size: "desktop",
     path: rolePage("Onboarding"),
     team: northwindTeam(),
-    // The viewer holds Role manager, which lacks Onboarding's invitations (F51): GetMyTenant answers its role and permissions,
-    // as the team's mock answers the rest.
-    mock: (page) => {
-      const manager = northwindTeam().customRoles.find(
+    // The viewer is Liam, who holds Role manager, which lacks Onboarding's invitations (F51): GetMe answers him and
+    // GetMyTenant his role and permissions, as the team's mock answers the rest.
+    mock: async (page) => {
+      const team = northwindTeam();
+      const manager = team.customRoles.find(
         (role) => role.name === "Role manager",
       );
-      return page.route(`**/api/v1/tenants/${northwind.id}`, (route) =>
+      const liam = team.members.find(
+        (member) => member.role.id === manager?.id,
+      );
+      await page.route("**/api/v1/me", (route) =>
+        route.fulfill({
+          json: {
+            ...me(Language.En),
+            id: liam?.userId,
+            name: liam?.name,
+            email: liam?.email,
+          },
+        }),
+      );
+      await page.route(`**/api/v1/tenants/${northwind.id}`, (route) =>
         route.fulfill({
           json: {
             ...northwind,

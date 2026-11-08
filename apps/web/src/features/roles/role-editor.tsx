@@ -279,7 +279,8 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
             <Button
               type="submit"
               variant="primary"
-              disabled={save.isPending}
+              // A role saves only a change (9.11, 9.16); a new role always has one to create.
+              disabled={save.isPending || (role !== undefined && !dirty)}
               aria-busy={save.isPending || undefined}
             >
               {role ? t("roles.save") : t("roles.create")}
