@@ -1,7 +1,24 @@
 import { randomUUID } from "node:crypto";
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { ErrorCode, Language, NotificationType } from "@repo/api-client";
+import {
+  AuditActorResponseKind,
+  type AuditEntryResponse,
+  AuditOperation,
+  AuditTargetResponseKind,
+  type CursorPageOfAuditEntryResponse,
+  type EntitlementValueResponse,
+  ErrorCode,
+  FeatureKey,
+  Language,
+  LimitKey,
+  NotificationType,
+  type PlanResponse,
+  TenantCreatedDetailsResponseOperation,
+  TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantPlanChangedDetailsResponseOperation,
+  TenantPurgeWarnedDetailsResponseOperation,
+} from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
   mockNotifications,
@@ -9,6 +26,7 @@ import {
   mockRename,
   organisations,
   plans,
+  problem,
   shannonSuspended,
   users,
 } from "./api";
@@ -225,6 +243,312 @@ const changeEmail = (address?: string) => async (page: Page) => {
   await page.getByRole("alertdialog", { name: "Check your email" }).waitFor();
 };
 
+// The Plans frames (6.01 to 6.18): Free, the default; Team; Business, each created on 1 Jan 2026, with the values the frames draw.
+const value = (
+  values: Partial<EntitlementValueResponse>,
+): EntitlementValueResponse => ({
+  enabled: null,
+  maximum: null,
+  unlimited: false,
+  ...values,
+});
+const framePlan = (
+  id: string,
+  name: string,
+  tenantCount: number,
+  entitlements: PlanResponse["entitlements"],
+  isDefault = false,
+): PlanResponse => ({
+  id,
+  name,
+  isDefault,
+  tenantCount,
+  entitlements,
+  createdAt: "2026-01-01T09:00:00Z",
+});
+const framePlans = {
+  free: framePlan(
+    "0198f0a2-0000-7000-8000-00000000c101",
+    "Free",
+    1,
+    {
+      [FeatureKey.RolesCustom]: value({ enabled: false }),
+      [LimitKey.MembersMax]: value({ maximum: 3 }),
+    },
+    true,
+  ),
+  team: framePlan("0198f0a2-0000-7000-8000-00000000c102", "Team", 5, {
+    [FeatureKey.RolesCustom]: value({ enabled: true }),
+    [LimitKey.RolesCustomMax]: value({ maximum: 5 }),
+    [LimitKey.MembersMax]: value({ maximum: 15 }),
+  }),
+  business: framePlan("0198f0a2-0000-7000-8000-00000000c103", "Business", 1, {
+    [FeatureKey.RolesCustom]: value({ enabled: true }),
+    [LimitKey.RolesCustomMax]: value({ maximum: 20 }),
+    [LimitKey.MembersMax]: value({ unlimited: true }),
+  }),
+};
+const nonprofit = framePlan(
+  "0198f0a2-0000-7000-8000-00000000c104",
+  "Nonprofit",
+  0,
+  {
+    [FeatureKey.RolesCustom]: value({ enabled: false }),
+    [LimitKey.MembersMax]: value({ maximum: 10 }),
+  },
+);
+const teamPath = `/plans/${framePlans.team.id}`;
+
+/** ListPlans and GetPlan answer the frames' plans; a command of the plans goes on to the shot's own route. */
+const mockFramePlans = async (page: Page) => {
+  const all = [...Object.values(framePlans), nonprofit];
+  await page.route("**/api/v1/platform/plans*", (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({
+          json: {
+            items: Object.values(framePlans).map(
+              ({ entitlements: _, ...item }) => item,
+            ),
+            page: 1,
+            pageSize: 50,
+            total: 3,
+          },
+        })
+      : route.fallback(),
+  );
+  await page.route("**/api/v1/platform/plans/*", (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const id = new URL(route.request().url()).pathname.split("/").at(-1);
+    const found = all.find((item) => item.id === id);
+    return found ? route.fulfill({ json: found }) : route.fallback();
+  });
+};
+
+/** ListPlans answers so, after the frames' plans. */
+const plansAnswer =
+  (answer: (route: Parameters<Parameters<Page["route"]>[1]>[0]) => unknown) =>
+  async (page: Page) => {
+    await mockFramePlans(page);
+    await page.route("**/api/v1/platform/plans*", (route) =>
+      route.request().method() === "GET" ? answer(route) : route.fallback(),
+    );
+  };
+
+/** The preview of Team's edit: two organisations go over the seats (6.07), none, or it fails (6.09). */
+const teamPreview =
+  (answer: "over" | "none" | "fails") => async (page: Page) => {
+    await mockFramePlans(page);
+    await page.route(
+      `**/api/v1/platform/plans/${framePlans.team.id}/preview*`,
+      (route) =>
+        answer === "fails"
+          ? route.fulfill(problem(500, ErrorCode.ServerError))
+          : route.fulfill({
+              json: {
+                items:
+                  answer === "none"
+                    ? []
+                    : [
+                        [organisations.northwind, 12, 6],
+                        [
+                          {
+                            ...organisations.northwind,
+                            id: "0198f0a2-0000-7000-8000-00000000a0f1",
+                            name: "شركة الأفق للتجارة",
+                            slug: "alufuq",
+                          },
+                          8,
+                          2,
+                        ],
+                      ].map(([organisation, count, amount]) => {
+                        const { id, name, slug } =
+                          organisation as typeof organisations.northwind;
+                        return {
+                          tenantId: id,
+                          name,
+                          slug,
+                          furthest: amount,
+                          excesses: [
+                            {
+                              key: LimitKey.MembersMax,
+                              count,
+                              newValue: value({ maximum: 6 }),
+                              amount,
+                            },
+                          ],
+                          overriddenKeys: [],
+                        };
+                      }),
+                page: 1,
+                pageSize: 20,
+                total: answer === "none" ? 0 : 2,
+              },
+            }),
+    );
+    await page.route(
+      `**/api/v1/platform/plans/${framePlans.team.id}`,
+      (route) =>
+        route.request().method() === "PATCH"
+          ? route.fulfill({
+              json: {
+                ...framePlans.team,
+                entitlements: {
+                  ...framePlans.team.entitlements,
+                  [LimitKey.MembersMax]: value({ maximum: 6 }),
+                },
+              },
+            })
+          : route.fallback(),
+    );
+  };
+
+/** The Seats field of the plan editor. */
+const seatsField = (page: Page) =>
+  page.getByRole("group", { name: "Seats" }).getByRole("spinbutton");
+
+/** Seats from 15 to 6, focused (6.06). */
+const lowerTheSeats = (page: Page) => seatsField(page).fill("6");
+
+/** Lowers the seats and saves: the preview runs first, because the edit takes something away. */
+const saveLowerSeats = async (page: Page) => {
+  await lowerTheSeats(page);
+  await page.getByRole("button", { name: "Save changes" }).click();
+};
+
+/** CreatePlan answers so, and records nothing. */
+const createAnswers =
+  (answer: (route: Parameters<Parameters<Page["route"]>[1]>[0]) => unknown) =>
+  async (page: Page) => {
+    await mockFramePlans(page);
+    await page.route("**/api/v1/platform/plans", (route) =>
+      route.request().method() === "POST" ? answer(route) : route.fallback(),
+    );
+  };
+
+/** Reduced motion stops a skeleton's pulse, so a loading frame is the same in every run. */
+const reduceMotion = (page: Page) =>
+  page.emulateMedia({ reducedMotion: "reduce" });
+
+// The Activity log frames (7.01 to 7.08): the platform's own sentences of 7.01, by Deniz Kaya, on the days the frame draws them
+// from today. The fee, trial and Contract sentences are step 40's.
+const minutesAgo = (minutes: number) =>
+  new Date(Date.now() - minutes * 60_000).toISOString();
+const deniz = {
+  kind: AuditActorResponseKind.User,
+  userId: "0198f0a2-0000-7000-8000-00000000b0d1",
+  displayName: "Deniz Kaya",
+  deleted: false,
+};
+const theTenant = (name: string) => ({
+  kind: AuditTargetResponseKind.Tenant,
+  id: organisations.northwind.id,
+  name,
+  deleted: null,
+});
+const logEntry = (
+  id: number,
+  daysAgo: number,
+  operation: AuditOperation,
+  fields: Partial<AuditEntryResponse>,
+): AuditEntryResponse => ({
+  id: `0198f0a2-0000-7000-8000-0000000e${String(id).padStart(4, "0")}`,
+  occurredAt: minutesAgo(daysAgo * 24 * 60 + id),
+  operation,
+  actor: deniz,
+  target: theTenant("Northwind Traders"),
+  details: null,
+  ...fields,
+});
+const frameLog: AuditEntryResponse[] = [
+  logEntry(1, 0, AuditOperation.TenantCreated, {
+    target: theTenant("Harbourside Dental"),
+    details: {
+      operation: TenantCreatedDetailsResponseOperation.TenantCreated,
+      plan: { id: framePlans.free.id, name: "Free" },
+    },
+  }),
+  logEntry(2, 1, AuditOperation.TenantPurgeWarned, {
+    actor: {
+      kind: AuditActorResponseKind.Platform,
+      userId: null,
+      displayName: null,
+      deleted: null,
+    },
+    target: theTenant("Fernwood Studio"),
+    details: {
+      operation: TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned,
+      purgesAt: minutesAgo(-29 * 24 * 60),
+    },
+  }),
+  logEntry(3, 5, AuditOperation.TenantEntitlementOverrideSet, {
+    details: {
+      operation:
+        TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+      key: LimitKey.RolesCustomMax,
+      oldValue: value({ maximum: 5 }),
+      oldExpiresAt: null,
+      newValue: value({ maximum: 10 }),
+      newExpiresAt: minutesAgo(-54 * 24 * 60),
+      reason: "pilot",
+    },
+  }),
+  logEntry(4, 8, AuditOperation.UserSuspended, {
+    target: {
+      kind: AuditTargetResponseKind.User,
+      id: "0198f0a2-0000-7000-8000-00000000b0e1",
+      name: "Mark Ellis",
+      deleted: false,
+    },
+  }),
+  logEntry(5, 13, AuditOperation.TenantPlanChanged, {
+    target: theTenant("Pacific Coast Freight & Warehousing Cooperative Ltd."),
+    details: {
+      operation: TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
+      oldPlan: { id: framePlans.team.id, name: "Team" },
+      newPlan: { id: framePlans.business.id, name: "Business" },
+    },
+  }),
+  logEntry(6, 13, AuditOperation.UserPreferencesChanged, {
+    actor: { ...deniz, userId: null, displayName: null, deleted: true },
+    target: {
+      kind: AuditTargetResponseKind.User,
+      id: "0198f0a2-0000-7000-8000-00000000b0e2",
+      name: null,
+      deleted: true,
+    },
+  }),
+  logEntry(7, 21, AuditOperation.TenantPurged, {
+    actor: {
+      kind: AuditActorResponseKind.Platform,
+      userId: null,
+      displayName: null,
+      deleted: null,
+    },
+    target: theTenant("Greyfield Books"),
+  }),
+];
+
+/** The log answers its first page with these entries and a next cursor; the next page answers as the shot says. */
+const logAnswers =
+  (
+    first: AuditEntryResponse[],
+    next?: (route: Parameters<Parameters<Page["route"]>[1]>[0]) => unknown,
+  ) =>
+  (page: Page) =>
+    page.route("**/api/v1/platform/audit-log*", (route) => {
+      const cursor = new URL(route.request().url()).searchParams.get("cursor");
+      if (cursor && next) return next(route);
+      const answer: CursorPageOfAuditEntryResponse = {
+        items: first,
+        nextCursor: next ? "older" : null,
+      };
+      return route.fulfill({ json: answer });
+    });
+
+/** Clicks Load older activity. */
+const loadOlder = (page: Page) =>
+  page.getByRole("button", { name: "Load older activity" }).click();
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -237,6 +561,8 @@ const shellShots: {
   fullPage?: boolean;
   /** What the page shows once it has loaded, when it is not a heading of the content. */
   ready?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
+  /** When the page is still: by default no list is busy; a loading frame stays busy, so it waits for nothing more. */
+  settled?: (page: Parameters<typeof mockPlatform>[0]) => Promise<void>;
 }[] = [
   { file: "2.01-organisations-en-light-desktop", size: "desktop" },
   {
@@ -429,7 +755,276 @@ const shellShots: {
     mock: fullState,
     open: changeEmail("deniz.kaya@platform.example"),
   },
+  // Plans (6.01 to 6.12, 6.17, 6.18). The frames draw no dark and no Arabic plan; 6.01 and 6.04 are taken in both too.
+  {
+    file: "6.01-plans-en-light-desktop",
+    size: "desktop",
+    path: "/plans",
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.01-plans-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/plans",
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.01-plans-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/plans",
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.02-plans-loading-en-light-desktop",
+    size: "desktop",
+    path: "/plans",
+    settled: async () => {},
+    // ListPlans never answers.
+    mock: async (page) => {
+      await reduceMotion(page);
+      await plansAnswer(() => {})(page);
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading plans" }).waitFor(),
+  },
+  {
+    file: "6.03-plans-error-en-light-desktop",
+    size: "desktop",
+    path: "/plans",
+    // ListPlans fails; the query tries three times more before the page says so (F8).
+    mock: plansAnswer((route) =>
+      route.fulfill(problem(500, ErrorCode.ServerError)),
+    ),
+    ready: (page) =>
+      page.getByRole("heading", { name: "Couldn’t load plans" }).waitFor(),
+  },
+  {
+    file: "6.04-plan-team-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.04-plan-team-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: teamPath,
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.04-plan-team-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: teamPath,
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.05-plan-free-default-en-light-desktop",
+    size: "desktop",
+    path: `/plans/${framePlans.free.id}`,
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.06-plan-team-edited-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: mockFramePlans,
+    open: lowerTheSeats,
+  },
+  {
+    file: "6.07-save-over-a-limit-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: teamPreview("over"),
+    open: async (page) => {
+      await saveLowerSeats(page);
+      await page
+        .getByRole("alertdialog", { name: "Save changes to Team?" })
+        .waitFor();
+    },
+  },
+  {
+    file: "6.08-plan-team-saved-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: teamPreview("none"),
+    open: async (page) => {
+      await saveLowerSeats(page);
+      await page.getByText("Team saved").waitFor();
+    },
+  },
+  {
+    file: "6.09-save-couldnt-check-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: teamPreview("fails"),
+    open: async (page) => {
+      await saveLowerSeats(page);
+      await page.getByText("Plan not saved").waitFor();
+    },
+  },
+  {
+    file: "6.10-new-plan-en-light-desktop",
+    size: "desktop",
+    path: "/plans/new",
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.11-new-plan-errors-en-light-desktop",
+    size: "desktop",
+    path: "/plans/new",
+    mock: createAnswers((route) =>
+      route.fulfill(problem(409, ErrorCode.PlanNameTaken)),
+    ),
+    open: async (page) => {
+      await page.getByRole("textbox", { name: "Name" }).fill("Team");
+      await seatsField(page).fill("10");
+      await page.getByRole("button", { name: "Create plan" }).click();
+      await page.getByText("Another plan has this name.").waitFor();
+    },
+  },
+  {
+    file: "6.12-plan-created-en-light-desktop",
+    size: "desktop",
+    path: "/plans/new",
+    mock: createAnswers((route) =>
+      route.fulfill({
+        status: 201,
+        json: nonprofit,
+        headers: { Location: `/api/v1/platform/plans/${nonprofit.id}` },
+      }),
+    ),
+    open: async (page) => {
+      await page.getByRole("textbox", { name: "Name" }).fill("Nonprofit");
+      await seatsField(page).fill("10");
+      await page.getByRole("button", { name: "Create plan" }).click();
+      await page
+        .getByRole("heading", { level: 1, name: "Nonprofit" })
+        .waitFor();
+      await page.getByText("Nonprofit created").waitFor();
+    },
+  },
+  {
+    file: "6.17-plans-en-light-phone",
+    size: "phone",
+    path: "/plans",
+    mock: mockFramePlans,
+  },
+  {
+    file: "6.18-plan-team-en-light-phone",
+    size: "phone",
+    path: teamPath,
+    mock: mockFramePlans,
+  },
+  // Activity log (7.01 to 7.08). The frames draw no dark and no Arabic log; 7.01 is taken in both too.
+  {
+    file: "7.01-activity-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    fullPage: true,
+    mock: logAnswers(frameLog, () => {}),
+  },
+  {
+    file: "7.01-activity-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/activity",
+    fullPage: true,
+    mock: logAnswers(frameLog, () => {}),
+  },
+  {
+    file: "7.01-activity-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/activity",
+    fullPage: true,
+    mock: logAnswers(frameLog, () => {}),
+  },
+  {
+    file: "7.02-activity-loading-older-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    // The older page never comes, so "Loading older activity…" stays.
+    mock: async (page) => {
+      await reduceMotion(page);
+      await logAnswers(frameLog.slice(0, 6), () => {})(page);
+    },
+    open: async (page) => {
+      await loadOlder(page);
+      await page.getByText("Loading older activity…").waitFor();
+    },
+  },
+  {
+    file: "7.03-activity-loading-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    settled: async () => {},
+    // The log never answers.
+    mock: async (page) => {
+      await reduceMotion(page);
+      await page.route("**/api/v1/platform/audit-log*", () => {});
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading activity" }).waitFor(),
+  },
+  {
+    file: "7.04-activity-error-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    // The log fails; the query tries three times more before the page says so (F8).
+    mock: (page) =>
+      page.route("**/api/v1/platform/audit-log*", (route) =>
+        route.fulfill(problem(500, ErrorCode.ServerError)),
+      ),
+    ready: (page) =>
+      page.getByRole("heading", { name: "Couldn’t load activity" }).waitFor(),
+  },
+  {
+    file: "7.05-activity-empty-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    mock: logAnswers([]),
+  },
+  {
+    file: "7.06-activity-older-failed-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    mock: logAnswers(frameLog, (route) =>
+      route.fulfill(problem(500, ErrorCode.ServerError)),
+    ),
+    open: async (page) => {
+      await loadOlder(page);
+      await page
+        .getByText("Couldn’t load older activity")
+        .waitFor({ timeout: 30_000 });
+    },
+    fullPage: true,
+  },
+  {
+    file: "7.07-activity-restarted-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    mock: logAnswers(frameLog.slice(0, 6), (route) =>
+      route.fulfill(problem(400, ErrorCode.PagingCursorInvalid)),
+    ),
+    open: async (page) => {
+      await loadOlder(page);
+      await page.getByText("Starting from the newest activity.").waitFor();
+    },
+  },
+  {
+    file: "7.08-activity-en-light-phone",
+    size: "phone",
+    path: "/activity",
+    mock: logAnswers(frameLog.slice(0, 2), () => {}),
+  },
 ];
+
+/** No list of the page is busy. */
+const notBusy = (page: Page) =>
+  expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 
 /** A shot's language, theme and page when it names none: English, light, the start page. */
 const withDefaults = (shot: (typeof shellShots)[number]) => ({
@@ -453,7 +1048,7 @@ for (const shot of shellShots.map(withDefaults))
     await page.goto(shot.path);
     await (shot.ready?.(page) ??
       page.getByRole("main").getByRole("heading").first().waitFor());
-    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await (shot.settled ?? notBusy)(page);
     await shot.open?.(page);
     // The screen as it rests: every opening animation has finished. A popup mounts a frame or two after the click, so its
     // animation starts only then.
@@ -463,8 +1058,17 @@ for (const shot of shellShots.map(withDefaults))
           requestAnimationFrame(() => requestAnimationFrame(done)),
         ),
     );
+    // An endless animation, such as a skeleton's pulse, has no end to wait for.
     await page.evaluate(() =>
-      Promise.all(document.getAnimations().map((each) => each.finished)),
+      Promise.all(
+        document
+          .getAnimations()
+          .filter(
+            (each) =>
+              each.effect?.getTiming().iterations !== Number.POSITIVE_INFINITY,
+          )
+          .map((each) => each.finished),
+      ),
     );
 
     await page.screenshot({

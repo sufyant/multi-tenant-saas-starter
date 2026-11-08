@@ -333,7 +333,6 @@
     "rootCannotRemove": "Root admins can’t be removed here."
   },
   "activity": {
-    "title": "Activity",
     "today": "Today, {date}",
     "yesterday": "Yesterday, {date}",
     "older": "Load older activity",
@@ -383,7 +382,10 @@
     },
     "change": "{key} from <bdi>{old}</bdi> to <bdi>{new}</bdi>",
     "changeSeparator": "; ",
-    "nameKey": "name"
+    "nameKey": "name",
+    "description": "Changes to organisations, users, plans and system admins.",
+    "loadingOlder": "Loading older activity…",
+    "loadedOlder": "{count, plural, one {# more entry loaded.} other {# more entries loaded.}}"
   },
   "entitlements": {
     "areas": {
@@ -401,7 +403,7 @@
         "description": "How many custom roles an organisation can have."
       },
       "members_max": {
-        "name": "Members limit",
+        "name": "Seats",
         "description": "Members plus pending invitations that have not expired."
       }
     },
@@ -455,11 +457,19 @@
     "newLimit": "New limit",
     "overBy": "Over by {count}",
     "saveAnyway": "Save anyway",
-    "search": "Search organisations",
     "shown": "Showing {shown} of {total}, the furthest over first.",
     "loadMore": "Load more",
     "newTab": "(opens in a new tab)",
-    "previewError": "Couldn’t check the organisations on this plan. Try again."
+    "previewError": "Couldn’t check the organisations on this plan. Try again.",
+    "createdColumn": "Created",
+    "organisations": "{count, plural, one {One organisation} other {# organisations}}",
+    "loadingMore": "Loading more plans…",
+    "loadedPlans": "{count, plural, one {# more plan loaded.} other {# more plans loaded.}}",
+    "moreError": "Couldn’t load more plans",
+    "savedText": "{count, plural, =0 {} one {The organisation on it gets the new values at once.} other {The # organisations on it get the new values at once.}}",
+    "createdText": "Give it to an organisation from that organisation’s Plan tab.",
+    "limits": "Limits",
+    "edit": "Edit plan"
   },
   "planSection": {
     "title": "Plan",

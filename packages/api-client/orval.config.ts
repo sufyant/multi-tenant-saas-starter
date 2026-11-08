@@ -56,6 +56,9 @@ export default defineConfig({
           ListRoles: {
             query: { useInfinite: true, useInfiniteQueryParam: "page" },
           },
+          ListPlans: {
+            query: { useInfinite: true, useInfiniteQueryParam: "page" },
+          },
         },
       },
     },

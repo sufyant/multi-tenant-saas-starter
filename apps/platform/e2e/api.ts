@@ -77,7 +77,7 @@ const day = 24 * 60 * 60 * 1000;
 const inDays = (days: number) =>
   new Date(Date.now() + days * day).toISOString();
 
-const problem = (status: number, code: ErrorCode) => ({
+export const problem = (status: number, code: ErrorCode) => ({
   status,
   json: { status, title: "Refused", code, traceId: "00-e2e" },
 });

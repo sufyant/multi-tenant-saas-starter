@@ -104,7 +104,7 @@ describe("PlanSection", () => {
     ).toBeVisible();
     expect(limit.getByText("Set by Ciara Byrne")).toBeVisible();
     expect(limit.getByText("14")).toBeVisible();
-    const members = rowOf(table, "Members limit");
+    const members = rowOf(table, "Seats");
     expect(members.getAllByText("Unlimited")).toHaveLength(2);
     expect(members.getByText("22")).toBeVisible();
     expect(
@@ -268,7 +268,7 @@ describe("PlanSection", () => {
   it("RowMenu_WithoutAnOverride_Adds", async () => {
     await renderSection();
 
-    await openMenu("Members limit");
+    await openMenu("Seats");
 
     expect(
       await screen.findByRole("menuitem", { name: "Add override" }),
@@ -288,7 +288,7 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Members limit");
+    await openMenu("Seats");
     await userEvent.click(
       await screen.findByRole("menuitem", { name: "Add override" }),
     );
@@ -306,8 +306,8 @@ describe("PlanSection", () => {
     ).toBeVisible();
     expect(
       dialog.getByRole("combobox", { name: "Feature or limit" }),
-    ).toHaveTextContent("Members limit");
-    // It starts from the value that applies: Members limit is unlimited.
+    ).toHaveTextContent("Seats");
+    // It starts from the value that applies: Seats is unlimited.
     expect(dialog.getByRole("checkbox", { name: "Unlimited" })).toBeChecked();
     await userEvent.click(dialog.getByRole("checkbox", { name: "Unlimited" }));
     await userEvent.type(
@@ -382,7 +382,7 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Members limit");
+    await openMenu("Seats");
     await userEvent.click(
       await screen.findByRole("menuitem", { name: "Add override" }),
     );
@@ -596,7 +596,7 @@ describe("PlanSection", () => {
       ),
     ).toBeVisible();
     expect(
-      dialog.getByText(sentence("Members limit: 22 now, 5 on Free.")),
+      dialog.getByText(sentence("Seats: 22 now, 5 on Free.")),
     ).toBeVisible();
     expect(dialog.getByText("Over by 17")).toBeVisible();
     expect(

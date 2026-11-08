@@ -1,5 +1,6 @@
 import {
   getGetPlanQueryKey,
+  getListPlansInfiniteQueryKey,
   getListPlansQueryKey,
   type ListPlansParams,
   ListPlansSort,
@@ -21,9 +22,13 @@ export const plansPage = "/plans";
 /** The page of a plan: its editor. */
 export const planPage = (id: string) => `${plansPage}/${id}`;
 
-/** After a plan command, or a refusal that says a plan changed meanwhile, the screen reads again (F47): the plan and the list. */
+/**
+ * After a plan command, or a refusal that says a plan changed meanwhile, the screen reads again (F47): the plan and the list, both its
+ * one page and its pages of Load more (F9).
+ */
 export const refreshPlans = (queryClient: QueryClient, id?: string) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: getListPlansQueryKey() }),
+    queryClient.invalidateQueries({ queryKey: getListPlansInfiniteQueryKey() }),
     id && queryClient.invalidateQueries({ queryKey: getGetPlanQueryKey(id) }),
   ]);

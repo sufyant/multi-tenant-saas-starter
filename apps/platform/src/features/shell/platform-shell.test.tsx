@@ -327,7 +327,62 @@ describe("PlatformShell", () => {
       await screen.findByRole("navigation", { name: "Breadcrumb" }),
     );
     expect(await crumbs.findByText("Ayşe Yılmaz")).toBeInTheDocument();
-    expect(crumbs.getByText("Users")).toBeInTheDocument();
+    // A detail page's breadcrumb starts at its section (5.05, 6.04).
+    expect(
+      crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
+    ).toEqual(["Users", "Ayşe Yılmaz"]);
+  });
+
+  it("PlatformShell_PlanPage_NamesThePlanAfterPlans", async () => {
+    const planId = "0198f0a2-0000-7000-8000-0000000000b2";
+    navigation.pathname = `/plans/${planId}`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      http.get(`*/v1/platform/plans/${planId}`, () =>
+        HttpResponse.json({
+          id: planId,
+          name: "Team",
+          isDefault: false,
+          tenantCount: 5,
+          entitlements: {},
+          createdAt: "2026-01-01T09:00:00Z",
+        }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("Team")).toBeInTheDocument();
+    expect(
+      crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
+    ).toEqual(["Plans", "Team"]);
+    expect(crumbs.getByRole("link", { name: "Plans" })).toHaveAttribute(
+      "href",
+      "/plans",
+    );
+  });
+
+  it("PlatformShell_NewPlanPage_SaysNewPlanAfterPlans", async () => {
+    navigation.pathname = "/plans/new";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(
+      crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
+    ).toEqual(["Plans", "New plan"]);
   });
 
   it("PlatformShell_DeletedUsersPage_SaysDeletedUserInTheBreadcrumb", async () => {

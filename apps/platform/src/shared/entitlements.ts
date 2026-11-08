@@ -28,15 +28,20 @@ export const entitlementKeys: EntitlementKey[] = [
   ...Object.values(LimitKey).map((key) => ({ key, isFeature: false })),
 ].map((item) => ({ ...item, area: areaOf(item.key) }));
 
-/** The keys by area, each area at the place of its first key. */
+/** The areas in the order of the Plans frames (6.04): Members, then Roles. An area the frames do not draw follows them. */
+const drawnAreas = ["members", "roles"];
+
+/** The keys by area: the frames' areas first, in their order; any other area at the place of its first key. */
 export const entitlementAreas = (): {
   area: string;
   keys: EntitlementKey[];
 }[] =>
-  [...new Set(entitlementKeys.map((item) => item.area))].map((area) => ({
-    area,
-    keys: entitlementKeys.filter((item) => item.area === area),
-  }));
+  [...new Set([...drawnAreas, ...entitlementKeys.map((item) => item.area)])]
+    .map((area) => ({
+      area,
+      keys: entitlementKeys.filter((item) => item.area === area),
+    }))
+    .filter(({ keys }) => keys.length > 0);
 
 export const isFeatureKey = (key: string) =>
   entitlementKeys.find((item) => item.key === key)?.isFeature ?? false;

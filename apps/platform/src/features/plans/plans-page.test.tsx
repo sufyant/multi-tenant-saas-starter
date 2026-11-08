@@ -1,4 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
+import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -11,9 +12,10 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from "vitest";
 import { meAnswer, problem } from "../../../test/organisations";
-import { free, plansAnswer, pro } from "../../../test/plans";
+import { free, itemOf, partner, plansAnswer, pro } from "../../../test/plans";
 import { renderWithProviders } from "../../../test/render";
 import { PlansPage } from "./plans-page";
 
@@ -50,6 +52,74 @@ describe("PlansPage", () => {
     );
   });
 
+  it("PlansPage_List_ShowsWhenEachPlanWasCreated", async () => {
+    server.use(plansAnswer());
+
+    renderWithProviders(<PlansPage />);
+
+    const table = await screen.findByRole("table", { name: "Plans" });
+    expect(
+      within(table).getByRole("columnheader", { name: "Created" }),
+    ).toBeVisible();
+    const proRow = within(table)
+      .getByRole("link", { name: "Pro" })
+      .closest("tr") as HTMLElement;
+    expect(within(proRow).getByText(/^1 Sept? 2026$/)).toHaveAttribute(
+      "datetime",
+      "2026-09-01T09:00:00.000Z",
+    );
+  });
+
+  // 6.17: a phone card says how many organisations are on the plan.
+  it("PlansPage_PhoneCard_SaysHowManyOrganisations", async () => {
+    server.use(plansAnswer());
+
+    renderWithProviders(<PlansPage />);
+
+    const cards = within(await screen.findByRole("list", { name: "Plans" }));
+    expect(cards.getByText("6 organisations")).toBeInTheDocument();
+    expect(cards.getByText("One organisation")).toBeInTheDocument();
+  });
+
+  it("PlansPage_MoreThanOnePage_LoadMoreAddsTheNextPageAndSaysHowMany", async () => {
+    const pages: (string | null)[] = [];
+    server.use(
+      http.get("*/v1/platform/plans", ({ request }) => {
+        const page = new URL(request.url).searchParams.get("page");
+        pages.push(page);
+        return HttpResponse.json(
+          page === "2"
+            ? { items: [itemOf(partner)], page: 2, pageSize: 2, total: 3 }
+            : {
+                items: [free, pro].map(itemOf),
+                page: 1,
+                pageSize: 2,
+                total: 3,
+              },
+        );
+      }),
+    );
+    renderWithProviders(<PlansPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    const table = await screen.findByRole("table", { name: "Plans" });
+    expect(
+      await within(table).findByRole("link", { name: "Partner" }),
+    ).toBeVisible();
+    expect(within(table).getByRole("link", { name: "Free" })).toBeVisible();
+    expect(screen.getByText("1 more plan loaded.")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Load more" }),
+    ).not.toBeInTheDocument();
+    expect(pages).toEqual(["1", "2"]);
+  });
+
   it("PlansPage_Header_HasTheIntroAndNewPlan", async () => {
     server.use(plansAnswer());
 
@@ -67,6 +137,8 @@ describe("PlansPage", () => {
       "href",
       "/plans/new",
     );
+    await screen.findByRole("table", { name: "Plans" });
+    expect(screen.queryByText("Updated", { exact: false })).toBeNull();
   });
 
   it("PlansPage_Loading_ShowsTheSkeleton", async () => {
@@ -100,5 +172,49 @@ describe("PlansPage", () => {
     expect(await screen.findByText("Couldn’t load plans")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("table", { name: "Plans" })).toBeVisible();
+  });
+
+  /** The first page of two; the second answers with the status given. */
+  const secondPageFails = (status: number, code: ErrorCode) =>
+    http.get("*/v1/platform/plans", ({ request }) =>
+      new URL(request.url).searchParams.get("page") === "2"
+        ? problem(status, code)
+        : HttpResponse.json({
+            items: [free, pro].map(itemOf),
+            page: 1,
+            pageSize: 2,
+            total: 3,
+          }),
+    );
+
+  it("PlansPage_LoadMoreFails_SaysSoAndKeepsThePlans", async () => {
+    server.use(secondPageFails(500, ErrorCode.ServerError));
+    renderWithProviders(<PlansPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    await expectVisibleToast("Couldn’t load more plans");
+    const table = screen.getByRole("table", { name: "Plans" });
+    expect(within(table).getByRole("link", { name: "Pro" })).toBeVisible();
+  });
+
+  it("PlansPage_LoadMoreSignedOut_GoesToSignIn", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    server.use(secondPageFails(401, ErrorCode.AuthUnauthenticated));
+    renderWithProviders(<PlansPage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    await vi.waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/sign-in\?reason=session-ended&redirect_url=/),
+      ),
+    );
+    vi.unstubAllGlobals();
   });
 });

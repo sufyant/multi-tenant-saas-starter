@@ -1,32 +1,25 @@
 "use client";
 
-import { getGetMeQueryOptions } from "@repo/api-client";
-import { Freshness } from "@repo/ui/components/freshness";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
   PlatformActivity,
   usePlatformActivity,
 } from "@/shared/platform-activity";
 
-/** Activity (the platform's Activity boards): the whole platform log, with the time it was read. */
+/**
+ * Activity log (7.01 to 7.08): the whole platform log under the frame's description and no Freshness (F59). On a phone the top bar
+ * names the page, so its title and description stay for screen readers (7.08).
+ */
 export function ActivityPage() {
   const t = useTranslations();
-  const me = useQuery(getGetMeQueryOptions());
   const activity = usePlatformActivity();
-  const { dataUpdatedAt } = activity.log;
   return (
-    <section className="flex min-w-0 max-w-[960px] flex-col gap-4">
-      <div>
-        <h1 className="text-page-title">{t("activity.title")}</h1>
-        {dataUpdatedAt > 0 && (
-          <Freshness
-            at={new Date(dataUpdatedAt)}
-            locale={t("locale.format")}
-            timeZone={me.data?.timeZone}
-            label={t("common.updated")}
-          />
-        )}
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="sr-only flex flex-col gap-0.5 tablet:not-sr-only">
+        <h1 className="text-page-title">{t("shell.activityLog")}</h1>
+        <p className="text-body text-muted-foreground">
+          {t("activity.description")}
+        </p>
       </div>
       <PlatformActivity
         activity={activity}

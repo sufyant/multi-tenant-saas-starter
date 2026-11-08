@@ -219,7 +219,7 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const targetName = target.deleted
     ? t("activity.deletedUser")
     : (target.name ?? t("activity.unnamedUser"));
-  const key = `activity.operations.${entry.operation}` as "activity.title";
+  const key = `activity.operations.${entry.operation}` as "activity.restarted";
   const values: Rich = {
     onPlan: "none",
     ...detailValues(entry.details, {

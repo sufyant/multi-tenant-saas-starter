@@ -13,9 +13,11 @@ import { ActivityLog } from "@repo/ui/components/activity-log";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { UserPlusIcon } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
+import { LoadMore } from "@repo/ui/components/load-more";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { showToast } from "@repo/ui/components/toast";
+import { pageSize, rowsIn } from "@repo/ui/lib/pages";
 import {
   useInfiniteQuery,
   useQuery,
@@ -23,8 +25,6 @@ import {
 } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
-import { LoadMore } from "@/shared/load-more";
-import { pageSize, rowsIn } from "@/shared/pages";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
