@@ -10,7 +10,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 35 | Cleanup, the shell and the menu | done |
 | 36 | Personal pages | done |
 | 37a | The web's organisation pages | in progress |
-| 37b | The platform's pages | todo |
+| 37b | The platform's pages | in progress |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -220,6 +220,59 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - The platform's organisation initial (`apps/platform/src/shared/initial.tsx`) becomes the shared tile of `packages/ui` where its frames draw the same tile, or the pull request says how they differ (the maintainer's decision of 2026-11-07).
 - The platform's lists drop their Freshness line too (F59). When no screen uses the Freshness component any more, it is deleted from `packages/ui` and from the Figma Components page (the maintainer's decision of 2026-11-07).
 - The platform's lists follow the same F9 and F10 rule (a "Load more" button, no page in the URL), or 37b-start asks when their frames differ (the maintainer's decision of 2026-11-07).
+- Not 37b: the plan's prices and meters, and the limits of a feature that is off (6.05's "Turn on custom roles to set this limit."): 40a. Billing: step 40 (the maintainer's decision of 2026-11-08).
+
+The parts of 37b, in their order. The frames are the Platform app page of the design. The pull request of this plan holds the table of every frame with its part, and the table of every value with its field.
+
+37b-backend, the fields the frames need, in one pull request (the maintainer's decisions of 2026-11-08):
+
+- `ListTenants` and `ListUsers` answer a count for each status, and their `status` filter takes several values. The Organisations tabs are All (every status but `purged`), Active, Suspended, Closed (`closed` and `purging`) and Deleted (`purged`), each with its count (4.01, 4.05, 4.43). The Users tabs are All, Active and Suspended, each with its count (5.01).
+- `GetTenant` answers `createdBy`, `suspendedAt`, `suspendedBy`, `closedBy` and `purgeStartedAt`. A name is `{ name, deleted }`, as `GetUser.suspendedBy` is, and null for a seed (4.09, 4.11, 4.20, 4.23, 4.25, 4.26).
+- The Owner invitation answers `sentAt` (4.11).
+- A system admin answers `systemAdminGrantedBy` `{ name, deleted }`, null for a root's first entry (10.15).
+- `SuspendUser` takes `{ "reason" }`, required, with the rule of `SuspendTenant`. `GetUser` answers `suspensionReason`, which `ReactivateUser` clears, and the platform's `user.suspended` entry holds the reason (5.07, 5.10).
+- `ListTenants` and `GetTenant` answer `pendingInvitationCount`: the pending invitations that have not expired at the moment of the read, as the web counts them and as the seats count them. It is `TenantSummary.PendingInvitationsAt(now)` over the summary's `pending_invitation_expiries`, so it needs no new column and no write when an invitation expires (K10, R12; the maintainer's decision of 2026-11-08) (4.01, 4.09, 4.15).
+- `ListTenants` answers each tenant's plan, `{ id, name }` (4.43).
+- Each list stays one query for its page and one for its total (K5), and a test counts the SQL commands.
+- The status counts follow the search text and every other filter, and ignore only the status filter, as the Open and Closed counts of GitHub Issues do (the maintainer's decision of 2026-11-08).
+- Each "by" and "at" field is null for a seed and for every event before its column exists. The screen then shows no "by" part, or no row. Nothing is backfilled from the Activity log (the maintainer's decision of 2026-11-08).
+- The suspension reason is personal data about the user. It is in the user's data export, and it goes when the account is deleted. The suspended person does not see it, as the platform's reason for a tenant ("Only the platform sees it") (the maintainer's decision of 2026-11-08).
+
+37b-emails, the platform's emails against their frames:
+
+- 14.01, 14.03, 14.04 and 14.05, compared with the email shots of 37a-emails.
+- The Owner invitation names the brand, not the system admin, and keeps its expiry as a moment with its zone (closed rules, 37a-emails). 14.02 is not built: `tenant.owner_joined` goes to the bell only (the maintainer's decision of 2026-11-03).
+- 14.05 says "address", never "slug" (the words of 37a). The footers of 14.03 to 14.05 follow their frames, in three languages.
+- It waits for nothing.
+
+37b-frontend-1, Plans and the Activity log:
+
+- Plans (6.01 to 6.12, 6.17, 6.18) without their prices and meters, and the Activity log (7.01 to 7.08) without its billing sentences.
+- Saving a plan keeps the person on the plan, in its saved state (6.08); a new plan opens on its own page (6.12) (the maintainer's decision of 2026-11-07). Save is disabled until a change, as the web's role editor.
+- `LoadMore` moves from `apps/web/src/shared/` to `packages/ui`, so both apps use one; F9 says so. A failed older page shows its text and Try again under the entries (7.06); a broken cursor shows a Banner, "Starting from the newest activity." (7.07).
+- It waits for nothing.
+
+37b-frontend-2, Organisations:
+
+- Organisations (4.01 to 4.26, 4.43, 4.44, 4.46) and "Organisation not found" (2.23), without the billing frames, the Usage tab and the Feature flags card.
+- The list grows with Load more, with no page in the URL (F9, F10); the tabs and their counts come from 37b-backend.
+- The organisation's Activity log tab shows the platform's entries about it only, because the platform never reads a tenant's own log (api-catalog, `ListPlatformAuditEntries`).
+- The second tab is "Plan" until step 40 names it "Plan and billing".
+- Suspend asks for the reason only, on every size (4.19; the maintainer's decision of 2026-11-08).
+- It waits for 37b-backend and 37b-frontend-1.
+
+37b-frontend-3, Users and System admins:
+
+- Users (5.01 to 5.19) and System admins (10.01 to 10.16).
+- A refused delete (5.14, 5.15) opens at once with its reason, from `lastOwner` and `isSystemAdmin`, as a stopped action does (F56). Removing yourself stays disabled with its reason (10.09), as F51 does for a role the viewer cannot give.
+- The root row has no action; the reason is in the Root label's tooltip (10.16; the maintainer's decision of 2026-11-04).
+- It waits for 37b-backend and 37b-frontend-1.
+
+37b-frontend-4, the end of 37b:
+
+- `Status`, `Tag`, `SubNav` and `Freshness` are deleted from `packages/ui`, with the web's last `Tag` ("You" in Members) and the samples of the dev components page. `Freshness` leaves the Figma Components page.
+- The organisation's tile: the frames draw no tile on the platform, so the platform's `Initial` is deleted. The tile of `OrgSwitcher` becomes a component of `packages/ui`, `info-subtle` in every place; the brand gradient stays only on the product's mark (the maintainer's decision of 2026-11-08).
+- It waits for 37b-frontend-1, -2 and -3.
 
 ## 6. Step 38: Terms of use
 
