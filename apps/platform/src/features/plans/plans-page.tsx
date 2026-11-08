@@ -157,11 +157,9 @@ export function PlansPage() {
   return (
     <section className="flex min-w-0 flex-1 flex-col gap-4">
       <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h1 className="sr-only text-page-title tablet:not-sr-only">
-            {t("plans.title")}
-          </h1>
-          <p className="hidden max-w-[720px] text-body text-muted-foreground tablet:block">
+        <div className="sr-only flex min-w-0 flex-col gap-0.5 tablet:not-sr-only">
+          <h1 className="text-page-title">{t("plans.title")}</h1>
+          <p className="max-w-[720px] text-body text-muted-foreground">
             {t("plans.intro")}
           </p>
         </div>

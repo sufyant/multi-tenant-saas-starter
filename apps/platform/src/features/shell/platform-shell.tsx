@@ -4,6 +4,7 @@ import { useClerk } from "@clerk/nextjs";
 import {
   ErrorCode,
   getGetMeQueryOptions,
+  getGetPlanQueryOptions,
   getGetTenantQueryOptions,
   getGetUserQueryOptions,
   getListTenantsQueryOptions,
@@ -51,6 +52,10 @@ const tenantIdOf = (pathname: string) =>
 /** The user of a user's page, `/users/<id>`, or null on any other page. */
 const userIdOf = (pathname: string) =>
   /^\/users\/([^/]+)/.exec(pathname)?.[1] ?? null;
+
+/** The plan of a plan's page, `/plans/<id>`, or null on any other page; New plan is `new`. */
+const planIdOf = (pathname: string) =>
+  /^\/plans\/([^/]+)/.exec(pathname)?.[1] ?? null;
 
 const notAUserYet = (error: Error | null) =>
   error instanceof ProblemDetailsError &&
@@ -106,6 +111,18 @@ export function PlatformShell({
   const user = useQuery(
     getGetUserQueryOptions(userId ?? "", {
       query: { enabled: userId !== null && me.data?.isSystemAdmin === true },
+    }),
+  );
+  // The plan's page reads the same GetPlan, so its name in the breadcrumb comes from the cache.
+  const planId = planIdOf(pathname);
+  const plan = useQuery(
+    getGetPlanQueryOptions(planId ?? "", {
+      query: {
+        enabled:
+          planId !== null &&
+          planId !== "new" &&
+          me.data?.isSystemAdmin === true,
+      },
     }),
   );
   const unread = useQuery({
@@ -193,12 +210,18 @@ export function PlatformShell({
       ? userName
       : current === "organisations" && tenantId
         ? tenant.data?.name
-        : undefined;
-  const crumbs = [
-    { label: inSettings ? t("shell.settings") : t("shell.platform") },
-    { label: pageName, href: detail ? item?.href : undefined },
-    ...(detail ? [{ label: detail }] : []),
-  ];
+        : current === "plans" && planId
+          ? planId === "new"
+            ? t("plans.createTitle")
+            : plan.data?.name
+          : undefined;
+  // A page of one record starts at its section (5.05, 6.04): "Plans › Team". A section's page starts at the platform.
+  const crumbs = detail
+    ? [{ label: pageName, href: item?.href }, { label: detail }]
+    : [
+        { label: inSettings ? t("shell.settings") : t("shell.platform") },
+        { label: pageName },
+      ];
   const commands: CommandSection[] = [
     { id: "go-to", label: t("appShell.goTo"), items: main },
     {
