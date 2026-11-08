@@ -6,8 +6,8 @@ using Wolverine;
 namespace ControlPlane.Application.Users.SuspendUser;
 
 // The command sets a state (I1): a user already suspended answers as they are, keeps the first time, and nothing is announced again. A
-// system admin is never suspended, the system admin who calls included, so the system door stays open to system admins. Rejections come
-// first (W7).
+// system admin is never suspended, the system admin who calls included, so the system door stays open to system admins. A deleted user
+// is never suspended (A8). Rejections come first (W7).
 public static class SuspendUserHandler
 {
     public static async Task<(Result<UserView>, OutgoingMessages)> HandleAsync(
@@ -30,9 +30,10 @@ public static class SuspendUserHandler
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         var now = time.GetUtcNow();
-        if (user.Suspend(now, actor, command.Reason) == StateChange.Unchanged)
+        var suspended = user.Suspend(now, actor, command.Reason);
+        if (!suspended.IsSuccess || suspended.Value == StateChange.Unchanged)
         {
-            return (UserView.Of(user, systemAdminGrantedAt: null, systemAdmins), []);
+            return (suspended.Map(_ => UserView.Of(user, systemAdminGrantedAt: null, systemAdmins)), []);
         }
 
         await users.SaveChangesAsync(cancellationToken);

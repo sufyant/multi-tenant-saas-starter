@@ -183,10 +183,15 @@ internal sealed class User(Guid id, string externalId)
     /// <summary>
     /// A system admin suspends the user for the reason, kept without the spaces around it. A second suspension keeps the first time, the
     /// first system admin and the first reason. The identity provider is not told. Changed when the user was not suspended. The caller
-    /// checked the reason's length.
+    /// checked the reason's length. A deleted user is refused: the reason would keep personal data the deletion erased.
     /// </summary>
-    public StateChange Suspend(DateTimeOffset now, Guid suspendedBy, string reason)
+    public Result<StateChange> Suspend(DateTimeOffset now, Guid suspendedBy, string reason)
     {
+        if (DeletedAt is not null)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.UserDeleted, "The user is deleted.");
+        }
+
         if (SuspendedAt is not null)
         {
             return StateChange.Unchanged;

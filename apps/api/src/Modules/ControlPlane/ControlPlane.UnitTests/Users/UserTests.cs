@@ -145,7 +145,20 @@ public sealed class UserTests
         var first = user.Suspend(Now, ActorId, Reason);
         var second = user.Suspend(Now.AddHours(1), ActorId, Reason);
 
-        (first, second).ShouldBe((StateChange.Changed, StateChange.Unchanged));
+        (first.Value, second.Value).ShouldBe((StateChange.Changed, StateChange.Unchanged));
+    }
+
+    // The deletion erased the user's personal data (A8); a reason would bring some back.
+    [Fact]
+    public void SuspendUser_Deleted_IsRefusedAndKeepsNoReason()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Delete(Now);
+
+        var suspended = user.Suspend(Now, ActorId, Reason);
+
+        suspended.Error.Code.Value.ShouldBe("user.deleted");
+        (user.SuspendedAt, user.SuspensionReason).ShouldBe((null, null));
     }
 
     [Fact]
