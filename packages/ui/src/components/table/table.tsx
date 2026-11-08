@@ -226,8 +226,9 @@ export function Table<Row extends RowData>({
                 ))}
                 {actions && (
                   <TableCell className="py-0 ps-3.5 pe-2 text-end">
-                    {/* The ⋯ keeps its cell at rest; a fine pointer gets the 28 px button, a touch screen keeps its touch size. */}
-                    <div className="flex justify-end opacity-0 group-hover/row:opacity-100 focus-within:opacity-100 has-data-popup-open:opacity-100 pointer-coarse:opacity-100 pointer-fine:*:size-target-row-action">
+                    {/* The ⋯ button keeps its cell at rest, and a text in its place always shows; a fine pointer gets the 28 px
+                      button, a touch screen keeps its touch size. */}
+                    <div className="flex justify-end [&>button]:opacity-0 group-hover/row:[&>button]:opacity-100 focus-within:[&>button]:opacity-100 [&>button]:data-popup-open:opacity-100 pointer-coarse:[&>button]:opacity-100 pointer-fine:[&>button]:size-target-row-action">
                       {actions(row.original)}
                     </div>
                   </TableCell>
@@ -277,7 +278,7 @@ export function Table<Row extends RowData>({
                 <span key={column.key}>{cell}</span>
               ))}
               {actions && (
-                <div className="flex *:size-touch-target [&_svg]:size-5">
+                <div className="flex [&>button]:size-touch-target [&>button_svg]:size-5">
                   {actions(row)}
                 </div>
               )}

@@ -171,10 +171,10 @@ describe("Table", () => {
       name: "Actions for Ayşe Yılmaz",
     }).parentElement;
     expect(actions).toHaveClass(
-      "opacity-0",
-      "group-hover/row:opacity-100",
-      "focus-within:opacity-100",
-      "has-data-popup-open:opacity-100",
+      "[&>button]:opacity-0",
+      "group-hover/row:[&>button]:opacity-100",
+      "focus-within:[&>button]:opacity-100",
+      "[&>button]:data-popup-open:opacity-100",
     );
   });
 
@@ -191,7 +191,7 @@ describe("Table", () => {
     expect(
       within(table).getByRole("button", { name: "Actions for Ayşe Yılmaz" })
         .parentElement,
-    ).toHaveClass("pointer-coarse:opacity-100");
+    ).toHaveClass("pointer-coarse:[&>button]:opacity-100");
   });
 
   // Table · Card (258:1389): the phone card's ⋯ always shows.
@@ -207,7 +207,7 @@ describe("Table", () => {
     expect(
       within(cards).getByRole("button", { name: "Actions for Ayşe Yılmaz" })
         .parentElement,
-    ).not.toHaveClass("opacity-0");
+    ).not.toHaveClass("[&>button]:opacity-0");
   });
 
   // Table row (424:2472): the first column fills, and each other column keeps the width its frame gives it.
