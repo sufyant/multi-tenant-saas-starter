@@ -103,6 +103,12 @@ const tenant = (
   ownerCount: 0,
   owners: [],
   ownerInvitation: null,
+  pendingInvitationCount: 0,
+  createdBy: null,
+  suspendedAt: null,
+  suspendedBy: null,
+  closedBy: null,
+  purgeStartedAt: null,
   ...fields,
 });
 
@@ -140,6 +146,7 @@ export const organisations = {
         expiresAt: inDays(5),
         state: InvitationResponseState.Pending,
         language: Language.En,
+        sentAt: inDays(-1),
       },
     },
   ),
@@ -184,6 +191,7 @@ export const created = tenant(
       expiresAt: inDays(7),
       state: InvitationResponseState.Pending,
       language: Language.En,
+      sentAt: inDays(0),
     },
   },
 );
@@ -191,8 +199,16 @@ export const created = tenant(
 const listItem = ({
   owners: _,
   purgeWarningAt: __,
+  createdBy: ___,
+  suspendedAt: ____,
+  suspendedBy: _____,
+  closedBy: ______,
+  purgeStartedAt: _______,
   ...item
-}: TenantDetailResponse): TenantListItemResponse => item;
+}: TenantDetailResponse): TenantListItemResponse => ({
+  ...item,
+  plan: { id: "0198f0a2-0000-7000-8000-00000000f001", name: "Team" },
+});
 
 const person = (
   id: string,
@@ -285,6 +301,8 @@ export const ayseDetail: UserDetailResponse = {
   ...users.ayse,
   suspendedAt: null,
   suspendedBy: null,
+  suspensionReason: null,
+  systemAdminGrantedBy: null,
   memberships: [
     membership(
       organisations.northwind,
@@ -381,12 +399,29 @@ export async function mockPlatform(
   await mockApi(page, language);
   const details = [...Object.values(organisations), created];
   await page.route("**/api/v1/platform/tenants*", (route) => {
-    const status = new URL(route.request().url()).searchParams.get("status");
+    const statuses = new URL(route.request().url()).searchParams.getAll(
+      "status",
+    );
     const items = Object.values(organisations)
-      .filter((organisation) => !status || organisation.status === status)
+      .filter(
+        (organisation) =>
+          statuses.length === 0 || statuses.includes(organisation.status),
+      )
       .map(listItem);
     return route.fulfill({
-      json: { items, page: 1, pageSize: 20, total: items.length },
+      json: {
+        items,
+        page: 1,
+        pageSize: 20,
+        total: items.length,
+        statusCounts: {
+          active: 0,
+          suspended: 0,
+          closed: 0,
+          purging: 0,
+          purged: 0,
+        },
+      },
     });
   });
   await page.route("**/api/v1/platform/tenants/*", (route) => {
@@ -411,7 +446,13 @@ export async function mockPlatform(
           )),
     );
     return route.fulfill({
-      json: { items, page: 1, pageSize: 20, total: items.length },
+      json: {
+        items,
+        page: 1,
+        pageSize: 20,
+        total: items.length,
+        statusCounts: { active: 0, suspended: 0, deleted: 0 },
+      },
     });
   });
   await page.route(`**/api/v1/platform/users/${users.ayse.id}`, (route) =>

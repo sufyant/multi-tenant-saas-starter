@@ -36,6 +36,12 @@ internal sealed class TenantSummary(Guid tenantId)
     /// <summary>The language the latest Owner invitation keeps for its email (K8), while the tenant has no Owner.</summary>
     public Language? OwnerInvitationLanguage { get; private set; }
 
+    /// <summary>
+    /// When the latest Owner invitation was sent, its creation, while the tenant has no Owner. None for a summary saved before the column,
+    /// until the tenant's next save.
+    /// </summary>
+    public DateTimeOffset? OwnerInvitationSentAt { get; private set; }
+
     /// <summary>How many custom roles the tenant has, which <c>roles.custom.max</c> counts and a preview reads across tenants.</summary>
     public int CustomRoleCount { get; private set; }
 
@@ -54,8 +60,8 @@ internal sealed class TenantSummary(Guid tenantId)
         (MemberCount, OwnerCount, CustomRoleCount) = (members, owners, customRoles);
         PendingInvitationExpiries = [.. pendingInvitationExpiries.Order()];
         var invitation = owners == 0 ? latestOwnerInvitation : null;
-        (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage) =
-            (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language);
+        (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage, OwnerInvitationSentAt) =
+            (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language, invitation?.CreatedAt);
     }
 
     /// <summary>How many pending invitations have not expired at this moment: those that count toward <c>members.max</c>.</summary>

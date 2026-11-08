@@ -4,7 +4,8 @@ using SharedKernel;
 namespace ControlPlane.Infrastructure.Persistence.Users;
 
 /// <summary>
-/// ControlPlane's part of a person's data export (docs/flows/personal-data-export.md): their profile, their memberships and the invitations
+/// ControlPlane's part of a person's data export (docs/flows/personal-data-export.md): their profile, with the reason of a suspension, which
+/// is personal data about them, their memberships and the invitations
 /// they accepted. No data of a tenant: a tenant's name and the stored name of the person's role in it describe the person's access. It reads in a
 /// transaction of its own that declares the user (R11), so the own_memberships, own_roles and own_accepted_invitations policies decide what
 /// is seen, and the transaction declares no tenant (R4).
@@ -20,7 +21,7 @@ public sealed class UserDataExporter(ControlPlaneDbContext controlPlane) : IPers
         var profile = await controlPlane.Users
             .AsNoTracking()
             .Where(user => user.Id == userId)
-            .Select(user => new { user.Email, user.Name, user.Language, user.TimeZone, user.CreatedAt })
+            .Select(user => new { user.Email, user.Name, user.Language, user.TimeZone, user.CreatedAt, user.SuspensionReason })
             .SingleOrDefaultAsync(cancellationToken);
 
         var memberships = await (

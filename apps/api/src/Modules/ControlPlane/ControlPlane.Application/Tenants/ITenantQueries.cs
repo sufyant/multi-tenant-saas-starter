@@ -38,12 +38,12 @@ public interface ITenantQueries
     internal Task<MyTenantDetailView?> FindMyTenantAsync(string externalUserId, DateTimeOffset now, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of every tenant whose name or slug contains the search, in the status or every status, by the sort field, then id. It
-    /// needs no active tenant.
+    /// A page of every tenant whose name or slug contains the search, in any of the statuses or, with none, every status, by the sort
+    /// field, then id, and how many tenants that contain the search are in each status. It needs no active tenant.
     /// </summary>
-    internal Task<ListPage<TenantListItemView>> ListTenantsAsync(
+    internal Task<TenantListView> ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
-        TenantStatus? status,
+        IReadOnlyList<TenantStatus> statuses,
         TimeSpan reopenPeriod,
         DateTimeOffset now,
         CancellationToken cancellationToken);

@@ -2,9 +2,9 @@
 
 import {
   InvitationResponseState,
-  type ListPageOfTenantListItemResponse,
   ListTenantsSort,
   type TenantListItemResponse,
+  type TenantListPageResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
 import { RowMenu } from "@repo/ui/components/row-menu";
@@ -51,7 +51,7 @@ export function OrganisationsTable({
   onSortChange,
   onPageChange,
 }: {
-  page: ListPageOfTenantListItemResponse;
+  page: TenantListPageResponse;
   sort: string | null;
   timeZone: string | null | undefined;
   actions: ReturnType<typeof useOrganisationActions>;

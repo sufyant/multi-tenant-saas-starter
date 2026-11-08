@@ -12,6 +12,9 @@ internal sealed class User(Guid id, string externalId)
 {
     public const int NameMaxLength = 100;
 
+    /// <summary>The longest reason of a suspension, as a tenant's (K4).</summary>
+    public const int SuspensionReasonMaxLength = 500;
+
     /// <summary>
     /// The longest time zone name ControlPlane keeps. The longest IANA name today has 32 characters, and the IANA rules allow 14 for each
     /// part of a name.
@@ -59,6 +62,13 @@ internal sealed class User(Guid id, string externalId)
     public Guid? SuspendedBy { get; private set; }
 
     /// <summary>
+    /// Why a system admin suspended the user, in their words, while the user is suspended; only the platform sees it. It is personal data
+    /// about the user: the user's data export holds it and the deletion erases it, and no audit entry keeps it, because the platform's log
+    /// stays after the deletion (A8; the maintainer's decision of 2026-11-08). None for a suspension before the column.
+    /// </summary>
+    public string? SuspensionReason { get; private set; }
+
+    /// <summary>
     /// When the person became a user: when they accepted their first invitation, or when the system door let them in as a root system admin.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
@@ -75,6 +85,14 @@ internal sealed class User(Guid id, string externalId)
     /// <summary>The users in a status, as a query reads them: <see cref="StatusOf"/> compared with the status.</summary>
     public static Expression<Func<User, bool>> InStatus(UserStatus status) =>
         Expression.Lambda<Func<User, bool>>(Expression.Equal(StatusOf.Body, Expression.Constant(status)), StatusOf.Parameters);
+
+    /// <summary>The users in any of the statuses, as a query reads them: <see cref="InStatus"/> of each, joined by "or".</summary>
+    public static Expression<Func<User, bool>> InAnyStatus(IReadOnlyList<UserStatus> statuses) =>
+        Expression.Lambda<Func<User, bool>>(
+            statuses
+                .Select(status => (Expression)Expression.Equal(StatusOf.Body, Expression.Constant(status)))
+                .Aggregate(Expression.OrElse),
+            StatusOf.Parameters);
 
     /// <summary>
     /// A person who is not a user yet joins through an invitation, at this moment: the invited address, which the identity provider
@@ -151,37 +169,38 @@ internal sealed class User(Guid id, string externalId)
     }
 
     /// <summary>
-    /// Erases the email address, the name and the time zone, which tells where the person lives, and marks the user deleted. A second
-    /// deletion keeps the first time. Changed for the first deletion.
+    /// Erases the email address, the name, the time zone, which tells where the person lives, and the reason of a suspension, and marks
+    /// the user deleted. A second deletion keeps the first time. Changed for the first deletion.
     /// </summary>
     public StateChange Delete(DateTimeOffset now)
     {
         var first = DeletedAt is null;
-        (Email, Name, TimeZone) = (null, null, null);
+        (Email, Name, TimeZone, SuspensionReason) = (null, null, null, null);
         DeletedAt ??= now;
         return first ? StateChange.Changed : StateChange.Unchanged;
     }
 
     /// <summary>
-    /// A system admin suspends the user. A second suspension keeps the first time and the first system admin. The identity provider is
-    /// not told. Changed when the user was not suspended.
+    /// A system admin suspends the user for the reason, kept without the spaces around it. A second suspension keeps the first time, the
+    /// first system admin and the first reason. The identity provider is not told. Changed when the user was not suspended. The caller
+    /// checked the reason's length.
     /// </summary>
-    public StateChange Suspend(DateTimeOffset now, Guid suspendedBy)
+    public StateChange Suspend(DateTimeOffset now, Guid suspendedBy, string reason)
     {
         if (SuspendedAt is not null)
         {
             return StateChange.Unchanged;
         }
 
-        (SuspendedAt, SuspendedBy) = (now, suspendedBy);
+        (SuspendedAt, SuspendedBy, SuspensionReason) = (now, suspendedBy, reason.Trim());
         return StateChange.Changed;
     }
 
-    /// <summary>Reactivates the user and forgets who suspended them. Changed when the user was suspended.</summary>
+    /// <summary>Reactivates the user and forgets who suspended them and why. Changed when the user was suspended.</summary>
     public StateChange Reactivate()
     {
         var changed = SuspendedAt is not null;
-        (SuspendedAt, SuspendedBy) = (null, null);
+        (SuspendedAt, SuspendedBy, SuspensionReason) = (null, null, null);
         return changed ? StateChange.Changed : StateChange.Unchanged;
     }
 

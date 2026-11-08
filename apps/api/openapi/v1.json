@@ -283,7 +283,10 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/TenantResponseStatus"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/TenantResponseStatus"
+              }
             }
           }
         ],
@@ -293,7 +296,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListPageOfTenantListItemResponse"
+                  "$ref": "#/components/schemas/TenantListPageResponse"
                 }
               }
             }
@@ -2974,7 +2977,10 @@
             "name": "status",
             "in": "query",
             "schema": {
-              "$ref": "#/components/schemas/UserResponseStatus"
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/UserResponseStatus"
+              }
             }
           },
           {
@@ -3000,7 +3006,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListPageOfUserResponse"
+                  "$ref": "#/components/schemas/UserListPageResponse"
                 }
               }
             }
@@ -3473,6 +3479,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -10674,6 +10690,22 @@
           "MembersMax"
         ]
       },
+      "ListFilterOfTenantResponseStatus": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "ListFilterOfUserResponseStatus": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        }
+      },
       "ListPageOfInvitationResponse": {
         "required": [
           "items",
@@ -10832,64 +10864,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TenantExcessResponse"
-            }
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "ListPageOfTenantListItemResponse": {
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TenantListItemResponse"
-            }
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "ListPageOfUserResponse": {
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserResponse"
             }
           },
           "page": {
@@ -11370,7 +11344,8 @@
           "email",
           "expiresAt",
           "state",
-          "language"
+          "language",
+          "sentAt"
         ],
         "type": "object",
         "properties": {
@@ -11386,9 +11361,16 @@
           },
           "language": {
             "$ref": "#/components/schemas/Language"
+          },
+          "sentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back."
+        "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment."
       },
       "Permission": {
         "enum": [
@@ -12044,6 +12026,19 @@
         },
         "description": "Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member\nnever sees it. It holds no personal data, such as a person's name or email address: the platform's audit log keeps it after the\ntenant's purge (A8)."
       },
+      "SuspendUserRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "description": "Why the system admin suspends the user, within the API's limit. The API trims the reason before it counts its length. The user never\nsees it. It is personal data about the user: the user's data export holds it, the deletion erases it, and no audit entry keeps it."
+      },
       "TenantCreatedDetailsResponse": {
         "required": [
           "plan",
@@ -12079,7 +12074,13 @@
           "memberCount",
           "ownerCount",
           "owners",
-          "ownerInvitation"
+          "ownerInvitation",
+          "pendingInvitationCount",
+          "createdBy",
+          "suspendedAt",
+          "suspendedBy",
+          "closedBy",
+          "purgeStartedAt"
         ],
         "type": "object",
         "properties": {
@@ -12157,9 +12158,57 @@
                 "$ref": "#/components/schemas/OwnerInvitationResponse"
               }
             ]
+          },
+          "pendingInvitationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          },
+          "suspendedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "suspendedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          },
+          "closedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          },
+          "purgeStartedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise)."
+        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise). It counts the pending invitations that have not expired at the moment of the request, and\nnames who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a\nseed, for an event the tenant is not in, and for an event before the API kept it."
       },
       "TenantEntitlementOverrideRemovedDetailsResponse": {
         "required": [
@@ -12351,7 +12400,9 @@
           "reopenableUntil",
           "memberCount",
           "ownerCount",
-          "ownerInvitation"
+          "ownerInvitation",
+          "plan",
+          "pendingInvitationCount"
         ],
         "type": "object",
         "properties": {
@@ -12416,9 +12467,50 @@
                 "$ref": "#/components/schemas/OwnerInvitationResponse"
               }
             ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/PlanNameResponse"
+          },
+          "pendingInvitationCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
-        "description": "A tenant in the platform's list: as TenantResponse, with when it was created, until when a closed tenant can be\nreopened, its members and Owners counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.\nA purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was\ncreated."
+        "description": "A tenant in the platform's list: as TenantResponse, with its plan, when it was created, until when a closed tenant can be\nreopened, its members and Owners counted, its pending invitations that have not expired at the moment of the request, as the seats count\nthem, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.\nA purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was\ncreated."
+      },
+      "TenantListPageResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "statusCounts"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantListItemResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "statusCounts": {
+            "$ref": "#/components/schemas/TenantStatusCountsResponse"
+          }
+        },
+        "description": "A page of the tenant list (K5), and how many tenants of the whole list are in each status."
       },
       "TenantOwnerInvitedDetailsResponse": {
         "required": [
@@ -12697,6 +12789,39 @@
           "Purged"
         ]
       },
+      "TenantStatusCountsResponse": {
+        "required": [
+          "active",
+          "suspended",
+          "closed",
+          "purging",
+          "purged"
+        ],
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "suspended": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "closed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purging": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "purged": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How many tenants of the list are in each status, with the search and without the status filter: the tabs of the Organisations list."
+      },
       "TenantSuspendedDetailsResponse": {
         "required": [
           "reason",
@@ -12788,6 +12913,8 @@
           "createdAt",
           "suspendedAt",
           "suspendedBy",
+          "suspensionReason",
+          "systemAdminGrantedBy",
           "memberships"
         ],
         "type": "object",
@@ -12849,6 +12976,22 @@
               }
             ]
           },
+          "suspensionReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "systemAdminGrantedBy": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          },
           "memberships": {
             "type": "array",
             "items": {
@@ -12856,7 +12999,41 @@
             }
           }
         },
-        "description": "One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's name\n(null when the user is not suspended), and every membership by the tenant's name."
+        "description": "One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason\n(null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who\ngranted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before\nit was kept), and every membership by the tenant's name."
+      },
+      "UserListPageResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "statusCounts"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "statusCounts": {
+            "$ref": "#/components/schemas/UserStatusCountsResponse"
+          }
+        },
+        "description": "A page of the user list (K5), and how many users of the whole list are in each status."
       },
       "UserMembershipResponse": {
         "required": [
@@ -13001,6 +13178,29 @@
           "Suspended",
           "Deleted"
         ]
+      },
+      "UserStatusCountsResponse": {
+        "required": [
+          "active",
+          "suspended",
+          "deleted"
+        ],
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "suspended": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deleted": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How many users of the list are in each status, with the search and every filter but the status: the tabs of the Users list."
       },
       "VerificationCodeResponse": {
         "required": [

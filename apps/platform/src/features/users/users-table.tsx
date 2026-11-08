@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  type ListPageOfUserResponse,
   ListUsersSort,
+  type UserListPageResponse,
   type UserResponse,
 } from "@repo/api-client";
 import { Avatar } from "@repo/ui/components/avatar";
@@ -69,7 +69,7 @@ export function UsersTable({
   onSortChange,
   onPageChange,
 }: {
-  page: ListPageOfUserResponse;
+  page: UserListPageResponse;
   sort: string | null;
   timeZone: string | null | undefined;
   actions: ReturnType<typeof useUserActions>;

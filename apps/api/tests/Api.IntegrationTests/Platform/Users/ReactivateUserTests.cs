@@ -71,7 +71,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     [InlineData("reactivate")]
     public async Task SuspendOrReactivateUser_UnknownUser_IsNotFound(string action)
     {
-        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", new { reason = "Shared account" }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("user.not_found");

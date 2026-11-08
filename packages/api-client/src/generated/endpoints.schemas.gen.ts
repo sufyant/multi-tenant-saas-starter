@@ -1048,6 +1048,14 @@ export const LimitKey = {
   MembersMax: 'members.max',
 } as const;
 
+export interface ListFilterOfTenantResponseStatus {
+  text?: string;
+}
+
+export interface ListFilterOfUserResponseStatus {
+  text?: string;
+}
+
 export interface ListPageOfInvitationResponse {
   items: InvitationResponse[];
   page: number;
@@ -1170,105 +1178,6 @@ export interface ListPageOfTenantExcessResponse {
 }
 
 /**
- * The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).
- */
-export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof TenantResponseStatus];
-
-
-export const TenantResponseStatus = {
-  Active: 'active',
-  Suspended: 'suspended',
-  Closed: 'closed',
-  Purging: 'purging',
-  Purged: 'purged',
-} as const;
-
-/**
- * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
- * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
- * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
- * again can send it back.
- */
-export interface OwnerInvitationResponse {
-  email: string;
-  expiresAt: string;
-  state: InvitationResponseState;
-  language: Language;
-}
-
-/**
- * A tenant in the platform's list: as TenantResponse, with when it was created, until when a closed tenant can be
- * reopened, its members and Owners counted, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
- * A purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was
- * created.
- */
-export interface TenantListItemResponse {
-  id: string;
-  name: string;
-  slug: string;
-  status: TenantResponseStatus;
-  createdAt: string;
-  /** @nullable */
-  suspensionReason: string | null;
-  /** @nullable */
-  closedAt: string | null;
-  /** @nullable */
-  purgedAt: string | null;
-  /** @nullable */
-  reopenableUntil: string | null;
-  memberCount: number;
-  ownerCount: number;
-  ownerInvitation: null | OwnerInvitationResponse;
-}
-
-export interface ListPageOfTenantListItemResponse {
-  items: TenantListItemResponse[];
-  page: number;
-  pageSize: number;
-  total: number;
-}
-
-/**
- * The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.
- */
-export type UserResponseStatus = typeof UserResponseStatus[keyof typeof UserResponseStatus];
-
-
-export const UserResponseStatus = {
-  Active: 'active',
-  Suspended: 'suspended',
-  Deleted: 'deleted',
-} as const;
-
-/**
- * A user: our user id, not the identity provider's, their email address and name, their status (active, suspended or
- * deleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin
- * can revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),
- * how many tenants they are a member of, and when they became a user.
- */
-export interface UserResponse {
-  id: string;
-  /** @nullable */
-  email: string | null;
-  /** @nullable */
-  name: string | null;
-  status: UserResponseStatus;
-  isSystemAdmin: boolean;
-  isRootSystemAdmin: boolean;
-  /** @nullable */
-  systemAdminGrantedAt: string | null;
-  membershipCount: number;
-  createdAt: string;
-}
-
-export interface ListPageOfUserResponse {
-  items: UserResponse[];
-  page: number;
-  pageSize: number;
-  total: number;
-}
-
-/**
  * The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a
  * request without one is refused, so it never falls back to an empty id.
  */
@@ -1315,6 +1224,21 @@ export interface MyTenantDetailResponse {
   planName: string;
   entitlements: MyTenantDetailResponseEntitlements;
   usage: MyTenantDetailResponseUsage;
+}
+
+/**
+ * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
+ * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
+ * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
+ * again can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment.
+ */
+export interface OwnerInvitationResponse {
+  email: string;
+  expiresAt: string;
+  state: InvitationResponseState;
+  language: Language;
+  /** @nullable */
+  sentAt: string | null;
 }
 
 /**
@@ -1495,6 +1419,29 @@ export interface SuspendTenantRequest {
 }
 
 /**
+ * Why the system admin suspends the user, within the API's limit. The API trims the reason before it counts its length. The user never
+ * sees it. It is personal data about the user: the user's data export holds it, the deletion erases it, and no audit entry keeps it.
+ */
+export interface SuspendUserRequest {
+  /** @maxLength 500 */
+  reason: string;
+}
+
+/**
+ * The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).
+ */
+export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof TenantResponseStatus];
+
+
+export const TenantResponseStatus = {
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
+  Purging: 'purging',
+  Purged: 'purged',
+} as const;
+
+/**
  * An Owner of a tenant: the user's id, name and address.
  */
 export interface TenantOwnerResponse {
@@ -1508,7 +1455,9 @@ export interface TenantOwnerResponse {
 /**
  * One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the
  * first. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or
- * were, warned of the purge (null otherwise).
+ * were, warned of the purge (null otherwise). It counts the pending invitations that have not expired at the moment of the request, and
+ * names who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a
+ * seed, for an event the tenant is not in, and for an event before the API kept it.
  */
 export interface TenantDetailResponse {
   id: string;
@@ -1530,6 +1479,14 @@ export interface TenantDetailResponse {
   ownerCount: number;
   owners: TenantOwnerResponse[];
   ownerInvitation: null | OwnerInvitationResponse;
+  pendingInvitationCount: number;
+  createdBy: null | UserNameResponse;
+  /** @nullable */
+  suspendedAt: string | null;
+  suspendedBy: null | UserNameResponse;
+  closedBy: null | UserNameResponse;
+  /** @nullable */
+  purgeStartedAt: string | null;
 }
 
 /**
@@ -1544,6 +1501,56 @@ export interface TenantEntitlementResponse {
   override: null | EntitlementOverrideResponse;
   effective: EntitlementValueResponse;
   count: number;
+}
+
+/**
+ * A tenant in the platform's list: as TenantResponse, with its plan, when it was created, until when a closed tenant can be
+ * reopened, its members and Owners counted, its pending invitations that have not expired at the moment of the request, as the seats count
+ * them, and, while it has no Owner, its latest Owner invitation. Each is null when it does not apply.
+ * A purged tenant counts no member and no Owner: its purge deleted its summary with its members (K4). Its tombstone keeps when it was
+ * created.
+ */
+export interface TenantListItemResponse {
+  id: string;
+  name: string;
+  slug: string;
+  status: TenantResponseStatus;
+  createdAt: string;
+  /** @nullable */
+  suspensionReason: string | null;
+  /** @nullable */
+  closedAt: string | null;
+  /** @nullable */
+  purgedAt: string | null;
+  /** @nullable */
+  reopenableUntil: string | null;
+  memberCount: number;
+  ownerCount: number;
+  ownerInvitation: null | OwnerInvitationResponse;
+  plan: PlanNameResponse;
+  pendingInvitationCount: number;
+}
+
+/**
+ * How many tenants of the list are in each status, with the search and without the status filter: the tabs of the Organisations list.
+ */
+export interface TenantStatusCountsResponse {
+  active: number;
+  suspended: number;
+  closed: number;
+  purging: number;
+  purged: number;
+}
+
+/**
+ * A page of the tenant list (K5), and how many tenants of the whole list are in each status.
+ */
+export interface TenantListPageResponse {
+  items: TenantListItemResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+  statusCounts: TenantStatusCountsResponse;
 }
 
 /**
@@ -1611,6 +1618,18 @@ export interface UpdateRoleRequest {
 }
 
 /**
+ * The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.
+ */
+export type UserResponseStatus = typeof UserResponseStatus[keyof typeof UserResponseStatus];
+
+
+export const UserResponseStatus = {
+  Active: 'active',
+  Suspended: 'suspended',
+  Deleted: 'deleted',
+} as const;
+
+/**
  * The status of a tenant a user is a member of: active, or suspended, closed or purging when its members cannot enter it. A purged tenant has no member.
  */
 export type UserMembershipResponseTenantStatus = typeof UserMembershipResponseTenantStatus[keyof typeof UserMembershipResponseTenantStatus];
@@ -1638,8 +1657,10 @@ export interface UserMembershipResponse {
 }
 
 /**
- * One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin's name
- * (null when the user is not suspended), and every membership by the tenant's name.
+ * One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason
+ * (null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who
+ * granted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before
+ * it was kept), and every membership by the tenant's name.
  */
 export interface UserDetailResponse {
   id: string;
@@ -1657,7 +1678,51 @@ export interface UserDetailResponse {
   /** @nullable */
   suspendedAt: string | null;
   suspendedBy: null | UserNameResponse;
+  /** @nullable */
+  suspensionReason: string | null;
+  systemAdminGrantedBy: null | UserNameResponse;
   memberships: UserMembershipResponse[];
+}
+
+/**
+ * A user: our user id, not the identity provider's, their email address and name, their status (active, suspended or
+ * deleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin
+ * can revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),
+ * how many tenants they are a member of, and when they became a user.
+ */
+export interface UserResponse {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  name: string | null;
+  status: UserResponseStatus;
+  isSystemAdmin: boolean;
+  isRootSystemAdmin: boolean;
+  /** @nullable */
+  systemAdminGrantedAt: string | null;
+  membershipCount: number;
+  createdAt: string;
+}
+
+/**
+ * How many users of the list are in each status, with the search and every filter but the status: the tabs of the Users list.
+ */
+export interface UserStatusCountsResponse {
+  active: number;
+  suspended: number;
+  deleted: number;
+}
+
+/**
+ * A page of the user list (K5), and how many users of the whole list are in each status.
+ */
+export interface UserListPageResponse {
+  items: UserResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+  statusCounts: UserStatusCountsResponse;
 }
 
 /**
@@ -1692,7 +1757,7 @@ sort?: ListTenantsSort;
  * @maxLength 100
  */
 q?: string;
-status?: TenantResponseStatus;
+status?: TenantResponseStatus[];
 };
 
 export type ListTenantsSort = typeof ListTenantsSort[keyof typeof ListTenantsSort];
@@ -1793,7 +1858,7 @@ sort?: ListUsersSort;
  * @maxLength 100
  */
 q?: string;
-status?: UserResponseStatus;
+status?: UserResponseStatus[];
 isSystemAdmin?: boolean;
 /**
  * @maxLength 320

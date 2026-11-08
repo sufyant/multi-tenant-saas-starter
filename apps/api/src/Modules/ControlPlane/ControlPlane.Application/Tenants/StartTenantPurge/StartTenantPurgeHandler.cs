@@ -17,9 +17,11 @@ public static class StartTenantPurgeHandler
         ITenantRepository tenants,
         IEnumerable<TenantPurgeParticipant> participants,
         TenantOptions settings,
+        TimeProvider time,
         CancellationToken cancellationToken)
     {
-        if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant || tenant.BeginPurge(start.ClosedAt) == StateChange.Unchanged)
+        if (await tenants.FindTenantForUpdateAsync(cancellationToken) is not { } tenant
+            || tenant.BeginPurge(start.ClosedAt, time.GetUtcNow()) == StateChange.Unchanged)
         {
             return (null, []);
         }

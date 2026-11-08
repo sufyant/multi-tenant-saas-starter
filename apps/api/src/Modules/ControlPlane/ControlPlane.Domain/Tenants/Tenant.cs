@@ -64,22 +64,44 @@ internal sealed class Tenant
     public DateTimeOffset CreatedAt { get; private init; }
 
     /// <summary>
+    /// The user id of the system admin who created the tenant. None for a seed, for a tenant created before the column, and for a
+    /// tombstone (K4).
+    /// </summary>
+    public Guid? CreatedBy { get; private set; }
+
+    /// <summary>
     /// Why a system admin suspended the tenant, in their words; only the platform side sees it. None unless suspended or closed after a
     /// suspension. It holds no personal data: the platform's audit log keeps it after the tenant's purge (A8).
     /// </summary>
     public string? SuspensionReason { get; private set; }
 
+    /// <summary>
+    /// When a system admin suspended the tenant, and the user id of that system admin. They follow the reason: kept by a closure, gone
+    /// with a reactivation, a reopening and the purge. None for a suspension before the columns.
+    /// </summary>
+    public DateTimeOffset? SuspendedAt { get; private set; }
+
+    /// <inheritdoc cref="SuspendedAt"/>
+    public Guid? SuspendedBy { get; private set; }
+
     /// <summary>When a system admin closed the tenant; the reopen period counts from it. None unless closed or purging.</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
+
+    /// <summary>The user id of the system admin who closed the tenant, while it is closed or purging. None for a closure before the column.</summary>
+    public Guid? ClosedBy { get; private set; }
+
+    /// <summary>When the purge started (the pivot, S5), while the tenant is purging. None for a purge started before the column.</summary>
+    public DateTimeOffset? PurgeStartedAt { get; private set; }
 
     /// <summary>When the purge ended and left the tenant as its tombstone (K4). None unless purged.</summary>
     public DateTimeOffset? PurgedAt { get; private set; }
 
     /// <summary>
-    /// A new tenant is active at once, on the plan its creation names (docs/flows/tenant-creation.md). The name is stored without the
-    /// spaces around it. A reserved slug is refused (<see cref="ReservedSlugs"/>).
+    /// A new tenant is active at once, on the plan its creation names, and keeps the system admin who created it
+    /// (docs/flows/tenant-creation.md). The name is stored without the spaces around it. A reserved slug is refused
+    /// (<see cref="ReservedSlugs"/>).
     /// </summary>
-    public static Result<Tenant> Create(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt)
+    public static Result<Tenant> Create(Guid id, string name, string slug, Guid planId, DateTimeOffset createdAt, Guid createdBy)
     {
         var trimmed = name.Trim();
         if (!IsValidName(trimmed))
@@ -96,7 +118,7 @@ internal sealed class Tenant
 
         return ReservedSlugs.Contains(slug)
             ? SlugReserved
-            : new Tenant(id, trimmed, slug, planId, createdAt);
+            : new Tenant(id, trimmed, slug, planId, createdAt) { CreatedBy = createdBy };
     }
 
     /// <summary>
@@ -130,31 +152,31 @@ internal sealed class Tenant
         closedAt + reopenPeriod - purgeWarningLead;
 
     /// <summary>
-    /// Suspends an active tenant for the reason, kept without the spaces around it: its members are refused at the tenant door until it
-    /// is reactivated. Returns whether the status changed; a suspended tenant stays suspended and keeps its first reason. A closed tenant is
-    /// rejected. The caller checked the reason's length.
+    /// Suspends an active tenant for the reason, kept without the spaces around it, by the system admin at this moment: its members are
+    /// refused at the tenant door until it is reactivated. Returns whether the status changed; a suspended tenant stays suspended and
+    /// keeps its first reason, moment and system admin. A closed tenant is rejected. The caller checked the reason's length.
     /// </summary>
-    public Result<StateChange> Suspend(string reason)
+    public Result<StateChange> Suspend(string reason, Guid suspendedBy, DateTimeOffset now)
     {
         var moved = Move(from: TenantStatus.Active, to: TenantStatus.Suspended);
         if (moved.IsSuccess && moved.Value == StateChange.Changed)
         {
-            SuspensionReason = reason.Trim();
+            (SuspensionReason, SuspendedAt, SuspendedBy) = (reason.Trim(), now, suspendedBy);
         }
 
         return moved;
     }
 
     /// <summary>
-    /// Gives a suspended tenant back to its members and forgets the reason. Returns whether the status changed; an active tenant stays
-    /// active. A closed tenant is rejected.
+    /// Gives a suspended tenant back to its members and forgets the suspension: its reason, moment and system admin. Returns whether the
+    /// status changed; an active tenant stays active. A closed tenant is rejected.
     /// </summary>
     public Result<StateChange> Reactivate()
     {
         var moved = Move(from: TenantStatus.Suspended, to: TenantStatus.Active);
         if (moved.IsSuccess && moved.Value == StateChange.Changed)
         {
-            SuspensionReason = null;
+            ForgetSuspension();
         }
 
         return moved;
@@ -270,12 +292,12 @@ internal sealed class Tenant
     }
 
     /// <summary>
-    /// Closes an active or a suspended tenant at this moment: its members are refused at the tenant door, its data stays, and the reopen
-    /// period counts from now (K4). A suspension's reason stays until a reopening. The closure cancels every pending invitation of the
+    /// Closes an active or a suspended tenant at this moment, by the system admin: its members are refused at the tenant door, its data
+    /// stays, and the reopen period counts from now (K4). A suspension, its reason included, stays until a reopening. The closure cancels every pending invitation of the
     /// tenant, expired ones included, so no invitation stays pending on a closed tenant (K6h); the caller read them under the tenant's
     /// lock. A closed tenant stays closed, keeps its first moment and cancels nothing.
     /// </summary>
-    public Result<Closed> Close(DateTimeOffset now, IReadOnlyList<Invitation> pending)
+    public Result<Closed> Close(DateTimeOffset now, Guid closedBy, IReadOnlyList<Invitation> pending)
     {
         if (Status == TenantStatus.Closed)
         {
@@ -288,7 +310,7 @@ internal sealed class Tenant
         }
 
         Status = TenantStatus.Closed;
-        ClosedAt = now;
+        (ClosedAt, ClosedBy) = (now, closedBy);
         foreach (var invitation in pending)
         {
             invitation.Cancel();
@@ -299,7 +321,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// Gives a closed tenant back to its members while its reopen period runs: it becomes active and forgets the closure and any
-    /// suspension's reason (K4). From the moment of the closure plus the period on, it stays closed. Returns whether the status changed;
+    /// suspension (K4). From the moment of the closure plus the period on, it stays closed. Returns whether the status changed;
     /// an active tenant, as a first reopening leaves it, changes nothing (I1). Any other tenant is not closed, and is rejected.
     /// </summary>
     public Result<StateChange> Reopen(DateTimeOffset now, TimeSpan period)
@@ -320,17 +342,18 @@ internal sealed class Tenant
         }
 
         Status = TenantStatus.Active;
-        ClosedAt = null;
-        SuspensionReason = null;
+        (ClosedAt, ClosedBy) = (null, null);
+        ForgetSuspension();
         return StateChange.Changed;
     }
 
     /// <summary>
     /// Starts the purge of a tenant that is still closed at the closure the purge was scheduled for: the pivot of the purge (S5). From
     /// now on the tenant cannot be reopened. A tenant that was reopened, closed again at another moment, or whose purge has started
-    /// changes nothing: the scheduled purge of an earlier closure does nothing (K4). The caller holds the tenant's lock.
+    /// changes nothing: the scheduled purge of an earlier closure does nothing (K4). The tenant keeps the moment its purge started. The
+    /// caller holds the tenant's lock.
     /// </summary>
-    public StateChange BeginPurge(DateTimeOffset closedAt)
+    public StateChange BeginPurge(DateTimeOffset closedAt, DateTimeOffset now)
     {
         if (!IsClosedAt(closedAt))
         {
@@ -338,13 +361,14 @@ internal sealed class Tenant
         }
 
         Status = TenantStatus.Purging;
+        PurgeStartedAt = now;
         return StateChange.Changed;
     }
 
     /// <summary>
     /// Ends the purge: the tenant row becomes its tombstone, which keeps the id, the name, the slug, the status, the moment of the creation
     /// and the moment of the purge, so the platform still sees that the tenant existed and its slug is never given again. Every other
-    /// value goes: the reason of a suspension and the moment of the closure (K4). The last step of the purge may run twice (S7): a
+    /// value goes: the suspension, the closure, the start of the purge and who created the tenant (K4). The last step of the purge may run twice (S7): a
     /// tombstone changes nothing. Only a tenant whose purge has started gets here, so any other is a fault. The caller holds the
     /// tenant's lock.
     /// </summary>
@@ -362,8 +386,8 @@ internal sealed class Tenant
 
         Status = TenantStatus.Purged;
         PurgedAt = now;
-        SuspensionReason = null;
-        ClosedAt = null;
+        ForgetSuspension();
+        (ClosedAt, ClosedBy, PurgeStartedAt, CreatedBy) = (null, null, null, null);
         return StateChange.Changed;
     }
 
@@ -926,6 +950,8 @@ internal sealed class Tenant
     // A system admin changes a tenant's plan and overrides only while the tenant is active or suspended, as its name.
     private Result CheckPlatformChange() =>
         Status is TenantStatus.Active or TenantStatus.Suspended ? Result.Success() : NotActive;
+
+    private void ForgetSuspension() => (SuspensionReason, SuspendedAt, SuspendedBy) = (null, null, null);
 
     private Result<StateChange> Move(TenantStatus from, TenantStatus to)
     {

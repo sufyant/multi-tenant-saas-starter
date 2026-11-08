@@ -194,8 +194,9 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         var inserted = await controlPlane.Database.ExecuteSqlAsync(
             $"""
             WITH tenant AS (
-                INSERT INTO control_plane.tenants (id, name, slug, status, plan_id, created_at)
-                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.PlanId}, {added.CreatedAt}) ON CONFLICT (slug) DO NOTHING
+                INSERT INTO control_plane.tenants (id, name, slug, status, plan_id, created_at, created_by)
+                VALUES ({added.Id}, {added.Name}, {added.Slug}, {added.Status.ToString()}, {added.PlanId}, {added.CreatedAt}, {added.CreatedBy})
+                ON CONFLICT (slug) DO NOTHING
                 RETURNING id)
             INSERT INTO control_plane.tenant_summaries (tenant_id) SELECT id FROM tenant
             """,

@@ -52,7 +52,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "memberships"],
+            ["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "suspensionReason", "systemAdminGrantedBy", "memberships"],
             ignoreOrder: true);
         (found.GetProperty("id").GetGuid(), found.GetProperty("email").GetString(), found.GetProperty("name").GetString())
             .ShouldBe((id, email, "Ada Lovelace"));

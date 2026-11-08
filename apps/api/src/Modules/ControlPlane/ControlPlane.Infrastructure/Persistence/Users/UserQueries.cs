@@ -51,8 +51,8 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
         return new MeView(user.Id, user.Email, user.Name, await IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
     }
 
-    // The user, the system admin who suspended them, when they were granted system admin, and their memberships: the four queries, in the
-    // order of the read before the views.
+    // The user, the system admin who suspended them, the grant of system admin with the names of who granted it, and their memberships: the
+    // four queries, in the order of the read before the views.
     async Task<UserDetailView?> IUserQueries.FindUserDetailAsync(Guid userId, CancellationToken cancellationToken)
     {
         if (await FindAsync(userId, cancellationToken) is not { } user)
@@ -61,14 +61,20 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
         }
 
         var suspendedBy = user.SuspendedBy is { } suspenderId ? await FindAsync(suspenderId, cancellationToken) : null;
-        var systemAdminGrantedAt = await controlPlane.SystemAdmins
-            .Where(admin => admin.UserId == user.Id)
-            .Select(admin => (DateTimeOffset?)admin.GrantedAt)
+        var grant = await (
+                from admin in controlPlane.SystemAdmins
+                where admin.UserId == user.Id
+                join granter in controlPlane.Users on admin.GrantedBy equals granter.Id into granters
+                from granter in granters.DefaultIfEmpty()
+                select new { admin.GrantedAt, Granter = granter })
+            .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
         return new UserDetailView(
-            UserView.Of(user, systemAdminGrantedAt, systemAdmins),
+            UserView.Of(user, grant?.GrantedAt, systemAdmins),
             user.SuspendedAt,
             suspendedBy is null ? null : UserNameView.Of(suspendedBy),
+            user.SuspensionReason,
+            grant?.Granter is { } granted ? UserNameView.Of(granted) : null,
             await ListMembershipsAsync(user.Id, cancellationToken));
     }
 
@@ -85,14 +91,15 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             : new InviterNameView(nameof(InviterKind.User), UserNameView.Of(user));
     }
 
-    async Task<ListPage<UserView>> IUserQueries.ListUsersAsync(
+    // Two queries (K5): the count of each status, with every filter but the status, from which the total comes, then the page.
+    async Task<UserListView> IUserQueries.ListUsersAsync(
         ListRequest<ListUsersSort> list,
-        UserStatus? status,
+        IReadOnlyList<UserStatus> statuses,
         bool? isSystemAdmin,
         EmailAddress? email,
         CancellationToken cancellationToken)
     {
-        var users = status is { } chosen ? controlPlane.Users.Where(User.InStatus(chosen)) : controlPlane.Users;
+        var users = controlPlane.Users.AsQueryable();
         if (isSystemAdmin is { } admins)
         {
             users = users.Where(user => controlPlane.SystemAdmins.Any(admin => admin.UserId == user.Id) == admins);
@@ -113,7 +120,16 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
                 || EF.Functions.ILike(user.Name!, pattern, ListQueryExtensions.Escape));
         }
 
-        var total = await users.CountAsync(cancellationToken);
+        var counts = await users
+            .GroupBy(User.StatusOf)
+            .Select(group => new { Status = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(group => group.Status, group => group.Count, cancellationToken);
+        var total = statuses.Count == 0 ? counts.Values.Sum() : statuses.Sum(chosen => counts.GetValueOrDefault(chosen));
+        if (statuses.Count > 0)
+        {
+            users = users.Where(User.InAnyStatus(statuses));
+        }
+
         var sorted = list.Sort switch
         {
             ListUsersSort.Name => users.OrderBy(user => user.Name == null).ThenBy(user => user.Name, list.Descending),
@@ -131,7 +147,9 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.GrantedAt, systemAdmins))], list.Paging, total);
+        return new UserListView(
+            ListPage.Of([.. page.Select(found => UserView.Of(found.User, found.GrantedAt, systemAdmins))], list.Paging, total),
+            UserStatusCountsView.Of(counts));
     }
 
     private Task<User?> FindAsync(Guid userId, CancellationToken cancellationToken) =>

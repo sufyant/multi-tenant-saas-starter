@@ -26,11 +26,11 @@ export const ListUsersQueryParams = zod.object({
   NameDescending: '-name',
 }).optional(),
   "q": zod.string().max(listUsersQueryQMax).optional().describe('The search. The API trims it before it counts its length.'),
-  "status": zod.enum({
+  "status": zod.array(zod.enum({
   Active: 'active',
   Suspended: 'suspended',
   Deleted: 'deleted',
-}).optional(),
+}).describe('The status of a user. A system admin deleted a deleted user, and ControlPlane keeps no email address or name of theirs.')).optional(),
   "isSystemAdmin": zod.boolean().optional(),
   "email": zod.email().max(listUsersQueryEmailMax).optional()
 })
@@ -53,8 +53,13 @@ export const ListUsersResponse = zod.object({
 }).describe('A user: our user id, not the identity provider\'s, their email address and name, their status (active, suspended or\ndeleted), whether they are a system admin, whether they are a root system admin, whom the configuration names and no system admin\ncan revoke, when they were granted system admin (null when they are none; a root gets the grant when they first enter the platform),\nhow many tenants they are a member of, and when they became a user.')),
   "page": zod.int(),
   "pageSize": zod.int(),
-  "total": zod.int()
-})
+  "total": zod.int(),
+  "statusCounts": zod.object({
+  "active": zod.int(),
+  "suspended": zod.int(),
+  "deleted": zod.int()
+}).describe('How many users of the list are in each status, with the search and every filter but the status: the tabs of the Users list.')
+}).describe('A page of the user list (K5), and how many users of the whole list are in each status.')
 
 export const GetUserParams = zod.object({
   "userId": zod.uuid()
@@ -79,6 +84,11 @@ export const GetUserResponse = zod.object({
   "name": zod.string().nullable(),
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
+  "suspensionReason": zod.string().nullable(),
+  "systemAdminGrantedBy": zod.union([zod.null(),zod.object({
+  "name": zod.string().nullable(),
+  "deleted": zod.boolean()
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
   "memberships": zod.array(zod.object({
   "tenantId": zod.uuid(),
   "tenantName": zod.string(),
@@ -97,7 +107,7 @@ export const GetUserResponse = zod.object({
   "joinedAt": zod.iso.datetime({"offset":true}),
   "lastOwner": zod.boolean()
 }).describe('A tenant the user is a member of: its id, name, slug and status, the user\'s role there, when they joined, and whether they are\nits last Owner. The suspend dialog warns with `lastOwner`, and the delete refusal names those tenants.'))
-}).describe('One user for the user detail screen: as in the list, with when a system admin suspended them and that system admin\'s name\n(null when the user is not suspended), and every membership by the tenant\'s name.')
+}).describe('One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin\'s name and the reason\n(null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who\ngranted them system admin (null for a user who is none, for a root\'s first entry, which the platform grants, and for a grant before\nit was kept), and every membership by the tenant\'s name.')
 
 export const RenameUserParams = zod.object({
   "userId": zod.uuid()
@@ -136,6 +146,14 @@ export const DeleteUserResponse = zod.void()
 export const SuspendUserParams = zod.object({
   "userId": zod.uuid()
 })
+
+export const suspendUserBodyReasonMax = 500;
+
+
+
+export const SuspendUserBody = zod.object({
+  "reason": zod.string().max(suspendUserBodyReasonMax)
+}).describe('Why the system admin suspends the user, within the API\'s limit. The API trims the reason before it counts its length. The user never\nsees it. It is personal data about the user: the user\'s data export holds it, the deletion erases it, and no audit entry keeps it.')
 
 export const SuspendUserResponse = zod.object({
   "id": zod.uuid(),

@@ -20,11 +20,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  ListPageOfUserResponse,
   ListUsersParams,
   ProblemDetails,
   RenameUserRequest,
+  SuspendUserRequest,
   UserDetailResponse,
+  UserListPageResponse,
   UserResponse
 } from '../endpoints.schemas.gen';
 
@@ -55,6 +56,14 @@ export const getListUsersUrl = (params?: ListUsersParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["status"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
 
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : String(value))
@@ -66,9 +75,9 @@ export const getListUsersUrl = (params?: ListUsersParams,) => {
   return stringifiedParams.length > 0 ? `/v1/platform/users?${stringifiedParams}` : `/v1/platform/users`
 }
 
-export const listUsers = async (params?: ListUsersParams, options?: Parameters<typeof apiFetch>[1]): Promise<ListPageOfUserResponse> => {
+export const listUsers = async (params?: ListUsersParams, options?: Parameters<typeof apiFetch>[1]): Promise<UserListPageResponse> => {
 
-  return apiFetch<ListPageOfUserResponse>(getListUsersUrl(params),
+  return apiFetch<UserListPageResponse>(getListUsersUrl(params),
   {
     ...options,
     method: 'GET'
@@ -311,14 +320,29 @@ export const getSuspendUserUrl = (userId: string,) => {
   return `/v1/platform/users/${userId}/suspend`
 }
 
-export const suspendUser = async (userId: string, options?: Parameters<typeof apiFetch>[1]): Promise<UserResponse> => {
+export const suspendUser = async (userId: string,
+    suspendUserRequest: SuspendUserRequest, options?: Parameters<typeof apiFetch>[1]): Promise<UserResponse> => {
 
-  return apiFetch<UserResponse>(getSuspendUserUrl(userId),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<UserResponse>(getSuspendUserUrl(userId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(suspendUserRequest)
   }
 );}
 

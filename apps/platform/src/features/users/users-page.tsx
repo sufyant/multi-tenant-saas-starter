@@ -57,7 +57,7 @@ export function UsersPage() {
     getListUsersQueryOptions(
       {
         q: q || undefined,
-        status: status ?? undefined,
+        status: status ? [status] : undefined,
         page,
         sort: sort ?? undefined,
       },

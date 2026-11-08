@@ -1,8 +1,8 @@
 import {
   BuiltInRole,
   Language,
-  type ListPageOfUserResponse,
   type UserDetailResponse,
+  type UserListPageResponse,
   type UserMembershipResponse,
   UserMembershipResponseTenantStatus,
   type UserResponse,
@@ -97,18 +97,19 @@ export const everyUser = [ayse, mehmet, john, ciara, rory, erased];
 /** One page of ListUsers. */
 export const usersPageOf = (
   items: UserResponse[],
-  values: Partial<ListPageOfUserResponse> = {},
-): ListPageOfUserResponse => ({
+  values: Partial<UserListPageResponse> = {},
+): UserListPageResponse => ({
   items,
   page: 1,
   pageSize: 20,
   total: items.length,
+  statusCounts: { active: 0, suspended: 0, deleted: 0 },
   ...values,
 });
 
 /** ListUsers: it records each request's parameters and answers the page. */
 export const usersAnswer = (
-  page: ListPageOfUserResponse = usersPageOf(everyUser),
+  page: UserListPageResponse = usersPageOf(everyUser),
   requests: URLSearchParams[] = [],
 ) =>
   http.get("*/v1/platform/users", ({ request }) => {
@@ -171,6 +172,8 @@ export const userDetailOf = (
   ...value,
   suspendedAt: null,
   suspendedBy: null,
+  suspensionReason: null,
+  systemAdminGrantedBy: null,
   memberships: [],
   ...values,
 });

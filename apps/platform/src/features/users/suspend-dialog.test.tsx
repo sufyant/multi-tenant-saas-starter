@@ -1,4 +1,8 @@
-import { ErrorCode, UserResponseStatus } from "@repo/api-client";
+import {
+  ErrorCode,
+  FieldErrorCode,
+  UserResponseStatus,
+} from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -49,8 +53,13 @@ afterAll(() => server.close());
 const open = (user = ayse, name = "Ayşe Yılmaz") =>
   openUserAction(user, name, "Suspend", `Suspend ${name}?`);
 
-const suspend = (dialog: Awaited<ReturnType<typeof open>>) =>
-  userEvent.click(dialog.getByRole("button", { name: "Suspend user" }));
+const suspend = async (
+  dialog: Awaited<ReturnType<typeof open>>,
+  reason = "Shared account",
+) => {
+  await userEvent.type(dialog.getByRole("textbox", { name: "Reason" }), reason);
+  await userEvent.click(dialog.getByRole("button", { name: "Suspend user" }));
+};
 
 const lastOwnerOf = (
   ...organisations: { id: string; name: string; slug: string }[]
@@ -90,7 +99,7 @@ describe("SuspendUserDialog", () => {
     expect(
       screen.getByText("They are refused on their next request."),
     ).toBeVisible();
-    expect(calls).toEqual([{ key: null, body: null }]);
+    expect(calls).toEqual([{ key: null, body: { reason: "Shared account" } }]);
     await waitFor(() => expect(reads.count).toBe(2));
   });
 
@@ -163,6 +172,41 @@ describe("SuspendUserDialog", () => {
         ),
       ),
     ).toBeVisible();
+  });
+
+  // The reason is required, as for an organisation (the maintainer's decision of 2026-11-08).
+  it("Suspend_NoReason_SaysEnterAReasonAndSendsNothing", async () => {
+    const calls: { key: string | null; body: unknown }[] = [];
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(mehmet)),
+      platformCommand("post", `users/${mehmet.id}/suspend`, [], calls),
+    );
+
+    const dialog = await open(mehmet, "Mehmet Kaya");
+    await suspend(dialog, "   ");
+
+    expect(await dialog.findByText("Enter a reason.")).toBeVisible();
+    expect(calls).toEqual([]);
+  });
+
+  it.each([
+    [FieldErrorCode.Required, "Enter a reason."],
+    [FieldErrorCode.TooLong, "Use at most 500 characters."],
+  ])("Suspend_%s_ShowsTheFieldsText", async (code, text) => {
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(mehmet)),
+      platformCommand("post", `users/${mehmet.id}/suspend`, [
+        () =>
+          problem(400, ErrorCode.RequestValidationFailed, { reason: [code] }),
+      ]),
+    );
+
+    const dialog = await open(mehmet, "Mehmet Kaya");
+    await suspend(dialog);
+
+    expect(await dialog.findByText(text)).toBeVisible();
   });
 
   it("Suspend_SystemAdmin_SaysRemoveThemFirst", async () => {
