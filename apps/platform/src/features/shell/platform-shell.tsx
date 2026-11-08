@@ -266,7 +266,7 @@ export function PlatformShell({
             <AccountMenu
               name={admin.name ?? ""}
               email={admin.email ?? ""}
-              person={{ name: admin.name }}
+              person={{ id: admin.id, name: admin.name }}
               profileHref="/settings/profile"
               accountAndSecurityHref="/settings/account"
               webAppHref={webAppUrl}

@@ -18,8 +18,9 @@ export type ToastOptions = {
 };
 
 /**
- * Shows a toast (the Toast README). Success and info leave after 5 seconds; a failure stays until the user closes it. Never use
- * a toast for something the user must act on: that is a Banner or a Dialog.
+ * Shows a toast (the Toast README and the Toast component, 45:523). Success and info have no close button and leave after 5
+ * seconds; a failure keeps its close button and stays until the user closes it (WCAG 2.2, 2.2.1; the maintainer's decision of
+ * 2026-11-08). Never use a toast for something the user must act on: that is a Banner or a Dialog.
  */
 export function showToast({
   title,
@@ -35,6 +36,7 @@ export function showToast({
   show(title, {
     description,
     duration: tone === "destructive" ? Number.POSITIVE_INFINITY : 5000,
+    closeButton: tone === "destructive",
     action,
   });
 }
@@ -47,7 +49,7 @@ export function dismissToasts(): void {
 export type ToasterProps = {
   /** The document's direction; toasts sit at the bottom end. */
   dir: "ltr" | "rtl";
-  /** The accessible name of each toast's close button. */
+  /** The accessible name of a failure's close button. */
   closeLabel: string;
   /** The accessible name of the toast region: "Notifications". */
   regionLabel: string;
@@ -61,12 +63,11 @@ export function Toaster({ dir, closeLabel, regionLabel }: ToasterProps) {
       theme={theme as "light" | "dark" | "system"}
       dir={dir}
       position={dir === "rtl" ? "bottom-left" : "bottom-right"}
-      closeButton
       containerAriaLabel={regionLabel}
       icons={{
-        success: <Icon icon={CircleCheckIcon} className="text-success" />,
-        info: <Icon icon={InfoIcon} className="text-info" />,
-        error: <Icon icon={CircleXIcon} className="text-destructive" />,
+        success: <Icon icon={CircleCheckIcon} className="text-success-text" />,
+        info: <Icon icon={InfoIcon} className="text-info-text" />,
+        error: <Icon icon={CircleXIcon} className="text-destructive-text" />,
       }}
       toastOptions={{
         closeButtonAriaLabel: closeLabel,

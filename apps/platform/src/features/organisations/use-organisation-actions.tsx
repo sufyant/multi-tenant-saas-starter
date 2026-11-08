@@ -46,15 +46,11 @@ export function useOrganisationActions() {
     setOpen({ action, organisation });
 
   const itemsFor = (organisation: Organisation): RowMenuItem[] =>
-    actionsOf(organisation).map((action) =>
-      action === null
-        ? { separator: true }
-        : {
-            label: t(labels[action]),
-            tone: action === "close" ? "destructive" : "default",
-            onSelect: () => start(action, organisation),
-          },
-    );
+    actionsOf(organisation).map((action) => ({
+      label: t(labels[action]),
+      tone: action === "close" ? "destructive" : "default",
+      onSelect: () => start(action, organisation),
+    }));
 
   const Open = open && dialogs[open.action];
   const dialog = open && Open && (

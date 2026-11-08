@@ -160,6 +160,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
     })();
     return (
       <Dialog
+        size="wide"
         open
         onOpenChange={close}
         title={t.rich("confirmTitle", { name, ...isolated })}
@@ -189,6 +190,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={close}
       title={t("add")}
@@ -238,7 +240,7 @@ function PersonCard({ person }: { person: UserResponse }) {
   const users = useTranslations("users");
   return (
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-      <Avatar person={{ name: person.name }} className="size-10" />
+      <Avatar person={person} size="large" />
       <div className="flex min-w-0 flex-col">
         <bdi className="truncate font-medium">
           {userNameOf(person, users("deletedUser"))}

@@ -117,7 +117,9 @@ describe("RowMenu", () => {
     );
 
     const menu = await screen.findByRole("menu");
-    const parts = [...menu.querySelectorAll("[role=menuitem], [role=separator]")];
+    const parts = [
+      ...menu.querySelectorAll("[role=menuitem], [role=separator]"),
+    ];
     expect(parts.map((part) => part.getAttribute("role"))).toEqual([
       "menuitem",
       "menuitem",
@@ -149,7 +151,11 @@ describe("RowMenu", () => {
         label="Actions for Ayşe Yılmaz"
         items={[
           { label: "Change role", icon: ShieldIcon },
-          { label: "Remove from organisation", icon: TrashIcon, tone: "destructive" },
+          {
+            label: "Remove from organisation",
+            icon: TrashIcon,
+            tone: "destructive",
+          },
         ]}
       />,
     );

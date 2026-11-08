@@ -78,6 +78,7 @@ export function CloseDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       tone="destructive"

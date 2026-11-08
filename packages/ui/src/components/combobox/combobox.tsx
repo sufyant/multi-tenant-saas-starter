@@ -33,10 +33,9 @@ export type ComboboxProps = {
   options: ComboboxOption[];
   onValueChange?: (id: string) => void;
   /**
-   * field (default) in forms; compact in the sign-in footer, with an icon and the name only; filter beside a search field, with
-   * the field's border and height and its width from the value.
+   * field (default) in forms; compact in the sign-in footer, with an icon and the name only. A list's filter is `RoleFilter`.
    */
-  variant?: "field" | "compact" | "filter";
+  variant?: "field" | "compact";
   icon?: LucideIcon;
   searchPlaceholder: string;
   /** Shown when the search matches no option. */
@@ -59,15 +58,11 @@ const triggers = {
   // The Auth footer's language: a thin border, the globe, the name and the chevron.
   compact:
     "h-7.5 gap-1.5 border border-border px-2 text-small text-foreground hover:bg-accent pointer-coarse:h-control-lg",
-  // The search field's height and border (search.tsx), so the two line up.
-  filter:
-    "h-control-md min-w-35 border border-input bg-card ps-3 pe-2.5 pointer-coarse:h-control-lg",
 };
 
 /**
  * A searchable picker for a long list (the Combobox README): the search box is the first thing in the list, and each option keeps
- * its own language and direction. New options never change the layout. As a filter, the first option names the whole set ("All
- * roles") and a chosen one names the filter and the value ("Role: Billing lead"); the label is the accessible name only.
+ * its own language and direction. New options never change the layout.
  */
 export function Combobox({
   label,
@@ -122,13 +117,7 @@ export function Combobox({
           <span lang={selected?.lang} dir={selected?.dir} className="truncate">
             {selected?.label}
           </span>
-          <Icon
-            icon={ChevronDownIcon}
-            className={cn(
-              "text-muted-foreground",
-              variant === "filter" && "ms-auto",
-            )}
-          />
+          <Icon icon={ChevronDownIcon} className="text-muted-foreground" />
         </ComboboxPrimitive.Trigger>
         <ComboboxContent className="min-w-64">
           <div className="m-1 flex h-control-md items-center gap-2 rounded-md border border-input bg-card px-3">

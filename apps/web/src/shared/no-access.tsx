@@ -37,7 +37,11 @@ export function NoAccess() {
             <AccountMenu
               name={name}
               email={email}
-              person={{ name: me.data?.name ?? null, email }}
+              person={{
+                id: me.data?.id ?? "",
+                name: me.data?.name ?? null,
+                email,
+              }}
               profileHref={me.data && personalPages.profile}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}

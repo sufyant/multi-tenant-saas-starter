@@ -104,6 +104,7 @@ export function RenameDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("renameTitle", { name, ...isolated })}

@@ -215,7 +215,10 @@ describe("Table", () => {
     render(
       <Table
         {...props}
-        columns={[columns[0], { key: "role", header: "Role", width: "w-37.5" }]}
+        columns={[
+          columns[0] as TableColumn<Member>,
+          { key: "role", header: "Role", width: "w-37.5" },
+        ]}
       />,
     );
 

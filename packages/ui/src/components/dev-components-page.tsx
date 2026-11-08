@@ -499,14 +499,18 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       name: "Avatar",
       render: () => (
         <>
-          <Avatar person={{ name: "Ayşe Yılmaz" }} />
+          <Avatar person={{ id: "f", name: "Ayşe Yılmaz" }} />
           <Avatar
             person={{
+              id: "a",
               name: null,
               email: "kemal@northwind.example",
             }}
           />
-          <Avatar person={{ name: "Mehmet Kaya" }} className="size-11" />
+          <Avatar person={{ id: "b", name: "Mehmet Kaya" }} size="medium" />
+          <Avatar person={{ id: "c", name: "Omar Haddad" }} size="large" />
+          <Avatar person={{ id: "d", name: "Lena Fischer" }} />
+          <Avatar person={{ id: "e", name: "Kemal Şahin" }} />
         </>
       ),
     },
@@ -810,7 +814,6 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
                 disabled: true,
                 reason: "An organisation needs at least one Owner.",
               },
-              { separator: true },
               {
                 label: "Remove from organisation",
                 tone: "destructive",
@@ -924,7 +927,7 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
           <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            person={{ name: "Ayşe Yılmaz" }}
+            person={{ id: "f", name: "Ayşe Yılmaz" }}
             profileHref="#profile"
             onSignOut={() => {}}
             version="a1b2c3d"
@@ -1276,7 +1279,7 @@ function AppShellPreview({ sample }: { sample: Sample }) {
           <AccountMenu
             name="Ayşe Yılmaz"
             email="ayse@northwind.io"
-            person={{ name: "Ayşe Yılmaz" }}
+            person={{ id: "f", name: "Ayşe Yılmaz" }}
             profileHref="#profile"
             onSignOut={() => {}}
             version="a1b2c3d"

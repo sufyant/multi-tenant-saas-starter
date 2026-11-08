@@ -179,7 +179,6 @@ export function PlanSection({
                     onSelect: () =>
                       setOpen({ dialog: "override", key: row.key }),
                   },
-                  { separator: true },
                   {
                     label: t("planSection.removeOverride"),
                     tone: "destructive",

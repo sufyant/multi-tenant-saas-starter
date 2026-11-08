@@ -43,7 +43,9 @@ describe("initialsOf", () => {
 
 describe("Avatar", () => {
   it("Avatar_Person_ShowsTheInitialsHiddenFromScreenReaders", () => {
-    const { container } = render(<Avatar person={{ id: "a", name: "Ayşe Yılmaz" }} />);
+    const { container } = render(
+      <Avatar person={{ id: "a", name: "Ayşe Yılmaz" }} />,
+    );
     const avatar = container.querySelector('[data-slot="avatar"]');
 
     expect(avatar).toHaveTextContent("AY");
@@ -63,7 +65,11 @@ describe("Avatar", () => {
     );
     expect(
       container.querySelector('[data-slot="avatar-fallback"]'),
-    ).toHaveClass("bg-role-owner-subtle", "text-role-owner-text", "text-status");
+    ).toHaveClass(
+      "bg-role-owner-subtle",
+      "text-role-owner-text",
+      "text-status",
+    );
   });
 
   it("Avatar_Medium_IsThePhoneCardsCircle", () => {
@@ -76,7 +82,7 @@ describe("Avatar", () => {
     );
     expect(
       container.querySelector('[data-slot="avatar-fallback"]'),
-    ).toHaveClass("text-small-strong");
+    ).toHaveClass("text-small", "font-medium");
   });
 
   // The Avatar component: one person keeps one tint everywhere, chosen from the person's id (45:334).

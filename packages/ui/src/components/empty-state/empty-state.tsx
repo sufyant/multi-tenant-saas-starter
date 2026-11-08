@@ -21,8 +21,8 @@ export type EmptyStateProps = {
 };
 
 /**
- * What a list or a page shows when it has nothing to show (the design's Empty state): what will appear and how, or what went
- * wrong, one action at most, no apology.
+ * What a list or a page shows when it has nothing to show (the design's Empty state, 45:576): what will appear and how, or what
+ * went wrong, one action at most, 8 px under the text as every other gap, no apology.
  */
 export function EmptyState({
   kind = "empty",
@@ -64,7 +64,7 @@ export function EmptyState({
           {code}
         </p>
       )}
-      {action && <div className={compact ? undefined : "mt-2"}>{action}</div>}
+      {action && <div>{action}</div>}
     </div>
   );
 }

@@ -65,7 +65,7 @@ export function PersonalShell({ children }: { children: ReactNode }) {
             <AccountMenu
               name={me.data.name ?? ""}
               email={me.data.email ?? ""}
-              person={{ name: me.data.name }}
+              person={me.data}
               profileHref={personalPages.profile}
               accountAndSecurityHref={personalPages.account}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}

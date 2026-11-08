@@ -7,14 +7,7 @@ import {
   Permission,
 } from "@repo/api-client";
 import { Avatar } from "@repo/ui/components/avatar";
-import {
-  CalendarIcon,
-  Icon,
-  type LucideIcon,
-  MailIcon,
-  ShieldIcon,
-  UserIcon,
-} from "@repo/ui/components/icon";
+import { LogOutIcon, ShieldIcon, TrashIcon } from "@repo/ui/components/icon";
 import { Label } from "@repo/ui/components/label";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
 import {
@@ -46,13 +39,6 @@ const sorts = {
 };
 
 /** A column's header: its 13 px icon before the label (8.01). */
-const header = (icon: LucideIcon, label: string) => (
-  <span className="inline-flex items-center gap-1.5">
-    <Icon icon={icon} size={13} />
-    {label}
-  </span>
-);
-
 /**
  * The Members tab's table (8.01): Name with the avatar, Email, Role as a Label, Joined. The rows are every page loaded so far
  * (F9, F10); the header still sorts by Name and Role. The row menu follows F5 and F51; nobody removes themselves: the person's own
@@ -107,13 +93,13 @@ export function MembersTable({
   const columns: TableColumn<MemberResponse>[] = [
     {
       key: "name",
-      header: header(UserIcon, t("members.name")),
+      header: t("members.name"),
       sortable: true,
       // Name fills the table's free width and a long one ends with "…": its cell takes the full width with no width of its own
       // (`max-w-0`), so the table never grows wider than the page (8.05).
       render: (member) => (
         <span className="flex min-w-0 items-center gap-2 [td:has(>&)]:w-full [td:has(>&)]:max-w-0">
-          <Avatar person={member} className="size-5.5" />
+          <Avatar person={{ ...member, id: member.userId }} />
           {name(member)}
         </span>
       ),
@@ -121,8 +107,9 @@ export function MembersTable({
     },
     {
       key: "email",
-      header: header(MailIcon, t("members.email")),
+      header: t("members.email"),
       secondary: true,
+      width: "w-62.5",
       card: "meta",
       // The email reads left to right in every language, inside a block of the page's direction, so in Arabic it aligns with its
       // header (8.36). In the table a long one ends with "…" at 250 px, the frame's width (8.05).
@@ -135,15 +122,17 @@ export function MembersTable({
     },
     {
       key: "role",
-      header: header(ShieldIcon, t("members.role")),
+      header: t("members.role"),
       sortable: true,
+      width: "w-37.5",
       card: "end",
       render: (member) => <Label>{roleText(member)}</Label>,
     },
     {
       key: "joined",
-      header: header(CalendarIcon, t("members.joined")),
+      header: t("members.joined"),
       secondary: true,
+      width: "w-27.5",
       // Joined hides in a table narrower than the desktop's (8.33).
       show: "wide",
       card: "hide",
@@ -166,6 +155,7 @@ export function MembersTable({
     if (canChange)
       items.push({
         label: t("members.changeRole"),
+        icon: ShieldIcon,
         onSelect: () => setChanging(member),
         disabled: changeReason !== null,
         reason: changeReason ?? undefined,
@@ -173,6 +163,7 @@ export function MembersTable({
     const last: RowMenuItem | null = own
       ? {
           label: t("members.leave"),
+          icon: LogOutIcon,
           tone: "destructive",
           onSelect: () => setLeaving(true),
           // The Owners' count still loads: the item waits, disabled. When the count fails, the API decides (8.25).
@@ -182,16 +173,14 @@ export function MembersTable({
       : canRemove
         ? {
             label: t("members.remove"),
+            icon: TrashIcon,
             tone: "destructive",
             onSelect: () => setRemoving(member),
             disabled: removeReason !== null,
             reason: removeReason ?? undefined,
           }
         : null;
-    if (last) {
-      if (items.length > 0) items.push({ separator: true });
-      items.push(last);
-    }
+    if (last) items.push(last);
     return items;
   };
 
@@ -214,7 +203,9 @@ export function MembersTable({
           );
         }}
         actionsLabel={t("members.actions")}
-        cardLead={(member) => <Avatar person={member} className="size-9" />}
+        cardLead={(member) => (
+          <Avatar person={{ ...member, id: member.userId }} size="medium" />
+        )}
         // Every loaded row is on the one page: the list grows with Load more, so the pager never shows (F9, F10).
         rowCount={rows.length}
         page={1}

@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "../button";
-import { Icon, MoreHorizontalIcon } from "../icon";
+import { Icon, type LucideIcon, MoreHorizontalIcon } from "../icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,20 +12,19 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 
-export type RowMenuItem =
-  | { separator: true }
-  | {
-      separator?: false;
-      label: string;
-      onSelect?: () => void;
-      disabled?: boolean;
-      /** Shown under a disabled item: why it cannot be used. */
-      reason?: string;
-      tone?: "default" | "destructive";
-    };
+export type RowMenuItem = {
+  label: string;
+  /** The 16 px icon before the label, where the item's frame draws one. */
+  icon?: LucideIcon;
+  onSelect?: () => void;
+  disabled?: boolean;
+  /** Shown under a disabled item: why it cannot be used. */
+  reason?: string;
+  tone?: "default" | "destructive";
+};
 
 export type RowMenuProps = {
-  /** Safe actions first, destructive actions last after a separator. Leave out what the user may not do. */
+  /** Safe actions first, destructive actions last; the menu puts a separator between the two groups. Leave out what the user may not do. */
   items: RowMenuItem[];
   /** The accessible name of the button: "Actions for Ayşe Yılmaz". */
   label: string;
@@ -35,13 +34,15 @@ export type RowMenuProps = {
   align?: "start" | "end";
 };
 
-const labelBefore = (items: RowMenuItem[], index: number) => {
-  const before = items[index - 1];
-  return before && !before.separator ? before.label : "start";
-};
-
-/** The one ⋯ button of a table row or phone card (the RowMenu README). A disabled item stays and says why. */
+/**
+ * The one ⋯ button of a table row or phone card (the RowMenu component, 406:2426): 240 wide, 32 px items with a 16 px icon, and
+ * a separator before the destructive group, none when every item is destructive (Apple HIG, Menus). A disabled item stays and
+ * says why.
+ */
 export function RowMenu({ items, label, open, align = "end" }: RowMenuProps) {
+  const firstDestructive = items.findIndex(
+    (item) => item.tone === "destructive",
+  );
   return (
     <DropdownMenu defaultOpen={open}>
       <DropdownMenuTrigger
@@ -53,23 +54,32 @@ export function RowMenu({ items, label, open, align = "end" }: RowMenuProps) {
           />
         }
       />
-      <DropdownMenuContent align={align} className="w-64">
-        {items.map((item, index) =>
-          item.separator ? (
-            <DropdownMenuSeparator
-              key={`separator-after-${labelBefore(items, index)}`}
-            />
-          ) : (
-            <Fragment key={item.label}>
-              <DropdownMenuItem
-                variant={item.tone}
-                disabled={item.disabled}
-                onClick={item.onSelect}
-                className={cn(
-                  "flex-col items-start gap-0.5 py-1.5",
-                  item.disabled && "data-disabled:opacity-100",
-                )}
-              >
+      <DropdownMenuContent align={align} className="w-60">
+        {items.map((item, index) => (
+          <Fragment key={item.label}>
+            {index > 0 && index === firstDestructive && (
+              <DropdownMenuSeparator className="mx-0" />
+            )}
+            <DropdownMenuItem
+              variant={item.tone}
+              disabled={item.disabled}
+              onClick={item.onSelect}
+              className={cn(
+                "data-[variant=destructive]:text-destructive-text data-[variant=destructive]:*:[svg]:text-destructive-text",
+                item.reason && item.disabled && "items-start py-1.5",
+                item.disabled && "data-disabled:opacity-100",
+              )}
+            >
+              {item.icon && (
+                <Icon
+                  icon={item.icon}
+                  className={cn(
+                    item.tone !== "destructive" && "text-muted-foreground",
+                    item.disabled && "opacity-50",
+                  )}
+                />
+              )}
+              <span className="flex flex-col gap-0.5">
                 <span className={cn(item.disabled && "opacity-50")}>
                   {item.label}
                 </span>
@@ -78,10 +88,10 @@ export function RowMenu({ items, label, open, align = "end" }: RowMenuProps) {
                     {item.reason}
                   </span>
                 )}
-              </DropdownMenuItem>
-            </Fragment>
-          ),
-        )}
+              </span>
+            </DropdownMenuItem>
+          </Fragment>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

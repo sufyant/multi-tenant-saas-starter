@@ -9,7 +9,7 @@ import {
 import { Avatar } from "@repo/ui/components/avatar";
 import { Button } from "@repo/ui/components/button";
 import { Freshness } from "@repo/ui/components/freshness";
-import { KeyIcon } from "@repo/ui/components/icon";
+import { KeyIcon, TrashIcon } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
@@ -54,7 +54,7 @@ export function SystemAdminsPage() {
 
   const person = (user: UserResponse) => (
     <span className="flex min-w-0 items-center gap-3">
-      <Avatar person={{ name: user.name }} />
+      <Avatar person={user} />
       <span className="flex min-w-0 flex-col">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <bdi className="truncate font-medium">
@@ -118,6 +118,7 @@ export function SystemAdminsPage() {
         items={[
           {
             label: t("systemAdmins.remove"),
+            icon: TrashIcon,
             tone: "destructive",
             disabled: self,
             reason: self ? t("systemAdmins.cannotRemoveSelf") : undefined,
@@ -149,7 +150,7 @@ export function SystemAdminsPage() {
         label={t("systemAdmins.title")}
         actions={actions}
         actionsLabel={t("systemAdmins.actions")}
-        cardLead={(user) => <Avatar person={{ name: user.name }} />}
+        cardLead={(user) => <Avatar person={user} size="medium" />}
         rowCount={list.data.total}
         page={list.data.page}
         pageSize={list.data.pageSize}

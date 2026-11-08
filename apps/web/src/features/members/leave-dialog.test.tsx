@@ -98,7 +98,8 @@ describe("LeaveDialog", () => {
     expect(
       within(menu)
         .getAllByRole("menuitem")
-        .map((item) => item.firstChild?.textContent),
+        // The label without a reason under it: the item starts with its icon, then the label.
+        .map((item) => item.querySelector("span > span")?.textContent),
     ).toEqual(["Change role", "Leave organisation"]);
   });
 

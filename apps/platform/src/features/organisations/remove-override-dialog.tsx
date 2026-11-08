@@ -62,6 +62,7 @@ export function RemoveOverrideDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       tone="destructive"

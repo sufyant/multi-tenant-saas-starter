@@ -49,6 +49,7 @@ export function ReactivateDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("reactivateTitle", { name, ...isolated })}

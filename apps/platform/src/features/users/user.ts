@@ -35,15 +35,15 @@ export type Action = "rename" | "suspend" | "reactivate" | "delete";
 
 /**
  * The actions of a user by their status (the Users board): Rename, Suspend or Reactivate, then Delete; none for a deleted user.
- * `null` is a separator. Every system admin holds every platform permission (the API's A4), so the menu has no permission check;
+ * The menu puts its separator before Delete. Every system admin holds every platform permission (the API's A4), so the menu has no permission check;
  * the API still decides.
  */
-export function actionsOf(user: User): (Action | null)[] {
+export function actionsOf(user: User): Action[] {
   switch (user.status) {
     case UserResponseStatus.Active:
-      return ["rename", "suspend", null, "delete"];
+      return ["rename", "suspend", "delete"];
     case UserResponseStatus.Suspended:
-      return ["rename", "reactivate", null, "delete"];
+      return ["rename", "reactivate", "delete"];
     default:
       return [];
   }

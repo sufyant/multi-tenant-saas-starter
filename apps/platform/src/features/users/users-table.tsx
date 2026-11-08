@@ -97,7 +97,7 @@ export function UsersTable({
       sortable: true,
       render: (user) => (
         <span className="flex min-w-0 items-center gap-3">
-          <Avatar person={{ name: user.name }} />
+          <Avatar person={user} />
           <span className="flex min-w-0 flex-col">
             <span className="flex min-w-0 flex-wrap items-center gap-2">
               {name(user)}
@@ -119,6 +119,7 @@ export function UsersTable({
     {
       key: "organisations",
       header: t("users.organisations"),
+      width: "w-40",
       align: "end",
       card: "hide",
       render: (user) => user.membershipCount,
@@ -126,6 +127,7 @@ export function UsersTable({
     {
       key: "status",
       header: t("users.status"),
+      width: "w-35",
       card: "end",
       render: (user) => (
         <Status tone={statuses[user.status].tone}>
@@ -164,7 +166,7 @@ export function UsersTable({
         )
       }
       actionsLabel={t("users.actions")}
-      cardLead={(user) => <Avatar person={{ name: user.name }} />}
+      cardLead={(user) => <Avatar person={user} size="medium" />}
       rowCount={page.total}
       page={page.page}
       pageSize={page.pageSize}

@@ -35,15 +35,11 @@ export function useUserActions() {
   const [open, setOpen] = useState<{ action: Action; user: User } | null>(null);
 
   const itemsFor = (user: User): RowMenuItem[] =>
-    actionsOf(user).map((action) =>
-      action === null
-        ? { separator: true }
-        : {
-            label: t(labels[action]),
-            tone: action === "delete" ? "destructive" : "default",
-            onSelect: () => setOpen({ action, user }),
-          },
-    );
+    actionsOf(user).map((action) => ({
+      label: t(labels[action]),
+      tone: action === "delete" ? "destructive" : "default",
+      onSelect: () => setOpen({ action, user }),
+    }));
 
   const Open = open && dialogs[open.action];
   const dialog = open && Open && (

@@ -125,6 +125,7 @@ export function ImpactDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onCancel()}
       title={t.rich("impactTitle", { plan: plan.name, ...isolated })}

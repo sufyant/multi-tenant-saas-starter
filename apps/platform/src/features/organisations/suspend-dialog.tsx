@@ -102,6 +102,7 @@ export function SuspendDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("suspendTitle", { name, ...isolated })}

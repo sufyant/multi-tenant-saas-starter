@@ -90,6 +90,7 @@ export function SuspendDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       tone="destructive"
       onOpenChange={(open) => !open && onClose()}

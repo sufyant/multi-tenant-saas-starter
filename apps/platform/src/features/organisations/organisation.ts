@@ -94,23 +94,20 @@ export type Action =
 
 /**
  * The actions of an organisation by its status (K4; the Main board): active ⇄ suspended → closed → reopened, and none once the
- * purge has begun. `null` is a separator. Every system admin holds every platform permission (the API's A4), so the menu has no
+ * purge has begun; the menu puts its separator before Close. Every system admin holds every platform permission (the API's A4), so the menu has no
  * permission check; the API still decides.
  */
-export function actionsOf(organisation: Organisation): (Action | null)[] {
+export function actionsOf(organisation: Organisation): Action[] {
   switch (organisation.status) {
     case TenantResponseStatus.Active:
       return [
-        ...(waitsForOwner(organisation)
-          ? (["inviteOwner", null] as const)
-          : []),
+        ...(waitsForOwner(organisation) ? (["inviteOwner"] as const) : []),
         "rename",
         "suspend",
-        null,
         "close",
       ];
     case TenantResponseStatus.Suspended:
-      return ["rename", "reactivate", null, "close"];
+      return ["rename", "reactivate", "close"];
     case TenantResponseStatus.Closed:
       return ["reopen"];
     default:
