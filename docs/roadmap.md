@@ -214,6 +214,13 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - Until then the screens of 37a-frontend-2 keep these parts as `packages/ui` draws them.
 - As built: `Dialog` takes `size="wide"` (480 px) where its frame draws Wide: Change role and every dialog of the platform's own features. `RowMenu` puts its one separator before the destructive group and draws the icon an item's frame gives it. No table header has an icon (the maintainer's decision of 2026-11-08). The role filter is `RoleFilter`, and the Combobox loses its filter variant. A person's tint comes from their id. A success or info toast has no close button; a failure keeps it and stays until the person closes it (WCAG 2.2, 2.2.1; the maintainer's decision of 2026-11-08). The platform's tables take the frames' widths only for the columns they share with them; 37b rebuilds those pages. Done.
 
+37a-settings-nav, the organisation's Settings holds only the organisation's pages (the maintainer's decision of 2026-11-08):
+
+- Since 37a-frontend-4, Profile and Account and security open without an organisation, so a click on them in the organisation's settings menu left its shell.
+- The organisation's settings menu drops My account, in the design (the Sidebar's Settings layouts, its rail and right-to-left variants, and the phone's Settings drawer) and in the web. Profile and Account and security open from the account menu, as GitHub separates them.
+- The command menu keeps "Settings · My account", as frames 2.04 and 2.05 draw it. The platform keeps My account in its settings menu (37b).
+- Done.
+
 37b, the platform's pages:
 
 - Organisations, Users, Plans, Activity log and System admins in the new design.
