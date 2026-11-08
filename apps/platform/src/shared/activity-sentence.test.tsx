@@ -669,9 +669,9 @@ const planCases: PlanCase[] = [
       },
     }),
     {
-      en: "Ciara Byrne changed several values of the plan Partner: Custom roles limit from 50 to 40; Members limit from unlimited to 100; name from Partners to Partner.",
-      tr: "Ciara Byrne, Partner planında birkaç değeri değiştirdi: Özel rol sınırı, 50 değerinden 40 değerine; Üye sınırı, sınırsız değerinden 100 değerine; ad, Partners değerinden Partner değerine.",
-      ar: "غيّر Ciara Byrne عدة قيم في الخطة Partner: حد الأدوار المخصصة من 50 إلى 40؛ حد الأعضاء من غير محدود إلى 100؛ الاسم من Partners إلى Partner.",
+      en: "Ciara Byrne changed several values of the plan Partner: Custom roles limit from 50 to 40; Seats from unlimited to 100; name from Partners to Partner.",
+      tr: "Ciara Byrne, Partner planında birkaç değeri değiştirdi: Özel rol sınırı, 50 değerinden 40 değerine; Yer sayısı, sınırsız değerinden 100 değerine; ad, Partners değerinden Partner değerine.",
+      ar: "غيّر Ciara Byrne عدة قيم في الخطة Partner: حد الأدوار المخصصة من 50 إلى 40؛ المقاعد من غير محدود إلى 100؛ الاسم من Partners إلى Partner.",
     },
   ],
   [
@@ -685,9 +685,9 @@ const planCases: PlanCase[] = [
       },
     }),
     {
-      en: "Ciara Byrne changed several values of the plan Pro: Custom roles from on to off; Members limit from unlimited to not set.",
-      tr: "Ciara Byrne, Pro planında birkaç değeri değiştirdi: Özel roller, açık değerinden kapalı değerine; Üye sınırı, sınırsız değerinden ayarlanmadı değerine.",
-      ar: "غيّر Ciara Byrne عدة قيم في الخطة Pro: الأدوار المخصصة من مفعّل إلى متوقف؛ حد الأعضاء من غير محدود إلى غير محدد.",
+      en: "Ciara Byrne changed several values of the plan Pro: Custom roles from on to off; Seats from unlimited to not set.",
+      tr: "Ciara Byrne, Pro planında birkaç değeri değiştirdi: Özel roller, açık değerinden kapalı değerine; Yer sayısı, sınırsız değerinden ayarlanmadı değerine.",
+      ar: "غيّر Ciara Byrne عدة قيم في الخطة Pro: الأدوار المخصصة من مفعّل إلى متوقف؛ المقاعد من غير محدود إلى غير محدد.",
     },
   ],
   [
@@ -732,9 +732,9 @@ const planCases: PlanCase[] = [
       },
     }),
     {
-      en: "Ciara Byrne made Free the default plan, in place of Pro, and changed Members limit from unlimited to 5.",
-      tr: "Ciara Byrne, Pro yerine Free planını varsayılan yaptı ve şunları değiştirdi: Üye sınırı, sınırsız değerinden 5 değerine.",
-      ar: "جعل Ciara Byrne Free الخطة الافتراضية بدلًا من Pro، وغيّر حد الأعضاء من غير محدود إلى 5.",
+      en: "Ciara Byrne made Free the default plan, in place of Pro, and changed Seats from unlimited to 5.",
+      tr: "Ciara Byrne, Pro yerine Free planını varsayılan yaptı ve şunları değiştirdi: Yer sayısı, sınırsız değerinden 5 değerine.",
+      ar: "جعل Ciara Byrne Free الخطة الافتراضية بدلًا من Pro، وغيّر المقاعد من غير محدود إلى 5.",
     },
   ],
   [
@@ -821,9 +821,9 @@ const planCases: PlanCase[] = [
       oldExpiresAt: "2026-11-30T00:00:00Z",
     },
     {
-      en: "Ciara Byrne removed Atlas Logistics’s override on Members limit (40, until 30 Nov 2026).",
-      tr: "Ciara Byrne, Atlas Logistics kuruluşunun Üye sınırı istisnasını kaldırdı (40, 30 Kas 2026 tarihine kadar).",
-      ar: "أزال Ciara Byrne استثناء Atlas Logistics على حد الأعضاء (40، حتى 30 نوفمبر 2026).",
+      en: "Ciara Byrne removed Atlas Logistics’s override on Seats (40, until 30 Nov 2026).",
+      tr: "Ciara Byrne, Atlas Logistics kuruluşunun Yer sayısı istisnasını kaldırdı (40, 30 Kas 2026 tarihine kadar).",
+      ar: "أزال Ciara Byrne استثناء Atlas Logistics على المقاعد (40، حتى 30 نوفمبر 2026).",
     },
   ],
   [
@@ -838,9 +838,9 @@ const planCases: PlanCase[] = [
       oldExpiresAt: null,
     },
     {
-      en: "Ciara Byrne removed Atlas Logistics’s override on Members limit (unlimited, no expiry).",
-      tr: "Ciara Byrne, Atlas Logistics kuruluşunun Üye sınırı istisnasını kaldırdı (sınırsız, süresiz).",
-      ar: "أزال Ciara Byrne استثناء Atlas Logistics على حد الأعضاء (غير محدود، بلا انتهاء).",
+      en: "Ciara Byrne removed Atlas Logistics’s override on Seats (unlimited, no expiry).",
+      tr: "Ciara Byrne, Atlas Logistics kuruluşunun Yer sayısı istisnasını kaldırdı (sınırsız, süresiz).",
+      ar: "أزال Ciara Byrne استثناء Atlas Logistics على المقاعد (غير محدود، بلا انتهاء).",
     },
   ],
 ];

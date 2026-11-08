@@ -383,7 +383,10 @@
     },
     "change": "{key}, <bdi>{old}</bdi> değerinden <bdi>{new}</bdi> değerine",
     "changeSeparator": "; ",
-    "nameKey": "ad"
+    "nameKey": "ad",
+    "description": "Kuruluşlardaki, kullanıcılardaki, planlardaki ve sistem yöneticilerindeki değişiklikler.",
+    "loadingOlder": "Eski etkinlikler yükleniyor…",
+    "loadedOlder": "{count, plural, one {# kayıt daha yüklendi.} other {# kayıt daha yüklendi.}}"
   },
   "entitlements": {
     "areas": {
@@ -401,7 +404,7 @@
         "description": "Bir kuruluşun en fazla kaç özel rolü olabileceği."
       },
       "members_max": {
-        "name": "Üye sınırı",
+        "name": "Yer sayısı",
         "description": "Üyeler ve süresi dolmamış bekleyen davetler."
       }
     },
@@ -455,11 +458,19 @@
     "newLimit": "Yeni sınır",
     "overBy": "{count} fazla",
     "saveAnyway": "Yine de kaydet",
-    "search": "Kuruluşlarda ara",
     "shown": "{total} kuruluştan {shown} tanesi gösteriliyor, sınırı en çok aşan önce.",
     "loadMore": "Daha fazla yükle",
     "newTab": "(yeni sekmede açılır)",
-    "previewError": "Bu plandaki kuruluşlar denetlenemedi. Yeniden deneyin."
+    "previewError": "Bu plandaki kuruluşlar denetlenemedi. Yeniden deneyin.",
+    "createdColumn": "Oluşturulma",
+    "organisations": "{count, plural, one {Bir kuruluş} other {# kuruluş}}",
+    "loadingMore": "Daha fazla plan yükleniyor…",
+    "loadedPlans": "{count, plural, one {# plan daha yüklendi.} other {# plan daha yüklendi.}}",
+    "moreError": "Daha fazla plan yüklenemedi",
+    "savedText": "{count, plural, =0 {} one {Bu plandaki kuruluş yeni değerleri hemen alır.} other {Bu plandaki # kuruluş yeni değerleri hemen alır.}}",
+    "createdText": "Bir kuruluşa o kuruluşun Plan sekmesinden verin.",
+    "limits": "Sınırlar",
+    "edit": "Planı düzenle"
   },
   "planSection": {
     "title": "Plan",

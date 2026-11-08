@@ -1,6 +1,5 @@
 "use client";
 
-import { Status } from "@repo/ui/components/status";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { Input as InputBase } from "@repo/ui/components/ui/input";
 import { Switch } from "@repo/ui/components/ui/switch";
@@ -9,9 +8,10 @@ import { useId } from "react";
 import { type Draft, useEntitlementText, valueFrom } from "./entitlements";
 
 /**
- * The control of one key's value (the PlanEdit and OrgPlan boards, F52): a `Switch` with On or Off for a feature; a whole number
- * with an Unlimited `Checkbox` for a limit. Unlimited empties and locks the number. In the plan editor a key with no value says
- * "Not set: closed"; an override always has a value, so its dialog leaves that out.
+ * The control of one key's value (the Plans frames and the OrgPlan board, F52): a `Switch` for a feature, with On or Off in the
+ * override dialog; a whole number with an Unlimited `Checkbox` for a limit. Unlimited empties and locks the number. In the plan
+ * editor (`showUnset`) the switch stands alone (6.04), a feature with no value says "Not set: closed" beside it and a limit with
+ * no value shows its placeholder, "Not set" (6.10); an override always has a value, so its dialog leaves that out.
  */
 export function ValueField({
   isFeature,
@@ -33,10 +33,22 @@ export function ValueField({
   const text = useEntitlementText();
   const unlimitedId = useId();
   const errorId = useId();
-  const unset = showUnset && valueFrom(isFeature, draft) === null && !error;
+  const unset = showUnset && isFeature && draft.enabled === null;
   return (
-    <div className="flex flex-col items-end gap-1.5">
-      <div className="flex flex-wrap items-center justify-end gap-3">
+    <div
+      className={
+        showUnset
+          ? "flex flex-col items-start gap-1.5"
+          : "flex flex-col items-end gap-1.5"
+      }
+    >
+      <div
+        className={
+          showUnset
+            ? "flex min-h-control-md flex-wrap items-center gap-3"
+            : "flex flex-wrap items-center justify-end gap-3"
+        }
+      >
         {isFeature ? (
           <>
             <Switch
@@ -44,7 +56,7 @@ export function ValueField({
               checked={draft.enabled === true}
               onCheckedChange={(enabled) => onChange({ ...draft, enabled })}
             />
-            {draft.enabled !== null && (
+            {!showUnset && draft.enabled !== null && (
               <span className="min-w-8 text-body text-muted-foreground">
                 {text.label(true, valueFrom(true, draft))}
               </span>
@@ -66,7 +78,11 @@ export function ValueField({
               onChange={(event) =>
                 onChange({ ...draft, text: event.target.value })
               }
-              className="h-control-md w-28 rounded-md bg-card px-3 text-body tabular-nums pointer-coarse:h-control-lg"
+              className={
+                showUnset
+                  ? "h-control-md w-30 rounded-md bg-card px-2.5 text-body tabular-nums pointer-coarse:h-control-lg"
+                  : "h-control-md w-28 rounded-md bg-card px-3 text-body tabular-nums pointer-coarse:h-control-lg"
+              }
             />
             <span className="flex items-center gap-2">
               <Checkbox
@@ -82,7 +98,7 @@ export function ValueField({
             </span>
           </>
         )}
-        {unset && <Status tone="neutral">{t("entitlements.notSet")}</Status>}
+        {unset && <span className="text-body">{t("entitlements.notSet")}</span>}
       </div>
       {error && (
         <p id={errorId} className="text-small text-destructive-text">

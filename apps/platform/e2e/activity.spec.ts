@@ -15,7 +15,7 @@ test("Activity_Platform_ShowsEveryEntryNewestFirst", async ({ page }) => {
   await open(page, "/activity");
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Activity" }),
+    page.getByRole("heading", { level: 1, name: "Activity log" }),
   ).toBeVisible();
   const entries = page.getByRole("main").getByRole("listitem");
   await expect(entries).toHaveText([

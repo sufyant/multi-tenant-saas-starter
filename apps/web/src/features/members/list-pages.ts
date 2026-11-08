@@ -4,7 +4,7 @@ import {
   type ListInvitationsParams,
   type ListMembersParams,
 } from "@repo/api-client";
-import { nextPage, pageSize } from "@/shared/pages";
+import { nextPage, pageSize } from "@repo/ui/lib/pages";
 
 /**
  * The members' list as pages that Load more adds to (F9): Orval's infinite options, whose page parameter is `page` (F2), as the

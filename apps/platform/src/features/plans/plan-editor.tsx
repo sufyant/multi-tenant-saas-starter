@@ -5,6 +5,7 @@ import {
   createPlan,
   ErrorCode,
   FieldErrorCode,
+  getGetPlanQueryKey,
   getGetPlanQueryOptions,
   getListPlansQueryOptions,
   getPlanUpdatePreview,
@@ -19,18 +20,20 @@ import {
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
-import { Input } from "@repo/ui/components/input";
+import { ArrowLeftIcon, Icon } from "@repo/ui/components/icon";
+import { Label } from "@repo/ui/components/label";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
 import { buttonVariants } from "@repo/ui/components/ui/button";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
+import { Input as InputBase } from "@repo/ui/components/ui/input";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useState } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -46,7 +49,7 @@ import {
 } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { NotFoundPage } from "@/shared/not-found-page";
-import { plansPage, plansQuery, refreshPlans } from "@/shared/plans";
+import { planPage, plansPage, plansQuery, refreshPlans } from "@/shared/plans";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { afterAccountRefusal } from "@/shared/refusal";
 import { ValueField } from "@/shared/value-field";
@@ -102,9 +105,11 @@ const takesAway = (plan: PlanResponse, form: Editing) =>
   });
 
 /**
- * Settings › Plans › a plan (the PlanEdit, PlanEditDefault and PlanImpact boards), and New plan with `planId` null. The keys are
- * grouped by area; a feature is a switch, a limit a whole number or Unlimited, and a key with no value is closed. The default plan
- * keeps its mark until another plan takes it. No delete.
+ * A plan (6.04 to 6.09, 6.18) and New plan (6.10 to 6.12) with `planId` null: Back to Plans, the title and how many organisations are
+ * on the plan, then the keys grouped by area, each a row of a card. A feature is a switch, a limit a whole number or Unlimited, and a
+ * key with no value is closed. Save changes saves only a change and keeps the person on the plan in its saved state (6.08); a new
+ * plan opens on its own page (6.12). The default plan keeps its mark until another plan takes it. No delete. On a phone a plan opens
+ * as the summary of its values, and Edit plan shows the editor (6.18).
  */
 export function PlanEditor({ planId }: { planId: string | null }) {
   const known =
@@ -116,6 +121,7 @@ export function PlanEditor({ planId }: { planId: string | null }) {
     }),
   );
   const t = useTranslations();
+  const [editing, setEditing] = useState(false);
   if (!known || problemOf(plan.error)?.code === ErrorCode.PlanNotFound)
     return <NotFoundPage />;
   if (plan.error) return <ProblemScreen error={plan.error} />;
@@ -125,17 +131,132 @@ export function PlanEditor({ planId }: { planId: string | null }) {
         <Skeleton rows={4} label={t("plans.section")} />
       </Frame>
     );
+  const saved = plan.data ?? null;
   return (
     <Frame>
-      <Form key={plan.data?.id ?? "new"} plan={plan.data ?? null} />
+      <div className="flex flex-col gap-0.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-page-title">
+            <bdi>{saved ? saved.name : t("plans.createTitle")}</bdi>
+          </h1>
+          {saved?.isDefault && <Label>{t("plans.default")}</Label>}
+        </div>
+        <p className="text-body text-muted-foreground">
+          {saved
+            ? t("plans.organisationCount", { count: saved.tenantCount })
+            : t("plans.createText")}
+        </p>
+      </div>
+      {saved && !editing && (
+        <Summary plan={saved} onEdit={() => setEditing(true)} />
+      )}
+      <div className={saved && !editing ? "max-tablet:hidden" : undefined}>
+        <Form key={saved?.id ?? "new"} plan={saved} />
+      </div>
     </Frame>
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
+/** The page: Back to Plans above the content (6.04). */
+function Frame({ children }: { children: ReactNode }) {
+  const t = useTranslations();
   return (
-    <section className="flex min-w-0 max-w-[760px] flex-1 flex-col gap-5">
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      <div>
+        {/* A link to the list, drawn as the ghost button of the frame: a link, not a button, because it navigates. */}
+        <Link href={plansPage} className={buttonVariants({ variant: "ghost" })}>
+          <Icon icon={ArrowLeftIcon} size={16} className="rtl:rotate-180" />
+          {t("plans.title")}
+        </Link>
+      </div>
       {children}
+    </section>
+  );
+}
+
+/** A plan's values as a phone shows them (6.18): each key's name over its value, and Edit plan. Hidden from bp-tablet. */
+function Summary({ plan, onEdit }: { plan: PlanResponse; onEdit: () => void }) {
+  const t = useTranslations();
+  const text = useEntitlementText();
+  const headingId = useId();
+  return (
+    <div className="flex flex-col gap-3 tablet:hidden">
+      <section
+        aria-labelledby={headingId}
+        className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
+      >
+        <p id={headingId} className="text-body font-medium">
+          {t("plans.limits")}
+        </p>
+        <dl className="flex flex-col gap-3">
+          {entitlementAreas().flatMap(({ keys }) =>
+            keys.map(({ key, isFeature }) => (
+              <div key={key} className="flex flex-col">
+                <dt className="text-small text-muted-foreground">
+                  {text.name(key)}
+                </dt>
+                <dd className="text-body">
+                  {text.label(isFeature, plan.entitlements[key] ?? null)}
+                </dd>
+              </div>
+            )),
+          )}
+        </dl>
+      </section>
+      <Button size="lg" onClick={onEdit}>
+        {t("plans.edit")}
+      </Button>
+    </div>
+  );
+}
+
+/** One row of a card (6.04): the label in a 300 px column, the control after it; one above the other on a phone. */
+function Row({
+  label,
+  description,
+  labelId,
+  children,
+  group = false,
+}: {
+  label: ReactNode;
+  description?: string;
+  labelId: string;
+  children: ReactNode;
+  /** A key's row: a group named by its label, which holds the switch or the number and Unlimited. */
+  group?: boolean;
+}) {
+  const className =
+    "flex flex-col gap-3 px-5 py-3 tablet:flex-row tablet:items-center tablet:gap-6";
+  const content = (
+    <>
+      <div className="flex min-w-0 flex-col gap-0.5 tablet:w-75 tablet:shrink-0">
+        <span id={labelId} className="text-body font-medium">
+          {label}
+        </span>
+        {description && (
+          <p className="text-small text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">{children}</div>
+    </>
+  );
+  if (!group) return <div className={className}>{content}</div>;
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: a fieldset's legend would draw a frame the card does not have; the group names the row.
+    <div role="group" aria-labelledby={labelId} className={className}>
+      {content}
+    </div>
+  );
+}
+
+/** An area of the plan (6.04): its name over a card of rows. */
+function Area({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-body font-medium">{title}</h2>
+      <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
+        {children}
+      </div>
     </section>
   );
 }
@@ -174,14 +295,26 @@ function Form({ plan }: { plan: PlanResponse | null }) {
   const done = (saved: PlanResponse, created: boolean) => {
     renew();
     setImpact(null);
+    queryClient.setQueryData(getGetPlanQueryKey(saved.id), saved);
     void refreshPlans(queryClient, saved.id);
+    const description = created
+      ? t("plans.createdText")
+      : t("plans.savedText", { count: saved.tenantCount });
     showToast({
       title: t.rich(created ? "plans.created" : "plans.saved", {
         name: saved.name,
         ...isolated,
       }),
+      description: description || undefined,
     });
-    router.push(plansPage);
+    // A new plan opens on its own page (6.12); a saved plan stays on screen in its saved state (6.08).
+    if (created) router.push(planPage(saved.id));
+    else
+      form.reset({
+        name: saved.name,
+        isDefault: saved.isDefault,
+        drafts: draftsOf(saved),
+      });
   };
 
   const refused = (error: unknown) => {
@@ -284,126 +417,107 @@ function Form({ plan }: { plan: PlanResponse | null }) {
           ...isolated,
         });
 
+  const nameId = `${markHint}-name`;
+  const nameNote = `${markHint}-name-note`;
   return (
     <form
       noValidate
       onSubmit={(event) => void submit(event)}
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
     >
-      <div>
-        <h1 className="text-page-title">
-          <bdi>{plan ? plan.name : t("plans.createTitle")}</bdi>
-        </h1>
-        <p className="text-body text-muted-foreground">
-          {plan
-            ? t("plans.organisationCount", { count: plan.tenantCount })
-            : t("plans.createText")}
-        </p>
-      </div>
-      <section className="flex flex-col gap-4 rounded-lg border bg-card p-5">
-        <h2 className="text-section-title">{t("plans.section")}</h2>
-        <Input
-          label={t("plans.name")}
-          autoComplete="off"
-          className="max-w-[360px]"
-          error={nameError}
-          {...form.register("name")}
-        />
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id={`${markHint}-box`}
-            className="mt-0.5"
-            aria-describedby={markHint}
-            checked={isDefault}
-            disabled={locked}
-            onCheckedChange={(checked) =>
-              form.setValue("isDefault", checked, { shouldDirty: true })
-            }
-          />
-          <div className="flex flex-col">
-            <label
-              htmlFor={`${markHint}-box`}
-              className="text-body font-medium"
+      <Area title={t("plans.section")}>
+        <Row
+          labelId={`${nameId}-label`}
+          label={<label htmlFor={nameId}>{t("plans.name")}</label>}
+        >
+          <div className="flex flex-col gap-1.5">
+            <InputBase
+              id={nameId}
+              autoComplete="off"
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? nameNote : undefined}
+              className="h-control-md w-full pointer-coarse:h-control-lg tablet:w-80"
+              {...form.register("name")}
+            />
+            {nameError && (
+              <p id={nameNote} className="text-small text-destructive-text">
+                {nameError}
+              </p>
+            )}
+          </div>
+        </Row>
+        <Row
+          labelId={`${markHint}-label`}
+          label={
+            <label htmlFor={`${markHint}-box`}>{t("plans.defaultPlan")}</label>
+          }
+        >
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id={`${markHint}-box`}
+              className="mt-0.5"
+              aria-describedby={markHint}
+              checked={isDefault}
+              disabled={locked}
+              onCheckedChange={(checked) =>
+                form.setValue("isDefault", checked, { shouldDirty: true })
+              }
+            />
+            <p
+              id={markHint}
+              className="max-w-105 text-small text-muted-foreground"
             >
-              {t("plans.defaultPlan")}
-            </label>
-            <p id={markHint} className="text-small text-muted-foreground">
               {markText}
             </p>
           </div>
-        </div>
-      </section>
+        </Row>
+      </Area>
       {entitlementAreas().map(({ area, keys }) => (
-        <section
-          key={area}
-          className="flex flex-col rounded-lg border bg-card p-5"
-        >
-          <h2 className="text-section-title">{text.area(area)}</h2>
-          <div className="flex flex-col divide-y">
-            {keys.map(({ key, isFeature }) => {
-              const index = entitlementKeys.findIndex(
-                (item) => item.key === key,
-              );
-              const draft = drafts[index];
-              if (!draft) return null;
-              const nameId = `${markHint}-${index}`;
-              return (
-                // biome-ignore lint/a11y/useSemanticElements: a fieldset's legend would draw a frame the board does not have; the group names the row.
-                <div
-                  key={key}
-                  role="group"
-                  aria-labelledby={nameId}
-                  className="flex flex-col gap-3 py-4 tablet:flex-row tablet:items-start tablet:justify-between"
-                >
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <span id={nameId} className="font-medium">
-                        {text.name(key)}
-                      </span>
-                      <code
-                        dir="ltr"
-                        className="font-mono text-mono text-muted-foreground"
-                      >
-                        {key}
-                      </code>
-                    </div>
-                    <p className="text-small text-muted-foreground">
-                      {text.description(key)}
-                    </p>
-                  </div>
-                  <ValueField
-                    isFeature={isFeature}
-                    label={text.name(key)}
-                    draft={draft}
-                    onChange={(next) => setDraft(index, next)}
-                    error={
-                      errors.drafts?.[index]?.text
-                        ? t("plans.numberInvalid")
-                        : undefined
-                    }
-                    showUnset
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <Area key={area} title={text.area(area)}>
+          {keys.map(({ key, isFeature }) => {
+            const index = entitlementKeys.findIndex((item) => item.key === key);
+            const draft = drafts[index];
+            if (!draft) return null;
+            return (
+              <Row
+                key={key}
+                group
+                labelId={`${markHint}-${index}`}
+                label={text.name(key)}
+                description={text.description(key)}
+              >
+                <ValueField
+                  isFeature={isFeature}
+                  label={text.name(key)}
+                  draft={draft}
+                  onChange={(next) => setDraft(index, next)}
+                  error={
+                    errors.drafts?.[index]?.text
+                      ? t("plans.numberInvalid")
+                      : undefined
+                  }
+                  showUnset
+                />
+              </Row>
+            );
+          })}
+        </Area>
       ))}
       {failure && (
         <Banner tone="destructive" title={t("plans.notSaved")}>
           {failure}
         </Banner>
       )}
-      <div className="flex flex-wrap gap-3">
-        <Button type="submit" variant="primary" disabled={pending}>
+      <div>
+        <Button
+          type="submit"
+          variant="primary"
+          // A plan saves only a change (6.04, 6.08); a new plan always has one to create, as the web's role editor.
+          disabled={pending || (plan !== null && !form.formState.isDirty)}
+          aria-busy={pending || undefined}
+        >
           {plan ? t("plans.save") : t("plans.create")}
         </Button>
-        <Link
-          href={plansPage}
-          className={buttonVariants({ variant: "outline" })}
-        >
-          {t("common.cancel")}
-        </Link>
       </div>
       {impact && plan && (
         <ImpactDialog

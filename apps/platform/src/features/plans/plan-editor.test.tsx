@@ -68,6 +68,10 @@ const setLimit = async (name: string, value: string) => {
 const save = () =>
   userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
+/** A change of the name, so Save changes turns on (6.06): a plan saves only a change. */
+const changeName = () =>
+  userEvent.type(screen.getByRole("textbox", { name: "Name" }), " Plus");
+
 const openPro = async () => {
   server.use(planAnswer(pro));
   renderWithProviders(<PlanEditor planId={pro.id} />);
@@ -480,53 +484,6 @@ describe("PlanEditor", () => {
     expect(updates).toEqual([]);
   });
 
-  it("Impact_Search_AsksThePreviewWithTheWords", async () => {
-    const previews: Call[] = [];
-    await openPro();
-    server.use(
-      plansCommand(
-        "post",
-        `plans/${pro.id}/preview`,
-        [
-          () =>
-            HttpResponse.json(
-              previewPage(
-                [
-                  excess(
-                    "0198f0a2-0000-7000-8000-000000000002",
-                    "Burren Supply",
-                    "burren-supply",
-                    14,
-                    10,
-                  ),
-                ],
-                { total: 200 },
-              ),
-            ),
-        ],
-        previews,
-      ),
-    );
-
-    await setLimit("Custom roles limit", "10");
-    await save();
-    const dialog = within(
-      await screen.findByRole("alertdialog", { name: "Save changes to Pro?" }),
-    );
-    expect(
-      dialog.getByText("Showing 1 of 200, the furthest over first."),
-    ).toBeVisible();
-    await userEvent.type(
-      dialog.getByRole("searchbox", { name: "Search organisations" }),
-      "burren",
-    );
-
-    await waitFor(() =>
-      expect(previews.at(-1)?.url.searchParams.get("q")).toBe("burren"),
-    );
-    expect(previews.at(-1)?.body).toEqual(previews[0]?.body);
-  });
-
   it("Impact_LoadMore_AsksTheNextPage", async () => {
     const previews: Call[] = [];
     await openPro();
@@ -663,6 +620,7 @@ describe("PlanEditor", () => {
       ]),
     );
 
+    await changeName();
     await save();
 
     expect(await screen.findByText("Enter a name.")).toBeVisible();
@@ -691,6 +649,7 @@ describe("PlanEditor", () => {
       ]),
     );
 
+    await changeName();
     await save();
 
     expect(await screen.findByText("Use 1 to 100 characters.")).toBeVisible();
@@ -731,6 +690,7 @@ describe("PlanEditor", () => {
       ]),
     );
 
+    await changeName();
     await save();
 
     expect(
@@ -749,6 +709,7 @@ describe("PlanEditor", () => {
 
     renderWithProviders(<PlanEditor planId={free.id} />);
     await screen.findByRole("heading", { level: 1, name: "Free" });
+    await changeName();
     await save();
 
     const banner = (await screen.findByText("Plan not saved")).closest(
@@ -771,6 +732,7 @@ describe("PlanEditor", () => {
 
     renderWithProviders(<PlanEditor planId={pro.id} />);
     await screen.findByRole("heading", { level: 1, name: "Pro" });
+    await changeName();
     await save();
 
     expect(

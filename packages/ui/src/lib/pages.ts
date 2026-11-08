@@ -1,4 +1,5 @@
-// The lists that grow with Load more (F9): Members, Invitations and Roles by page, the Activity log by cursor.
+// The lists that grow with Load more (F9), in both apps: by page (the web's Members, Invitations and Roles, the platform's Plans) or by
+// cursor (the Activity logs).
 
 /** The rows of one page of a list. The API's limit is 1 to 100. */
 export const pageSize = 50;

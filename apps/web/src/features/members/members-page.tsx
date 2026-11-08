@@ -23,12 +23,14 @@ import {
   UserPlusIcon,
 } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
+import { LoadMore } from "@repo/ui/components/load-more";
 import { RoleFilter } from "@repo/ui/components/role-filter";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Search } from "@repo/ui/components/search";
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Tabs } from "@repo/ui/components/tabs";
 import { showToast } from "@repo/ui/components/toast";
+import { rowsIn } from "@repo/ui/lib/pages";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import {
   keepPreviousData,
@@ -38,8 +40,6 @@ import {
 import { useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { type ReactNode, useCallback, useEffect, useId, useState } from "react";
-import { LoadMore } from "@/shared/load-more";
-import { rowsIn } from "@/shared/pages";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { PlanBanner } from "@/shared/plan-banner";

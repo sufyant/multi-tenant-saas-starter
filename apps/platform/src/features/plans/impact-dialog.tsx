@@ -7,18 +7,15 @@ import {
   type ListPageOfTenantExcessResponse,
   type PlanResponse,
   problemOf,
-  schemas,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import { Dialog } from "@repo/ui/components/dialog";
-import { Search } from "@repo/ui/components/search";
-import { Status } from "@repo/ui/components/status";
+import { Pill } from "@repo/ui/components/pill";
 import { Table, type TableColumn } from "@repo/ui/components/table";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { isFeatureKey, useEntitlementText } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 
@@ -27,8 +24,8 @@ type Row = ExcessResponse & { id: string; tenantId: string; name: string };
 /**
  * The impact of a plan edit before it is saved (the PlanImpact board): the organisations on the plan that the edit puts over a
  * limit, each with the key, its count, the new value and how far over; a feature turned off lists what uses it. The list is the
- * API's page (K5): searched by name or slug, the furthest over first, with "Load more" and the total. Each organisation opens in
- * a new tab, so the edit is not lost. It never blocks: Cancel or Save anyway.
+ * API's page (K5): the furthest over first, with "Load more" and the total, and no search, as 6.07 draws it. Each organisation
+ * opens in a new tab, so the edit is not lost. It never blocks: Cancel or Save anyway.
  */
 export function ImpactDialog({
   plan,
@@ -50,22 +47,17 @@ export function ImpactDialog({
   const common = useTranslations("common");
   const text = useEntitlementText();
   const failureText = useFailureText();
-  const [q, setQ] = useState("");
   const pages = useInfiniteQuery({
     // A POST that reads: its key is its operation and its arguments, as a generated key is (F2, F44).
-    queryKey: ["getPlanUpdatePreview", plan.id, { entitlements }, { q }],
+    queryKey: ["getPlanUpdatePreview", plan.id, { entitlements }],
     queryFn: ({ pageParam }) =>
-      getPlanUpdatePreview(
-        plan.id,
-        { entitlements },
-        { page: pageParam, ...(q ? { q } : {}) },
-      ),
+      getPlanUpdatePreview(plan.id, { entitlements }, { page: pageParam }),
     initialPageParam: 1,
     getNextPageParam: (last, all) =>
       all.reduce((count, page) => count + page.items.length, 0) < last.total
         ? last.page + 1
         : undefined,
-    ...(q === "" ? { initialData: { pages: [first], pageParams: [1] } } : {}),
+    initialData: { pages: [first], pageParams: [1] },
     staleTime: Number.POSITIVE_INFINITY,
   });
   const loaded = pages.data?.pages ?? [];
@@ -109,7 +101,7 @@ export function ImpactDialog({
         <span className="inline-flex flex-wrap items-center justify-end gap-2">
           <span className="tabular-nums">{row.count}</span>
           {!isFeatureKey(row.key) && (
-            <Status tone="warning">{t("overBy", { count: row.amount })}</Status>
+            <Pill tone="warning">{t("overBy", { count: row.amount })}</Pill>
           )}
         </span>
       ),
@@ -136,12 +128,6 @@ export function ImpactDialog({
       onConfirm={onConfirm}
     >
       <div className="flex flex-col gap-3">
-        <Search
-          value={q}
-          label={t("search")}
-          maxLength={schemas.getPlanUpdatePreviewQueryQMax}
-          onSearch={setQ}
-        />
         {pages.isError ? (
           <Banner tone="destructive" title={t("previewError")}>
             {failureText(problemOf(pages.error))}

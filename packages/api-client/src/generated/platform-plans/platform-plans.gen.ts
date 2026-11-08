@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -89,11 +94,81 @@ export const listPlans = async (params?: ListPlansParams, options?: Parameters<t
 
 
 
+export const getListPlansInfiniteQueryKey = (params?: ListPlansParams,) => {
+    return [
+    'infinite', "listPlans", ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListPlansQueryKey = (params?: ListPlansParams,) => {
     return [
     "listPlans", ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListPlansInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listPlans>>, ListPlansParams['page']>, TError = ErrorType<ProblemDetails>>(params?: ListPlansParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlansInfiniteQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlans>>, QueryKey, ListPlansParams['page']> = ({ signal, pageParam }) => listPlans({...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPlansInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listPlans>>>
+export type ListPlansInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListPlansInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlans>>, ListPlansParams['page']>, TError = ErrorType<ProblemDetails>>(
+ params: undefined |  ListPlansParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlans>>,
+          TError,
+          Awaited<ReturnType<typeof listPlans>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlansInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlans>>, ListPlansParams['page']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlansParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPlans>>,
+          TError,
+          Awaited<ReturnType<typeof listPlans>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPlansInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlans>>, ListPlansParams['page']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlansParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListPlansInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlans>>, ListPlansParams['page']>, TError = ErrorType<ProblemDetails>>(
+ params?: ListPlansParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPlansInfiniteQueryOptions(params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListPlansQueryOptions = <TData = Awaited<ReturnType<typeof listPlans>>, TError = ErrorType<ProblemDetails>>(params?: ListPlansParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}

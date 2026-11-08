@@ -48,7 +48,7 @@ test("PlanEditor_Pro_ShowsEveryKeyByArea", async ({ page }) => {
       .getByRole("spinbutton"),
   ).toHaveValue("20");
   await expect(
-    page.getByRole("group", { name: "Members limit" }).getByRole("checkbox", {
+    page.getByRole("group", { name: "Seats" }).getByRole("checkbox", {
       name: "Unlimited",
     }),
   ).toBeChecked();
@@ -88,7 +88,9 @@ test("PlanEditor_LowerALimit_ShowsTheImpactAndSavesAnyway", async ({
   await expectAccessible(page);
   await dialog.getByRole("button", { name: "Save anyway" }).click();
 
-  await expect(page).toHaveURL("/plans");
+  // The person stays on the plan, in its saved state (6.08).
+  await expect(page.getByText("Pro saved")).toBeVisible();
+  await expect(page).toHaveURL(`/plans/${plans.pro.id}`);
   expect(bodies).toEqual([
     {
       name: "Pro",
@@ -123,7 +125,7 @@ test("Organisation_AddOverride_SavesIt", async ({ page }) => {
   await open(page, `/organisations/${northwind.id}`);
   await mockOverride(page, northwind.id, bodies);
 
-  await page.getByRole("button", { name: "Actions for Members limit" }).click();
+  await page.getByRole("button", { name: "Actions for Seats" }).click();
   await page.getByRole("menuitem", { name: "Add override" }).click();
   const dialog = page.getByRole("alertdialog", {
     name: "Add an override for Northwind Traders",
