@@ -42,9 +42,10 @@ for app in web platform; do
   echo "::endgroup::"
 done
 
+# The shots run with the frames' revision, so the account menu and the drawer show "Version a1b2c3d" as the frames draw it (F59).
 for app in web platform; do
   echo "::group::Screenshots: $app"
-  if ! E2E_SCREENSHOTS=1 pnpm --filter "@repo/$app" exec playwright test e2e/screenshots.spec.ts \
+  if ! SOURCE_REVISION=a1b2c3d4e5f6 E2E_SCREENSHOTS=1 pnpm --filter "@repo/$app" exec playwright test e2e/screenshots.spec.ts \
     --project=signed-in --reporter=list; then
     failed=1
   fi

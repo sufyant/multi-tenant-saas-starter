@@ -2198,6 +2198,17 @@ for (const shot of shellShots.map(withDefaults))
           .map((each) => each.finished),
       ),
     );
+    // A tall frame draws the whole page as one screen, so the sticky sidebar reaches its foot. A full-page capture alone keeps the
+    // sidebar at the screen's height and leaves the account chip mid-page (6.33).
+    if (shot.fullPage) {
+      const height = await page.evaluate(
+        () => document.documentElement.scrollHeight,
+      );
+      await page.setViewportSize({
+        width: frames[shot.size].width,
+        height: Math.max(height, frames[shot.size].height),
+      });
+    }
 
     await page.screenshot({
       path: `${folder}/shell-${shot.file}.png`,
