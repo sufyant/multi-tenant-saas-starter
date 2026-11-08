@@ -275,6 +275,7 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 - Saving a plan keeps the person on the plan, in its saved state (6.08); a new plan opens on its own page (6.12) (the maintainer's decision of 2026-11-07). Save is disabled until a change, as the web's role editor.
 - `LoadMore` moves from `apps/web/src/shared/` to `packages/ui`, so both apps use one; F9 says so. A failed older page shows its text and Try again under the entries (7.06); a broken cursor shows a Banner, "Starting from the newest activity." (7.07).
 - It waits for nothing.
+- As built: `LoadMore` and the paging helpers are in `packages/ui` (`components/load-more/`, `lib/pages.ts`). The Plans list grows with Load more over `ListPlans`' infinite options and shows Created. The plan editor draws each area as a card of rows (Plan, Members, Roles), and "Members limit" is "Seats" on every screen of the platform. The impact dialog has no search. A page of one record names its section and the record in the breadcrumb ("Plans › Team"), the Users and Organisations pages too (5.05, 6.04). On a phone a plan opens as its summary with Edit plan. Done.
 
 37b-frontend-2, Organisations:
 
