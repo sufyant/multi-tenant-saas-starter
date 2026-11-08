@@ -37,3 +37,19 @@ export function csvStream(
     },
   });
 }
+
+/**
+ * The records of a file of `csvStream` after its header. A line break inside a quoted field is part of the field (RFC 4180,
+ * section 2), so only a CRLF outside quotes ends a record.
+ */
+export function csvRecords(file: string): number {
+  let quoted = false;
+  let records = 0;
+  for (let index = 0; index < file.length; index++) {
+    const character = file[index];
+    if (character === '"') quoted = !quoted;
+    else if (!quoted && character === "\r" && file[index + 1] === "\n")
+      records++;
+  }
+  return Math.max(0, records - 1);
+}

@@ -296,7 +296,7 @@
     "empty": "Henüz etkinlik yok",
     "emptyText": "Üyeler, davetler ve kuruluştaki değişiklikler burada görünür.",
     "error": "Etkinlik yüklenemedi",
-    "olderError": "Eski etkinlikler yüklenemedi",
+    "olderError": "Eski etkinlikler yüklenemedi.",
     "restarted": "En yeni etkinlikten başlanıyor",
     "operations": {
       "activity_log": {
@@ -357,7 +357,22 @@
       }
     },
     "morePermissions": "{count} izin daha",
-    "roleRenamed": "<actor></actor>, <name>{oldName}</name> rolünün adını <name>{newName}</name> olarak değiştirdi."
+    "roleRenamed": "<actor></actor>, <name>{oldName}</name> rolünün adını <name>{newName}</name> olarak değiştirdi.",
+    "description": "Üyelerde, davetlerde, rollerde ve kuruluşta yapılan değişiklikler.",
+    "loadingOlder": "Eski etkinlikler yükleniyor…",
+    "loadedOlder": "{count, plural, one {# kayıt daha yüklendi.} other {# kayıt daha yüklendi.}}",
+    "moreActions": "Diğer işlemler",
+    "exportCsv": "CSV olarak dışa aktar",
+    "exportTitle": "Etkinlik kaydını dışa aktarın",
+    "exportText": "{organisation} kuruluşunun en yeniden başlayarak en çok {cap} kaydını içeren bir CSV dosyası. Sütunlar: Zaman (UTC), Kim, Ne.",
+    "exportFormat": "Zamanlar ISO 8601 UTC biçimindedir, örneğin 2026-11-01T14:32:00Z. Silinmiş kişilerin kayıtlarında “Silinmiş kullanıcı” yazar.",
+    "exportFailed": "Dosya oluşturulamadı.",
+    "exportedTitle": "Etkinlik kaydı dışa aktarıldı",
+    "exportedText": "{name} indirilenler klasörünüzde.",
+    "exportedCapped": "Dosyada en yeni {cap} kayıt var.",
+    "fileTime": "Zaman (UTC)",
+    "fileWho": "Kim",
+    "fileWhat": "Ne"
   },
   "blocked": {
     "suspendedTitle": "{organisation} askıya alındı",
@@ -382,7 +397,7 @@
   "permissions": {
     "tenant": {
       "audit": {
-        "read": "Etkinliği görebilir"
+        "read": "Etkinlik kaydını görebilir"
       },
       "invitations": {
         "create": "Kişileri davet edebilir",
@@ -421,7 +436,6 @@
     "usageBoth": "{members} · {invitations}",
     "notInUse": "Kullanılmıyor",
     "inUseBoth": "{members} ve {invitations}",
-    "inUseReason": "Önce {users} için başka bir rol seçin.",
     "seeMembers": "Üyelerini gör",
     "seeInvitations": "Davetlerini gör",
     "builtIn": "Yerleşik",
@@ -437,8 +451,6 @@
     "noCustomText": "Sahip, Yönetici ve Üye uymadığında bir rol oluşturun.",
     "newRole": "Yeni rol",
     "nameHint": "{organisation} içinde benzersiz olmalı, yerleşik adlar da dahil.",
-    "everyRole": "Her rolde vardır.",
-    "rolesReadNeeded": "Kişileri davet etmek, rolleri değiştirmek, üyeleri çıkarmak ve davetleri geri çekmek için gerekir.",
     "lacks": "Sizin rolünüzde bu izin yok.",
     "save": "Değişiklikleri kaydet",
     "nameTaken": "{name} adında bir rol zaten var.",
@@ -464,9 +476,9 @@
     "discard": "At",
     "keepEditing": "Düzenlemeye devam et",
     "deleteTitle": "{name} silinsin mi?",
-    "deleteText": "Artık kimse bu rolü alamaz. Etkinlik adını saklar.",
+    "deleteText": "Artık kimse bu rolü alamaz. Etkinlik kaydı adını saklar.",
     "deleted": "Rol silindi",
-    "deletedText": "Etkinlik adını saklar.",
+    "deletedText": "Etkinlik kaydı adını saklar.",
     "deleteFailed": "{name} silinemedi",
     "inUse": "{name} şu anda kullanımda.",
     "inUseText": "Biri az önce bu rolü bir üyeye ya da davete verdi. Liste yenilendi.",
@@ -476,7 +488,50 @@
       "members": "Üyeler",
       "invitations": "Davetler",
       "roles": "Roller",
-      "activity": "Etkinlik"
+      "activity": "Etkinlik kaydı"
+    },
+    "customType": "Özel",
+    "summary": "{type} · {permissions} · {users}",
+    "notInUseLower": "kullanılmıyor",
+    "inUseTitle": "{name} kullanımda",
+    "inUseDialog": "Bu rol {users} tarafından kullanılıyor. Önce {kind, select, members {{total, plural, one {üyesine} other {üyelerine}}} invitations {{total, plural, one {davetine} other {davetlerine}}} other {onlara}} başka bir rol verin.",
+    "savedText": "{name} artık {count} izne sahip.",
+    "outOfReachText": "Rolü görebilirsiniz, ancak yalnızca bu izinlerin hepsine sahip biri değiştirebilir veya silebilir. Bir Sahibe sorun.",
+    "loadMore": "Daha fazla yükle",
+    "loadingMore": "Daha fazla rol yükleniyor…",
+    "loadedRoles": "{count, plural, one {# rol daha yüklendi.} other {# rol daha yüklendi.}}",
+    "moreError": "Daha fazla rol yüklenemedi",
+    "selectAll": "Tümünü seç",
+    "selectAllOf": "Tümünü seç: {area}",
+    "areaCount": "{held}/{total}",
+    "hints": {
+      "tenant": {
+        "profile": {
+          "read": "Her rolde bu izin var."
+        },
+        "members": {
+          "read": "Üye listesi ve her kişinin rolü.",
+          "update": "Bir üyeye başka bir rol verin.",
+          "delete": "Birini {organisation} kuruluşundan çıkarın."
+        },
+        "owners": {
+          "manage": "Sahipleri yönetme izni yalnızca Sahip rolündedir."
+        },
+        "invitations": {
+          "read": "Bekleyen davetler ve onları kimin gönderdiği.",
+          "create": "E-postayla davet gönderin.",
+          "delete": "Bir daveti kabul edilmeden önce durdurun."
+        },
+        "roles": {
+          "read": "Kişileri davet etmek, rolleri değiştirmek, üyeleri çıkarmak ve davetleri geri almak için gerekir.",
+          "create": "Özel bir rol ekleyin.",
+          "update": "Özel bir rolün adını ve izinlerini değiştirin.",
+          "delete": "Kimsenin kullanmadığı özel bir rolü kaldırın."
+        },
+        "audit": {
+          "read": "Kimin neyi ne zaman değiştirdiği."
+        }
+      }
     }
   },
   "plans": {

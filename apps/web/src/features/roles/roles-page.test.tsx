@@ -103,13 +103,13 @@ describe("RolesPage", () => {
     renderInTenant(<RolesPage />, { url });
 
     expect(await rows()).toEqual([
-      expect.stringMatching(/^Owner13 permissionsNot in useBuilt in/),
-      expect.stringMatching(/^Admin9 permissionsNot in useBuilt in/),
-      expect.stringMatching(/^Member2 permissionsNot in useBuilt in/),
-      expect.stringMatching(/^Billing lead3 permissionsNot in use$/),
-      expect.stringMatching(/^Reviewer2 permissionsNot in use$/),
+      expect.stringMatching(/^OwnerBuilt inNot in use13 permissions/),
+      expect.stringMatching(/^AdminBuilt inNot in use9 permissions/),
+      expect.stringMatching(/^MemberBuilt inNot in use2 permissions/),
+      expect.stringMatching(/^Billing leadCustomNot in use3 permissions/),
+      expect.stringMatching(/^ReviewerCustomNot in use2 permissions/),
     ]);
-    expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "New role" })).toHaveAttribute(
       "href",
       "/northwind/settings/roles/new",
     );
@@ -153,7 +153,7 @@ describe("RolesPage", () => {
 
     expect(await menuItems("Reviewer")).toEqual([["View permissions", false]]);
     expect(
-      screen.queryByRole("button", { name: "Create role" }),
+      screen.queryByRole("button", { name: "New role" }),
     ).not.toBeInTheDocument();
   });
 
@@ -193,17 +193,22 @@ describe("RolesPage", () => {
 
       renderInTenant(<RolesPage />, { url });
 
-      expect((await rows())[3]).toBe(`Reviewer2 permissions${text}`);
+      expect((await rows())[3]).toBe(`ReviewerCustom${text}2 permissions`);
     },
   );
 
+  // A role in use keeps "Delete role", which opens a dialog that says who uses it and how to go on (9.13; the maintainer's rule of 37a-frontend-2 that a stopped action stays and says why).
   it.each([
-    [4, 1, "Give its 4 members and 1 pending invitation another role first."],
-    [1, 0, "Give its 1 member another role first."],
-    [2, 3, "Give its 2 members and 3 pending invitations another role first."],
+    [
+      4,
+      1,
+      "4 members and 1 pending invitation have this role. Give them another role first.",
+    ],
+    [1, 0, "1 member has this role. Give its member another role first."],
+    [3, 0, "3 members have this role. Give its members another role first."],
   ])(
-    "RolesPage_CustomRoleUsedBy%sMembersAnd%sInvitations_DisablesDeleteWithTheCounts",
-    async (members, invitations, reason) => {
+    "RolesPage_DeleteCustomRoleUsedBy%sMembersAnd%sInvitations_SaysWhoUsesItAndOffersItsMembers",
+    async (members, invitations, text) => {
       server.use(
         ...tenantAnswers(BuiltInRole.Owner, undefined, [
           usedBy(reviewer, members, invitations),
@@ -211,14 +216,50 @@ describe("RolesPage", () => {
       );
 
       renderInTenant(<RolesPage />, { url });
-
       expect(await menuItems("Reviewer")).toEqual([
         ["Edit role", false],
         ["See its members", false],
-        [`Delete role${reason}`, true],
+        ["Delete role", false],
       ]);
+      await userEvent.click(
+        screen.getByRole("menuitem", { name: "Delete role" }),
+      );
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Reviewer is in use",
+      });
+      expect(dialog).toHaveTextContent(text);
+      await userEvent.click(
+        within(dialog).getByRole("button", { name: "See its members" }),
+      );
+      expect(push).toHaveBeenCalledWith(
+        `/northwind/settings/members?roleId=${reviewer.id}`,
+      );
     },
   );
+
+  it("RolesPage_DeleteRoleInUse_CallsNoDelete", async () => {
+    const deleted = vi.fn();
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, undefined, [usedBy(reviewer, 1, 0)]),
+      deleteAnswer(() => {
+        deleted();
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+    await pickFromRowMenu("Roles", "Reviewer", "Delete role");
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Reviewer is in use",
+    });
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Close" }),
+    );
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(deleted).not.toHaveBeenCalled();
+  });
 
   it("RolesPage_SeeItsMembers_OpensTheMembersFilteredByTheRole", async () => {
     server.use(
@@ -233,7 +274,7 @@ describe("RolesPage", () => {
     );
   });
 
-  it("RolesPage_CustomRoleUsedOnlyByInvitations_DisablesDeleteAndLinksItsInvitations", async () => {
+  it("RolesPage_CustomRoleUsedOnlyByInvitations_DeleteSaysSoAndLinksItsInvitations", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Owner, undefined, [usedBy(reviewer, 0, 2)]),
     );
@@ -243,10 +284,19 @@ describe("RolesPage", () => {
     expect(await menuItems("Reviewer")).toEqual([
       ["Edit role", false],
       ["See its invitations", false],
-      ["Delete roleGive its 2 pending invitations another role first.", true],
+      ["Delete role", false],
     ]);
     await userEvent.click(
-      screen.getByRole("menuitem", { name: "See its invitations" }),
+      screen.getByRole("menuitem", { name: "Delete role" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Reviewer is in use",
+    });
+    expect(dialog).toHaveTextContent(
+      "2 pending invitations have this role. Give its invitations another role first.",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "See its invitations" }),
     );
     expect(push).toHaveBeenCalledWith(
       `/northwind/settings/members?tab=invitations&roleId=${reviewer.id}`,
@@ -326,11 +376,17 @@ describe("RolesPage", () => {
 
     expect(await menuItems("Profile only")).toEqual([
       ["Edit role", false],
-      [
-        "Delete roleGive its 4 members and 1 pending invitation another role first.",
-        true,
-      ],
+      ["Delete role", false],
     ]);
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Delete role" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Profile only is in use",
+    });
+    // Without a list to open, the dialog only informs.
+    expect(within(dialog).getAllByRole("button")).toHaveLength(1);
+    expect(within(dialog).getByRole("button", { name: "Close" })).toBeVisible();
   });
 
   it("RolesPage_ViewerWithoutInvitationsRead_OffersNoInvitationsLink", async () => {
@@ -345,7 +401,7 @@ describe("RolesPage", () => {
 
     expect(await menuItems("Reviewer")).toEqual([
       ["Edit role", false],
-      ["Delete roleGive its 2 pending invitations another role first.", true],
+      ["Delete role", false],
     ]);
   });
 
@@ -364,10 +420,12 @@ describe("RolesPage", () => {
     expect(
       await screen.findByText("15 of 20 custom roles"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "New role" })).toHaveAttribute(
       "href",
       "/northwind/settings/roles/new",
     );
+    // The list's skeleton is a status too: the banner's absence is checked once the rows came.
+    await rows();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -386,7 +444,7 @@ describe("RolesPage", () => {
     expect(await rows()).toHaveLength(5);
     expect(screen.queryByText(/custom roles?$/)).not.toBeInTheDocument();
     expect(screen.queryByText(/null/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create role" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "New role" })).toHaveAttribute(
       "href",
       "/northwind/settings/roles/new",
     );
@@ -416,7 +474,7 @@ describe("RolesPage", () => {
       renderInTenant(<RolesPage />, { url });
 
       const create = await screen.findByRole("button", {
-        name: "Create role",
+        name: "New role",
       });
       await waitFor(() => expect(create).toBeDisabled());
       expect(create).not.toHaveAttribute("href");
@@ -447,7 +505,7 @@ describe("RolesPage", () => {
       within(banner).getByRole("link", { name: "Contact us" }),
     ).toHaveAttribute("href", brand.supportUrl);
     expect(screen.getByText("3 of 2 custom roles")).toBeVisible();
-    const create = screen.getByRole("button", { name: "Create role" });
+    const create = screen.getByRole("button", { name: "New role" });
     expect(create).toBeDisabled();
     expect(create).toHaveAccessibleDescription(
       "You have 3 custom roles; your plan allows 2. Delete roles to create new ones. Every role and its members keep working.",
@@ -484,7 +542,7 @@ describe("RolesPage", () => {
 
     const reason = "Your organisation’s plan doesn’t include custom roles.";
     const [create] = await screen.findAllByRole("button", {
-      name: "Create role",
+      name: "New role",
     });
     await waitFor(() => expect(create).toBeDisabled());
     expect(create).toHaveAccessibleDescription(reason);
@@ -517,7 +575,7 @@ describe("RolesPage", () => {
       expect.stringMatching(/^Reviewer/),
       expect.stringMatching(/^Support lead/),
     ]);
-    const create = screen.getByRole("button", { name: "Create role" });
+    const create = screen.getByRole("button", { name: "New role" });
     expect(create).toBeDisabled();
     expect(create).toHaveAccessibleDescription(reason);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -529,7 +587,7 @@ describe("RolesPage", () => {
     ]);
   });
 
-  it("RolesPage_CustomRolesOffAndRoleInUse_KeepsTheInUseReasonOnDelete", async () => {
+  it("RolesPage_CustomRolesOffAndRoleInUse_KeepsDeleteEnabled", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
@@ -548,10 +606,7 @@ describe("RolesPage", () => {
       ["View permissions", false],
       ["See its members", false],
       ["Edit roleYour organisation’s plan doesn’t include custom roles.", true],
-      [
-        "Delete roleGive its 1 member and 1 pending invitation another role first.",
-        true,
-      ],
+      ["Delete role", false],
     ]);
   });
 
@@ -590,9 +645,87 @@ describe("RolesPage", () => {
 
     expect(await screen.findByText("No custom roles yet")).toBeInTheDocument();
     expect(await rows()).toHaveLength(3);
-    expect(screen.getAllByRole("button", { name: "Create role" })).toHaveLength(
-      2,
+    // The header's "New role" is the one action (9.04).
+    expect(screen.getAllByRole("button", { name: "New role" })).toHaveLength(1);
+  });
+
+  // No Freshness under the title (F59): the frame's description sentence stands there (9.01).
+  it("RolesPage_Header_ShowsTheDescriptionAndNoFreshness", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(await rows()).toHaveLength(4);
+    expect(
+      screen.getByText(
+        "Owner, Admin and Member are built in. Create a role when a person needs a different set of permissions.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText(/Updated/)).not.toBeInTheDocument();
+  });
+
+  // The list grows with Load more (F9): the next page joins the rows, and a live region says how many came.
+  it("RolesPage_LoadMore_AddsTheNextPageAndSaysHowManyCame", async () => {
+    const pages: Record<string, RoleDetailResponse[]> = {
+      "1": [
+        {
+          ...roleOf.owner,
+          permissions: permissionsOf.owner,
+          memberCount: 1,
+          pendingInvitationCount: 0,
+        },
+        {
+          ...roleOf.admin,
+          permissions: permissionsOf.admin,
+          memberCount: 0,
+          pendingInvitationCount: 0,
+        },
+      ],
+      "2": [reviewer],
+    };
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}/roles`, ({ request }) => {
+        const page = new URL(request.url).searchParams.get("page") ?? "1";
+        return HttpResponse.json({
+          items: pages[page],
+          page: Number(page),
+          pageSize: 2,
+          total: 3,
+        });
+      }),
+      ...tenantAnswers(BuiltInRole.Owner),
     );
+
+    renderInTenant(<RolesPage />, { url });
+    expect(await rows()).toHaveLength(2);
+    await userEvent.click(screen.getByRole("button", { name: "Load more" }));
+
+    await waitFor(async () => expect(await rows()).toHaveLength(3));
+    expect(screen.getByText("1 more role loaded.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Load more" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Next" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // "New role" stands while the list loads, as 9.02 draws it: the plan decides the button, not the list.
+  it("RolesPage_ListLoading_ShowsNewRole", async () => {
+    server.use(
+      http.get(
+        `*/v1/tenants/${northwind.id}/roles`,
+        () => new Promise(() => {}),
+      ),
+      ...tenantAnswers(BuiltInRole.Owner),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(
+      await screen.findByRole("status", { name: "Loading roles" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New role" })).toBeVisible();
   });
 
   it("RolesPage_WithoutRolesRead_ShowsPermissionDenied", async () => {
@@ -630,14 +763,16 @@ describe("DeleteRoleDialog", () => {
     renderInTenant(<RolesPage />, { url });
     const dialog = await openDelete();
     expect(dialog).toHaveTextContent(
-      "People can no longer get this role. Activity keeps its name.",
+      "People can no longer get this role. The Activity log keeps its name.",
     );
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Delete role" }),
     );
 
     expect(await screen.findByText("Role deleted")).toBeInTheDocument();
-    expect(screen.getByText("Activity keeps its name.")).toBeInTheDocument();
+    expect(
+      screen.getByText("The Activity log keeps its name."),
+    ).toBeInTheDocument();
     await waitFor(() => expect(reads).toBe(2));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });

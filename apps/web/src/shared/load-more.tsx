@@ -8,6 +8,8 @@ import { useEffect, useRef } from "react";
  * The foot of a list that grows (F9): "Load more" while a next page exists; while it comes, a "Loading more …" row in the
  * button's place (8.05). A polite live region says how many rows came (WCAG 2.2, 4.1.3); it stays in the page, so a screen
  * reader hears each change. The button takes the focus back when it returns, so a keyboard user does not start again at the top.
+ * A list that says a failed page in place (the Activity log, 12.06) passes `failed`: its text and Try again stand in the button's
+ * place until a try succeeds.
  */
 export function LoadMore({
   hasMore,
@@ -16,6 +18,7 @@ export function LoadMore({
   label,
   loadingLabel,
   announcement,
+  failed,
 }: {
   hasMore: boolean;
   loading: boolean;
@@ -24,6 +27,7 @@ export function LoadMore({
   loadingLabel: string;
   /** What came with the last page: "10 more members loaded.", or nothing yet. */
   announcement: string | null;
+  failed?: { text: string; retryLabel: string };
 }) {
   const button = useRef<HTMLButtonElement>(null);
   const refocus = useRef(false);
@@ -45,7 +49,13 @@ export function LoadMore({
           </span>
         </div>
       )}
-      {hasMore && !loading && (
+      {failed && !loading && (
+        <div className="flex flex-wrap items-center gap-2 py-2">
+          <p className="text-small text-destructive-text">{failed.text}</p>
+          <Button onClick={onMore}>{failed.retryLabel}</Button>
+        </div>
+      )}
+      {hasMore && !loading && !failed && (
         <div className="flex justify-center py-2">
           <Button
             ref={button}

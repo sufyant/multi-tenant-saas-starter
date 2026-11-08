@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -84,12 +89,88 @@ export const listRoles = async (tenantId: string,
 
 
 
+export const getListRolesInfiniteQueryKey = (tenantId: string,
+    params?: ListRolesParams,) => {
+    return [
+    'infinite', "listRoles", ...(tenantId ? [tenantId] : []), ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListRolesQueryKey = (tenantId: string,
     params?: ListRolesParams,) => {
     return [
     "listRoles", ...(tenantId ? [tenantId] : []), ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListRolesInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listRoles>>, ListRolesParams['page']>, TError = ErrorType<ProblemDetails>>(tenantId: string,
+    params?: ListRolesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRolesInfiniteQueryKey(tenantId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoles>>, QueryKey, ListRolesParams['page']> = ({ signal, pageParam }) => listRoles(tenantId,{...params, 'page': pageParam ?? params?.['page']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListRolesInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listRoles>>>
+export type ListRolesInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListRolesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listRoles>>, ListRolesParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params: undefined |  ListRolesParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listRoles>>,
+          TError,
+          Awaited<ReturnType<typeof listRoles>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRolesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listRoles>>, ListRolesParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListRolesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listRoles>>,
+          TError,
+          Awaited<ReturnType<typeof listRoles>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRolesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listRoles>>, ListRolesParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListRolesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListRolesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listRoles>>, ListRolesParams['page']>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string,
+    params?: ListRolesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListRolesInfiniteQueryOptions(tenantId,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListRolesQueryOptions = <TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<ProblemDetails>>(tenantId: string,

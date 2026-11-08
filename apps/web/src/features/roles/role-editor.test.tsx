@@ -107,6 +107,19 @@ describe("RoleEditor rules", () => {
     expect(profile).toHaveAccessibleDescription("Every role has this.");
   });
 
+  // 9.08: the label is body text, and a locked permission says why in its line, without a lock mark.
+  it("RoleEditor_LockedPermission_ShowsItsLabelInBodyTextWithoutAMark", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    await openNew();
+
+    const label = (
+      (await box("See the organisation’s details")) as HTMLButtonElement
+    ).labels?.[0];
+    expect(label).toHaveClass("text-body");
+    expect(label?.querySelector("svg")).toBeNull();
+  });
+
   it.each([
     "Invite people",
     "Change members’ roles",
@@ -157,15 +170,56 @@ describe("RoleEditor rules", () => {
     expect(await box("See members")).toBeEnabled();
   });
 
-  it("RoleEditor_Owner_NeverShowsManageOwners", async () => {
+  // Manage Owners shows in the editor, disabled with its reason: only the Owner role holds it (9.08, K1).
+  it("RoleEditor_Owner_ShowsManageOwnersDisabledWithItsReason", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner));
 
     await openNew();
 
-    await box("See members");
-    expect(
-      screen.queryByRole("checkbox", { name: "Manage Owners" }),
-    ).not.toBeInTheDocument();
+    const owners = await box("Manage Owners");
+    expect(owners).toBeDisabled();
+    expect(owners).toHaveAttribute("aria-checked", "false");
+    expect(owners).toHaveAccessibleDescription(
+      "Manage Owners belongs to the Owner role only.",
+    );
+  });
+
+  // Each area says how many of its permissions the role holds, and each permission says what it gives (9.08).
+  it("RoleEditor_Areas_CountTheHeldPermissionsAndDescribeEach", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
+
+    await openReviewer();
+
+    expect(await screen.findByText("1 of 4")).toBeVisible();
+    expect(await box("See members")).toHaveAccessibleDescription(
+      "The member list and each person’s role.",
+    );
+    expect(await box("Remove members")).toHaveAccessibleDescription(
+      "Take someone out of Northwind Traders.",
+    );
+    expect(await box("See the activity log")).toHaveAccessibleDescription(
+      "Who changed what, and when.",
+    );
+  });
+
+  // Select all of an area checks each of its permissions the viewer may give; See roles follows, as the editor's rules say.
+  it("RoleEditor_SelectAllInvitations_ChecksEachOfTheArea", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
+    await openReviewer();
+
+    await userEvent.click(await box("Select all: Invitations"));
+
+    expect(await box("See invitations")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(await box("Invite people")).toHaveAttribute("aria-checked", "true");
+    expect(await box("Revoke and cancel invitations")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(await box("See roles")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("3 of 3")).toBeVisible();
   });
 
   it.each([
@@ -529,6 +583,17 @@ describe("NewRolePage", () => {
 });
 
 describe("UpdateRole", () => {
+  // 9.11 and 9.16: "Save changes" waits for a change, and rests again once the role holds what the form shows.
+  it("UpdateRole_NoChange_DisablesSaveUntilSomethingChanges", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
+    await openReviewer();
+
+    const save = screen.getByRole("button", { name: "Save changes" });
+    expect(save).toBeDisabled();
+    await userEvent.click(await box("See the activity log"));
+    expect(save).toBeEnabled();
+  });
+
   it("UpdateRole_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeature", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
@@ -546,17 +611,29 @@ describe("UpdateRole", () => {
     );
   });
 
-  it("UpdateRole_Success_SendsTheNameAndEveryPermissionAfterwards", async () => {
+  it("UpdateRole_Success_SendsEveryPermissionAndStaysOnTheRole", async () => {
     const sent: unknown[] = [];
     server.use(
       ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
-      updateAnswer(() => HttpResponse.json(reviewer), sent),
+      updateAnswer(
+        () =>
+          HttpResponse.json({
+            ...reviewer,
+            name: "Auditor",
+            permissions: [
+              Permission.TenantProfileRead,
+              Permission.TenantMembersRead,
+              Permission.TenantAuditRead,
+            ],
+          }),
+        sent,
+      ),
     );
     const field = await openReviewer();
 
     await userEvent.clear(field);
     await userEvent.type(field, "Auditor");
-    await userEvent.click(await box("See Activity"));
+    await userEvent.click(await box("See the activity log"));
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByText("Changes saved.")).toBeInTheDocument();
@@ -570,7 +647,11 @@ describe("UpdateRole", () => {
         ],
       },
     ]);
-    expect(push).toHaveBeenCalledWith(list);
+    // The role stays open after a save (9.16); only a new role goes back to the list (9.05).
+    expect(
+      screen.getByText("Auditor now has 3 permissions."),
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -595,7 +676,7 @@ describe("UpdateRole", () => {
       );
       await openReviewer();
 
-      await userEvent.click(await box("See Activity"));
+      await userEvent.click(await box("See the activity log"));
       await userEvent.click(
         screen.getByRole("button", { name: "Save changes" }),
       );
@@ -611,6 +692,7 @@ describe("UpdateRole", () => {
       updateAnswer(() => problem(404, ErrorCode.RoleNotFound)),
     );
     await openReviewer();
+    await userEvent.click(await box("See the activity log"));
 
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
@@ -626,6 +708,7 @@ describe("UpdateRole", () => {
       updateAnswer(() => problem(403, ErrorCode.RoleNotPermitted)),
     );
     await openReviewer();
+    await userEvent.click(await box("See the activity log"));
 
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
@@ -646,7 +729,7 @@ describe("Editor pages", () => {
     );
     await openReviewer();
 
-    await userEvent.click(await box("See Activity"));
+    await userEvent.click(await box("See the activity log"));
     await userEvent.click(screen.getByRole("button", { name: "Delete role" }));
     const dialog = await screen.findByRole("alertdialog", {
       name: "Delete Reviewer?",
@@ -664,7 +747,7 @@ describe("Editor pages", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("RolePage_CustomRoleOutOfReach_ReadsWithoutAForm", async () => {
+  it("RolePage_CustomRoleOutOfReach_ReadsWithADisabledName", async () => {
     const roleEditor = customRole(
       "0198f0a2-0000-7000-8000-0000000000c4",
       "Role editor",
@@ -689,8 +772,8 @@ describe("Editor pages", () => {
     expect(
       await screen.findByRole("heading", { name: "Billing lead" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-    expect(await box("See Activity")).toBeDisabled();
+    expect(screen.getByRole("textbox", { name: "Name" })).toBeDisabled();
+    expect(await box("See the activity log")).toBeDisabled();
   });
 
   it("NewRolePage_WithoutRolesCreate_ShowsPermissionDenied", async () => {
@@ -710,7 +793,7 @@ describe("Leaving with changes", () => {
     server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
     await openReviewer();
 
-    await userEvent.click(await box("See Activity"));
+    await userEvent.click(await box("See the activity log"));
     await userEvent.click(screen.getByRole("link", { name: "Members" }));
 
     expect(
@@ -731,7 +814,7 @@ describe("Leaving with changes", () => {
     server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
     await openReviewer();
 
-    await userEvent.click(await box("See Activity"));
+    await userEvent.click(await box("See the activity log"));
     await userEvent.click(screen.getByRole("link", { name: "Members" }));
     await userEvent.click(
       await screen.findByRole("button", { name: "Keep editing" }),
@@ -741,13 +824,13 @@ describe("Leaving with changes", () => {
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
     );
     expect(push).not.toHaveBeenCalled();
-    expect(await box("See Activity")).toBeChecked();
+    expect(await box("See the activity log")).toBeChecked();
   });
 
   it("LeaveEditor_BackAfterAnUndoThenNewChanges_StillAsks", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
     await openReviewer();
-    const activity = await box("See Activity");
+    const activity = await box("See the activity log");
 
     await userEvent.click(activity);
     await userEvent.click(activity);

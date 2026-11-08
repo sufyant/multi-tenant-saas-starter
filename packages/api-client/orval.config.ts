@@ -53,6 +53,9 @@ export default defineConfig({
           ListInvitations: {
             query: { useInfinite: true, useInfiniteQueryParam: "page" },
           },
+          ListRoles: {
+            query: { useInfinite: true, useInfiniteQueryParam: "page" },
+          },
         },
       },
     },

@@ -1,64 +1,98 @@
 "use client";
 
 import {
+  actionFor,
   FeatureKey,
-  getGetMeQueryOptions,
+  getListRolesInfiniteQueryOptions,
   LimitKey,
   Permission,
+  ProblemDetailsError,
   problemOf,
   type RoleDetailResponse,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
+import { Dialog } from "@repo/ui/components/dialog";
 import { EmptyState } from "@repo/ui/components/empty-state";
-import { Freshness } from "@repo/ui/components/freshness";
-import { Icon, LockIcon } from "@repo/ui/components/icon";
+import { Icon, PlusIcon } from "@repo/ui/components/icon";
+import { Label } from "@repo/ui/components/label";
 import { ListError } from "@repo/ui/components/list-error";
 import { RowMenu, type RowMenuItem } from "@repo/ui/components/row-menu";
-import { Skeleton } from "@repo/ui/components/skeleton";
+import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Table, type TableColumn } from "@repo/ui/components/table";
-import { Tag } from "@repo/ui/components/tag";
-import { useQuery } from "@tanstack/react-query";
+import { showToast } from "@repo/ui/components/toast";
+import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
+import { LoadMore } from "@/shared/load-more";
+import { nextPage, pageSize, rowsIn } from "@/shared/pages";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
+import { TableSkeleton } from "@/shared/table-skeleton";
 import { useCan, useTenant } from "@/shared/tenant-context";
-import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
+import { holdsAll } from "@/shared/use-can-act-on";
 import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
 import { DeleteRoleDialog } from "./delete-role-dialog";
+import { useRoleUsers } from "./role-users";
 import { RolesFrame } from "./roles-frame";
 
+/** The bars of the first load, by column: Name, Type, Used by, Permissions (9.02). */
+const skeletonBars = ["w-30", "w-30", "w-30", "w-30"];
+
+/** The list of a role's members or invitations, as a menu item and as the in-use dialog's action. */
+type UsersLink = { label: string; onSelect: () => void };
+
+/** A role in use, whose "Delete role" says who uses it and opens their list (9.13). */
+type InUse = { role: RoleDetailResponse; link: UsersLink | null };
+
 /**
- * Settings > Roles (the RolesList, RolesAdmin, RolesLimit and RolesEmpty boards): Name, Permissions, Used by and Type, the built-in
- * roles first (F51). A built-in role offers "View permissions". A custom role offers "Edit role" and "Delete role" by their
- * permissions (F5), both disabled with the reason when the viewer's role does not hold every permission of it (F51); without the
- * update permission it opens read-only. A role in use offers its members, or its invitations when only invitations use it, and
- * its "Delete role" is disabled with the counts, as `role.in_use` counts them. The plan (the plan-limit boards, through `usePlan`):
- * a viewer who may create sees the count of `roles.custom.max` (none when unlimited); at the limit "Create role" is disabled with
- * the reason, over it with the banner. With `roles.custom` off the custom roles stay listed, "Create role" and "Edit role" are
- * disabled with the feature's reason in place of the count, and "Delete role" keeps its own rules.
+ * Settings > Roles (9.01 to 9.07, 9.12, 9.13, 9.17): Name, Type, Used by and Permissions, the built-in roles first (F51), under the
+ * frame's description and no Freshness (F59). The list grows with Load more (F9). A built-in role offers "View permissions". A
+ * custom role offers "Edit role" and "Delete role" by their permissions (F5), both disabled with the reason when the viewer's role
+ * does not hold every permission of it (F51); without the update permission it opens read-only. A role in use offers its members,
+ * or its invitations when only invitations use it; its "Delete role" opens a dialog that says who uses it and offers the same list
+ * (9.13), and calls no delete. The plan (through `usePlan`, F56 until 40a): a viewer who may create sees the count of
+ * `roles.custom.max` (none when unlimited); at the limit "New role" is disabled with the reason, over it with the banner. With
+ * `roles.custom` off the custom roles stay listed, "New role" and "Edit role" are disabled with the feature's reason in place of
+ * the count, and "Delete role" keeps its own rules.
  */
 export function RolesPage() {
   const t = useTranslations();
   const roleName = useRoleName();
+  const usersOf = useRoleUsers();
   const can = useCan();
   const router = useRouter();
   const { tenant, detail } = useTenant();
-  const roles = useTenantRoles();
-  const me = useQuery(getGetMeQueryOptions());
+  const failureText = useFailureText();
+  const readsRoles = can(Permission.TenantRolesRead);
+  const roles = useInfiniteQuery(
+    getListRolesInfiniteQueryOptions(
+      tenant.id,
+      { pageSize },
+      {
+        query: {
+          initialPageParam: 1,
+          getNextPageParam: nextPage,
+          enabled: readsRoles,
+        },
+      },
+    ),
+  );
   const plan = usePlan();
   const planReason = usePlanReason();
   const [deleting, setDeleting] = useState<RoleDetailResponse | null>(null);
+  const [inUse, setInUse] = useState<InUse | null>(null);
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   const counterId = useId();
   const bannerId = useId();
 
-  if (!can(Permission.TenantRolesRead))
+  if (!readsRoles)
     return (
       <RolesFrame>
         <PermissionDenied page={t("settings.roles")} />
@@ -88,53 +122,52 @@ export function RolesPage() {
       limit: roleLimit.limit,
     });
   })();
-  // The button waits for the roles, so it shows with the list it acts on.
+  const plus = <Icon icon={PlusIcon} size={16} />;
+  // The button stands while the list loads or fails, as 9.02 and 9.03 draw it: the plan decides it, not the list.
   const createButton =
     canCreate &&
-    roles.data !== undefined &&
     (featureOff || roleLimit.full ? (
       <Button
         variant="primary"
+        icon={plus}
         disabled
         aria-describedby={over ? reasonIdsOf(bannerId) : counterId}
       >
-        {t("roles.create")}
+        {t("roles.newRole")}
       </Button>
     ) : (
       <Button
         variant="primary"
+        icon={plus}
         render={<Link href={`${base}/new`} />}
         nativeButton={false}
       >
-        {t("roles.create")}
+        {t("roles.newRole")}
       </Button>
     ));
 
-  // Who uses a role, as `role.in_use` counts them: its members and its pending invitations, an expired one included.
-  const usersOf = (
-    role: RoleDetailResponse,
-    both: "roles.usageBoth" | "roles.inUseBoth",
-  ) => {
-    const people =
-      role.memberCount > 0 &&
-      t("roles.usageMembers", { count: role.memberCount });
-    const invitations =
-      role.pendingInvitationCount > 0 &&
-      t("roles.usageInvitations", { count: role.pendingInvitationCount });
-    if (people && invitations) return t(both, { members: people, invitations });
-    return people || invitations || null;
-  };
-
   const name = (role: RoleDetailResponse) => (
-    <span className="flex min-w-0 items-center gap-1.5 font-medium">
-      {role.builtIn && (
-        <Icon icon={LockIcon} size={14} className="text-muted-foreground" />
-      )}
-      <bdi className="truncate">{roleName(role)}</bdi>
-    </span>
+    <bdi className="block truncate">{roleName(role)}</bdi>
   );
   const columns: TableColumn<RoleDetailResponse>[] = [
     { key: "name", header: t("roles.name"), render: name },
+    {
+      key: "type",
+      header: t("roles.type"),
+      card: "end",
+      render: (role) => (
+        <Label>
+          {role.builtIn ? t("roles.builtIn") : t("roles.customType")}
+        </Label>
+      ),
+    },
+    {
+      key: "use",
+      header: t("roles.usedBy"),
+      secondary: true,
+      card: "hide",
+      render: (role) => usersOf(role, "usageBoth") ?? t("roles.notInUse"),
+    },
     {
       key: "permissions",
       header: t("roles.permissions"),
@@ -142,44 +175,31 @@ export function RolesPage() {
       render: (role) =>
         t("members.permissionCount", { count: role.permissions.length }),
     },
-    {
-      key: "use",
-      header: t("roles.usedBy"),
-      secondary: true,
-      card: "hide",
-      render: (role) => usersOf(role, "roles.usageBoth") ?? t("roles.notInUse"),
-    },
-    {
-      key: "type",
-      header: t("roles.type"),
-      card: "end",
-      render: (role) => role.builtIn && <Tag>{t("roles.builtIn")}</Tag>,
-    },
   ];
 
   // The members of a role in the members list filtered by it (F9), or its invitations when only invitations use it.
-  const usedBy = (role: RoleDetailResponse): RowMenuItem[] => {
+  const usedByLink = (role: RoleDetailResponse): UsersLink | null => {
     if (role.memberCount > 0)
       return can(Permission.TenantMembersRead)
-        ? [
-            {
-              label: t("roles.seeMembers"),
-              onSelect: () => router.push(`${members}?roleId=${role.id}`),
-            },
-          ]
-        : [];
+        ? {
+            label: t("roles.seeMembers"),
+            onSelect: () => router.push(`${members}?roleId=${role.id}`),
+          }
+        : null;
     if (
       role.pendingInvitationCount > 0 &&
       can(Permission.TenantInvitationsRead)
     )
-      return [
-        {
-          label: t("roles.seeInvitations"),
-          onSelect: () =>
-            router.push(`${members}?tab=invitations&roleId=${role.id}`),
-        },
-      ];
-    return [];
+      return {
+        label: t("roles.seeInvitations"),
+        onSelect: () =>
+          router.push(`${members}?tab=invitations&roleId=${role.id}`),
+      };
+    return null;
+  };
+  const usedBy = (role: RoleDetailResponse): RowMenuItem[] => {
+    const link = usedByLink(role);
+    return link ? [link] : [];
   };
 
   const itemsFor = (role: RoleDetailResponse): RowMenuItem[] => {
@@ -204,27 +224,67 @@ export function RolesPage() {
     ];
     if (canUpdate && closed) items.push(edit);
     if (canDelete) {
-      // The escalation reason wins: the viewer could not delete the role even when nobody used it (F51).
-      const users = usersOf(role, "roles.inUseBoth");
-      const reason =
-        outOfReach ?? (users ? t("roles.inUseReason", { users }) : undefined);
+      // The escalation reason wins: the viewer could not delete the role even when nobody used it (F51). A role in use opens
+      // the dialog of 9.13, which says who uses it (the maintainer's rule of 37a-frontend-2: a stopped action stays and says why).
+      const used = role.memberCount > 0 || role.pendingInvitationCount > 0;
       items.push(
         { separator: true },
         {
           label: t("roles.delete"),
           tone: "destructive",
-          onSelect: () => setDeleting(role),
-          disabled: reason !== undefined,
-          reason,
+          onSelect: () =>
+            used
+              ? setInUse({ role, link: usedByLink(role) })
+              : setDeleting(role),
+          disabled: outOfReach !== undefined,
+          reason: outOfReach,
         },
       );
     }
     return items;
   };
 
+  const rowCount = rowsIn(roles.data);
+  // The next page: a 401 goes to sign-in (F4), a 403 of a stopped organisation is the tenant layout's (F47), and any other
+  // failure says so and keeps the rows that came.
+  const loadMore = async () => {
+    const before = rowCount ?? 0;
+    const result = await roles.fetchNextPage();
+    if (!result.isFetchNextPageError) {
+      setAnnouncement(
+        t("roles.loadedRoles", { count: (rowsIn(result.data) ?? 0) - before }),
+      );
+      return;
+    }
+    const action =
+      result.error instanceof ProblemDetailsError
+        ? actionFor(result.error.status, result.error.problem).kind
+        : null;
+    if (action === "sign-in")
+      return window.location.assign(signInAgainUrl(window.location));
+    if (action === "tenant-blocked") return;
+    showToast({
+      title: t("roles.moreError"),
+      description: failureText(problemOf(result.error)),
+      tone: "destructive",
+    });
+  };
+
   const body = (() => {
     if (roles.isPending)
-      return <Skeleton rows={4} label={t("roles.loading")} />;
+      return (
+        <TableSkeleton
+          columns={[
+            t("roles.name"),
+            t("roles.type"),
+            t("roles.usedBy"),
+            t("roles.permissions"),
+          ]}
+          bars={skeletonBars}
+          rows={7}
+          label={t("roles.loading")}
+        />
+      );
     if (roles.isError)
       return (
         <ListError
@@ -235,9 +295,9 @@ export function RolesPage() {
           onRetry={() => void roles.refetch()}
         />
       );
-    const rows = inListOrder(roles.data.items);
+    const rows = inListOrder(roles.data.pages.flatMap((page) => page.items));
     return (
-      <>
+      <div className="flex flex-col gap-2">
         <Table
           columns={columns}
           rows={rows}
@@ -250,9 +310,10 @@ export function RolesPage() {
             />
           )}
           actionsLabel={t("roles.actions")}
-          rowCount={roles.data.total}
-          page={roles.data.page}
-          pageSize={roles.data.pageSize}
+          // Every loaded row is on the one page: the list grows with Load more, so the pager never shows (F9, F10).
+          rowCount={rows.length}
+          page={1}
+          pageSize={Math.max(1, rows.length)}
           pager={{
             previous: t("common.previous"),
             next: t("common.next"),
@@ -260,35 +321,35 @@ export function RolesPage() {
               t("common.page", { page: current, count }),
           }}
         />
-        {rows.every((role) => role.builtIn) && (
+        <LoadMore
+          hasMore={roles.hasNextPage}
+          loading={roles.isFetchingNextPage}
+          onMore={() => void loadMore()}
+          label={t("roles.loadMore")}
+          loadingLabel={t("roles.loadingMore")}
+          announcement={announcement}
+        />
+        {!roles.hasNextPage && rows.every((role) => role.builtIn) && (
           <EmptyState
             title={t("roles.noCustom")}
             description={t("roles.noCustomText")}
-            action={createButton}
           />
         )}
-      </>
+      </div>
     );
   })();
 
   return (
     <RolesFrame>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <h1 className="text-page-title">{t("roles.title")}</h1>
-          {roles.dataUpdatedAt > 0 && (
-            <Freshness
-              at={new Date(roles.dataUpdatedAt)}
-              locale={t("locale.format")}
-              timeZone={me.data?.timeZone}
-              label={t("common.updated")}
-            />
-          )}
+          <p className="text-body text-muted-foreground">{t("roles.lead")}</p>
         </div>
         {canCreate && (
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex shrink-0 flex-col items-end gap-1">
             {createButton}
-            {roles.data && counter && (
+            {counter && (
               <span
                 id={counterId}
                 className="max-w-90 text-end text-small text-muted-foreground"
@@ -309,11 +370,69 @@ export function RolesPage() {
           text={t("plans.rolesOverText")}
         />
       )}
-      <p className="max-w-prose text-muted-foreground">{t("roles.lead")}</p>
       {body}
       {deleting && (
         <DeleteRoleDialog role={deleting} onClose={() => setDeleting(null)} />
       )}
+      {inUse && (
+        <RoleInUseDialog
+          role={inUse.role}
+          users={usersOf(inUse.role, "inUseBoth") ?? ""}
+          link={inUse.link}
+          onClose={() => setInUse(null)}
+        />
+      )}
     </RolesFrame>
+  );
+}
+
+/** "{name} is in use" (9.13): who uses the role, and their list when the viewer may read it; without it the dialog only informs. */
+function RoleInUseDialog({
+  role,
+  users,
+  link,
+  onClose,
+}: {
+  role: RoleDetailResponse;
+  users: string;
+  link: UsersLink | null;
+  onClose: () => void;
+}) {
+  const t = useTranslations();
+  const roleName = useRoleName();
+  const kind = (() => {
+    if (role.pendingInvitationCount === 0) return "members";
+    return role.memberCount === 0 ? "invitations" : "both";
+  })();
+  const close = (open: boolean) => !open && onClose();
+  const text = t("roles.inUseDialog", {
+    users,
+    total: role.memberCount + role.pendingInvitationCount,
+    kind,
+  });
+  if (!link)
+    return (
+      <Dialog
+        open
+        onOpenChange={close}
+        title={t("roles.inUseTitle", { name: roleName(role) })}
+        description={text}
+        actionLabel={t("common.close")}
+        onConfirm={onClose}
+      />
+    );
+  return (
+    <Dialog
+      open
+      onOpenChange={close}
+      title={t("roles.inUseTitle", { name: roleName(role) })}
+      description={text}
+      actionLabel={link.label}
+      cancelLabel={t("common.close")}
+      onConfirm={() => {
+        onClose();
+        link.onSelect();
+      }}
+    />
   );
 }

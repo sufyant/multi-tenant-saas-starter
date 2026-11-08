@@ -5,7 +5,6 @@ import {
   actionFor,
   createRole,
   ErrorCode,
-  getListRolesQueryKey,
   Permission,
   ProblemDetailsError,
   problemOf,
@@ -27,14 +26,21 @@ import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { afterRefusal, refreshRoles, refreshTenant } from "@/shared/refresh";
+import {
+  afterRefusal,
+  refreshRoleList,
+  refreshRoles,
+  refreshTenant,
+} from "@/shared/refresh";
 import { nameTaken } from "@/shared/roles";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
 import { DeleteRoleDialog } from "./delete-role-dialog";
+import { NameCard } from "./name-card";
 import { PermissionList } from "./permission-list";
 import { withRequired } from "./permissions";
+import { RoleHeader } from "./role-header";
 import { useLeaveGuard } from "./use-leave-guard";
 
 type RoleForm = z.infer<typeof schemas.CreateRoleBody>;
@@ -128,9 +134,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
         form.setError("name", {
           message: t("roles.nameTaken", { name: form.getValues("name") }),
         });
-        void queryClient.invalidateQueries({
-          queryKey: getListRolesQueryKey(tenant.id),
-        });
+        void refreshRoleList(queryClient, tenant.id);
       }
       if (code === ErrorCode.RoleBuiltIn)
         void refreshRoles(queryClient, tenant.id);
@@ -199,16 +203,23 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
         {
           onSuccess: (saved) => {
             renew();
+            // A saved role stays open, and its form follows the roles read again (9.16); a new role goes to the list (9.05).
+            if (role) {
+              showToast({
+                title: t("roles.saved"),
+                description: t("roles.savedText", {
+                  name: saved.name,
+                  count: saved.permissions.length,
+                }),
+              });
+              return;
+            }
             setDone(true);
             guard.release();
-            showToast(
-              role
-                ? { title: t("roles.saved") }
-                : {
-                    title: t("roles.created"),
-                    description: t("roles.createdText", { name: saved.name }),
-                  },
-            );
+            showToast({
+              title: t("roles.created"),
+              description: t("roles.createdText", { name: saved.name }),
+            });
             router.push(list);
           },
         },
@@ -223,12 +234,12 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
     if (nameError.startsWith("validation.")) return t("roles.nameRequired");
     return nameError;
   })();
-  const toggle = (permission: Permission, checked: boolean) =>
+  const toggle = (changed: readonly Permission[], checked: boolean) =>
     form.setValue(
       "permissions",
       checked
-        ? [...permissions, permission]
-        : permissions.filter((held) => held !== permission),
+        ? [...new Set([...permissions, ...changed])]
+        : permissions.filter((held) => !changed.includes(held)),
     );
   const canDelete =
     role !== undefined &&
@@ -237,22 +248,22 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
 
   return (
     <>
-      <h1 className="text-page-title">
-        <bdi>{role ? role.name : t("roles.newRole")}</bdi>
-      </h1>
+      <RoleHeader title={role ? role.name : t("roles.newRole")} role={role} />
       <form
         noValidate
         onSubmit={(event) => void submit(event)}
-        className="flex max-w-3xl flex-col gap-5"
+        className="flex flex-col gap-4"
       >
-        <Input
-          label={t("roles.name")}
-          autoComplete="off"
-          maxLength={nameMax}
-          hint={t("roles.nameHint", { organisation: tenant.name })}
-          error={nameErrorText}
-          {...form.register("name")}
-        />
+        <NameCard>
+          <Input
+            label={t("roles.name")}
+            autoComplete="off"
+            maxLength={nameMax}
+            hint={t("roles.nameHint", { organisation: tenant.name })}
+            error={nameErrorText}
+            {...form.register("name")}
+          />
+        </NameCard>
         <PermissionList
           held={permissions}
           editable={{ viewer: detail.permissions, onChange: toggle }}
@@ -262,12 +273,14 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
             {banner.text}
           </Banner>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* The save bar stays at the foot of the panel while the permissions scroll (9.08, 9.11). */}
+        <div className="sticky bottom-0 z-10 -mx-4 -mb-6 flex flex-wrap items-center justify-between gap-2 border-t border-border bg-card px-4 py-3 tablet:-mx-6 tablet:-mb-5 tablet:px-6">
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="submit"
               variant="primary"
-              disabled={save.isPending}
+              // A role saves only a change (9.11, 9.16); a new role always has one to create.
+              disabled={save.isPending || (role !== undefined && !dirty)}
               aria-busy={save.isPending || undefined}
             >
               {role ? t("roles.save") : t("roles.create")}

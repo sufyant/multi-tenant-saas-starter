@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import {
   AuditActorResponseKind,
+  type AuditDetailsResponse,
   type AuditEntryResponse,
   AuditOperation,
   AuditTargetResponseKind,
@@ -16,7 +17,10 @@ import {
   type InviteMemberRequest,
   InviterNameResponseKind,
   Language,
+  MemberInvitedDetailsResponseOperation,
+  MemberRemovedDetailsResponseOperation,
   type MemberResponse,
+  MemberRoleChangedDetailsResponseOperation,
   type MeResponse,
   type MyTenantDetailResponse,
   type MyTenantResponse,
@@ -26,8 +30,11 @@ import {
   NotificationType,
   Permission,
   type RenameMeRequest,
+  RoleCreatedDetailsResponseOperation,
   type RoleDetailResponse,
   type RoleResponse,
+  RoleUpdatedDetailsResponseOperation,
+  TenantEntitlementOverrideSetDetailsResponseOperation,
 } from "@repo/api-client";
 
 // The API at the browser's door: the page's calls to /api/v1 get these answers, so a page test needs no API and no database.
@@ -1022,6 +1029,203 @@ export async function mockAuditLog(
       ],
     }),
   );
+}
+
+/** "Now" in the Activity log's frames: 1 Nov 2026, noon in Dublin, so its days read Today, Yesterday and dates (12.01). */
+export const activityFrameNow = new Date("2026-11-01T12:00:00Z");
+
+const frameActor = (name: string | null, n: number) =>
+  name
+    ? {
+        kind: AuditActorResponseKind.User,
+        userId: `0198f0a2-0000-7000-8000-0000000003${String(n).padStart(2, "0")}`,
+        displayName: name,
+        deleted: false,
+      }
+    : {
+        kind: AuditActorResponseKind.Platform,
+        userId: null,
+        displayName: null,
+        deleted: null,
+      };
+
+const frameEntry = (
+  n: number,
+  occurredAt: string,
+  operation: AuditOperation,
+  actor: string | null,
+  target: AuditEntryResponse["target"],
+  details: AuditDetailsResponse | null = null,
+): AuditEntryResponse => ({
+  id: `0198f0a2-0000-7000-8000-0000000004${String(n).padStart(2, "0")}`,
+  occurredAt,
+  operation,
+  details,
+  actor: frameActor(actor, n),
+  target,
+});
+
+const userTarget = (name: string | null, deleted = false) => ({
+  kind: AuditTargetResponseKind.User,
+  id: "0198f0a2-0000-7000-8000-000000000399",
+  name,
+  deleted,
+});
+const roleTarget = (name: string) => ({
+  kind: AuditTargetResponseKind.Role,
+  id: "0198f0a2-0000-7000-8000-000000000398",
+  name,
+  deleted: null,
+});
+const frameRole = (role: RoleDetailResponse) => roleOf(role);
+
+/**
+ * The entries of 12.01 that the API writes today: the frame's billing entries and its Billing manager come with step 40 and 40a.
+ * The first page ends with a cursor, so "Show older activity" shows.
+ */
+export const activityFrame: CursorPageOfAuditEntryResponse = {
+  items: [
+    frameEntry(
+      1,
+      "2026-11-01T10:24:00Z",
+      AuditOperation.MemberRoleChanged,
+      "Omar Haddad",
+      userTarget("Lena Fischer"),
+      {
+        operation: MemberRoleChangedDetailsResponseOperation.MemberRoleChanged,
+        oldRole: frameRole(roles.member),
+        newRole: frameRole(roles.admin),
+      },
+    ),
+    frameEntry(
+      2,
+      "2026-11-01T09:51:00Z",
+      AuditOperation.RoleCreated,
+      "Ayşe Demir",
+      roleTarget("Maintenance planner"),
+      {
+        operation: RoleCreatedDetailsResponseOperation.RoleCreated,
+        permissions: [
+          Permission.TenantProfileRead,
+          Permission.TenantMembersRead,
+        ],
+      },
+    ),
+    frameEntry(
+      3,
+      "2026-11-01T09:12:00Z",
+      AuditOperation.MemberInvited,
+      "Omar Haddad",
+      userTarget(null),
+      {
+        operation: MemberInvitedDetailsResponseOperation.MemberInvited,
+        role: frameRole(roles.member),
+        replacedInvitationId: null,
+      },
+    ),
+    frameEntry(
+      4,
+      "2026-10-31T16:40:00Z",
+      AuditOperation.MemberJoined,
+      "Priya Nair",
+      userTarget("Priya Nair"),
+    ),
+    frameEntry(
+      5,
+      "2026-10-31T11:05:00Z",
+      AuditOperation.RoleUpdated,
+      "Ayşe Demir",
+      roleTarget("Support lead"),
+      {
+        operation: RoleUpdatedDetailsResponseOperation.RoleUpdated,
+        oldName: "Support lead",
+        newName: "Support lead",
+        permissionsAdded: [Permission.TenantInvitationsDelete],
+        permissionsRemoved: [],
+      },
+    ),
+    frameEntry(
+      6,
+      "2026-10-31T08:30:00Z",
+      AuditOperation.MemberJoined,
+      "Liam O’Connor",
+      userTarget("Liam O’Connor"),
+    ),
+    frameEntry(
+      7,
+      "2026-10-28T14:02:00Z",
+      AuditOperation.MemberRemoved,
+      "Omar Haddad",
+      userTarget(null, true),
+      {
+        operation: MemberRemovedDetailsResponseOperation.MemberRemoved,
+        role: frameRole(roles.member),
+      },
+    ),
+    frameEntry(
+      8,
+      "2026-10-28T10:15:00Z",
+      AuditOperation.TenantEntitlementOverrideSet,
+      null,
+      {
+        kind: AuditTargetResponseKind.Tenant,
+        id: northwind.id,
+        name: northwind.name,
+        deleted: null,
+      },
+      {
+        operation:
+          TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+        key: "roles.custom.max",
+        oldValue: null,
+        oldExpiresAt: null,
+        newValue: { enabled: null, maximum: 10, unlimited: false },
+        newExpiresAt: "2026-12-31T12:00:00Z",
+        reason: null,
+      },
+    ),
+  ],
+  nextCursor: "older",
+};
+
+/**
+ * The log of the Activity log's frames: the first page of `activityFrame`, and the older page as the frame needs it: one more
+ * entry, an answer that never comes (12.02) or a failure (12.06). The page's clock stands at `activityFrameNow`.
+ */
+export async function mockActivityFrame(
+  page: Page,
+  older: "entry" | "hold" | "fail" = "entry",
+): Promise<void> {
+  await page.clock.setFixedTime(activityFrameNow);
+  await page.route(`**/api/v1/tenants/${northwind.id}/audit-log*`, (route) => {
+    if (!new URL(route.request().url()).searchParams.get("cursor"))
+      return route.fulfill({ json: activityFrame });
+    if (older === "hold") return;
+    if (older === "fail")
+      return route.fulfill({
+        status: 500,
+        json: {
+          status: 500,
+          title: "Internal Server Error",
+          code: ErrorCode.ServerError,
+          traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        },
+      });
+    return route.fulfill({
+      json: {
+        items: [
+          frameEntry(
+            9,
+            "2026-10-20T09:00:00Z",
+            AuditOperation.MemberJoined,
+            "Omar Haddad",
+            userTarget("Omar Haddad"),
+          ),
+        ],
+        nextCursor: null,
+      },
+    });
+  });
 }
 
 /** ChangePreferences answers the body back, as the API does, and records it. */

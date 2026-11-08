@@ -12,6 +12,7 @@ import {
   TenantPurgeWarnedDetailsResponseOperation,
 } from "@repo/api-client";
 import { screen } from "@testing-library/react";
+import { createTranslator } from "next-intl";
 import { describe, expect, it } from "vitest";
 import { messages } from "@/i18n/messages";
 import {
@@ -22,6 +23,7 @@ import {
 } from "../../../test/activity";
 import { renderWithProviders } from "../../../test/render";
 import { ActivitySentence } from "./activity-sentence";
+import { sentenceText } from "./activity-text";
 
 /** The sentence of the operation in a message file, found by its path: `activity.operations.member.joined`. */
 const sentenceIn = (language: keyof typeof messages, operation: string) =>
@@ -357,7 +359,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "Ayşe Yılmaz changed the role Billing lead: added Invite people and See roles, removed See Activity.",
+        "Ayşe Yılmaz changed the role Billing lead: added Invite people and See roles, removed See the activity log.",
       ),
     ).toBeInTheDocument();
   });
@@ -381,7 +383,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "Ayşe Yılmaz changed the role Billing lead: added See Activity, See invitations, Change members’ roles and 2 more.",
+        "Ayşe Yılmaz changed the role Billing lead: added See the activity log, See invitations, Change members’ roles and 2 more.",
       ),
     ).toBeInTheDocument();
   });
@@ -394,7 +396,9 @@ describe("ActivitySentence", () => {
     );
 
     expect(
-      shown("Ayşe Yılmaz changed the role Billing lead: removed See Activity."),
+      shown(
+        "Ayşe Yılmaz changed the role Billing lead: removed See the activity log.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -450,7 +454,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "Ayşe Yılmaz, Billing lead rolünü değiştirdi: Kişileri davet edebilir ve Rolleri görebilir eklendi, Etkinliği görebilir kaldırıldı.",
+        "Ayşe Yılmaz, Billing lead rolünü değiştirdi: Kişileri davet edebilir ve Rolleri görebilir eklendi, Etkinlik kaydını görebilir kaldırıldı.",
       ),
     ).toBeInTheDocument();
   });
@@ -469,7 +473,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "غيّر Ayşe Yılmaz الدور Billing lead: أضاف دعوة الأشخاص وعرض الأدوار، وأزال عرض النشاط.",
+        "غيّر Ayşe Yılmaz الدور Billing lead: أضاف دعوة الأشخاص وعرض الأدوار، وأزال عرض سجل النشاط.",
       ),
     ).toBeInTheDocument();
   });
@@ -701,4 +705,58 @@ describe("ActivitySentence", () => {
       expect(shown(text)).toBeInTheDocument();
     },
   );
+});
+
+const languages = Object.keys(messages) as (keyof typeof messages)[];
+
+// The CSV file of the log writes each sentence as text (12.08): the same words as the screen, without the Platform badge.
+describe("sentenceText", () => {
+  it.each(
+    languages.flatMap((language) =>
+      operations.map((operation) => [language, operation] as const),
+    ),
+  )("SentenceText_%s_%s_IsTheScreensSentence", (language, operation) => {
+    const logged = entry({ operation, details: detailsOf[operation] });
+    const { container } = renderWithProviders(
+      <ActivitySentence entry={logged} timeZone="Europe/Dublin" />,
+      language,
+    );
+
+    expect(
+      sentenceText(
+        logged,
+        createTranslator({ locale: language, messages: messages[language] }),
+        "Europe/Dublin",
+      ),
+    ).toBe(container.textContent);
+  });
+
+  it("SentenceText_PlatformActor_HasNoBadge", () => {
+    const logged = entry({
+      operation: AuditOperation.TenantReactivated,
+      actor: thePlatform,
+    });
+
+    expect(
+      sentenceText(
+        logged,
+        createTranslator({ locale: "en", messages: messages.en }),
+        "Europe/Dublin",
+      ),
+    ).toBe("The platform reactivated this organisation.");
+  });
+
+  it("SentenceText_RoleRenamedWithPermissionChanges_SaysTheRenameFirst", () => {
+    const logged = roleUpdated("Billing", [Permission.TenantAuditRead], []);
+
+    expect(
+      sentenceText(
+        logged,
+        createTranslator({ locale: "en", messages: messages.en }),
+        "Europe/Dublin",
+      ),
+    ).toBe(
+      "Ayşe Yılmaz renamed the role Billing to Billing lead. Ayşe Yılmaz changed the role Billing lead: added See the activity log.",
+    );
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { csvCell, csvStream } from "./csv";
+import { csvCell, csvRecords, csvStream } from "./csv";
 
 const read = async (stream: ReadableStream<Uint8Array>) =>
   new TextDecoder("utf-8", { ignoreBOM: true }).decode(
@@ -95,5 +95,35 @@ describe("csvStream", () => {
     await expect(read(csvStream(["Name"], failing()))).rejects.toThrow(
       "page 2 failed",
     );
+  });
+});
+
+// The screen counts the records of a file it saved, to say when the Activity log's file holds its cap.
+describe("csvRecords", () => {
+  it("CsvRecords_FileOfTheStream_CountsTheRowsWithoutTheHeader", async () => {
+    const file = await read(
+      csvStream(
+        ["Who", "What"],
+        rowsOf([
+          ["Omar", "joined"],
+          ["Lena", "left"],
+        ]),
+      ),
+    );
+
+    expect(csvRecords(file)).toBe(2);
+  });
+
+  // RFC 4180, section 2: a line break inside a quoted field is part of the field, not the end of a record.
+  it("CsvRecords_LineBreakInsideAQuotedField_IsNoRecord", async () => {
+    const file = await read(
+      csvStream(["What"], rowsOf([["one\r\ntwo"], ['say "hi"\r\n']])),
+    );
+
+    expect(csvRecords(file)).toBe(2);
+  });
+
+  it("CsvRecords_HeaderOnly_IsZero", async () => {
+    expect(csvRecords(await read(csvStream(["What"], rowsOf([]))))).toBe(0);
   });
 });
