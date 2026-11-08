@@ -244,6 +244,7 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 - The Owner invitation names the brand, not the system admin, and keeps its expiry as a moment with its zone (closed rules, 37a-emails). 14.02 is not built: `tenant.owner_joined` goes to the bell only (the maintainer's decision of 2026-11-03).
 - 14.05 says "address", never "slug" (the words of 37a). The footers of 14.03 to 14.05 follow their frames, in three languages.
 - It waits for nothing.
+- As built: the Owner invitation already named the brand and wrote its expiry as a moment with its zone, so 14.01 changed no code. Every status type of the platform has the footer "You received this because you are a system admin.", reactivated and reopened too, which have no frame. `tenant.purged` says "address" ("adres", "العنوان", the words of the web's General page). `pnpm screenshots` takes 14.01 and 14.03 to 14.05. Done.
 
 37b-frontend-1, Plans and the Activity log:
 

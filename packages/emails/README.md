@@ -32,7 +32,7 @@ Run from this folder, or with `pnpm --filter @repo/emails` from the root.
 
 - `pnpm dev`: React Email's preview server on port 3002, with the samples of `src/previews/` (the design system's invented names and `.example` addresses), in each language.
 - `pnpm generate`: render every email into the API.
-- `pnpm screenshots`: a screenshot of each email of the email boards, in each language, light and dark, into `test-results/screenshots`, with the boards' data filled in as the API fills it. Run `pnpm generate` first. `scripts/ci/test-e2e.sh` runs it, and CI keeps the shots in the artifact `screenshots`.
+- `pnpm screenshots`: a screenshot of each email of the email boards (the web's 13.01 to 13.15 and the platform's 14.01, 14.03 to 14.05), in each language, light and dark, into `test-results/screenshots`, with the boards' data filled in as the API fills it. Run `pnpm generate` first. `scripts/ci/test-e2e.sh` runs it, and CI keeps the shots in the artifact `screenshots`.
 - `pnpm check-types`: TypeScript, the script included.
 
 ## Tools and licenses

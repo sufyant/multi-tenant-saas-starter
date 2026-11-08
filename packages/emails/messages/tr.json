@@ -121,27 +121,27 @@
     "tenant.suspended": {
       "title": "{tenantName} askıya alındı",
       "body": "{actorName}, {tenantName} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.",
-      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
     },
     "tenant.reactivated": {
       "title": "{tenantName} yeniden etkinleştirildi",
       "body": "{actorName}, {tenantName} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir.",
-      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
     },
     "tenant.closed": {
       "title": "{tenantName} kapatıldı",
       "body": "{actorName}, {tenantName} kuruluşunu kapattı. Biri yeniden açmazsa {reopenableUntil} tarihinde silinecek.",
-      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
     },
     "tenant.reopened": {
       "title": "{tenantName} yeniden açıldı",
       "body": "{actorName}, {tenantName} kuruluşunu yeniden açtı. Kuruluş yeniden etkin.",
-      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
     },
     "tenant.purged": {
       "title": "{tenantName} silindi",
-      "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
-      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+      "body": "Platform, {tenantName} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve adresi listede kalır.",
+      "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
     },
     "tenant.suspended_for_owners": {
       "title": "{tenantName} askıya alındı",
