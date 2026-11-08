@@ -24,7 +24,8 @@ test("General_Owner_ShowsTheOrganisationReadOnly", async ({ page }) => {
   await expectAccessible(page);
 });
 
-test("MainMenu_Settings_OpensProfile", async ({ page }) => {
+// Profile opens without an organisation, so Settings opens General, the organisation's page that every role can open (F59).
+test("MainMenu_Settings_OpensGeneral", async ({ page }) => {
   await mockMembers(page, { role: BuiltInRole.Member });
   await open(page, `/${northwind.slug}`);
 
@@ -33,9 +34,9 @@ test("MainMenu_Settings_OpensProfile", async ({ page }) => {
     .getByRole("link", { name: "Settings" })
     .click();
 
-  await expect(page).toHaveURL(`${settings}/profile`);
+  await expect(page).toHaveURL(`${settings}/general`);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Profile" }),
+    page.getByRole("heading", { level: 1, name: "General" }),
   ).toBeVisible();
   await expectAccessible(page);
 });
