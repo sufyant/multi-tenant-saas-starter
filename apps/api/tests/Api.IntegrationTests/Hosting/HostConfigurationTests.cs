@@ -76,6 +76,22 @@ public sealed class HostConfigurationTests(Database database)
         start.ShouldThrow<Exception>().Message.ShouldContain(missing[0].TrimEnd(':', '0'));
     }
 
+    // Only a test host leaves the rate limiter out, and it runs in development (section 11, "Rate limiting off in test hosts").
+    [Theory]
+    [InlineData("Staging")]
+    [InlineData("Production")]
+    public async Task StartApplication_WithoutTheRateLimiterOutsideDevelopment_FailsNamingTheKey(string environment)
+    {
+        await using var api = new ApiFactory(
+            database.ApplicationConnectionString,
+            environment: environment,
+            settings: new Dictionary<string, string?>(Complete) { ["Host:RateLimiting:Enabled"] = "false" });
+
+        var start = () => api.CreateClient();
+
+        start.ShouldThrow<Exception>().Message.ShouldContain("Host:RateLimiting:Enabled");
+    }
+
     [Theory]
     [InlineData("api")]
     [InlineData("web,worker")]
