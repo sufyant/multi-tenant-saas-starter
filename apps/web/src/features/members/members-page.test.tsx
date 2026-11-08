@@ -204,24 +204,6 @@ describe("MembersPage", () => {
     await vi.waitFor(() => expect(window.location.search).toBe(""));
   });
 
-  it("MembersPage_Owner_CannotRemoveThemselvesAndSaysWhy", async () => {
-    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
-
-    renderInTenant(<MembersPage />);
-    await openMenu("Ayşe Yılmaz");
-
-    const remove = await screen.findByRole("menuitem", {
-      name: /Remove from organisation/,
-    });
-    expect(remove).toHaveAttribute("aria-disabled", "true");
-    expect(remove).toHaveTextContent(
-      "You cannot remove yourself. Ask another Owner or Admin.",
-    );
-    expect(
-      screen.getByRole("menuitem", { name: "Change role" }),
-    ).not.toHaveAttribute("aria-disabled");
-  });
-
   it("MembersPage_YourOwnRow_SaysYouInMutedTextAfterTheName", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
 
@@ -406,6 +388,7 @@ describe("MembersPage", () => {
   });
 
   // A Member keeps the one Members tab with its count, and no Invitations tab (8.11).
+  // A Member changes and removes nobody: only their own row has a menu, which holds Leave (8.18).
   it("MembersPage_Member_SeesAReadOnlyListWithOnlyTheMembersTab", async () => {
     server.use(...tenantAnswers(BuiltInRole.Member), membersAnswer());
 
@@ -421,8 +404,10 @@ describe("MembersPage", () => {
         .map((tab) => tab.textContent),
     ).toEqual(["Members 4"]);
     expect(
-      (await table()).queryByRole("button", { name: /Actions for/ }),
-    ).not.toBeInTheDocument();
+      (await table())
+        .getAllByRole("button", { name: /Actions for/ })
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual(["Actions for İbrahim Bulut"]);
   });
 
   it("MembersPage_MemberOpensTheInvitationsTab_SeesTheMembers", async () => {

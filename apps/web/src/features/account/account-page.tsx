@@ -9,20 +9,20 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { reportError } from "@/error-tracking/report-error";
+import { personalPages } from "@/shared/personal-pages";
 import { ProblemScreen } from "@/shared/problem-screen";
-import { useTenant } from "@/shared/tenant-context";
 import { DeleteAccount } from "./delete-account";
 import { useEmailChange } from "./use-email-change";
 import { useYourData } from "./use-your-data";
 
 /**
- * Settings › Account and security (F62, the Account and security screens): the shared page with the tenant web's words. Its
- * settings are the person's, the same in every organisation; two-step verification is optional here. Under the shared cards
+ * Settings › Account and security (F62, the Account and security screens): the shared page with the tenant web's words, at
+ * `/settings/account`, without an organisation (6.33). Its settings are the person's, the same in every organisation; two-step
+ * verification is optional here. Under the shared cards
  * come Your data and Delete my account.
  */
 export function AccountPage() {
   const t = useTranslations();
-  const { tenant } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
   const emailChange = useEmailChange();
   const yourData = useYourData();
@@ -36,7 +36,7 @@ export function AccountPage() {
       email={me.data.email}
       emailChange={emailChange}
       twoStep={{ text: t("securityPage.twoStep"), required: false }}
-      returnPath={`/${tenant.slug}/settings/account`}
+      returnPath={personalPages.account}
       timeZone={me.data.timeZone}
       onUnexpectedError={reportError}
     >

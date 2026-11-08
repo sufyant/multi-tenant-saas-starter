@@ -7,8 +7,9 @@ using Notifications.Domain.Notifications;
 namespace Notifications.Application.Notifications.SendNotificationEmail;
 
 // The generic notification email (U2, U4): the notification's title and body, rendered in the recipient's language and time zone as the
-// bell renders them, with the names of its people at the moment of the event; one button to the web app, or to the platform app for the
-// platform's notifications; and the footer of its type, which says why the email came (U5). The handler takes no DbContext, so Wolverine opens no transaction around the call to the email service. An email that fails is tried again and then goes to the dead letter
+// bell renders them, with the names of its people at the moment of the event; one button to the web app, to its Account and security
+// for the link kind AccountSecurity, or to the platform app for the platform's notifications; and the footer of its type, which says
+// why the email came (U5). The handler takes no DbContext, so Wolverine opens no transaction around the call to the email service. An email that fails is tried again and then goes to the dead letter
 // queue (W11); the in-app notification stays.
 public static class SendNotificationEmailHandler
 {
@@ -21,7 +22,7 @@ public static class SendNotificationEmailHandler
         var people = send.People ?? new Dictionary<Guid, UserName>();
         var text = NotificationText.Render(send.Type, send.Values, people, send.Language, send.TimeZone);
         var kind = NotificationCatalog.Of(send.Type);
-        var link = (kind.Bell == NotificationBell.Platform ? links.Value.PlatformUrl : links.Value.WebUrl)!;
+        var link = LinkOf(kind, links.Value);
         List<EmailValue> values =
         [
             EmailValue.Text("title", text.Title),
@@ -37,4 +38,11 @@ public static class SendNotificationEmailHandler
             values);
         return channel.SendAsync(email, cancellationToken);
     }
+
+    // The platform's notifications lead to the platform app, the others to the web app. Account and security opens there without an
+    // organisation, at /settings/account, so its kind leads to that page. Every other kind leads to the root.
+    private static Uri LinkOf(NotificationKind kind, NotificationLinkOptions links) =>
+        kind.Bell == NotificationBell.Platform ? links.PlatformUrl!
+        : kind.Link == NotificationLinkKind.AccountSecurity ? new Uri(links.WebUrl!, "settings/account")
+        : links.WebUrl!;
 }

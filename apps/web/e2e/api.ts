@@ -194,6 +194,10 @@ export async function mockApi(
     route.fulfill({ json: me(language) }),
   );
   await mockDataExport(page);
+  // The personal bell of the pages without an organisation (F57).
+  await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+    route.fulfill({ json: { unread: 0 } }),
+  );
   await page.route("**/api/v1/me/tenants*", (route) =>
     route.fulfill({
       json: { items: [northwind], page: 1, pageSize: 100, total: 1 },

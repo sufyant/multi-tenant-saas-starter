@@ -1,7 +1,7 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test } from "@playwright/test";
 import { Language } from "@repo/api-client";
-import { mockApi, northwind } from "./api";
+import { mockApi } from "./api";
 import { expectAccessible } from "./axe";
 import { mockIdentity } from "./identity";
 
@@ -13,7 +13,7 @@ test("Account_English_ShowsTheEmailTheMethodsAndThisDevice", async ({
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
 
-  await page.goto(`/${northwind.slug}/settings/account`);
+  await page.goto("/settings/account");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Account and security" }),
@@ -29,7 +29,7 @@ test("Account_Arabic_IsRightToLeft", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.Ar);
 
-  await page.goto(`/${northwind.slug}/settings/account`);
+  await page.goto("/settings/account");
 
   await expect(page.getByText("هذا الجهاز", { exact: true })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
@@ -47,7 +47,7 @@ test("Account_ConnectedGoogleAndOtherSessions_OffersDisconnectAndSignOut", async
     otherSessions: true,
   });
 
-  await page.goto(`/${northwind.slug}/settings/account`);
+  await page.goto("/settings/account");
 
   const methods = page.getByRole("region", { name: "Sign-in methods" });
   await expect(methods).toContainText("ayse.demir@gmail.example");

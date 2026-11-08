@@ -9,12 +9,13 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { PersonalBell } from "./notification-bell";
+import { personalPages } from "./personal-pages";
 
 /**
  * "No access yet" (frame 1.19): the same text for a person who is not a user yet (GetMe 404), a user with no organisation and a
  * slug that is not in the user's list. It never says whether an invitation exists. The account button at the top end names the
- * person and holds Sign out; a person who is not a user yet has only Clerk's address. The menu has no Profile, which needs an
- * organisation (the maintainer's decision of 2026-11-07). The personal bell beside it shows a removal from an organisation (F57).
+ * person and holds Profile, which opens without an organisation, and Sign out; a person who is not a user yet has only Clerk's
+ * address and no Profile. The personal bell beside it shows a removal from an organisation (F57).
  */
 export function NoAccess() {
   const t = useTranslations();
@@ -37,6 +38,7 @@ export function NoAccess() {
               name={name}
               email={email}
               person={{ name: me.data?.name ?? null, email }}
+              profileHref={me.data && personalPages.profile}
               onSignOut={() => void signOut({ redirectUrl: "/sign-in" })}
               version={version}
               variant="chip"

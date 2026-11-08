@@ -305,9 +305,9 @@ describe("ChooseOrganisation", () => {
     expect(await screen.findByText("قيد الحذف")).toBeInTheDocument();
   });
 
-  // Frame 1.19: the account button at the top end, with the person's name; its menu holds Sign out and no Profile, which needs
-  // an organisation (the maintainer's decision of 2026-11-07).
-  it("ChooseOrganisation_NoOrganisation_ShowsTheAccountMenuWithoutProfile", async () => {
+  // Frame 1.19: the account button at the top end, with the person's name; its menu holds Profile, which opens without an
+  // organisation, and Sign out.
+  it("ChooseOrganisation_NoOrganisation_ShowsTheAccountMenuWithProfile", async () => {
     server.use(
       getGetMeMockHandler(
         getGetMeResponseMock({
@@ -333,8 +333,8 @@ describe("ChooseOrganisation", () => {
       within(menu).getByRole("menuitem", { name: "Sign out" }),
     ).toBeInTheDocument();
     expect(
-      within(menu).queryByRole("menuitem", { name: "Profile" }),
-    ).not.toBeInTheDocument();
+      within(menu).getByRole("menuitem", { name: "Profile" }),
+    ).toHaveAttribute("href", "/settings/profile");
   });
 
   it("ChooseOrganisation_NotAUserYet_NamesTheAccountByItsAddress", async () => {

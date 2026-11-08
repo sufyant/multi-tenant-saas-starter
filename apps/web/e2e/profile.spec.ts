@@ -8,11 +8,26 @@ import {
 import { mockApi, mockPreferences, mockRename, northwind } from "./api";
 import { expectAccessible } from "./axe";
 
-test("Profile_English_IsLeftToRight", async ({ page }) => {
+// Profile opens without an organisation (decision 69): the old address under the organisation's slug leads there.
+test("Profile_OldAddress_LeadsToTheAddressWithoutAnOrganisation", async ({
+  page,
+}) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
 
   await page.goto(`/${northwind.slug}/settings/profile`);
+
+  await expect(page).toHaveURL("/settings/profile");
+  await expect(
+    page.getByRole("navigation", { name: "Settings menu" }),
+  ).toContainText("Back to my organisations");
+});
+
+test("Profile_English_IsLeftToRight", async ({ page }) => {
+  await setupClerkTestingToken({ page });
+  await mockApi(page, Language.En);
+
+  await page.goto("/settings/profile");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Profile" }),
@@ -25,7 +40,7 @@ test("Profile_Arabic_IsRightToLeft", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.Ar);
 
-  await page.goto(`/${northwind.slug}/settings/profile`);
+  await page.goto("/settings/profile");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "الملف الشخصي" }),
@@ -39,7 +54,7 @@ test("Profile_ArabicForm_SavesTheTimeZone", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockPreferences(page, Language.Ar, bodies);
 
-  await page.goto(`/${northwind.slug}/settings/profile`);
+  await page.goto("/settings/profile");
   const language = page.getByRole("combobox", { name: "اللغة" });
   await expect(language).toHaveText("العربية");
   await expectAccessible(page);
@@ -60,7 +75,7 @@ test("Profile_Rename_ShowsTheNewNameInTheUserMenu", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockRename(page, Language.En, bodies);
 
-  await page.goto(`/${northwind.slug}/settings/profile`);
+  await page.goto("/settings/profile");
   await expect(page.getByRole("button", { name: /Ayşe Yılmaz/ })).toBeVisible();
   await page.getByRole("textbox", { name: "Name" }).fill("Ayla Kaya");
   await page.getByRole("button", { name: "Save changes" }).click();

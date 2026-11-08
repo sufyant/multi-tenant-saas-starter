@@ -21,7 +21,7 @@ import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type FormEvent, type ReactNode, useState } from "react";
-import { useTenant } from "@/shared/tenant-context";
+import { SupportLink } from "@/shared/support-link";
 import { deletedEmailKey } from "./deleted-account";
 import { useReadFailure } from "./use-read-failure";
 
@@ -37,7 +37,8 @@ type Open =
 /**
  * Delete my account (6.22 to 6.24, F62; `flows/user-deletion.md`, section 2): `RequestAccountDeletion` checks first and emails a
  * 6-digit code, as the email change does (the maintainer's decision of 2026-11-05; 6.23's typed address is a deviation). The last
- * Owner of an organisation is refused with its names. `ConfirmAccountDeletion` with the code deletes the account at once; the
+ * Owner of an organisation is refused with its names, and the sentence ends as Leave's does, with "contact support", since only
+ * the platform closes an organisation (#219, section 3). `ConfirmAccountDeletion` with the code deletes the account at once; the
  * person is signed out and sees the page of the deleted account, which names the address from this tab's storage.
  */
 export function DeleteAccount({ email }: { email: string | null }) {
@@ -46,7 +47,6 @@ export function DeleteAccount({ email }: { email: string | null }) {
   const queryClient = useQueryClient();
   const readFailure = useReadFailure();
   const { signOut } = useClerk();
-  const { tenant } = useTenant();
   const { key, renew } = useIntentKey();
   const [open, setOpen] = useState<Open>();
   const [code, setCode] = useState("");
@@ -110,6 +110,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
           step: "refused",
           reason: t.rich("securityPage.lastOwner", {
             organisations: () => organisations,
+            support: (chunks) => <SupportLink>{chunks}</SupportLink>,
           }),
         });
       }
@@ -178,9 +179,7 @@ export function DeleteAccount({ email }: { email: string | null }) {
           open
           onOpenChange={(isOpen) => !isOpen && close()}
           title={t("securityPage.confirmTitle")}
-          description={t.rich("securityPage.confirmText", {
-            organisation: () => <bdi>{tenant.name}</bdi>,
-          })}
+          description={t("securityPage.confirmText")}
           tone="destructive"
           actionLabel={t("securityPage.deleteTitle")}
           cancelLabel={t("common.cancel")}
