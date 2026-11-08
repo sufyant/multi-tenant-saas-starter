@@ -205,8 +205,34 @@ test("Shell_SettingsMenu_ShowsBackAndTheOrganisationsPages", async ({
     "aria-current",
     "page",
   );
+  // Settings holds only the organisation's pages; the person's pages open from the account menu (F59).
+  await expect(menu.getByText("My account")).toHaveCount(0);
+  await expect(menu.getByRole("link", { name: "Profile" })).toHaveCount(0);
+  await expect(
+    menu.getByRole("link", { name: "Account and security" }),
+  ).toHaveCount(0);
   await expectAccessible(page);
 });
+
+for (const [name, item, path] of [
+  ["Profile", "Profile", "/settings/profile"],
+  ["AccountAndSecurity", "Account and security", "/settings/account"],
+] as const)
+  test(`Shell_AccountMenuInSettings_Opens${name}`, async ({ page }) => {
+    await open(page, { path: `/${northwind.slug}/settings/members` });
+
+    // The members' list has "Actions for Ayşe Yılmaz" too, so the account button's name is exact.
+    await page
+      .getByRole("button", { name: "Ayşe Yılmaz", exact: true })
+      .click();
+    await page.getByRole("menuitem", { name: item }).click();
+
+    await expect(page).toHaveURL(path);
+    await expect(
+      page.getByRole("heading", { level: 1, name: item }),
+    ).toBeVisible();
+    await expectAccessible(page);
+  });
 
 // The Dialogs on a phone pattern: a form you type into fills the screen, its main button at the foot.
 test("Shell_PhoneForm_IsAFullScreenPage", async ({ page }) => {

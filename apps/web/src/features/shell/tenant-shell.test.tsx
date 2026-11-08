@@ -187,8 +187,8 @@ describe("TenantShell", () => {
     ).toHaveAttribute("href", "/northwind/settings/general");
   });
 
-  // Profile and Account and security are the person's pages, at the platform's paths (decision 69).
-  it("TenantShell_InSettings_MyAccountLeadsToThePagesWithoutAnOrganisation", async () => {
+  // The organisation's Settings holds only the organisation's pages; the person's pages open from the account menu (F59).
+  it("TenantShell_InSettings_HoldsNoPersonalLink", async () => {
     route.pathname = "/northwind/settings/members";
     server.use(...answers(1));
 
@@ -196,13 +196,13 @@ describe("TenantShell", () => {
 
     await screen.findByText("Content");
     const menu = screen.getByRole("navigation", { name: "Settings menu" });
-    expect(within(menu).getByRole("link", { name: "Profile" })).toHaveAttribute(
-      "href",
-      "/settings/profile",
-    );
+    expect(within(menu).queryByText("My account")).not.toBeInTheDocument();
     expect(
-      within(menu).getByRole("link", { name: "Account and security" }),
-    ).toHaveAttribute("href", "/settings/account");
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("href"))
+        .filter((href) => href?.startsWith("/settings/")),
+    ).toEqual([]);
   });
 
   it("TenantShell_AccountMenu_LeadsToThePagesWithoutAnOrganisation", async () => {
@@ -260,7 +260,7 @@ describe("TenantShell", () => {
     );
   });
 
-  it("TenantShell_InSettings_ShowsBackMyAccountAndThePagesTheRoleCanOpen", async () => {
+  it("TenantShell_InSettings_ShowsBackAndThePagesTheRoleCanOpen", async () => {
     route.pathname = "/northwind/settings/members";
     server.use(...answers(1));
 
@@ -273,12 +273,7 @@ describe("TenantShell", () => {
       within(menu)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual([
-      "Back to Northwind Traders",
-      "Profile",
-      "Account and security",
-      "Members",
-    ]);
+    ).toEqual(["Back to Northwind Traders", "Members"]);
     expect(within(menu).getByRole("link", { name: "Members" })).toHaveAttribute(
       "aria-current",
       "page",
