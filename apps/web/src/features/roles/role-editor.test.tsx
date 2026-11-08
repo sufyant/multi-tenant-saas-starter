@@ -107,6 +107,19 @@ describe("RoleEditor rules", () => {
     expect(profile).toHaveAccessibleDescription("Every role has this.");
   });
 
+  // 9.08: the label is body text, and a locked permission says why in its line, without a lock mark.
+  it("RoleEditor_LockedPermission_ShowsItsLabelInBodyTextWithoutAMark", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner));
+
+    await openNew();
+
+    const label = (
+      (await box("See the organisation’s details")) as HTMLButtonElement
+    ).labels?.[0];
+    expect(label).toHaveClass("text-body");
+    expect(label?.querySelector("svg")).toBeNull();
+  });
+
   it.each([
     "Invite people",
     "Change members’ roles",
@@ -570,6 +583,17 @@ describe("NewRolePage", () => {
 });
 
 describe("UpdateRole", () => {
+  // 9.11 and 9.16: "Save changes" waits for a change, and rests again once the role holds what the form shows.
+  it("UpdateRole_NoChange_DisablesSaveUntilSomethingChanges", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]));
+    await openReviewer();
+
+    const save = screen.getByRole("button", { name: "Save changes" });
+    expect(save).toBeDisabled();
+    await userEvent.click(await box("See the activity log"));
+    expect(save).toBeEnabled();
+  });
+
   it("UpdateRole_RefusedFeatureUnavailable_ShowsTheReasonOfTheFeature", async () => {
     server.use(
       ...tenantAnswers(BuiltInRole.Owner, undefined, [reviewer]),
@@ -668,6 +692,7 @@ describe("UpdateRole", () => {
       updateAnswer(() => problem(404, ErrorCode.RoleNotFound)),
     );
     await openReviewer();
+    await userEvent.click(await box("See the activity log"));
 
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
@@ -683,6 +708,7 @@ describe("UpdateRole", () => {
       updateAnswer(() => problem(403, ErrorCode.RoleNotPermitted)),
     );
     await openReviewer();
+    await userEvent.click(await box("See the activity log"));
 
     await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
 

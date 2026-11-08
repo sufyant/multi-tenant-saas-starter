@@ -168,6 +168,16 @@ describe("AppShell", () => {
     expect(screen.getByRole("main")).toHaveClass("pt-4", "pb-6");
   });
 
+  // The role editor's save bar (9.08, 9.11) sticks to the foot of the window: a panel that clips with `overflow: hidden`
+  // becomes the bar's scroll box, which never scrolls, so the bar would sit at the page's end.
+  it("AppShell_Panel_ClipsItsCornersWithoutHoldingStickyContent", () => {
+    renderShell();
+
+    const panel = screen.getByRole("main").parentElement;
+    expect(panel).toHaveClass("tablet:overflow-clip");
+    expect(panel).not.toHaveClass("tablet:overflow-hidden");
+  });
+
   it("AppShell_Breadcrumb_EndsWithThePage", () => {
     renderShell();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
