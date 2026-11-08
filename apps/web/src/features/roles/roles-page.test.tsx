@@ -424,6 +424,8 @@ describe("RolesPage", () => {
       "href",
       "/northwind/settings/roles/new",
     );
+    // The list's skeleton is a status too: the banner's absence is checked once the rows came.
+    await rows();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -706,6 +708,24 @@ describe("RolesPage", () => {
     expect(
       screen.queryByRole("button", { name: "Next" }),
     ).not.toBeInTheDocument();
+  });
+
+  // "New role" stands while the list loads, as 9.02 draws it: the plan decides the button, not the list.
+  it("RolesPage_ListLoading_ShowsNewRole", async () => {
+    server.use(
+      http.get(
+        `*/v1/tenants/${northwind.id}/roles`,
+        () => new Promise(() => {}),
+      ),
+      ...tenantAnswers(BuiltInRole.Owner),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    expect(
+      await screen.findByRole("status", { name: "Loading roles" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New role" })).toBeVisible();
   });
 
   it("RolesPage_WithoutRolesRead_ShowsPermissionDenied", async () => {

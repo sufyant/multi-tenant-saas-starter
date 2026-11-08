@@ -123,10 +123,9 @@ export function RolesPage() {
     });
   })();
   const plus = <Icon icon={PlusIcon} size={16} />;
-  // The button waits for the roles, so it shows with the list it acts on.
+  // The button stands while the list loads or fails, as 9.02 and 9.03 draw it: the plan decides it, not the list.
   const createButton =
     canCreate &&
-    roles.data !== undefined &&
     (featureOff || roleLimit.full ? (
       <Button
         variant="primary"
@@ -337,15 +336,15 @@ export function RolesPage() {
 
   return (
     <RolesFrame>
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h1 className="text-page-title">{t("roles.title")}</h1>
           <p className="text-body text-muted-foreground">{t("roles.lead")}</p>
         </div>
         {canCreate && (
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex shrink-0 flex-col items-end gap-1">
             {createButton}
-            {roles.data && counter && (
+            {counter && (
               <span
                 id={counterId}
                 className="max-w-90 text-end text-small text-muted-foreground"
