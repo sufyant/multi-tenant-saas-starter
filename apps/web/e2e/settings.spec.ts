@@ -41,13 +41,18 @@ test("MainMenu_Settings_OpensGeneral", async ({ page }) => {
   await expectAccessible(page);
 });
 
-// The seconds until the session token in the page's cookie expires; Clerk's JWT names its expiry in `exp`.
+// The seconds until the last session token in the page's cookies expires: Clerk keeps one cookie with the instance's suffix and
+// may keep an older one without it, and its JWT names its expiry in `exp`.
 const secondsLeft = async (page: Page) => {
-  const cookies = await page.context().cookies();
-  const token = cookies.find((cookie) => cookie.name.startsWith("__session"));
-  const payload = token?.value.split(".")[1] ?? "";
-  const { exp } = JSON.parse(Buffer.from(payload, "base64url").toString());
-  return exp - Date.now() / 1000;
+  const expiries = (await page.context().cookies())
+    .filter((cookie) => cookie.name.startsWith("__session"))
+    .map(
+      (cookie) =>
+        JSON.parse(
+          Buffer.from(cookie.value.split(".")[1] ?? "", "base64url").toString(),
+        ).exp as number,
+    );
+  return Math.max(...expiries) - Date.now() / 1000;
 };
 
 // A navigation whose session token expired before clerk-js refreshed it loads the page as a document, and Clerk's handshake keeps
