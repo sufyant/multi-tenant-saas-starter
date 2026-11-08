@@ -48,6 +48,9 @@ internal sealed class ApiFactory(
         ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:00:00.040",
     };
 
+    // The setting of a test of the rate limiter, which a test host leaves off.
+    public static readonly IReadOnlyDictionary<string, string?> RateLimiterOn = new Dictionary<string, string?> { ["Host:RateLimiting:Enabled"] = "true" };
+
     // How long a test waits for the messages it caused. Wolverine's default of 5 s is shorter than a retry policy's pauses under load.
     public static readonly TimeSpan TrackingTimeout = TimeSpan.FromSeconds(30);
 
@@ -144,6 +147,9 @@ internal sealed class ApiFactory(
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
             ["ControlPlane:SystemAdmins:RootEmails:0"] = RootEmail,
             ["Host:Authentication:Issuer"] = TestTokens.Issuer,
+
+            // A test of the rate limiter turns it on (Deviations, "Rate limiting off in test hosts").
+            ["Host:RateLimiting:Enabled"] = "false",
         };
         foreach (var (party, index) in (authorizedParties ?? [TestTokens.AuthorizedParty]).Select((party, index) => (party, index)))
         {

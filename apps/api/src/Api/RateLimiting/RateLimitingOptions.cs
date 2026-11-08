@@ -4,6 +4,9 @@ internal sealed class RateLimitingOptions
 {
     public const string Section = "Host:RateLimiting";
 
+    /// <summary>Whether the pipeline runs the rate limiter. Only test hosts turn it off (Deviations, "Rate limiting off in test hosts").</summary>
+    public bool Enabled { get; set; } = true;
+
     public int PermitLimit { get; set; }
 
     public TimeSpan Window { get; set; }
