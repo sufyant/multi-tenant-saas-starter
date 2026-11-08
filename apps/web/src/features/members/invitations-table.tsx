@@ -117,13 +117,13 @@ export function InvitationsTable({
     {
       key: "role",
       header: t("members.role"),
-      width: "w-35",
+      width: "w-38.5",
       render: (invitation) => <Label>{roleText(invitation)}</Label>,
     },
     {
       key: "invitedBy",
       header: t("members.invitedBy"),
-      width: "w-42.5",
+      width: "w-46",
       secondary: true,
       card: "hide",
       render: (invitation) => (
@@ -135,7 +135,7 @@ export function InvitationsTable({
     {
       key: "expires",
       header: t("members.expires"),
-      width: "w-37.5",
+      width: "w-41",
       secondary: true,
       sortable: true,
       card: "hide",
@@ -151,7 +151,7 @@ export function InvitationsTable({
     {
       key: "status",
       header: t("members.status"),
-      width: "w-27.5",
+      width: "w-31",
       card: "end",
       render: (invitation) => {
         const status = statusOf(invitation);

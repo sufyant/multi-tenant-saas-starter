@@ -51,7 +51,7 @@ export function PlansPage() {
     {
       key: "tenantCount",
       header: t("plans.organisationsColumn"),
-      width: "w-35",
+      width: "w-38.5",
       align: "end",
       card: "end",
       render: (plan) => plan.tenantCount,

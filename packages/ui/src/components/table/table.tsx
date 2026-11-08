@@ -40,7 +40,10 @@ export type TableColumn<Row extends RowData> = {
   cardRender?: (row: Row) => ReactNode;
   /** wide: the column shows only from `cq-table-wide` of the table's own width, such as "Joined" on a tablet. The card ignores it. */
   show?: "wide";
-  /** The width class its frame gives the column, such as `w-62.5` for 250 px. The first column has none: it fills (Table row, 424:2472). */
+  /**
+   * The column's width class: its frame's cell width and the 14 px gap before it, such as `w-66` for a 250 px cell. The first
+   * column has none: it fills (Table row, 424:2472).
+   */
   width?: string;
 };
 
@@ -149,7 +152,7 @@ export function Table<Row extends RowData>({
       <div className="hidden overflow-hidden rounded-lg border border-border bg-card @min-[640px]:block">
         <TableBase
           aria-label={label}
-          className="hidden text-body tabular-nums @min-[640px]:table"
+          className="hidden table-fixed text-body tabular-nums @min-[640px]:table"
         >
           <TableHeader>
             <TableRow className="h-row-header border-border bg-muted hover:bg-muted">
@@ -196,7 +199,8 @@ export function Table<Row extends RowData>({
                 );
               })}
               {actions && (
-                <TableHead className="w-target-row-action ps-3.5 pe-2">
+                // The 28 px ⋯, the 14 px gap before it and the 8 px at the row's end.
+                <TableHead className="w-12.5 ps-3.5 pe-2">
                   {actionsLabel && (
                     <span className="sr-only">{actionsLabel}</span>
                   )}
@@ -239,7 +243,11 @@ export function Table<Row extends RowData>({
         </TableBase>
       </div>
 
-      <ul aria-label={label} className="flex flex-col @min-[640px]:hidden">
+      {/* The cards sit in one box, as the table does (8.34): a border and the large radius around them. */}
+      <ul
+        aria-label={label}
+        className="flex flex-col overflow-hidden rounded-lg border border-border empty:hidden @min-[640px]:hidden"
+      >
         {rows.map((row) => {
           const card = (place: string) =>
             columns
@@ -253,7 +261,7 @@ export function Table<Row extends RowData>({
           return (
             <li
               key={String(row[rowKey])}
-              className="flex min-h-16 items-center gap-3 border-b border-border bg-card px-4 py-3"
+              className="flex min-h-16 items-center gap-3 border-b border-border bg-card px-4 py-3 last:border-b-0"
             >
               {cardLead?.(row)}
               <div className="flex min-w-0 flex-1 flex-col">

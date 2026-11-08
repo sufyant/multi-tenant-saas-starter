@@ -119,7 +119,7 @@ export function UsersTable({
     {
       key: "organisations",
       header: t("users.organisations"),
-      width: "w-40",
+      width: "w-43.5",
       align: "end",
       card: "hide",
       render: (user) => user.membershipCount,
@@ -127,7 +127,7 @@ export function UsersTable({
     {
       key: "status",
       header: t("users.status"),
-      width: "w-35",
+      width: "w-38.5",
       card: "end",
       render: (user) => (
         <Status tone={statuses[user.status].tone}>

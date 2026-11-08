@@ -154,7 +154,7 @@ export function RolesPage() {
     {
       key: "type",
       header: t("roles.type"),
-      width: "w-35",
+      width: "w-38.5",
       card: "end",
       render: (role) => (
         <Label>
@@ -165,7 +165,7 @@ export function RolesPage() {
     {
       key: "use",
       header: t("roles.usedBy"),
-      width: "w-50",
+      width: "w-53.5",
       secondary: true,
       card: "hide",
       render: (role) => usersOf(role, "usageBoth") ?? t("roles.notInUse"),
@@ -173,7 +173,7 @@ export function RolesPage() {
     {
       key: "permissions",
       header: t("roles.permissions"),
-      width: "w-40",
+      width: "w-43.5",
       secondary: true,
       render: (role) =>
         t("members.permissionCount", { count: role.permissions.length }),

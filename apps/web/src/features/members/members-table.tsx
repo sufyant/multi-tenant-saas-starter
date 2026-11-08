@@ -109,7 +109,7 @@ export function MembersTable({
       key: "email",
       header: t("members.email"),
       secondary: true,
-      width: "w-62.5",
+      width: "w-66",
       card: "meta",
       // The email reads left to right in every language, inside a block of the page's direction, so in Arabic it aligns with its
       // header (8.36). In the table a long one ends with "…" at 250 px, the frame's width (8.05).
@@ -124,7 +124,7 @@ export function MembersTable({
       key: "role",
       header: t("members.role"),
       sortable: true,
-      width: "w-37.5",
+      width: "w-41",
       card: "end",
       render: (member) => <Label>{roleText(member)}</Label>,
     },
@@ -132,7 +132,7 @@ export function MembersTable({
       key: "joined",
       header: t("members.joined"),
       secondary: true,
-      width: "w-27.5",
+      width: "w-31",
       // Joined hides in a table narrower than the desktop's (8.33).
       show: "wide",
       card: "hide",

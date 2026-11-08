@@ -210,14 +210,15 @@ describe("Table", () => {
     ).not.toHaveClass("[&>button]:opacity-0");
   });
 
-  // Table row (424:2472): the first column fills, and each other column keeps the width its frame gives it.
+  // Table row (424:2472): the first column fills, and each other column keeps the width its frame gives it, in a fixed layout so
+  // that the first column's full width does not squeeze the others.
   it("Table_ColumnWithAWidth_KeepsIt", () => {
     render(
       <Table
         {...props}
         columns={[
           columns[0] as TableColumn<Member>,
-          { key: "role", header: "Role", width: "w-37.5" },
+          { key: "role", header: "Role", width: "w-41" },
         ]}
       />,
     );
@@ -227,6 +228,9 @@ describe("Table", () => {
         "columnheader",
         { name: "Role" },
       ),
-    ).toHaveClass("w-37.5");
+    ).toHaveClass("w-41");
+    expect(screen.getByRole("table", { name: "Members" })).toHaveClass(
+      "table-fixed",
+    );
   });
 });

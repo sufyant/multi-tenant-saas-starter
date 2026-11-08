@@ -150,7 +150,7 @@ export function OrganisationsTable({
     {
       key: "members",
       header: t("organisations.members"),
-      width: "w-40",
+      width: "w-43.5",
       align: "end",
       card: "hide",
       render: (row) => (isGone(row) ? muted("—") : row.memberCount),
@@ -158,7 +158,7 @@ export function OrganisationsTable({
     {
       key: "status",
       header: t("organisations.status"),
-      width: "w-35",
+      width: "w-38.5",
       card: "end",
       render: status,
     },
