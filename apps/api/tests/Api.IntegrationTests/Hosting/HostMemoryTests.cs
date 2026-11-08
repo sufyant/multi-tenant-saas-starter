@@ -6,7 +6,7 @@ namespace Api.IntegrationTests.Hosting;
 // Section 9, rule 11: a test host on the committed handler code leaves little memory behind when it stops. A host that compiled its
 // handler code at runtime kept 26 to 41 MB of the process's resident memory; a host on the committed code keeps about 4 MB. The limit
 // lies between the two. The class runs alone, after every other test, so no other host changes the process's memory while it measures.
-// The test runs on Linux only (section 9, rule 15).
+// The case of the resident memory runs on Linux only (section 9, rule 15).
 [Collection(typeof(RunsAlone))]
 public sealed class HostMemoryTests(Database database)
 {
