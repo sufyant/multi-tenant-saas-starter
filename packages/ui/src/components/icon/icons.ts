@@ -7,7 +7,6 @@ export {
   AtSignIcon,
   BellIcon,
   Building2 as BuildingIcon,
-  CalendarIcon,
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
