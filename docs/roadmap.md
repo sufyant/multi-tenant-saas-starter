@@ -9,7 +9,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 34 | Design | done, but the handoff package is todo |
 | 35 | Cleanup, the shell and the menu | done |
 | 36 | Personal pages | done |
-| 37a | The web's organisation pages | in progress |
+| 37a | The web's organisation pages | done |
 | 37b | The platform's pages | in progress |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
@@ -212,6 +212,7 @@ The parts of 37a, in their order. The frames are the Web app page of the design,
 - First the design session at the end of 37a makes one Figma component for each of these parts of `packages/ui`, and links every frame that draws one to it: Dialog, RowMenu, Table (its card, its row height, its column widths, and ⋯ shown on hover or focus), Tabs (the line across the full width), Search (its icon and width), EmptyState (the gap above its action), Toast (no close button), Avatar (a tint for each person) and the role filter (a menu with `list-filter`, not the Combobox). The sizes are settled in that session. The start is the majority of the frames: a Dialog 440 wide, padding 20 with 16 at the bottom, and a footer band; a RowMenu 240 wide, with 16 px icons and 32 px items.
 - Then a code pull request makes `packages/ui` follow them, with the shots of both apps.
 - Until then the screens of 37a-frontend-2 keep these parts as `packages/ui` draws them.
+- As built: `Dialog` takes `size="wide"` (480 px) where its frame draws Wide: Change role and every dialog of the platform's own features. `RowMenu` puts its one separator before the destructive group and draws the icon an item's frame gives it. No table header has an icon (the maintainer's decision of 2026-11-08). The role filter is `RoleFilter`, and the Combobox loses its filter variant. A person's tint comes from their id. A success or info toast has no close button; a failure keeps it and stays until the person closes it (WCAG 2.2, 2.2.1; the maintainer's decision of 2026-11-08). The platform's tables take the frames' widths only for the columns they share with them; 37b rebuilds those pages. Done.
 
 37b, the platform's pages:
 
