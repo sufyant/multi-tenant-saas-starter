@@ -267,6 +267,7 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
   - `ck_users_deleted_keeps_no_personal_data`: `deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL AND suspension_reason IS NULL)`
   - `ck_tenant_summaries_owner_invitation_sent_with_it`: `owner_invitation_sent_at IS NULL OR owner_invitation_status IS NOT NULL`
 - `MigratedSchemaTests.WriteRow_BreakingAControlPlaneCheck_IsRefusedByThatCheck` gets a row that breaks each, and the open item of 37b-backend leaves section 13 of `apps/api/docs/ARCHITECTURE.md`.
+- As built: the migration `TieWhoAndWhenToTheirEvents`. `MigrationStepTests.Migrate_TieWhoAndWhenToTheirEvents_ClearsWhatTheVersionBeforeLeftAndAddsTheChecks` seeds the rows the version before leaves, migrates, and shows them cleared and the CHECKs in place. Staging ran 37b-backend first; production did not exist yet. Done.
 
 37b-emails, the platform's emails against their frames:
 
