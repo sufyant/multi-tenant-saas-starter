@@ -61,6 +61,14 @@ public sealed class TenantTests
 
     private static readonly Guid PlanId = new("0199a8f0-0000-7000-8000-0000000000aa");
 
+    private static readonly Guid CreatorId = new("0199a8f0-0000-7000-8000-0000000000c1");
+
+    private static readonly Guid SuspenderId = new("0199a8f0-0000-7000-8000-0000000000c2");
+
+    private static readonly Guid CloserId = new("0199a8f0-0000-7000-8000-0000000000c3");
+
+    private static readonly DateTimeOffset PurgeStartedAt = new(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
+
 
     public static TheoryData<string> InvalidNames => ["", "   ", new string('n', 101)];
 
@@ -68,7 +76,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_Valid_IsOnThePlan()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt, CreatorId);
 
         tenant.Value.PlanId.ShouldBe(PlanId);
     }
@@ -77,7 +85,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_Valid_KeepsWhenItWasCreated()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt, CreatorId);
 
         tenant.Value.CreatedAt.ShouldBe(CreatedAt);
     }
@@ -90,7 +98,7 @@ public sealed class TenantTests
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk")]
     public void CreateTenant_UrlSafeSlug_IsCreatedWithThatSlug(string slug)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", slug, PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", slug, PlanId, CreatedAt, CreatorId);
 
         tenant.IsSuccess.ShouldBeTrue();
         tenant.Value.Slug.ShouldBe(slug);
@@ -109,7 +117,7 @@ public sealed class TenantTests
     [InlineData("acmé")]
     public void CreateTenant_SlugNotUrlSafe_IsRejected(string slug)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", slug, PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", slug, PlanId, CreatedAt, CreatorId);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugInvalid);
@@ -118,7 +126,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_ReservedSlug_IsRejected()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "settings", PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, "Acme Ltd", "settings", PlanId, CreatedAt, CreatorId);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantSlugReserved);
@@ -127,7 +135,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_NameWithSpacesAround_IsKeptWithoutThem()
     {
-        var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme", PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, "  Acme Ltd ", "acme", PlanId, CreatedAt, CreatorId);
 
         tenant.Value.Name.ShouldBe("Acme Ltd");
     }
@@ -137,7 +145,7 @@ public sealed class TenantTests
     {
         var name = new string('n', 100);
 
-        var tenant = Tenant.Create(Id, name, "acme", PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, name, "acme", PlanId, CreatedAt, CreatorId);
 
         tenant.Value.Name.ShouldBe(name);
     }
@@ -146,7 +154,7 @@ public sealed class TenantTests
     [MemberData(nameof(InvalidNames))]
     public void CreateTenant_InvalidName_IsRejected(string name)
     {
-        var tenant = Tenant.Create(Id, name, "acme", PlanId, CreatedAt);
+        var tenant = Tenant.Create(Id, name, "acme", PlanId, CreatedAt, CreatorId);
 
         tenant.IsSuccess.ShouldBeFalse();
         tenant.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNameInvalid);
@@ -155,7 +163,7 @@ public sealed class TenantTests
     [Fact]
     public void CreateTenant_New_IsActive()
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt, CreatorId).Value;
 
         tenant.Status.ShouldBe(TenantStatus.Active);
     }
@@ -165,7 +173,7 @@ public sealed class TenantTests
     {
         var tenant = Active();
 
-        var suspended = tenant.Suspend(Reason);
+        var suspended = tenant.Suspend(Reason, SuspenderId, Now);
 
         suspended.Value.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Suspended);
@@ -176,9 +184,9 @@ public sealed class TenantTests
     public void SuspendTenant_Suspended_StaysSuspendedWithoutAChange()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
 
-        var suspended = tenant.Suspend(Reason);
+        var suspended = tenant.Suspend(Reason, SuspenderId, Now);
 
         suspended.Value.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Suspended);
@@ -188,7 +196,7 @@ public sealed class TenantTests
     public void ReactivateTenant_Suspended_IsActive()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
 
         var reactivated = tenant.Reactivate();
 
@@ -212,7 +220,7 @@ public sealed class TenantTests
     {
         var tenant = Active();
 
-        tenant.Suspend("  Unpaid invoices ");
+        tenant.Suspend("  Unpaid invoices ", SuspenderId, Now);
 
         tenant.SuspensionReason.ShouldBe("Unpaid invoices");
     }
@@ -222,9 +230,9 @@ public sealed class TenantTests
     public void SuspendTenant_Suspended_KeepsTheFirstReason()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
 
-        tenant.Suspend("Another reason");
+        tenant.Suspend("Another reason", SuspenderId, Now);
 
         tenant.SuspensionReason.ShouldBe(Reason);
     }
@@ -233,11 +241,52 @@ public sealed class TenantTests
     public void ReactivateTenant_Suspended_ForgetsTheReason()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
 
         tenant.Reactivate();
 
         tenant.SuspensionReason.ShouldBeNull();
+    }
+
+    // The organisation's page says who created it (the maintainer's decision of 2026-11-08).
+    [Fact]
+    public void CreateTenant_BySystemAdmin_KeepsWhoCreatedIt()
+    {
+        Active().CreatedBy.ShouldBe(CreatorId);
+    }
+
+    // The Suspended banner says when and by whom.
+    [Fact]
+    public void SuspendTenant_Active_KeepsWhenAndWhoSuspendedIt()
+    {
+        var tenant = Active();
+
+        tenant.Suspend(Reason, SuspenderId, Now);
+
+        (tenant.SuspendedAt, tenant.SuspendedBy).ShouldBe((Now, SuspenderId));
+    }
+
+    // A repeat changes nothing, its moment and its system admin included.
+    [Fact]
+    public void SuspendTenant_Suspended_KeepsTheFirstSuspension()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason, SuspenderId, Now);
+
+        tenant.Suspend(Reason, CloserId, Now.AddHours(1));
+
+        (tenant.SuspendedAt, tenant.SuspendedBy).ShouldBe((Now, SuspenderId));
+    }
+
+    [Fact]
+    public void ReactivateTenant_Suspended_ForgetsWhenAndWhoSuspendedIt()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason, SuspenderId, Now);
+
+        tenant.Reactivate();
+
+        (tenant.SuspendedAt, tenant.SuspendedBy).ShouldBe((null, null));
     }
 
     // A closed tenant comes back only through a reopening.
@@ -246,7 +295,7 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var suspended = tenant.Suspend(Reason);
+        var suspended = tenant.Suspend(Reason, SuspenderId, Now);
         var reactivated = tenant.Reactivate();
 
         suspended.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
@@ -270,7 +319,7 @@ public sealed class TenantTests
     public void RenameTenant_Suspended_IsRenamed()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
 
         var renamed = tenant.Rename("Globex Corp");
 
@@ -324,7 +373,7 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var closed = tenant.Close(Now, []);
+        var closed = tenant.Close(Now, CloserId, []);
 
         closed.Value.Change.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Closed);
@@ -332,13 +381,25 @@ public sealed class TenantTests
     }
 
     // The reason stays until the tenant is reopened.
+    // The Closed banner says who closed it. A closure after a suspension keeps the suspension, as it keeps its reason.
+    [Fact]
+    public void CloseTenant_Suspended_KeepsWhoClosedItAndTheSuspension()
+    {
+        var tenant = Active();
+        tenant.Suspend(Reason, SuspenderId, Now);
+
+        tenant.Close(Now.AddHours(1), CloserId, []);
+
+        (tenant.ClosedBy, tenant.SuspendedAt, tenant.SuspendedBy).ShouldBe((CloserId, Now, SuspenderId));
+    }
+
     [Fact]
     public void CloseTenant_Suspended_KeepsTheReason()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
 
-        tenant.Close(Now, []);
+        tenant.Close(Now, CloserId, []);
 
         tenant.SuspensionReason.ShouldBe(Reason);
     }
@@ -349,7 +410,7 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var closed = tenant.Close(Now.AddDays(1), []);
+        var closed = tenant.Close(Now.AddDays(1), CloserId, []);
 
         closed.Value.Change.ShouldBe(StateChange.Unchanged);
         tenant.ClosedAt.ShouldBe(Now);
@@ -363,7 +424,7 @@ public sealed class TenantTests
         var expired = Invitation.Create(
             Guid.NewGuid(), Id, EmailAddress.Create("grace@example.com"), RoleOf("Owner"), InviterId, CreatedAt, Lifetime, InvitationSecret.Generate(), Language.En);
 
-        var closed = Active().Close(Now, [pending, expired]);
+        var closed = Active().Close(Now, CloserId, [pending, expired]);
 
         closed.Value.Cancelled.ShouldBe([pending, expired]);
         pending.Status.ShouldBe(InvitationStatus.Cancelled);
@@ -375,7 +436,7 @@ public sealed class TenantTests
     {
         var pending = PendingTo("ada@example.com", RoleOf("Member"));
 
-        var closed = Closed().Close(Now, [pending]);
+        var closed = Closed().Close(Now, CloserId, [pending]);
 
         closed.Value.Cancelled.ShouldBeEmpty();
         pending.Status.ShouldBe(InvitationStatus.Pending);
@@ -428,8 +489,8 @@ public sealed class TenantTests
     public void ReopenTenant_ClosedWithinThePeriod_IsActiveAndForgetsTheClosureAndTheReason()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
-        tenant.Close(Now, []);
+        tenant.Suspend(Reason, SuspenderId, Now);
+        tenant.Close(Now, CloserId, []);
 
         var reopened = tenant.Reopen(Now + ReopenPeriod - TimeSpan.FromSeconds(1), ReopenPeriod);
 
@@ -437,6 +498,7 @@ public sealed class TenantTests
         tenant.Status.ShouldBe(TenantStatus.Active);
         tenant.ClosedAt.ShouldBeNull();
         tenant.SuspensionReason.ShouldBeNull();
+        (tenant.ClosedBy, tenant.SuspendedAt, tenant.SuspendedBy).ShouldBe((null, null, null));
     }
 
     // The period ends at the moment of the closure plus the period: from then on the tenant stays closed.
@@ -516,11 +578,12 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var started = tenant.BeginPurge(Now);
+        var started = tenant.BeginPurge(Now, PurgeStartedAt);
 
         started.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Purging);
         tenant.ClosedAt.ShouldBe(Now);
+        tenant.PurgeStartedAt.ShouldBe(PurgeStartedAt);
     }
 
     // PostgreSQL keeps a moment to the microsecond and .NET to 100 ns, so a closure read back from the database is the closure the
@@ -530,7 +593,7 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var started = tenant.BeginPurge(Now + TimeSpan.FromTicks(7));
+        var started = tenant.BeginPurge(Now + TimeSpan.FromTicks(7), PurgeStartedAt);
 
         started.ShouldBe(StateChange.Changed);
         tenant.Status.ShouldBe(TenantStatus.Purging);
@@ -542,7 +605,7 @@ public sealed class TenantTests
     {
         var tenant = Closed();
 
-        var started = tenant.BeginPurge(Now - TimeSpan.FromDays(1));
+        var started = tenant.BeginPurge(Now - TimeSpan.FromDays(1), PurgeStartedAt);
 
         started.ShouldBe(StateChange.Unchanged);
         tenant.Status.ShouldBe(TenantStatus.Closed);
@@ -557,21 +620,21 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var started = tenant.BeginPurge(Now);
+        var started = tenant.BeginPurge(Now, PurgeStartedAt);
 
         started.ShouldBe(StateChange.Unchanged);
         tenant.Status.ToString().ShouldBe(status);
     }
 
     // K4: the tombstone keeps the id, the name, the slug, the status, the moment of the creation and the moment of the purge; the
-    // reason of a suspension and the moment of the closure go.
+    // reason of a suspension, the moment of the closure, and who and when of every event go.
     [Fact]
     public void PurgeTenant_Purging_KeepsOnlyTheTombstone()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
-        tenant.Close(Now, []);
-        tenant.BeginPurge(Now);
+        tenant.Suspend(Reason, SuspenderId, Now);
+        tenant.Close(Now, CloserId, []);
+        tenant.BeginPurge(Now, PurgeStartedAt);
         var purgedAt = Now + TimeSpan.FromDays(30);
 
         var purged = tenant.Purge(purgedAt);
@@ -579,6 +642,7 @@ public sealed class TenantTests
         purged.ShouldBe(StateChange.Changed);
         (tenant.Id, tenant.Name, tenant.Slug, tenant.Status, tenant.CreatedAt, tenant.PurgedAt).ShouldBe((Id, "Acme Ltd", "acme", TenantStatus.Purged, CreatedAt, purgedAt));
         (tenant.SuspensionReason, tenant.ClosedAt).ShouldBe((null, null));
+        (tenant.CreatedBy, tenant.SuspendedAt, tenant.SuspendedBy, tenant.ClosedBy, tenant.PurgeStartedAt).ShouldBe((null, null, null, null, null));
     }
 
     // The purge's last step may run twice (S7): a tombstone stays as it is.
@@ -610,7 +674,7 @@ public sealed class TenantTests
     {
         var tenant = InStatus("Purging");
 
-        var closed = tenant.Close(Now, []);
+        var closed = tenant.Close(Now, CloserId, []);
 
         closed.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
         tenant.Status.ShouldBe(TenantStatus.Purging);
@@ -621,7 +685,7 @@ public sealed class TenantTests
     {
         var tenant = InStatus("Purging");
 
-        var suspended = tenant.Suspend(Reason);
+        var suspended = tenant.Suspend(Reason, SuspenderId, Now);
 
         suspended.Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
         tenant.Status.ShouldBe(TenantStatus.Purging);
@@ -2128,32 +2192,32 @@ public sealed class TenantTests
         InStatus("Closed").RemoveOverride(existing).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
     }
 
-    private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
+    private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt, CreatorId).Value;
 
     private static Tenant Suspended()
     {
         var tenant = Active();
-        tenant.Suspend(Reason);
+        tenant.Suspend(Reason, SuspenderId, Now);
         return tenant;
     }
 
     private static Tenant Closed()
     {
         var tenant = Active();
-        tenant.Close(Now, []);
+        tenant.Close(Now, CloserId, []);
         return tenant;
     }
 
     private static Tenant InStatus(string status)
     {
-        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt).Value;
+        var tenant = Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt, CreatorId).Value;
         _ = status switch
         {
             "Active" => true,
-            "Suspended" => tenant.Suspend(Reason).Value is StateChange.Changed,
-            "Closed" => tenant.Close(Now, []).Value.Change is StateChange.Changed,
-            "Purging" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed,
-            "Purged" => tenant.Close(Now, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now) is StateChange.Changed
+            "Suspended" => tenant.Suspend(Reason, SuspenderId, Now).Value is StateChange.Changed,
+            "Closed" => tenant.Close(Now, CloserId, []).Value.Change is StateChange.Changed,
+            "Purging" => tenant.Close(Now, CloserId, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now, PurgeStartedAt) is StateChange.Changed,
+            "Purged" => tenant.Close(Now, CloserId, []).Value.Change is StateChange.Changed && tenant.BeginPurge(Now, PurgeStartedAt) is StateChange.Changed
                 && tenant.Purge(Now) is StateChange.Changed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };

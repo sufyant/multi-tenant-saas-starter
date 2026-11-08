@@ -45,6 +45,7 @@ public sealed class TenantSummaryTests
         (summary.MemberCount, summary.OwnerCount).ShouldBe((0, 0));
         (summary.OwnerInvitationEmail, summary.OwnerInvitationExpiresAt, summary.OwnerInvitationStatus)
             .ShouldBe(("ada@example.com", Now.AddDays(7), InvitationStatus.Pending));
+        summary.OwnerInvitationSentAt.ShouldBe(Now);
     }
 
     [Fact]
@@ -57,6 +58,7 @@ public sealed class TenantSummaryTests
 
         (summary.MemberCount, summary.OwnerCount).ShouldBe((3, 2));
         (summary.OwnerInvitationEmail, summary.OwnerInvitationExpiresAt, summary.OwnerInvitationStatus).ShouldBe((null, null, null));
+        summary.OwnerInvitationSentAt.ShouldBeNull();
         summary.OwnerInvitationStateAt(Now).ShouldBeNull();
     }
 

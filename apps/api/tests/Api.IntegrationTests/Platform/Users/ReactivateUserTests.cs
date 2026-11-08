@@ -28,8 +28,8 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
         var admin = await _testData.AddSystemAdminAsync();
         var client = _api.CreateClient(admin, secondFactor: true);
 
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.SuspendUserAsync(id));
+        await _api.WaitingForMessagesAsync(() => client.SuspendUserAsync(id));
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
 

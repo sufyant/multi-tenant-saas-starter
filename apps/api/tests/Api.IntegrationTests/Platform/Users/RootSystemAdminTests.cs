@@ -30,6 +30,20 @@ public sealed class RootSystemAdminTests(Database database)
         (await IsSystemAdminAsync(person)).ShouldBeTrue();
     }
 
+    // The platform granted the root's first entry, so the grant names no system admin who granted it.
+    [Fact]
+    public async Task VisitTheSystemDoor_AListedPerson_IsGrantedByNobody()
+    {
+        var root = RootEmail();
+        await using var api = WithRoots(root);
+        var person = Person(api, root);
+
+        await api.WaitingForMessagesAsync(() => api.CreateClient(person, secondFactor: true).GetAsync("/v1/platform/users", Cancellation));
+
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.system_admins WHERE user_id = '{await _testData.UserIdOfAsync(person)}' AND granted_by IS NULL")).ShouldBe(1);
+    }
+
     // A grant the door writes is recorded once, by the platform: the person did not ask for it, the configuration did.
     [Fact]
     public async Task VisitTheSystemDoor_AListedPersonTwice_IsRecordedOnceInThePlatformLogByThePlatform()

@@ -96,7 +96,7 @@ public sealed class CacheRemovalTests(Database database) : IAsyncLifetime
         }, Cancellation);
         await started.Task;
 
-        (await api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true).PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation)).EnsureSuccessStatusCode();
+        (await api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true).SuspendUserAsync(userId)).EnsureSuccessStatusCode();
         released.SetResult();
         await reading;
         var rightAfter = await cache.ReadAsync(read, member, _ => Task.FromResult(new Seen("suspended")), Cancellation);

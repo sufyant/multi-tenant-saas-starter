@@ -51,11 +51,12 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             (echoLater.Id, "Echo Ltd", echoLater.Slug, "active"),
         ]);
         page.GetProperty("items")[0].EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation", "createdAt"],
+            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "memberCount", "ownerCount", "ownerInvitation", "createdAt", "plan", "pendingInvitationCount"],
             ignoreOrder: true);
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(4);
+        page.EnumerateObject().Select(field => field.Name).ShouldBe(["items", "page", "pageSize", "total", "statusCounts"], ignoreOrder: true);
     }
 
     [Fact]
@@ -299,6 +300,134 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
             $"{closedTenant}|0|0|{closed}|{now.AddDays(7):O}|cancelled|{now.AddDays(30):O}",
             $"{expiredTenant}|0|0|{expired}|{expiredAt:O}|expired|-",
         ]);
+    }
+
+    // The tabs of the Organisations list count each status (the maintainer's decision of 2026-11-08): the whole list counts every tenant
+    // in each status, a purged tenant's tombstone included.
+    [Fact]
+    public async Task ListTenants_TenantsInEveryStatus_AnswersACountForEachStatus()
+    {
+        await UseADatabaseOfItsOwnAsync();
+        await _testData.AddTenantAsync(name: "Alpha Ltd");
+        await _testData.AddTenantAsync(name: "Bravo Ltd");
+        await _testData.AddTenantAsync(status: "Suspended", name: "Charlie Ltd");
+        await _testData.AddTenantAsync(status: "Closed", name: "Delta Ltd", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purging", name: "Echo Ltd", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantRowAsync(status: "Purged", name: "Foxtrot Ltd");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants", Cancellation);
+
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"closed":1,"purging":1,"purged":1}""");
+        page.GetProperty("total").GetInt32().ShouldBe(6);
+    }
+
+    // The counts follow the search and ignore only the status filter, as the Open and Closed counts of GitHub Issues do (the maintainer's
+    // decision of 2026-11-08). The total counts the tenants the filter keeps.
+    [Fact]
+    public async Task ListTenants_ASearchAndAStatusFilter_CountsTheSearchInEachStatusAndTotalsTheFilter()
+    {
+        await _testData.AddTenantAsync(name: $"{_marker} Alpha");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+        await _testData.AddTenantAsync(status: "Suspended", name: "Another Ltd");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&status=suspended", Cancellation);
+
+        Names(page).ShouldBe([$"{_marker} Bravo", $"{_marker} Charlie"]);
+        page.GetProperty("total").GetInt32().ShouldBe(2);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":2,"closed":0,"purging":0,"purged":0}""");
+    }
+
+    // The Closed tab holds closed and purging tenants, and All every status but purged: the status filter takes several values.
+    [Theory]
+    [InlineData("status=closed&status=purging", "Echo, Foxtrot")]
+    [InlineData("status=active&status=suspended&status=closed&status=purging", "Bravo, Charlie, Echo, Foxtrot")]
+    [InlineData("status=purged&status=", "Golf")]
+    public async Task ListTenants_SeveralStatuses_ReturnsTheTenantsInAnyOfThem(string filter, string names)
+    {
+        await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purging", name: $"{_marker} Foxtrot", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantRowAsync(status: "Purged", name: $"{_marker} Golf");
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}&{filter}", Cancellation);
+
+        string.Join(", ", Names(page).Select(name => name[(_marker.Length + 1)..])).ShouldBe(names);
+        page.GetProperty("total").GetInt32().ShouldBe(names.Split(", ").Length);
+    }
+
+    [Fact]
+    public async Task ListTenants_SeveralStatusesWithAnUnknownOne_IsRejected()
+    {
+        var response = await (await SystemAdminAsync()).GetAsync("/v1/platform/tenants?status=active&status=deleted", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("paging.filter_invalid");
+    }
+
+    // A row of the phone's list names the tenant's plan.
+    [Fact]
+    public async Task ListTenants_ATenant_AnswersItsPlan()
+    {
+        var planId = await _testData.AddPlanAsync([]);
+        await _testData.AddTenantAsync(name: $"{_marker} Kilo", planId: planId);
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single().GetProperty("plan").ToString().ShouldBe($$"""{"id":"{{planId}}","name":"Plan {{planId:N}}"}""");
+    }
+
+    // The invitations the web counts and the seats count: the pending ones that have not expired at the moment of the read, from the
+    // summary's expiries (K10, R12). The accepted and the cancelled ones count nothing.
+    [Fact]
+    public async Task ListTenants_PendingInvitations_CountsThoseNotExpiredAtTheRead()
+    {
+        var tenant = await _testData.AddTenantAsync(name: $"{_marker} Lima");
+        var now = _time.GetUtcNow();
+        await _testData.AddInvitationAsync(tenant.Id, expiresAt: now.AddDays(2));
+        await _testData.AddInvitationAsync(tenant.Id, expiresAt: now.AddDays(5));
+        await _testData.AddInvitationAsync(tenant.Id, expiresAt: now.AddDays(-1));
+        await _testData.AddInvitationAsync(tenant.Id, status: "Cancelled");
+        await _testData.SummarizeAsync(tenant.Id);
+        _time.Advance(TimeSpan.FromDays(3));
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+
+        page.GetProperty("items").EnumerateArray().Single().GetProperty("pendingInvitationCount").GetInt32().ShouldBe(1);
+    }
+
+    // K5: the page is one query and the counts with the total a second, whatever the page holds: no query for each tenant.
+    [Fact]
+    public async Task ListTenants_ALongerPage_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        await AddTenantsAsync("Mike", "November", "Oscar");
+        var admin = await _testData.AddSystemAdminAsync();
+
+        var one = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/tenants?q={_marker}&pageSize=1", Cancellation));
+        var three = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/tenants?q={_marker}&pageSize=3", Cancellation));
+
+        three.ShouldBe(one);
+        one.ShouldBeGreaterThan(0);
+    }
+
+    // K5: the counts come with the total, so a list with a search and a status filter sends as many commands as the list without them.
+    [Fact]
+    public async Task ListTenants_AStatusFilter_SendsNoMoreSqlCommands()
+    {
+        using var commands = new SqlCommands();
+        await AddTenantsAsync("Papa");
+        var admin = await _testData.AddSystemAdminAsync();
+
+        var all = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/tenants?q={_marker}", Cancellation));
+        var filtered = await commands.CountAsync(
+            () => _api.CreateClient(admin, secondFactor: true), client => client.GetAsync($"/v1/platform/tenants?q={_marker}&status=active&status=closed", Cancellation));
+
+        filtered.ShouldBe(all);
     }
 
     private static List<(Guid Id, string Name, string Slug, string Status)> Tenants(JsonElement page) =>

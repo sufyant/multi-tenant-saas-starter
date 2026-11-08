@@ -103,7 +103,7 @@ public sealed class SuspendedUserTests(Database database) : IAsyncLifetime
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
     private async Task SuspendAsync(string externalId) =>
-        (await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(externalId)}/suspend", null, Cancellation))
+        (await (await SystemAdminAsync()).SuspendUserAsync(await _testData.UserIdOfAsync(externalId)))
             .EnsureSuccessStatusCode();
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);

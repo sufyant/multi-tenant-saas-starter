@@ -95,6 +95,52 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         found.GetProperty("membershipCount").GetInt32().ShouldBe(0);
         found.GetProperty("suspendedAt").ValueKind.ShouldBe(JsonValueKind.Null);
         found.GetProperty("suspendedBy").ValueKind.ShouldBe(JsonValueKind.Null);
+        found.GetProperty("suspensionReason").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    // The reason is personal data about the user: it goes with the deletion, as the names do (the maintainer's decision of 2026-11-08).
+    [Fact]
+    public async Task GetUser_ASuspendedUserDeleted_HasNoReasonLeft()
+    {
+        var client = await SystemAdminAsync();
+        var user = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Gone");
+        var id = await _testData.UserIdOfAsync(user);
+        (await client.SuspendUserAsync(id, "Shared account")).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => client.DeleteAsync($"/v1/platform/users/{id}", Cancellation))).EnsureSuccessStatusCode();
+
+        var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+
+        found.GetProperty("suspensionReason").ValueKind.ShouldBe(JsonValueKind.Null);
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT suspension_reason FROM control_plane.users WHERE id = '{id}'")).ShouldBeNull();
+    }
+
+    // The System admin page says who added them, as they are named now (the maintainer's decision of 2026-11-08).
+    [Fact]
+    public async Task GetUser_ASystemAdminGrantedByAnother_NamesWhoGrantedThem()
+    {
+        var granter = await _testData.AddUserAsync(name: "Selin Arslan");
+        await database.ScalarAsync<object>(
+            $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{granter}'");
+        var client = _api.CreateClient(granter, secondFactor: true);
+        var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
+        using var grant = new HttpRequestMessage(HttpMethod.Post, $"/v1/platform/users/{id}/system-admin");
+        grant.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        (await _api.WaitingForMessagesAsync(() => client.SendAsync(grant, Cancellation))).EnsureSuccessStatusCode();
+
+        var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+
+        found.GetProperty("systemAdminGrantedBy").ToString().ShouldBe("""{"name":"Selin Arslan","deleted":false}""");
+    }
+
+    // A seed, a grant from before the column and a root's first entry, which the platform grants, name nobody.
+    [Fact]
+    public async Task GetUser_ASystemAdminSeed_NamesNobodyWhoGrantedThem()
+    {
+        var id = await _testData.UserIdOfAsync(await _testData.AddSystemAdminAsync());
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
+
+        found.GetProperty("systemAdminGrantedBy").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     // The system admin who suspended the user is named as they are named now.
@@ -106,7 +152,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
             $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'");
         var client = _api.CreateClient(admin, secondFactor: true);
         var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
-        (await client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation)).EnsureSuccessStatusCode();
+        (await client.SuspendUserAsync(id)).EnsureSuccessStatusCode();
 
         var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
 
@@ -115,13 +161,13 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         found.GetProperty("suspendedBy").ToString().ShouldBe("""{"name":"Sys Admin","deleted":false}""");
     }
 
-    // A reactivation forgets who suspended the user.
+    // A reactivation forgets who suspended the user, and why.
     [Fact]
     public async Task GetUser_AUserSuspendedAndReactivated_HasNoSuspension()
     {
         var client = await SystemAdminAsync();
         var id = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
-        (await client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation)).EnsureSuccessStatusCode();
+        (await client.SuspendUserAsync(id)).EnsureSuccessStatusCode();
         (await client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation)).EnsureSuccessStatusCode();
 
         var found = await client.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{id}", Cancellation);
@@ -129,6 +175,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         found.GetProperty("status").GetString().ShouldBe("active");
         found.GetProperty("suspendedAt").ValueKind.ShouldBe(JsonValueKind.Null);
         found.GetProperty("suspendedBy").ValueKind.ShouldBe(JsonValueKind.Null);
+        found.GetProperty("suspensionReason").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     // A8: the deletion took the user out of every tenant and erased the email address and the names.
