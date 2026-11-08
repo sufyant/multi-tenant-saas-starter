@@ -113,10 +113,26 @@ describe("ActivityPage", () => {
       ],
       ["9 Oct 2026", ["Corrib Press was deleted."]],
     ]);
+  });
+
+  it("ActivityPage_Header_NamesTheLogAndSaysWhatItHoldsWithNoFreshness", async () => {
+    server.use(
+      meIn(),
+      auditLogAnswer({ "": { items: [suspendedJohn], nextCursor: null } }),
+    );
+
+    renderWithProviders(<ActivityPage />);
+
     expect(
-      screen.getByRole("heading", { level: 1, name: "Activity" }),
+      await screen.findByRole("heading", { level: 1, name: "Activity log" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Updated", { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Changes to organisations, users, plans and system admins.",
+      ),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole("listitem")).toBeInTheDocument();
+    expect(screen.queryByText("Updated", { exact: false })).toBeNull();
   });
 
   it("ActivityPage_WholeLog_SendsNoTenantId", async () => {
@@ -198,6 +214,10 @@ describe("ActivityPage", () => {
       null,
       "page-2",
     ]);
+    expect(screen.getByText("1 more entry loaded.")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
   });
 
   it("ActivityPage_LastPage_ShowsNoOlderButton", async () => {
@@ -214,7 +234,8 @@ describe("ActivityPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("ActivityPage_CursorNoLongerValid_StartsFromTheNewestAndSaysSo", async () => {
+  // 7.07: the page says it above the entries, as a Banner with its title only; no toast.
+  it("ActivityPage_CursorNoLongerValid_StartsFromTheNewestAndSaysSoAboveTheEntries", async () => {
     const cursors: (string | null)[] = [];
     server.use(meIn(), refusesEveryCursor(cursors, 400));
     renderWithProviders(<ActivityPage />);
@@ -223,14 +244,24 @@ describe("ActivityPage", () => {
       await screen.findByRole("button", { name: "Load older activity" }),
     );
 
+    const page = within(
+      screen
+        .getByRole("heading", { level: 1, name: "Activity log" })
+        .closest("section") as HTMLElement,
+    );
     expect(
-      await screen.findByText("Starting from the newest activity."),
-    ).toBeInTheDocument();
+      await page.findByText("Starting from the newest activity."),
+    ).toBeVisible();
     await vi.waitFor(() => expect(cursors).toEqual([null, "page-2", null]));
+    expect(
+      screen.getAllByText("Starting from the newest activity."),
+    ).toHaveLength(1);
   });
 
-  it("ActivityPage_OlderPageFails_SaysSoAndKeepsTheEntries", async () => {
-    server.use(meIn(), refusesEveryCursor([], 500));
+  // 7.06: the failed page says so under the entries, with Try again in the button's place; no toast.
+  it("ActivityPage_OlderPageFails_SaysSoUnderTheEntriesAndTryAgainAsksAgain", async () => {
+    const cursors: (string | null)[] = [];
+    server.use(meIn(), refusesEveryCursor(cursors, 500));
     renderWithProviders(<ActivityPage />);
 
     await userEvent.click(
@@ -239,10 +270,16 @@ describe("ActivityPage", () => {
 
     expect(
       await screen.findByText("Couldn’t load older activity"),
-    ).toBeInTheDocument();
+    ).toBeVisible();
+    expect(screen.getAllByText("Couldn’t load older activity")).toHaveLength(1);
     expect(
       await findSentence("Ciara Byrne suspended the user John Byrne."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Load older activity" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await vi.waitFor(() => expect(cursors).toEqual([null, "page-2", "page-2"]));
   });
 
   it("ActivityPage_OlderPageSignedOut_GoesToSignIn", async () => {

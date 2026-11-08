@@ -80,30 +80,30 @@ describe("PlanEditor", () => {
 
     expect(screen.getByText("6 organisations are on this plan.")).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Pro");
+    // The areas in the frames' order (6.04): the plan, then Members, then Roles.
     expect(
-      screen.getByRole("heading", { level: 2, name: "Roles" }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("heading", { level: 2, name: "Members" }),
-    ).toBeVisible();
+      screen
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent),
+    ).toEqual(["Plan", "Members", "Roles"]);
     expect(
       row("Custom roles").getByRole("switch", { name: "Custom roles" }),
     ).toBeChecked();
-    expect(row("Custom roles").getByText("On")).toBeVisible();
+    expect(row("Custom roles").queryByText("On")).toBeNull();
     expect(
       row("Custom roles").getByText(
         "Roles an organisation creates beyond Owner, Admin and Member.",
       ),
     ).toBeVisible();
-    expect(row("Custom roles").getByText(FeatureKey.RolesCustom)).toBeVisible();
+    expect(row("Custom roles").queryByText(FeatureKey.RolesCustom)).toBeNull();
     expect(limitField("Custom roles limit")).toHaveValue(20);
     expect(
       row("Custom roles limit").getByRole("checkbox", { name: "Unlimited" }),
     ).not.toBeChecked();
     expect(
-      row("Members limit").getByRole("checkbox", { name: "Unlimited" }),
+      row("Seats").getByRole("checkbox", { name: "Unlimited" }),
     ).toBeChecked();
-    expect(limitField("Members limit")).toBeDisabled();
+    expect(limitField("Seats")).toBeDisabled();
     expect(screen.queryByText("Not set: closed")).toBeNull();
   });
 
@@ -124,12 +124,9 @@ describe("PlanEditor", () => {
     renderWithProviders(<PlanEditor planId={pro.id} />);
     await screen.findByRole("heading", { level: 1, name: "Pro" });
 
-    expect(row("Members limit").getByText("Not set: closed")).toBeVisible();
-    expect(limitField("Members limit")).toHaveValue(null);
-    expect(limitField("Members limit")).toHaveAttribute(
-      "placeholder",
-      "Not set",
-    );
+    expect(row("Seats").queryByText("Not set: closed")).toBeNull();
+    expect(limitField("Seats")).toHaveValue(null);
+    expect(limitField("Seats")).toHaveAttribute("placeholder", "Not set");
     expect(row("Custom roles limit").queryByText("Not set: closed")).toBeNull();
   });
 
@@ -200,7 +197,45 @@ describe("PlanEditor", () => {
         },
       },
     ]);
-    expect(router.push).toHaveBeenCalledWith("/plans");
+    // 6.08: the person stays on the plan, in its saved state.
+    expect(router.push).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("The 6 organisations on it get the new values at once."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  });
+
+  it("Save_NoChange_IsDisabled", async () => {
+    await openPro();
+
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  });
+
+  it("Save_ChangeThenChangeBack_IsEnabledThenDisabledAgain", async () => {
+    await openPro();
+
+    await setLimit("Custom roles limit", "30");
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+    await setLimit("Custom roles limit", "20");
+
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  });
+
+  it("Save_PlanWithNoOrganisation_ToastSaysNoCount", async () => {
+    server.use(
+      planAnswer(partner),
+      plansCommand("patch", `plans/${partner.id}`, [
+        () => HttpResponse.json(partner),
+      ]),
+    );
+    renderWithProviders(<PlanEditor planId={partner.id} />);
+    await screen.findByRole("heading", { level: 1, name: "Partner" });
+
+    await setLimit("Custom roles limit", "60");
+    await save();
+
+    await expectVisibleToast(sentence("Partner saved"));
+    expect(screen.queryByText(/get the new values at once/)).toBeNull();
   });
 
   it("Save_KeyLeftUnset_SendsEveryOtherKeyAndLeavesItClosed", async () => {
@@ -240,9 +275,10 @@ describe("PlanEditor", () => {
     );
 
     await setLimit("Custom roles limit", "");
-    expect(
-      row("Custom roles limit").getByText("Not set: closed"),
-    ).toBeVisible();
+    expect(limitField("Custom roles limit")).toHaveAttribute(
+      "placeholder",
+      "Not set",
+    );
     await save();
 
     await waitFor(() => expect(previews).toHaveLength(1));
@@ -281,7 +317,7 @@ describe("PlanEditor", () => {
     );
 
     await userEvent.click(row("Custom roles").getByRole("switch"));
-    expect(row("Custom roles").getByText("Off")).toBeVisible();
+    expect(row("Custom roles").getByRole("switch")).not.toBeChecked();
     await save();
 
     await waitFor(() => expect(previews).toHaveLength(1));
@@ -303,9 +339,9 @@ describe("PlanEditor", () => {
     );
 
     await userEvent.click(
-      row("Members limit").getByRole("checkbox", { name: "Unlimited" }),
+      row("Seats").getByRole("checkbox", { name: "Unlimited" }),
     );
-    await setLimit("Members limit", "100");
+    await setLimit("Seats", "100");
     await save();
 
     await waitFor(() => expect(previews).toHaveLength(1));
@@ -698,7 +734,7 @@ describe("PlanEditor", () => {
     await save();
 
     expect(
-      await row("Members limit").findByText("Enter a whole number, 0 or more."),
+      await row("Seats").findByText("Enter a whole number, 0 or more."),
     ).toBeVisible();
   });
 
@@ -779,13 +815,14 @@ describe("PlanEditor", () => {
         "A key you leave unset is closed for the organisations on this plan.",
       ),
     ).toBeVisible();
-    expect(screen.getAllByText("Not set: closed")).toHaveLength(3);
+    // Only the feature says it; an unset limit shows its placeholder (6.10).
+    expect(screen.getAllByText("Not set: closed")).toHaveLength(1);
     await userEvent.type(
       screen.getByRole("textbox", { name: "Name" }),
       "Starter",
     );
     await userEvent.click(row("Custom roles").getByRole("switch"));
-    await setLimit("Members limit", "10");
+    await setLimit("Seats", "10");
     await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
 
     await expectVisibleToast(sentence("Starter created"));
@@ -800,7 +837,13 @@ describe("PlanEditor", () => {
       },
     ]);
     expect(creates[0]?.key).toMatch(/^[0-9a-f-]{36}$/);
-    expect(router.push).toHaveBeenCalledWith("/plans");
+    // 6.12: the new plan opens on its own page.
+    expect(router.push).toHaveBeenCalledWith(`/plans/${partner.id}`);
+    expect(
+      screen.getByText(
+        "Give it to an organisation from that organisation’s Plan tab.",
+      ),
+    ).toBeVisible();
   });
 
   it("Create_Refused_RetriesWithANewKey", async () => {
@@ -885,10 +928,11 @@ describe("PlanEditor", () => {
     expect(creates[1]?.key).not.toBe(creates[0]?.key);
   });
 
-  it("Cancel_LeadsBackToThePlans", async () => {
+  it("Back_LeadsBackToThePlans", async () => {
     await openPro();
 
-    expect(screen.getByRole("link", { name: "Cancel" })).toHaveAttribute(
+    expect(screen.queryByRole("link", { name: "Cancel" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Plans" })).toHaveAttribute(
       "href",
       "/plans",
     );
@@ -898,13 +942,13 @@ describe("PlanEditor", () => {
     await openPro();
 
     await userEvent.click(
-      row("Members limit").getByRole("checkbox", { name: "Unlimited" }),
+      row("Seats").getByRole("checkbox", { name: "Unlimited" }),
     );
 
-    expect(limitField("Members limit")).toBeEnabled();
-    expect(row("Members limit").getByText("Not set: closed")).toBeVisible();
-    await setLimit("Members limit", "40");
-    expect(row("Members limit").queryByText("Not set: closed")).toBeNull();
+    expect(limitField("Seats")).toBeEnabled();
+    expect(limitField("Seats")).toHaveAttribute("placeholder", "Not set");
+    await setLimit("Seats", "40");
+    expect(limitField("Seats")).toHaveValue(40);
   });
 
   it("Edit_DefaultHint_NamesTheDefaultPlanFromTheList", async () => {
@@ -921,5 +965,24 @@ describe("PlanEditor", () => {
         "Check it to give this plan to new organisations instead of Basic.",
       ),
     );
+  });
+
+  // 6.18: on a phone the plan opens as a summary of its values, with Edit plan (CSS hides it from bp-tablet).
+  it("Summary_Pro_ListsEachValueAndOffersEditPlan", async () => {
+    await openPro();
+
+    const summary = within(screen.getByRole("region", { name: "Limits" }));
+    /** The value under a key's name in the summary. */
+    const value = (name: string) =>
+      summary.getByText(name, { selector: "dt" }).nextElementSibling
+        ?.textContent;
+    expect([
+      value("Seats"),
+      value("Custom roles"),
+      value("Custom roles limit"),
+    ]).toEqual(["Unlimited", "On", "20"]);
+    expect(
+      screen.getByRole("button", { name: "Edit plan" }),
+    ).toBeInTheDocument();
   });
 });
