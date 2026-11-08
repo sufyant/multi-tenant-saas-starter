@@ -21,17 +21,21 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
+  // A failed test keeps its trace, a screenshot and a video. The HTML report holds them, and CI keeps the report of a failed run
+  // (the artifact playwright-report of the e2e job).
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
   projects: [
     {
       name: "setup",
       testMatch: /global\.setup\.ts/,
       teardown: "teardown",
-      // The setup types the authenticator's secret and the backup codes: no trace may record them.
-      use: { trace: "off" },
+      // The setup types the authenticator's secret and the backup codes: no trace, screenshot or video may record them.
+      use: { trace: "off", screenshot: "off", video: "off" },
     },
     { name: "teardown", testMatch: /global\.teardown\.ts/ },
     {
@@ -53,7 +57,12 @@ export default defineConfig({
       name: "two-step",
       testMatch: /two-step\.spec\.ts/,
       dependencies: ["setup"],
-      use: { ...devices["Desktop Chrome"], trace: "off" },
+      use: {
+        ...devices["Desktop Chrome"],
+        trace: "off",
+        screenshot: "off",
+        video: "off",
+      },
     },
   ],
 });

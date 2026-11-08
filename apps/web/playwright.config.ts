@@ -21,9 +21,13 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
+  // A failed test keeps its trace, a screenshot and a video. The HTML report holds them, and CI keeps the report of a failed run
+  // (the artifact playwright-report of the e2e job).
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
   projects: [
     {
