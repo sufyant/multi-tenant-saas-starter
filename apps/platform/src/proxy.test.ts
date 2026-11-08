@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // The proxy's own handler, with Clerk's route matcher and a stand-in for auth(), so a test sees whether a path needs a session
 // and whether the two-step gate (F42) sends it to /two-step.
 type Handler = (
-  auth: { protect: () => Promise<unknown> },
+  auth: {
+    (): Promise<{ userId: string | null }>;
+    protect: () => Promise<unknown>;
+  },
   request: NextRequest,
 ) => Promise<Response | undefined>;
 const handler = vi.hoisted(() => ({
@@ -20,6 +23,9 @@ vi.mock("@clerk/nextjs/server", async (importOriginal) => ({
 await import("./proxy");
 
 const protect = vi.fn();
+// auth() of a person signed in as the user, or signed out with null, and its protect().
+const authOf = (userId: string | null) =>
+  Object.assign(async () => ({ userId }), { protect });
 // A session without a verified second factor: Clerk's -1.
 beforeEach(() => {
   protect.mockReset();
@@ -28,8 +34,19 @@ beforeEach(() => {
 
 function run(path: string) {
   return handler.current?.(
-    { protect },
+    authOf("user_1"),
     new NextRequest(`https://platform.example.test${path}`),
+  );
+}
+
+// A request of the browser, as the proxy sees it: a navigation of the App Router is a fetch (Sec-Fetch-Dest: empty), a page
+// load a document.
+function navigate(userId: string | null, destination = "empty") {
+  return handler.current?.(
+    authOf(userId),
+    new NextRequest("https://platform.example.test/organisations", {
+      headers: { "Sec-Fetch-Dest": destination, "Next-Url": "/" },
+    }),
   );
 }
 
@@ -92,5 +109,26 @@ describe("proxy", () => {
     const { config } = await import("./proxy");
 
     expect(config.matcher.join(" ")).not.toContain("trpc");
+  });
+
+  // A signed-out navigation loads the page as a document (F63).
+  it("Proxy_AClientSideNavigationSignedOut_AsksTheBrowserToLoadThePage", async () => {
+    const answer = await navigate(null);
+
+    expect(protect).not.toHaveBeenCalled();
+    expect(answer?.status).toBe(401);
+    expect(answer?.body).toBeNull();
+  });
+
+  it("Proxy_APageLoadSignedOut_NeedsTheSession", async () => {
+    await navigate(null, "document");
+
+    expect(protect).toHaveBeenCalled();
+  });
+
+  it("Proxy_AClientSideNavigationSignedIn_NeedsTheSession", async () => {
+    await navigate("user_1");
+
+    expect(protect).toHaveBeenCalled();
   });
 });

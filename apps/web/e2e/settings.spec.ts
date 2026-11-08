@@ -41,6 +41,40 @@ test("MainMenu_Settings_OpensGeneral", async ({ page }) => {
   await expectAccessible(page);
 });
 
+// The seconds until the session token in the page's cookie expires; Clerk's JWT names its expiry in `exp`.
+const secondsLeft = async (page: Page) => {
+  const cookies = await page.context().cookies();
+  const token = cookies.find((cookie) => cookie.name.startsWith("__session"));
+  const payload = token?.value.split(".")[1] ?? "";
+  const { exp } = JSON.parse(Buffer.from(payload, "base64url").toString());
+  return exp - Date.now() / 1000;
+};
+
+// A navigation whose session token expired before clerk-js refreshed it loads the page as a document, and Clerk's handshake keeps
+// the person signed in (F63). The test stops clerk-js's refresh and waits until the page's token has expired: it lives 60 s.
+test("MainMenu_AfterTheSessionTokenExpired_OpensTheLinkSignedIn", async ({
+  page,
+}) => {
+  test.slow();
+  const refresh = /\/v1\/client\/sessions\/[^/]+\/tokens/;
+  await mockMembers(page, { role: BuiltInRole.Member });
+  await open(page, `/${northwind.slug}`);
+  await page.route(refresh, (route) => route.abort());
+  await expect
+    .poll(() => secondsLeft(page), { timeout: 75_000, intervals: [1_000] })
+    .toBeLessThan(0);
+
+  await page
+    .getByRole("navigation", { name: "Main menu" })
+    .getByRole("link", { name: "Settings" })
+    .click();
+
+  await expect(page).toHaveURL(`${settings}/general`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "General" }),
+  ).toBeVisible();
+});
+
 test("Activity_TwoPages_ShowsOlderActivityThenNoButton", async ({ page }) => {
   await mockAuditLog(page);
   await open(page, `${settings}/activity`);
