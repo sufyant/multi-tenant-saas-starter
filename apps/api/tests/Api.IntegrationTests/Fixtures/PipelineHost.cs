@@ -27,6 +27,8 @@ internal sealed class PipelineHost : IAsyncDisposable
 {
     private static readonly Dictionary<string, string?> DefaultSettings = new()
     {
+        // A test of the rate limiter turns it on (Deviations, "Rate limiting off in test hosts").
+        ["Host:RateLimiting:Enabled"] = "false",
         ["Host:RateLimiting:PermitLimit"] = "1000",
         ["Host:RateLimiting:Window"] = "00:01:00",
         ["Host:Role"] = "all",

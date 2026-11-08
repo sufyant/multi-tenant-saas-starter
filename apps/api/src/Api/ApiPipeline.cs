@@ -111,7 +111,14 @@ internal static class ApiPipeline
         // costs no membership lookup. Authorization comes last, so callers it turns away have been rate limited too.
         app.UseRouting();
         app.UseAuthentication();
-        app.UseRateLimiter();
+
+        // ASP.NET Core's rate limiting middleware never disposes the limiter it creates, and the limiter's timer keeps a stopped host
+        // reachable (dotnet/aspnetcore#66434). A process here runs one host, so only test hosts turn it off (Deviations).
+        if (app.Services.GetRequiredService<IOptions<RateLimitingOptions>>().Value.Enabled)
+        {
+            app.UseRateLimiter();
+        }
+
         app.UseMiddleware<TenantResolutionMiddleware>();
         app.UseAuthorization();
         app.UseMiddleware<IdempotencyMiddleware>();
