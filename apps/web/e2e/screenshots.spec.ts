@@ -884,10 +884,19 @@ const sendInvitation = (email: string, says: string) => async (page: Page) => {
 };
 
 /** The person is in no organisation: ListMyTenants answers none, and GetMe names the frame's Lena Fischer (5.11, 6.33, 2.45). */
-const withoutAnOrganisation = async (page: Page) => {
-  await memberOf([])(page);
-  await lena(page);
-};
+const withoutAnOrganisation =
+  (language: Language = Language.En) =>
+  async (page: Page) => {
+    await memberOf([])(page);
+    await lena(language)(page);
+  };
+
+/** Lena's identity in the Account and security frames without an organisation: Google connected, two other sessions (6.33). */
+const lenaIdentity = (page: Page) =>
+  mockIdentity(page, {
+    googleEmail: "lena.fischer@gmail.example",
+    otherSessions: true,
+  });
 
 /** ListMembers filtered by the Owner role answers `count` Owners: the read that tells whether the viewer is the last Owner (8.46). */
 const ownersAre = (count: number) => (page: Page) =>
@@ -1140,13 +1149,13 @@ const shellShots: {
     size: "desktop",
     fullPage: true,
     path: "/settings/profile",
-    mock: withoutAnOrganisation,
+    mock: withoutAnOrganisation(),
   },
   {
     file: "5.12-profile-no-organisation-en-light-phone",
     size: "phone",
     path: "/settings/profile",
-    mock: withoutAnOrganisation,
+    mock: withoutAnOrganisation(),
   },
   {
     file: "5.13-profile-no-organisation-en-dark-desktop",
@@ -1154,7 +1163,7 @@ const shellShots: {
     fullPage: true,
     scheme: "dark",
     path: "/settings/profile",
-    mock: withoutAnOrganisation,
+    mock: withoutAnOrganisation(),
     open: (page) => page.getByRole("radio", { name: "Dark" }).click(),
   },
   {
@@ -1163,7 +1172,7 @@ const shellShots: {
     fullPage: true,
     language: Language.Ar,
     path: "/settings/profile",
-    mock: withoutAnOrganisation,
+    mock: withoutAnOrganisation(Language.Ar),
   },
   {
     file: "6.33-account-no-organisation-en-light-desktop",
@@ -1171,8 +1180,8 @@ const shellShots: {
     fullPage: true,
     path: "/settings/account",
     mock: async (page) => {
-      await withoutAnOrganisation(page);
-      await fullState(page);
+      await withoutAnOrganisation()(page);
+      await lenaIdentity(page);
     },
     open: otherSessionsShown,
   },
@@ -1182,8 +1191,8 @@ const shellShots: {
     fullPage: true,
     path: "/settings/account",
     mock: async (page) => {
-      await withoutAnOrganisation(page);
-      await fullState(page);
+      await withoutAnOrganisation()(page);
+      await lenaIdentity(page);
     },
     open: otherSessionsShown,
   },
@@ -1194,8 +1203,8 @@ const shellShots: {
     scheme: "dark",
     path: "/settings/account",
     mock: async (page) => {
-      await withoutAnOrganisation(page);
-      await fullState(page);
+      await withoutAnOrganisation()(page);
+      await lenaIdentity(page);
     },
     open: otherSessionsShown,
   },
@@ -1203,7 +1212,7 @@ const shellShots: {
     file: "2.45-settings-drawer-no-organisation-en-light-phone",
     size: "phone",
     path: "/settings/profile",
-    mock: withoutAnOrganisation,
+    mock: withoutAnOrganisation(),
     open: (page) => page.getByRole("button", { name: "Open menu" }).click(),
   },
   // The Dates and times pattern: a time's line on hover, the city and its offset (F18, F60).
@@ -2228,17 +2237,24 @@ const accountRefused = (code: ErrorCode) => (page: Page) =>
     }),
   );
 
-/** The frame's person: Lena Fischer, with no organisation (1.19). */
-const lena = (page: Page) =>
-  page.route("**/api/v1/me", (route) =>
-    route.fulfill({
-      json: {
-        ...me(Language.En),
-        name: "Lena Fischer",
-        email: "lena@northwind.example",
-      },
-    }),
-  );
+/** The frame's person: Lena Fischer, with no organisation, in Istanbul, with two unread notifications (1.19, 5.11, 6.33). */
+const lena =
+  (language: Language = Language.En) =>
+  async (page: Page) => {
+    await page.route("**/api/v1/me", (route) =>
+      route.fulfill({
+        json: {
+          ...me(language),
+          name: "Lena Fischer",
+          email: "lena@northwind.example",
+          timeZone: "Europe/Istanbul",
+        },
+      }),
+    );
+    await page.route("**/api/v1/me/notifications/unread-count", (route) =>
+      route.fulfill({ json: { unread: 2 } }),
+    );
+  };
 
 const omar = {
   ...pendingInvitation,
@@ -2305,7 +2321,7 @@ const entryShots: {
     mock: async (page) => {
       await mockApi(page);
       await memberOf([])(page);
-      await lena(page);
+      await lena()(page);
     },
     open: async (page) => {
       await page.getByRole("button", { name: /Lena Fischer/ }).click();
