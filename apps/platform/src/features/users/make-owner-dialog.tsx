@@ -63,6 +63,7 @@ export function MakeOwnerDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("makeOwnerTitle", { name, organisation, ...isolated })}

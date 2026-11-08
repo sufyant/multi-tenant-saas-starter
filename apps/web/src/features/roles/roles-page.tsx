@@ -154,6 +154,7 @@ export function RolesPage() {
     {
       key: "type",
       header: t("roles.type"),
+      width: "w-38.5",
       card: "end",
       render: (role) => (
         <Label>
@@ -164,6 +165,7 @@ export function RolesPage() {
     {
       key: "use",
       header: t("roles.usedBy"),
+      width: "w-53.5",
       secondary: true,
       card: "hide",
       render: (role) => usersOf(role, "usageBoth") ?? t("roles.notInUse"),
@@ -171,6 +173,7 @@ export function RolesPage() {
     {
       key: "permissions",
       header: t("roles.permissions"),
+      width: "w-43.5",
       secondary: true,
       render: (role) =>
         t("members.permissionCount", { count: role.permissions.length }),
@@ -227,19 +230,14 @@ export function RolesPage() {
       // The escalation reason wins: the viewer could not delete the role even when nobody used it (F51). A role in use opens
       // the dialog of 9.13, which says who uses it (the maintainer's rule of 37a-frontend-2: a stopped action stays and says why).
       const used = role.memberCount > 0 || role.pendingInvitationCount > 0;
-      items.push(
-        { separator: true },
-        {
-          label: t("roles.delete"),
-          tone: "destructive",
-          onSelect: () =>
-            used
-              ? setInUse({ role, link: usedByLink(role) })
-              : setDeleting(role),
-          disabled: outOfReach !== undefined,
-          reason: outOfReach,
-        },
-      );
+      items.push({
+        label: t("roles.delete"),
+        tone: "destructive",
+        onSelect: () =>
+          used ? setInUse({ role, link: usedByLink(role) }) : setDeleting(role),
+        disabled: outOfReach !== undefined,
+        reason: outOfReach,
+      });
     }
     return items;
   };

@@ -101,6 +101,7 @@ export function RemoveDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       tone="destructive"
       onOpenChange={(open) => !open && onClose()}

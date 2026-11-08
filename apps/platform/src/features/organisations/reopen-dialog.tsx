@@ -100,6 +100,7 @@ export function ReopenDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("reopenTitle", { name, ...isolated })}

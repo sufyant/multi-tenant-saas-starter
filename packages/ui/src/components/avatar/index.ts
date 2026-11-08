@@ -1,1 +1,7 @@
-export { Avatar, initialsOf, type Person } from "./avatar";
+export {
+  Avatar,
+  initialsOf,
+  type Person,
+  type Tint,
+  tintOf,
+} from "./avatar";

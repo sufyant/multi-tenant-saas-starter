@@ -62,6 +62,7 @@ export function DeleteDialog({
     const [first] = organisations;
     return (
       <Dialog
+        size="wide"
         open
         onOpenChange={close}
         title={t.rich("cannotDelete", { name, ...isolated })}
@@ -122,6 +123,7 @@ export function DeleteDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       tone="destructive"
       onOpenChange={close}

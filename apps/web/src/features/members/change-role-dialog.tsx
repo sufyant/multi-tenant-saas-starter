@@ -112,6 +112,7 @@ export function ChangeRoleDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={

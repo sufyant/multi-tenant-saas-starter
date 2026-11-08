@@ -172,6 +172,7 @@ export function OverrideDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={

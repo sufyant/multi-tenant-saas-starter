@@ -40,6 +40,11 @@ export type TableColumn<Row extends RowData> = {
   cardRender?: (row: Row) => ReactNode;
   /** wide: the column shows only from `cq-table-wide` of the table's own width, such as "Joined" on a tablet. The card ignores it. */
   show?: "wide";
+  /**
+   * The column's width class: its frame's cell width and the 14 px gap before it, such as `w-66` for a 250 px cell. The first
+   * column has none: it fills (Table row, 424:2472).
+   */
+  width?: string;
 };
 
 export type TableSort = { key: string; desc: boolean };
@@ -86,9 +91,15 @@ const cellText = <Row extends RowData>(
     ? column.render(row)
     : String((row as Record<string, unknown>)[column.key] ?? "");
 
+/** The cells' padding (Table row, 424:2472): 10 at the start of the row, 14 between cells, 8 at the end. */
+const cellPadding = (index: number, last: boolean) =>
+  cn(index === 0 ? "ps-2.5" : "ps-3.5", last ? "pe-2" : "pe-0");
+
 /**
- * A list of records (the Table README) on TanStack Table in manual mode: the API pages and sorts, the table shows one page. Under
- * 640px of container width it becomes a card list: lead, title, one meta line joined by "·", the status at the end, then ⋯.
+ * A list of records (the Table README and the Table component, 424:2473) on TanStack Table in manual mode: the API pages and
+ * sorts, the table shows one page. A row's ⋯ shows on hover, on focus, while its menu is open and always on a touch screen
+ * (Table · Actions, 424:2404). Under 640px of container width it becomes a card list (Table · Card, 258:1389): lead, title, one
+ * meta line joined by "·", the status at the end, then ⋯, always shown.
  */
 export function Table<Row extends RowData>({
   columns,
@@ -135,90 +146,108 @@ export function Table<Row extends RowData>({
   const placeOf = (column: TableColumn<Row>, index: number) =>
     column.card ?? (index === 0 ? "title" : "meta");
 
+  const lastColumn = columns.length - 1;
   return (
     <div className={cn("@container flex flex-col gap-3", className)}>
-      <TableBase
-        aria-label={label}
-        className="hidden text-body tabular-nums @min-[640px]:table"
-      >
-        <TableHeader>
-          <TableRow className="border-border bg-muted hover:bg-muted">
-            {table.getHeaderGroups()[0]?.headers.map((header, index) => {
-              const column = columns[index] as TableColumn<Row>;
-              const direction = header.column.getIsSorted();
-              return (
-                <TableHead
-                  key={header.id}
-                  aria-sort={
-                    direction
-                      ? direction === "desc"
-                        ? "descending"
-                        : "ascending"
-                      : undefined
-                  }
-                  className={cn(
-                    "h-row-header px-3 text-status text-muted-foreground",
-                    column.align === "end" && "text-end",
-                    column.show === "wide" && "hidden @table-wide:table-cell",
-                  )}
-                >
-                  {column.sortable ? (
-                    <button
-                      type="button"
-                      onClick={header.column.getToggleSortingHandler()}
-                      className="inline-flex items-center gap-1 hover:text-foreground"
-                    >
-                      {column.header}
-                      {direction && (
-                        <Icon
-                          icon={ChevronDownIcon}
-                          size={14}
-                          className={cn(direction === "asc" && "rotate-180")}
-                        />
-                      )}
-                    </button>
-                  ) : (
-                    column.header
+      <div className="hidden overflow-hidden rounded-lg border border-border bg-card @min-[640px]:block">
+        <TableBase
+          aria-label={label}
+          className="hidden table-fixed text-body tabular-nums @min-[640px]:table"
+        >
+          <TableHeader>
+            <TableRow className="h-row-header border-border bg-muted hover:bg-muted">
+              {table.getHeaderGroups()[0]?.headers.map((header, index) => {
+                const column = columns[index] as TableColumn<Row>;
+                const direction = header.column.getIsSorted();
+                return (
+                  <TableHead
+                    key={header.id}
+                    aria-sort={
+                      direction
+                        ? direction === "desc"
+                          ? "descending"
+                          : "ascending"
+                        : undefined
+                    }
+                    className={cn(
+                      "h-row-header text-status text-muted-foreground",
+                      cellPadding(index, !actions && index === lastColumn),
+                      column.width,
+                      column.align === "end" && "text-end",
+                      column.show === "wide" && "hidden @table-wide:table-cell",
+                    )}
+                  >
+                    {column.sortable ? (
+                      <button
+                        type="button"
+                        onClick={header.column.getToggleSortingHandler()}
+                        className="inline-flex items-center gap-1 hover:text-foreground"
+                      >
+                        {column.header}
+                        {direction && (
+                          <Icon
+                            icon={ChevronDownIcon}
+                            size={14}
+                            className={cn(direction === "asc" && "rotate-180")}
+                          />
+                        )}
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </TableHead>
+                );
+              })}
+              {actions && (
+                // The 28 px ⋯, the 14 px gap before it and the 8 px at the row's end.
+                <TableHead className="w-12.5 ps-3.5 pe-2">
+                  {actionsLabel && (
+                    <span className="sr-only">{actionsLabel}</span>
                   )}
                 </TableHead>
-              );
-            })}
-            {actions && (
-              <TableHead className="w-12 px-3">
-                {actionsLabel && (
-                  <span className="sr-only">{actionsLabel}</span>
-                )}
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="h-row-height border-border">
-              {columns.map((column) => (
-                <TableCell
-                  key={column.key}
-                  className={cn(
-                    "px-3",
-                    column.align === "end" && "text-end",
-                    column.secondary && "text-muted-foreground",
-                    column.show === "wide" && "hidden @table-wide:table-cell",
-                  )}
-                >
-                  {cellText(column, row.original)}
-                </TableCell>
-              ))}
-              {actions && (
-                <TableCell className="px-3 text-end">
-                  {actions(row.original)}
-                </TableCell>
               )}
             </TableRow>
-          ))}
-        </TableBody>
-      </TableBase>
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                className="group/row h-row-height border-border focus-within:bg-row-hover"
+              >
+                {columns.map((column, index) => (
+                  <TableCell
+                    key={column.key}
+                    className={cn(
+                      "py-0",
+                      cellPadding(index, !actions && index === lastColumn),
+                      column.align === "end" && "text-end",
+                      column.secondary && "text-small text-muted-foreground",
+                      column.show === "wide" && "hidden @table-wide:table-cell",
+                    )}
+                  >
+                    {cellText(column, row.original)}
+                  </TableCell>
+                ))}
+                {actions && (
+                  <TableCell className="py-0 ps-3.5 pe-2 text-end">
+                    {/* The ⋯ button keeps its cell at rest, and a text in its place always shows; a fine pointer gets the 28 px
+                      button, a touch screen keeps its touch size. */}
+                    <div className="flex justify-end [&>button]:opacity-0 group-hover/row:[&>button]:bg-accent group-hover/row:[&>button]:opacity-100 focus-within:[&>button]:opacity-100 [&>button]:data-popup-open:opacity-100 pointer-coarse:[&>button]:opacity-100 pointer-fine:[&>button]:size-target-row-action">
+                      {actions(row.original)}
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </TableBase>
+      </div>
 
-      <ul aria-label={label} className="flex flex-col @min-[640px]:hidden">
+      {/* The cards sit in one box, as the table does (8.34): a border and the large radius around them. */}
+      <ul
+        aria-label={label}
+        className="flex flex-col overflow-hidden rounded-lg border border-border empty:hidden @min-[640px]:hidden"
+      >
         {rows.map((row) => {
           const card = (place: string) =>
             columns
@@ -232,12 +261,15 @@ export function Table<Row extends RowData>({
           return (
             <li
               key={String(row[rowKey])}
-              className="flex min-h-16 items-center gap-3 border-b border-border py-2"
+              className="flex min-h-16 items-center gap-3 border-b border-border bg-card px-4 py-3 last:border-b-0"
             >
               {cardLead?.(row)}
               <div className="flex min-w-0 flex-1 flex-col">
                 {card("title").map(({ column, cell }) => (
-                  <span key={column.key} className="truncate font-medium">
+                  <span
+                    key={column.key}
+                    className="truncate text-body font-medium"
+                  >
                     {cell}
                   </span>
                 ))}
@@ -253,7 +285,11 @@ export function Table<Row extends RowData>({
               {card("end").map(({ column, cell }) => (
                 <span key={column.key}>{cell}</span>
               ))}
-              {actions?.(row)}
+              {actions && (
+                <div className="flex [&>button]:size-touch-target [&>button_svg]:size-5">
+                  {actions(row)}
+                </div>
+              )}
             </li>
           );
         })}

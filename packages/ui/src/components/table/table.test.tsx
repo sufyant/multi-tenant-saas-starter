@@ -154,4 +154,85 @@ describe("Table", () => {
 
     expect(screen.getByRole("table", { name: "الأعضاء" })).toBeInTheDocument();
   });
+
+  // Table · Actions (424:2404): the ⋯ keeps its cell at rest and shows on the row's hover, on focus and while its menu is open.
+  // jsdom draws no CSS, so the rule is the classes; the shots of 8.15 and 8.17 show the drawing.
+  it("Table_RowActions_ShowOnHoverFocusOrOpenMenu", () => {
+    render(
+      <Table
+        {...props}
+        actions={(row) => <button type="button">Actions for {row.name}</button>}
+        actionsLabel="Actions"
+      />,
+    );
+
+    const table = screen.getByRole("table", { name: "Members" });
+    const actions = within(table).getByRole("button", {
+      name: "Actions for Ayşe Yılmaz",
+    }).parentElement;
+    expect(actions).toHaveClass(
+      "[&>button]:opacity-0",
+      "group-hover/row:[&>button]:opacity-100",
+      // Table row's Hover state draws Table · Actions in its Hover state: the accent fill.
+      "group-hover/row:[&>button]:bg-accent",
+      "focus-within:[&>button]:opacity-100",
+      "[&>button]:data-popup-open:opacity-100",
+    );
+  });
+
+  // A touch screen has no hover, so the ⋯ always shows there (the task of 37a-shared-components).
+  it("Table_RowActionsOnATouchScreen_AlwaysShow", () => {
+    render(
+      <Table
+        {...props}
+        actions={(row) => <button type="button">Actions for {row.name}</button>}
+      />,
+    );
+
+    const table = screen.getByRole("table", { name: "Members" });
+    expect(
+      within(table).getByRole("button", { name: "Actions for Ayşe Yılmaz" })
+        .parentElement,
+    ).toHaveClass("pointer-coarse:[&>button]:opacity-100");
+  });
+
+  // Table · Card (258:1389): the phone card's ⋯ always shows.
+  it("Table_CardActions_AlwaysShow", () => {
+    render(
+      <Table
+        {...props}
+        actions={(row) => <button type="button">Actions for {row.name}</button>}
+      />,
+    );
+
+    const cards = screen.getByRole("list", { name: "Members" });
+    expect(
+      within(cards).getByRole("button", { name: "Actions for Ayşe Yılmaz" })
+        .parentElement,
+    ).not.toHaveClass("[&>button]:opacity-0");
+  });
+
+  // Table row (424:2472): the first column fills, and each other column keeps the width its frame gives it, in a fixed layout so
+  // that the first column's full width does not squeeze the others.
+  it("Table_ColumnWithAWidth_KeepsIt", () => {
+    render(
+      <Table
+        {...props}
+        columns={[
+          columns[0] as TableColumn<Member>,
+          { key: "role", header: "Role", width: "w-41" },
+        ]}
+      />,
+    );
+
+    expect(
+      within(screen.getByRole("table", { name: "Members" })).getByRole(
+        "columnheader",
+        { name: "Role" },
+      ),
+    ).toHaveClass("w-41");
+    expect(screen.getByRole("table", { name: "Members" })).toHaveClass(
+      "table-fixed",
+    );
+  });
 });

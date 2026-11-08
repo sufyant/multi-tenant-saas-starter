@@ -1464,8 +1464,10 @@ const shellShots: {
     path: members,
     team: northwindTeam(),
     open: async (page) => {
-      await page.getByRole("combobox", { name: "Filter by role" }).click();
-      await page.getByRole("option", { name: "All roles" }).waitFor();
+      await page
+        .getByRole("button", { name: "Filter by role: All roles" })
+        .click();
+      await page.getByRole("menuitemradio", { name: "All roles" }).waitFor();
     },
   },
   {

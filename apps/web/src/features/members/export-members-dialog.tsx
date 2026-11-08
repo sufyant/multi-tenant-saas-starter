@@ -92,7 +92,7 @@ export function ExportMembersDialog({
       }
     >
       {failed ? (
-        <p className="text-body text-destructive-text">
+        <p className="text-small text-destructive-text">
           {`${t("members.exportFailed")} ${failureText(problemOf(exportFile.error))}`}
         </p>
       ) : (

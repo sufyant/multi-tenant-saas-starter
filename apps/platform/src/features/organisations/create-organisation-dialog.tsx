@@ -166,6 +166,7 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t("create")}

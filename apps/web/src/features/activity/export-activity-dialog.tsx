@@ -72,7 +72,7 @@ export function ExportActivityDialog({ onClose }: { onClose: () => void }) {
       }
     >
       {failed ? (
-        <p className="text-body text-destructive-text">
+        <p className="text-small text-destructive-text">
           {`${t("activity.exportFailed")} ${failureText(problemOf(exportFile.error))}`}
         </p>
       ) : (

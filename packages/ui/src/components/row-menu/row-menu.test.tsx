@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { ShieldIcon, TrashIcon } from "../icon";
 import { RowMenu } from "./row-menu";
 
 const reason = "An organisation needs at least one Owner.";
@@ -12,7 +13,6 @@ describe("RowMenu", () => {
         label="Actions for Ayşe Yılmaz"
         items={[
           { label: "Change role" },
-          { separator: true },
           {
             label: "Remove from organisation",
             tone: "destructive",
@@ -96,5 +96,75 @@ describe("RowMenu", () => {
     expect(
       screen.getByRole("button", { name: "إجراءات عائشة" }),
     ).toBeInTheDocument();
+  });
+
+  // Safe actions first, then a separator, then the destructive group (the RowMenu component, 406:2426; Apple HIG, Menus).
+  it("RowMenu_SafeAndDestructiveItems_SeparatesTheDestructiveGroup", async () => {
+    render(
+      <RowMenu
+        label="Actions for Ayşe Yılmaz"
+        items={[
+          { label: "Change role" },
+          { label: "Copy email" },
+          { label: "Remove from organisation", tone: "destructive" },
+          { label: "Block", tone: "destructive" },
+        ]}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Actions for Ayşe Yılmaz" }),
+    );
+
+    const menu = await screen.findByRole("menu");
+    const parts = [
+      ...menu.querySelectorAll("[role=menuitem], [role=separator]"),
+    ];
+    expect(parts.map((part) => part.getAttribute("role"))).toEqual([
+      "menuitem",
+      "menuitem",
+      "separator",
+      "menuitem",
+      "menuitem",
+    ]);
+  });
+
+  it("RowMenu_OnlyDestructiveItems_HasNoSeparator", async () => {
+    render(
+      <RowMenu
+        label="Actions for Selin Arslan"
+        items={[{ label: "Remove system admin", tone: "destructive" }]}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Actions for Selin Arslan" }),
+    );
+
+    await screen.findByRole("menuitem", { name: "Remove system admin" });
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+  });
+
+  it("RowMenu_ItemWithIcon_DrawsItsIcon", async () => {
+    render(
+      <RowMenu
+        label="Actions for Ayşe Yılmaz"
+        items={[
+          { label: "Change role", icon: ShieldIcon },
+          {
+            label: "Remove from organisation",
+            icon: TrashIcon,
+            tone: "destructive",
+          },
+        ]}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Actions for Ayşe Yılmaz" }),
+    );
+
+    const item = await screen.findByRole("menuitem", { name: "Change role" });
+    expect(item.querySelector("svg")).toHaveAttribute("width", "16");
   });
 });

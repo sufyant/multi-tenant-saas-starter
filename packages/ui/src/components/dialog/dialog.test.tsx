@@ -236,4 +236,57 @@ describe("Dialog", () => {
       screen.getByRole("heading", { name: "Invite member" }),
     );
   });
+
+  // The Dialog component (406:2533): 440 px by default, 480 px Wide for a list of choices or a form of several fields. jsdom
+  // draws nothing, so the size is the class; the shots of 8.19 and 8.21 show the drawing.
+  it("Dialog_Default_IsFourHundredFortyWideFromBpTablet", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        title="Remove Ayşe Yılmaz?"
+        actionLabel="Remove member"
+        cancelLabel="Cancel"
+      />,
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", { name: "Remove Ayşe Yılmaz?" }),
+    ).toHaveClass("data-[size=default]:tablet:max-w-110");
+  });
+
+  it("Dialog_Wide_IsFourHundredEightyWideFromBpTablet", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        size="wide"
+        title="Change Ayşe Yılmaz's role"
+        actionLabel="Change role"
+        cancelLabel="Cancel"
+      />,
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Change Ayşe Yılmaz's role",
+      }),
+    ).toHaveClass("data-[size=default]:tablet:max-w-120");
+  });
+
+  // The footer band (406:2485): row-hover with a line on top, cancel first, the action last.
+  it("Dialog_Buttons_SitInTheFooterBand", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        title="Remove Ayşe Yılmaz?"
+        actionLabel="Remove member"
+        cancelLabel="Cancel"
+      />,
+    );
+
+    const action = await screen.findByRole("button", { name: "Remove member" });
+    const footer = action.parentElement as HTMLElement;
+    expect(footer).toHaveClass("bg-row-hover", "border-t", "border-border");
+    expect(footer.firstElementChild).toHaveTextContent("Cancel");
+    expect(footer.lastElementChild).toBe(action);
+  });
 });

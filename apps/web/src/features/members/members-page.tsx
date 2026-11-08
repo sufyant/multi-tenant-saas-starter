@@ -14,7 +14,6 @@ import {
   schemas,
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
-import { Combobox } from "@repo/ui/components/combobox";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import {
   CircleXIcon,
@@ -24,6 +23,7 @@ import {
   UserPlusIcon,
 } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
+import { RoleFilter } from "@repo/ui/components/role-filter";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Search } from "@repo/ui/components/search";
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
@@ -481,15 +481,15 @@ export function MembersPage() {
         </div>
         {/* 8.29 draws no role filter on the Invitations tab; a role in the address still filters it, with Clear filter (F51). */}
         {readsRoles && tab === "members" && (
-          <Combobox
-            variant="filter"
+          <RoleFilter
             label={t("members.roleFilter")}
+            phoneLabel={t("members.filter")}
             value={roleId ?? allRoles}
             options={[
               { id: allRoles, label: t("members.allRoles") },
               ...inListOrder(roles.data?.items ?? []).map((choice) => ({
                 id: choice.id,
-                label: t("members.filteredBy", { role: roleName(choice) }),
+                label: roleName(choice),
               })),
             ]}
             onValueChange={(id) =>
@@ -499,8 +499,6 @@ export function MembersPage() {
                   null,
               })
             }
-            searchPlaceholder={t("members.roleSearch")}
-            emptyLabel={t("members.roleEmpty")}
           />
         )}
         {roleId && !emptyFiltered && (

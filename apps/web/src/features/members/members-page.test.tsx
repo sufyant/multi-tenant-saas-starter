@@ -223,7 +223,7 @@ describe("MembersPage", () => {
     renderInTenant(<MembersPage />);
 
     expect(
-      await screen.findByRole("combobox", { name: "Filter by role" }),
+      await screen.findByRole("button", { name: "Filter by role: All roles" }),
     ).toHaveTextContent(/^All roles$/);
   });
 
@@ -359,8 +359,8 @@ describe("MembersPage", () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByRole("combobox", { name: "Filter by role" }),
-      ).toHaveTextContent("Role: Billing lead"),
+        screen.getByRole("button", { name: "Filter by role: Billing lead" }),
+      ).toHaveTextContent(/^Billing lead$/),
     );
   });
 
@@ -443,7 +443,7 @@ describe("MembersPage", () => {
       await screen.findByRole("button", { name: "Clear filter" }),
     ).toBeVisible();
     expect(
-      screen.queryByRole("combobox", { name: "Filter by role" }),
+      screen.queryByRole("button", { name: /^Filter by role/ }),
     ).not.toBeInTheDocument();
     expect(
       invitationRequests.some(

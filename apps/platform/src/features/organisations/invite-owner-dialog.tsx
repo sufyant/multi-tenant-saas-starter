@@ -137,6 +137,7 @@ export function InviteOwnerDialog({
 
   return (
     <Dialog
+      size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("inviteTitle", { name, ...isolated })}

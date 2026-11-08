@@ -117,11 +117,13 @@ export function InvitationsTable({
     {
       key: "role",
       header: t("members.role"),
+      width: "w-38.5",
       render: (invitation) => <Label>{roleText(invitation)}</Label>,
     },
     {
       key: "invitedBy",
       header: t("members.invitedBy"),
+      width: "w-46",
       secondary: true,
       card: "hide",
       render: (invitation) => (
@@ -133,6 +135,7 @@ export function InvitationsTable({
     {
       key: "expires",
       header: t("members.expires"),
+      width: "w-41",
       secondary: true,
       sortable: true,
       card: "hide",
@@ -148,6 +151,7 @@ export function InvitationsTable({
     {
       key: "status",
       header: t("members.status"),
+      width: "w-31",
       card: "end",
       render: (invitation) => {
         const status = statusOf(invitation);
@@ -188,7 +192,6 @@ export function InvitationsTable({
             },
           ),
       });
-    if (items.length > 0 && canRevoke) items.push({ separator: true });
     if (canRevoke)
       items.push({
         label: expired ? t("members.cancelInvitation") : t("members.revoke"),
