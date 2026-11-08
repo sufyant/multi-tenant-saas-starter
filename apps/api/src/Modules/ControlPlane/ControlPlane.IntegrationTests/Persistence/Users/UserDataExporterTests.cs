@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SharedKernel;
 using Database = ControlPlane.IntegrationTests.Fixtures.Database;
 
-namespace ControlPlane.IntegrationTests.Users;
+namespace ControlPlane.IntegrationTests.Persistence.Users;
 
 // ControlPlane's part of a person's data export (docs/flows/personal-data-export.md). The reason of a user's suspension is personal data
 // about the person, so their profile holds it (GDPR, Article 15; the maintainer's decision of 2026-11-08).

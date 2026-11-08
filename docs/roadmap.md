@@ -238,8 +238,28 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 - The status counts follow the search text and every other filter, and ignore only the status filter, as the Open and Closed counts of GitHub Issues do (the maintainer's decision of 2026-11-08).
 - Each "by" and "at" field is null for a seed and for every event before its column exists. The screen then shows no "by" part, or no row. Nothing is backfilled from the Activity log (the maintainer's decision of 2026-11-08).
 - The suspension reason is personal data about the user. It is in the user's data export, and it goes when the account is deleted. The suspended person does not see it, as the platform's reason for a tenant ("Only the platform sees it") (the maintainer's decision of 2026-11-08).
-- The migration is an expansion: the CHECKs that tie the new columns to the old ones come in a later release (`apps/api/docs/ARCHITECTURE.md`, section 13).
+- The migration is an expansion: the CHECKs that tie the new columns to the old ones come in 37b-backend-contract (`docs/deployment.md`, section 8).
 - Done.
+
+37b-backend-contract, the CHECKs of 37b-backend's columns (the maintainer's decision of 2026-11-08):
+
+- It waits for one deploy: 37b-backend has run on staging and on production, so no running version writes the old columns without the new ones.
+- One migration of ControlPlane. It first clears what the version before left during the deploy, then adds the CHECKs (R15):
+  - `UPDATE control_plane.tenants SET suspended_at = NULL, suspended_by = NULL WHERE suspension_reason IS NULL`
+  - `UPDATE control_plane.tenants SET closed_by = NULL WHERE closed_at IS NULL`
+  - `UPDATE control_plane.tenants SET purge_started_at = NULL WHERE status <> 'Purging'`
+  - `UPDATE control_plane.tenants SET created_by = NULL WHERE status = 'Purged'`
+  - `UPDATE control_plane.users SET suspension_reason = NULL WHERE suspended_at IS NULL OR deleted_at IS NOT NULL`
+  - `UPDATE control_plane.tenant_summaries SET owner_invitation_sent_at = NULL WHERE owner_invitation_status IS NULL`
+- The CHECKs:
+  - `ck_tenants_suspension`: `(suspended_at IS NULL) = (suspended_by IS NULL) AND (suspended_at IS NULL OR suspension_reason IS NOT NULL)`
+  - `ck_tenants_closed_by_with_closure`: `closed_by IS NULL OR closed_at IS NOT NULL`
+  - `ck_tenants_purge_started_while_purging`: `purge_started_at IS NULL OR status = 'Purging'`
+  - `ck_tenants_purged_is_a_tombstone`: `status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL AND created_by IS NULL)`
+  - `ck_users_suspension_reason_while_suspended`: `suspended_at IS NOT NULL OR suspension_reason IS NULL`
+  - `ck_users_deleted_keeps_no_personal_data`: `deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL AND suspension_reason IS NULL)`
+  - `ck_tenant_summaries_owner_invitation_sent_with_it`: `owner_invitation_sent_at IS NULL OR owner_invitation_status IS NOT NULL`
+- `MigratedSchemaTests.WriteRow_BreakingAControlPlaneCheck_IsRefusedByThatCheck` gets a row that breaks each, and the open item of 37b-backend leaves section 13 of `apps/api/docs/ARCHITECTURE.md`.
 
 37b-emails, the platform's emails against their frames:
 

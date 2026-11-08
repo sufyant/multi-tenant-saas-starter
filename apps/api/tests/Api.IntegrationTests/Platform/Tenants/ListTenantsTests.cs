@@ -343,6 +343,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     [InlineData("status=closed&status=purging", "Echo, Foxtrot")]
     [InlineData("status=active&status=suspended&status=closed&status=purging", "Bravo, Charlie, Echo, Foxtrot")]
     [InlineData("status=purged&status=", "Golf")]
+    [InlineData("status=closed&status=closed", "Echo")]
     public async Task ListTenants_SeveralStatuses_ReturnsTheTenantsInAnyOfThem(string filter, string names)
     {
         await _testData.AddTenantAsync(status: "Active", name: $"{_marker} Bravo");
