@@ -87,7 +87,9 @@ test("Members_RoleFilter_IsAsHighAsTheSearchField", async ({
 }) => {
   await open(browser);
 
-  const filter = browser.getByRole("combobox", { name: "Filter by role" });
+  const filter = browser.getByRole("button", {
+    name: "Filter by role: All roles",
+  });
   await expect(filter).toHaveText("All roles");
   const search = browser.getByRole("searchbox", {
     name: "Search by name or email",
