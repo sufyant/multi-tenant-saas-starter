@@ -45,27 +45,27 @@
       "tenant.suspended": {
         "title": "{{tenantName}} was suspended",
         "body": "{{actorName}} suspended {{tenantName}}. Its members can’t open it until it is reactivated.",
-        "footer": "You received this because you are a system admin and an organisation’s status changed."
+        "footer": "You received this because you are a system admin."
       },
       "tenant.reactivated": {
         "title": "{{tenantName}} was reactivated",
         "body": "{{actorName}} reactivated {{tenantName}}. Its members can open it again.",
-        "footer": "You received this because you are a system admin and an organisation’s status changed."
+        "footer": "You received this because you are a system admin."
       },
       "tenant.closed": {
         "title": "{{tenantName}} was closed",
         "body": "{{actorName}} closed {{tenantName}}. It will be deleted on {{reopenableUntil}} unless someone reopens it.",
-        "footer": "You received this because you are a system admin and an organisation’s status changed."
+        "footer": "You received this because you are a system admin."
       },
       "tenant.reopened": {
         "title": "{{tenantName}} was reopened",
         "body": "{{actorName}} reopened {{tenantName}}. It is active again.",
-        "footer": "You received this because you are a system admin and an organisation’s status changed."
+        "footer": "You received this because you are a system admin."
       },
       "tenant.purged": {
         "title": "{{tenantName}} was deleted",
-        "body": "The platform finished deleting {{tenantName}} and its data. Its name and slug stay in the list.",
-        "footer": "You received this because you are a system admin and an organisation’s status changed."
+        "body": "The platform finished deleting {{tenantName}} and its data. Its name and address stay in the list.",
+        "footer": "You received this because you are a system admin."
       },
       "tenant.suspended_for_owners": {
         "title": "{{tenantName}} was suspended",
@@ -169,27 +169,27 @@
       "tenant.suspended": {
         "title": "{{tenantName}} askıya alındı",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu askıya aldı. Üyeleri, kuruluş yeniden etkinleştirilene kadar onu açamaz.",
-        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
       },
       "tenant.reactivated": {
         "title": "{{tenantName}} yeniden etkinleştirildi",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden etkinleştirdi. Üyeleri onu yeniden açabilir.",
-        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
       },
       "tenant.closed": {
         "title": "{{tenantName}} kapatıldı",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu kapattı. Biri yeniden açmazsa {{reopenableUntil}} tarihinde silinecek.",
-        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
       },
       "tenant.reopened": {
         "title": "{{tenantName}} yeniden açıldı",
         "body": "{{actorName}}, {{tenantName}} kuruluşunu yeniden açtı. Kuruluş yeniden etkin.",
-        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
       },
       "tenant.purged": {
         "title": "{{tenantName}} silindi",
-        "body": "Platform, {{tenantName}} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve kısa adı listede kalır.",
-        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz ve bir kuruluşun durumu değiştiği için aldınız."
+        "body": "Platform, {{tenantName}} kuruluşunu ve verilerini silmeyi tamamladı. Adı ve adresi listede kalır.",
+        "footer": "Bu e-postayı, sistem yöneticisi olduğunuz için aldınız."
       },
       "tenant.suspended_for_owners": {
         "title": "{{tenantName}} askıya alındı",
@@ -293,27 +293,27 @@
       "tenant.suspended": {
         "title": "عُلّقت {{tenantName}}",
         "body": "علّق {{actorName}} مؤسسة {{tenantName}}. لا يستطيع أعضاؤها فتحها حتى يُعاد تفعيلها.",
-        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام."
       },
       "tenant.reactivated": {
         "title": "أُعيد تفعيل {{tenantName}}",
         "body": "أعاد {{actorName}} تفعيل {{tenantName}}. يستطيع أعضاؤها فتحها مجددًا.",
-        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام."
       },
       "tenant.closed": {
         "title": "أُغلقت {{tenantName}}",
         "body": "أغلق {{actorName}} مؤسسة {{tenantName}}. ستُحذف في {{reopenableUntil}} ما لم يُعِد أحد فتحها.",
-        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام."
       },
       "tenant.reopened": {
         "title": "أُعيد فتح {{tenantName}}",
         "body": "أعاد {{actorName}} فتح {{tenantName}}. أصبحت نشطة مجددًا.",
-        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام."
       },
       "tenant.purged": {
         "title": "حُذفت {{tenantName}}",
-        "body": "أنهت المنصة حذف {{tenantName}} وبياناتها. يبقى اسمها ومعرّفها في القائمة.",
-        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام وتغيّرت حالة مؤسسة."
+        "body": "أنهت المنصة حذف {{tenantName}} وبياناتها. يبقى اسمها وعنوانها في القائمة.",
+        "footer": "وصلتك هذه الرسالة لأنك مسؤول النظام."
       },
       "tenant.suspended_for_owners": {
         "title": "عُلّقت {{tenantName}}",

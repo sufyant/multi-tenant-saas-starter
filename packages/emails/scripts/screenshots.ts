@@ -1,9 +1,10 @@
-// Takes a screenshot of every email that the email boards draw (13.01 to 13.15), in every language and in the light and the dark theme,
+// Takes a screenshot of every email that the email boards draw (13.01 to 13.15, and the platform's 14.01 and 14.03 to 14.05), in every language and in the light and the dark theme,
 // for the review against the design. It reads the generated parts of the API's folder, fills each placeholder with the board's data as
 // the API fills it (each value HTML-encoded), and opens the result in Chromium at the boards' width. The shots go into
 // test-results/screenshots, which ci.yml uploads with the apps' shots; they never go into the repository. Run `pnpm generate` first.
 import { mkdir, readFile, rm } from "node:fs/promises";
 import type { Language } from "@repo/api-client";
+import { brand } from "@repo/brand";
 import { chromium } from "playwright";
 import { languages } from "../src/texts";
 
@@ -71,12 +72,15 @@ const moment = (language: Language, date: number, month: number) =>
   });
 
 const webApp = "https://app.starter.example/";
+const platformApp = "https://platform.starter.example/";
 
-// A notification email as SendNotificationEmailHandler writes it: the type's title, body and footer with its values.
+// A notification email as SendNotificationEmailHandler writes it: the type's title, body and footer with its values, and the button to the
+// web app, or to the platform app for the platform's notifications.
 const notification = (
   language: Language,
   type: string,
   values: Record<string, string>,
+  link = webApp,
 ) => {
   const texts = notificationTexts[language].types[type];
   if (!texts) {
@@ -85,7 +89,7 @@ const notification = (
   return {
     title: fill(texts.title, values),
     body: fill(texts.body, values),
-    link: webApp,
+    link,
     footer: fill(texts.footer, values),
   };
 };
@@ -154,6 +158,55 @@ const shots: Shot[] = [
       purgesAt: moment(language, 1, 11),
       supportUrl: "mailto:support@starter.example",
     }),
+  },
+  {
+    // The platform invites an Owner in the brand's name (SendInvitationEmailHandler), not in the system admin's.
+    frame: "14.01-owner-invitation",
+    email: "invitation",
+    values: (language) => ({
+      inviterName: brand.name,
+      tenantName: "Harbourside Dental",
+      roleName: languageData[language].roles.owner ?? "",
+      expiresAt: moment(language, 9, 10),
+      link: `${webApp}invitations/accept?token=4b8e21`,
+    }),
+  },
+  {
+    frame: "14.03-organisation-suspended",
+    email: "notification",
+    values: (language) =>
+      notification(
+        language,
+        "tenant.suspended",
+        { tenantName: "Blue Harbour Logistics", actorName: "Deniz Kaya" },
+        platformApp,
+      ),
+  },
+  {
+    frame: "14.04-organisation-closed",
+    email: "notification",
+    values: (language) =>
+      notification(
+        language,
+        "tenant.closed",
+        {
+          tenantName: "Fernwood Studio",
+          actorName: "Deniz Kaya",
+          reopenableUntil: day(language, 1, 11),
+        },
+        platformApp,
+      ),
+  },
+  {
+    frame: "14.05-organisation-deleted",
+    email: "notification",
+    values: (language) =>
+      notification(
+        language,
+        "tenant.purged",
+        { tenantName: "Greyfield Books" },
+        platformApp,
+      ),
   },
 ];
 
