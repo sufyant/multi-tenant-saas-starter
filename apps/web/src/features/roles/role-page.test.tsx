@@ -81,7 +81,7 @@ describe("RolePage", () => {
         "Create roles",
         "Edit roles",
         "Delete roles",
-        "See Activity",
+        "See the activity log",
       ].map((label) => [label, true, true]),
     );
   });

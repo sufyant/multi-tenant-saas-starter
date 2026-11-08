@@ -359,7 +359,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "Ayşe Yılmaz changed the role Billing lead: added Invite people and See roles, removed See Activity.",
+        "Ayşe Yılmaz changed the role Billing lead: added Invite people and See roles, removed See the activity log.",
       ),
     ).toBeInTheDocument();
   });
@@ -383,7 +383,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "Ayşe Yılmaz changed the role Billing lead: added See Activity, See invitations, Change members’ roles and 2 more.",
+        "Ayşe Yılmaz changed the role Billing lead: added See the activity log, See invitations, Change members’ roles and 2 more.",
       ),
     ).toBeInTheDocument();
   });
@@ -396,7 +396,9 @@ describe("ActivitySentence", () => {
     );
 
     expect(
-      shown("Ayşe Yılmaz changed the role Billing lead: removed See Activity."),
+      shown(
+        "Ayşe Yılmaz changed the role Billing lead: removed See the activity log.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -452,7 +454,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "Ayşe Yılmaz, Billing lead rolünü değiştirdi: Kişileri davet edebilir ve Rolleri görebilir eklendi, Etkinliği görebilir kaldırıldı.",
+        "Ayşe Yılmaz, Billing lead rolünü değiştirdi: Kişileri davet edebilir ve Rolleri görebilir eklendi, Etkinlik kaydını görebilir kaldırıldı.",
       ),
     ).toBeInTheDocument();
   });
@@ -471,7 +473,7 @@ describe("ActivitySentence", () => {
 
     expect(
       shown(
-        "غيّر Ayşe Yılmaz الدور Billing lead: أضاف دعوة الأشخاص وعرض الأدوار، وأزال عرض النشاط.",
+        "غيّر Ayşe Yılmaz الدور Billing lead: أضاف دعوة الأشخاص وعرض الأدوار، وأزال عرض سجل النشاط.",
       ),
     ).toBeInTheDocument();
   });
@@ -754,7 +756,7 @@ describe("sentenceText", () => {
         "Europe/Dublin",
       ),
     ).toBe(
-      "Ayşe Yılmaz renamed the role Billing to Billing lead. Ayşe Yılmaz changed the role Billing lead: added See Activity.",
+      "Ayşe Yılmaz renamed the role Billing to Billing lead. Ayşe Yılmaz changed the role Billing lead: added See the activity log.",
     );
   });
 });
