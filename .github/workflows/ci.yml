@@ -272,12 +272,17 @@ jobs:
             exit 1
           fi
 
+      # An exception of the scan ends on its date (.github/grype-app-images.yaml).
+      - name: Check the scan exceptions
+        run: scripts/ci/check-scan-exceptions.sh
+
       - name: Scan the image
         run: |
           docker save web -o "$RUNNER_TEMP/web.tar"
           grype() {
             docker run --rm -e GRYPE_DB_CACHE_DIR=/grype-db -v grype-db:/grype-db \
-              -v "$RUNNER_TEMP/web.tar:/image.tar:ro" "$GRYPE_IMAGE" docker-archive:/image.tar "$@"
+              -v "$PWD/.github/grype-app-images.yaml:/grype.yaml:ro" \
+              -v "$RUNNER_TEMP/web.tar:/image.tar:ro" "$GRYPE_IMAGE" -c /grype.yaml docker-archive:/image.tar "$@"
           }
           grype
           grype --only-fixed --fail-on high
@@ -337,12 +342,17 @@ jobs:
             exit 1
           fi
 
+      # An exception of the scan ends on its date (.github/grype-app-images.yaml).
+      - name: Check the scan exceptions
+        run: scripts/ci/check-scan-exceptions.sh
+
       - name: Scan the image
         run: |
           docker save platform -o "$RUNNER_TEMP/platform.tar"
           grype() {
             docker run --rm -e GRYPE_DB_CACHE_DIR=/grype-db -v grype-db:/grype-db \
-              -v "$RUNNER_TEMP/platform.tar:/image.tar:ro" "$GRYPE_IMAGE" docker-archive:/image.tar "$@"
+              -v "$PWD/.github/grype-app-images.yaml:/grype.yaml:ro" \
+              -v "$RUNNER_TEMP/platform.tar:/image.tar:ro" "$GRYPE_IMAGE" -c /grype.yaml docker-archive:/image.tar "$@"
           }
           grype
           grype --only-fixed --fail-on high
