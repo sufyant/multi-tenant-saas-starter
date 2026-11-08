@@ -111,6 +111,9 @@ test("Bell_AStartLinkInsideAnOrganisation_KeepsTheShellMounted", async ({
     link: { kind: NotificationLinkResponseKind.Start, tenantId: null },
   };
   await open(page, `/${northwind.slug}`, [removed]);
+  // The shell of a known organisation: the pending shell, drawn while the organisation loads, gives way to it, so a mark set on
+  // the pending one would go with it. The bell's count shows only in the known shell.
+  await expect(bell(page, 1)).toBeVisible();
   await page
     .getByRole("navigation", { name: "Main menu" })
     .evaluate((element) => {
@@ -118,9 +121,18 @@ test("Bell_AStartLinkInsideAnOrganisation_KeepsTheShellMounted", async ({
     });
 
   await bell(page, 1).click();
+  // The address is the organisation's before and after the click, so the test waits for the navigation's own read of the
+  // organisation's page, not a prefetch: it comes once the person is back, by a detour through "/" or not.
+  const navigated = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === `/${northwind.slug}` &&
+      response.url().includes("_rsc") &&
+      !response.request().headers()["next-router-prefetch"],
+  );
   await page
     .getByRole("link", { name: /You were removed from Harbour Logistics/ })
     .click();
+  await navigated;
 
   await expect(page).toHaveURL(`/${northwind.slug}`);
   await expect(page.locator("[data-e2e-mounted=before]")).toHaveCount(1);
