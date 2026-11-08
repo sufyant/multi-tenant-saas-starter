@@ -161,6 +161,20 @@ public sealed class UserTests
         (user.SuspendedAt, user.SuspensionReason).ShouldBe((null, null));
     }
 
+    // The deletion comes before the suspension (A8): a user suspended, then deleted, is refused too, and keeps the first suspension.
+    [Fact]
+    public void SuspendUser_SuspendedThenDeleted_IsRefusedAndKeepsTheFirstSuspension()
+    {
+        var user = new User(Guid.CreateVersion7(), "user_1");
+        user.Suspend(Now, ActorId, Reason);
+        user.Delete(Now);
+
+        var suspended = user.Suspend(Now.AddHours(1), OtherAdminId, Reason);
+
+        suspended.Error.Code.Value.ShouldBe("user.deleted");
+        (user.SuspendedAt, user.SuspendedBy).ShouldBe((Now, ActorId));
+    }
+
     [Fact]
     public void ReactivateUser_NotSuspended_ChangesNothing()
     {
