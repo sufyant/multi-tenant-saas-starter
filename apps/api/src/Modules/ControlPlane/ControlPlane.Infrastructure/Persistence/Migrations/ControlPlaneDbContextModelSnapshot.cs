@@ -19,7 +19,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("control_plane")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -625,11 +625,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("tenants", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_tenants_purged_is_a_tombstone", "status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL)");
+                            t.HasCheckConstraint("ck_tenants_closed_by_with_closure", "closed_by IS NULL OR closed_at IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_tenants_purge_started_while_purging", "purge_started_at IS NULL OR status = 'Purging'");
+
+                            t.HasCheckConstraint("ck_tenants_purged_is_a_tombstone", "status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL AND created_by IS NULL)");
 
                             t.HasCheckConstraint("ck_tenants_status", "status IN ('Active', 'Suspended', 'Closed', 'Purging', 'Purged')");
 
-                            t.HasCheckConstraint("ck_tenants_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)");
+                            t.HasCheckConstraint("ck_tenants_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL) AND (suspended_at IS NULL OR suspension_reason IS NOT NULL)");
                         });
                 });
 
@@ -695,6 +699,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0");
 
                             t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_language", "owner_invitation_language IN ('en', 'tr', 'ar')");
+
+                            t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_sent_with_it", "owner_invitation_sent_at IS NULL OR owner_invitation_status IS NOT NULL");
 
                             t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_status", "owner_invitation_status IN ('Pending', 'Accepted', 'Cancelled')");
 
@@ -800,13 +806,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("users", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_users_deleted_keeps_no_personal_data", "deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL)");
+                            t.HasCheckConstraint("ck_users_deleted_keeps_no_personal_data", "deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL AND suspension_reason IS NULL)");
 
                             t.HasCheckConstraint("ck_users_language", "language IN ('en', 'tr', 'ar')");
 
                             t.HasCheckConstraint("ck_users_membership_count", "membership_count >= 0");
 
                             t.HasCheckConstraint("ck_users_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)");
+
+                            t.HasCheckConstraint("ck_users_suspension_reason_while_suspended", "suspended_at IS NOT NULL OR suspension_reason IS NULL");
                         });
                 });
 
