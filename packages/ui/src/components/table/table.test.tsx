@@ -173,6 +173,8 @@ describe("Table", () => {
     expect(actions).toHaveClass(
       "[&>button]:opacity-0",
       "group-hover/row:[&>button]:opacity-100",
+      // Table row's Hover state draws Table · Actions in its Hover state: the accent fill.
+      "group-hover/row:[&>button]:bg-accent",
       "focus-within:[&>button]:opacity-100",
       "[&>button]:data-popup-open:opacity-100",
     );

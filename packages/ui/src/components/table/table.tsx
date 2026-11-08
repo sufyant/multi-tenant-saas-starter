@@ -232,7 +232,7 @@ export function Table<Row extends RowData>({
                   <TableCell className="py-0 ps-3.5 pe-2 text-end">
                     {/* The ⋯ button keeps its cell at rest, and a text in its place always shows; a fine pointer gets the 28 px
                       button, a touch screen keeps its touch size. */}
-                    <div className="flex justify-end [&>button]:opacity-0 group-hover/row:[&>button]:opacity-100 focus-within:[&>button]:opacity-100 [&>button]:data-popup-open:opacity-100 pointer-coarse:[&>button]:opacity-100 pointer-fine:[&>button]:size-target-row-action">
+                    <div className="flex justify-end [&>button]:opacity-0 group-hover/row:[&>button]:bg-accent group-hover/row:[&>button]:opacity-100 focus-within:[&>button]:opacity-100 [&>button]:data-popup-open:opacity-100 pointer-coarse:[&>button]:opacity-100 pointer-fine:[&>button]:size-target-row-action">
                       {actions(row.original)}
                     </div>
                   </TableCell>
