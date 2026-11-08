@@ -397,7 +397,7 @@
   "permissions": {
     "tenant": {
       "audit": {
-        "read": "See Activity"
+        "read": "See the activity log"
       },
       "invitations": {
         "create": "Invite people",
@@ -451,8 +451,6 @@
     "noCustomText": "Create a role when Owner, Admin and Member don’t fit.",
     "newRole": "New role",
     "nameHint": "Unique in {organisation}, built-in names included.",
-    "everyRole": "Every role has this.",
-    "rolesReadNeeded": "Needed to invite people, change roles, remove members and revoke invitations.",
     "lacks": "Your role doesn’t have this permission.",
     "save": "Save changes",
     "nameTaken": "A role named {name} already exists.",
@@ -490,7 +488,7 @@
       "members": "Members",
       "invitations": "Invitations",
       "roles": "Roles",
-      "activity": "Activity"
+      "activity": "Activity log"
     },
     "customType": "Custom",
     "summary": "{type} · {permissions} · {users}",
@@ -502,7 +500,39 @@
     "loadMore": "Load more",
     "loadingMore": "Loading more roles…",
     "loadedRoles": "{count, plural, one {# more role loaded.} other {# more roles loaded.}}",
-    "moreError": "Couldn’t load more roles"
+    "moreError": "Couldn’t load more roles",
+    "selectAll": "Select all",
+    "selectAllOf": "Select all: {area}",
+    "areaCount": "{held} of {total}",
+    "hints": {
+      "tenant": {
+        "profile": {
+          "read": "Every role has this."
+        },
+        "members": {
+          "read": "The member list and each person’s role.",
+          "update": "Give a member another role.",
+          "delete": "Take someone out of {organisation}."
+        },
+        "owners": {
+          "manage": "Manage Owners belongs to the Owner role only."
+        },
+        "invitations": {
+          "read": "Pending invitations and who sent them.",
+          "create": "Send an invitation by email.",
+          "delete": "Stop an invitation before it is accepted."
+        },
+        "roles": {
+          "read": "Needed to invite people, change roles, remove members and revoke invitations.",
+          "create": "Add a custom role.",
+          "update": "Change a custom role’s name and permissions.",
+          "delete": "Remove a custom role nobody uses."
+        },
+        "audit": {
+          "read": "Who changed what, and when."
+        }
+      }
+    }
   },
   "plans": {
     "rolesCustomOff": "Your organisation’s plan doesn’t include custom roles.",

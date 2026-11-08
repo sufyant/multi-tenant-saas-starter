@@ -16,6 +16,7 @@ import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
+import { NameCard } from "./name-card";
 import { PermissionList } from "./permission-list";
 import { RoleEditor } from "./role-editor";
 import { RoleHeader } from "./role-header";
@@ -112,7 +113,7 @@ export function RolePage({ roleId }: { roleId: string }) {
           title={planReason.feature(FeatureKey.RolesCustom)}
         />
       )}
-      <div className="flex max-w-3xl flex-col gap-5">
+      <NameCard>
         <Input
           label={t("roles.name")}
           value={roleName(role)}
@@ -120,8 +121,8 @@ export function RolePage({ roleId }: { roleId: string }) {
           readOnly
           hint={t("roles.nameHint", { organisation: tenant.name })}
         />
-        <PermissionList held={role.permissions} />
-      </div>
+      </NameCard>
+      <PermissionList held={role.permissions} />
     </RolesFrame>
   );
 }

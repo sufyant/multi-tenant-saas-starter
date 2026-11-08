@@ -37,6 +37,7 @@ import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
 import { DeleteRoleDialog } from "./delete-role-dialog";
+import { NameCard } from "./name-card";
 import { PermissionList } from "./permission-list";
 import { withRequired } from "./permissions";
 import { RoleHeader } from "./role-header";
@@ -233,12 +234,12 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
     if (nameError.startsWith("validation.")) return t("roles.nameRequired");
     return nameError;
   })();
-  const toggle = (permission: Permission, checked: boolean) =>
+  const toggle = (changed: readonly Permission[], checked: boolean) =>
     form.setValue(
       "permissions",
       checked
-        ? [...permissions, permission]
-        : permissions.filter((held) => held !== permission),
+        ? [...new Set([...permissions, ...changed])]
+        : permissions.filter((held) => !changed.includes(held)),
     );
   const canDelete =
     role !== undefined &&
@@ -251,16 +252,18 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
       <form
         noValidate
         onSubmit={(event) => void submit(event)}
-        className="flex max-w-3xl flex-col gap-5"
+        className="flex flex-col gap-4"
       >
-        <Input
-          label={t("roles.name")}
-          autoComplete="off"
-          maxLength={nameMax}
-          hint={t("roles.nameHint", { organisation: tenant.name })}
-          error={nameErrorText}
-          {...form.register("name")}
-        />
+        <NameCard>
+          <Input
+            label={t("roles.name")}
+            autoComplete="off"
+            maxLength={nameMax}
+            hint={t("roles.nameHint", { organisation: tenant.name })}
+            error={nameErrorText}
+            {...form.register("name")}
+          />
+        </NameCard>
         <PermissionList
           held={permissions}
           editable={{ viewer: detail.permissions, onChange: toggle }}
@@ -270,7 +273,8 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
             {banner.text}
           </Banner>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* The save bar stays at the foot of the panel while the permissions scroll (9.08, 9.11). */}
+        <div className="sticky bottom-0 z-10 -mx-4 -mb-6 flex flex-wrap items-center justify-between gap-2 border-t border-border bg-card px-4 py-3 tablet:-mx-6 tablet:-mb-5 tablet:px-6">
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="submit"

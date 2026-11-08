@@ -397,7 +397,7 @@
   "permissions": {
     "tenant": {
       "audit": {
-        "read": "Etkinliği görebilir"
+        "read": "Etkinlik kaydını görebilir"
       },
       "invitations": {
         "create": "Kişileri davet edebilir",
@@ -451,8 +451,6 @@
     "noCustomText": "Sahip, Yönetici ve Üye uymadığında bir rol oluşturun.",
     "newRole": "Yeni rol",
     "nameHint": "{organisation} içinde benzersiz olmalı, yerleşik adlar da dahil.",
-    "everyRole": "Her rolde vardır.",
-    "rolesReadNeeded": "Kişileri davet etmek, rolleri değiştirmek, üyeleri çıkarmak ve davetleri geri çekmek için gerekir.",
     "lacks": "Sizin rolünüzde bu izin yok.",
     "save": "Değişiklikleri kaydet",
     "nameTaken": "{name} adında bir rol zaten var.",
@@ -490,7 +488,7 @@
       "members": "Üyeler",
       "invitations": "Davetler",
       "roles": "Roller",
-      "activity": "Etkinlik"
+      "activity": "Etkinlik kaydı"
     },
     "customType": "Özel",
     "summary": "{type} · {permissions} · {users}",
@@ -502,7 +500,39 @@
     "loadMore": "Daha fazla yükle",
     "loadingMore": "Daha fazla rol yükleniyor…",
     "loadedRoles": "{count, plural, one {# rol daha yüklendi.} other {# rol daha yüklendi.}}",
-    "moreError": "Daha fazla rol yüklenemedi"
+    "moreError": "Daha fazla rol yüklenemedi",
+    "selectAll": "Tümünü seç",
+    "selectAllOf": "Tümünü seç: {area}",
+    "areaCount": "{held}/{total}",
+    "hints": {
+      "tenant": {
+        "profile": {
+          "read": "Her rolde bu izin var."
+        },
+        "members": {
+          "read": "Üye listesi ve her kişinin rolü.",
+          "update": "Bir üyeye başka bir rol verin.",
+          "delete": "Birini {organisation} kuruluşundan çıkarın."
+        },
+        "owners": {
+          "manage": "Sahipleri yönetme izni yalnızca Sahip rolündedir."
+        },
+        "invitations": {
+          "read": "Bekleyen davetler ve onları kimin gönderdiği.",
+          "create": "E-postayla davet gönderin.",
+          "delete": "Bir daveti kabul edilmeden önce durdurun."
+        },
+        "roles": {
+          "read": "Kişileri davet etmek, rolleri değiştirmek, üyeleri çıkarmak ve davetleri geri almak için gerekir.",
+          "create": "Özel bir rol ekleyin.",
+          "update": "Özel bir rolün adını ve izinlerini değiştirin.",
+          "delete": "Kimsenin kullanmadığı özel bir rolü kaldırın."
+        },
+        "audit": {
+          "read": "Kimin neyi ne zaman değiştirdiği."
+        }
+      }
+    }
   },
   "plans": {
     "rolesCustomOff": "Kuruluşunuzun planı özel rolleri içermiyor.",
