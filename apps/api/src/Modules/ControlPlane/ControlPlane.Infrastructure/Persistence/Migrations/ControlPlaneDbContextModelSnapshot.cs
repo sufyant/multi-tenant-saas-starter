@@ -312,8 +312,15 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("granted_at");
 
+                    b.Property<Guid?>("GrantedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("granted_by");
+
                     b.HasKey("UserId")
                         .HasName("pk_system_admins");
+
+                    b.HasIndex("GrantedBy")
+                        .HasDatabaseName("ix_system_admins_granted_by");
 
                     b.ToTable("system_admins", "control_plane");
                 });
@@ -527,9 +534,17 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("closed_at");
 
+                    b.Property<Guid?>("ClosedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -540,6 +555,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uuid")
                         .HasColumnName("plan_id");
+
+                    b.Property<DateTimeOffset?>("PurgeStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purge_started_at");
 
                     b.Property<DateTimeOffset?>("PurgedAt")
                         .HasColumnType("timestamp with time zone")
@@ -557,6 +576,14 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<DateTimeOffset?>("SuspendedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("suspended_at");
+
+                    b.Property<Guid?>("SuspendedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("suspended_by");
+
                     b.Property<string>("SuspensionReason")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -564,6 +591,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_tenants");
+
+                    b.HasIndex("ClosedBy")
+                        .HasDatabaseName("ix_tenants_closed_by");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_tenants_created_by");
 
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_tenants_name");
@@ -574,6 +607,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("Slug")
                         .IsUnique()
                         .HasDatabaseName("ix_tenants_slug");
+
+                    b.HasIndex("SuspendedBy")
+                        .HasDatabaseName("ix_tenants_suspended_by");
 
                     b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
                         .HasDatabaseName("ix_tenants_name_trgm");
@@ -592,6 +628,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_tenants_purged_is_a_tombstone", "status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL)");
 
                             t.HasCheckConstraint("ck_tenants_status", "status IN ('Active', 'Suspended', 'Closed', 'Purging', 'Purged')");
+
+                            t.HasCheckConstraint("ck_tenants_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)");
                         });
                 });
 
@@ -632,6 +670,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasMaxLength(35)
                         .HasColumnType("character varying(35)")
                         .HasColumnName("owner_invitation_language");
+
+                    b.Property<DateTimeOffset?>("OwnerInvitationSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("owner_invitation_sent_at");
 
                     b.Property<string>("OwnerInvitationStatus")
                         .HasMaxLength(20)
@@ -715,6 +757,11 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("SuspendedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("suspended_by");
+
+                    b.Property<string>("SuspensionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("suspension_reason");
 
                     b.Property<string>("TimeZone")
                         .HasMaxLength(64)
@@ -876,6 +923,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ControlPlane.Domain.SystemAdmins.SystemAdmin", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("GrantedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_system_admins_users_granted_by");
+
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithOne()
                         .HasForeignKey("ControlPlane.Domain.SystemAdmins.SystemAdmin", "UserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -957,12 +1010,30 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.Tenant", b =>
                 {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ClosedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_tenants_users_closed_by");
+
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_tenants_users_created_by");
+
                     b.HasOne("ControlPlane.Domain.Plans.Plan", null)
                         .WithMany()
                         .HasForeignKey("PlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_tenants_plans_plan_id");
+
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("SuspendedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_tenants_users_suspended_by");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>

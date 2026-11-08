@@ -688,6 +688,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             "RenameMeRequest.name PredicateValidator",
             "RenameUserRequest.name PredicateValidator",
             "SuspendTenantRequest.reason PredicateValidator",
+            "SuspendUserRequest.reason PredicateValidator",
             "SetEntitlementOverrideRequest.reason PredicateValidator",
         ];
 

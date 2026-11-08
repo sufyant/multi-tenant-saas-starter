@@ -234,6 +234,7 @@ public sealed class MigratedSchemaTests(Database database)
             PostgresErrorCodes.CheckViolation,
             $"UPDATE control_plane.tenants SET status = 'Cancelled' WHERE id = '{owned.Id}'",
             $"UPDATE control_plane.tenants SET closed_at = now() WHERE id = '{purged.Id}'",
+            $"UPDATE control_plane.tenants SET suspended_at = now() WHERE id = '{owned.Id}'",
             $"UPDATE control_plane.tenant_summaries SET owner_count = member_count + 1 WHERE tenant_id = '{owned.Id}'",
             $"UPDATE control_plane.tenant_summaries SET member_count = -1, owner_count = -1 WHERE tenant_id = '{closed.Id}'",
             $"UPDATE control_plane.tenant_summaries SET owner_invitation_status = 'Expired' WHERE tenant_id = '{invited.Id}'",
@@ -261,6 +262,7 @@ public sealed class MigratedSchemaTests(Database database)
         [
             "ck_tenants_status",
             "ck_tenants_purged_is_a_tombstone",
+            "ck_tenants_suspension",
             "ck_tenant_summaries_counts",
             "ck_tenant_summaries_counts",
             "ck_tenant_summaries_owner_invitation_status",
@@ -400,9 +402,13 @@ public sealed class MigratedSchemaTests(Database database)
             fk_role_permissions_roles_tenant_id_role_id: CASCADE
             fk_roles_tenants_tenant_id: RESTRICT
             fk_stored_files_users_user_id: RESTRICT
+            fk_system_admins_users_granted_by: RESTRICT
             fk_system_admins_users_user_id: RESTRICT
             fk_tenant_summaries_tenants_tenant_id: RESTRICT
             fk_tenants_plans_plan_id: RESTRICT
+            fk_tenants_users_closed_by: RESTRICT
+            fk_tenants_users_created_by: RESTRICT
+            fk_tenants_users_suspended_by: RESTRICT
             fk_users_users_suspended_by: RESTRICT
             fk_verification_codes_users_user_id: RESTRICT
             """);

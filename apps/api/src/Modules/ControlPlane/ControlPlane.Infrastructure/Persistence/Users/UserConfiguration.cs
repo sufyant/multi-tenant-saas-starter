@@ -24,10 +24,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         user.HasIndex(u => u.Name, "ix_users_name_trgm").HasDatabaseName("ix_users_name_trgm").HasMethod("gin").HasOperators("gin_trgm_ops");
         user.Property(u => u.Language).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
         user.Property(u => u.TimeZone).HasMaxLength(User.TimeZoneMaxLength);
+        user.Property(u => u.SuspensionReason).HasMaxLength(User.SuspensionReasonMaxLength);
         user.HasOne<User>().WithMany().HasForeignKey(u => u.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
 
         // R15: a language of the one list, a count that never falls below zero, a suspension that names its system admin, and a deleted
-        // user who keeps no address, name or time zone (A8).
+        // user who keeps no address, name or time zone (A8). The reason's rules, only while suspended and none once deleted, are CHECKs of
+        // a later release: the version before this one clears a suspension and deletes a user without the column (section 13).
         user.ToTable(table => table.HasCheckConstraint("ck_users_language", CheckConstraints.OneOf("language", ControlPlaneDbContext.LanguageTags)));
         user.ToTable(table => table.HasCheckConstraint("ck_users_membership_count", "membership_count >= 0"));
         user.ToTable(table => table.HasCheckConstraint("ck_users_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)"));

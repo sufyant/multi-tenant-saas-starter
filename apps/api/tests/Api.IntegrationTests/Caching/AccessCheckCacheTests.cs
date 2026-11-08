@@ -91,7 +91,7 @@ public sealed class AccessCheckCacheTests(Valkey valkey, Database database) : IC
         var member = await _testData.AddMemberAsync(tenant.Id);
         var before = await MembersAsync(member, tenant.Id);
 
-        (await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{await _testData.UserIdOfAsync(member)}/suspend", null, Cancellation))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(async () => await (await SystemAdminAsync()).SuspendUserAsync(await _testData.UserIdOfAsync(member)))).EnsureSuccessStatusCode();
         var after = await _api.CreateClient(member).GetAsync($"/v1/tenants/{tenant.Id}/members", Cancellation);
 
         before.ShouldBe(HttpStatusCode.OK);
@@ -217,7 +217,7 @@ public sealed class AccessCheckCacheTests(Valkey valkey, Database database) : IC
         var member = await _testData.AddMemberAsync(tenant.Id);
         var admin = await SystemAdminAsync();
         var userId = await _testData.UserIdOfAsync(member);
-        (await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/users/{userId}/suspend", null, Cancellation))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => admin.SuspendUserAsync(userId))).EnsureSuccessStatusCode();
         var before = await MembersAsync(member, tenant.Id);
 
         (await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/users/{userId}/reactivate", null, Cancellation))).EnsureSuccessStatusCode();

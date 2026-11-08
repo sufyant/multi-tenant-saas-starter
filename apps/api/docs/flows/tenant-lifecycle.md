@@ -14,9 +14,9 @@ The moves (K4):
 
 | Stored status | `POST .../suspend` | `POST .../reactivate` | `POST .../close` | `POST .../reopen` | `PATCH` (rename) |
 | --- | --- | --- | --- | --- | --- |
-| `Active` | Becomes `Suspended`, with the reason | No change | Becomes `Closed` at this moment | No change | Renamed |
-| `Suspended` | No change, the first reason stays | Becomes `Active`, the reason is cleared | Becomes `Closed`, the reason stays | 409 `tenant.not_closed` | Renamed |
-| `Closed` | 409 `tenant.not_active` | 409 `tenant.not_active` | No change, the first moment stays | Becomes `Active`, `closedAt` and the reason are cleared; after the period 409 `tenant.reopen_period_ended` | 409 `tenant.not_active` |
+| `Active` | Becomes `Suspended`, with the reason, the moment and the system admin | No change | Becomes `Closed` at this moment, by the system admin | No change | Renamed |
+| `Suspended` | No change, the first suspension stays | Becomes `Active`, the suspension is cleared | Becomes `Closed`, the suspension stays | 409 `tenant.not_closed` | Renamed |
+| `Closed` | 409 `tenant.not_active` | 409 `tenant.not_active` | No change, the first closure stays | Becomes `Active`, the closure and the suspension are cleared; after the period 409 `tenant.reopen_period_ended` | 409 `tenant.not_active` |
 | `Purging` | 409 `tenant.not_active` | 409 `tenant.not_active` | 409 `tenant.not_active` | 409 `tenant.not_closed` | 409 `tenant.not_active` |
 | `Purged` | 409 `tenant.not_active` | 409 `tenant.not_active` | 409 `tenant.not_active` | 409 `tenant.not_closed` | 409 `tenant.not_active` |
 
@@ -36,6 +36,7 @@ Every success answers 200 with the tenant as the system admin sees it (`TenantRe
 | `TenantReopenedEvent` | `ReopenTenantHandler`, on a change of status | Audit, `RecordTenantReopenedHandler` (`tenant.reopened`, both logs) | Yes |
 
 - A request that changes nothing publishes nothing, so Audit records each change once.
+- The tenant keeps who and when of its events, for the platform's banners (step 37b): `created_by` from its creation, `suspended_at` and `suspended_by` with the reason, `closed_by` with `closed_at`, and `purge_started_at` from the purge's pivot (`tenant-purge.md`). `GetTenant` names each system admin as they are named now, `{ name, deleted }`. A seed and an event before step 37b have none: nothing is backfilled from the Activity log (the maintainer's decision of 2026-11-08). The tombstone keeps none of them (K4).
 - The name is trimmed and checked as at the creation: 1 to 100 characters. A name over 100 characters is a validation problem (400 `request.validation_failed`, `too_long`, N11); an empty one is 400 `tenant.name_invalid`. The slug never changes. Only the platform renames a tenant: the tenant path has no endpoint for the name.
 - The suspension's reason is text the system admin writes: required, 1 to 500 characters, trimmed (`SuspendTenantValidator`, field codes `required` and `too_long`). It is stored on the tenant (`suspension_reason`) and shown on the platform side only (`GetTenant`, `ListTenants`). The tenant door answers a member `tenant.suspended`, without it. It holds no personal data: the platform's log keeps it after the tenant's purge (A8). Only the platform's audit entry holds it: the tenant's log is read by the tenant's Owners and Admins (`ListAuditEntries`), so its entry has no details.
 - A member who calls a tenant route gets 403 `tenant.suspended` or `tenant.closed`. A non-member still gets 404 (T3): only a member learns that the tenant is suspended or closed. The rule is the tenant's (`Tenant.CheckMemberAccess`); the door asks it on every request (T7), and every tenant command asks it again under the tenant's lock (K6).

@@ -10,7 +10,7 @@ public sealed class RateLimitingTests(Database database) : IAsyncLifetime
     private PipelineHost _host = null!;
 
     public async ValueTask InitializeAsync() =>
-        _host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["Host:RateLimiting:PermitLimit"] = "1" });
+        _host = await PipelineHost.StartAsync(new Dictionary<string, string?> { ["Host:RateLimiting:Enabled"] = "true", ["Host:RateLimiting:PermitLimit"] = "1" });
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 

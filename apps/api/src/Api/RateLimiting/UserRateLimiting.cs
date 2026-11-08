@@ -23,6 +23,9 @@ internal static class UserRateLimiting
             .Validate(options => options.Window > TimeSpan.Zero, $"{RateLimitingOptions.Section}:Window must be positive.")
             .Validate(options => options.InvitationAccept.PermitLimit > 0, $"{RateLimitingOptions.Section}:InvitationAccept:PermitLimit must be positive.")
             .Validate(options => options.InvitationAccept.Window > TimeSpan.Zero, $"{RateLimitingOptions.Section}:InvitationAccept:Window must be positive.")
+            .Validate<IHostEnvironment>(
+                (options, environment) => options.Enabled || environment.IsDevelopment(),
+                $"{RateLimitingOptions.Section}:Enabled may be false only in development, where the test hosts run.")
             .ValidateOnStart();
 
         return services.AddRateLimiter(limiter =>

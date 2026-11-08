@@ -21,17 +21,16 @@ public static class SuspendTenantHandler
             return (Errors.TenantNotFound, []);
         }
 
-        var suspended = tenant.Suspend(command.Reason);
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a user.");
+        var now = time.GetUtcNow();
+        var suspended = tenant.Suspend(command.Reason, actor, now);
         if (!suspended.IsSuccess || suspended.Value == StateChange.Unchanged)
         {
             return (suspended.Map(_ => TenantView.Of(tenant)), []);
         }
 
-        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveChangesAsync(cancellationToken);
-
-        var now = time.GetUtcNow();
         return (TenantView.Of(tenant), [new TenantSuspendedEvent(Guid.CreateVersion7(now), now, tenant.Id, actor, tenant.Name, tenant.SuspensionReason!)]);
     }
 }

@@ -28,8 +28,8 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
         var admin = await _testData.AddSystemAdminAsync();
         var client = _api.CreateClient(admin, secondFactor: true);
 
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
-        await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/suspend", null, Cancellation));
+        await _api.WaitingForMessagesAsync(() => client.SuspendUserAsync(id));
+        await _api.WaitingForMessagesAsync(() => client.SuspendUserAsync(id));
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
         await _api.WaitingForMessagesAsync(() => client.PostAsync($"/v1/platform/users/{id}/reactivate", null, Cancellation));
 
@@ -71,7 +71,7 @@ public sealed class ReactivateUserTests(Database database) : IAsyncLifetime
     [InlineData("reactivate")]
     public async Task SuspendOrReactivateUser_UnknownUser_IsNotFound(string action)
     {
-        var response = await (await SystemAdminAsync()).PostAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", null, Cancellation);
+        var response = await (await SystemAdminAsync()).PostAsJsonAsync($"/v1/platform/users/{Guid.NewGuid()}/{action}", new { reason = "Shared account" }, Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await CodeOfAsync(response)).ShouldBe("user.not_found");

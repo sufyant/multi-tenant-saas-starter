@@ -13,15 +13,17 @@ internal static class TestData
 {
     public static async Task<Tenant> AddTenantAsync(IServiceProvider services, TenantStatus status = TenantStatus.Active, string? slug = null)
     {
-        var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), await DefaultPlanIdAsync(services), DateTimeOffset.UtcNow).Value;
+        // A system admin creates, suspends and closes a tenant, and each change names them.
+        var admin = await AddUserAsync(services);
+        var tenant = Tenant.Create(Guid.CreateVersion7(), "Acme Ltd", slug ?? Unique.Slug(), await DefaultPlanIdAsync(services), DateTimeOffset.UtcNow, admin.Id).Value;
         if (status == TenantStatus.Suspended)
         {
-            tenant.Suspend("Unpaid invoices");
+            tenant.Suspend("Unpaid invoices", admin.Id, DateTimeOffset.UtcNow);
         }
 
         if (status == TenantStatus.Closed)
         {
-            tenant.Close(DateTimeOffset.UtcNow, []);
+            tenant.Close(DateTimeOffset.UtcNow, admin.Id, []);
         }
 
         // Every tenant has its summary (R12) and its own built-in roles (A2) from its creation on. The roles belong to the tenant, so

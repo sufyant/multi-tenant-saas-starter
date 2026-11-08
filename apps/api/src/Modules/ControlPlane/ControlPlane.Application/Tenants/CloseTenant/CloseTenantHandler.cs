@@ -28,15 +28,15 @@ public static class CloseTenantHandler
             return (Errors.TenantNotFound, []);
         }
 
+        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
+            ?? throw new InvalidOperationException("A system actor is always a user.");
         var now = time.GetUtcNow();
-        var closed = tenant.Close(now, await tenants.FindPendingInvitationsAsync(cancellationToken));
+        var closed = tenant.Close(now, actor, await tenants.FindPendingInvitationsAsync(cancellationToken));
         if (!closed.IsSuccess || closed.Value.Change == StateChange.Unchanged)
         {
             return (closed.Map(_ => TenantView.Of(tenant)), []);
         }
 
-        var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
-            ?? throw new InvalidOperationException("A system actor is always a user.");
         await tenants.SaveAsync(tenant, cancellationToken);
 
         return (

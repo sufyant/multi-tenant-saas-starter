@@ -16,6 +16,7 @@ public sealed class RootSystemAdminTests(Database database)
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
+    // The platform grants the root's first entry, so the grant names no system admin who granted it (step 37b).
     [Fact]
     public async Task VisitTheSystemDoor_AListedPersonWhileOtherSystemAdminsExist_BecomesASystemAdmin()
     {
@@ -28,6 +29,8 @@ public sealed class RootSystemAdminTests(Database database)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await IsSystemAdminAsync(person)).ShouldBeTrue();
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.system_admins WHERE user_id = '{await _testData.UserIdOfAsync(person)}' AND granted_by IS NULL")).ShouldBe(1);
     }
 
     // A grant the door writes is recorded once, by the platform: the person did not ask for it, the configuration did.

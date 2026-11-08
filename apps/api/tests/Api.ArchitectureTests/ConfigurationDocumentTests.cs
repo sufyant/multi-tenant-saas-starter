@@ -174,6 +174,7 @@ public sealed partial class ConfigurationDocumentTests
         null => "none",
         string text => text,
         TimeSpan time => time.ToString("c", CultureInfo.InvariantCulture),
+        bool flag => flag ? "true" : "false",
         IEnumerable items when items.Cast<object>().Any() => string.Join(", ", items.Cast<object>().Select(Format)),
         IEnumerable => "none",
         IFormattable number => number.ToString(null, CultureInfo.InvariantCulture),

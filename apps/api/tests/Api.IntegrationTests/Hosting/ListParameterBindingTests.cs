@@ -78,6 +78,9 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
             .Where(list => list.Id.StartsWith("List", StringComparison.Ordinal))
             .Where(list => !list.Value.Value.GetProperty("parameters").EnumerateArray().Any(parameter => parameter.GetProperty("name").GetString() == "cursor"));
 
+    private static JsonElement ValuesOf(JsonElement schema) =>
+        schema.TryGetProperty("items", out var items) ? items : schema;
+
     // A caller who may read the list: a system admin, a user, or a member of a new tenant.
     private async Task<(HttpClient Client, string Url)> CallerAsync(string caller, string path) => caller switch
     {
@@ -93,11 +96,12 @@ public sealed class ListParameterBindingTests(Database database) : IAsyncLifetim
         return (_api.CreateClient(member), path.Replace("{tenantId}", tenant.Id.ToString(), StringComparison.Ordinal));
     }
 
-    // Each value of each enum query parameter, as a query string.
+    // Each value of each enum query parameter, as a query string. A filter of several values is an array of its enum (step 37b), so each
+    // value of its items is sent alone.
     private IEnumerable<string> EnumParametersOf(JsonElement operation) =>
         operation.GetProperty("parameters").EnumerateArray()
             .Where(parameter => parameter.GetProperty("in").GetString() == "query")
-            .Select(parameter => (Name: parameter.GetProperty("name").GetString()!, Schema: Resolve(parameter.GetProperty("schema"))))
+            .Select(parameter => (Name: parameter.GetProperty("name").GetString()!, Schema: Resolve(ValuesOf(parameter.GetProperty("schema")))))
             .Where(parameter => parameter.Schema.TryGetProperty("enum", out _))
             .SelectMany(parameter => parameter.Schema.GetProperty("enum").EnumerateArray()
                 .Select(value => $"{parameter.Name}={Uri.EscapeDataString(value.GetString()!)}"));

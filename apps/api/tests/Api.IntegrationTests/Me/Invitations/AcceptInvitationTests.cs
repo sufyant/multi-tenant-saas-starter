@@ -305,9 +305,10 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task AcceptInvitation_OverItsOwnLimit_IsRejectedButTheUsersOtherRequestsAnswer()
     {
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: ApiFactory.RateLimiterOn);
         var user = $"user_{Guid.NewGuid():N}";
         var code = $"{Guid.NewGuid()}.unknown-secret";
-        var client = _api.CreateClient(user);
+        var client = api.CreateClient(user);
         HttpResponseMessage[] allowed = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => client.PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation)));
 
         var rejected = await client.PostAsJsonAsync("/v1/me/invitations/accept", new { code }, Cancellation);

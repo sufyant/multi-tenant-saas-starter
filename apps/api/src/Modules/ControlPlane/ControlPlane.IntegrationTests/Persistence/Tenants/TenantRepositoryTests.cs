@@ -183,7 +183,8 @@ public sealed class TenantRepositoryTests(Database database)
     [Fact]
     public async Task AddTenant_OtherThanTheDeclaredTenant_IsRefused()
     {
-        var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), await TestData.DefaultPlanIdAsync(database.Services), DateTimeOffset.UtcNow).Value;
+        var creator = await TestData.AddUserAsync(database.Services);
+        var other = Domain.Tenants.Tenant.Create(Guid.CreateVersion7(), "Other Ltd", Unique.Slug(), await TestData.DefaultPlanIdAsync(database.Services), DateTimeOffset.UtcNow, creator.Id).Value;
 
         var add = () => InTenant.ReadAsync(database.Services, Guid.CreateVersion7(), scope =>
             scope.GetRequiredService<ITenantRepository>().TryAddAsync(other, [], Cancellation));

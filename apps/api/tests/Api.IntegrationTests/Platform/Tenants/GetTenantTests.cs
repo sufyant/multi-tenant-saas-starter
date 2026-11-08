@@ -48,7 +48,10 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         (found.GetProperty("id").GetGuid(), found.GetProperty("name").GetString(), found.GetProperty("slug").GetString(), found.GetProperty("status").GetString())
             .ShouldBe((tenant.Id, "Admin View Ltd", tenant.Slug, answered));
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "ownerCount", "owners", "ownerInvitation", "createdAt"],
+            [
+                "id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "ownerCount",
+                "owners", "ownerInvitation", "createdAt", "createdBy", "suspendedAt", "suspendedBy", "closedBy", "purgeStartedAt", "pendingInvitationCount",
+            ],
             ignoreOrder: true);
     }
 
@@ -261,6 +264,149 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         Invitation(found).ShouldBe($"{email}|{expiresAt:O}|cancelled");
     }
 
+    // The organisation's page says who created it, as they are named now, and when its Owner invitation was sent (the maintainer's
+    // decision of 2026-11-08).
+    [Fact]
+    public async Task GetTenant_ACreatedTenant_AnswersWhoCreatedItAndWhenTheOwnerInvitationWasSent()
+    {
+        var (admin, _) = await NamedSystemAdminAsync("Deniz Kaya");
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+
+        var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        found.GetProperty("createdBy").ToString().ShouldBe("""{"name":"Deniz Kaya","deleted":false}""");
+        found.GetProperty("ownerInvitation").GetProperty("sentAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
+    }
+
+    // "Invite Owner again" sends a new invitation, so the sending is the latest invitation's.
+    [Fact]
+    public async Task GetTenant_ItsOwnerInvitedAgain_AnswersWhenTheLatestInvitationWasSent()
+    {
+        var admin = await SystemAdminAsync();
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+        _time.Advance(TimeSpan.FromHours(3));
+        (await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(tenant, PlatformTenants.Email()))).EnsureSuccessStatusCode();
+
+        var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        found.GetProperty("ownerInvitation").GetProperty("sentAt").GetDateTimeOffset().ShouldBe(_time.GetUtcNow());
+    }
+
+    // A deleted system admin has no name: the screen says "Deleted user".
+    [Fact]
+    public async Task GetTenant_ItsCreatorWasDeleted_AnswersTheCreatorDeleted()
+    {
+        var (admin, creator) = await NamedSystemAdminAsync("Deniz Kaya");
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+        await _testData.DeleteUserAsync(creator);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        found.GetProperty("createdBy").ToString().ShouldBe("""{"name":null,"deleted":true}""");
+    }
+
+    // A seed, and every tenant from before the columns, has no "by" and no "at": nothing is backfilled (the maintainer's decision of
+    // 2026-11-08).
+    [Theory]
+    [InlineData("Active")]
+    [InlineData("Suspended")]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    public async Task GetTenant_ASeed_AnswersNoCreatorAndNoMomentOfItsEvents(string status)
+    {
+        var tenant = await SeedAsync(status);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        Moments(found).ShouldBe("-|-|-|-|-");
+    }
+
+    // The Suspended banner: when and by whom. A reactivation forgets both, as it forgets the reason.
+    [Fact]
+    public async Task GetTenant_SuspendedThenReactivated_AnswersTheSuspensionThenNone()
+    {
+        var (admin, _) = await NamedSystemAdminAsync("Deniz Kaya");
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+        _time.Advance(TimeSpan.FromDays(1));
+        await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant));
+        var suspendedAt = _time.GetUtcNow();
+
+        var suspended = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+        await _api.WaitingForMessagesAsync(() => admin.PostAsync($"/v1/platform/tenants/{tenant}/reactivate", null, Cancellation));
+        var reactivated = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        Moments(suspended).ShouldBe($"Deniz Kaya|{suspendedAt:O}|Deniz Kaya|-|-");
+        Moments(reactivated).ShouldBe("Deniz Kaya|-|-|-|-");
+    }
+
+    // A second suspension keeps the first, as it keeps the first reason.
+    [Fact]
+    public async Task GetTenant_SuspendedTwice_KeepsTheFirstSuspension()
+    {
+        var (admin, _) = await NamedSystemAdminAsync("Deniz Kaya");
+        var (other, _) = await NamedSystemAdminAsync("Selin Arslan");
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+        await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant));
+        var suspendedAt = _time.GetUtcNow();
+        _time.Advance(TimeSpan.FromHours(1));
+        await _api.WaitingForMessagesAsync(() => other.SuspendTenantAsync(tenant));
+
+        var found = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        Moments(found).ShouldBe($"Deniz Kaya|{suspendedAt:O}|Deniz Kaya|-|-");
+    }
+
+    // The Closed banner says who closed it. A closure after a suspension keeps the suspension, as it keeps the reason; a reopening forgets
+    // both.
+    [Fact]
+    public async Task GetTenant_SuspendedClosedThenReopened_AnswersWhoClosedItThenNoClosureAndNoSuspension()
+    {
+        var (admin, _) = await NamedSystemAdminAsync("Deniz Kaya");
+        var (closer, _) = await NamedSystemAdminAsync("Selin Arslan");
+        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
+        await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant));
+        var suspendedAt = _time.GetUtcNow();
+        await _api.WaitingForMessagesAsync(() => closer.CloseTenantAsync(tenant));
+
+        var closed = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+        await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant));
+        var reopened = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
+
+        Moments(closed).ShouldBe($"Deniz Kaya|{suspendedAt:O}|Deniz Kaya|Selin Arslan|-");
+        Moments(reopened).ShouldBe("Deniz Kaya|-|-|-|-");
+    }
+
+    // The "Being deleted since" row: the moment the purge started, which the tenant row keeps while it is purging.
+    [Fact]
+    public async Task GetTenant_APurgingTenant_AnswersWhenItsPurgeStarted()
+    {
+        var startedAt = new DateTimeOffset(2026, 11, 1, 9, 30, 0, TimeSpan.Zero);
+        var tenant = await _testData.AddTenantAsync(status: "Purging", closedAt: startedAt.AddDays(-30));
+        await database.ScalarAsync<object>($"UPDATE control_plane.tenants SET purge_started_at = '{startedAt:O}' WHERE id = '{tenant.Id}'");
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("purgeStartedAt").GetDateTimeOffset().ShouldBe(startedAt);
+    }
+
+    // The members line of the page counts the pending invitations that have not expired at the read (K10, R12).
+    [Fact]
+    public async Task GetTenant_PendingInvitations_CountsThoseNotExpiredAtTheRead()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var now = _time.GetUtcNow();
+        await _testData.AddInvitationAsync(tenant.Id, expiresAt: now.AddDays(1));
+        await _testData.AddInvitationAsync(tenant.Id, expiresAt: now.AddDays(4));
+        await _testData.AddInvitationAsync(tenant.Id, expiresAt: now.AddDays(6));
+        await _testData.AddInvitationAsync(tenant.Id, status: "Accepted");
+        await _testData.SummarizeAsync(tenant.Id);
+        _time.Advance(TimeSpan.FromDays(2));
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("pendingInvitationCount").GetInt32().ShouldBe(2);
+    }
+
     [Fact]
     public async Task GetTenant_AnIdNoTenantHas_IsNotFound()
     {
@@ -282,5 +428,31 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         return $"{invitation.GetProperty("email").GetString()}|{invitation.GetProperty("expiresAt").GetDateTimeOffset():O}|{invitation.GetProperty("state").GetString()}";
     }
 
+    // "createdBy|suspendedAt|suspendedBy|closedBy|purgeStartedAt", each person by their name, "-" for null.
+    private static string Moments(JsonElement tenant) => string.Join('|',
+        NameOf(tenant.GetProperty("createdBy")),
+        tenant.GetProperty("suspendedAt") is { ValueKind: JsonValueKind.String } suspendedAt ? suspendedAt.GetDateTimeOffset().ToString("O") : "-",
+        NameOf(tenant.GetProperty("suspendedBy")),
+        NameOf(tenant.GetProperty("closedBy")),
+        tenant.GetProperty("purgeStartedAt") is { ValueKind: JsonValueKind.String } startedAt ? startedAt.GetDateTimeOffset().ToString("O") : "-");
+
+    private static string NameOf(JsonElement person) => person.ValueKind == JsonValueKind.Object ? person.GetProperty("name").GetString()! : "-";
+
+    // A tenant written as a seed writes it, in the status, with the reason a suspension has and the closure a closed tenant has.
+    private async Task<Guid> SeedAsync(string status) =>
+        (await _testData.AddTenantAsync(
+            status: status,
+            suspensionReason: status == "Suspended" ? "Unpaid invoices" : null,
+            closedAt: status is "Closed" or "Purging" ? DateTimeOffset.UtcNow : null)).Id;
+
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+    // A system admin with a name, as the screens name them.
+    private async Task<(HttpClient Client, string ExternalId)> NamedSystemAdminAsync(string name)
+    {
+        var admin = await _testData.AddUserAsync(name: name);
+        await database.ScalarAsync<object>(
+            $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'");
+        return (_api.CreateClient(admin, secondFactor: true), admin);
+    }
 }

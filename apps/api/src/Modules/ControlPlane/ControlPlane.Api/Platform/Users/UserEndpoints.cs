@@ -100,12 +100,12 @@ public static class UserEndpoints
 
     // An empty email filter is no filter, as an empty status or q is (K5 in api-catalog). A given address is checked as the other email
     // inputs are, and takes its one form in the handler.
-    private static async Task<Result<ListPage<UserResponse>>> ListUsers(
+    private static async Task<Result<UserListPageResponse>> ListUsers(
         int? page,
         int? pageSize,
         ListSort<ListUsersSort>? sort,
         string? q,
-        ListFilter<UserResponseStatus>? status,
+        ListFilter<UserResponseStatus>[]? status,
         bool? isSystemAdmin,
         string? email,
         IMessageBus bus,
@@ -117,20 +117,25 @@ public static class UserEndpoints
             return list.Error;
         }
 
-        var filter = ListFilter.Read(status, nameof(status));
+        var filter = ListFilter.ReadAll(status, nameof(status));
         if (!filter.IsSuccess)
         {
             return filter.Error;
         }
 
-        var users = await bus.InvokeAsync<Result<ListPage<UserView>>>(
+        var users = await bus.InvokeAsync<Result<UserListView>>(
             new ListUsersQuery(
                 list.Value,
-                filter.Value is { } chosen ? ResponseStatus.OfUser(chosen) : null,
+                [.. filter.Value.Select(ResponseStatus.OfUser)],
                 isSystemAdmin,
                 string.IsNullOrWhiteSpace(email) ? null : email),
             cancellationToken);
-        return users.Map(found => found.Map(ToResponse));
+        return users.Map(found => new UserListPageResponse(
+            [.. found.Page.Items.Select(ToResponse)],
+            found.Page.Page,
+            found.Page.PageSize,
+            found.Page.Total,
+            new UserStatusCountsResponse(found.StatusCounts.Active, found.StatusCounts.Suspended, found.StatusCounts.Deleted)));
     }
 
     // The user's memberships are under row level security; the query declares the user (R11), as a user's deletion does.
@@ -138,8 +143,13 @@ public static class UserEndpoints
         (await bus.InvokeAsync<Result<UserDetailView>>(new GetUserQuery(userId), cancellationToken)).Map(ToResponse);
 
     // Suspension and reactivation set a state, so they take no idempotency key (I1).
-    private static async Task<Result<UserResponse>> SuspendUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<UserView>>(new SuspendUserCommand(user.Id(), userId), cancellationToken)).Map(ToResponse);
+    private static async Task<Result<UserResponse>> SuspendUser(
+        Guid userId,
+        SuspendUserRequest request,
+        ClaimsPrincipal user,
+        IMessageBus bus,
+        CancellationToken cancellationToken) =>
+        (await bus.InvokeAsync<Result<UserView>>(new SuspendUserCommand(user.Id(), userId, request.Reason), cancellationToken)).Map(ToResponse);
 
     private static async Task<Result<UserResponse>> ReactivateUser(Guid userId, ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<UserView>>(new ReactivateUserCommand(user.Id(), userId), cancellationToken)).Map(ToResponse);
@@ -174,5 +184,7 @@ public static class UserEndpoints
         user.User.CreatedAt,
         user.SuspendedAt,
         user.SuspendedBy is { } suspendedBy ? InvitationEndpoints.ToResponse(suspendedBy) : null,
+        user.SuspensionReason,
+        user.SystemAdminGrantedBy is { } grantedBy ? InvitationEndpoints.ToResponse(grantedBy) : null,
         [.. user.Memberships.Select(ToResponse)]);
 }

@@ -1,6 +1,5 @@
 using Api.Hosting;
 using JasperFx;
-using Npgsql;
 using Tenancy;
 using Wolverine;
 using Wolverine.Postgresql;
@@ -27,11 +26,15 @@ internal static class MessageStorage
     // How long an idle worker waits before it looks for new messages in the queue again.
     private static readonly TimeSpan QueuePollingInterval = TimeSpan.FromSeconds(1);
 
-    public static void Configure(WolverineOptions options, NpgsqlDataSource dataSource, HostRole? role)
+    public static void Configure(WolverineOptions options, string connectionString, HostRole? role)
     {
         // A dead letter expires (W13). The dead letter table then has a column for the expiry, so the migration step needs it too.
         options.Durability.DeadLetterQueueExpirationEnabled = true;
-        var storage = options.PersistMessagesWithPostgresql(dataSource, Schema).OverrideAutoCreateResources(AutoCreate.None);
+
+        // Wolverine builds the data source from the connection string, so it owns it and closes its connections as the host stops
+        // (section 9, rule 7). It does not dispose a data source that it is given.
+        var storage = options.PersistMessagesWithPostgresql(DatabaseConnection.Of(connectionString), Schema)
+            .OverrideAutoCreateResources(AutoCreate.None);
         options.AutoBuildMessageStorageOnStartup = AutoCreate.None;
         options.Policies.UseDurableLocalQueues();
 
@@ -65,7 +68,7 @@ internal static class MessageStorage
         await using var dataSource = DatabaseConnection.CreateDataSource(ownerConnectionString);
         var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings { DisableDefaults = true });
         MessageNames.Register();
-        builder.Services.AddWolverine(options => Configure(options, dataSource, HostRole.Worker));
+        builder.Services.AddWolverine(options => Configure(options, ownerConnectionString, HostRole.Worker));
         var host = builder.Build();
 
         try

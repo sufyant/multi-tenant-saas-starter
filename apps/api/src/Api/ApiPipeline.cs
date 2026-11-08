@@ -19,7 +19,6 @@ using SharedKernel;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
-using Tenancy;
 using JasperFx.CodeGeneration;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
@@ -111,7 +110,14 @@ internal static class ApiPipeline
         // costs no membership lookup. Authorization comes last, so callers it turns away have been rate limited too.
         app.UseRouting();
         app.UseAuthentication();
-        app.UseRateLimiter();
+
+        // ASP.NET Core's rate limiting middleware never disposes the limiter it creates, and the limiter's timer keeps a stopped host
+        // reachable (dotnet/aspnetcore#66434). A process here runs one host, so only test hosts turn it off (Deviations).
+        if (app.Services.GetRequiredService<IOptions<RateLimitingOptions>>().Value.Enabled)
+        {
+            app.UseRateLimiter();
+        }
+
         app.UseMiddleware<TenantResolutionMiddleware>();
         app.UseAuthorization();
         app.UseMiddleware<IdempotencyMiddleware>();
@@ -191,7 +197,7 @@ internal static class ApiPipeline
             // never starts it; any other host without it does not start (PersistenceExtensions).
             if (!openApiBuild && PersistenceExtensions.MessagingConnectionOf(builder.Configuration) is { ConnectionString: var messaging })
             {
-                MessageStorage.Configure(options, DatabaseConnection.CreateDataSource(messaging), role);
+                MessageStorage.Configure(options, messaging, role);
             }
 
             // A stopping host stops taking messages and finishes the ones it has, within the host's shutdown time.

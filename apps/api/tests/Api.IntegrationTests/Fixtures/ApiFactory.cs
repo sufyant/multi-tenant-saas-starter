@@ -48,6 +48,9 @@ internal sealed class ApiFactory(
         ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:00:00.040",
     };
 
+    // The setting of a test of the rate limiter, which a test host leaves off.
+    public static readonly IReadOnlyDictionary<string, string?> RateLimiterOn = new Dictionary<string, string?> { ["Host:RateLimiting:Enabled"] = "true" };
+
     // How long a test waits for the messages it caused. Wolverine's default of 5 s is shorter than a retry policy's pauses under load.
     public static readonly TimeSpan TrackingTimeout = TimeSpan.FromSeconds(30);
 
@@ -87,7 +90,7 @@ internal sealed class ApiFactory(
     public async Task<T> WaitingForMessagesAsync<T>(Func<Task<T>> action)
     {
         var result = default(T)!;
-        await Tracking().ExecuteAndWaitAsync(RunAsync);
+        await Settled().ExecuteAndWaitAsync(RunAsync);
 
         return result;
 
@@ -97,7 +100,7 @@ internal sealed class ApiFactory(
     // The same, for a test that expects a message to fail and inspects what became of it.
     public Task<ITrackedSession> TrackMessagesAsync(Func<Task> action)
     {
-        return Tracking().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(RunAsync);
+        return Settled().DoNotAssertOnExceptionsDetected().ExecuteAndWaitAsync(RunAsync);
 
         Task RunAsync(IMessageContext _) => action();
     }
@@ -144,6 +147,9 @@ internal sealed class ApiFactory(
             ["ControlPlane:Clerk:SecretKey"] = "sk_test_unused",
             ["ControlPlane:SystemAdmins:RootEmails:0"] = RootEmail,
             ["Host:Authentication:Issuer"] = TestTokens.Issuer,
+
+            // A test of the rate limiter turns it on. Outside development the limiter must run (Deviations, "Rate limiting off in test hosts").
+            ["Host:RateLimiting:Enabled"] = environment is null || environment.Equals(Environments.Development, StringComparison.OrdinalIgnoreCase) ? "false" : "true",
         };
         foreach (var (party, index) in (authorizedParties ?? [TestTokens.AuthorizedParty]).Select((party, index) => (party, index)))
         {
@@ -206,6 +212,9 @@ internal sealed class ApiFactory(
     }
 
     private TrackedSessionConfiguration Tracking() => Services.GetRequiredService<IHost>().TrackActivity().Timeout(TrackingTimeout);
+
+    // A session that ends when every message it saw has been handled (SettledMessages).
+    private TrackedSessionConfiguration Settled() => Tracking().WaitForCondition(new SettledMessages());
 
     // IHostLifetime.WaitForStartAsync is the host's own way to delay its start until an outside event.
     private sealed class StartsWhenTheFactoryWaits(IHostLifetime lifetime, Task factoryWaits) : IHostLifetime

@@ -22,12 +22,12 @@ import type {
 import type {
   CreateTenantHeaders,
   CreateTenantRequest,
-  ListPageOfTenantListItemResponse,
   ListTenantsParams,
   ProblemDetails,
   RenameTenantRequest,
   SuspendTenantRequest,
   TenantDetailResponse,
+  TenantListPageResponse,
   TenantResponse
 } from '../endpoints.schemas.gen';
 
@@ -94,6 +94,14 @@ export const getListTenantsUrl = (params?: ListTenantsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["status"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
 
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : String(value))
@@ -105,9 +113,9 @@ export const getListTenantsUrl = (params?: ListTenantsParams,) => {
   return stringifiedParams.length > 0 ? `/v1/platform/tenants?${stringifiedParams}` : `/v1/platform/tenants`
 }
 
-export const listTenants = async (params?: ListTenantsParams, options?: Parameters<typeof apiFetch>[1]): Promise<ListPageOfTenantListItemResponse> => {
+export const listTenants = async (params?: ListTenantsParams, options?: Parameters<typeof apiFetch>[1]): Promise<TenantListPageResponse> => {
 
-  return apiFetch<ListPageOfTenantListItemResponse>(getListTenantsUrl(params),
+  return apiFetch<TenantListPageResponse>(getListTenantsUrl(params),
   {
     ...options,
     method: 'GET'
