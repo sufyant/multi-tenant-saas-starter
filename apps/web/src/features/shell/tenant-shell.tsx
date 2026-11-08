@@ -47,7 +47,7 @@ import { useRoleName } from "@/shared/use-role-name";
 
 /**
  * The tenant web's shell (F28, F30, the Shell screens): the organisation switcher, search, the organisation's bell, Home and the
- * product's sections, Settings and the account menu; inside Settings the settings menu with My account and Organisation. A page
+ * product's sections, Settings and the account menu; inside Settings the settings menu with the organisation's pages. A page
  * the person cannot open is not in their menu (F5).
  */
 export function TenantShell({
@@ -347,12 +347,8 @@ function TenantFrame({
                   label: t("shell.backTo", { organisation: name ?? "" }),
                   href: base,
                 },
+                // Only the organisation's pages: the person's pages open from the account menu (F59).
                 groups: [
-                  {
-                    id: "my-account",
-                    label: t("shell.myAccount"),
-                    items: myAccount,
-                  },
                   {
                     id: "organisation",
                     label: t("shell.organisation"),

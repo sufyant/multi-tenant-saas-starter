@@ -10,7 +10,7 @@ export const personalPages = {
   account: "/settings/account",
 } as const;
 
-/** My account in a settings menu and in the command menu: both shells list it. */
+/** My account in the settings menu without an organisation and in the command menu of both shells (F59). */
 export const myAccountPages = (
   t: (key: "appShell.profile" | "appShell.accountAndSecurity") => string,
 ): NavItem[] => [
