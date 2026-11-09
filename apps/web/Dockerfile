@@ -10,7 +10,7 @@
 
 # Debian, like the runtime image, so the native packages the build installs match the runtime's C library.
 # Its major version must agree with .nvmrc; the deps stage checks that.
-FROM node:22.23.4-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS deps
+FROM node:22.23.4-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS deps
 # The Node major version from .nvmrc. CI passes it: --build-arg NODE_MAJOR="$(cat .nvmrc)".
 ARG NODE_MAJOR=22
 RUN test "$(node -p 'process.versions.node.split(".")[0]')" = "$NODE_MAJOR" \
