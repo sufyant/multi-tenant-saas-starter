@@ -43,18 +43,23 @@ afterAll(() => {
   vi.restoreAllMocks();
 });
 
-// A request that the client aborts at its time limit, before the handler answers.
+// A request that the client aborts at its time limit, before the handler answers. The case tests the transport under the API
+// client's mutator, so it calls fetch itself, as test/setup.ts does.
 const aborted = () =>
-  fetch(`${origin}/api/slow`, {
-    method: "POST",
-    signal: AbortSignal.timeout(100),
-  }).catch(() => undefined);
+  globalThis
+    .fetch(`${origin}/api/slow`, {
+      method: "POST",
+      signal: AbortSignal.timeout(100),
+    })
+    .catch(() => undefined);
 
 it("Origin_AfterTwoAbortedRequests_AnswersTheNextMockedRequest", async () => {
   await aborted();
   await aborted();
 
-  const answer = await fetch(`${origin}/api/fast`, { method: "POST" });
+  const answer = await globalThis.fetch(`${origin}/api/fast`, {
+    method: "POST",
+  });
 
   expect(answer.status).toBe(200);
 });
