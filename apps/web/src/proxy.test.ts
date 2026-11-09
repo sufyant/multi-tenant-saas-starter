@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The proxy's own handler, with Clerk's route matcher and a stand-in for auth(), so a test sees whether a path needs a session.
 type Handler = (
-  auth: { protect: () => Promise<unknown> },
+  auth: {
+    (): Promise<{ userId: string | null }>;
+    protect: () => Promise<unknown>;
+  },
   request: NextRequest,
 ) => Promise<unknown>;
 const handler = vi.hoisted(() => ({
@@ -19,14 +22,31 @@ vi.mock("@clerk/nextjs/server", async (importOriginal) => ({
 await import("./proxy");
 
 const protect = vi.fn();
+// auth() of a person signed in as the user, or signed out with null, and its protect().
+const authOf = (userId: string | null) =>
+  Object.assign(async () => ({ userId }), { protect });
 beforeEach(() => protect.mockReset());
 
 async function needsSession(path: string): Promise<boolean> {
   await handler.current?.(
-    { protect },
+    authOf("user_1"),
     new NextRequest(`https://web.example.test${path}`),
   );
   return protect.mock.calls.length > 0;
+}
+
+// A request of the browser, as the proxy sees it: a navigation of the App Router is a fetch (Sec-Fetch-Dest: empty), a page
+// load a document.
+async function navigate(
+  userId: string | null,
+  destination = "empty",
+): Promise<unknown> {
+  return handler.current?.(
+    authOf(userId),
+    new NextRequest("https://web.example.test/northwind/settings/general", {
+      headers: { "Sec-Fetch-Dest": destination, "Next-Url": "/" },
+    }),
+  );
 }
 
 describe("proxy", () => {
@@ -58,6 +78,27 @@ describe("proxy", () => {
     "/atlas",
   ])("Proxy_LongerSegment_%s_NeedsASession", async (path) => {
     expect(await needsSession(path)).toBe(true);
+  });
+
+  // A signed-out navigation loads the page as a document (F63).
+  it("Proxy_AClientSideNavigationSignedOut_AsksTheBrowserToLoadThePage", async () => {
+    const answer = await navigate(null);
+
+    expect(protect).not.toHaveBeenCalled();
+    expect((answer as Response).status).toBe(401);
+    expect((answer as Response).body).toBeNull();
+  });
+
+  it("Proxy_APageLoadSignedOut_NeedsTheSession", async () => {
+    await navigate(null, "document");
+
+    expect(protect).toHaveBeenCalled();
+  });
+
+  it("Proxy_AClientSideNavigationSignedIn_NeedsTheSession", async () => {
+    await navigate("user_1");
+
+    expect(protect).toHaveBeenCalled();
   });
 
   // No route serves /trpc: the first pattern of the matcher runs the proxy on every path but the static files.
