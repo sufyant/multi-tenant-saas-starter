@@ -27,15 +27,16 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         user.Property(u => u.SuspensionReason).HasMaxLength(User.SuspensionReasonMaxLength);
         user.HasOne<User>().WithMany().HasForeignKey(u => u.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
 
-        // R15: a language of the one list, a count that never falls below zero, a suspension that names its system admin, and a deleted
-        // user who keeps no address, name or time zone (A8). The reason's rules, only while suspended and none once deleted, are CHECKs of
-        // a later release: the version before this one clears a suspension and deletes a user without the column (section 13).
+        // R15: a language of the one list, a count that never falls below zero, a suspension that names its system admin, a reason only
+        // while suspended, and a deleted user who keeps no address, name, time zone or reason (A8).
         user.ToTable(table => table.HasCheckConstraint("ck_users_language", CheckConstraints.OneOf("language", ControlPlaneDbContext.LanguageTags)));
         user.ToTable(table => table.HasCheckConstraint("ck_users_membership_count", "membership_count >= 0"));
         user.ToTable(table => table.HasCheckConstraint("ck_users_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)"));
         user.ToTable(table => table.HasCheckConstraint(
+            "ck_users_suspension_reason_while_suspended", "suspended_at IS NOT NULL OR suspension_reason IS NULL"));
+        user.ToTable(table => table.HasCheckConstraint(
             "ck_users_deleted_keeps_no_personal_data",
-            "deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL)"));
+            "deleted_at IS NULL OR (email IS NULL AND name IS NULL AND time_zone IS NULL AND suspension_reason IS NULL)"));
 
         // The database's defaults: a row inserted without these columns is a user from the moment of the insert, with no membership
         // (R13).

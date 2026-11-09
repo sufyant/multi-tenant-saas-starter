@@ -333,6 +333,80 @@ public sealed class MigrationStepTests(Database database)
         (named.SqlState, named.ConstraintName).ShouldBe((PostgresErrorCodes.CheckViolation, "ck_users_deleted_keeps_no_personal_data"));
     }
 
+    // Step 37b-backend-contract: the version before step 37b ran during that deploy and changed the old columns without the new ones. So a
+    // tenant it reactivated keeps the moment and the system admin of its suspension, a tenant it reopened keeps who closed it, a tenant it
+    // purged keeps the start of its purge and its creator, a user it reactivated or deleted keeps the reason, and a summary it saved keeps
+    // the sending of an Owner invitation it no longer has. The migration clears these and nothing else, then adds the CHECKs (R15).
+    [Fact]
+    public async Task Migrate_TieWhoAndWhenToTheirEvents_ClearsWhatTheVersionBeforeLeftAndAddsTheChecks()
+    {
+        var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("TieWhoAndWhenToTheirEvents");
+        var testData = new TestData(database, before);
+        var admin = await testData.UserIdOfAsync(await testData.AddUserAsync());
+        var reactivated = await testData.AddTenantAsync(name: "Reactivated");
+        var suspended = await testData.AddTenantAsync(status: "Suspended", name: "Suspended", suspensionReason: "Unpaid invoices");
+        await testData.AddInvitationAsync(suspended.Id, role: "Owner", language: "tr");
+        await SummarizeOwnerInvitationAsync(suspended.Id, before);
+        var reopened = await testData.AddTenantAsync(name: "Reopened");
+        var closed = await testData.AddTenantAsync(status: "Closed", name: "Closed", closedAt: DateTimeOffset.UtcNow);
+        var purging = await testData.AddTenantAsync(status: "Purging", name: "Purging", closedAt: DateTimeOffset.UtcNow);
+        var purged = await testData.AddTenantAsync(status: "Purged", name: "Purged");
+        var (reactivatedUser, suspendedUser, deletedUser) = (await testData.AddUserAsync(), await testData.AddUserAsync(), await testData.AddUserAsync());
+        await testData.SuspendUserAsync(suspendedUser);
+        await testData.SuspendUserAsync(deletedUser);
+        await testData.DeleteUserAsync(deletedUser);
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenants SET created_by = '{admin}';
+            UPDATE control_plane.tenants SET suspended_at = now(), suspended_by = '{admin}' WHERE id IN ('{reactivated.Id}', '{suspended.Id}');
+            UPDATE control_plane.tenants SET closed_by = '{admin}' WHERE id IN ('{reopened.Id}', '{closed.Id}');
+            UPDATE control_plane.tenants SET purge_started_at = now() WHERE id IN ('{purging.Id}', '{purged.Id}');
+            UPDATE control_plane.tenant_summaries SET owner_invitation_sent_at = now() WHERE tenant_id IN ('{reactivated.Id}', '{suspended.Id}');
+            UPDATE control_plane.users SET suspension_reason = 'Spam' WHERE external_id IN ('{reactivatedUser}', '{suspendedUser}', '{deletedUser}');
+            """,
+            before);
+        var rowsBefore = await ControlPlaneRowsAsync(before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await ControlPlaneRowsAsync(before)).ShouldBe(rowsBefore);
+        (await database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(
+                name || '=' || concat_ws('|', created_by IS NOT NULL, suspended_at IS NOT NULL, suspended_by IS NOT NULL, closed_by IS NOT NULL,
+                    purge_started_at IS NOT NULL, owner_invitation_sent_at IS NOT NULL),
+                ', ' ORDER BY name)
+            FROM control_plane.tenants JOIN control_plane.tenant_summaries ON tenant_summaries.tenant_id = tenants.id
+            """,
+            before)).ShouldBe(
+            "Closed=t|f|f|t|f|f, Purged=f|f|f|f|f|f, Purging=t|f|f|f|t|f, Reactivated=t|f|f|f|f|f, Reopened=t|f|f|f|f|f, Suspended=t|t|t|f|f|t");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(coalesce(suspension_reason, '-') || '|' || (suspended_at IS NOT NULL), ', '
+                ORDER BY array_position(ARRAY['{reactivatedUser}', '{suspendedUser}', '{deletedUser}'], external_id))
+            FROM control_plane.users WHERE external_id IN ('{reactivatedUser}', '{suspendedUser}', '{deletedUser}')
+            """,
+            before)).ShouldBe("-|false, Spam|true, -|true");
+        (await database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(conname, ', ' ORDER BY conname)
+            FROM pg_constraint JOIN (VALUES
+                ('ck_tenants_suspension', 'suspension_reason'),
+                ('ck_tenants_closed_by_with_closure', 'closed_by'),
+                ('ck_tenants_purge_started_while_purging', 'purge_started_at'),
+                ('ck_tenants_purged_is_a_tombstone', 'created_by'),
+                ('ck_users_suspension_reason_while_suspended', 'suspension_reason'),
+                ('ck_users_deleted_keeps_no_personal_data', 'suspension_reason'),
+                ('ck_tenant_summaries_owner_invitation_sent_with_it', 'owner_invitation_sent_at')) AS rule (name, column_name)
+                ON conname = rule.name AND pg_get_constraintdef(pg_constraint.oid) LIKE '%' || rule.column_name || '%'
+            WHERE connamespace = 'control_plane'::regnamespace
+            """,
+            before)).ShouldBe(
+            "ck_tenant_summaries_owner_invitation_sent_with_it, ck_tenants_closed_by_with_closure, ck_tenants_purge_started_while_purging, "
+            + "ck_tenants_purged_is_a_tombstone, ck_tenants_suspension, ck_users_deleted_keeps_no_personal_data, ck_users_suspension_reason_while_suspended");
+    }
+
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
     // default mark (R15).
     [Fact]

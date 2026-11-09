@@ -30,14 +30,17 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         tenant.HasOne<User>().WithMany().HasForeignKey(t => t.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
         tenant.HasOne<User>().WithMany().HasForeignKey(t => t.ClosedBy).OnDelete(DeleteBehavior.Restrict);
 
-        // R15: a status the code knows, a purged tenant is its tombstone: the moment of its purge and none of the closure or a suspension,
-        // and a suspension's moment and system admin go together. The rules that tie the new columns to the old ones (a suspension with its
-        // reason, a closure's system admin with its moment, the start of a purge while purging, a tombstone without its creator) are CHECKs
-        // of a later release: the version before this one changes the old columns without the new ones (section 13).
+        // R15: a status the code knows, a purged tenant is its tombstone: the moment of its purge and none of the closure, a suspension or
+        // its creator. A suspension's moment and system admin go together, and they come with its reason; a reason may stand alone, from
+        // before step 37b. A closure's system admin comes with its moment, and the start of a purge stays only while the tenant purges.
         tenant.ToTable(table => table.HasCheckConstraint("ck_tenants_status", CheckConstraints.OneOf<TenantStatus>("status")));
         tenant.ToTable(table => table.HasCheckConstraint(
             "ck_tenants_purged_is_a_tombstone",
-            "status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL)"));
-        tenant.ToTable(table => table.HasCheckConstraint("ck_tenants_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL)"));
+            "status <> 'Purged' OR (purged_at IS NOT NULL AND closed_at IS NULL AND suspension_reason IS NULL AND created_by IS NULL)"));
+        tenant.ToTable(table => table.HasCheckConstraint(
+            "ck_tenants_suspension",
+            "(suspended_at IS NULL) = (suspended_by IS NULL) AND (suspended_at IS NULL OR suspension_reason IS NOT NULL)"));
+        tenant.ToTable(table => table.HasCheckConstraint("ck_tenants_closed_by_with_closure", "closed_by IS NULL OR closed_at IS NOT NULL"));
+        tenant.ToTable(table => table.HasCheckConstraint("ck_tenants_purge_started_while_purging", "purge_started_at IS NULL OR status = 'Purging'"));
     }
 }

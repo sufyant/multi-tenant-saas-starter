@@ -27,7 +27,7 @@ internal sealed class TenantSummaryConfiguration : IEntityTypeConfiguration<Tena
 
         // R15: the counts, and the latest Owner invitation only while the tenant has no Owner. Its status, expiry and language are there
         // together (the language since step r12). The address may be gone from a finished invitation (A8), so it is kept apart; a pending
-        // invitation always has its address.
+        // invitation always has its address. Its sending is kept only with its status; a status may lack it, from before step 37b.
         summary.ToTable(table => table.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0"));
         summary.ToTable(table => table.HasCheckConstraint(
             "ck_tenant_summaries_owner_invitation_status", CheckConstraints.OneOf<InvitationStatus>("owner_invitation_status")));
@@ -42,5 +42,7 @@ internal sealed class TenantSummaryConfiguration : IEntityTypeConfiguration<Tena
             "ck_tenant_summaries_pending_owner_invitation_has_email", "owner_invitation_status <> 'Pending' OR owner_invitation_email IS NOT NULL"));
         summary.ToTable(table => table.HasCheckConstraint(
             "ck_tenant_summaries_owner_invitation_without_owner", "owner_count = 0 OR owner_invitation_status IS NULL"));
+        summary.ToTable(table => table.HasCheckConstraint(
+            "ck_tenant_summaries_owner_invitation_sent_with_it", "owner_invitation_sent_at IS NULL OR owner_invitation_status IS NOT NULL"));
     }
 }

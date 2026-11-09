@@ -85,6 +85,20 @@ public sealed class SuspendUserTests(Database database) : IAsyncLifetime
         (await SuspendedAtAsync(systemAdmin)).ShouldBeNull();
     }
 
+    // The deletion erased the user's personal data (A8); a reason would bring some back. The refusal comes before any change (W7).
+    [Fact]
+    public async Task SuspendUser_DeletedUser_IsAConflictAndChangesNothing()
+    {
+        var user = await _testData.AddUserAsync();
+        await _testData.DeleteUserAsync(user);
+
+        var response = await (await SystemAdminAsync()).SuspendUserAsync(await _testData.UserIdOfAsync(user));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await CodeOfAsync(response)).ShouldBe("user.deleted");
+        (await SuspendedAtAsync(user)).ShouldBeNull();
+    }
+
     // One error code has one text (N11w): suspension answers the text that deletion answers.
     [Fact]
     public async Task SuspendUser_ASystemAdmin_AnswersTheTextOfTheCode()
