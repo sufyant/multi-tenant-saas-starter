@@ -40,12 +40,21 @@ beforeEach(() => {
         return response;
       },
       (error: unknown) => {
-        record.answer = `failed: ${error}`;
+        record.answer = `failed: ${failure(error)}`;
         throw error;
       },
     );
   };
 });
+// Undici rejects every failed fetch with "TypeError: fetch failed", a mocked answer too, because MSW answers through Undici; the
+// cause tells them apart: a handler's Response.error(), its exception, or a connection that failed.
+const failure = (error: unknown): string => {
+  const cause = error instanceof Error ? error.cause : undefined;
+  if (cause === undefined) return `${error}`;
+  if (cause instanceof Response)
+    return `${error}, cause: a mocked network error (Response.error())`;
+  return `${error}, cause: ${cause}`;
+};
 afterEach(({ task }) => {
   globalThis.fetch = unwrapped;
   if (task.result?.state !== "fail") return;
