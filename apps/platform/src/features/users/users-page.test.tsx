@@ -345,6 +345,35 @@ describe("UsersPage", () => {
     );
   });
 
+  // On a phone the tabs are one choice (5.16), the same as the Organisations' (4.43).
+  it("UsersPage_StatusChoice_FiltersAsTheTabsDo", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      usersAnswer(
+        usersPageOf([ayse], {
+          statusCounts: { active: 65, suspended: 2, deleted: 0 },
+        }),
+        requests,
+      ),
+    );
+
+    renderWithProviders(<UsersPage />);
+    await rowOf("Ayşe Yılmaz");
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Filter by status" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Suspended · 2" }),
+    );
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.getAll("status")).toEqual([
+        UserResponseStatus.Suspended,
+      ]),
+    );
+  });
+
   it("UsersPage_Search_SendsQAndKeepsItInTheUrl", async () => {
     const requests: URLSearchParams[] = [];
     server.use(meAnswer(), usersAnswer(usersPageOf([ayse]), requests));
