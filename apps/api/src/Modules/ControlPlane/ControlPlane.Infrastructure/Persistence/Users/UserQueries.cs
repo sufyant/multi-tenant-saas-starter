@@ -91,7 +91,8 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             : new InviterNameView(nameof(InviterKind.User), UserNameView.Of(user));
     }
 
-    // Two queries (K5): the count of each status, with every filter but the status, from which the total comes, then the page.
+    // Three queries (K5): the count of each status, of every user, without the search or any filter (the maintainer's decision of
+    // 2026-11-10); the total of what the filters keep; then the page.
     async Task<UserListView> IUserQueries.ListUsersAsync(
         ListRequest<ListUsersSort> list,
         IReadOnlyList<UserStatus> statuses,
@@ -99,6 +100,10 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
         EmailAddress? email,
         CancellationToken cancellationToken)
     {
+        var counts = await controlPlane.Users
+            .GroupBy(User.StatusOf)
+            .Select(group => new { Status = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(group => group.Status, group => group.Count, cancellationToken);
         var users = controlPlane.Users.AsQueryable();
         if (isSystemAdmin is { } admins)
         {
@@ -120,15 +125,12 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
                 || EF.Functions.ILike(user.Name!, pattern, ListQueryExtensions.Escape));
         }
 
-        var counts = await users
-            .GroupBy(User.StatusOf)
-            .Select(group => new { Status = group.Key, Count = group.Count() })
-            .ToDictionaryAsync(group => group.Status, group => group.Count, cancellationToken);
-        var total = statuses.Count == 0 ? counts.Values.Sum() : statuses.Sum(chosen => counts.GetValueOrDefault(chosen));
         if (statuses.Count > 0)
         {
             users = users.Where(User.InAnyStatus(statuses));
         }
+
+        var total = await users.CountAsync(cancellationToken);
 
         var sorted = list.Sort switch
         {

@@ -37,7 +37,7 @@ export const statusesOf = (tab: Tab | null): Status[] => {
   }
 };
 
-/** A tab's count: the sum of its statuses' counts, which follow the search and ignore the status (`ListTenants.statusCounts`). */
+/** A tab's count: the sum of its statuses' counts, the totals that no search or filter changes (`ListTenants.statusCounts`). */
 export const countOf = (counts: TenantStatusCountsResponse, tab: Tab | null) =>
   statusesOf(tab).reduce((sum, status) => sum + counts[status], 0);
 

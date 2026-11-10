@@ -109,9 +109,9 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             EntitlementKeys.Limits.ToDictionary(key => key, usage.CountOf, StringComparer.Ordinal));
     }
 
-    // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. Two queries
-    // (K5): the count of each status, without the status filter, from which the total comes, then the page, which joins each tenant's
-    // plan and summary (R12), with no query for each tenant. A purged tenant has no summary, so the summary is joined where it exists, and
+    // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. Three queries
+    // (K5): the count of each status, of every tenant, without the search or the status filter (the maintainer's decision of 2026-11-10);
+    // the total of what the filters keep; then the page, which joins each tenant's plan and summary (R12), with no query for each tenant. A purged tenant has no summary, so the summary is joined where it exists, and
     // a tombstone counts nothing (K4).
     async Task<TenantListView> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
@@ -120,6 +120,10 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
+        var counts = await controlPlane.Tenants
+            .GroupBy(tenant => tenant.Status)
+            .Select(group => new { Status = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(group => group.Status, group => group.Count, cancellationToken);
         var tenants = controlPlane.Tenants.AsQueryable();
         if (list.Search is { } search)
         {
@@ -128,15 +132,12 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
                 EF.Functions.ILike(tenant.Name, pattern, ListQueryExtensions.Escape) || EF.Functions.ILike(tenant.Slug, pattern, ListQueryExtensions.Escape));
         }
 
-        var counts = await tenants
-            .GroupBy(tenant => tenant.Status)
-            .Select(group => new { Status = group.Key, Count = group.Count() })
-            .ToDictionaryAsync(group => group.Status, group => group.Count, cancellationToken);
-        var total = statuses.Count == 0 ? counts.Values.Sum() : statuses.Sum(chosen => counts.GetValueOrDefault(chosen));
         if (statuses.Count > 0)
         {
             tenants = tenants.Where(tenant => statuses.Contains(tenant.Status));
         }
+
+        var total = await tenants.CountAsync(cancellationToken);
 
         var rows =
             from tenant in tenants

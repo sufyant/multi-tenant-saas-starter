@@ -58,7 +58,7 @@ export const ListUsersResponse = zod.object({
   "active": zod.int(),
   "suspended": zod.int(),
   "deleted": zod.int()
-}).describe('How many users of the list are in each status, with the search and every filter but the status: the tabs of the Users list.')
+}).describe('How many users are in each status, without the search or any filter: the tabs of the Users list.')
 }).describe('A page of the user list (K5), and how many users of the whole list are in each status.')
 
 export const GetUserParams = zod.object({

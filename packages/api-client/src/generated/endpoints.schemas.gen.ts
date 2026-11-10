@@ -1532,7 +1532,7 @@ export interface TenantListItemResponse {
 }
 
 /**
- * How many tenants of the list are in each status, with the search and without the status filter: the tabs of the Organisations list.
+ * How many tenants are in each status, without the search or the status filter: the tabs of the Organisations list.
  */
 export interface TenantStatusCountsResponse {
   active: number;
@@ -1706,7 +1706,7 @@ export interface UserResponse {
 }
 
 /**
- * How many users of the list are in each status, with the search and every filter but the status: the tabs of the Users list.
+ * How many users are in each status, without the search or any filter: the tabs of the Users list.
  */
 export interface UserStatusCountsResponse {
   active: number;

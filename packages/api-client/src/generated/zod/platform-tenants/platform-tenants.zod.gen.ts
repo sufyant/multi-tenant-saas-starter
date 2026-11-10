@@ -132,7 +132,7 @@ export const ListTenantsResponse = zod.object({
   "closed": zod.int(),
   "purging": zod.int(),
   "purged": zod.int()
-}).describe('How many tenants of the list are in each status, with the search and without the status filter: the tabs of the Organisations list.')
+}).describe('How many tenants are in each status, without the search or the status filter: the tabs of the Organisations list.')
 }).describe('A page of the tenant list (K5), and how many tenants of the whole list are in each status.')
 
 export const GetTenantParams = zod.object({

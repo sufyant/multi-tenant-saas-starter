@@ -302,30 +302,40 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         ]);
     }
 
-    // The tabs of the Organisations list count each status (the maintainer's decision of 2026-11-08): every tenant the search finds,
-    // in each status, a purged tenant's tombstone included. The search keeps the shared database's other tenants out, with no host of its
-    // own (section 9, rule 11).
+    // The tabs of the Organisations list count each status (the maintainer's decision of 2026-11-10): every tenant in each status, a
+    // purged tenant's tombstone included. The counts read the whole list, so the test has a database of its own.
     [Fact]
     public async Task ListTenants_TenantsInEveryStatus_AnswersACountForEachStatus()
     {
-        await _testData.AddTenantAsync(name: $"{_marker} Alpha");
-        await _testData.AddTenantAsync(name: $"{_marker} Bravo");
-        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
-        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Delta", closedAt: DateTimeOffset.UtcNow);
-        await _testData.AddTenantAsync(status: "Purging", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
-        await _testData.AddTenantRowAsync(status: "Purged", name: $"{_marker} Foxtrot");
+        await UseADatabaseOfItsOwnAsync();
+        await AddTenantsInEveryStatusAsync();
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants?q={_marker}", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants", Cancellation);
 
         page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"closed":1,"purging":1,"purged":1}""");
         page.GetProperty("total").GetInt32().ShouldBe(6);
     }
 
-    // The counts follow the search and ignore only the status filter, as the Open and Closed counts of GitHub Issues do (the maintainer's
-    // decision of 2026-11-08). The total counts the tenants the filter keeps.
+    // The counts are the totals of each status: a search does not change them (the maintainer's decision of 2026-11-10, which replaces
+    // the one of 2026-11-08). The page and its total follow the search.
     [Fact]
-    public async Task ListTenants_ASearchAndAStatusFilter_CountsTheSearchInEachStatusAndTotalsTheFilter()
+    public async Task ListTenants_ASearchThatFindsOneTenant_LeavesEveryCountAtItsTotal()
     {
+        await UseADatabaseOfItsOwnAsync();
+        await AddTenantsInEveryStatusAsync();
+
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>("/v1/platform/tenants?q=Charlie", Cancellation);
+
+        Names(page).ShouldBe([$"{_marker} Charlie"]);
+        page.GetProperty("total").GetInt32().ShouldBe(1);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"closed":1,"purging":1,"purged":1}""");
+    }
+
+    // Neither the search nor the status filter changes the counts. The total counts the tenants that both keep.
+    [Fact]
+    public async Task ListTenants_ASearchAndAStatusFilter_CountsEveryTenantInEachStatusAndTotalsTheFilter()
+    {
+        await UseADatabaseOfItsOwnAsync();
         await _testData.AddTenantAsync(name: $"{_marker} Alpha");
         await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Bravo");
         await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
@@ -335,7 +345,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
 
         Names(page).ShouldBe([$"{_marker} Bravo", $"{_marker} Charlie"]);
         page.GetProperty("total").GetInt32().ShouldBe(2);
-        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":2,"closed":0,"purging":0,"purged":0}""");
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":3,"closed":0,"purging":0,"purged":0}""");
     }
 
     // The Closed tab holds closed and purging tenants, and All every status but purged: the status filter takes several values.
@@ -398,7 +408,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("items").EnumerateArray().Single().GetProperty("pendingInvitationCount").GetInt32().ShouldBe(1);
     }
 
-    // K5: the page is one query and the counts with the total a second, whatever the page holds: no query for each tenant.
+    // K5: the counts, the total and the page are one query each, whatever the page holds: no query for each tenant.
     [Fact]
     public async Task ListTenants_ALongerPage_SendsNoMoreSqlCommands()
     {
@@ -415,7 +425,7 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         one.ShouldBeGreaterThan(0);
     }
 
-    // K5: the counts come with the total, so a list with a search and a status filter sends as many commands as the list without them.
+    // K5: a list with a search and a status filter sends as many commands as the list without the status filter.
     [Fact]
     public async Task ListTenants_AStatusFilter_SendsNoMoreSqlCommands()
     {
@@ -466,6 +476,17 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         _testData = new TestData(database, name);
         await _api.DisposeAsync();
         _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name));
+    }
+
+    // Two active tenants and one in each other status, named after the test's marker.
+    private async Task AddTenantsInEveryStatusAsync()
+    {
+        await _testData.AddTenantAsync(name: $"{_marker} Alpha");
+        await _testData.AddTenantAsync(name: $"{_marker} Bravo");
+        await _testData.AddTenantAsync(status: "Suspended", name: $"{_marker} Charlie");
+        await _testData.AddTenantAsync(status: "Closed", name: $"{_marker} Delta", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantAsync(status: "Purging", name: $"{_marker} Echo", closedAt: DateTimeOffset.UtcNow);
+        await _testData.AddTenantRowAsync(status: "Purged", name: $"{_marker} Foxtrot");
     }
 
     // Tenants named after the test's marker, so that a search for the marker finds them alone.
