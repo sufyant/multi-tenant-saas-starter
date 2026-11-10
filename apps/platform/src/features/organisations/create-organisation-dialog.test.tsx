@@ -105,7 +105,7 @@ const fill = async (
 
 const send = (dialog: ReturnType<typeof within>) =>
   userEvent.click(
-    dialog.getByRole("button", { name: "Create and invite Owner" }),
+    dialog.getByRole("button", { name: "Create organisation" }),
   );
 
 describe("CreateOrganisationDialog", () => {
@@ -214,7 +214,7 @@ describe("CreateOrganisationDialog", () => {
     [
       "SlugTaken",
       () => problem(409, ErrorCode.TenantSlugTaken),
-      "This slug is taken. Try another.",
+      "This address is taken or reserved. Try another.",
     ],
   ])("Create_%s_ShowsTheFieldsText", async (_, answer, text) => {
     server.use(
@@ -232,12 +232,12 @@ describe("CreateOrganisationDialog", () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  // The API refuses a reserved slug with the field code `slug_reserved` (the enum `ReservedSlug`). The texts are written here, not
-  // read from the message files, so a wrong or missing text fails.
+  // The API refuses a reserved slug with the field code `slug_reserved` (the enum `ReservedSlug`): one text with a taken one (4.08).
+  // The texts are written here, not read from the message files, so a wrong or missing text fails.
   it.each([
-    ["en", "This slug is reserved."],
-    ["tr", "Bu kısa ad ayrılmış."],
-    ["ar", "هذا المعرّف محجوز."],
+    ["en", "This address is taken or reserved. Try another."],
+    ["tr", "Bu adres alınmış ya da ayrılmış. Başka bir adres deneyin."],
+    ["ar", "هذا العنوان مستخدَم أو محجوز. جرّب عنوانًا آخر."],
   ] as const)(
     "Create_SlugReservedIn_%s_ShowsItsTextUnderTheSlug",
     async (locale, text) => {
@@ -286,7 +286,9 @@ describe("CreateOrganisationDialog", () => {
     await fill(dialog, { slug: ReservedSlug.Settings });
     await send(dialog);
 
-    expect(await dialog.findByText("This slug is reserved.")).toBeVisible();
+    expect(
+      await dialog.findByText("This address is taken or reserved. Try another."),
+    ).toBeVisible();
     expect(calls).toEqual([]);
   });
 
@@ -332,13 +334,33 @@ describe("CreateOrganisationDialog", () => {
     const dialog = await openCreate();
     await fill(dialog, {});
     await send(dialog);
-    await dialog.findByText("This slug is taken. Try another.");
+    await dialog.findByText("This address is taken or reserved. Try another.");
     await fill(dialog, { slug: "liffey" });
     await send(dialog);
 
     await expectVisibleToast(sentence("Liffey Design created"));
     expect(new Set(calls.map((call) => call.key)).size).toBe(2);
   });
+  it("Create_Address_ShowsTheWebAppsHostAndTheHints", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([northwind])));
+
+    renderWithProviders(<OrganisationsPage />);
+    const dialog = await openCreate();
+
+    expect(dialog.getByText("app.starter.example/")).toBeVisible();
+    expect(
+      dialog.getByRole("textbox", { name: "Address" }),
+    ).toHaveAccessibleDescription(
+      "Part of every link to it. It can’t change later.",
+    );
+    expect(
+      dialog.getByRole("textbox", { name: "Owner’s email" }),
+    ).toHaveAccessibleDescription("The Owner gets an invitation by email.");
+    expect(
+      dialog.getByRole("combobox", { name: "Language of the invitation" }),
+    ).toBeVisible();
+  });
+
   it("Create_Plan_PreselectsTheDefaultPlanAndMarksIt", async () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind])));
 
@@ -347,9 +369,6 @@ describe("CreateOrganisationDialog", () => {
 
     const field = dialog.getByRole("combobox", { name: "Plan" });
     await waitFor(() => expect(field).toHaveTextContent("Free"));
-    expect(field).toHaveAccessibleDescription(
-      "New organisations get the default plan. You can change it later.",
-    );
     await userEvent.click(field);
     expect(
       await screen.findByRole("option", { name: /Free.*Default/ }),

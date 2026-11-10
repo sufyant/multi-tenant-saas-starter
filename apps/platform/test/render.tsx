@@ -1,4 +1,5 @@
 import { configureApiClient } from "@repo/api-client";
+import { AppFrameProvider } from "@repo/ui/components/app-frame";
 import { Toaster } from "@repo/ui/components/toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
@@ -14,6 +15,9 @@ import { messages } from "@/i18n/messages";
  * no ordinary process may listen below 1024. Fetch does not block the port.
  */
 export const origin = "https://127.0.0.1:47";
+
+/** The web app's origin of the frame (`WEB_APP_URL`): an organisation's address starts with its host. */
+export const webAppUrl = "https://app.starter.example";
 
 /**
  * Renders a screen with the providers of the root layout and its toasts, in a language of the contract. nuqs reads and writes
@@ -34,7 +38,11 @@ export function renderWithProviders(
       timeZone="Europe/Dublin"
     >
       <QueryClientProvider client={queryClient}>
-        <NuqsAdapter>{ui}</NuqsAdapter>
+        <AppFrameProvider
+          value={{ environment: { kind: "production" }, webAppUrl }}
+        >
+          <NuqsAdapter>{ui}</NuqsAdapter>
+        </AppFrameProvider>
       </QueryClientProvider>
       <Toaster dir="ltr" closeLabel="Close" regionLabel="Notifications" />
     </NextIntlClientProvider>,

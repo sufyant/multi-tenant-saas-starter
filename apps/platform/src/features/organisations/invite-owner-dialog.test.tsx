@@ -40,7 +40,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const open = () =>
-  openAction(liffey, "Invite Owner", "Invite Owner for Liffey Design");
+  openAction(liffey, "Invite Owner", "Invite an Owner");
 
 type Call = { key: string | null; body: unknown };
 
@@ -86,7 +86,7 @@ const typeEmail = async (
   dialog: Awaited<ReturnType<typeof open>>,
   email: string,
 ) => {
-  const field = dialog.getByRole("textbox", { name: "Email" });
+  const field = dialog.getByRole("textbox", { name: "Owner’s email" });
   await userEvent.clear(field);
   await userEvent.type(field, email);
 };
@@ -97,12 +97,12 @@ describe("InviteOwnerDialog", () => {
 
     const dialog = await open();
 
-    expect(dialog.getByRole("textbox", { name: "Email" })).toHaveValue(
+    expect(dialog.getByRole("textbox", { name: "Owner’s email" })).toHaveValue(
       "niamh@liffeydesign.example",
     );
     expect(
       dialog.getByText(
-        "The last invited address. Change it to invite someone else.",
+        "We send a new invitation to this address. A link sent before stops working.",
       ),
     ).toBeVisible();
     expect(dialog.getByText("Türkçe")).toBeVisible();

@@ -16,7 +16,6 @@ import {
 } from "vitest";
 import {
   atlas,
-  burren,
   corrib,
   kestrel,
   liffey,
@@ -58,6 +57,8 @@ const menuOf = async (name: string) => {
   );
 };
 
+const counts = { active: 7, suspended: 1, closed: 1, purging: 1, purged: 1 };
+
 describe("OrganisationsPage", () => {
   it("OrganisationsPage_EachStatus_ShowsItsWord", async () => {
     server.use(meAnswer(), listAnswer());
@@ -77,73 +78,60 @@ describe("OrganisationsPage", () => {
     expect((await rowOf("Corrib Press")).getByText("Deleted")).toBeVisible();
   });
 
-  it.each([
-    ["en", "Organisations", "Created", "3 Mar 2026"],
-    ["tr", "Kuruluşlar", "Oluşturulma", "3 Mar 2026"],
-    ["ar", "المؤسسات", "تاريخ الإنشاء", "3 مارس 2026"],
-  ] as const)(
-    "OrganisationsPage_CreatedIn%s_ShowsTheDateInItsColumn",
-    async (locale, label, header, date) => {
-      server.use(meAnswer(), listAnswer(pageOf([northwind, corrib])));
-
-      renderWithProviders(<OrganisationsPage />, locale);
-
-      const list = within(await screen.findByRole("table", { name: label }));
-      const cell = await list.findByText(date);
-      expect(cell.closest("tr")).toHaveTextContent("Northwind Traders");
-      expect(
-        list.getAllByRole("columnheader").map((column) => column.textContent),
-      ).toContain(header);
-    },
-  );
-
-  it("OrganisationsPage_Created_ShowsTheTombstonesDate", async () => {
-    server.use(meAnswer(), listAnswer(pageOf([corrib])));
-
-    renderWithProviders(<OrganisationsPage />);
-
-    expect((await rowOf("Corrib Press")).getByText("4 Nov 2025")).toBeVisible();
-  });
-
-  it("OrganisationsPage_CreatedHeader_DoesNotSort", async () => {
+  it("OrganisationsPage_Table_HasTheFramesColumns", async () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind])));
-
-    renderWithProviders(<OrganisationsPage />);
-
-    const header = (await table()).getByRole("columnheader", {
-      name: "Created",
-    });
-    expect(within(header).queryByRole("button")).toBeNull();
-  });
-
-  it("OrganisationsPage_PhoneCard_LeavesTheCreatedDateOut", async () => {
-    server.use(meAnswer(), listAnswer(pageOf([northwind])));
-
-    renderWithProviders(<OrganisationsPage />);
-    await table();
-
-    const card = within(
-      screen.getByRole("list", { name: "Organisations" }),
-    ).getByRole("listitem");
-    expect(card).toHaveTextContent("Northwind Traders");
-    expect(card).not.toHaveTextContent("3 Mar 2026");
-  });
-
-  it("OrganisationsPage_Closed_CountsTheDaysFromReopenableUntil", async () => {
-    server.use(meAnswer(), listAnswer(pageOf([kestrel])));
 
     renderWithProviders(<OrganisationsPage />);
 
     expect(
-      (await rowOf("Kestrel Labs")).getByText("Deleted in 3 days"),
+      (await table())
+        .getAllByRole("columnheader")
+        .map((column) => column.textContent)
+        .slice(0, 4),
+    ).toEqual(["Name", "Status", "Address", "Members"]);
+  });
+
+  it("OrganisationsPage_Row_ShowsTheAddressAndTheMembersWithTheInvited", async () => {
+    server.use(
+      meAnswer(),
+      listAnswer(
+        pageOf([
+          { ...northwind, memberCount: 10, pendingInvitationCount: 2 },
+          { ...liffey, pendingInvitationCount: 1 },
+          { ...shannon, memberCount: 24, pendingInvitationCount: 0 },
+        ]),
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+
+    const row = await rowOf("Northwind Traders");
+    expect(row.getByText("northwind")).toBeVisible();
+    expect(row.getByText("10 members · 2 invited")).toBeVisible();
+    expect(
+      (await rowOf("Liffey Design")).getByText("No members yet · 1 invited"),
     ).toBeVisible();
+    expect((await rowOf("Shannon Studio")).getByText("24 members")).toBeVisible();
+  });
+
+  it("OrganisationsPage_PhoneCard_ShowsThePlanAndTheMembers", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([northwind, liffey])));
+
+    renderWithProviders(<OrganisationsPage />);
+    await table();
+
+    const cards = within(
+      screen.getByRole("list", { name: "Organisations" }),
+    ).getAllByRole("listitem");
+    expect(cards[0]).toHaveTextContent("Team · 7 members");
+    expect(cards[1]).toHaveTextContent("Team · waiting for Owner");
   });
 
   it.each([
     ["Moyne Gallery", moyne],
     ["Corrib Press", corrib],
   ])(
-    "OrganisationsPage_%s_HasNoMenuAndNoCounts",
+    "OrganisationsPage_%s_HasNoMenuAndNoCount",
     async (name, organisation) => {
       server.use(meAnswer(), listAnswer(pageOf([organisation])));
 
@@ -153,42 +141,9 @@ describe("OrganisationsPage", () => {
       expect(
         row.queryByRole("button", { name: `Actions for ${name}` }),
       ).toBeNull();
-      expect(row.getAllByText("—")).toHaveLength(2);
+      expect(row.getByText("—")).toBeVisible();
     },
   );
-
-  it("OrganisationsPage_OwnerColumn_CountsTheOwners", async () => {
-    server.use(meAnswer(), listAnswer(pageOf([northwind, shannon])));
-
-    renderWithProviders(<OrganisationsPage />);
-
-    expect(
-      (await rowOf("Northwind Traders")).getByText("1 Owner"),
-    ).toBeVisible();
-    expect((await rowOf("Shannon Studio")).getByText("3 Owners")).toBeVisible();
-  });
-
-  it("OrganisationsPage_NoOwnerAndAPendingInvitation_ShowsItsEmailAndExpiry", async () => {
-    server.use(meAnswer(), listAnswer(pageOf([liffey])));
-
-    renderWithProviders(<OrganisationsPage />);
-
-    const row = await rowOf("Liffey Design");
-    expect(row.getByText("Waiting for Owner")).toBeVisible();
-    expect(row.getByText("niamh@liffeydesign.example")).toBeVisible();
-    expect(row.getByText("in 7 days")).toBeVisible();
-  });
-
-  it("OrganisationsPage_NoOwnerAndAnExpiredInvitation_SaysItExpired", async () => {
-    server.use(meAnswer(), listAnswer(pageOf([burren])));
-
-    renderWithProviders(<OrganisationsPage />);
-
-    const row = await rowOf("Burren Supply");
-    expect(row.getByText("Waiting for Owner")).toBeVisible();
-    expect(row.getByText("Invitation expired")).toBeVisible();
-    expect(row.queryByText("orla@burren.example")).toBeNull();
-  });
 
   it("OrganisationsPage_ActiveWithAnOwner_OffersRenameSuspendClose", async () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind])));
@@ -235,51 +190,91 @@ describe("OrganisationsPage", () => {
     expect(await menuOf("Kestrel Labs")).toEqual(["Reopen"]);
   });
 
-  it("OrganisationsPage_AllTab_ListsBeingDeletedWithoutAStatusFilter", async () => {
+  it("OrganisationsPage_Tabs_CountFromTheStatusCounts", async () => {
+    server.use(
+      meAnswer(),
+      listAnswer(pageOf([northwind], { statusCounts: counts })),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(
+        ["All 10", "Active 7", "Suspended 1", "Closed 2", "Deleted 1"],
+      ),
+    );
+  });
+
+  it("OrganisationsPage_AllTab_AsksEveryStatusButDeleted", async () => {
     const requests: URLSearchParams[] = [];
     server.use(meAnswer(), listAnswer(pageOf([kestrel, moyne]), requests));
 
     renderWithProviders(<OrganisationsPage />);
 
     expect(await rowOf("Moyne Gallery")).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: /^All/ })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    expect(requests.map((request) => request.get("status"))).toEqual([null]);
+    expect(requests[0]?.getAll("status")).toEqual([
+      TenantResponseStatus.Active,
+      TenantResponseStatus.Suspended,
+      TenantResponseStatus.Closed,
+      TenantResponseStatus.Purging,
+    ]);
   });
 
   it.each([
-    ["Active", TenantResponseStatus.Active],
-    ["Suspended", TenantResponseStatus.Suspended],
-    ["Closed", TenantResponseStatus.Closed],
-    ["Deleted", TenantResponseStatus.Purged],
+    ["Active", "active", [TenantResponseStatus.Active]],
+    ["Suspended", "suspended", [TenantResponseStatus.Suspended]],
+    [
+      "Closed",
+      "closed",
+      [TenantResponseStatus.Closed, TenantResponseStatus.Purging],
+    ],
+    ["Deleted", "purged", [TenantResponseStatus.Purged]],
   ])(
-    "OrganisationsPage_%sTab_FiltersByItsStatusInTheUrl",
-    async (tab, status) => {
+    "OrganisationsPage_%sTab_FiltersByItsStatusesInTheUrl",
+    async (tab, inUrl, statuses) => {
       const requests: URLSearchParams[] = [];
       server.use(meAnswer(), listAnswer(pageOf([northwind]), requests));
 
       renderWithProviders(<OrganisationsPage />);
-      await userEvent.click(await screen.findByRole("tab", { name: tab }));
+      await userEvent.click(
+        await screen.findByRole("tab", { name: new RegExp(`^${tab}`) }),
+      );
 
-      await waitFor(() => expect(requests.at(-1)?.get("status")).toBe(status));
+      await waitFor(() =>
+        expect(requests.at(-1)?.getAll("status")).toEqual(statuses),
+      );
       await waitFor(() =>
         expect(new URLSearchParams(window.location.search).get("status")).toBe(
-          status,
+          inUrl,
         ),
       );
     },
   );
 
-  it("OrganisationsPage_NoTabForBeingDeleted", async () => {
-    server.use(meAnswer(), listAnswer());
+  it("OrganisationsPage_StatusChoice_FiltersAsTheTabsDo", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(pageOf([northwind], { statusCounts: counts }), requests),
+    );
 
     renderWithProviders(<OrganisationsPage />);
+    await userEvent.click(
+      await screen.findByRole("combobox", { name: "Filter by status" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Suspended · 1" }),
+    );
 
-    expect(
-      (await screen.findAllByRole("tab")).map((tab) => tab.textContent),
-    ).toEqual(["All", "Active", "Suspended", "Closed", "Deleted"]);
+    await waitFor(() =>
+      expect(requests.at(-1)?.getAll("status")).toEqual([
+        TenantResponseStatus.Suspended,
+      ]),
+    );
   });
 
   it("OrganisationsPage_Search_SendsQAndKeepsItInTheUrl", async () => {
@@ -288,7 +283,9 @@ describe("OrganisationsPage", () => {
 
     renderWithProviders(<OrganisationsPage />);
     await userEvent.type(
-      await screen.findByRole("searchbox", { name: "Search by name or slug" }),
+      await screen.findByRole("searchbox", {
+        name: "Search by name or address",
+      }),
       "north",
     );
 
@@ -309,13 +306,12 @@ describe("OrganisationsPage", () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind]), requests));
 
     renderWithProviders(<OrganisationsPage />);
-    const sortButton = (await table()).getByRole("button", {
-      name: "Organisation",
-    });
-    await userEvent.click(sortButton);
+    await userEvent.click(
+      (await table()).getByRole("button", { name: "Name" }),
+    );
     await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("name"));
     await userEvent.click(
-      (await table()).getByRole("button", { name: "Organisation" }),
+      (await table()).getByRole("button", { name: "Name" }),
     );
 
     await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("-name"));
@@ -336,24 +332,54 @@ describe("OrganisationsPage", () => {
     await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("slug"));
   });
 
-  it("OrganisationsPage_NextPage_PutsThePageInTheUrl", async () => {
-    const requests: URLSearchParams[] = [];
+  it("OrganisationsPage_MoreThanOnePage_LoadMoreAddsTheNextPageAndKeepsNoPageInTheUrl", async () => {
+    const pages: (string | null)[] = [];
     server.use(
       meAnswer(),
-      listAnswer(pageOf([northwind], { total: 41 }), requests),
+      http.get("*/v1/platform/tenants", ({ request }) => {
+        const page = new URL(request.url).searchParams.get("page");
+        pages.push(page);
+        return HttpResponse.json(
+          page === "2"
+            ? pageOf([atlas], { page: 2, total: 2, pageSize: 1 })
+            : pageOf([northwind], { total: 2, pageSize: 1 }),
+        );
+      }),
     );
 
     renderWithProviders(<OrganisationsPage />);
     await userEvent.click(
-      (
-        await screen.findAllByRole("button", { name: "Next" })
-      )[0] as HTMLElement,
+      await screen.findByRole("button", { name: "Load more" }),
     );
 
-    await waitFor(() => expect(requests.at(-1)?.get("page")).toBe("2"));
-    await waitFor(() =>
-      expect(new URLSearchParams(window.location.search).get("page")).toBe("2"),
+    expect(await rowOf("Atlas Logistics")).toBeTruthy();
+    expect(await rowOf("Northwind Traders")).toBeTruthy();
+    expect(screen.getByText("1 more organisation loaded.")).toHaveAttribute(
+      "aria-live",
+      "polite",
     );
+    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    expect(pages).toEqual(["1", "2"]);
+    expect(new URLSearchParams(window.location.search).get("page")).toBeNull();
+  });
+
+  it("OrganisationsPage_LoadMoreFails_SaysSoAndKeepsTheRows", async () => {
+    server.use(
+      meAnswer(),
+      http.get("*/v1/platform/tenants", ({ request }) =>
+        new URL(request.url).searchParams.get("page") === "2"
+          ? problem(500, ErrorCode.ServerError)
+          : HttpResponse.json(pageOf([northwind], { total: 2, pageSize: 1 })),
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    await expectVisibleToast("Couldn’t load more organisations");
+    expect(await rowOf("Northwind Traders")).toBeTruthy();
   });
 
   it("OrganisationsPage_BackAfterATab_RestoresTheList", async () => {
@@ -361,13 +387,15 @@ describe("OrganisationsPage", () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind]), requests));
 
     renderWithProviders(<OrganisationsPage />);
-    await userEvent.click(await screen.findByRole("tab", { name: "Closed" }));
+    await userEvent.click(
+      await screen.findByRole("tab", { name: /^Closed/ }),
+    );
     // nuqs writes the address after its throttle; back() goes to the entry before it only once it is there.
     await waitFor(() => expect(window.location.search).toBe("?status=closed"));
     window.history.back();
 
     await waitFor(() =>
-      expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute(
+      expect(screen.getByRole("tab", { name: /^All/ })).toHaveAttribute(
         "aria-selected",
         "true",
       ),
@@ -401,9 +429,7 @@ describe("OrganisationsPage", () => {
       }),
     );
     await userEvent.type(dialog.getByRole("textbox", { name: "Name" }), " Ltd");
-    await userEvent.click(
-      dialog.getByRole("button", { name: "Rename organisation" }),
-    );
+    await userEvent.click(dialog.getByRole("button", { name: "Rename" }));
 
     await expectVisibleToast(sentence("Renamed to Northwind Traders Ltd."));
     await waitFor(() => expect(requests).toHaveLength(2));
@@ -425,19 +451,50 @@ describe("OrganisationsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("OrganisationsPage_FirstRun_OffersCreateOrganisation", async () => {
+  it("OrganisationsPage_Header_HasTheIntroAndNoFreshness", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([northwind])));
+
+    renderWithProviders(<OrganisationsPage />);
+    await table();
+
+    expect(screen.getByText("Every organisation on Starter.")).toBeVisible();
+    expect(screen.queryByText(/^Updated/)).toBeNull();
+  });
+
+  it("OrganisationsPage_FirstRun_OffersCreateOrganisationTwice", async () => {
     server.use(meAnswer(), listAnswer(pageOf([])));
 
     renderWithProviders(<OrganisationsPage />);
 
     expect(await screen.findByText("No organisations yet")).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Create organisation" }),
+      screen.getByText(
+        "Create the first one. Its Owner gets an invitation by email.",
+      ),
     ).toBeVisible();
+    expect(
+      screen.getAllByRole("button", { name: "Create organisation" }),
+    ).toHaveLength(2);
     expect(screen.queryByRole("tab")).toBeNull();
   });
 
-  it("OrganisationsPage_FilteredEmpty_SaysSoAndClears", async () => {
+  it("OrganisationsPage_NoMatchForTheSearch_SaysSoAndClearsTheSearch", async () => {
+    window.history.replaceState(null, "", "/?q=harbor");
+    server.use(meAnswer(), listAnswer(pageOf([])));
+
+    renderWithProviders(<OrganisationsPage />);
+    expect(
+      await screen.findByText("No organisation matches “harbor”"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Check the spelling, or search by address."),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Clear search" }));
+
+    await waitFor(() => expect(window.location.search).toBe(""));
+  });
+
+  it("OrganisationsPage_EmptyTab_SaysSoAndClears", async () => {
     window.history.replaceState(null, "", "/?status=closed");
     server.use(meAnswer(), listAnswer(pageOf([])));
 

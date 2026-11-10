@@ -70,7 +70,7 @@ describe("CloseDialog", () => {
     const dialog = await open();
     expect(
       dialog.getByText(
-        "Its 9 members lose access at once. Pending invitations are cancelled. You can reopen it for a limited time. After that it is deleted with all its data.",
+        "Its 9 members lose access at once. You can reopen it for a limited time; after that, it is deleted with all its data. The Activity log keeps its entries.",
       ),
     ).toBeVisible();
     const button = dialog.getByRole("button", { name: "Close organisation" });
