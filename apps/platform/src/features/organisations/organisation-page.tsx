@@ -43,6 +43,7 @@ import {
   waitingInvitation,
   waitsForOwner,
 } from "./organisation";
+import { usePersonName } from "./person-name";
 import { PlanSection } from "./plan-section";
 import { useOrganisationActions } from "./use-organisation-actions";
 import { ViewChoice } from "./view-choice";
@@ -82,13 +83,6 @@ function Loading() {
   return <Skeleton rows={4} label={t("loading")} />;
 }
 
-/** A person's name in a sentence: "Deleted user" once the account is deleted (F60). */
-function useNameOf() {
-  const t = useTranslations("activity");
-  return (person: UserNameResponse) =>
-    person.deleted ? t("deletedUser") : (nameOf(person) ?? t("unnamedUser"));
-}
-
 function Organisation({
   organisation,
 }: {
@@ -96,7 +90,7 @@ function Organisation({
 }) {
   const t = useTranslations();
   const { date } = useDates();
-  const personName = useNameOf();
+  const personName = usePersonName();
   const actions = useOrganisationActions();
   const address = useOrganisationAddress(organisation.slug);
   const { name, status } = organisation;
@@ -306,7 +300,7 @@ function Row({
           : "flex flex-col gap-0.5 tablet:flex-row tablet:items-center tablet:gap-6 tablet:px-5 tablet:py-3"
       }
     >
-      <dt className="text-small text-muted-foreground tablet:w-54 tablet:shrink-0">
+      <dt className="text-small text-muted-foreground tablet:w-48 tablet:shrink-0">
         {term}
       </dt>
       <dd className="flex min-w-0 flex-col gap-0.5 text-body">{children}</dd>
@@ -328,7 +322,7 @@ function Overview({
 }) {
   const t = useTranslations();
   const { date, dateTime } = useDates();
-  const personName = useNameOf();
+  const personName = usePersonName();
   const membersText = useMembersText();
   const plan = useQuery(getGetTenantPlanQueryOptions(organisation.id));
   const gone = isGone(organisation);

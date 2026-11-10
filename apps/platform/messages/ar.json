@@ -76,7 +76,6 @@
     "members": "الأعضاء",
     "status": "الحالة",
     "ownerCount": "{count, plural, one {مالك واحد} two {مالكان} few {# مالكين} many {# مالكًا} other {# مالك}}",
-    "waitingForOwner": "بانتظار المالك",
     "noOwner": "لا يوجد",
     "statusActive": "نشطة",
     "statusSuspended": "موقوفة",

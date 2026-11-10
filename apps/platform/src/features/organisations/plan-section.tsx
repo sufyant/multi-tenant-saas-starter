@@ -17,14 +17,14 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId, useState } from "react";
-import { useEntitlementText } from "@/shared/entitlements";
+import { entitlementAreas, useEntitlementText } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
-import { nameOf } from "@/shared/name-of";
 import { leaveOf } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import { ChangePlanDialog } from "./change-plan-dialog";
 import { useMembersText } from "./members-text";
 import { OverrideDialog } from "./override-dialog";
+import { usePersonName } from "./person-name";
 import { RemoveOverrideDialog } from "./remove-override-dialog";
 
 /** How far over its limit the organisation is: its count less the value that applies, for a limit with a number. */
@@ -63,10 +63,7 @@ export function PlanSection({
     organisation.status === TenantResponseStatus.Closed ||
     organisation.status === TenantResponseStatus.Purging;
   const name = organisation.name;
-  const personName = (person: { name: string | null; deleted: boolean }) =>
-    person.deleted
-      ? t("activity.deletedUser")
-      : (nameOf(person) ?? t("activity.unnamedUser"));
+  const personName = usePersonName();
 
   /** The value that applies: a limit with a number says how much of it the organisation uses. */
   const applies = (row: TenantEntitlementResponse) =>
@@ -127,7 +124,16 @@ export function PlanSection({
           onRetry={() => void plan.refetch()}
         />
       );
-    const { entitlements: rows, plan: current } = plan.data;
+    const { plan: current } = plan.data;
+    // The keys in the frames' order of areas (4.14, 6.04): the seats, then the roles; a key the list does not know comes last.
+    const order = entitlementAreas().flatMap(({ keys }) =>
+      keys.map(({ key }) => key),
+    );
+    const place = (key: string) =>
+      order.includes(key) ? order.indexOf(key) : order.length;
+    const rows = [...plan.data.entitlements].sort(
+      (one, other) => place(one.key) - place(other.key),
+    );
     return (
       <>
         {!readOnly && rows.some((row) => overBy(row) > 0) && (
@@ -263,7 +269,7 @@ function Row({
     >
       <span
         id={labelId}
-        className="text-small text-muted-foreground tablet:w-54 tablet:shrink-0"
+        className="text-small text-muted-foreground tablet:w-48 tablet:shrink-0"
       >
         {label}
       </span>

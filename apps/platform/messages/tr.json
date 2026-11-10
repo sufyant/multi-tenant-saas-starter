@@ -76,7 +76,6 @@
     "members": "Üyeler",
     "status": "Durum",
     "ownerCount": "{count, plural, other {# Sahip}}",
-    "waitingForOwner": "Sahip bekleniyor",
     "noOwner": "Yok",
     "statusActive": "Etkin",
     "statusSuspended": "Askıya alındı",

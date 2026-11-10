@@ -109,6 +109,17 @@ describe("PlanSection", () => {
     expect(screen.queryByText(/is over a limit/)).toBeNull();
   });
 
+  it("Section_Keys_FollowTheAreasOfTheFrames", async () => {
+    await renderSection();
+
+    expect(
+      screen
+        .getAllByRole("group")
+        .map((group) => group.getAttribute("aria-labelledby"))
+        .map((id) => document.getElementById(id ?? "")?.textContent),
+    ).toEqual(["Plan", "Seats", "Custom roles", "Custom roles limit"]);
+  });
+
   it("Section_LimitedSeats_SaysTheSeatsInTheMembersSentence", async () => {
     await renderSection(
       detailOf(burren, {

@@ -1185,7 +1185,8 @@ const shellShots: {
       const dialog = page.getByRole("alertdialog");
       await dialog.getByRole("combobox", { name: "New plan" }).click();
       await page.getByRole("option", { name: /^Free/ }).click();
-      await dialog.getByRole("button", { name: "Change to Free" }).waitFor();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await dialog.getByText("Here is what changes:").waitFor();
     },
   },
   {
@@ -1257,7 +1258,22 @@ const shellShots: {
     file: "4.22-close-organisation-en-light-desktop",
     size: "desktop",
     path: pathOf(frameOrganisations.fernwood),
-    mock: (page) => mockFrameOrganisations(page),
+    // Fernwood before its closing: active, as the dialog of 4.22 finds it.
+    mock: async (page) => {
+      await mockFrameOrganisations(page);
+      const { plan: _, ...fernwood } = frameOrganisations.fernwood;
+      await page.route(`**/api/v1/platform/tenants/${fernwood.id}`, (route) =>
+        route.fulfill({
+          json: {
+            ...fernwood,
+            status: "active",
+            closedAt: null,
+            closedBy: null,
+            reopenableUntil: null,
+          },
+        }),
+      );
+    },
     open: async (page) => {
       await chooseAction("Fernwood Studio", "Close organisation")(page);
       await page

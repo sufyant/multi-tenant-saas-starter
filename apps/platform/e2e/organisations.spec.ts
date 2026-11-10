@@ -33,8 +33,11 @@ test("Organisations_List_ShowsEachStatus", async ({ page }) => {
   await expect(row(page, "Atlas Logistics")).toContainText("1 member");
   await expect(row(page, "Shannon Studio")).toContainText("Suspended");
   await expect(row(page, "Kestrel Labs")).toContainText("Closed");
-  await expect(row(page, "Liffey Design")).toContainText("Deleted");
+  // All holds every status but deleted; the Deleted tab holds Liffey (4.01).
   await expect(page.getByRole("tab", { name: "All 4" })).toBeVisible();
+  await expect(row(page, "Liffey Design")).toBeHidden();
+  await page.getByRole("tab", { name: "Deleted 1" }).click();
+  await expect(row(page, "Liffey Design")).toContainText("Deleted");
   await expectAccessible(page);
 });
 

@@ -203,7 +203,8 @@ export function OrganisationsPage() {
         {create}
       </div>
       {!firstRun && (
-        <>
+        // On a phone the search comes before the status choice (4.43).
+        <div className="flex flex-col gap-4 max-tablet:flex-col-reverse">
           <ViewChoice
             label={t("organisations.tabs")}
             current={status ?? all}
@@ -231,7 +232,7 @@ export function OrganisationsPage() {
             maxLength={schemas.listTenantsQueryQMax}
             onSearch={onSearch}
           />
-        </>
+        </div>
       )}
       {body}
       {creating && (

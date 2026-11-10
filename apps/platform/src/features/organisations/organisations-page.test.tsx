@@ -59,6 +59,19 @@ const menuOf = async (name: string) => {
 
 const counts = { active: 7, suspended: 1, closed: 1, purging: 1, purged: 1 };
 
+/** Two pages of one organisation each, by the page asked. */
+const twoPages = {
+  "1": pageOf([northwind], { total: 2, pageSize: 1 }),
+  "2": pageOf([atlas], { page: 2, total: 2, pageSize: 1 }),
+};
+type PageAsked = keyof typeof twoPages;
+
+/** The first page, then a failure of the second. */
+const secondPageFails: Record<PageAsked, () => Response> = {
+  "1": () => HttpResponse.json(pageOf([northwind], { total: 2, pageSize: 1 })),
+  "2": () => problem(500, ErrorCode.ServerError),
+};
+
 describe("OrganisationsPage", () => {
   it("OrganisationsPage_EachStatus_ShowsItsWord", async () => {
     server.use(meAnswer(), listAnswer());
@@ -336,17 +349,13 @@ describe("OrganisationsPage", () => {
   });
 
   it("OrganisationsPage_MoreThanOnePage_LoadMoreAddsTheNextPageAndKeepsNoPageInTheUrl", async () => {
-    const pages: (string | null)[] = [];
+    const pages: string[] = [];
     server.use(
       meAnswer(),
       http.get("*/v1/platform/tenants", ({ request }) => {
-        const page = new URL(request.url).searchParams.get("page");
+        const page = new URL(request.url).searchParams.get("page") as PageAsked;
         pages.push(page);
-        return HttpResponse.json(
-          page === "2"
-            ? pageOf([atlas], { page: 2, total: 2, pageSize: 1 })
-            : pageOf([northwind], { total: 2, pageSize: 1 }),
-        );
+        return HttpResponse.json(twoPages[page]);
       }),
     );
 
@@ -370,9 +379,9 @@ describe("OrganisationsPage", () => {
     server.use(
       meAnswer(),
       http.get("*/v1/platform/tenants", ({ request }) =>
-        new URL(request.url).searchParams.get("page") === "2"
-          ? problem(500, ErrorCode.ServerError)
-          : HttpResponse.json(pageOf([northwind], { total: 2, pageSize: 1 })),
+        secondPageFails[
+          new URL(request.url).searchParams.get("page") as PageAsked
+        ](),
       ),
     );
 

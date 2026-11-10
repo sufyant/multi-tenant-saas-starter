@@ -76,7 +76,6 @@
     "members": "Members",
     "status": "Status",
     "ownerCount": "{count, plural, one {# Owner} other {# Owners}}",
-    "waitingForOwner": "Waiting for Owner",
     "noOwner": "None",
     "statusActive": "Active",
     "statusSuspended": "Suspended",
