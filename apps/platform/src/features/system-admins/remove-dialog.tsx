@@ -32,9 +32,12 @@ import {
 export function RemoveDialog({
   user,
   onClose,
+  onRemoved,
 }: {
   user: UserResponse;
   onClose: () => void;
+  /** What follows a removal beyond the toast: the admin's own page has nothing left to show, so it leaves for the list. */
+  onRemoved?: () => void;
 }) {
   const t = useTranslations("systemAdmins");
   const users = useTranslations("users");
@@ -59,6 +62,7 @@ export function RemoveDialog({
     revoke.mutate(undefined, {
       onSuccess: () => {
         onClose();
+        onRemoved?.();
         showToast({
           title: t.rich("noLongerAdmin", { name, ...isolated }),
           description: t("noLongerAdminText"),

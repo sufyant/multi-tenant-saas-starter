@@ -11,6 +11,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { BackLink } from "@/shared/back-link";
@@ -27,7 +28,7 @@ import { RootLabel } from "./system-admins-page";
  * One system admin (10.15), the page a phone card opens: Back to System admins, the name and the email, when and by whom they were
  * added, that two-step verification is required, and Remove system admin. The "by" part is left out when the API does not know it (a root's first entry, or an event before
  * 37b-backend); a deleted admin is "Deleted user". A root has no Remove and says why; the viewer's own Remove is disabled with its
- * reason (F51). A user who is no system admin has no such page.
+ * reason (F51). A user who is no system admin has no such page, so a removal leaves for the list.
  */
 export function SystemAdminPage({ userId }: { userId: string }) {
   const known = schemas.GetUserParams.shape.userId.safeParse(userId).success;
@@ -54,6 +55,7 @@ function Detail({ user }: { user: UserDetailResponse }) {
   const t = useTranslations();
   const { date } = useDates();
   const me = useQuery(getGetMeQueryOptions());
+  const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const reasonId = useId();
   const name = userNameOf(user, t("users.deletedUser"));
@@ -126,7 +128,11 @@ function Detail({ user }: { user: UserDetailResponse }) {
         </div>
       )}
       {removing && (
-        <RemoveDialog user={user} onClose={() => setRemoving(false)} />
+        <RemoveDialog
+          user={user}
+          onClose={() => setRemoving(false)}
+          onRemoved={() => router.push(systemAdminsPage)}
+        />
       )}
     </section>
   );
