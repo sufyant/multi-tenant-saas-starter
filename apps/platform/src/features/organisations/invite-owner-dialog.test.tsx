@@ -39,8 +39,7 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const open = () =>
-  openAction(liffey, "Invite Owner", "Invite an Owner");
+const open = () => openAction(liffey, "Invite Owner", "Invite an Owner");
 
 type Call = { key: string | null; body: unknown };
 

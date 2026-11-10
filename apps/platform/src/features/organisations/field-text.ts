@@ -10,11 +10,15 @@ const tooLong = (error: string) =>
 export const nameText = (error: string | undefined) =>
   error ? (tooLong(error) ? "nameTooLong" : "nameRequired") : undefined;
 
-/** The slug: a reserved one is `slug_reserved`, every other refusal of its shape `slug_invalid`; `tenant.slug_taken` comes as its own key. */
+/**
+ * The slug: a taken one (`tenant.slug_taken`, its own key) and a reserved one (`slug_reserved`) have one text (4.08); every other
+ * refusal of its shape is `slug_invalid`.
+ */
 export const slugText = (error: string | undefined) => {
   if (!error) return undefined;
-  if (error === "slugTaken") return "slugTaken";
-  return error === FieldErrorCode.SlugReserved ? "slugReserved" : "slugInvalid";
+  return error === "slugTaken" || error === FieldErrorCode.SlugReserved
+    ? "slugTaken"
+    : "slugInvalid";
 };
 
 /** An email address: missing, malformed or too long. */

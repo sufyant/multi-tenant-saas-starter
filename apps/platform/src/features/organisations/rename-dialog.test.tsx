@@ -43,9 +43,7 @@ const rename = async (
   const field = dialog.getByRole("textbox", { name: "Name" });
   await userEvent.clear(field);
   await userEvent.type(field, name);
-  await userEvent.click(
-    dialog.getByRole("button", { name: "Rename" }),
-  );
+  await userEvent.click(dialog.getByRole("button", { name: "Rename" }));
 };
 
 describe("RenameDialog", () => {

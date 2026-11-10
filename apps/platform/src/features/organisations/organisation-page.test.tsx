@@ -22,7 +22,6 @@ import {
   dateTimeOf,
   detailAnswer,
   detailOf,
-  inDays,
   kestrel,
   liffey,
   meAnswer,
@@ -37,7 +36,7 @@ import {
   plansAnswer,
   tenantPlanAnswer,
 } from "../../../test/plans";
-import { renderWithProviders, sentence } from "../../../test/render";
+import { renderWithProviders } from "../../../test/render";
 import { OrganisationPage } from "./organisation-page";
 
 vi.mock("next/navigation", () => ({
@@ -57,7 +56,7 @@ afterAll(() => server.close());
 const term = async (name: string) => {
   const terms = await screen.findAllByRole("term");
   const place = terms.findIndex((element) => element.textContent === name);
-  return screen.getAllByRole("definition")[place];
+  return screen.getAllByRole("definition")[place] as HTMLElement;
 };
 
 const deniz = { name: "Deniz Kaya", deleted: false };
@@ -109,9 +108,11 @@ describe("OrganisationPage", () => {
     expect(
       screen.getByRole("button", { name: "Actions for Northwind Traders" }),
     ).toBeVisible();
-    expect(
-      screen.getAllByRole("tab").map((tab) => tab.textContent),
-    ).toEqual(["Overview", "Plan", "Activity log"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Overview",
+      "Plan",
+      "Activity log",
+    ]);
   });
 
   it("OrganisationPage_Overview_ShowsTheAddressTheStatusAndTheOwner", async () => {
@@ -122,9 +123,7 @@ describe("OrganisationPage", () => {
     const address = within(await term("Address"));
     expect(address.getByText("app.starter.example/northwind")).toBeVisible();
     expect(address.getByText("It never changes.")).toBeVisible();
-    expect(
-      address.getByRole("button", { name: /^Copy/ }),
-    ).toBeVisible();
+    expect(address.getByRole("button", { name: /^Copy/ })).toBeVisible();
     expect(await term("Status")).toHaveTextContent("Active");
     const owner = within(await term("Owner"));
     expect(owner.getByText("Ayşe Yılmaz")).toBeVisible();
@@ -182,10 +181,7 @@ describe("OrganisationPage", () => {
   ])(
     "OrganisationPage_CreatedBy%o_SaysWhoWhenItIsKnown",
     async (createdBy, text) => {
-      server.use(
-        meAnswer(),
-        detailAnswer(detailOf(northwind, { createdBy })),
-      );
+      server.use(meAnswer(), detailAnswer(detailOf(northwind, { createdBy })));
 
       renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
 
@@ -350,9 +346,10 @@ describe("OrganisationPage", () => {
     expect(
       screen.queryByRole("button", { name: "Actions for Moyne Gallery" }),
     ).toBeNull();
-    expect(
-      screen.getAllByRole("tab").map((tab) => tab.textContent),
-    ).toEqual(["Overview", "Activity log"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Overview",
+      "Activity log",
+    ]);
     expect(await term("Owner")).toHaveTextContent("—");
     expect(await term("Members")).toHaveTextContent("—");
   });
@@ -376,9 +373,10 @@ describe("OrganisationPage", () => {
     expect(await term("Created")).toHaveTextContent("4 Nov 2025");
     expect(await term("Owner")).toHaveTextContent("—");
     expect(await term("Plan")).toHaveTextContent("Pro");
-    expect(
-      screen.getAllByRole("tab").map((tab) => tab.textContent),
-    ).toEqual(["Overview", "Activity log"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Overview",
+      "Activity log",
+    ]);
     expect(
       screen.queryByRole("button", { name: "Actions for Corrib Press" }),
     ).toBeNull();
@@ -448,7 +446,9 @@ describe("OrganisationPage", () => {
     );
     renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
 
-    await userEvent.click(await screen.findByRole("tab", { name: "Activity log" }));
+    await userEvent.click(
+      await screen.findByRole("tab", { name: "Activity log" }),
+    );
 
     expect(
       await screen.findByText(
@@ -514,7 +514,9 @@ describe("OrganisationPage", () => {
     );
     renderWithProviders(<OrganisationPage tenantId={corrib.id} />);
 
-    await userEvent.click(await screen.findByRole("tab", { name: "Activity log" }));
+    await userEvent.click(
+      await screen.findByRole("tab", { name: "Activity log" }),
+    );
 
     expect(await screen.findByRole("listitem")).toBeVisible();
     expect(requests.map((url) => url.searchParams.get("tenantId"))).toEqual([

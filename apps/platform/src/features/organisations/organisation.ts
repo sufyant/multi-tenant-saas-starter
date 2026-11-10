@@ -2,12 +2,13 @@ import {
   ErrorCode,
   getGetTenantPlanQueryKey,
   getGetTenantQueryKey,
+  getListTenantsInfiniteQueryKey,
   getListTenantsQueryKey,
   InvitationResponseState,
   type TenantListItemResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
-import type { StatusTone } from "@repo/ui/components/status";
+import type { PillTone } from "@repo/ui/components/pill";
 import type { QueryClient } from "@tanstack/react-query";
 import { afterAccountRefusal } from "@/shared/refusal";
 
@@ -22,9 +23,13 @@ export type Organisation = Pick<
   | "ownerCount"
   | "ownerInvitation"
   | "reopenableUntil"
+  | "pendingInvitationCount"
 >;
 
-/** The message key and the tone of each status (the Main board, K4). Colour is never the only signal: the word stays. */
+/**
+ * The message key and the Pill tone of each status (4.01, K4; the Pill component's description): Being deleted is Danger, Closed
+ * and Deleted are Neutral. Colour is never the only signal: the word stays.
+ */
 export const statuses = {
   [TenantResponseStatus.Active]: {
     label: "organisations.statusActive",
@@ -40,7 +45,7 @@ export const statuses = {
   },
   [TenantResponseStatus.Purging]: {
     label: "organisations.statusPurging",
-    tone: "neutral",
+    tone: "destructive",
   },
   [TenantResponseStatus.Purged]: {
     label: "organisations.statusPurged",
@@ -48,26 +53,13 @@ export const statuses = {
   },
 } as const satisfies Record<
   TenantResponseStatus,
-  { label: string; tone: StatusTone }
+  { label: string; tone: PillTone }
 >;
 
 /** A tenant whose purge has begun or ended: it takes no action, and it counts no member and no Owner (K4). */
 export const isGone = (organisation: Pick<Organisation, "status">) =>
   organisation.status === TenantResponseStatus.Purging ||
   organisation.status === TenantResponseStatus.Purged;
-
-const day = 24 * 60 * 60 * 1000;
-
-/**
- * The whole days until the deletion date the API answered (`reopenableUntil`), for "Deleted in 3 days": the nearest whole number,
- * and at least one, as the purge warning's email counts them (`flows/tenant-purge.md`, step 2). Never a fixed period.
- */
-export function daysUntil(at: string, now: Date): number {
-  return Math.max(
-    1,
-    Math.round((new Date(at).getTime() - now.getTime()) / day),
-  );
-}
 
 /** The Owner invitation that waits for its Owner: pending, or expired. A cancelled one waits for nothing. */
 export function waitingInvitation(organisation: Organisation) {
@@ -115,12 +107,21 @@ export function actionsOf(organisation: Organisation): Action[] {
   }
 }
 
+/** Every read of the list: the shell's search reads one page, the Organisations page the pages Load more added (F9). */
+export const refreshOrganisations = (queryClient: QueryClient) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: getListTenantsQueryKey() }),
+    queryClient.invalidateQueries({
+      queryKey: getListTenantsInfiniteQueryKey(),
+    }),
+  ]);
+
 /** After a command the screen reads again (F47): the organisation, its plan, and every page of the list. */
 export const refreshOrganisation = (queryClient: QueryClient, id: string) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: getGetTenantQueryKey(id) }),
     queryClient.invalidateQueries({ queryKey: getGetTenantPlanQueryKey(id) }),
-    queryClient.invalidateQueries({ queryKey: getListTenantsQueryKey() }),
+    refreshOrganisations(queryClient),
   ]);
 
 /** A refusal that says the organisation changed meanwhile: the dialog shows its text, and the screen reads again (F47). */

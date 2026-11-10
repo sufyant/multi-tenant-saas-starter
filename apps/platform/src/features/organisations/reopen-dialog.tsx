@@ -104,7 +104,11 @@ export function ReopenDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("reopenTitle", { name, ...isolated })}
-      description={t("reopenText", { count })}
+      description={
+        reopenableUntil
+          ? t("reopenText", { count, date: date(reopenableUntil) })
+          : t("reopenTextNoDate", { count })
+      }
       actionLabel={t("reopenAction")}
       cancelLabel={common("cancel")}
       pending={reopen.isPending}

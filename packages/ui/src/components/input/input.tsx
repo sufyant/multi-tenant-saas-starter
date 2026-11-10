@@ -15,16 +15,22 @@ export type InputProps = Omit<React.ComponentProps<"input">, "size"> & {
   error?: ReactNode;
   /** A read-only value with a lock; the reason shows on hover and focus: "Used in links. It can't be changed." */
   lockedReason?: string;
+  /** Muted text before the field on its line, which the value continues: the host of an address, "app.starter.example/". */
+  addon?: ReactNode;
 };
 
 const leftToRight = new Set(["email", "url", "tel"]);
 
-/** A text field with a visible label, optional help and an error (the Input README). Email, URL and ID stay left to right. */
+/**
+ * A text field with a visible label, optional help and an error (the Input README), and an optional addon before it. Email, URL and
+ * ID stay left to right.
+ */
 export function Input({
   label,
   hint,
   error,
   lockedReason,
+  addon,
   id,
   type = "text",
   className,
@@ -40,7 +46,17 @@ export function Input({
       <label htmlFor={inputId} className="text-body font-medium">
         {label}
       </label>
-      <div className="relative">
+      <div
+        className={cn(
+          "relative",
+          addon !== undefined && "flex items-center gap-2",
+        )}
+      >
+        {addon !== undefined && (
+          <span className="shrink-0 text-body text-muted-foreground">
+            {addon}
+          </span>
+        )}
         <InputBase
           id={inputId}
           type={type}

@@ -107,14 +107,11 @@ test("PlanEditor_LowerALimit_ShowsTheImpactAndSavesAnyway", async ({
 test("Organisation_PlanSection_ShowsThePlanAndTheOverride", async ({
   page,
 }) => {
-  await open(page, `/organisations/${organisations.northwind.id}`);
+  await open(page, `/organisations/${organisations.northwind.id}?tab=plan`);
 
-  await expect(
-    page.getByRole("heading", { level: 2, name: "Plan" }),
-  ).toBeVisible();
-  const table = page.getByRole("table", { name: "Plan" });
-  await expect(table).toContainText("Custom roles limit");
-  await expect(table).toContainText("Set by Sam Kelly");
+  const limit = page.getByRole("group", { name: "Custom roles limit" });
+  await expect(limit).toContainText("4 of 25");
+  await expect(limit).toContainText("by Sam Kelly");
   await expect(page.getByRole("button", { name: "Change plan" })).toBeVisible();
   await expectAccessible(page);
 });
@@ -122,20 +119,19 @@ test("Organisation_PlanSection_ShowsThePlanAndTheOverride", async ({
 test("Organisation_AddOverride_SavesIt", async ({ page }) => {
   const bodies: unknown[] = [];
   const { northwind } = organisations;
-  await open(page, `/organisations/${northwind.id}`);
+  await open(page, `/organisations/${northwind.id}?tab=plan`);
   await mockOverride(page, northwind.id, bodies);
 
-  await page.getByRole("button", { name: "Actions for Seats" }).click();
-  await page.getByRole("menuitem", { name: "Add override" }).click();
-  const dialog = page.getByRole("alertdialog", {
-    name: "Add an override for Northwind Traders",
-  });
+  await page.getByRole("button", { name: "Add override" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "Add an override" });
   await expect(dialog).toBeVisible();
+  await dialog.getByRole("combobox", { name: "Feature or limit" }).click();
+  await page.getByRole("option", { name: "Seats" }).click();
   await expectAccessible(page);
   await dialog.getByRole("checkbox", { name: "Unlimited" }).click();
   await dialog.getByRole("spinbutton", { name: "Value" }).fill("40");
   await dialog.getByRole("textbox", { name: "Reason" }).fill("Trial");
-  await dialog.getByRole("button", { name: "Save override" }).click();
+  await dialog.getByRole("button", { name: "Add override" }).click();
 
   await expect(dialog).toBeHidden();
   expect(bodies).toEqual([

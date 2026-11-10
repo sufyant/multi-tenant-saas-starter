@@ -196,7 +196,7 @@ export const created = tenant(
   },
 );
 
-const listItem = ({
+export const listItem = ({
   owners: _,
   purgeWarningAt: __,
   createdBy: ___,
@@ -391,6 +391,44 @@ export const platformLog: (AuditEntryResponse & { tenantId: string | null })[] =
     },
   ];
 
+/**
+ * ListTenants over a list of organisations, as the API answers it: the statuses asked, the search over the name and the address,
+ * and the count of each status over the search alone (`statusCounts`).
+ */
+export const tenantsPage = (
+  all: TenantListItemResponse[],
+  params: URLSearchParams,
+) => {
+  const statuses = params.getAll("status");
+  const q = params.get("q")?.toLocaleLowerCase("en");
+  const found = all.filter(
+    (organisation) =>
+      !q ||
+      [organisation.name, organisation.slug].some((text) =>
+        text.toLocaleLowerCase("en").includes(q),
+      ),
+  );
+  const items = found.filter(
+    (organisation) =>
+      statuses.length === 0 || statuses.includes(organisation.status),
+  );
+  const count = (status: TenantResponseStatus) =>
+    found.filter((organisation) => organisation.status === status).length;
+  return {
+    items,
+    page: 1,
+    pageSize: 50,
+    total: items.length,
+    statusCounts: {
+      active: count(TenantResponseStatus.Active),
+      suspended: count(TenantResponseStatus.Suspended),
+      closed: count(TenantResponseStatus.Closed),
+      purging: count(TenantResponseStatus.Purging),
+      purged: count(TenantResponseStatus.Purged),
+    },
+  };
+};
+
 /** What the platform's pages read: GetMe, the organisations, the users and the platform's log. */
 export async function mockPlatform(
   page: Page,
@@ -398,32 +436,14 @@ export async function mockPlatform(
 ): Promise<void> {
   await mockApi(page, language);
   const details = [...Object.values(organisations), created];
-  await page.route("**/api/v1/platform/tenants*", (route) => {
-    const statuses = new URL(route.request().url()).searchParams.getAll(
-      "status",
-    );
-    const items = Object.values(organisations)
-      .filter(
-        (organisation) =>
-          statuses.length === 0 || statuses.includes(organisation.status),
-      )
-      .map(listItem);
-    return route.fulfill({
-      json: {
-        items,
-        page: 1,
-        pageSize: 20,
-        total: items.length,
-        statusCounts: {
-          active: 0,
-          suspended: 0,
-          closed: 0,
-          purging: 0,
-          purged: 0,
-        },
-      },
-    });
-  });
+  await page.route("**/api/v1/platform/tenants*", (route) =>
+    route.fulfill({
+      json: tenantsPage(
+        Object.values(organisations).map(listItem),
+        new URL(route.request().url()).searchParams,
+      ),
+    }),
+  );
   await page.route("**/api/v1/platform/tenants/*", (route) => {
     const id = new URL(route.request().url()).pathname.split("/").at(-1);
     const found = details.find((organisation) => organisation.id === id);

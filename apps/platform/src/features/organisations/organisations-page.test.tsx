@@ -111,7 +111,9 @@ describe("OrganisationsPage", () => {
     expect(
       (await rowOf("Liffey Design")).getByText("No members yet · 1 invited"),
     ).toBeVisible();
-    expect((await rowOf("Shannon Studio")).getByText("24 members")).toBeVisible();
+    expect(
+      (await rowOf("Shannon Studio")).getByText("24 members"),
+    ).toBeVisible();
   });
 
   it("OrganisationsPage_PhoneCard_ShowsThePlanAndTheMembers", async () => {
@@ -130,20 +132,17 @@ describe("OrganisationsPage", () => {
   it.each([
     ["Moyne Gallery", moyne],
     ["Corrib Press", corrib],
-  ])(
-    "OrganisationsPage_%s_HasNoMenuAndNoCount",
-    async (name, organisation) => {
-      server.use(meAnswer(), listAnswer(pageOf([organisation])));
+  ])("OrganisationsPage_%s_HasNoMenuAndNoCount", async (name, organisation) => {
+    server.use(meAnswer(), listAnswer(pageOf([organisation])));
 
-      renderWithProviders(<OrganisationsPage />);
+    renderWithProviders(<OrganisationsPage />);
 
-      const row = await rowOf(name);
-      expect(
-        row.queryByRole("button", { name: `Actions for ${name}` }),
-      ).toBeNull();
-      expect(row.getByText("—")).toBeVisible();
-    },
-  );
+    const row = await rowOf(name);
+    expect(
+      row.queryByRole("button", { name: `Actions for ${name}` }),
+    ).toBeNull();
+    expect(row.getByText("—")).toBeVisible();
+  });
 
   it("OrganisationsPage_ActiveWithAnOwner_OffersRenameSuspendClose", async () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind])));
@@ -199,9 +198,13 @@ describe("OrganisationsPage", () => {
     renderWithProviders(<OrganisationsPage />);
 
     await waitFor(() =>
-      expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(
-        ["All 10", "Active 7", "Suspended 1", "Closed 2", "Deleted 1"],
-      ),
+      expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+        "All 10",
+        "Active 7",
+        "Suspended 1",
+        "Closed 2",
+        "Deleted 1",
+      ]),
     );
   });
 
@@ -387,9 +390,7 @@ describe("OrganisationsPage", () => {
     server.use(meAnswer(), listAnswer(pageOf([northwind]), requests));
 
     renderWithProviders(<OrganisationsPage />);
-    await userEvent.click(
-      await screen.findByRole("tab", { name: /^Closed/ }),
-    );
+    await userEvent.click(await screen.findByRole("tab", { name: /^Closed/ }));
     // nuqs writes the address after its throttle; back() goes to the entry before it only once it is there.
     await waitFor(() => expect(window.location.search).toBe("?status=closed"));
     window.history.back();

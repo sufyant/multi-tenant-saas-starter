@@ -1,33 +1,41 @@
 "use client";
 
 import {
-  getListTenantsQueryOptions,
+  getListTenantsInfiniteQueryOptions,
   ListTenantsSort,
   problemOf,
   schemas,
   TenantResponseStatus,
 } from "@repo/api-client";
+import { brand } from "@repo/brand";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
-import { Freshness } from "@repo/ui/components/freshness";
 import { Icon, PlusIcon } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
+import { LoadMore } from "@repo/ui/components/load-more";
 import { Search } from "@repo/ui/components/search";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Tabs } from "@repo/ui/components/tabs";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { nextPage, pageSize } from "@repo/ui/lib/pages";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
+import { useLoadMore } from "@/shared/load-more";
 import { leaveOf } from "@/shared/problem-screen";
-import { useDates } from "@/shared/use-dates";
 import { CreateOrganisationDialog } from "./create-organisation-dialog";
 import { OrganisationsTable } from "./organisations-table";
-import { type Tab, tabs, useListParams } from "./use-list-params";
+import {
+  countOf,
+  statusesOf,
+  type Tab,
+  tabs,
+  useListParams,
+} from "./use-list-params";
 import { useOrganisationActions } from "./use-organisation-actions";
+import { ViewChoice } from "./view-choice";
 
 const all = "all";
 
-/** The tab's label key: All, then the statuses (the Main board). */
+/** The tab's label key: All, then the statuses (4.01). */
 const tabLabels = {
   [TenantResponseStatus.Active]: "organisations.tabActive",
   [TenantResponseStatus.Suspended]: "organisations.tabSuspended",
@@ -35,7 +43,7 @@ const tabLabels = {
   [TenantResponseStatus.Purged]: "organisations.tabDeleted",
 } as const satisfies Record<Tab, string>;
 
-/** The title of an empty tab (the ListStates board). */
+/** The title of an empty tab. */
 const noMatchLabels = {
   [TenantResponseStatus.Active]: "organisations.noMatchActive",
   [TenantResponseStatus.Suspended]: "organisations.noMatchSuspended",
@@ -44,40 +52,51 @@ const noMatchLabels = {
 } as const satisfies Record<Tab, string>;
 
 /**
- * Organisations, the platform's start page (the Main, OrgsFiltered, OrgsEmpty and ListStates boards): the status tabs, the
- * search, the table and Create organisation. Every parameter of the list is in the URL (F9).
+ * Organisations, the platform's start page (4.01 to 4.06, 4.43): the title with its description and no Freshness (F59), Create
+ * organisation, the status tabs with the counts of `ListTenants`, the search, the table, and Load more (F9). The tabs, the search and
+ * the sort are in the URL, never the page. On a phone the top bar names the page, so its title stays for screen readers; Create spans
+ * the width, and the tabs are one choice.
  */
 export function OrganisationsPage() {
   const t = useTranslations();
-  const { timeZone } = useDates();
   const [params, setParams] = useListParams();
   const [creating, setCreating] = useState(false);
   const actions = useOrganisationActions();
-  const { status, q, page, sort } = params;
+  const { status, q, sort } = params;
   const onSearch = useCallback(
-    (next: string) => void setParams({ q: next || null, page: null }),
+    (next: string) => void setParams({ q: next || null }),
     [setParams],
   );
 
-  const list = useQuery(
-    getListTenantsQueryOptions(
+  const list = useInfiniteQuery(
+    getListTenantsInfiniteQueryOptions(
       {
         q: q || undefined,
-        status: status ? [status] : undefined,
-        page,
+        status: statusesOf(status),
         sort: sort ?? undefined,
+        pageSize,
       },
-      { query: { placeholderData: keepPreviousData } },
+      {
+        query: {
+          initialPageParam: 1,
+          getNextPageParam: nextPage,
+          placeholderData: keepPreviousData,
+        },
+      },
     ),
   );
+  const { announcement, loadMore } = useLoadMore(list, {
+    loaded: (count) => t("organisations.loadedMore", { count }),
+    failed: t("organisations.moreError"),
+  });
+  const counts = list.data?.pages[0]?.statusCounts;
 
-  const filtered = Boolean(q || status);
-  const clear = () => void setParams({ q: null, status: null, page: null });
   const create = (
     <Button
       variant="primary"
       icon={<Icon icon={PlusIcon} />}
       onClick={() => setCreating(true)}
+      className="max-tablet:h-control-lg max-tablet:w-full"
     >
       {t("organisations.create")}
     </Button>
@@ -85,8 +104,8 @@ export function OrganisationsPage() {
 
   const body = (() => {
     if (list.isPending)
-      return <Skeleton rows={4} label={t("organisations.loading")} />;
-    if (list.isError)
+      return <Skeleton rows={6} label={t("organisations.loading")} />;
+    if (!list.data)
       return (
         <ListError
           title={t("organisations.error")}
@@ -96,80 +115,113 @@ export function OrganisationsPage() {
           onRetry={() => void list.refetch()}
         />
       );
-    if (list.data.items.length === 0 && filtered)
+    const rows = list.data.pages.flatMap((page) => page.items);
+    if (rows.length === 0 && q)
       return (
         <EmptyState
           kind="no-results"
-          title={
-            q
-              ? t("organisations.noMatchSearch", { q })
-              : status && t(noMatchLabels[status])
-          }
+          title={t("organisations.noMatchSearch", { q })}
           description={t("organisations.noMatchText")}
           action={
-            <Button onClick={clear}>{t("organisations.clearFilters")}</Button>
+            <Button onClick={() => void setParams({ q: null })}>
+              {t("organisations.clearSearch")}
+            </Button>
           }
         />
       );
-    if (list.data.items.length === 0)
+    if (rows.length === 0 && status)
+      return (
+        <EmptyState
+          kind="no-results"
+          title={t(noMatchLabels[status])}
+          action={
+            <Button onClick={() => void setParams({ status: null })}>
+              {t("organisations.clearFilters")}
+            </Button>
+          }
+        />
+      );
+    if (rows.length === 0)
       return (
         <EmptyState
           title={t("organisations.emptyTitle")}
           description={t("organisations.emptyText")}
-          action={create}
+          action={
+            <Button
+              icon={<Icon icon={PlusIcon} />}
+              onClick={() => setCreating(true)}
+            >
+              {t("organisations.create")}
+            </Button>
+          }
         />
       );
     return (
-      <OrganisationsTable
-        page={list.data}
-        sort={sort}
-        timeZone={timeZone}
-        actions={actions}
-        onSortChange={(next) =>
-          void setParams({
-            sort:
-              Object.values(ListTenantsSort).find((value) => value === next) ??
-              null,
-            page: null,
-          })
-        }
-        onPageChange={(next) => void setParams({ page: next })}
-      />
+      <div className="flex flex-col gap-2">
+        <OrganisationsTable
+          rows={rows}
+          sort={sort}
+          actions={actions}
+          onSortChange={(next) =>
+            void setParams({
+              sort:
+                Object.values(ListTenantsSort).find(
+                  (value) => value === next,
+                ) ?? null,
+            })
+          }
+        />
+        <LoadMore
+          hasMore={list.hasNextPage}
+          loading={list.isFetchingNextPage}
+          onMore={loadMore}
+          label={t("organisations.loadMore")}
+          loadingLabel={t("organisations.loadingMore")}
+          announcement={announcement}
+        />
+      </div>
     );
   })();
 
-  // The first run shows only the title and the empty state (the OrgsEmpty board).
-  const firstRun = !filtered && list.data?.total === 0;
+  // The first run shows the header and the empty state only (4.06).
+  const firstRun =
+    !q &&
+    !status &&
+    list.data?.pages[0]?.items.length === 0 &&
+    counts &&
+    countOf(counts, null) === 0;
 
   return (
-    <section className="flex min-w-0 max-w-[1160px] flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+        <div className="sr-only flex min-w-0 flex-col gap-0.5 tablet:not-sr-only">
           <h1 className="text-page-title">{t("organisations.title")}</h1>
-          {list.dataUpdatedAt > 0 && (
-            <Freshness
-              at={new Date(list.dataUpdatedAt)}
-              locale={t("locale.format")}
-              timeZone={timeZone}
-              label={t("common.updated")}
-            />
-          )}
+          <p className="text-body text-muted-foreground">
+            {t("organisations.intro", { brand: brand.name })}
+          </p>
         </div>
-        {!firstRun && create}
+        {create}
       </div>
       {!firstRun && (
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <Tabs
+        <>
+          <ViewChoice
             label={t("organisations.tabs")}
             current={status ?? all}
             items={[
-              { id: all, label: t("organisations.tabAll") },
-              ...tabs.map((tab) => ({ id: tab, label: t(tabLabels[tab]) })),
+              {
+                id: all,
+                label: t("organisations.tabAll"),
+                count: counts && countOf(counts, null),
+              },
+              ...tabs.map((tab) => ({
+                id: tab,
+                label: t(tabLabels[tab]),
+                count: counts && countOf(counts, tab),
+              })),
             ]}
             onValueChange={(next) =>
               void setParams({
                 status: tabs.find((tab) => tab === next) ?? null,
-                page: null,
               })
             }
           />
@@ -179,7 +231,7 @@ export function OrganisationsPage() {
             maxLength={schemas.listTenantsQueryQMax}
             onSearch={onSearch}
           />
-        </div>
+        </>
       )}
       {body}
       {creating && (

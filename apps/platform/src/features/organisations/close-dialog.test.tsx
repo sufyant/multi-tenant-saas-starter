@@ -89,7 +89,7 @@ describe("CloseDialog", () => {
     ).toBeVisible();
     expect(
       await screen.findByText(
-        `Closed on ${dateOf(closedAt)}. You can reopen it until ${dateOf(reopenableUntil)}. After that it is deleted.`,
+        `It can be reopened until ${dateOf(reopenableUntil)}. Then it is deleted with all its data.`,
       ),
     ).toBeVisible();
   });

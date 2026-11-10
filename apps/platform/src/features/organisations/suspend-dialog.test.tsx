@@ -45,9 +45,7 @@ const suspend = async (
   reason: string,
 ) => {
   await userEvent.type(dialog.getByRole("textbox", { name: "Reason" }), reason);
-  await userEvent.click(
-    dialog.getByRole("button", { name: "Suspend" }),
-  );
+  await userEvent.click(dialog.getByRole("button", { name: "Suspend" }));
 };
 
 describe("SuspendDialog", () => {

@@ -153,11 +153,10 @@ export function InviteOwnerDialog({
         className="flex flex-col gap-3.5"
       >
         <Input
-          label={t("email")}
+          label={t("ownerEmail")}
           type="email"
           autoComplete="off"
           maxLength={schemas.inviteOwnerBodyEmailMax}
-          hint={last ? t("emailHint") : undefined}
           error={emailError && t(emailError)}
           {...form.register("email")}
           onKeyDown={(event) => {
@@ -168,7 +167,7 @@ export function InviteOwnerDialog({
           }}
         />
         <LanguageChoice
-          label={t("emailLanguage")}
+          label={t("ownerLanguage")}
           value={form.watch("language") ?? Language.En}
           onChange={(language) => form.setValue("language", language)}
         />

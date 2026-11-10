@@ -30,7 +30,7 @@ test("Activity_Platform_ShowsEveryEntryNewestFirst", async ({ page }) => {
 test("Activity_OrganisationTab_ShowsOnlyItsEntries", async ({ page }) => {
   await open(page, `/organisations/${organisations.kestrel.id}`);
 
-  await page.getByRole("tab", { name: "Activity" }).click();
+  await page.getByRole("tab", { name: "Activity log" }).click();
 
   await expect(page).toHaveURL(/tab=activity/);
   const entries = page.getByRole("main").getByRole("listitem");

@@ -104,9 +104,7 @@ const fill = async (
 };
 
 const send = (dialog: ReturnType<typeof within>) =>
-  userEvent.click(
-    dialog.getByRole("button", { name: "Create organisation" }),
-  );
+  userEvent.click(dialog.getByRole("button", { name: "Create organisation" }));
 
 describe("CreateOrganisationDialog", () => {
   it("Create_Success_ToastsAndOpensThePageFromLocation", async () => {
@@ -287,7 +285,9 @@ describe("CreateOrganisationDialog", () => {
     await send(dialog);
 
     expect(
-      await dialog.findByText("This address is taken or reserved. Try another."),
+      await dialog.findByText(
+        "This address is taken or reserved. Try another.",
+      ),
     ).toBeVisible();
     expect(calls).toEqual([]);
   });

@@ -1,30 +1,24 @@
 "use client";
 
 import {
-  actionFor,
-  getGetMeQueryKey,
   getListPlansInfiniteQueryOptions,
   ListPlansSort,
   type PlanListItemResponse,
-  ProblemDetailsError,
   problemOf,
 } from "@repo/api-client";
 import { Icon, PlusIcon } from "@repo/ui/components/icon";
 import { Label } from "@repo/ui/components/label";
 import { ListError } from "@repo/ui/components/list-error";
 import { LoadMore } from "@repo/ui/components/load-more";
-import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Table, type TableColumn } from "@repo/ui/components/table";
-import { showToast } from "@repo/ui/components/toast";
 import { buttonVariants } from "@repo/ui/components/ui/button";
-import { nextPage, pageSize, rowsIn } from "@repo/ui/lib/pages";
-import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { nextPage, pageSize } from "@repo/ui/lib/pages";
 import { cn } from "@repo/ui/lib/utils";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useLoadMore } from "@/shared/load-more";
 import { planPage, plansPage } from "@/shared/plans";
 import { leaveOf } from "@/shared/problem-screen";
 import { TextLink } from "@/shared/text-link";
@@ -39,45 +33,16 @@ import { useDates } from "@/shared/use-dates";
 export function PlansPage() {
   const t = useTranslations();
   const dates = useDates();
-  const queryClient = useQueryClient();
-  const failureText = useFailureText();
-  const [announcement, setAnnouncement] = useState<string | null>(null);
   const list = useInfiniteQuery(
     getListPlansInfiniteQueryOptions(
       { pageSize, sort: ListPlansSort.Name },
       { query: { initialPageParam: 1, getNextPageParam: nextPage } },
     ),
   );
-
-  // The next page: a 401 goes to sign-in (F4); a refusal of the caller's account is GetMe's to show (F47); any other failure
-  // says so and keeps the rows that came.
-  const loadMore = async () => {
-    const before = rowsIn(list.data) ?? 0;
-    const result = await list.fetchNextPage();
-    if (!result.isFetchNextPageError) {
-      setAnnouncement(
-        t("plans.loadedPlans", {
-          count: (rowsIn(result.data) ?? 0) - before,
-        }),
-      );
-      return;
-    }
-    const action =
-      result.error instanceof ProblemDetailsError
-        ? actionFor(result.error.status, result.error.problem).kind
-        : null;
-    if (action === "sign-in")
-      return window.location.assign(signInAgainUrl(window.location));
-    if (action === "account-suspended" || action === "account-deleted") {
-      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      return;
-    }
-    showToast({
-      title: t("plans.moreError"),
-      description: failureText(problemOf(result.error)),
-      tone: "destructive",
-    });
-  };
+  const { announcement, loadMore } = useLoadMore(list, {
+    loaded: (count) => t("plans.loadedPlans", { count }),
+    failed: t("plans.moreError"),
+  });
 
   const columns: TableColumn<PlanListItemResponse>[] = [
     {
@@ -145,7 +110,7 @@ export function PlansPage() {
         <LoadMore
           hasMore={list.hasNextPage}
           loading={list.isFetchingNextPage}
-          onMore={() => void loadMore()}
+          onMore={loadMore}
           label={t("plans.loadMore")}
           loadingLabel={t("plans.loadingMore")}
           announcement={announcement}
