@@ -1199,6 +1199,7 @@ const shellShots: {
       const dialog = page.getByRole("alertdialog");
       await dialog.getByRole("combobox", { name: "Feature or limit" }).click();
       await page.getByRole("option", { name: "Seats" }).click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
       await dialog.getByRole("spinbutton", { name: "Value" }).fill("20");
       await dialog.getByLabel("Until").fill("2027-01-31");
       await dialog

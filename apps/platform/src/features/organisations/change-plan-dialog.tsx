@@ -17,7 +17,11 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { isFeatureKey, useEntitlementText } from "@/shared/entitlements";
+import {
+  entitlementAreas,
+  isFeatureKey,
+  useEntitlementText,
+} from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { plansQuery, refreshPlans } from "@/shared/plans";
 import { useDates } from "@/shared/use-dates";
@@ -80,7 +84,13 @@ export function ChangePlanDialog({
 
   const rowOf = (key: string) =>
     plan.entitlements.find((row) => row.key === key);
-  const excesses = preview.data?.excesses ?? [];
+  // The keys in the frames' order of areas (4.15): the seats, then the roles.
+  const order = entitlementAreas().flatMap(({ keys }) =>
+    keys.map(({ key }) => key),
+  );
+  const excesses = [...(preview.data?.excesses ?? [])].sort(
+    (one, other) => order.indexOf(one.key) - order.indexOf(other.key),
+  );
 
   const failure = (() => {
     const problem = problemOf(change.error);
@@ -122,23 +132,6 @@ export function ChangePlanDialog({
       onConfirm={() => change.isPending || change.mutate()}
     >
       <div className="flex flex-col gap-3.5">
-        <Combobox
-          label={t("newPlan")}
-          value={chosen}
-          options={(plans.data?.items ?? []).map((item) => ({
-            id: item.id,
-            label: item.name,
-            hint:
-              item.id === plan.plan.id
-                ? t("current")
-                : item.isDefault
-                  ? all("plans.default")
-                  : undefined,
-          }))}
-          onValueChange={setChosen}
-          searchPlaceholder={t("planSearch")}
-          emptyLabel={t("planEmpty")}
-        />
         {preview.data && (
           <ul className="flex flex-col gap-2 text-small text-muted-foreground">
             {excesses.map((excess) => (
@@ -173,6 +166,23 @@ export function ChangePlanDialog({
             })}
           </ul>
         )}
+        <Combobox
+          label={t("newPlan")}
+          value={chosen}
+          options={(plans.data?.items ?? []).map((item) => ({
+            id: item.id,
+            label: item.name,
+            hint:
+              item.id === plan.plan.id
+                ? t("current")
+                : item.isDefault
+                  ? all("plans.default")
+                  : undefined,
+          }))}
+          onValueChange={setChosen}
+          searchPlaceholder={t("planSearch")}
+          emptyLabel={t("planEmpty")}
+        />
         {preview.isError && (
           <Banner tone="destructive" title={all("plans.previewError")}>
             {failureText(problemOf(preview.error))}

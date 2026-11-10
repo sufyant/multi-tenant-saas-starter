@@ -105,6 +105,7 @@ export function SuspendDialog({
       size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
+      tone="destructive"
       title={t.rich("suspendTitle", { name, ...isolated })}
       description={t("suspendText", { count })}
       actionLabel={t("suspendAction")}
