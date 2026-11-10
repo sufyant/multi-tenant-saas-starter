@@ -75,6 +75,28 @@ describe("ReactivateUserDialog", () => {
     await waitFor(() => expect(reads.count).toBe(2));
   });
 
+  it("Reactivate_OrganisationEndingInAStop_EndsTheSentenceWithOneStop", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer({
+        ...suspended,
+        memberships: [
+          membershipOf({ ...northwind, name: "Pacific Coast Freight Ltd." }),
+        ],
+      }),
+    );
+
+    const dialog = await open();
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "John Byrne can sign in again at once, with the same roles in Pacific Coast Freight Ltd.",
+        ),
+      ),
+    ).toBeVisible();
+  });
+
   it("Reactivate_NotFound_SaysSoAndReadsTheUserAgain", async () => {
     const reads = { count: 0 };
     server.use(
