@@ -393,7 +393,7 @@ export const platformLog: (AuditEntryResponse & { tenantId: string | null })[] =
 
 /**
  * ListTenants over a list of organisations, as the API answers it: the statuses asked, the search over the name and the address,
- * and the count of each status over the search alone (`statusCounts`).
+ * and the count of each status over every organisation, which no search changes (`statusCounts`).
  */
 export const tenantsPage = (
   all: TenantListItemResponse[],
@@ -413,7 +413,7 @@ export const tenantsPage = (
       statuses.length === 0 || statuses.includes(organisation.status),
   );
   const count = (status: TenantResponseStatus) =>
-    found.filter((organisation) => organisation.status === status).length;
+    all.filter((organisation) => organisation.status === status).length;
   return {
     items,
     page: 1,
