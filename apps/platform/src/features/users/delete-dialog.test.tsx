@@ -185,6 +185,28 @@ describe("DeleteUserDialog", () => {
     expect(dialog.getByRole("button", { name: "Close" })).toBeVisible();
   });
 
+  // The API stays the guard: a user whom another admin made a system admin after the page read GetUser.
+  it("Delete_SystemAdminMeanwhile_SaysWhyAndReadsTheUserAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      meAnswer(),
+      userAnswer(detail, reads),
+      platformCommand("delete", `users/${ayse.id}`, [
+        () => problem(409, ErrorCode.UserIsSystemAdmin),
+      ]),
+    );
+
+    const dialog = await open();
+    await confirm(dialog);
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Ayşe Yılmaz can’t be deleted",
+      }),
+    ).toBeVisible();
+    await waitFor(() => expect(reads.count).toBe(2));
+  });
+
   // The API stays the guard: an Owner who became the last one after the page read GetUser.
   it("Delete_LastOwnerMeanwhile_SaysWhyAndReadsTheUserAgain", async () => {
     const reads = { count: 0 };

@@ -42,6 +42,18 @@ const rowOf = async (name: string) => {
   return within((await table.findByText(name)).closest("tr") as HTMLElement);
 };
 
+/** Two pages of admins: Rory and Ciara on the first, Tomás on the second. It records each page asked for. */
+const twoPages = (pages: (string | null)[]) =>
+  http.get("*/v1/platform/users", ({ request }) => {
+    const page = new URL(request.url).searchParams.get("page");
+    pages.push(page);
+    return HttpResponse.json(
+      page === "2"
+        ? usersPageOf([tomas], { page: 2, pageSize: 2, total: 3 })
+        : usersPageOf([rory, ciara], { pageSize: 2, total: 3 }),
+    );
+  });
+
 describe("SystemAdminsPage", () => {
   it("SystemAdmins_List_AsksOnlyForSystemAdmins", async () => {
     const requests: URLSearchParams[] = [];
@@ -154,18 +166,7 @@ describe("SystemAdminsPage", () => {
   it("SystemAdmins_MoreThanOnePage_LoadMoreAddsTheNextPageWithNoPageInTheUrl", async () => {
     window.history.replaceState(null, "", "/settings/system-admins");
     const pages: (string | null)[] = [];
-    server.use(
-      meAs(ciara),
-      http.get("*/v1/platform/users", ({ request }) => {
-        const page = new URL(request.url).searchParams.get("page");
-        pages.push(page);
-        return HttpResponse.json(
-          page === "2"
-            ? usersPageOf([tomas], { page: 2, pageSize: 2, total: 3 })
-            : usersPageOf([rory, ciara], { pageSize: 2, total: 3 }),
-        );
-      }),
-    );
+    server.use(meAs(ciara), twoPages(pages));
 
     renderWithProviders(<SystemAdminsPage />);
     await userEvent.click(

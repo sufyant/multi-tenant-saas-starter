@@ -1,5 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -25,9 +25,8 @@ import {
 } from "../../../test/users";
 import { SystemAdminPage } from "./system-admin-page";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
+const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@clerk/nextjs", () => ({ useSession: () => ({ session: null }) }));
 
 const server = setupServer();
@@ -116,6 +115,34 @@ describe("SystemAdminPage", () => {
         name: "Remove Tomás Ryan as a system admin?",
       }),
     ).toBeVisible();
+  });
+
+  // After a removal the user is no system admin, so the page has nothing to show: it goes back to the list.
+  it("SystemAdminPage_Removed_GoesBackToSystemAdmins", async () => {
+    server.use(
+      meAs(ciara),
+      userAnswer(userDetailOf(tomas)),
+      http.delete(
+        `*/v1/platform/users/${tomas.id}/system-admin`,
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    );
+
+    renderWithProviders(<SystemAdminPage userId={tomas.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Remove system admin" }),
+    );
+    await userEvent.click(
+      within(
+        await screen.findByRole("alertdialog", {
+          name: "Remove Tomás Ryan as a system admin?",
+        }),
+      ).getByRole("button", { name: "Remove" }),
+    );
+
+    await waitFor(() =>
+      expect(router.push).toHaveBeenCalledWith("/settings/system-admins"),
+    );
   });
 
   it("SystemAdminPage_OwnPage_DisablesRemoveWithTheReason", async () => {
