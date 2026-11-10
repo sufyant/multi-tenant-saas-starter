@@ -87,6 +87,22 @@ describe("SystemAdminPage", () => {
     expect(await added()).toHaveTextContent("2 Mar 2026, by Deleted user");
   });
 
+  // No field says whether a new admin has set up their app yet, so the row says the rule and no "On" (the maintainer's decision of
+  // 2026-11-10).
+  it("SystemAdminPage_TwoStep_SaysItIsRequiredWithNoOnLabel", async () => {
+    server.use(meAs(ciara), userAnswer(userDetailOf(tomas)));
+
+    renderWithProviders(<SystemAdminPage userId={tomas.id} />);
+
+    const dt = await screen.findByText("Two-step verification", {
+      selector: "dt",
+    });
+    expect(dt.nextElementSibling).toHaveTextContent(
+      /^Required for every system admin\.$/,
+    );
+    expect(screen.queryByText("On")).toBeNull();
+  });
+
   it("SystemAdminPage_OtherAdmin_RemoveOpensItsDialog", async () => {
     server.use(meAs(ciara), userAnswer(userDetailOf(tomas)));
 
