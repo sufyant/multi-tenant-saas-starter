@@ -1,5 +1,5 @@
 import { ErrorCode } from "@repo/api-client";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -110,10 +110,12 @@ describe("SystemAdminPage", () => {
     const remove = await screen.findByRole("button", {
       name: "Remove system admin",
     });
-    expect(remove).toBeDisabled();
-    expect(remove).toHaveAccessibleDescription(
-      "You can’t remove yourself. Ask another system admin.",
+    await waitFor(() =>
+      expect(remove).toHaveAccessibleDescription(
+        "You can’t remove yourself. Ask another system admin.",
+      ),
     );
+    expect(remove).toBeDisabled();
   });
 
   it("SystemAdminPage_Root_OffersNoRemoveAndSaysWhy", async () => {

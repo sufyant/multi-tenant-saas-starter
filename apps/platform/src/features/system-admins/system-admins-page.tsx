@@ -2,94 +2,122 @@
 
 import {
   getGetMeQueryOptions,
-  getListUsersQueryOptions,
+  getListUsersInfiniteQueryOptions,
   problemOf,
   type UserResponse,
 } from "@repo/api-client";
-import { Avatar } from "@repo/ui/components/avatar";
 import { Button } from "@repo/ui/components/button";
-import { Freshness } from "@repo/ui/components/freshness";
-import { KeyIcon, TrashIcon } from "@repo/ui/components/icon";
+import { Icon, PlusIcon, TrashIcon } from "@repo/ui/components/icon";
+import { Label } from "@repo/ui/components/label";
 import { ListError } from "@repo/ui/components/list-error";
+import { LoadMore } from "@repo/ui/components/load-more";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Table, type TableColumn } from "@repo/ui/components/table";
-import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@repo/ui/components/ui/tooltip";
+import { nextPage, pageSize } from "@repo/ui/lib/pages";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
 import { userNameOf } from "@/shared/name-of";
 import { leaveOf } from "@/shared/problem-screen";
+import { systemAdminPage } from "@/shared/system-admins";
 import { useDates } from "@/shared/use-dates";
+import { useNextPage } from "@/shared/use-next-page";
 import { AddDialog } from "./add-dialog";
 import { RemoveDialog } from "./remove-dialog";
 
-/** The page of the list lives in the URL, and each change pushes a history entry (F9). */
-const pageParser = parseAsInteger.withDefault(1).withOptions({
-  history: "push",
-});
+/** The Root label, whose tooltip says why the row has no action (10.16; the maintainer's decision of 2026-11-04). */
+export function RootLabel() {
+  const t = useTranslations("systemAdmins");
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: the label takes focus so a keyboard can open its tooltip (WCAG 2.2, 1.4.13).
+        render={<span tabIndex={0} />}
+        className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Label>{t("root")}</Label>
+      </TooltipTrigger>
+      <TooltipContent>{t("rootHint")}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 /**
- * Settings › System admins (the SystemAdmins board): ListUsers with `isSystemAdmin=true`, each admin with their email, the Root tag
- * and the date added (`systemAdminGrantedAt`). A root admin has no action: the configuration names them. The viewer's own row
- * has Remove disabled. There is no empty state: there is always a root admin, although one who never signed in is not listed.
- * Every system admin holds every platform permission (the API's A4), so nothing checks one; the API still decides.
+ * Settings › System admins (10.01 to 10.16): ListUsers with `isSystemAdmin=true`, each admin with their email and the date added
+ * (`systemAdminGrantedAt`), under the frame's text and no Freshness (F59). The list grows with Load more (F9). A root admin has no
+ * action: the configuration names them, and the Root label's tooltip says so. The viewer's own row has Remove disabled with its
+ * reason (F51). On a phone each admin but the root opens their page (10.14). There is no empty state: there is always a root admin,
+ * although one who never signed in is not listed. Every system admin holds every platform permission (the API's A4), so nothing
+ * checks one; the API still decides.
  */
 export function SystemAdminsPage() {
   const t = useTranslations();
   const { timeZone } = useDates();
-  const [page, setPage] = useQueryState("page", pageParser);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<UserResponse | null>(null);
   const me = useQuery(getGetMeQueryOptions());
-  const list = useQuery(
-    getListUsersQueryOptions(
-      { isSystemAdmin: true, page },
-      { query: { placeholderData: keepPreviousData } },
+  const list = useInfiniteQuery(
+    getListUsersInfiniteQueryOptions(
+      { isSystemAdmin: true, pageSize },
+      { query: { initialPageParam: 1, getNextPageParam: nextPage } },
     ),
   );
-  const locale = t("locale.format");
-
-  const person = (user: UserResponse) => (
-    <span className="flex min-w-0 items-center gap-3">
-      <Avatar person={user} />
-      <span className="flex min-w-0 flex-col">
-        <span className="flex min-w-0 flex-wrap items-center gap-2">
-          <bdi className="truncate font-medium">
-            {userNameOf(user, t("users.deletedUser"))}
-          </bdi>
-          {user.isRootSystemAdmin && (
-            <Tag icon={KeyIcon}>{t("systemAdmins.root")}</Tag>
-          )}
-          {user.id === me.data?.id && (
-            <Tag variant="text">{t("systemAdmins.you")}</Tag>
-          )}
-        </span>
-        {user.email && (
-          <bdi dir="ltr" className="truncate text-small text-muted-foreground">
-            {user.email}
-          </bdi>
-        )}
-      </span>
-    </span>
+  const next = useNextPage(list, (count) =>
+    t("systemAdmins.loadedAdmins", { count }),
   );
+  const locale = t("locale.format");
+  const nameText = (user: UserResponse) => {
+    const name = userNameOf(user, t("users.deletedUser"));
+    return user.id === me.data?.id ? t("systemAdmins.nameYou", { name }) : name;
+  };
 
   const columns: TableColumn<UserResponse>[] = [
     {
       key: "name",
       header: t("systemAdmins.name"),
-      render: person,
-      cardRender: (user) => (
-        <bdi>{userNameOf(user, t("users.deletedUser"))}</bdi>
+      render: (user) => (
+        <span className="flex min-w-0 items-center gap-2">
+          <bdi className="truncate">{nameText(user)}</bdi>
+          {user.isRootSystemAdmin && <RootLabel />}
+        </span>
       ),
+      // A phone card opens the admin's page (10.14, 10.15); the root's has nothing to do there.
+      cardRender: (user) =>
+        user.isRootSystemAdmin ? (
+          <span className="flex min-w-0 items-center gap-2">
+            <bdi className="truncate">{nameText(user)}</bdi>
+            <RootLabel />
+          </span>
+        ) : (
+          <Link href={systemAdminPage(user.id)} className="hover:underline">
+            <bdi>{nameText(user)}</bdi>
+          </Link>
+        ),
+    },
+    {
+      key: "email",
+      header: t("systemAdmins.email"),
+      width: "w-67.5",
+      render: (user) =>
+        user.email && (
+          <bdi dir="ltr" className="block truncate">
+            {user.email}
+          </bdi>
+        ),
     },
     {
       key: "added",
       header: t("systemAdmins.added"),
-      secondary: true,
-      card: "end",
+      width: "w-79",
+      card: "hide",
       render: (user) =>
         user.systemAdminGrantedAt && (
           <Time
@@ -103,12 +131,7 @@ export function SystemAdminsPage() {
   ];
 
   const actions = (user: UserResponse) => {
-    if (user.isRootSystemAdmin)
-      return (
-        <span className="block max-w-56 text-end text-small text-muted-foreground">
-          {t("systemAdmins.rootHint")}
-        </span>
-      );
+    if (user.isRootSystemAdmin) return null;
     const self = user.id === me.data?.id;
     return (
       <RowMenu
@@ -132,7 +155,7 @@ export function SystemAdminsPage() {
   const body = (() => {
     if (list.isPending)
       return <Skeleton rows={3} label={t("systemAdmins.loading")} />;
-    if (list.isError)
+    if (!list.data)
       return (
         <ListError
           title={t("systemAdmins.error")}
@@ -142,49 +165,65 @@ export function SystemAdminsPage() {
           onRetry={() => void list.refetch()}
         />
       );
+    const rows = list.data.pages.flatMap((page) => page.items);
     return (
-      <Table
-        columns={columns}
-        rows={list.data.items}
-        rowKey="id"
-        label={t("systemAdmins.title")}
-        actions={actions}
-        actionsLabel={t("systemAdmins.actions")}
-        cardLead={(user) => <Avatar person={user} size="medium" />}
-        rowCount={list.data.total}
-        page={list.data.page}
-        pageSize={list.data.pageSize}
-        onPageChange={(next) => void setPage(next)}
-        pager={{
-          previous: t("common.previous"),
-          next: t("common.next"),
-          page: (current, count) => t("common.page", { page: current, count }),
-        }}
-      />
+      <div className="flex flex-col gap-2">
+        <Table
+          columns={columns}
+          rows={rows}
+          rowKey="id"
+          label={t("systemAdmins.title")}
+          actions={actions}
+          actionsLabel={t("systemAdmins.actions")}
+          rowCount={rows.length}
+          page={1}
+          pageSize={Math.max(rows.length, 1)}
+          pager={{
+            previous: t("common.previous"),
+            next: t("common.next"),
+            page: (current, count) =>
+              t("common.page", { page: current, count }),
+          }}
+        />
+        <LoadMore
+          hasMore={list.hasNextPage}
+          loading={list.isFetchingNextPage}
+          onMore={() => void next.more()}
+          label={t("systemAdmins.loadMore")}
+          loadingLabel={t("systemAdmins.loadingMore")}
+          announcement={next.announcement}
+          failed={
+            next.failed
+              ? {
+                  text: t("systemAdmins.moreError"),
+                  retryLabel: t("common.tryAgain"),
+                }
+              : undefined
+          }
+        />
+      </div>
     );
   })();
 
   return (
-    <section className="flex min-w-0 max-w-[1160px] flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="flex flex-col gap-4 tablet:flex-row tablet:items-start tablet:justify-between">
+        {/* On a phone the top bar names the page (10.14), so its header stays for screen readers. */}
+        <div className="sr-only flex min-w-0 flex-col gap-0.5 tablet:not-sr-only">
           <h1 className="text-page-title">{t("systemAdmins.title")}</h1>
-          {list.dataUpdatedAt > 0 && (
-            <Freshness
-              at={new Date(list.dataUpdatedAt)}
-              locale={locale}
-              timeZone={timeZone}
-              label={t("common.updated")}
-            />
-          )}
+          <p className="max-w-[720px] text-body text-muted-foreground">
+            {t("systemAdmins.text")}
+          </p>
         </div>
-        <Button variant="primary" onClick={() => setAdding(true)}>
+        <Button
+          variant="primary"
+          className="max-tablet:h-control-lg max-tablet:w-full"
+          onClick={() => setAdding(true)}
+        >
+          <Icon icon={PlusIcon} />
           {t("systemAdmins.add")}
         </Button>
       </div>
-      <p className="max-w-[720px] text-body text-muted-foreground">
-        {t("systemAdmins.text")}
-      </p>
       {body}
       {adding && <AddDialog onClose={() => setAdding(false)} />}
       {removing && (

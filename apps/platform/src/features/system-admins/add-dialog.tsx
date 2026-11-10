@@ -111,6 +111,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
               name: userNameOf(user, users("deletedUser")),
               ...isolated,
             }),
+            description: t("grantedText"),
           });
         },
       },

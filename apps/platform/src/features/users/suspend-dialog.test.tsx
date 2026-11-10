@@ -286,8 +286,11 @@ describe("SuspendUserDialog", () => {
       name: "إيقاف Mehmet Kaya؟",
     });
 
+    // The title isolates the name; so does the sentence under it.
     expect(
-      within(dialog).getByText("Mehmet Kaya", { selector: "bdi" }),
+      within(within(dialog).getByRole("heading")).getByText("Mehmet Kaya", {
+        selector: "bdi",
+      }),
     ).toBeVisible();
   });
 
@@ -297,7 +300,9 @@ describe("SuspendUserDialog", () => {
     const dialog = await open(unnamed, "root@starter.example");
 
     expect(
-      dialog.getByText("root@starter.example", { selector: "bdi" }),
+      within(dialog.getByRole("heading")).getByText("root@starter.example", {
+        selector: "bdi",
+      }),
     ).toBeVisible();
   });
 });

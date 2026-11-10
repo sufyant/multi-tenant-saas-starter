@@ -59,7 +59,10 @@ export function RemoveDialog({
     revoke.mutate(undefined, {
       onSuccess: () => {
         onClose();
-        showToast({ title: t.rich("noLongerAdmin", { name, ...isolated }) });
+        showToast({
+          title: t.rich("noLongerAdmin", { name, ...isolated }),
+          description: t("noLongerAdminText"),
+        });
       },
     });
 

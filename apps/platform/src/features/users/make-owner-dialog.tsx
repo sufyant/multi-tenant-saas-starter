@@ -67,7 +67,7 @@ export function MakeOwnerDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("makeOwnerTitle", { name, organisation, ...isolated })}
-      description={t.rich("makeOwnerText", { organisation, ...isolated })}
+      description={t.rich("makeOwnerText", { name, ...isolated })}
       actionLabel={t("makeOwner")}
       cancelLabel={common("cancel")}
       pending={make.isPending}

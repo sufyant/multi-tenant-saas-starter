@@ -16,6 +16,7 @@ import { renderWithProviders } from "../../../test/render";
 import {
   ciara,
   meAs,
+  rory,
   systemAdmins,
   tomas,
   usersAnswer,

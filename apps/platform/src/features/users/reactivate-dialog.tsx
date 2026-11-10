@@ -1,17 +1,26 @@
 "use client";
 
-import { ErrorCode, problemOf, reactivateUser } from "@repo/api-client";
+import {
+  ErrorCode,
+  getGetUserQueryOptions,
+  problemOf,
+  reactivateUser,
+} from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
+import { useOrganisationList } from "./organisation-list";
 import { afterRefusal, refreshUser, type User } from "./user";
 
-/** Reactivate a suspended user (the ReactivateUser board). A refusal shows its text in the dialog (F47). */
+/**
+ * Reactivate a suspended user (5.11): the sentence names the organisations where their roles stay, from GetUser. A refusal shows its
+ * text in the dialog (F47).
+ */
 export function ReactivateDialog({
   user,
   onClose,
@@ -24,6 +33,14 @@ export function ReactivateDialog({
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const name = userNameOf(user, t("deletedUser"));
+  const organisationList = useOrganisationList();
+  // The list's row has no memberships. The user's page has read them already, so the dialog takes them from the cache there.
+  const detail = useQuery(
+    getGetUserQueryOptions(user.id, { query: { refetchOnMount: false } }),
+  );
+  const organisations = (detail.data?.memberships ?? []).map(
+    (membership) => membership.tenantName,
+  );
 
   const reactivate = useMutation({
     mutationFn: () => reactivateUser(user.id),
@@ -47,7 +64,12 @@ export function ReactivateDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("reactivateTitle", { name, ...isolated })}
-      description={t("reactivateText")}
+      description={t.rich("reactivateText", {
+        name,
+        count: organisations.length,
+        ...isolated,
+        list: () => organisationList(organisations),
+      })}
       actionLabel={t("reactivateAction")}
       cancelLabel={common("cancel")}
       pending={reactivate.isPending}

@@ -49,9 +49,9 @@ import { ServerBar } from "@/shared/server-bar";
 const tenantIdOf = (pathname: string) =>
   /^\/organisations\/([^/]+)/.exec(pathname)?.[1] ?? null;
 
-/** The user of a user's page, `/users/<id>`, or null on any other page. */
+/** The user of a user's page, `/users/<id>`, or of a system admin's, `/settings/system-admins/<id>`, or null on any other page. */
 const userIdOf = (pathname: string) =>
-  /^\/users\/([^/]+)/.exec(pathname)?.[1] ?? null;
+  /^\/(?:users|settings\/system-admins)\/([^/]+)/.exec(pathname)?.[1] ?? null;
 
 /** The plan of a plan's page, `/plans/<id>`, or null on any other page; New plan is `new`. */
 const planIdOf = (pathname: string) =>
@@ -106,7 +106,7 @@ export function PlatformShell({
       query: { enabled: tenantId !== null && me.data?.isSystemAdmin === true },
     }),
   );
-  // The user's page reads the same GetUser, so their name in the breadcrumb comes from the cache.
+  // The user's page and a system admin's read the same GetUser, so the name in the breadcrumb comes from the cache.
   const userId = userIdOf(pathname);
   const user = useQuery(
     getGetUserQueryOptions(userId ?? "", {
@@ -206,7 +206,7 @@ export function PlatformShell({
       : (item?.label ?? t("shell.settings"));
   const userName = user.data && userNameOf(user.data, t("users.deletedUser"));
   const detail =
-    current === "users" && userId
+    (current === "users" || current === "system-admins") && userId
       ? userName
       : current === "organisations" && tenantId
         ? tenant.data?.name
@@ -215,7 +215,7 @@ export function PlatformShell({
             ? t("plans.createTitle")
             : plan.data?.name
           : undefined;
-  // A page of one record starts at its section (5.05, 6.04): "Plans › Team". A section's page starts at the platform.
+  // A page of one record starts at its section (5.05, 6.04, 10.15): "Plans › Team". A section's page starts at the platform.
   const crumbs = detail
     ? [{ label: pageName, href: item?.href }, { label: detail }]
     : [

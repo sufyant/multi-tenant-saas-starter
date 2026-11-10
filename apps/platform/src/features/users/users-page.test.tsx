@@ -118,10 +118,13 @@ describe("UsersPage", () => {
     );
 
     renderWithProviders(<UsersPage />);
+    await rowOf("Ayşe Yılmaz");
 
-    expect(
-      (await screen.findAllByRole("tab")).map((tab) => tab.textContent),
-    ).toEqual(["All 68", "Active 65", "Suspended 2"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "All 68",
+      "Active 65",
+      "Suspended 2",
+    ]);
   });
 
   it("UsersPage_SystemAdmin_ShowsTheSystemAdminTagOnly", async () => {
@@ -214,7 +217,9 @@ describe("UsersPage", () => {
     );
     expect(
       await dialog.findByText(
-        sentence("Ayşe Yılmaz is the last Owner of Northwind Traders."),
+        sentence(
+          "Ayşe Yılmaz is the only Owner of Northwind Traders. While they are suspended, nobody there can manage Owners. Make someone else Owner first if Northwind Traders needs one.",
+        ),
       ),
     ).toBeVisible();
     expect(reads.count).toBe(1);
