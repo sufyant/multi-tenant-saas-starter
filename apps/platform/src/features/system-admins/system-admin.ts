@@ -3,6 +3,7 @@ import {
   ErrorCode,
   getGetMeQueryKey,
   getGetUserQueryKey,
+  getListUsersInfiniteQueryKey,
   getListUsersQueryKey,
   ProblemDetailsError,
   problemOf,
@@ -14,11 +15,12 @@ import type { QueryClient } from "@tanstack/react-query";
 export const needsReverification = (error: unknown) =>
   problemOf(error)?.code === ErrorCode.SystemAdminReverificationRequired;
 
-/** After a change the screen reads again (F47): the user, and every page of both lists, the System admins and the Users. */
+/** After a change the screen reads again (F47): the user, and both lists, the System admins and the Users, with their pages of Load more (F9). */
 export const refreshSystemAdmin = (queryClient: QueryClient, id: string) =>
   Promise.all([
     queryClient.invalidateQueries({ queryKey: getGetUserQueryKey(id) }),
     queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() }),
+    queryClient.invalidateQueries({ queryKey: getListUsersInfiniteQueryKey() }),
   ]);
 
 /** A refusal that says the user or the grant changed meanwhile: the dialog shows its text, and the screen reads again (F47). */

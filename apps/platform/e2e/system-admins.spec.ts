@@ -58,10 +58,12 @@ test("SystemAdmins_List_ShowsTheRootAndTheOwnRow", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: "System admins" }),
   ).toBeVisible();
   await expect(row(page, "root@starter.example")).toContainText("Root");
-  await expect(row(page, "root@starter.example")).toContainText(
-    "Root admins come from the platform’s configuration.",
-  );
-  await expect(row(page, "Sam Kelly")).toContainText("(you)");
+  await expect(
+    row(page, "root@starter.example").getByRole("button", {
+      name: /Actions for/,
+    }),
+  ).toHaveCount(0);
+  await expect(row(page, "Sam Kelly")).toContainText("Sam Kelly (you)");
   await page.getByRole("button", { name: "Actions for Sam Kelly" }).click();
   await expect(
     page.getByRole("menuitem", { name: /Remove system admin/ }),
@@ -69,6 +71,30 @@ test("SystemAdmins_List_ShowsTheRootAndTheOwnRow", async ({ page }) => {
   await expect(
     page.getByText("You can’t remove yourself. Ask another system admin."),
   ).toBeVisible();
+  await expectAccessible(page);
+});
+
+test("SystemAdmins_HoverRoot_ShowsWhyOverThePage", async ({ page }) => {
+  await open(page);
+
+  await row(page, "root@starter.example")
+    .getByText("Root", { exact: true })
+    .hover();
+  const tooltip = page.locator('[data-slot="tooltip-content"]');
+  await expect(tooltip).toHaveText(
+    "Root admins come from the platform’s configuration.",
+  );
+
+  // jsdom cannot stack layers: the browser answers which element is on top just under the tooltip's top edge (F53). The point is
+  // taken once the opening animation has ended.
+  const onTop = await tooltip.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((each) => each.finished));
+    const box = element.getBoundingClientRect();
+    return element.contains(
+      document.elementFromPoint(box.x + box.width / 2, box.y + 4),
+    );
+  });
+  expect(onTop).toBe(true);
   await expectAccessible(page);
 });
 

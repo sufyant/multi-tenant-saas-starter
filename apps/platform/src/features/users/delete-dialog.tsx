@@ -11,21 +11,18 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Initial } from "@/shared/initial";
+import type { ReactNode } from "react";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
-import { systemAdminsPage } from "@/shared/system-admins";
+import { useOrganisationList } from "./organisation-list";
 import { afterRefusal, refreshUser, type User } from "./user";
 
-const organisationPage = (tenantId: string) => `/organisations/${tenantId}`;
-
 /**
- * Delete a user (the DeleteUser board): red, and the user's email typed to confirm. The user leaves every organisation and their
- * email and names are erased (A8). When they are the last Owner somewhere (409 `user.last_owner`), the dialog names those
- * organisations from the user's memberships by the answer's `tenantIds`. A refusal shows its text in the dialog (F47).
+ * Delete a user (5.13): red, and the user's email typed to confirm. The user leaves every organisation and their email and names
+ * are erased (A8). A delete the API would refuse opens at once with its reason and only Close, as a stopped action does (F56): a
+ * system admin (5.15, `isSystemAdmin`), or the only Owner of an organisation (5.14, `memberships[].lastOwner` of GetUser). The
+ * API stays the guard: its 409 `user.is_system_admin` or `user.last_owner` shows the same refusal, and the page reads again (F47).
  */
 export function DeleteDialog({
   user,
@@ -37,13 +34,14 @@ export function DeleteDialog({
   const t = useTranslations("users");
   const common = useTranslations("common");
   const failureText = useFailureText();
-  const router = useRouter();
   const queryClient = useQueryClient();
+  const organisationList = useOrganisationList();
   const name = userNameOf(user, t("deletedUser"));
   // The list's row has no memberships. The user's page has read them already, so the dialog takes them from the cache there.
   const detail = useQuery(
     getGetUserQueryOptions(user.id, { query: { refetchOnMount: false } }),
   );
+  const memberships = detail.data?.memberships ?? [];
 
   const remove = useMutation({
     mutationFn: () => deleteUser(user.id),
@@ -53,60 +51,44 @@ export function DeleteDialog({
 
   const problem = problemOf(remove.error);
   const close = (open: boolean) => !open && onClose();
+  const refused = (title: ReactNode, text: ReactNode) => (
+    <Dialog
+      size="wide"
+      open
+      onOpenChange={close}
+      title={title}
+      description={text}
+      actionLabel={common("close")}
+      onConfirm={onClose}
+    />
+  );
 
-  if (problem?.code === ErrorCode.UserLastOwner) {
-    const tenantIds = problem.tenantIds ?? [];
-    const organisations = (detail.data?.memberships ?? []).filter(
-      (membership) => tenantIds.includes(membership.tenantId),
+  if (user.isSystemAdmin || problem?.code === ErrorCode.UserIsSystemAdmin)
+    return refused(
+      t.rich("cannotDeleteAdmin", { name, ...isolated }),
+      t.rich("cannotDeleteAdminText", { name, ...isolated }),
     );
-    const [first] = organisations;
-    return (
-      <Dialog
-        size="wide"
-        open
-        onOpenChange={close}
-        title={t.rich("cannotDelete", { name, ...isolated })}
-        description={t("cannotDeleteText", { count: tenantIds.length })}
-        actionLabel={t("openOrganisation")}
-        cancelLabel={common("close")}
-        onConfirm={() => first && router.push(organisationPage(first.tenantId))}
-      >
-        <ul className="flex flex-col gap-1.5">
-          {organisations.map((organisation) => (
-            <li key={organisation.tenantId}>
-              <Link
-                href={organisationPage(organisation.tenantId)}
-                className="flex items-center gap-2.5 rounded-md border border-border px-3 py-2 hover:bg-muted"
-              >
-                <Initial name={organisation.tenantName} />
-                <bdi className="flex-1 font-medium">
-                  {organisation.tenantName}
-                </bdi>
-                <bdi
-                  dir="ltr"
-                  className="font-mono text-small text-muted-foreground"
-                >
-                  {organisation.tenantSlug}
-                </bdi>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Dialog>
+  const tenantIds = new Set(
+    problem?.code === ErrorCode.UserLastOwner ? (problem.tenantIds ?? []) : [],
+  );
+  const lastOwnerOf = memberships
+    .filter(
+      (membership) =>
+        membership.lastOwner || tenantIds.has(membership.tenantId),
+    )
+    .map((membership) => membership.tenantName);
+  if (lastOwnerOf.length > 0)
+    return refused(
+      t.rich("cannotDeleteYet", { name, ...isolated }),
+      t.rich("cannotDeleteLastOwner", {
+        name,
+        ...isolated,
+        ...organisationList(lastOwnerOf),
+      }),
     );
-  }
 
   const failure = (() => {
     if (!remove.error) return null;
-    if (problem?.code === ErrorCode.UserIsSystemAdmin)
-      return {
-        title: t.rich("isSystemAdmin", { name, ...isolated }),
-        text: t("isSystemAdminText"),
-        link: {
-          href: systemAdminsPage,
-          label: t("openSystemAdmins"),
-        },
-      };
     if (problem?.code === ErrorCode.UserHasMemberships)
       return {
         title: t.rich("joinedMeanwhile", { name, ...isolated }),
@@ -116,10 +98,11 @@ export function DeleteDialog({
       return { title: t("notFound"), text: null };
     return {
       title: t.rich("notDone", { name, ...isolated }),
-      text: failureText(problemOf(remove.error)),
+      text: failureText(problem),
     };
   })();
   const email = user.email ?? "";
+  const organisations = memberships.map((membership) => membership.tenantName);
 
   return (
     <Dialog
@@ -128,7 +111,12 @@ export function DeleteDialog({
       tone="destructive"
       onOpenChange={close}
       title={t.rich("deleteTitle", { name, ...isolated })}
-      description={t("deleteText")}
+      description={t.rich("deleteText", {
+        name,
+        count: organisations.length,
+        ...isolated,
+        ...organisationList(organisations),
+      })}
       actionLabel={t("deleteAction")}
       cancelLabel={common("cancel")}
       confirmText={email}
@@ -145,20 +133,7 @@ export function DeleteDialog({
       }
     >
       {failure && (
-        <Banner
-          tone="destructive"
-          title={failure.title}
-          action={
-            failure.link && (
-              <Link
-                href={failure.link.href}
-                className="shrink-0 font-medium underline"
-              >
-                {failure.link.label}
-              </Link>
-            )
-          }
-        >
+        <Banner tone="destructive" title={failure.title}>
           {failure.text}
         </Banner>
       )}

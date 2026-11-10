@@ -5,8 +5,8 @@ import { Tabs, type TabsItem } from "@repo/ui/components/tabs";
 import { useTranslations } from "next-intl";
 
 /**
- * The tabs of a page from bp-tablet, and one choice of them on a phone, where the tabs do not fit on one line (4.43, 4.44): "All ·
- * 10". Both read and write the same value, which the page keeps in the URL (F9).
+ * The tabs of a page from bp-tablet, and one choice of them on a phone, where the tabs do not fit on one line (4.43, 4.44, 5.16):
+ * "All · 10". Both read and write the same value, which the page keeps in the URL (F9). Organisations and Users share it.
  */
 export function ViewChoice({
   label,
@@ -19,7 +19,7 @@ export function ViewChoice({
   current: string;
   onValueChange: (id: string) => void;
 }) {
-  const t = useTranslations("organisations");
+  const t = useTranslations("viewChoice");
   return (
     <>
       <div className="max-tablet:hidden">
@@ -39,11 +39,11 @@ export function ViewChoice({
           label:
             item.count === undefined
               ? item.label
-              : t("viewWithCount", { view: item.label, count: item.count }),
+              : t("withCount", { view: item.label, count: item.count }),
         }))}
         onValueChange={onValueChange}
-        searchPlaceholder={t("viewSearch")}
-        emptyLabel={t("viewEmpty")}
+        searchPlaceholder={t("search")}
+        emptyLabel={t("empty")}
       />
     </>
   );

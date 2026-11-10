@@ -7,35 +7,60 @@ import {
   schemas,
   type UserDetailResponse,
   type UserMembershipResponse,
+  UserMembershipResponseTenantStatus,
   UserResponseStatus,
 } from "@repo/api-client";
-import { Avatar } from "@repo/ui/components/avatar";
 import { Banner } from "@repo/ui/components/banner";
+import { Button } from "@repo/ui/components/button";
+import { CopyButton } from "@repo/ui/components/copy-button";
+import { Label } from "@repo/ui/components/label";
+import { Pill, type PillTone } from "@repo/ui/components/pill";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Status } from "@repo/ui/components/status";
-import { Table, type TableColumn } from "@repo/ui/components/table";
 import { Time } from "@repo/ui/components/time";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
+import { BackLink } from "@/shared/back-link";
 import { DetailList } from "@/shared/detail-list";
-import { Initial } from "@/shared/initial";
 import { nameOf, userNameOf } from "@/shared/name-of";
 import { NotFoundPage } from "@/shared/not-found-page";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import { MakeOwnerDialog } from "./make-owner-dialog";
 import { isOwnerMembership } from "./owner-membership";
+import { ReactivateDialog } from "./reactivate-dialog";
 import { useRoleName } from "./use-role-name";
 import { useUserActions } from "./use-user-actions";
-import { actionsOf, statuses } from "./user";
-import { AdminTags } from "./users-table";
+import { actionsOf } from "./user";
+import { UserStatus } from "./users-table";
+
+/** An organisation that is not active shows its status beside the role (5.05); an active one shows none. */
+const tenantStatuses = {
+  [UserMembershipResponseTenantStatus.Suspended]: {
+    label: "organisations.statusSuspended",
+    tone: "warning",
+  },
+  [UserMembershipResponseTenantStatus.Closed]: {
+    label: "organisations.statusClosed",
+    tone: "neutral",
+  },
+  [UserMembershipResponseTenantStatus.Purging]: {
+    label: "organisations.statusPurging",
+    tone: "destructive",
+  },
+} as const satisfies Record<
+  Exclude<
+    UserMembershipResponseTenantStatus,
+    typeof UserMembershipResponseTenantStatus.Active
+  >,
+  { label: string; tone: PillTone }
+>;
 
 /**
- * One user (the UserDetail, ReactivateUser and DeleteUser boards): the header with the System admin badge and the actions, the
- * suspension's banner, the details and the memberships with Make Owner. A deleted user shows the deleted state, without actions.
+ * One user (5.05 to 5.15, 5.17): Back to Users, the name with its status, the System admin label and the actions, the suspension's
+ * banner, the details and the organisations with Make Owner. A deleted user shows the deleted state, without actions.
  */
 export function UserPage({ userId }: { userId: string }) {
   const known = schemas.GetUserParams.shape.userId.safeParse(userId).success;
@@ -56,22 +81,29 @@ function Loading() {
 
 function Detail({ user }: { user: UserDetailResponse }) {
   const t = useTranslations();
-  const { date, timeZone } = useDates();
+  const { timeZone } = useDates();
   const actions = useUserActions();
   const locale = t("locale.format");
-  const deletedUser = t("users.deletedUser");
-  const name = userNameOf(user, deletedUser);
-  const suspended = user.status === UserResponseStatus.Suspended;
-  const suspender =
-    (user.suspendedBy &&
-      !user.suspendedBy.deleted &&
-      nameOf(user.suspendedBy)) ||
-    deletedUser;
+  const name = userNameOf(user, t("users.deletedUser"));
 
+  // A deleted user has no email (A8), so their page has no Email row.
   const rows: { term: string; value: ReactNode }[] = [
-    { term: t("users.organisationsTerm"), value: user.membershipCount },
+    ...(user.email
+      ? [
+          {
+            term: t("users.emailTerm"),
+            value: (
+              <>
+                <bdi dir="ltr">{user.email}</bdi>
+                <CopyButton value={user.email} label={t("users.copyEmail")} />
+              </>
+            ),
+          },
+        ]
+      : []),
+    { term: t("users.statusTerm"), value: <UserStatus status={user.status} /> },
     {
-      term: t("users.createdTerm"),
+      term: t("users.signedUpTerm"),
       value: (
         <Time
           at={user.createdAt}
@@ -81,171 +113,138 @@ function Detail({ user }: { user: UserDetailResponse }) {
         />
       ),
     },
+    { term: t("users.organisationsTerm"), value: user.membershipCount },
   ];
-  if (suspended && user.suspendedAt)
-    rows.push(
-      {
-        term: t("users.suspendedTerm"),
-        value: (
-          <Time
-            at={user.suspendedAt}
-            show="datetime"
-            locale={locale}
-            timeZone={timeZone}
-          />
-        ),
-      },
-      { term: t("users.suspendedByTerm"), value: <bdi>{suspender}</bdi> },
-    );
 
   return (
-    <section className="flex min-w-0 max-w-[1160px] flex-col gap-5">
-      {suspended && user.suspendedAt && (
-        <Banner
-          tone="warning"
-          title={t("users.suspendedTitle", {
-            date: date(user.suspendedAt),
-            name: suspender,
-          })}
-        >
-          {t("users.suspendedText")}
-        </Banner>
-      )}
-      <div className="flex items-center gap-3.5">
-        <Avatar person={user} className="size-11" />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-page-title">
-              <bdi>{name}</bdi>
-            </h1>
-            <Status tone={statuses[user.status].tone}>
-              {t(statuses[user.status].label)}
-            </Status>
-            <AdminTags user={user} linked />
-          </div>
-          {user.email && (
-            <bdi dir="ltr" className="text-muted-foreground">
-              {user.email}
-            </bdi>
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      <BackLink href="/users" label={t("users.backToUsers")} />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-page-title">
+            <bdi>{name}</bdi>
+          </h1>
+          {user.isSystemAdmin && <Label>{t("users.systemAdmin")}</Label>}
+          {user.isRootSystemAdmin && <Label>{t("systemAdmins.root")}</Label>}
+          <UserStatus status={user.status} />
+          {actionsOf(user).length > 0 && (
+            <RowMenu
+              label={t("users.actionsFor", { name })}
+              items={actions.itemsFor(user)}
+            />
           )}
         </div>
-        {actionsOf(user).length > 0 && (
-          <RowMenu
-            label={t("users.actionsFor", { name })}
-            items={actions.itemsFor(user)}
-          />
+        {user.email && (
+          <bdi dir="ltr" className="text-small text-muted-foreground">
+            {user.email}
+          </bdi>
         )}
       </div>
+      <Suspension user={user} />
       <DetailList rows={rows} />
-      <h2 className="text-section-title">{t("users.memberships")}</h2>
-      {user.memberships.length > 0 ? (
-        <Memberships user={user} timeZone={timeZone} />
-      ) : (
-        <p className="text-muted-foreground">{t("users.noMemberships")}</p>
-      )}
+      <Memberships user={user} />
       {actions.dialog}
     </section>
   );
 }
 
-/** The user's memberships (the UserDetail board): the organisation, its slug, the role and when they joined, each with Make Owner. */
-function Memberships({
-  user,
-  timeZone,
-}: {
-  user: UserDetailResponse;
-  timeZone: string | null | undefined;
-}) {
-  const t = useTranslations();
-  const roleName = useRoleName();
-  const locale = t("locale.format");
-  const [making, setMaking] = useState<UserMembershipResponse | null>(null);
-
-  const organisation = (membership: UserMembershipResponse) => (
-    <Link
-      href={`/organisations/${membership.tenantId}`}
-      className="truncate font-medium hover:underline"
-    >
-      <bdi>{membership.tenantName}</bdi>
-    </Link>
-  );
-
-  const columns: TableColumn<UserMembershipResponse>[] = [
-    {
-      key: "organisation",
-      header: t("users.organisation"),
-      render: (membership) => (
-        <span className="flex min-w-0 items-center gap-3">
-          <Initial name={membership.tenantName} />
-          <span className="flex min-w-0 flex-col">
-            {organisation(membership)}
-            <bdi
-              dir="ltr"
-              className="truncate font-mono text-small text-muted-foreground"
-            >
-              {membership.tenantSlug}
-            </bdi>
-          </span>
-        </span>
-      ),
-      cardRender: organisation,
-    },
-    {
-      key: "role",
-      header: t("users.role"),
-      card: "end",
-      // A built-in role by its translated name; a custom role as the organisation stored it, isolated from the page's direction.
-      render: (membership) => <bdi>{roleName(membership.role)}</bdi>,
-    },
-    {
-      key: "joined",
-      header: t("users.joined"),
-      secondary: true,
-      card: "hide",
-      render: (membership) => (
-        <Time
-          at={membership.joinedAt}
-          show="date"
-          locale={locale}
-          timeZone={timeZone}
-        />
-      ),
-    },
-  ];
-
+/**
+ * The suspension's banner (5.07): when, by whom and why, with Reactivate. A "by" or a reason that the API does not know (an event
+ * before 37b-backend) is left out; a deleted admin is "Deleted user". The reason is only the platform's; the user never sees it.
+ */
+function Suspension({ user }: { user: UserDetailResponse }) {
+  const t = useTranslations("users");
+  const { date } = useDates();
+  const [reactivating, setReactivating] = useState(false);
+  if (user.status !== UserResponseStatus.Suspended || !user.suspendedAt)
+    return null;
+  const by =
+    user.suspendedBy &&
+    ((!user.suspendedBy.deleted && nameOf(user.suspendedBy)) ||
+      t("deletedUser"));
   return (
     <>
-      <Table
-        columns={columns}
-        rows={user.memberships}
-        rowKey="tenantId"
-        label={t("users.memberships")}
-        actions={(membership) => (
-          <RowMenu
-            label={t("users.actionsFor", { name: membership.tenantName })}
-            items={[
-              {
-                label: t("users.makeOwner"),
-                disabled: isOwnerMembership(membership),
-                reason: isOwnerMembership(membership)
-                  ? t("users.alreadyOwner")
-                  : undefined,
-                onSelect: () => setMaking(membership),
-              },
-            ]}
-          />
-        )}
-        actionsLabel={t("users.actions")}
-        cardLead={(membership) => <Initial name={membership.tenantName} />}
-        rowCount={user.memberships.length}
-        page={1}
-        pageSize={user.memberships.length}
-        pager={{
-          previous: t("common.previous"),
-          next: t("common.next"),
-          page: (current, count) => t("common.page", { page: current, count }),
-        }}
-      />
+      <Banner
+        tone="warning"
+        title={
+          by
+            ? t("suspendedOnBy", { date: date(user.suspendedAt), name: by })
+            : t("suspendedOn", { date: date(user.suspendedAt) })
+        }
+        action={
+          <Button onClick={() => setReactivating(true)}>
+            {t("reactivate")}
+          </Button>
+        }
+      >
+        {user.suspensionReason
+          ? t("suspendedReason", { reason: user.suspensionReason })
+          : t("suspendedNoReason")}
+      </Banner>
+      {reactivating && (
+        <ReactivateDialog user={user} onClose={() => setReactivating(false)} />
+      )}
+    </>
+  );
+}
+
+/**
+ * The user's organisations (5.05, 5.08): each by its name, a status that is not active, the role, and Make Owner where the user is
+ * not an Owner yet. Without one, "In no organisation.".
+ */
+function Memberships({ user }: { user: UserDetailResponse }) {
+  const t = useTranslations();
+  const roleName = useRoleName();
+  const [making, setMaking] = useState<UserMembershipResponse | null>(null);
+
+  if (user.memberships.length === 0)
+    return (
+      <p className="rounded-lg border border-border bg-card px-4 py-3.5 text-body text-muted-foreground">
+        {t("users.noMemberships")}
+      </p>
+    );
+  return (
+    <>
+      <ul
+        aria-label={t("users.organisationsTerm")}
+        className="flex flex-col overflow-hidden rounded-lg border border-border bg-card"
+      >
+        {user.memberships.map((membership) => {
+          const status =
+            membership.tenantStatus ===
+            UserMembershipResponseTenantStatus.Active
+              ? null
+              : tenantStatuses[membership.tenantStatus];
+          return (
+            <li
+              key={membership.tenantId}
+              className="flex min-h-row-height flex-wrap items-center gap-2 border-b border-border px-4 py-1.5 last:border-b-0"
+            >
+              <Link
+                href={`/organisations/${membership.tenantId}`}
+                className="min-w-0 flex-1 truncate text-body hover:underline"
+              >
+                <bdi>{membership.tenantName}</bdi>
+              </Link>
+              {status && <Pill tone={status.tone}>{t(status.label)}</Pill>}
+              {/* A built-in role by its translated name; a custom role as the organisation stored it, isolated from the page's direction. */}
+              <Label>
+                <bdi>{roleName(membership.role)}</bdi>
+              </Label>
+              {!isOwnerMembership(membership) && (
+                <Button
+                  aria-label={t("users.makeOwnerOf", {
+                    organisation: membership.tenantName,
+                  })}
+                  onClick={() => setMaking(membership)}
+                >
+                  {t("users.makeOwner")}
+                </Button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
       {making && (
         <MakeOwnerDialog
           user={user}

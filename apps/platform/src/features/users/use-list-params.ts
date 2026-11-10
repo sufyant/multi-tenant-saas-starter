@@ -1,12 +1,7 @@
 "use client";
 
 import { ListUsersSort, UserResponseStatus } from "@repo/api-client";
-import {
-  parseAsInteger,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryStates,
-} from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 
 /**
  * The status tabs (the Users board): All, Active and Suspended. A deleted user shows under All. The list never sends
@@ -19,13 +14,12 @@ export const tabs = [
 export type Tab = (typeof tabs)[number];
 
 /**
- * The list's state in the URL (F8, F9): `?status=…&q=…&page=…&sort=…`. Each change pushes a history entry, so back and forward
- * restore it. A value the contract does not have reads as absent.
+ * The list's state in the URL (F8, F9): `?status=…&q=…&sort=…`, never the page: the list grows with Load more. Each change pushes a
+ * history entry, so back and forward restore it. A value the contract does not have reads as absent.
  */
 const parsers = {
   status: parseAsStringLiteral(tabs),
   q: parseAsString.withDefault(""),
-  page: parseAsInteger.withDefault(1),
   sort: parseAsStringLiteral(Object.values(ListUsersSort)),
 };
 

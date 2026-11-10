@@ -62,6 +62,9 @@ export default defineConfig({
           ListTenants: {
             query: { useInfinite: true, useInfiniteQueryParam: "page" },
           },
+          ListUsers: {
+            query: { useInfinite: true, useInfiniteQueryParam: "page" },
+          },
         },
       },
     },

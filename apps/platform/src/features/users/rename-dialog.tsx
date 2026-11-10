@@ -108,8 +108,8 @@ export function RenameDialog({
       open
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("renameTitle", { name, ...isolated })}
-      description={t("renameText")}
-      actionLabel={t("renameAction")}
+      description={t.rich("renameText", { name, ...isolated })}
+      actionLabel={t("rename")}
       cancelLabel={common("cancel")}
       pending={rename.isPending}
       onConfirm={() => void submit()}

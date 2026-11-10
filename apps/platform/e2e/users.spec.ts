@@ -4,7 +4,7 @@ import type { MakeOwnerRequest, UserResponse } from "@repo/api-client";
 import { mockMakeOwner, mockPlatform, users } from "./api";
 import { expectAccessible } from "./axe";
 
-// Users, and one user with their memberships and Make Owner (the Users, UserDetail and MakeOwner boards).
+// Users, and one user with their organisations and Make Owner (5.01, 5.05, 5.12).
 
 const open = async (page: Page, path: string) => {
   await setupClerkTestingToken({ page });
@@ -17,42 +17,19 @@ const row = (page: Page, user: UserResponse) =>
     .getByRole("row")
     .filter({ has: page.locator(`a[href="/users/${user.id}"]`) });
 
-test("Users_List_ShowsTheSystemAdminAndRootTags", async ({ page }) => {
+test("Users_List_ShowsTheSystemAdminLabels", async ({ page }) => {
   await open(page, "/users");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Users" }),
   ).toBeVisible();
   await expect(row(page, users.root)).toContainText("System admin");
-  await expect(row(page, users.root)).toContainText("Root");
+  await expect(row(page, users.root)).not.toContainText("Root");
   await expect(row(page, users.sam)).toContainText("System admin");
   await expect(row(page, users.sam)).not.toContainText("Root");
   await expect(row(page, users.ayse)).not.toContainText("System admin");
   await expect(row(page, users.mehmet)).toContainText("Suspended");
   await expect(row(page, users.deleted)).toContainText("Deleted user");
-  await expectAccessible(page);
-});
-
-test("Users_HoverUpdated_ShowsTheTooltipOverTheTopBar", async ({ page }) => {
-  await open(page, "/users");
-
-  await page
-    .getByText(/^Updated/)
-    .locator("time")
-    .hover();
-  const tooltip = page.locator('[data-slot="tooltip-content"]');
-  await expect(tooltip).toBeVisible();
-
-  // jsdom cannot stack layers: the browser answers which element is on top just under the tooltip's top edge, where the top
-  // bar covered it (F53). The point is taken once the opening animation has ended.
-  const onTop = await tooltip.evaluate(async (element) => {
-    await Promise.all(element.getAnimations().map((each) => each.finished));
-    const box = element.getBoundingClientRect();
-    return element.contains(
-      document.elementFromPoint(box.x + box.width / 2, box.y + 4),
-    );
-  });
-  expect(onTop).toBe(true);
   await expectAccessible(page);
 });
 
@@ -62,14 +39,12 @@ test("User_WithMemberships_ListsEachOrganisationAndRole", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Ayşe Yılmaz" }),
   ).toBeVisible();
-  const memberships = page.getByRole("table", {
-    name: "Organisations and roles",
-  });
+  const memberships = page.getByRole("list", { name: "Organisations" });
   await expect(
-    memberships.getByRole("row", { name: /Northwind Traders/ }),
+    memberships.getByRole("listitem").filter({ hasText: "Northwind Traders" }),
   ).toContainText("Owner");
   await expect(
-    memberships.getByRole("row", { name: /Atlas Logistics/ }),
+    memberships.getByRole("listitem").filter({ hasText: "Atlas Logistics" }),
   ).toContainText("Member");
   await expectAccessible(page);
 });
@@ -79,20 +54,13 @@ test("MakeOwner_Member_MakesThemAnOwner", async ({ page }) => {
   await open(page, `/users/${users.ayse.id}`);
   await mockMakeOwner(page, bodies);
 
-  await page
-    .getByRole("button", { name: "Actions for Northwind Traders" })
-    .click();
+  // An Owner is offered no Make Owner there (5.05).
   await expect(
-    page.getByRole("menuitem", { name: /Make Owner/ }),
-  ).toBeDisabled();
-  await expect(page.getByText("Already an Owner.")).toBeVisible();
-  await page.keyboard.press("Escape");
-  // The first menu closes with an animation; the second must not open beside it.
-  await expect(page.getByRole("menu")).toBeHidden();
+    page.getByRole("button", { name: "Make Owner of Northwind Traders" }),
+  ).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Actions for Atlas Logistics" })
+    .getByRole("button", { name: "Make Owner of Atlas Logistics" })
     .click();
-  await page.getByRole("menuitem", { name: "Make Owner", exact: true }).click();
   const dialog = page.getByRole("alertdialog", {
     name: "Make Ayşe Yılmaz an Owner of Atlas Logistics?",
   });

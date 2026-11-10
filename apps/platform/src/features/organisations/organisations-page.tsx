@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { useLoadMore } from "@/shared/load-more";
 import { leaveOf } from "@/shared/problem-screen";
+import { ViewChoice } from "@/shared/view-choice";
 import { CreateOrganisationDialog } from "./create-organisation-dialog";
 import { OrganisationsTable } from "./organisations-table";
 import {
@@ -31,7 +32,6 @@ import {
   useListParams,
 } from "./use-list-params";
 import { useOrganisationActions } from "./use-organisation-actions";
-import { ViewChoice } from "./view-choice";
 
 const all = "all";
 

@@ -12,11 +12,12 @@ import {
   it,
   vi,
 } from "vitest";
-import { meAnswer, problem } from "../../../test/organisations";
+import { meAnswer, northwind, problem } from "../../../test/organisations";
 import { sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   john,
+  membershipOf,
   platformCommand,
   userAnswer,
   userDetailOf,
@@ -35,13 +36,14 @@ afterAll(() => server.close());
 const suspended = userDetailOf(john, {
   suspendedAt: "2026-10-16T09:00:00Z",
   suspendedBy: { name: "Ciara Byrne", deleted: false },
+  memberships: [membershipOf(northwind)],
 });
 
 const open = () =>
   openUserAction(john, "John Byrne", "Reactivate", "Reactivate John Byrne?");
 
 const reactivate = (dialog: Awaited<ReturnType<typeof open>>) =>
-  userEvent.click(dialog.getByRole("button", { name: "Reactivate user" }));
+  userEvent.click(dialog.getByRole("button", { name: "Reactivate" }));
 
 describe("ReactivateUserDialog", () => {
   it("Reactivate_Success_ToastsAndReadsTheUserAgain", async () => {
@@ -61,7 +63,9 @@ describe("ReactivateUserDialog", () => {
     const dialog = await open();
     expect(
       dialog.getByText(
-        "They can sign in again at once, in every organisation they belong to.",
+        sentence(
+          "John Byrne can sign in again at once, with the same roles in Northwind Traders.",
+        ),
       ),
     ).toBeVisible();
     await reactivate(dialog);
@@ -69,6 +73,28 @@ describe("ReactivateUserDialog", () => {
     await expectVisibleToast(sentence("John Byrne reactivated."));
     expect(calls).toEqual([{ key: null, body: null }]);
     await waitFor(() => expect(reads.count).toBe(2));
+  });
+
+  it("Reactivate_OrganisationEndingInAStop_EndsTheSentenceWithOneStop", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer({
+        ...suspended,
+        memberships: [
+          membershipOf({ ...northwind, name: "Pacific Coast Freight Ltd." }),
+        ],
+      }),
+    );
+
+    const dialog = await open();
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "John Byrne can sign in again at once, with the same roles in Pacific Coast Freight Ltd.",
+        ),
+      ),
+    ).toBeVisible();
   });
 
   it("Reactivate_NotFound_SaysSoAndReadsTheUserAgain", async () => {

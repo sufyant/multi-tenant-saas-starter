@@ -1,31 +1,34 @@
 "use client";
 
 import {
-  getListUsersQueryOptions,
+  getListUsersInfiniteQueryOptions,
   ListUsersSort,
   problemOf,
   schemas,
+  type UserListPageResponse,
   UserResponseStatus,
 } from "@repo/api-client";
+import { brand } from "@repo/brand";
 import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
-import { Freshness } from "@repo/ui/components/freshness";
 import { ListError } from "@repo/ui/components/list-error";
+import { LoadMore } from "@repo/ui/components/load-more";
 import { Search } from "@repo/ui/components/search";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Tabs } from "@repo/ui/components/tabs";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { nextPage, pageSize } from "@repo/ui/lib/pages";
+import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
+import { useLoadMore } from "@/shared/load-more";
 import { leaveOf } from "@/shared/problem-screen";
-import { useDates } from "@/shared/use-dates";
+import { ViewChoice } from "@/shared/view-choice";
 import { type Tab, tabs, useListParams } from "./use-list-params";
 import { useUserActions } from "./use-user-actions";
 import { UsersTable } from "./users-table";
 
 const all = "all";
 
-/** The tab's label key: All, then the statuses (the Users board). */
+/** The tab's label key: All, then the statuses (5.01). */
 const tabLabels = {
   [UserResponseStatus.Active]: "users.tabActive",
   [UserResponseStatus.Suspended]: "users.tabSuspended",
@@ -38,38 +41,63 @@ const noMatchLabels = {
 } as const satisfies Record<Tab, string>;
 
 /**
- * Users, the people of every organisation (the Users and ListStates boards): the status tabs, the search by name or email, and
- * the table. Every parameter of the list is in the URL (F9). The System admin and Root tags are information; the System admins
- * page manages them.
+ * A tab's count: its status's, and All their sum, a deleted user included (`statusCounts`). Each is the status's total, which no
+ * search or filter changes (frames 8.06, 4.04; the maintainer's decision of 2026-11-10, which 37b-backend-counts brings to the API).
+ */
+const countOf = (
+  counts: UserListPageResponse["statusCounts"] | undefined,
+  tab: Tab | typeof all,
+) => {
+  if (!counts) return undefined;
+  if (tab === all) return counts.active + counts.suspended + counts.deleted;
+  return counts[tab];
+};
+
+/**
+ * Users, the people of every organisation (5.01 to 5.04, 5.16, 5.18, 5.19): the frame's description and no Freshness (F59), the
+ * status tabs with their counts, the search by name or email, and the table. The list grows with Load more (F9); the URL holds the
+ * tab, the search and the sort, never the page. The System admin label is information; the System admins page manages it.
  */
 export function UsersPage() {
   const t = useTranslations();
-  const { timeZone } = useDates();
   const [params, setParams] = useListParams();
   const actions = useUserActions();
-  const { status, q, page, sort } = params;
+  const { status, q, sort } = params;
   const onSearch = useCallback(
-    (next: string) => void setParams({ q: next || null, page: null }),
+    (next: string) => void setParams({ q: next || null }),
     [setParams],
   );
 
-  const list = useQuery(
-    getListUsersQueryOptions(
+  const list = useInfiniteQuery(
+    getListUsersInfiniteQueryOptions(
       {
         q: q || undefined,
         status: status ? [status] : undefined,
-        page,
+        pageSize,
         sort: sort ?? undefined,
       },
-      { query: { placeholderData: keepPreviousData } },
+      {
+        query: {
+          initialPageParam: 1,
+          getNextPageParam: nextPage,
+          placeholderData: keepPreviousData,
+        },
+      },
     ),
   );
-
-  const clear = () => void setParams({ q: null, status: null, page: null });
+  const next = useLoadMore(
+    list,
+    {
+      loaded: (count) => t("users.loadedUsers", { count }),
+      failed: t("users.moreError"),
+    },
+    { failure: "in-place" },
+  );
+  const counts = list.data?.pages[0]?.statusCounts;
 
   const body = (() => {
-    if (list.isPending) return <Skeleton rows={4} label={t("users.loading")} />;
-    if (list.isError)
+    if (list.isPending) return <Skeleton rows={8} label={t("users.loading")} />;
+    if (!list.data)
       return (
         <ListError
           title={t("users.error")}
@@ -79,66 +107,91 @@ export function UsersPage() {
           onRetry={() => void list.refetch()}
         />
       );
-    // There is always a root system admin, so only a search or a tab finds nobody (the ListStates board).
-    if (list.data.items.length === 0 && (q || status))
+    const rows = list.data.pages.flatMap((page) => page.items);
+    // There is always a root system admin, so only a search or a tab finds nobody (5.03).
+    if (rows.length === 0 && q)
       return (
         <EmptyState
           kind="no-results"
-          title={
-            q
-              ? t("users.noMatchSearch", { q })
-              : status && t(noMatchLabels[status])
+          title={t("users.noMatchSearch", { q })}
+          description={t("users.noMatchSearchText")}
+          action={
+            <Button onClick={() => void setParams({ q: null })}>
+              {t("users.clearSearch")}
+            </Button>
           }
-          description={
-            q ? t("users.noMatchSearchText") : t("users.noMatchText")
+        />
+      );
+    if (rows.length === 0 && status)
+      return (
+        <EmptyState
+          kind="no-results"
+          title={t(noMatchLabels[status])}
+          description={t("users.noMatchText")}
+          action={
+            <Button onClick={() => void setParams({ status: null })}>
+              {t("users.clearFilters")}
+            </Button>
           }
-          action={<Button onClick={clear}>{t("users.clearFilters")}</Button>}
         />
       );
     return (
-      <UsersTable
-        page={list.data}
-        sort={sort}
-        timeZone={timeZone}
-        actions={actions}
-        onSortChange={(next) =>
-          void setParams({
-            sort:
-              Object.values(ListUsersSort).find((value) => value === next) ??
-              null,
-            page: null,
-          })
-        }
-        onPageChange={(next) => void setParams({ page: next })}
-      />
+      <div className="flex flex-col gap-2">
+        <UsersTable
+          rows={rows}
+          sort={sort}
+          actions={actions}
+          onSortChange={(value) =>
+            void setParams({
+              sort:
+                Object.values(ListUsersSort).find(
+                  (sorted) => sorted === value,
+                ) ?? null,
+            })
+          }
+        />
+        <LoadMore
+          hasMore={list.hasNextPage}
+          loading={list.isFetchingNextPage}
+          onMore={next.loadMore}
+          label={t("users.loadMore")}
+          loadingLabel={t("users.loadingMore")}
+          announcement={next.announcement}
+          failed={
+            next.failed
+              ? { text: t("users.moreError"), retryLabel: t("common.tryAgain") }
+              : undefined
+          }
+        />
+      </div>
     );
   })();
 
   return (
-    <section className="flex min-w-0 max-w-[1160px] flex-col gap-4">
-      <div>
+    <section className="flex min-w-0 flex-1 flex-col gap-4">
+      {/* On a phone the top bar names the page (5.16), so its header stays for screen readers. */}
+      <div className="sr-only flex min-w-0 flex-col gap-0.5 tablet:not-sr-only">
         <h1 className="text-page-title">{t("users.title")}</h1>
-        {list.dataUpdatedAt > 0 && (
-          <Freshness
-            at={new Date(list.dataUpdatedAt)}
-            locale={t("locale.format")}
-            timeZone={timeZone}
-            label={t("common.updated")}
-          />
-        )}
+        <p className="text-body text-muted-foreground">
+          {t("users.intro", { product: brand.name })}
+        </p>
       </div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <Tabs
+      {/* On a phone the search comes before the status choice (5.16). */}
+      <div className="flex flex-col gap-4 max-tablet:flex-col-reverse">
+        <ViewChoice
           label={t("users.tabs")}
           current={status ?? all}
           items={[
-            { id: all, label: t("users.tabAll") },
-            ...tabs.map((tab) => ({ id: tab, label: t(tabLabels[tab]) })),
+            { id: all, label: t("users.tabAll"), count: countOf(counts, all) },
+            ...tabs.map((tab) => ({
+              id: tab,
+              label: t(tabLabels[tab]),
+              count: countOf(counts, tab),
+            })),
           ]}
-          onValueChange={(next) =>
+          onValueChange={(value) =>
             void setParams({
-              status: tabs.find((tab) => tab === next) ?? null,
-              page: null,
+              status: tabs.find((tab) => tab === value) ?? null,
             })
           }
         />

@@ -95,6 +95,9 @@ describe("RemoveSystemAdminDialog", () => {
     await expectVisibleToast(
       sentence("Tomás Ryan is no longer a system admin."),
     );
+    expect(
+      screen.getByText("Their memberships in organisations stay."),
+    ).toBeVisible();
     expect(calls.count).toBe(1);
     await vi.waitFor(() => expect(requests).toHaveLength(2));
   });

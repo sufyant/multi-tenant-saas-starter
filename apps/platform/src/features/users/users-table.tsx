@@ -2,159 +2,118 @@
 
 import {
   ListUsersSort,
-  type UserListPageResponse,
   type UserResponse,
+  UserResponseStatus,
 } from "@repo/api-client";
-import { Avatar } from "@repo/ui/components/avatar";
-import { KeyIcon, type LucideIcon } from "@repo/ui/components/icon";
+import { Label } from "@repo/ui/components/label";
+import { Pill } from "@repo/ui/components/pill";
 import { RowMenu } from "@repo/ui/components/row-menu";
-import { Status } from "@repo/ui/components/status";
 import {
   sortFrom,
   sortOf,
   Table,
   type TableColumn,
 } from "@repo/ui/components/table";
-import { Tag } from "@repo/ui/components/tag";
-import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { userNameOf } from "@/shared/name-of";
-import { systemAdminsPage } from "@/shared/system-admins";
 import type { useUserActions } from "./use-user-actions";
 import { actionsOf, statuses } from "./user";
 
 /** The column a person can sort by, and the API's sort field (K5). The email's sort works from the URL. */
 const sorts = {
-  user: { asc: ListUsersSort.Name, desc: ListUsersSort.NameDescending },
+  name: { asc: ListUsersSort.Name, desc: ListUsersSort.NameDescending },
 };
 
-/**
- * The System admin tag, and Root beside it. In the list they are information only (the Users board); on a user's page each one
- * links to System admins (the UserDetail board).
- */
-export function AdminTags({
-  user,
-  linked = false,
-}: {
-  user: Pick<UserResponse, "isSystemAdmin" | "isRootSystemAdmin">;
-  linked?: boolean;
-}) {
-  const t = useTranslations("users");
-  const tag = (label: string, icon?: LucideIcon) =>
-    linked ? (
-      <Link href={systemAdminsPage} className="rounded-full hover:underline">
-        <Tag icon={icon}>{label}</Tag>
-      </Link>
-    ) : (
-      <Tag icon={icon}>{label}</Tag>
-    );
-  return (
-    <>
-      {user.isSystemAdmin && tag(t("systemAdmin"))}
-      {user.isRootSystemAdmin && tag(t("root"), KeyIcon)}
-    </>
-  );
+/** A user's status as its Pill (5.01). */
+export function UserStatus({ status }: { status: UserResponseStatus }) {
+  const t = useTranslations();
+  return <Pill tone={statuses[status].tone}>{t(statuses[status].label)}</Pill>;
 }
 
 /**
- * The list of users across every organisation (the Users board): the person with their email and tags, Organisations
- * (`membershipCount`), Status and Created. A deleted user has no name and no email, and no menu.
+ * The list of users across every organisation (5.01, 5.16): Name with the System admin label, Status, Email and Organisations
+ * (`membershipCount`), with no avatar. A phone card shows the email and the count, and at its end a status that is not active, or
+ * the System admin label. A deleted user has no name and no email, and no menu.
  */
 export function UsersTable({
-  page,
+  rows,
   sort,
-  timeZone,
   actions,
   onSortChange,
-  onPageChange,
 }: {
-  page: UserListPageResponse;
+  rows: UserResponse[];
   sort: string | null;
-  timeZone: string | null | undefined;
   actions: ReturnType<typeof useUserActions>;
   onSortChange: (sort: string | null) => void;
-  onPageChange: (page: number) => void;
 }) {
   const t = useTranslations();
-  const locale = t("locale.format");
   const nameText = (user: UserResponse) =>
     userNameOf(user, t("users.deletedUser"));
-
   const name = (user: UserResponse) => (
-    <Link
-      href={`/users/${user.id}`}
-      className="truncate font-medium hover:underline"
-    >
+    <Link href={`/users/${user.id}`} className="truncate hover:underline">
       <bdi>{nameText(user)}</bdi>
     </Link>
   );
+  const systemAdmin = (user: UserResponse) =>
+    user.isSystemAdmin && <Label>{t("users.systemAdmin")}</Label>;
+  const email = (user: UserResponse) =>
+    user.email && <bdi dir="ltr">{user.email}</bdi>;
 
   const columns: TableColumn<UserResponse>[] = [
     {
-      key: "user",
-      header: t("users.user"),
+      key: "name",
+      header: t("users.name"),
       sortable: true,
       render: (user) => (
-        <span className="flex min-w-0 items-center gap-3">
-          <Avatar person={user} />
-          <span className="flex min-w-0 flex-col">
-            <span className="flex min-w-0 flex-wrap items-center gap-2">
-              {name(user)}
-              <AdminTags user={user} />
-            </span>
-            {user.email && (
-              <bdi
-                dir="ltr"
-                className="truncate text-small text-muted-foreground"
-              >
-                {user.email}
-              </bdi>
-            )}
-          </span>
+        <span className="flex min-w-0 items-center gap-2">
+          {name(user)}
+          {systemAdmin(user)}
         </span>
       ),
       cardRender: name,
-    },
-    {
-      key: "organisations",
-      header: t("users.organisations"),
-      width: "w-43.5",
-      align: "end",
-      card: "hide",
-      render: (user) => user.membershipCount,
     },
     {
       key: "status",
       header: t("users.status"),
       width: "w-38.5",
       card: "end",
-      render: (user) => (
-        <Status tone={statuses[user.status].tone}>
-          {t(statuses[user.status].label)}
-        </Status>
+      render: (user) => <UserStatus status={user.status} />,
+      cardRender: (user) =>
+        user.status === UserResponseStatus.Active ? (
+          systemAdmin(user)
+        ) : (
+          <UserStatus status={user.status} />
+        ),
+    },
+    {
+      key: "email",
+      header: t("users.email"),
+      width: "w-53.5",
+      render: (user) => <span className="block truncate">{email(user)}</span>,
+      // The card's one line: the email, then the count when there is one (5.16).
+      cardRender: (user) => (
+        <>
+          {email(user)}
+          {user.email && user.membershipCount > 0 && " · "}
+          {user.membershipCount > 0 &&
+            t("users.organisationCount", { count: user.membershipCount })}
+        </>
       ),
     },
     {
-      key: "created",
-      header: t("users.created"),
-      secondary: true,
+      key: "organisations",
+      header: t("users.organisations"),
+      width: "w-43.5",
       card: "hide",
-      render: (user) => (
-        <Time
-          at={user.createdAt}
-          show="date"
-          locale={locale}
-          timeZone={timeZone}
-        />
-      ),
+      render: (user) => user.membershipCount,
     },
   ];
 
   return (
     <Table
       columns={columns}
-      rows={page.items}
+      rows={rows}
       rowKey="id"
       label={t("users.title")}
       actions={(user) =>
@@ -166,11 +125,9 @@ export function UsersTable({
         )
       }
       actionsLabel={t("users.actions")}
-      cardLead={(user) => <Avatar person={user} size="medium" />}
-      rowCount={page.total}
-      page={page.page}
-      pageSize={page.pageSize}
-      onPageChange={onPageChange}
+      rowCount={rows.length}
+      page={1}
+      pageSize={Math.max(rows.length, 1)}
       sort={sortOf(sorts, sort)}
       onSortChange={(next) => onSortChange(sortFrom(sorts, next))}
       pager={{

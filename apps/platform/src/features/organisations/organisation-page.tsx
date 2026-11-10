@@ -35,6 +35,7 @@ import {
 import { ProblemScreen } from "@/shared/problem-screen";
 import { TextLink } from "@/shared/text-link";
 import { useDates } from "@/shared/use-dates";
+import { ViewChoice } from "@/shared/view-choice";
 import { useMembersText } from "./members-text";
 import {
   actionsOf,
@@ -46,7 +47,6 @@ import {
 import { usePersonName } from "./person-name";
 import { PlanSection } from "./plan-section";
 import { useOrganisationActions } from "./use-organisation-actions";
-import { ViewChoice } from "./view-choice";
 
 /** The Users list, searched by the invited email: an Owner who joined as a member is made an Owner from their user page. */
 const usersFoundBy = (email: string | undefined) =>

@@ -24,10 +24,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { isolated } from "@/shared/isolated";
 import { userNameOf } from "@/shared/name-of";
+import { useOrganisationList } from "./organisation-list";
 import { afterRefusal, refreshUser, type User } from "./user";
-
-/** A list names at most three, then "and n more" (the Messages board, F15). */
-const named = 3;
 
 // The generated schema of SuspendUser (F11). The API trims the reason and needs 1 to 500 characters, as for an organisation; the
 // generated schema has the limit only, so the form adds the trim and the minimum.
@@ -45,9 +43,10 @@ const reasonText = (error: string | undefined) => {
 };
 
 /**
- * Suspend a user (the SuspendUser board). It asks for a reason that the user never sees, as an organisation's suspension does. Where the
- * user is the last Owner of an organisation (`memberships[].lastOwner`), it warns by the organisation's name; the warning never blocks.
- * A refusal shows its text in the dialog (F47).
+ * Suspend a user (5.10). It asks for a reason that only the platform sees, as an organisation's suspension does. Where the user is
+ * the only Owner of an organisation (`memberships[].lastOwner`), it warns by the organisation's name; the warning never blocks. A
+ * refusal shows its text in the dialog (F47); a deleted user is offered no Suspend, so `user.deleted` is the race of another admin's
+ * delete.
  */
 export function SuspendDialog({
   user,
@@ -57,7 +56,6 @@ export function SuspendDialog({
   onClose: () => void;
 }) {
   const t = useTranslations("users");
-  const locale = useTranslations("locale")("format");
   const common = useTranslations("common");
   const failureText = useFailureText();
   const queryClient = useQueryClient();
@@ -71,31 +69,10 @@ export function SuspendDialog({
   const detail = useQuery(
     getGetUserQueryOptions(user.id, { query: { refetchOnMount: false } }),
   );
+  const organisationList = useOrganisationList();
   const lastOwnerOf = (detail.data?.memberships ?? [])
     .filter((membership) => membership.lastOwner)
     .map((membership) => membership.tenantName);
-  const more = lastOwnerOf.length - named;
-  // Each organisation's name is isolated in the list, as in the sentence around it; the list's words stay text.
-  const organisations = new Intl.ListFormat(locale, {
-    type: "conjunction",
-  })
-    .formatToParts(
-      more > 0
-        ? [
-            ...lastOwnerOf.slice(0, named),
-            t("moreOrganisations", { count: more }),
-          ]
-        : lastOwnerOf,
-    )
-    .map((part, index) =>
-      part.type === "element" && lastOwnerOf.includes(part.value) ? (
-        // Two organisations may share a name; a part's place in the one formatted list never changes.
-        // biome-ignore lint/suspicious/noArrayIndexKey: the parts of a formatted list have no id of their own.
-        <bdi key={index}>{part.value}</bdi>
-      ) : (
-        part.value
-      ),
-    );
 
   const suspend = useMutation({
     mutationFn: (body: Suspension) => suspendUser(user.id, body),
@@ -121,6 +98,8 @@ export function SuspendDialog({
       };
     if (code === ErrorCode.UserNotFound)
       return { title: t("notFound"), text: null };
+    if (code === ErrorCode.UserDeleted)
+      return { title: t("wasDeleted"), text: null };
     return {
       title: t.rich("notDone", { name, ...isolated }),
       text: failureText(problemOf(suspend.error)),
@@ -149,12 +128,23 @@ export function SuspendDialog({
       tone="destructive"
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("suspendTitle", { name, ...isolated })}
-      description={t("suspendText")}
+      description={t.rich("suspendText", { name, ...isolated })}
       actionLabel={t("suspendAction")}
       cancelLabel={common("cancel")}
       pending={suspend.isPending}
       onConfirm={() => void submit()}
     >
+      {/* The warning never blocks (5.10): the frame draws it as the dialog's red text, above the reason. */}
+      {lastOwnerOf.length > 0 && (
+        <p className="text-small text-destructive-text">
+          {t.rich("lastOwnerWarning", {
+            name,
+            count: lastOwnerOf.length,
+            ...isolated,
+            ...organisationList(lastOwnerOf),
+          })}
+        </p>
+      )}
       <form
         noValidate
         onSubmit={(event) => void submit(event)}
@@ -183,18 +173,6 @@ export function SuspendDialog({
           })}
         </p>
       </form>
-      {lastOwnerOf.length > 0 && (
-        <Banner
-          tone="warning"
-          title={t.rich("lastOwnerWarning", {
-            name,
-            ...isolated,
-            list: () => organisations,
-          })}
-        >
-          {t("lastOwnerWarningText")}
-        </Banner>
-      )}
       {failure && (
         <Banner tone="destructive" title={failure.title}>
           {failure.text}
