@@ -63,4 +63,20 @@ describe("Input", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("Input_WithAnAddon_ShowsItBeforeTheFieldOutsideItsName", () => {
+    render(
+      <Input
+        label="Address"
+        addon="app.starter.example/"
+        dir="ltr"
+        defaultValue="northwind"
+      />,
+    );
+
+    const field = screen.getByRole("textbox", { name: "Address" });
+    expect(screen.getByText("app.starter.example/")).toBeVisible();
+    expect(field.parentElement).toHaveTextContent("app.starter.example/");
+    expect(field).toHaveValue("northwind");
+  });
 });

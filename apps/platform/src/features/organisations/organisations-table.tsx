@@ -1,36 +1,23 @@
 "use client";
 
-import {
-  InvitationResponseState,
-  ListTenantsSort,
-  type TenantListItemResponse,
-  type TenantListPageResponse,
-  TenantResponseStatus,
-} from "@repo/api-client";
+import { ListTenantsSort, type TenantListItemResponse } from "@repo/api-client";
+import { EmptyValue } from "@repo/ui/components/empty-value";
+import { Pill } from "@repo/ui/components/pill";
 import { RowMenu } from "@repo/ui/components/row-menu";
-import { Status } from "@repo/ui/components/status";
 import {
   sortFrom,
   sortOf,
   Table,
   type TableColumn,
 } from "@repo/ui/components/table";
-import { Time } from "@repo/ui/components/time";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Initial } from "@/shared/initial";
-import {
-  actionsOf,
-  daysUntil,
-  isGone,
-  statuses,
-  waitingInvitation,
-} from "./organisation";
+import { actionsOf, isGone, statuses, waitsForOwner } from "./organisation";
 import type { useOrganisationActions } from "./use-organisation-actions";
 
 /** The columns a person can sort by, and the API's sort field of each (K5). */
 const sorts = {
-  organisation: {
+  name: {
     asc: ListTenantsSort.Name,
     desc: ListTenantsSort.NameDescending,
   },
@@ -39,149 +26,101 @@ const sorts = {
 type Row = TenantListItemResponse;
 
 /**
- * The list of organisations (the Main board): Organisation with its slug, Owner, Members, Status and Created. The Owner column
- * counts the Owners and never names one (`ownerCount`); with none, it shows the Owner invitation that waits. A row whose purge has
- * begun has no menu. Created does not sort: ListTenants sorts by name and slug only.
+ * The list of organisations (4.01): Name, Status, Address and Members, with the frame's widths. Members counts the pending
+ * invitations too ("10 members · 2 invited"). The phone card names the plan with the members (4.43). A row whose purge has begun has
+ * no menu and counts nothing (K4). Every row the pages loaded is one page of the table (F10).
  */
 export function OrganisationsTable({
-  page,
+  rows,
   sort,
-  timeZone,
   actions,
   onSortChange,
-  onPageChange,
 }: {
-  page: TenantListPageResponse;
+  rows: Row[];
   sort: string | null;
-  timeZone: string | null | undefined;
   actions: ReturnType<typeof useOrganisationActions>;
   onSortChange: (sort: string | null) => void;
-  onPageChange: (page: number) => void;
 }) {
   const t = useTranslations();
-  const now = new Date();
-  const locale = t("locale.format");
-  const muted = (text: string) => (
-    <span className="text-muted-foreground">{text}</span>
-  );
 
-  const owner = (row: Row) => {
-    if (isGone(row)) return muted("—");
-    if (row.ownerCount > 0)
-      return t("organisations.ownerCount", { count: row.ownerCount });
-    if (row.status !== TenantResponseStatus.Active)
-      return muted(t("organisations.noOwner"));
-    const invitation = waitingInvitation(row);
-    return (
-      <span className="flex min-w-0 flex-col items-start">
-        <Status tone="info">{t("organisations.waitingForOwner")}</Status>
-        {invitation && (
-          <span className="text-small text-muted-foreground">
-            {invitation.state === InvitationResponseState.Expired
-              ? t("organisations.invitationExpired")
-              : t.rich("organisations.invitationExpires", {
-                  email: () => <bdi dir="ltr">{invitation.email}</bdi>,
-                  time: () => (
-                    <Time
-                      at={invitation.expiresAt}
-                      show="relative"
-                      locale={locale}
-                      timeZone={timeZone}
-                    />
-                  ),
-                })}
-          </span>
-        )}
-      </span>
-    );
+  const members = (row: Row) => {
+    const count =
+      row.memberCount > 0
+        ? t("organisations.memberCount", { count: row.memberCount })
+        : t("organisations.noMembersYet");
+    if (row.pendingInvitationCount === 0) return count;
+    return t("organisations.membersAndInvited", {
+      members: count,
+      count: row.pendingInvitationCount,
+    });
   };
-
-  const status = (row: Row) => (
-    <span className="flex flex-col items-start">
-      <Status tone={statuses[row.status].tone}>
-        {t(statuses[row.status].label)}
-      </Status>
-      {row.status === TenantResponseStatus.Closed && row.reopenableUntil && (
-        <span className="text-small text-muted-foreground">
-          {t("organisations.deletedIn", {
-            days: daysUntil(row.reopenableUntil, now),
-          })}
-        </span>
-      )}
-    </span>
-  );
-
-  const name = (row: Row) => (
-    <Link
-      href={`/organisations/${row.id}`}
-      className="truncate font-medium hover:underline"
-    >
-      <bdi>{row.name}</bdi>
-    </Link>
-  );
 
   const columns: TableColumn<Row>[] = [
     {
-      key: "organisation",
-      header: t("organisations.organisation"),
+      key: "name",
+      header: t("organisations.name"),
       sortable: true,
       render: (row) => (
-        <span className="flex min-w-0 items-center gap-3">
-          <Initial name={row.name} />
-          <span className="flex min-w-0 flex-col">
-            {name(row)}
-            <bdi
-              dir="ltr"
-              className="truncate font-mono text-small text-muted-foreground"
-            >
-              {row.slug}
-            </bdi>
-          </span>
-        </span>
+        <Link
+          href={`/organisations/${row.id}`}
+          className="truncate hover:underline"
+        >
+          <bdi>{row.name}</bdi>
+        </Link>
       ),
-      cardRender: name,
-    },
-    {
-      key: "owner",
-      header: t("organisations.owner"),
-      card: "hide",
-      render: owner,
-    },
-    {
-      key: "members",
-      header: t("organisations.members"),
-      width: "w-43.5",
-      align: "end",
-      card: "hide",
-      render: (row) => (isGone(row) ? muted("—") : row.memberCount),
     },
     {
       key: "status",
       header: t("organisations.status"),
       width: "w-38.5",
       card: "end",
-      render: status,
+      render: (row) => (
+        <Pill tone={statuses[row.status].tone}>
+          {t(statuses[row.status].label)}
+        </Pill>
+      ),
     },
     {
-      key: "created",
-      header: t("organisations.createdTerm"),
-      secondary: true,
+      key: "slug",
+      header: t("organisations.address"),
+      width: "w-53.5",
       card: "hide",
       render: (row) => (
-        <Time
-          at={row.createdAt}
-          show="date"
-          locale={locale}
-          timeZone={timeZone}
-        />
+        <bdi dir="ltr" className="truncate text-small">
+          {row.slug}
+        </bdi>
       ),
+    },
+    {
+      key: "members",
+      header: t("organisations.members"),
+      width: "w-43.5",
+      render: (row) =>
+        isGone(row) ? (
+          <EmptyValue />
+        ) : (
+          <span className="text-small">{members(row)}</span>
+        ),
+      cardRender: (row) => {
+        const plan = <bdi>{row.plan.name}</bdi>;
+        if (isGone(row)) return plan;
+        return (
+          <>
+            {plan}
+            {" · "}
+            {waitsForOwner(row)
+              ? t("organisations.waitingForOwnerLower")
+              : t("organisations.memberCount", { count: row.memberCount })}
+          </>
+        );
+      },
     },
   ];
 
   return (
     <Table
       columns={columns}
-      rows={page.items}
+      rows={rows}
       rowKey="id"
       label={t("organisations.title")}
       actions={(row) =>
@@ -193,11 +132,9 @@ export function OrganisationsTable({
         )
       }
       actionsLabel={t("organisations.actions")}
-      cardLead={(row) => <Initial name={row.name} />}
-      rowCount={page.total}
-      page={page.page}
-      pageSize={page.pageSize}
-      onPageChange={onPageChange}
+      rowCount={rows.length}
+      page={1}
+      pageSize={Math.max(rows.length, 1)}
       sort={sortOf(sorts, sort)}
       onSortChange={(next) => onSortChange(sortFrom(sorts, next))}
       pager={{

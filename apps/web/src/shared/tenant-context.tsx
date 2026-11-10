@@ -15,6 +15,7 @@ import {
 } from "@repo/api-client";
 import { Dialog } from "@repo/ui/components/dialog";
 import { NotFound } from "@repo/ui/components/not-found";
+import { useOrganisationAddress } from "@repo/ui/lib/organisation-address";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -31,7 +32,6 @@ import {
   type BlockedStatus,
 } from "./blocked-organisation";
 import { NoAccess } from "./no-access";
-import { useOrganisationAddress } from "./organisation-address";
 import { accountBlockOf } from "./problem";
 import { ProblemScreen } from "./problem-screen";
 

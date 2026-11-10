@@ -175,16 +175,12 @@ export function OverrideDialog({
       size="wide"
       open
       onOpenChange={(open) => !open && onClose()}
-      title={
-        editing
-          ? t("editTitle", { key: text.name(key) })
-          : t.rich("addTitle", { name: organisation.name, ...isolated })
-      }
+      title={editing ? t("editTitle", { key: text.name(key) }) : t("addTitle")}
       description={t.rich("overrideText", {
         name: organisation.name,
         ...isolated,
       })}
-      actionLabel={t("save")}
+      actionLabel={editing ? t("save") : t("addOverride")}
       cancelLabel={common("cancel")}
       pending={save.isPending}
       onConfirm={() => void submit()}

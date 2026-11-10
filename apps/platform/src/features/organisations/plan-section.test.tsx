@@ -57,79 +57,94 @@ const renderSection = async (
 ) => {
   server.use(tenantPlanAnswer({ ...plan, tenantId: organisation.id }, reads));
   renderWithProviders(<PlanSection organisation={organisation} />);
-  return within(await screen.findByRole("table", { name: "Plan" }));
+  await screen.findByRole("group", { name: "Plan" });
 };
 
-/** The row of a key in the section's table. */
-const rowOf = (table: ReturnType<typeof within>, name: string) =>
-  within(
-    table.getByText(name, { selector: "tr *" }).closest("tr") as HTMLElement,
+/** The row of a key in the section's card: a group named by the key. */
+const rowOf = (name: string) => within(screen.getByRole("group", { name }));
+
+const editOverride = (name: string) =>
+  userEvent.click(
+    rowOf(name).getByRole("button", { name: `Edit the override on ${name}` }),
   );
 
-const openMenu = async (name: string) => {
-  await userEvent.click(
-    within(screen.getByRole("table", { name: "Plan" })).getByRole("button", {
-      name: `Actions for ${name}`,
+const removeOverride = (name: string) =>
+  userEvent.click(
+    rowOf(name).getByRole("button", {
+      name: `Remove the override on ${name}`,
     }),
   );
-};
 
 describe("PlanSection", () => {
   it("Section_Default_ShowsThePlanAndARowPerKey", async () => {
-    const table = await renderSection();
+    await renderSection(
+      detailOf(burren, {
+        status: TenantResponseStatus.Active,
+        memberCount: 20,
+        pendingInvitationCount: 2,
+      }),
+    );
 
-    expect(
-      screen.getByRole("heading", { level: 2, name: "Plan" }),
-    ).toBeVisible();
-    expect(screen.getByText("Pro")).toBeVisible();
+    expect(rowOf("Plan").getByText("Pro")).toBeVisible();
     expect(screen.getByRole("button", { name: "Change plan" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Add override" })).toBeEnabled();
-    for (const header of [
-      "Feature or limit",
-      "Plan",
-      "Override",
-      "Applies",
-      "Used",
-    ])
-      expect(table.getByRole("columnheader", { name: header })).toBeVisible();
-
-    const roles = rowOf(table, "Custom roles");
-    expect(roles.getAllByText("On")).toHaveLength(2);
-    const limit = rowOf(table, "Custom roles limit");
-    expect(limit.getByText("20")).toBeVisible();
-    expect(limit.getByText("25", { selector: "strong" })).toBeVisible();
-    expect(limit.getByText(sentence("until 31 Dec 2026"))).toBeVisible();
+    expect(rowOf("Custom roles").getByText("On")).toBeVisible();
     expect(
-      limit.getByText("Moving their old roles over; review at year end."),
+      rowOf("Custom roles").getByText(sentence("Pro gives On.")),
     ).toBeVisible();
-    expect(limit.getByText("Set by Ciara Byrne")).toBeVisible();
-    expect(limit.getByText("14")).toBeVisible();
-    const members = rowOf(table, "Seats");
-    expect(members.getAllByText("Unlimited")).toHaveLength(2);
-    expect(members.getByText("22")).toBeVisible();
+    const limit = rowOf("Custom roles limit");
+    expect(limit.getByText("14 of 25")).toBeVisible();
     expect(
-      screen.getByText(
-        "An override changes one value for this organisation only. The plan stays as it is.",
+      limit.getByText(
+        sentence(
+          "Pro gives 20. Override: 25 until 31 Dec 2026 · Reason: Moving their old roles over; review at year end. · by Ciara Byrne",
+        ),
       ),
+    ).toBeVisible();
+    const seats = rowOf("Seats");
+    expect(seats.getByText("Unlimited")).toBeVisible();
+    expect(
+      seats.getByText("20 members and 2 pending invitations"),
     ).toBeVisible();
     expect(screen.queryByText(/is over a limit/)).toBeNull();
   });
 
-  it("Section_NoOverrides_SaysEveryValueComesFromThePlan", async () => {
+  it("Section_Keys_FollowTheAreasOfTheFrames", async () => {
+    await renderSection();
+
+    expect(
+      screen
+        .getAllByRole("group")
+        .map((group) => group.getAttribute("aria-labelledby"))
+        .map((id) => document.getElementById(id ?? "")?.textContent),
+    ).toEqual(["Plan", "Seats", "Custom roles", "Custom roles limit"]);
+  });
+
+  it("Section_LimitedSeats_SaysTheSeatsInTheMembersSentence", async () => {
     await renderSection(
-      active,
+      detailOf(burren, {
+        status: TenantResponseStatus.Active,
+        memberCount: 10,
+        pendingInvitationCount: 2,
+      }),
       burrenPlan({
-        [LimitKey.RolesCustomMax]: { override: null, effective: max(20) },
+        [LimitKey.MembersMax]: {
+          planValue: max(15),
+          effective: max(15),
+          count: 12,
+        },
       }),
     );
 
+    const seats = rowOf("Seats");
+    expect(seats.getByText("12 of 15")).toBeVisible();
     expect(
-      screen.getByText("No overrides. Every value comes from the plan."),
+      seats.getByText("10 members and 2 pending invitations: 12 of 15 seats."),
     ).toBeVisible();
   });
 
-  it("Section_NoExpiry_SaysSo", async () => {
-    const table = await renderSection(
+  it("Section_NoExpiry_SaysNoDate", async () => {
+    await renderSection(
       active,
       burrenPlan({
         [LimitKey.RolesCustomMax]: {
@@ -139,12 +154,32 @@ describe("PlanSection", () => {
     );
 
     expect(
-      rowOf(table, "Custom roles limit").getByText("No expiry"),
+      rowOf("Custom roles limit").getByText(
+        sentence(
+          "Pro gives 20. Override: 25 · Reason: Moving their old roles over; review at year end. · by Ciara Byrne",
+        ),
+      ),
     ).toBeVisible();
   });
 
+  it("Section_NoOverride_HasNoEditOrRemove", async () => {
+    await renderSection(
+      active,
+      burrenPlan({
+        [LimitKey.RolesCustomMax]: { override: null, effective: max(20) },
+      }),
+    );
+
+    expect(
+      rowOf("Custom roles limit").getByText(sentence("Pro gives 20.")),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /^Edit the override/ }),
+    ).toBeNull();
+  });
+
   it("Section_OverALimit_ShowsTheBannerAndOverBy", async () => {
-    const table = await renderSection(
+    await renderSection(
       active,
       burrenPlan({
         [LimitKey.RolesCustomMax]: {
@@ -163,13 +198,11 @@ describe("PlanSection", () => {
         "Nothing is deleted or locked. Its people can’t add more until it is under the limit.",
       ),
     ).toBeVisible();
-    expect(
-      rowOf(table, "Custom roles limit").getByText("Over by 4"),
-    ).toBeVisible();
+    expect(rowOf("Custom roles limit").getByText("Over by 4")).toBeVisible();
   });
 
   it("Section_ExpiredOverride_StaysListedAndCrossedOut", async () => {
-    const table = await renderSection(
+    await renderSection(
       active,
       burrenPlan({
         [LimitKey.RolesCustomMax]: {
@@ -183,10 +216,10 @@ describe("PlanSection", () => {
       }),
     );
 
-    const limit = rowOf(table, "Custom roles limit");
+    const limit = rowOf("Custom roles limit");
     expect(limit.getByText("Expired")).toBeVisible();
     expect(limit.getByText("25").closest("del")).not.toBeNull();
-    expect(limit.getByText("10", { selector: "strong" })).toBeVisible();
+    expect(limit.getByText("14 of 10")).toBeVisible();
     expect(limit.getByText("Over by 4")).toBeVisible();
   });
 
@@ -203,14 +236,18 @@ describe("PlanSection", () => {
     expect(screen.getByText("Reopen it to change them.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Change plan" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Add override" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Actions for/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /^Edit the override/ }),
+    ).toBeNull();
   });
 
   it("Section_Purging_IsReadOnly", async () => {
     await renderSection(detailOf(moyne));
 
     expect(screen.queryByRole("button", { name: "Change plan" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Actions for/ })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /^Remove the override/ }),
+    ).toBeNull();
   });
 
   it("Section_Suspended_CanChange", async () => {
@@ -249,30 +286,7 @@ describe("PlanSection", () => {
 
     expect(await screen.findByText("Couldn’t load the plan")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByRole("table", { name: "Plan" })).toBeVisible();
-  });
-
-  it("RowMenu_WithAnOverride_EditsOrRemoves", async () => {
-    await renderSection();
-
-    await openMenu("Custom roles limit");
-
-    expect(
-      await screen.findByRole("menuitem", { name: "Edit override" }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("menuitem", { name: "Remove override" }),
-    ).toBeVisible();
-  });
-
-  it("RowMenu_WithoutAnOverride_Adds", async () => {
-    await renderSection();
-
-    await openMenu("Seats");
-
-    expect(
-      await screen.findByRole("menuitem", { name: "Add override" }),
-    ).toBeVisible();
+    expect(await screen.findByRole("group", { name: "Plan" })).toBeVisible();
   });
 
   it("AddOverride_Saved_SendsValueExpiryAndReason", async () => {
@@ -288,19 +302,20 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Seats");
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
     await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Add override" }),
-    );
-    const dialog = within(
-      await screen.findByRole("alertdialog", {
-        name: "Add an override for Burren Supply",
+      within(await screen.findByRole("alertdialog")).getByRole("combobox", {
+        name: "Feature or limit",
       }),
+    );
+    await userEvent.click(await screen.findByRole("option", { name: "Seats" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Add an override" }),
     );
     expect(
       dialog.getByText(
         sentence(
-          "It changes this value for Burren Supply only, until it expires or someone removes it.",
+          "An override changes one value for Burren Supply only. The plan stays the same.",
         ),
       ),
     ).toBeVisible();
@@ -314,14 +329,12 @@ describe("PlanSection", () => {
       dialog.getByRole("spinbutton", { name: "Value" }),
       "40",
     );
-    await userEvent.type(dialog.getByLabelText("Expires"), "2026-11-30");
+    await userEvent.type(dialog.getByLabelText("Until"), "2026-11-30");
     await userEvent.type(
       dialog.getByRole("textbox", { name: "Reason" }),
       "Trial of the bigger team",
     );
-    await userEvent.click(
-      dialog.getByRole("button", { name: "Save override" }),
-    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add override" }));
 
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.body).toEqual({
@@ -358,9 +371,7 @@ describe("PlanSection", () => {
       dialog.getByRole("textbox", { name: "Reason" }),
       "Off for review",
     );
-    await userEvent.click(
-      dialog.getByRole("button", { name: "Save override" }),
-    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add override" }));
 
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.body).toEqual({
@@ -382,14 +393,15 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Seats");
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
     await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Add override" }),
+      within(await screen.findByRole("alertdialog")).getByRole("combobox", {
+        name: "Feature or limit",
+      }),
     );
+    await userEvent.click(await screen.findByRole("option", { name: "Seats" }));
     const dialog = within(await screen.findByRole("alertdialog"));
-    await userEvent.click(
-      dialog.getByRole("button", { name: "Save override" }),
-    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add override" }));
 
     expect(await dialog.findByText("Enter a reason.")).toBeVisible();
     expect(calls).toEqual([]);
@@ -398,10 +410,7 @@ describe("PlanSection", () => {
   it("EditOverride_StartsFromTheOverride", async () => {
     await renderSection();
 
-    await openMenu("Custom roles limit");
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Edit override" }),
-    );
+    await editOverride("Custom roles limit");
 
     const dialog = within(
       await screen.findByRole("alertdialog", {
@@ -409,7 +418,7 @@ describe("PlanSection", () => {
       }),
     );
     expect(dialog.getByRole("spinbutton", { name: "Value" })).toHaveValue(25);
-    expect(dialog.getByLabelText("Expires")).toHaveValue("2026-12-31");
+    expect(dialog.getByLabelText("Until")).toHaveValue("2026-12-31");
     expect(dialog.getByRole("textbox", { name: "Reason" })).toHaveValue(
       "Moving their old roles over; review at year end.",
     );
@@ -429,10 +438,7 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Custom roles limit");
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Edit override" }),
-    );
+    await editOverride("Custom roles limit");
     const dialog = within(await screen.findByRole("alertdialog"));
     await userEvent.click(
       dialog.getByRole("button", { name: "Save override" }),
@@ -463,10 +469,7 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Custom roles limit");
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Edit override" }),
-    );
+    await editOverride("Custom roles limit");
     const dialog = within(await screen.findByRole("alertdialog"));
     await userEvent.click(
       dialog.getByRole("button", { name: "Save override" }),
@@ -488,10 +491,7 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Custom roles limit");
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Remove override" }),
-    );
+    await removeOverride("Custom roles limit");
     const dialog = within(
       await screen.findByRole("alertdialog", {
         name: "Remove the override on Custom roles limit?",
@@ -499,9 +499,7 @@ describe("PlanSection", () => {
     );
     expect(
       dialog.getByText(
-        sentence(
-          "Burren Supply goes back to the plan’s value, 20. It has 14 now.",
-        ),
+        sentence("Burren Supply goes back to Pro’s value: 20. It has 14."),
       ),
     ).toBeVisible();
     await userEvent.click(
@@ -524,10 +522,7 @@ describe("PlanSection", () => {
       ),
     );
 
-    await openMenu("Custom roles limit");
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Remove override" }),
-    );
+    await removeOverride("Custom roles limit");
     const dialog = within(await screen.findByRole("alertdialog"));
     await userEvent.click(
       dialog.getByRole("button", { name: "Remove override" }),
@@ -573,7 +568,7 @@ describe("PlanSection", () => {
     await userEvent.click(screen.getByRole("button", { name: "Change plan" }));
     const dialog = within(
       await screen.findByRole("alertdialog", {
-        name: "Change Burren Supply’s plan",
+        name: "Change the plan of Burren Supply",
       }),
     );
     await userEvent.click(dialog.getByRole("combobox", { name: "New plan" }));
@@ -585,22 +580,25 @@ describe("PlanSection", () => {
 
     expect(
       await dialog.findByText(
+        sentence("From Pro to Free. Here is what changes:"),
+      ),
+    ).toBeVisible();
+    expect(
+      dialog.getByText(
         sentence(
-          "On Free, Burren Supply goes over a limit and loses a feature. Nothing is deleted or locked: its people can’t add more until it is under the limit.",
+          "Custom roles: off on Free. The 14 custom roles keep working for their members; new ones can’t be created.",
         ),
       ),
     ).toBeVisible();
     expect(
       dialog.getByText(
-        "Custom roles turns off. Its 14 custom roles stay, and their members keep their permissions; nobody can create, edit or give one.",
+        sentence("Seats: Unlimited → 5. Burren Supply uses 22."),
       ),
     ).toBeVisible();
     expect(
-      dialog.getByText(sentence("Seats: 22 now, 5 on Free.")),
-    ).toBeVisible();
-    expect(dialog.getByText("Over by 17")).toBeVisible();
-    expect(
-      dialog.getByText("Custom roles limit: its override (25) still applies."),
+      dialog.getByText(
+        "The override on Custom roles limit stays until 31 Dec 2026.",
+      ),
     ).toBeVisible();
     expect(previews[0]?.body).toEqual({ planId: free.id });
   });
@@ -625,7 +623,9 @@ describe("PlanSection", () => {
     const dialog = within(await screen.findByRole("alertdialog"));
     await userEvent.click(dialog.getByRole("combobox", { name: "New plan" }));
     await userEvent.click(await screen.findByRole("option", { name: /Free/ }));
-    await userEvent.click(dialog.getByRole("button", { name: "Change plan" }));
+    await userEvent.click(
+      await dialog.findByRole("button", { name: "Change to Free" }),
+    );
 
     await waitFor(() => expect(calls).toHaveLength(1));
     expect(calls[0]?.body).toEqual({ planId: free.id });
@@ -650,7 +650,9 @@ describe("PlanSection", () => {
     const dialog = within(await screen.findByRole("alertdialog"));
     await userEvent.click(dialog.getByRole("combobox", { name: "New plan" }));
     await userEvent.click(await screen.findByRole("option", { name: /Free/ }));
-    await userEvent.click(dialog.getByRole("button", { name: "Change plan" }));
+    await userEvent.click(
+      await dialog.findByRole("button", { name: "Change to Free" }),
+    );
 
     expect(
       await dialog.findByText("This plan no longer exists."),

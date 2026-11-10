@@ -6,6 +6,7 @@ import {
   removeEntitlementOverride,
   type TenantDetailResponse,
   type TenantEntitlementResponse,
+  type TenantPlanResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
@@ -18,15 +19,17 @@ import { isolated } from "@/shared/isolated";
 import { afterRefusal, refreshOrganisation } from "./organisation";
 
 /**
- * Remove an override (the OrgPlan board): the organisation goes back to the plan's value, which the description names with the
- * count it has now. A refusal that says the organisation or the override changed meanwhile shows its text and reads again (F47).
+ * Remove an override (4.17): the organisation goes back to its plan's value, which the description names with the count it has
+ * now. A refusal that says the organisation or the override changed meanwhile shows its text and reads again (F47).
  */
 export function RemoveOverrideDialog({
   organisation,
+  plan,
   row,
   onClose,
 }: {
   organisation: TenantDetailResponse;
+  plan: TenantPlanResponse;
   row: TenantEntitlementResponse;
   onClose: () => void;
 }) {
@@ -69,6 +72,7 @@ export function RemoveOverrideDialog({
       title={t("removeTitle", { key: text.name(row.key) })}
       description={t.rich("removeText", {
         name: organisation.name,
+        plan: plan.plan.name,
         value: text.label(row.isFeature, row.planValue),
         count: row.count,
         ...isolated,

@@ -32,6 +32,12 @@ import {
 } from "./api";
 import { createUser, deleteUser } from "./clerk-users";
 import { mockIdentity } from "./identity";
+import {
+  frameNorthwind,
+  frameOrganisations,
+  freePreview,
+  mockFrameOrganisations,
+} from "./organisation-frames";
 import { enrolledUser, signInWithEmailCode, totpCode } from "./two-step";
 
 /** The bell's tabs; a page may have tabs of its own. */
@@ -549,6 +555,34 @@ const logAnswers =
 const loadOlder = (page: Page) =>
   page.getByRole("button", { name: "Load older activity" }).click();
 
+// The Organisations frames' helpers: the organisation's page, its menu, and the Create dialog filled as 4.07 draws it.
+const pathOf = (organisation: { id: string }) =>
+  `/organisations/${organisation.id}`;
+const northwindPath = pathOf(frameNorthwind);
+const openMenu = (name: string) => async (page: Page) => {
+  await page.getByRole("button", { name: `Actions for ${name}` }).click();
+  await page.getByRole("menu").waitFor();
+};
+const chooseAction = (name: string, action: string) => async (page: Page) => {
+  await openMenu(name)(page);
+  await page.getByRole("menuitem", { name: action }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
+const fillCreate = (slug: string) => async (page: Page) => {
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "Create organisation" })
+    .click();
+  const dialog = page.getByRole("alertdialog");
+  await dialog
+    .getByRole("textbox", { name: "Name" })
+    .fill("Harbourside Dental");
+  await dialog.getByRole("textbox", { name: "Address" }).fill(slug);
+  await dialog
+    .getByRole("textbox", { name: "Owner’s email" })
+    .fill("maya.chen@harbourside.example");
+};
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -1019,6 +1053,295 @@ const shellShots: {
     size: "phone",
     path: "/activity",
     mock: logAnswers(frameLog.slice(0, 2), () => {}),
+  },
+  // Organisations (4.01 to 4.26, 4.43, 4.44, 4.46) and "Organisation not found" (2.23). The frames draw no dark and no Arabic
+  // organisation; 4.01 and 4.09 are taken in both too.
+  ...(
+    [
+      ["4.01-organisations", "/"],
+      ["4.09-organisation-overview", northwindPath],
+    ] as const
+  ).flatMap(([name, path]) =>
+    [
+      { file: `${name}-en-light-desktop`, path },
+      { file: `${name}-en-dark-desktop`, path, scheme: "dark" as const },
+      { file: `${name}-ar-light-desktop`, path, language: Language.Ar },
+    ].map((shot) => ({
+      ...shot,
+      size: "desktop" as const,
+      mock: (page: Page) => mockFrameOrganisations(page),
+      fullPage: name.startsWith("4.09"),
+    })),
+  ),
+  {
+    file: "4.02-organisations-suspended-en-light-desktop",
+    size: "desktop",
+    path: "/?status=suspended",
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.03-organisations-closed-en-light-desktop",
+    size: "desktop",
+    path: "/?status=closed",
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.04-organisations-no-match-en-light-desktop",
+    size: "desktop",
+    path: "/?q=harbor",
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.05-organisations-loading-en-light-desktop",
+    size: "desktop",
+    settled: async () => {},
+    // ListTenants never answers.
+    mock: async (page) => {
+      await reduceMotion(page);
+      await page.route("**/api/v1/platform/tenants*", () => {});
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading organisations" }).waitFor(),
+  },
+  {
+    file: "4.06-no-organisations-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockFrameOrganisations(page, []),
+  },
+  {
+    file: "4.07-create-organisation-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockFrameOrganisations(page),
+    open: fillCreate("harbourside-dental"),
+  },
+  {
+    file: "4.08-create-address-taken-en-light-desktop",
+    size: "desktop",
+    mock: async (page) => {
+      await mockFrameOrganisations(page);
+      await page.route("**/api/v1/platform/tenants", (route) =>
+        route.request().method() === "POST"
+          ? route.fulfill(problem(409, ErrorCode.TenantSlugTaken))
+          : route.fallback(),
+      );
+    },
+    open: async (page) => {
+      await fillCreate("blue-harbour")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Create organisation" })
+        .click();
+      await page
+        .getByText("This address is taken or reserved. Try another.")
+        .waitFor();
+    },
+  },
+  {
+    file: "4.10-organisation-menu-en-light-desktop",
+    size: "desktop",
+    path: northwindPath,
+    mock: (page) => mockFrameOrganisations(page),
+    open: openMenu("Northwind Traders"),
+  },
+  {
+    file: "4.11-organisation-waiting-for-owner-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.harbourside),
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.12-invite-owner-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.harbourside),
+    mock: (page) => mockFrameOrganisations(page),
+    open: (page) =>
+      page.getByRole("button", { name: "Invite Owner again" }).click(),
+  },
+  {
+    file: "4.13-rename-en-light-desktop",
+    size: "desktop",
+    path: northwindPath,
+    mock: (page) => mockFrameOrganisations(page),
+    open: chooseAction("Northwind Traders", "Rename"),
+  },
+  {
+    file: "4.14-organisation-plan-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.15-change-plan-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: async (page) => {
+      await mockFrameOrganisations(page);
+      await page.route("**/api/v1/platform/tenants/*/plan/preview", (route) =>
+        route.fulfill({ json: freePreview }),
+      );
+    },
+    open: async (page) => {
+      await page.getByRole("button", { name: "Change plan" }).click();
+      const dialog = page.getByRole("alertdialog");
+      await dialog.getByRole("combobox", { name: "New plan" }).click();
+      await page.getByRole("option", { name: /^Free/ }).click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await dialog.getByText("Here is what changes:").waitFor();
+    },
+  },
+  {
+    file: "4.16-add-override-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) => mockFrameOrganisations(page),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Add override" }).click();
+      const dialog = page.getByRole("alertdialog");
+      await dialog.getByRole("combobox", { name: "Feature or limit" }).click();
+      await page.getByRole("option", { name: "Seats" }).click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await dialog.getByRole("spinbutton", { name: "Value" }).fill("20");
+      await dialog.getByLabel("Until").fill("2027-01-31");
+      await dialog
+        .getByRole("textbox", { name: "Reason" })
+        .fill("Seasonal staff");
+    },
+  },
+  {
+    file: "4.17-remove-override-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) => mockFrameOrganisations(page),
+    open: (page) =>
+      page
+        .getByRole("button", {
+          name: "Remove the override on Custom roles limit",
+        })
+        .click(),
+  },
+  {
+    file: "4.18-organisation-activity-log-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=activity`,
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.19-suspend-en-light-desktop",
+    size: "desktop",
+    path: northwindPath,
+    mock: (page) => mockFrameOrganisations(page),
+    open: async (page) => {
+      await chooseAction("Northwind Traders", "Suspend")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("textbox", { name: "Reason" })
+        .fill("Unpaid invoices since September");
+    },
+  },
+  {
+    file: "4.20-suspended-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.blueHarbour),
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.21-reactivate-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.blueHarbour),
+    mock: (page) => mockFrameOrganisations(page),
+    open: (page) =>
+      page
+        .getByRole("status")
+        .getByRole("button", { name: "Reactivate" })
+        .click(),
+  },
+  {
+    file: "4.22-close-organisation-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.fernwood),
+    // Fernwood before its closing: active, as the dialog of 4.22 finds it.
+    mock: async (page) => {
+      await mockFrameOrganisations(page);
+      const { plan: _, ...fernwood } = frameOrganisations.fernwood;
+      await page.route(`**/api/v1/platform/tenants/${fernwood.id}`, (route) =>
+        route.fulfill({
+          json: {
+            ...fernwood,
+            status: "active",
+            closedAt: null,
+            closedBy: null,
+            reopenableUntil: null,
+          },
+        }),
+      );
+    },
+    open: async (page) => {
+      await chooseAction("Fernwood Studio", "Close organisation")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("textbox", { name: "Type fernwood to confirm" })
+        .fill("fern");
+    },
+  },
+  {
+    file: "4.23-closed-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.fernwood),
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.24-reopen-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.fernwood),
+    mock: (page) => mockFrameOrganisations(page),
+    open: (page) =>
+      page.getByRole("status").getByRole("button", { name: "Reopen" }).click(),
+  },
+  {
+    file: "4.25-being-deleted-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.oldMill),
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.26-deleted-en-light-desktop",
+    size: "desktop",
+    path: pathOf(frameOrganisations.greyfield),
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.43-organisations-en-light-phone",
+    size: "phone",
+    fullPage: true,
+    mock: (page) => mockFrameOrganisations(page),
+    ready: (page) =>
+      page.getByRole("list", { name: "Organisations" }).waitFor(),
+  },
+  {
+    file: "4.44-organisation-en-light-phone",
+    size: "phone",
+    path: northwindPath,
+    mock: (page) => mockFrameOrganisations(page),
+  },
+  {
+    file: "4.46-suspend-organisation-en-light-phone",
+    size: "phone",
+    path: northwindPath,
+    mock: (page) => mockFrameOrganisations(page),
+    open: async (page) => {
+      await chooseAction("Northwind Traders", "Suspend")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("textbox", { name: "Reason" })
+        .fill("Unpaid invoices since September");
+    },
+  },
+  {
+    file: "2.23-organisation-not-found-en-light-desktop",
+    size: "desktop",
+    path: "/organisations/0198f0a2-0000-7000-8000-0000000dffff",
+    ready: (page) =>
+      page.getByRole("heading", { name: "Organisation not found" }).waitFor(),
   },
 ];
 

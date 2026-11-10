@@ -8,10 +8,10 @@ import {
 import { CopyButton } from "@repo/ui/components/copy-button";
 import { Pill, type PillTone } from "@repo/ui/components/pill";
 import { Time } from "@repo/ui/components/time";
+import { useOrganisationAddress } from "@repo/ui/lib/organisation-address";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { useOrganisationAddress } from "@/shared/organisation-address";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useRoleName } from "@/shared/use-role-name";

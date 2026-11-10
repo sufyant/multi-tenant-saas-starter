@@ -12,20 +12,24 @@ import {
 import { Banner } from "@repo/ui/components/banner";
 import { Combobox } from "@repo/ui/components/combobox";
 import { Dialog } from "@repo/ui/components/dialog";
-import { Status } from "@repo/ui/components/status";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { isFeatureKey, useEntitlementText } from "@/shared/entitlements";
+import {
+  entitlementAreas,
+  isFeatureKey,
+  useEntitlementText,
+} from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { plansQuery, refreshPlans } from "@/shared/plans";
+import { useDates } from "@/shared/use-dates";
 import { afterRefusal, refreshOrganisation } from "./organisation";
 
 /**
- * Change an organisation's plan (the OrgPlan board): the plans, the default and the current one marked; for the plan chosen, the
- * preview of this organisation lists what goes over or turns off, and each override that still applies. It never blocks.
+ * Change an organisation's plan (4.15): the plans, the default and the current one marked; for the plan chosen, the preview of this
+ * organisation says from which plan to which, then what goes over or turns off, and each override that stays. It never blocks.
  */
 export function ChangePlanDialog({
   organisation,
@@ -40,6 +44,7 @@ export function ChangePlanDialog({
   const all = useTranslations();
   const common = useTranslations("common");
   const text = useEntitlementText();
+  const { date } = useDates();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const plans = useQuery(getListPlansQueryOptions(plansQuery));
@@ -79,7 +84,13 @@ export function ChangePlanDialog({
 
   const rowOf = (key: string) =>
     plan.entitlements.find((row) => row.key === key);
-  const excesses = preview.data?.excesses ?? [];
+  // The keys in the frames' order of areas (4.15): the seats, then the roles.
+  const order = entitlementAreas().flatMap(({ keys }) =>
+    keys.map(({ key }) => key),
+  );
+  const excesses = [...(preview.data?.excesses ?? [])].sort(
+    (one, other) => order.indexOf(one.key) - order.indexOf(other.key),
+  );
 
   const failure = (() => {
     const problem = problemOf(change.error);
@@ -101,21 +112,60 @@ export function ChangePlanDialog({
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("changeTitle", { name: organisation.name, ...isolated })}
       description={
-        excesses.length > 0
-          ? t.rich("changeText", {
-              name: organisation.name,
-              plan: chosenName,
-              ...isolated,
-            })
-          : undefined
+        chosen !== plan.plan.id &&
+        preview.data &&
+        t.rich(
+          excesses.length > 0 || preview.data.overriddenKeys.length > 0
+            ? "changeFromToWhat"
+            : "changeFromTo",
+          { from: plan.plan.name, to: chosenName, ...isolated },
+        )
       }
-      actionLabel={t("changePlan")}
+      actionLabel={
+        chosen !== plan.plan.id
+          ? t("changeTo", { plan: chosenName })
+          : t("changePlan")
+      }
       cancelLabel={common("cancel")}
       actionDisabled={chosen === plan.plan.id}
       pending={change.isPending}
       onConfirm={() => change.isPending || change.mutate()}
     >
       <div className="flex flex-col gap-3.5">
+        {preview.data && (
+          <ul className="flex flex-col gap-2 text-small text-muted-foreground">
+            {excesses.map((excess) => (
+              <li key={excess.key}>
+                {isFeatureKey(excess.key)
+                  ? text.turnsOff(excess.key, excess.count, chosenName)
+                  : t.rich("limitChange", {
+                      ...isolated,
+                      key: text.name(excess.key),
+                      from: text.label(
+                        false,
+                        rowOf(excess.key)?.effective ?? null,
+                      ),
+                      to: text.label(false, excess.newValue),
+                      count: excess.count,
+                      name: organisation.name,
+                    })}
+              </li>
+            ))}
+            {preview.data.overriddenKeys.map((key) => {
+              const expiresAt = rowOf(key)?.override?.expiresAt;
+              return (
+                <li key={key}>
+                  {expiresAt
+                    ? t("overrideStaysUntil", {
+                        key: text.name(key),
+                        date: date(expiresAt),
+                      })
+                    : t("overrideStays", { key: text.name(key) })}
+                </li>
+              );
+            })}
+          </ul>
+        )}
         <Combobox
           label={t("newPlan")}
           value={chosen}
@@ -133,47 +183,6 @@ export function ChangePlanDialog({
           searchPlaceholder={t("planSearch")}
           emptyLabel={t("planEmpty")}
         />
-        {preview.data && (
-          <ul className="flex flex-col gap-2 text-body">
-            {excesses.map((excess) => (
-              <li
-                key={excess.key}
-                className="flex flex-wrap items-center gap-2"
-              >
-                <span>
-                  {isFeatureKey(excess.key)
-                    ? text.turnsOff(excess.key, excess.count)
-                    : t.rich("limitOver", {
-                        ...isolated,
-                        key: text.name(excess.key),
-                        count: excess.count,
-                        limit: text.label(false, excess.newValue),
-                        plan: chosenName,
-                      })}
-                </span>
-                {!isFeatureKey(excess.key) && (
-                  <Status tone="warning">
-                    {t("overBy", { count: excess.amount })}
-                  </Status>
-                )}
-              </li>
-            ))}
-            {preview.data.overriddenKeys.map((key) => {
-              const row = rowOf(key);
-              return (
-                <li key={key} className="text-muted-foreground">
-                  {t("overrideApplies", {
-                    key: text.name(key),
-                    value: text.label(
-                      row?.isFeature ?? false,
-                      row?.override?.value ?? null,
-                    ),
-                  })}
-                </li>
-              );
-            })}
-          </ul>
-        )}
         {preview.isError && (
           <Banner tone="destructive" title={all("plans.previewError")}>
             {failureText(problemOf(preview.error))}

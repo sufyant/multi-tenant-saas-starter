@@ -11,8 +11,7 @@ import {
 } from "./api";
 import { expectAccessible } from "./axe";
 
-// Organisations, the platform's start page, and one organisation in each state (the Main, CreateOrg, OrgDetail, OrgOwnerless,
-// OrgClosed, OrgPurged and CloseOrg boards).
+// Organisations, the platform's start page, and one organisation in each state (4.01 to 4.26).
 
 const open = async (page: Page, path: string) => {
   await setupClerkTestingToken({ page });
@@ -29,15 +28,15 @@ test("Organisations_List_ShowsEachStatus", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Organisations" }),
   ).toBeVisible();
-  await expect(row(page, "Northwind Traders")).toContainText("1 Owner");
+  await expect(row(page, "Northwind Traders")).toContainText("6 members");
   await expect(row(page, "Northwind Traders")).toContainText("Active");
-  await expect(row(page, "Atlas Logistics")).toContainText("Waiting for Owner");
-  await expect(row(page, "Atlas Logistics")).toContainText(
-    "owner@atlas.example",
-  );
+  await expect(row(page, "Atlas Logistics")).toContainText("1 member");
   await expect(row(page, "Shannon Studio")).toContainText("Suspended");
   await expect(row(page, "Kestrel Labs")).toContainText("Closed");
-  await expect(row(page, "Kestrel Labs")).toContainText("Deleted in 20 days");
+  // All holds every status but deleted; the Deleted tab holds Liffey (4.01).
+  await expect(page.getByRole("tab", { name: "All 4" })).toBeVisible();
+  await expect(row(page, "Liffey Design")).toBeHidden();
+  await page.getByRole("tab", { name: "Deleted 1" }).click();
   await expect(row(page, "Liffey Design")).toContainText("Deleted");
   await expectAccessible(page);
 });
@@ -45,7 +44,7 @@ test("Organisations_List_ShowsEachStatus", async ({ page }) => {
 test("Organisations_SuspendedTab_ListsOnlyTheSuspended", async ({ page }) => {
   await open(page, "/");
 
-  await page.getByRole("tab", { name: "Suspended" }).click();
+  await page.getByRole("tab", { name: "Suspended 1" }).click();
 
   await expect(page).toHaveURL(/status=suspended/);
   await expect(row(page, "Shannon Studio")).toBeVisible();
@@ -63,11 +62,11 @@ test("CreateOrganisation_Valid_OpensTheNewOrganisation", async ({ page }) => {
   await expect(dialog).toBeVisible();
   await expectAccessible(page);
   await dialog.getByRole("textbox", { name: "Name" }).fill(created.name);
-  await dialog.getByRole("textbox", { name: "Slug" }).fill(created.slug);
+  await dialog.getByRole("textbox", { name: "Address" }).fill(created.slug);
   await dialog
     .getByRole("textbox", { name: "Owner’s email" })
     .fill("owner@corrib.example");
-  await dialog.getByRole("button", { name: "Create and invite Owner" }).click();
+  await dialog.getByRole("button", { name: "Create organisation" }).click();
 
   await expect(page).toHaveURL(pageOf(created.id));
   await expect(
@@ -104,12 +103,12 @@ test("Organisation_Active_ShowsItsOwner", async ({ page }) => {
 test("Organisation_WaitingForOwner_ShowsTheInvitation", async ({ page }) => {
   await open(page, pageOf(organisations.atlas.id));
 
-  await expect(page.getByText("Waiting for the Owner.")).toBeVisible();
+  await expect(page.getByText("Waiting for the Owner")).toBeVisible();
   await expect(page.getByRole("main")).toContainText(
-    "The link to owner@atlas.example works until",
+    "owner@atlas.example hasn’t accepted yet. The invitation works until",
   );
   await expect(
-    page.getByRole("button", { name: "Invite Owner" }),
+    page.getByRole("button", { name: "Invite Owner again" }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "open their user page" }),
@@ -117,12 +116,11 @@ test("Organisation_WaitingForOwner_ShowsTheInvitation", async ({ page }) => {
   await expectAccessible(page);
 });
 
-test("Organisation_Closed_ShowsTheWarningDate", async ({ page }) => {
+test("Organisation_Closed_ShowsUntilWhenItCanBeReopened", async ({ page }) => {
   await open(page, pageOf(organisations.kestrel.id));
 
-  // The warning is 13 days ahead (api.ts), so it is still to come.
   await expect(page.getByRole("main")).toContainText(
-    /Closed on .+\. You can reopen it until .+\. After that it is deleted\. The Owners are warned on .+\./,
+    /Closed on .+It can be reopened until .+\. Then it is deleted with all its data\./,
   );
   await expect(page.getByRole("button", { name: "Reopen" })).toBeVisible();
   await expectAccessible(page);
@@ -134,9 +132,11 @@ test("Organisation_Deleted_ShowsWhenAndNoActions", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Liffey Design" }),
   ).toBeVisible();
-  await expect(page.getByRole("term")).toHaveText(["Created", "Deleted"]);
+  await expect(page.getByText(/^Deleted on /)).toBeVisible();
   await expect(
-    page.getByText("Its members, invitations and data are gone."),
+    page.getByText(
+      "Its data is gone. Its name and address stay reserved, and the Activity log keeps its entries.",
+    ),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Actions for Liffey Design" }),

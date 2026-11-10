@@ -37,9 +37,7 @@ const open = () =>
   openAction(atlas, "Reactivate", "Reactivate Atlas Logistics?");
 
 const confirm = (dialog: Awaited<ReturnType<typeof open>>) =>
-  userEvent.click(
-    dialog.getByRole("button", { name: "Reactivate organisation" }),
-  );
+  userEvent.click(dialog.getByRole("button", { name: "Reactivate" }));
 
 describe("ReactivateDialog", () => {
   it("Reactivate_Success_ToastsAndReadsAgain", async () => {
@@ -57,9 +55,7 @@ describe("ReactivateDialog", () => {
 
     const dialog = await open();
     expect(
-      dialog.getByText(
-        "Its 9 members can sign in again at once. The reason is cleared. The suspension stays in Activity.",
-      ),
+      dialog.getByText("Its 9 members can open it again at once."),
     ).toBeVisible();
     await confirm(dialog);
 

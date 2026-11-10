@@ -21,6 +21,7 @@ import { Combobox } from "@repo/ui/components/combobox";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useOrganisationAddress } from "@repo/ui/lib/organisation-address";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -77,6 +78,12 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
       language: me.data?.language ?? Language.En,
     },
   });
+  // The system admin's own language, once GetMe answers; a choice of the system admin stays.
+  const ownLanguage = me.data?.language;
+  useEffect(() => {
+    if (ownLanguage && !form.getFieldState("language").isDirty)
+      form.setValue("language", ownLanguage);
+  }, [ownLanguage, form]);
   // The default plan, once the plans are read; a choice of the system admin stays.
   useEffect(() => {
     if (defaultPlan && !form.getValues("planId"))
@@ -163,6 +170,8 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
   const nameError = nameText(errors.name?.message);
   const slugError = slugText(errors.slug?.message);
   const emailError = emailText(errors.ownerEmail?.message);
+  // The address as a person types it starts with the web app's host (4.07): "app.starter.example/".
+  const host = useOrganisationAddress("");
 
   return (
     <Dialog
@@ -170,7 +179,6 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
       open
       onOpenChange={(open) => !open && onClose()}
       title={t("create")}
-      description={t("createText")}
       actionLabel={t("createAction")}
       cancelLabel={common("cancel")}
       pending={create.isPending}
@@ -191,6 +199,7 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
         />
         <Input
           label={t("slug")}
+          addon={<bdi dir="ltr">{host}</bdi>}
           dir="ltr"
           inputMode="url"
           autoComplete="off"
@@ -204,17 +213,19 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
           type="email"
           autoComplete="off"
           maxLength={schemas.createTenantBodyOwnerEmailMax}
+          hint={t("ownerEmailHint")}
           error={emailError && t(emailError)}
           {...form.register("ownerEmail")}
         />
         <LanguageChoice
           label={t("ownerLanguage")}
           value={form.watch("language") ?? Language.En}
-          onChange={(language) => form.setValue("language", language)}
+          onChange={(language) =>
+            form.setValue("language", language, { shouldDirty: true })
+          }
         />
         <Combobox
           label={t("plan")}
-          hint={t("planHint")}
           error={errors.planId ? all("errors.plan.not_found") : undefined}
           value={form.watch("planId") ?? undefined}
           options={(plans.data?.items ?? []).map((plan) => ({

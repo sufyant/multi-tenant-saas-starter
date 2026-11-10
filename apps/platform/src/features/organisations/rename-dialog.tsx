@@ -14,6 +14,7 @@ import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
+import { useOrganisationAddress } from "@repo/ui/lib/organisation-address";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -34,7 +35,7 @@ const renaming = schemas.RenameTenantBody.extend({
 });
 type Renaming = z.infer<typeof renaming>;
 
-/** Rename an organisation (the RenameOrg board). The slug never changes. A refusal shows its text in the dialog (F47). */
+/** Rename an organisation (4.13). Its address never changes. A refusal shows its text in the dialog (F47). */
 export function RenameDialog({
   organisation,
   onClose,
@@ -47,6 +48,7 @@ export function RenameDialog({
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const { name, slug } = organisation;
+  const address = useOrganisationAddress(slug);
   const form = useForm<Renaming>({
     resolver: zodResolver(renaming),
     defaultValues: { name },
@@ -107,11 +109,7 @@ export function RenameDialog({
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("renameTitle", { name, ...isolated })}
       description={t.rich("renameText", {
-        slug: () => (
-          <bdi dir="ltr" className="font-mono">
-            {slug}
-          </bdi>
-        ),
+        address: () => <bdi dir="ltr">{address}</bdi>,
       })}
       actionLabel={t("renameAction")}
       cancelLabel={common("cancel")}
@@ -125,7 +123,6 @@ export function RenameDialog({
       >
         <Input
           label={t("name")}
-          hint={t("nameHint", { max: schemas.renameTenantBodyNameMax })}
           autoComplete="off"
           error={
             nameError && t(nameError, { max: schemas.renameTenantBodyNameMax })

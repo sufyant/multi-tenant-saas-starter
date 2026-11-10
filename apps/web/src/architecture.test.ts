@@ -39,6 +39,7 @@ const sharedParts = [
   "initialsOf",
   "groupByDay",
   "DayGroup",
+  "useOrganisationAddress",
 ];
 
 describe("architecture of apps/web", () => {

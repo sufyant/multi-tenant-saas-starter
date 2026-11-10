@@ -293,6 +293,7 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 - The second tab is "Plan" until step 40 names it "Plan and billing".
 - Suspend asks for the reason only, on every size (4.19; the maintainer's decision of 2026-11-08).
 - It waits for 37b-backend and 37b-frontend-1.
+- As built: the list shows Name, Status, Address and Members ("10 members · 2 invited"), and the tabs count from `ListTenants.statusCounts`: All asks every status but deleted, Closed asks closed and purging. On a phone the tabs are one choice ("All · 10"). An organisation has Back to Organisations, its menu beside its title, the banner of its state with the who and when of 37b-backend, and the tabs Overview, Plan and Activity log; Overview is a card of rows, and Plan a card of rows with Edit and Remove of an override. A "by" the API does not know is left out ("by the platform" of 4.09 is not drawn). The phone keeps the actions in the ⋯ menu (4.44). `useOrganisationAddress` is in `packages/ui`, and `Input` takes an addon, the host before the address (4.07). Done.
 
 37b-frontend-3, Users and System admins:
 
@@ -305,6 +306,7 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 
 - `Status`, `Tag`, `SubNav` and `Freshness` are deleted from `packages/ui`, with the web's last `Tag` ("You" in Members) and the samples of the dev components page. `Freshness` leaves the Figma Components page.
 - The organisation's tile: the frames draw no tile on the platform, so the platform's `Initial` is deleted. The tile of `OrgSwitcher` becomes a component of `packages/ui`, `info-subtle` in every place; the brand gradient stays only on the product's mark (the maintainer's decision of 2026-11-08).
+- `isNavigation` of `apps/web/src/proxy.ts` and `apps/platform/src/proxy.ts` (#238) moves to one shared place; the two proxies use it.
 - It waits for 37b-frontend-1, -2 and -3.
 
 ## 6. Step 38: Terms of use

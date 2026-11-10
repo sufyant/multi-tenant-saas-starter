@@ -45,9 +45,7 @@ const suspend = async (
   reason: string,
 ) => {
   await userEvent.type(dialog.getByRole("textbox", { name: "Reason" }), reason);
-  await userEvent.click(
-    dialog.getByRole("button", { name: "Suspend organisation" }),
-  );
+  await userEvent.click(dialog.getByRole("button", { name: "Suspend" }));
 };
 
 describe("SuspendDialog", () => {
@@ -68,11 +66,11 @@ describe("SuspendDialog", () => {
     const dialog = await open();
     expect(
       dialog.getByText(
-        "Its 7 members lose access at once. Data and memberships are kept. You can reactivate it at any time.",
+        "Its 7 members can’t open it until you reactivate it. Nothing is deleted. Members don’t see the reason.",
       ),
     ).toBeVisible();
     expect(
-      dialog.getByText("Required, up to 500 characters. Members never see it."),
+      dialog.getByText("Required. Only the platform sees it."),
     ).toBeVisible();
     await suspend(dialog, "Contract under review");
 

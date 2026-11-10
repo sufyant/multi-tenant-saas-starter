@@ -1,15 +1,15 @@
-import { AppFrameProvider } from "@repo/ui/components/app-frame";
 import { renderHook } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
-import { messages } from "@/i18n/messages";
+import en from "../../messages/en.json";
+import { AppFrameProvider } from "../components/app-frame";
 import { useOrganisationAddress } from "./organisation-address";
 
 const wrapper =
   (url: string) =>
   ({ children }: { children: ReactNode }) => (
-    <NextIntlClientProvider locale="en" messages={messages.en}>
+    <NextIntlClientProvider locale="en" messages={en}>
       <AppFrameProvider
         value={{ environment: { kind: "production" }, webAppUrl: url }}
       >

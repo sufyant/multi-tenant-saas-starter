@@ -102,11 +102,11 @@ export function useEntitlementText() {
         ? t("sentence.unlimited")
         : String(value.maximum ?? 0);
     },
-    /** What turning a feature off leaves (the OrgPlan board's change of plan), for a key that has its own text. */
-    turnsOff: (key: string, count: number) => {
+    /** What turning a feature off on a plan leaves (4.15), for a key that has its own text. */
+    turnsOff: (key: string, count: number, plan: string) => {
       const path =
         `keys.${messageKeyOf(key)}.turnsOff` as "keys.roles_custom.turnsOff";
-      const values = { key: keyText(key, "name"), count };
+      const values = { key: keyText(key, "name"), count, plan };
       return t.has(path) ? t(path, values) : t("turnsOff", values);
     },
   };

@@ -53,7 +53,7 @@ const detailAnswers = (
   });
 
 const confirm = (dialog: Awaited<ReturnType<typeof open>>) =>
-  userEvent.click(dialog.getByRole("button", { name: "Reopen organisation" }));
+  userEvent.click(dialog.getByRole("button", { name: "Reopen" }));
 
 describe("ReopenDialog", () => {
   it("Reopen_Success_ToastsAndReadsAgain", async () => {
@@ -79,7 +79,7 @@ describe("ReopenDialog", () => {
     const dialog = await open();
     expect(
       dialog.getByText(
-        "It becomes active and its 4 members can sign in again. Invitations cancelled at closing stay cancelled; invite those people again.",
+        `Its 4 members can open it again at once. The deletion on ${dateOf(kestrel.reopenableUntil as string)} is cancelled.`,
       ),
     ).toBeVisible();
     await confirm(dialog);

@@ -43,9 +43,7 @@ const rename = async (
   const field = dialog.getByRole("textbox", { name: "Name" });
   await userEvent.clear(field);
   await userEvent.type(field, name);
-  await userEvent.click(
-    dialog.getByRole("button", { name: "Rename organisation" }),
-  );
+  await userEvent.click(dialog.getByRole("button", { name: "Rename" }));
 };
 
 describe("RenameDialog", () => {
@@ -64,7 +62,13 @@ describe("RenameDialog", () => {
     );
 
     const dialog = await open();
-    expect(dialog.getByText("northwind")).toBeVisible();
+    expect(
+      dialog.getByText(
+        sentence(
+          "Members see the new name at once. The address stays app.starter.example/northwind.",
+        ),
+      ),
+    ).toBeVisible();
     await rename(dialog, "Northwind Traders Ltd");
 
     await expectVisibleToast(sentence("Renamed to Northwind Traders Ltd."));

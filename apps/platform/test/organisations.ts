@@ -12,7 +12,7 @@ import {
   getGetMeMockHandler,
   getGetMeResponseMock,
 } from "@repo/api-client/msw";
-import { formatDate } from "@repo/ui/lib/format-date-time";
+import { formatDate, formatDateTime } from "@repo/ui/lib/format-date-time";
 import { HttpResponse, http } from "msw";
 
 // Sample organisations of the design system's boards (Northwind Traders, Atlas Logistics, Kestrel Labs) for the platform's tests.
@@ -21,6 +21,10 @@ export const day = 24 * 60 * 60 * 1000;
 /** The date a sentence shows, as the screen formats it in English and Dublin's time (F18). */
 export const dateOf = (at: string) =>
   formatDate(at, { locale: "en-IE", timeZone: "Europe/Dublin" });
+
+/** The date and time a sentence shows, as the screen formats them in English and Dublin's time (F18). */
+export const dateTimeOf = (at: string) =>
+  formatDateTime(at, { locale: "en-IE", timeZone: "Europe/Dublin" });
 
 export const inDays = (days: number) =>
   new Date(Date.now() + days * day).toISOString();
