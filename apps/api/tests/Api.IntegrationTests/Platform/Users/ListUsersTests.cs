@@ -88,15 +88,17 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":4,"suspended":2,"deleted":0}""");
     }
 
-    // A search that finds one user and the isSystemAdmin filter leave every count at its total. The three active users are the two
-    // added and the system admin who reads the list.
+    // A search that finds one user, the isSystemAdmin filter and the email filter leave every count at its total. The three active
+    // users are the two added and the system admin who reads the list.
     [Theory]
     [InlineData("q=Ball", 1)]
     [InlineData("isSystemAdmin=true", 1)]
+    [InlineData("email=cole@example.com", 1)]
     public async Task ListUsers_ASearchOrAFilterThatKeepsOneUser_LeavesEveryCountAtItsTotal(string filter, int total)
     {
         await UseADatabaseOfItsOwnAsync();
-        await AddUsersAsync("Ball", "Cole");
+        await AddUsersAsync("Ball");
+        await _testData.AddUserAsync(email: "cole@example.com", name: $"{_marker} Cole");
         await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
         await _testData.DeleteUserAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
 
