@@ -333,6 +333,44 @@ describe("PlatformShell", () => {
     ).toEqual(["Users", "Ayşe Yılmaz"]);
   });
 
+  it("PlatformShell_SystemAdminPage_NamesTheAdminAfterSystemAdmins", async () => {
+    const userId = "0198f0a2-0000-7000-8000-0000000000a7";
+    navigation.pathname = `/settings/system-admins/${userId}`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      http.get(`*/v1/platform/users/${userId}`, () =>
+        HttpResponse.json({
+          id: userId,
+          email: "tomas@starter.example",
+          name: "Tomás Ryan",
+          status: UserResponseStatus.Active,
+          isSystemAdmin: true,
+          isRootSystemAdmin: false,
+          systemAdminGrantedAt: "2026-03-02T10:00:00Z",
+          membershipCount: 0,
+          createdAt: "2026-03-03T09:20:00Z",
+          suspendedAt: null,
+          suspendedBy: null,
+          suspensionReason: null,
+          systemAdminGrantedBy: null,
+          memberships: [],
+        }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("Tomás Ryan")).toBeInTheDocument();
+    expect(
+      crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
+    ).toEqual(["System admins", "Tomás Ryan"]);
+  });
+
   it("PlatformShell_PlanPage_NamesThePlanAfterPlans", async () => {
     const planId = "0198f0a2-0000-7000-8000-0000000000b2";
     navigation.pathname = `/plans/${planId}`;

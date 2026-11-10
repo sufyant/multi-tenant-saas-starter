@@ -1,4 +1,8 @@
-import { ErrorCode, UserResponseStatus } from "@repo/api-client";
+import {
+  ErrorCode,
+  type UserDetailResponse,
+  UserResponseStatus,
+} from "@repo/api-client";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -37,17 +41,14 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const memberships = async (name: string) =>
-  within(await screen.findByRole("table", { name }));
+const memberships = async (name = "Organisations") =>
+  within(await screen.findByRole("list", { name }));
 
-const membershipRow = async (
-  organisation: string,
-  table = "Organisations and roles",
-) => {
-  const link = await (await memberships(table)).findByRole("link", {
+const membershipRow = async (organisation: string, list?: string) => {
+  const link = await (await memberships(list)).findByRole("link", {
     name: organisation,
   });
-  return within(link.closest("tr") as HTMLElement);
+  return within(link.closest("li") as HTMLElement);
 };
 
 const term = async (name: string) => {
@@ -55,8 +56,16 @@ const term = async (name: string) => {
   return dt.nextElementSibling as HTMLElement;
 };
 
+const suspendedJohn = (values: Partial<UserDetailResponse> = {}) =>
+  userDetailOf(john, {
+    suspendedAt: "2026-10-25T09:00:00Z",
+    suspendedBy: { name: "Ciara Byrne", deleted: false },
+    suspensionReason: "Shared account",
+    ...values,
+  });
+
 describe("UserPage", () => {
-  it("UserPage_Active_ShowsNameEmailStatusAndDetails", async () => {
+  it("UserPage_Active_ShowsTheHeaderAndTheDetails", async () => {
     server.use(
       meAnswer(),
       userAnswer(userDetailOf(ayse, { memberships: ayseMemberships })),
@@ -67,12 +76,24 @@ describe("UserPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Ayşe Yılmaz" }),
     ).toBeVisible();
-    expect(screen.getByText("ayse@northwind.example")).toBeVisible();
-    expect(screen.getAllByText("Active")[0]).toBeVisible();
+    expect(screen.getByRole("link", { name: "Users" })).toHaveAttribute(
+      "href",
+      "/users",
+    );
+    expect(await term("Email")).toHaveTextContent("ayse@northwind.example");
+    expect(
+      within(await term("Email")).getByRole("button", {
+        name: "Copy the email",
+      }),
+    ).toBeVisible();
+    expect(within(await term("Status")).getByText("Active")).toHaveAttribute(
+      "data-tone",
+      "success",
+    );
+    expect(await term("Signed up")).toHaveTextContent("3 Mar 2026");
     expect(await term("Organisations")).toHaveTextContent("2");
-    expect(await term("Created")).toHaveTextContent("3 Mar 2026");
     expect(screen.queryByText("System admin")).toBeNull();
-    expect(screen.queryByText(/Suspended since/)).toBeNull();
+    expect(screen.queryByText(/Suspended on/)).toBeNull();
   });
 
   it("UserPage_Active_OffersRenameSuspendDelete", async () => {
@@ -88,47 +109,52 @@ describe("UserPage", () => {
     ).toEqual(["Rename", "Suspend", "Delete user"]);
   });
 
-  it("UserPage_SuspendedByAPerson_SaysWhenAndByWhom", async () => {
-    server.use(
-      meAnswer(),
-      userAnswer(
-        userDetailOf(john, {
-          suspendedAt: "2026-10-16T09:00:00Z",
-          suspendedBy: {
-            name: "Ciara Byrne",
-            deleted: false,
-          },
-        }),
-      ),
-    );
+  it("UserPage_Suspended_SaysWhenByWhomAndWhyWithReactivate", async () => {
+    server.use(meAnswer(), userAnswer(suspendedJohn()));
 
     renderWithProviders(<UserPage userId={john.id} />);
 
     expect(
-      await screen.findByText("Suspended since 16 Oct 2026 by Ciara Byrne."),
+      await screen.findByText("Suspended on 25 Oct 2026 by Ciara Byrne"),
     ).toBeVisible();
     expect(
-      screen.getByText(
-        "They are refused on every request. Their memberships are kept.",
-      ),
+      screen.getByText("Reason: Shared account. They can’t sign in."),
     ).toBeVisible();
-    expect(await term("Suspended by")).toHaveTextContent("Ciara Byrne");
-    expect(await term("Suspended")).toHaveTextContent("16 Oct 2026");
+    await userEvent.click(screen.getByRole("button", { name: "Reactivate" }));
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Reactivate John Byrne?",
+      }),
+    ).toBeVisible();
+  });
+
+  it("UserPage_SuspendedWithoutWhoOrWhy_ShowsNoByPartAndNoReason", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(suspendedJohn({ suspendedBy: null, suspensionReason: null })),
+    );
+
+    renderWithProviders(<UserPage userId={john.id} />);
+
+    expect(await screen.findByText("Suspended on 25 Oct 2026")).toBeVisible();
+    expect(screen.getByText("They can’t sign in.")).toBeVisible();
+    expect(screen.queryByText(/ by /)).toBeNull();
+    expect(screen.queryByText(/Reason:/)).toBeNull();
+  });
+
+  it("UserPage_SuspendedWithoutAMoment_ShowsNoBanner", async () => {
+    server.use(meAnswer(), userAnswer(suspendedJohn({ suspendedAt: null })));
+
+    renderWithProviders(<UserPage userId={john.id} />);
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "John Byrne" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/Suspended on/)).toBeNull();
   });
 
   it("UserPage_Suspended_OffersReactivate", async () => {
-    server.use(
-      meAnswer(),
-      userAnswer(
-        userDetailOf(john, {
-          suspendedAt: "2026-10-16T09:00:00Z",
-          suspendedBy: {
-            name: "Ciara Byrne",
-            deleted: false,
-          },
-        }),
-      ),
-    );
+    server.use(meAnswer(), userAnswer(suspendedJohn()));
 
     renderWithProviders(<UserPage userId={john.id} />);
     await userEvent.click(
@@ -143,20 +169,14 @@ describe("UserPage", () => {
   it("UserPage_SuspendedByADeletedAdmin_NamesThemDeletedUser", async () => {
     server.use(
       meAnswer(),
-      userAnswer(
-        userDetailOf(john, {
-          suspendedAt: "2026-10-16T09:00:00Z",
-          suspendedBy: { name: null, deleted: true },
-        }),
-      ),
+      userAnswer(suspendedJohn({ suspendedBy: { name: null, deleted: true } })),
     );
 
     renderWithProviders(<UserPage userId={john.id} />);
 
     expect(
-      await screen.findByText("Suspended since 16 Oct 2026 by Deleted user."),
+      await screen.findByText("Suspended on 25 Oct 2026 by Deleted user"),
     ).toBeVisible();
-    expect(await term("Suspended by")).toHaveTextContent("Deleted user");
   });
 
   it("UserPage_Deleted_ShowsTheDeletedStateWithoutActions", async () => {
@@ -167,26 +187,62 @@ describe("UserPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Deleted user" }),
     ).toBeVisible();
-    expect(screen.getByText("Deleted")).toBeVisible();
+    expect(screen.getAllByText("Deleted")[0]).toBeVisible();
     expect(screen.queryByRole("button", { name: /Actions for/ })).toBeNull();
-    expect(screen.getByText("Not a member of any organisation.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /Suspend/ })).toBeNull();
+    expect(screen.getByText("In no organisation.")).toBeVisible();
   });
 
-  it("UserPage_RootSystemAdmin_BothBadgesLinkToSystemAdmins", async () => {
+  it("UserPage_SystemAdmin_ShowsTheSystemAdminLabel", async () => {
     server.use(meAnswer(), userAnswer(userDetailOf(rory)));
 
     renderWithProviders(<UserPage userId={rory.id} />);
 
-    expect(
-      await screen.findByRole("link", { name: "System admin" }),
-    ).toHaveAttribute("href", "/settings/system-admins");
-    expect(screen.getByRole("link", { name: "Root" })).toHaveAttribute(
-      "href",
-      "/settings/system-admins",
-    );
+    expect(await screen.findByText("System admin")).toBeVisible();
+    expect(screen.getByText("Root")).toBeVisible();
+    expect(screen.getByText("In no organisation.")).toBeVisible();
   });
 
-  it("UserPage_Memberships_ShowEachOrganisationSlugRoleAndJoined", async () => {
+  it("UserPage_DeleteASystemAdmin_SaysWhyAtOnce", async () => {
+    server.use(meAnswer(), userAnswer(userDetailOf(rory)));
+
+    renderWithProviders(<UserPage userId={rory.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Actions for Rory Brennan" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "Delete user" }),
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Rory Brennan can’t be deleted",
+      }),
+    ).toBeVisible();
+  });
+
+  it("UserPage_DeleteTheLastOwner_SaysWhyAtOnce", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(ayse, { memberships: ayseMemberships })),
+    );
+
+    renderWithProviders(<UserPage userId={ayse.id} />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Actions for Ayşe Yılmaz" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitem", { name: "Delete user" }),
+    );
+
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Ayşe Yılmaz can’t be deleted yet",
+      }),
+    ).toBeVisible();
+  });
+
+  it("UserPage_Memberships_ShowEachOrganisationWithItsRole", async () => {
     server.use(
       meAnswer(),
       userAnswer(userDetailOf(mehmet, { memberships: mehmetMemberships })),
@@ -195,18 +251,32 @@ describe("UserPage", () => {
     renderWithProviders(<UserPage userId={mehmet.id} />);
 
     const northwindRow = await membershipRow("Northwind Traders");
-    expect(northwindRow.getByText("northwind")).toBeVisible();
     expect(northwindRow.getByText("Admin")).toBeVisible();
-    expect(northwindRow.getByText("5 Mar 2026")).toBeVisible();
+    expect(northwindRow.queryByText("northwind")).toBeNull();
+    expect(northwindRow.queryByText("5 Mar 2026")).toBeNull();
     expect(
-      (await membershipRow("Northwind Traders")).getByRole("link", {
-        name: "Northwind Traders",
-      }),
+      northwindRow.getByRole("link", { name: "Northwind Traders" }),
     ).toHaveAttribute("href", `/organisations/${northwind.id}`);
     const custom = (await membershipRow("Shannon Studio")).getByText(
       "Billing lead",
     );
     expect(custom.tagName).toBe("BDI");
+  });
+
+  it("UserPage_MembershipOfAStoppedOrganisation_ShowsItsStatus", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(ayse, { memberships: ayseMemberships })),
+    );
+
+    renderWithProviders(<UserPage userId={ayse.id} />);
+
+    expect(
+      (await membershipRow("Atlas Logistics")).getByText("Suspended"),
+    ).toHaveAttribute("data-tone", "warning");
+    expect(
+      (await membershipRow("Northwind Traders")).queryByText("Active"),
+    ).toBeNull();
   });
 
   it("UserPage_BuiltInRole_ShowsItsTranslatedName", async () => {
@@ -218,31 +288,26 @@ describe("UserPage", () => {
     renderWithProviders(<UserPage userId={mehmet.id} />, "tr");
 
     expect(
-      (
-        await membershipRow("Northwind Traders", "Kuruluşlar ve roller")
-      ).getByText("Yönetici"),
+      (await membershipRow("Northwind Traders", "Kuruluşlar")).getByText(
+        "Yönetici",
+      ),
     ).toBeVisible();
   });
 
-  it("UserPage_OwnerMembership_DisablesMakeOwnerWithItsReason", async () => {
+  it("UserPage_OwnerMembership_OffersNoMakeOwner", async () => {
     server.use(
       meAnswer(),
       userAnswer(userDetailOf(ayse, { memberships: ayseMemberships })),
     );
 
     renderWithProviders(<UserPage userId={ayse.id} />);
-    await userEvent.click(
-      (await membershipRow("Northwind Traders")).getByRole("button", {
-        name: "Actions for Northwind Traders",
-      }),
-    );
 
-    const item = await screen.findByRole("menuitem", { name: /Make Owner/ });
-    expect(item).toHaveAttribute("aria-disabled", "true");
-    expect(item).toHaveTextContent("Already an Owner.");
+    const row = await membershipRow("Northwind Traders");
+    expect(row.getByText("Owner")).toBeVisible();
+    expect(row.queryByRole("button", { name: /Make Owner/ })).toBeNull();
   });
 
-  it("UserPage_OtherMembership_EnablesMakeOwner", async () => {
+  it("UserPage_OtherMembership_MakeOwnerOpensItsDialog", async () => {
     server.use(
       meAnswer(),
       userAnswer(userDetailOf(ayse, { memberships: ayseMemberships })),
@@ -251,13 +316,15 @@ describe("UserPage", () => {
     renderWithProviders(<UserPage userId={ayse.id} />);
     await userEvent.click(
       (await membershipRow("Atlas Logistics")).getByRole("button", {
-        name: "Actions for Atlas Logistics",
+        name: "Make Owner of Atlas Logistics",
       }),
     );
 
     expect(
-      await screen.findByRole("menuitem", { name: "Make Owner" }),
-    ).not.toHaveAttribute("aria-disabled");
+      await screen.findByRole("alertdialog", {
+        name: "Make Ayşe Yılmaz an Owner of Atlas Logistics?",
+      }),
+    ).toBeVisible();
   });
 
   it("UserPage_NotFound_ShowsPageNotFound", async () => {

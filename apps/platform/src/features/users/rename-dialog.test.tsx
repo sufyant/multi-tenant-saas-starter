@@ -42,7 +42,7 @@ const rename = async (
   const field = dialog.getByRole("textbox", { name: "Name" });
   await userEvent.clear(field);
   await userEvent.type(field, value);
-  await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
+  await userEvent.click(dialog.getByRole("button", { name: "Rename" }));
 };
 
 describe("RenameUserDialog", () => {
@@ -67,7 +67,9 @@ describe("RenameUserDialog", () => {
     expect(dialog.getAllByRole("textbox")).toHaveLength(1);
     expect(
       dialog.getByText(
-        "Fixes a typo or a name change. The new name shows in every organisation at once. Past Activity shows the new name too.",
+        sentence(
+          "Ayşe Yılmaz sees the new name at once, in every organisation. Their email stays the same.",
+        ),
       ),
     ).toBeVisible();
     await rename(dialog, "  Ayşe Yılmaz Demir ");

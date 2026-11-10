@@ -23,7 +23,6 @@ import { sentence } from "../../../test/render";
 import { openUserAction } from "../../../test/user-page";
 import {
   ayse,
-  ayseMemberships,
   ciara,
   membershipOf,
   platformCommand,
@@ -40,7 +39,11 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const detail = userDetailOf(ayse, { memberships: ayseMemberships });
+// Ayşe is an Admin of Atlas Logistics only, so nothing stops her deletion before the click.
+const detail = userDetailOf(ayse, {
+  memberships: [membershipOf(atlas)],
+  membershipCount: 1,
+});
 
 const open = (user = ayse, name = "Ayşe Yılmaz") =>
   openUserAction(user, name, "Delete user", `Delete ${name}?`);
@@ -64,7 +67,9 @@ describe("DeleteUserDialog", () => {
 
     expect(
       dialog.getByText(
-        "They leave every organisation. Their email and names are erased. Activity keeps their entries as Deleted user. This cannot be undone.",
+        sentence(
+          "Ayşe Yılmaz’s account is deleted, and they leave Atlas Logistics. The Activity log keeps their entries as “Deleted user”. This can’t be undone.",
+        ),
       ),
     ).toBeVisible();
     expect(dialog.getByRole("button", { name: "Delete user" })).toBeDisabled();
@@ -105,31 +110,52 @@ describe("DeleteUserDialog", () => {
     ).toBeVisible();
   });
 
-  it("Delete_SystemAdmin_SaysRemoveThemFirstAndLinksToSystemAdmins", async () => {
+  it("Delete_NoMemberships_SaysOnlyThatTheAccountIsDeleted", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(ayse, { memberships: [], membershipCount: 0 })),
+    );
+
+    const dialog = await open();
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "Ayşe Yılmaz’s account is deleted. The Activity log keeps their entries as “Deleted user”. This can’t be undone.",
+        ),
+      ),
+    ).toBeVisible();
+  });
+
+  it("Delete_SystemAdmin_OpensWithTheReasonAndSendsNothing", async () => {
+    const calls: { key: string | null; body: unknown }[] = [];
     server.use(
       meAnswer(),
       userAnswer(userDetailOf(ciara)),
-      platformCommand("delete", `users/${ciara.id}`, [
-        () => problem(409, ErrorCode.UserIsSystemAdmin),
-      ]),
+      platformCommand("delete", `users/${ciara.id}`, [], calls),
     );
 
-    const dialog = await open(ciara, "Ciara Byrne");
-    await confirm(dialog, "ciara@starter.example");
+    const dialog = await openUserAction(
+      ciara,
+      "Ciara Byrne",
+      "Delete user",
+      "Ciara Byrne can’t be deleted",
+    );
 
     expect(
-      await dialog.findByText(sentence("Ciara Byrne is a system admin.")),
+      dialog.getByText(
+        sentence(
+          "Ciara Byrne is a system admin. Remove the system admin access in Settings › System admins first.",
+        ),
+      ),
     ).toBeVisible();
-    expect(
-      dialog.getByText("Remove them from System admins first."),
-    ).toBeVisible();
-    expect(
-      dialog.getByRole("link", { name: "Open System admins" }),
-    ).toHaveAttribute("href", "/settings/system-admins");
+    expect(dialog.queryByRole("textbox")).toBeNull();
+    await userEvent.click(dialog.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(calls).toHaveLength(0);
   });
 
-  it("Delete_LastOwner_NamesEachOrganisationFromTheMemberships", async () => {
-    const reads = { count: 0 };
+  it("Delete_LastOwnerOfTwo_OpensWithTheReasonNamingBoth", async () => {
     server.use(
       meAnswer(),
       userAnswer(
@@ -139,14 +165,42 @@ describe("DeleteUserDialog", () => {
             membershipOf(atlas, { lastOwner: true }),
           ],
         }),
+      ),
+    );
+
+    const dialog = await openUserAction(
+      ayse,
+      "Ayşe Yılmaz",
+      "Delete user",
+      "Ayşe Yılmaz can’t be deleted yet",
+    );
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "Ayşe Yılmaz is the only Owner of Northwind Traders and Atlas Logistics. Make someone else Owner there first.",
+        ),
+      ),
+    ).toBeVisible();
+    expect(dialog.getByRole("button", { name: "Close" })).toBeVisible();
+  });
+
+  // The API stays the guard: an Owner who became the last one after the page read GetUser.
+  it("Delete_LastOwnerMeanwhile_SaysWhyAndReadsTheUserAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      meAnswer(),
+      userAnswers(
+        [
+          detail,
+          userDetailOf(ayse, {
+            memberships: [membershipOf(atlas, { lastOwner: true })],
+          }),
+        ],
         reads,
       ),
       platformCommand("delete", `users/${ayse.id}`, [
-        () =>
-          problem(409, ErrorCode.UserLastOwner, undefined, [
-            northwind.id,
-            atlas.id,
-          ]),
+        () => problem(409, ErrorCode.UserLastOwner, undefined, [atlas.id]),
       ]),
     );
 
@@ -154,47 +208,12 @@ describe("DeleteUserDialog", () => {
     await confirm(dialog);
 
     const refused = await screen.findByRole("alertdialog", {
-      name: "Ayşe Yılmaz cannot be deleted",
+      name: "Ayşe Yılmaz can’t be deleted yet",
     });
     expect(refused).toHaveTextContent(
-      "They are the last Owner of 2 organisations. Make someone else an Owner there, or close them, then try again.",
+      "Ayşe Yılmaz is the only Owner of Atlas Logistics. Make someone else Owner there first.",
     );
-    expect(
-      screen.getByRole("link", { name: /Northwind Traders/ }),
-    ).toHaveAttribute("href", `/organisations/${northwind.id}`);
-    expect(
-      screen.getByRole("link", { name: /Atlas Logistics/ }),
-    ).toHaveAttribute("href", `/organisations/${atlas.id}`);
     await waitFor(() => expect(reads.count).toBe(2));
-  });
-
-  it("Delete_LastOwnerOpenTheOrganisation_OpensTheFirstOneNamed", async () => {
-    server.use(
-      meAnswer(),
-      userAnswer(
-        userDetailOf(ayse, {
-          memberships: [
-            membershipOf(northwind, { lastOwner: true }),
-            membershipOf(atlas, { lastOwner: true }),
-          ],
-        }),
-      ),
-      platformCommand("delete", `users/${ayse.id}`, [
-        () =>
-          problem(409, ErrorCode.UserLastOwner, undefined, [
-            northwind.id,
-            atlas.id,
-          ]),
-      ]),
-    );
-
-    const dialog = await open();
-    await confirm(dialog);
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Open the organisation" }),
-    );
-
-    expect(router.push).toHaveBeenCalledWith(`/organisations/${northwind.id}`);
   });
 
   it("Delete_JoinedMeanwhile_SaysNothingWasDeletedAndReadsAgain", async () => {

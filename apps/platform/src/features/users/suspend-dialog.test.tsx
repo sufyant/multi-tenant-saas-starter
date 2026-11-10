@@ -58,7 +58,7 @@ const suspend = async (
   reason = "Shared account",
 ) => {
   await userEvent.type(dialog.getByRole("textbox", { name: "Reason" }), reason);
-  await userEvent.click(dialog.getByRole("button", { name: "Suspend user" }));
+  await userEvent.click(dialog.getByRole("button", { name: "Suspend" }));
 };
 
 const lastOwnerOf = (
@@ -89,10 +89,15 @@ describe("SuspendUserDialog", () => {
     const dialog = await open(mehmet, "Mehmet Kaya");
     expect(
       dialog.getByText(
-        "They are refused on their next request, everywhere. Their memberships are kept. You can reactivate them at any time.",
+        sentence(
+          "Mehmet Kaya is signed out everywhere and can’t sign in until you reactivate them. Nothing is deleted.",
+        ),
       ),
     ).toBeVisible();
-    expect(dialog.queryByText(/is the last Owner of/)).toBeNull();
+    expect(
+      dialog.getByText("Required. Only the platform sees it."),
+    ).toBeVisible();
+    expect(dialog.queryByText(/is the only Owner of/)).toBeNull();
     await suspend(dialog);
 
     await expectVisibleToast(sentence("Mehmet Kaya suspended"));
@@ -119,15 +124,12 @@ describe("SuspendUserDialog", () => {
     const dialog = await open();
     expect(
       dialog.getByText(
-        sentence("Ayşe Yılmaz is the last Owner of Northwind Traders."),
+        sentence(
+          "Ayşe Yılmaz is the only Owner of Northwind Traders. While they are suspended, nobody there can manage Owners. Make someone else Owner first if Northwind Traders needs one.",
+        ),
       ),
-    ).toBeVisible();
-    expect(
-      dialog.getByText(
-        "While they are suspended, nobody there can invite, change roles or remove members.",
-      ),
-    ).toBeVisible();
-    expect(dialog.getByRole("button", { name: "Suspend user" })).toBeEnabled();
+    ).toHaveClass("text-destructive-text");
+    expect(dialog.getByRole("button", { name: "Suspend" })).toBeEnabled();
     await suspend(dialog);
 
     await expectVisibleToast(sentence("Ayşe Yılmaz suspended"));
@@ -147,7 +149,7 @@ describe("SuspendUserDialog", () => {
     expect(
       dialog.getByText(
         sentence(
-          "Ayşe Yılmaz is the last Owner of Northwind Traders and Atlas Logistics.",
+          "Ayşe Yılmaz is the only Owner of Northwind Traders and Atlas Logistics. While they are suspended, nobody there can manage Owners. Make someone else Owner first in each one that needs one.",
         ),
       ),
     ).toBeVisible();
@@ -168,7 +170,7 @@ describe("SuspendUserDialog", () => {
     expect(
       dialog.getByText(
         sentence(
-          "Ayşe Yılmaz is the last Owner of Northwind Traders, Atlas Logistics, Shannon Studio and 1 more.",
+          "Ayşe Yılmaz is the only Owner of Northwind Traders, Atlas Logistics, Shannon Studio and 1 more. While they are suspended, nobody there can manage Owners. Make someone else Owner first in each one that needs one.",
         ),
       ),
     ).toBeVisible();
@@ -249,6 +251,24 @@ describe("SuspendUserDialog", () => {
   });
 
   // In Arabic a Latin name reorders the punctuation around it unless it is isolated (W3C, "Inline markup and bidirectional text").
+  // A deleted user can't be suspended (409 user.deleted); the page offers no Suspend, so this is the race of another admin's delete.
+  it("Suspend_DeletedMeanwhile_SaysSoAndReadsTheUserAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      meAnswer(),
+      userAnswer(userDetailOf(mehmet), reads),
+      platformCommand("post", `users/${mehmet.id}/suspend`, [
+        () => problem(409, ErrorCode.UserDeleted),
+      ]),
+    );
+
+    const dialog = await open(mehmet, "Mehmet Kaya");
+    await suspend(dialog);
+
+    expect(await dialog.findByText("This user was deleted.")).toBeVisible();
+    await waitFor(() => expect(reads.count).toBe(2));
+  });
+
   it("Suspend_Arabic_IsolatesTheUsersNameInTheTitle", async () => {
     server.use(
       meAnswer(),

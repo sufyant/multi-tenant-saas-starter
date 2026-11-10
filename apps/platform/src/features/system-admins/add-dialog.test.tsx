@@ -311,6 +311,11 @@ describe("AddSystemAdminDialog", () => {
     await makeSystemAdmin();
 
     await expectVisibleToast(sentence("Mehmet Kaya is a system admin."));
+    expect(
+      screen.getByText(
+        "They set up an authenticator app on their next sign-in.",
+      ),
+    ).toBeVisible();
     expect(keys).toHaveLength(1);
     expect(keys[0]).toMatch(/^[\da-f-]{36}$/);
     await vi.waitFor(() =>

@@ -22,6 +22,7 @@ import {
   ciara,
   erased,
   john,
+  mehmet,
   membershipOf,
   platformCommand,
   rory,
@@ -65,7 +66,7 @@ const searchParam = (name: string) =>
   new URLSearchParams(window.location.search).get(name);
 
 describe("UsersPage", () => {
-  it("UsersPage_EachUser_ShowsNameEmailOrganisationsStatusAndCreated", async () => {
+  it("UsersPage_EachUser_ShowsNameStatusEmailAndOrganisations", async () => {
     server.use(meAnswer(), usersAnswer(usersPageOf([ayse, john])));
 
     renderWithProviders(<UsersPage />);
@@ -73,14 +74,54 @@ describe("UsersPage", () => {
     const row = await rowOf("Ayşe Yılmaz");
     expect(row.getByText("ayse@northwind.example")).toBeVisible();
     expect(row.getByText("2")).toBeVisible();
-    expect(row.getByText("Active")).toBeVisible();
-    expect(row.getByText("3 Mar 2026")).toBeVisible();
-    expect((await rowOf("John Byrne")).getByText("Suspended")).toBeVisible();
+    expect(row.getByText("Active")).toHaveAttribute("data-tone", "success");
+    expect(row.queryByText("3 Mar 2026")).toBeNull();
+    expect((await rowOf("John Byrne")).getByText("Suspended")).toHaveAttribute(
+      "data-tone",
+      "warning",
+    );
     expect(
       (await table())
         .getAllByRole("columnheader")
         .map((header) => header.textContent),
-    ).toEqual(["User", "Organisations", "Status", "Created", "Actions"]);
+    ).toEqual(["Name", "Status", "Email", "Organisations", "Actions"]);
+  });
+
+  it("UsersPage_EachUser_ShowsNoAvatar", async () => {
+    server.use(meAnswer(), usersAnswer(usersPageOf([ayse])));
+
+    renderWithProviders(<UsersPage />);
+
+    expect((await rowOf("Ayşe Yılmaz")).queryByText("AY")).toBeNull();
+  });
+
+  it("UsersPage_Header_HasTheDescriptionAndNoFreshness", async () => {
+    server.use(meAnswer(), usersAnswer(usersPageOf([ayse])));
+
+    renderWithProviders(<UsersPage />);
+
+    expect(
+      await screen.findByText("Everyone who can sign in to Starter."),
+    ).toBeVisible();
+    await rowOf("Ayşe Yılmaz");
+    expect(screen.queryByText(/Updated/)).toBeNull();
+  });
+
+  it("UsersPage_Tabs_ShowTheStatusCountsWithAllTheirSum", async () => {
+    server.use(
+      meAnswer(),
+      usersAnswer(
+        usersPageOf([ayse], {
+          statusCounts: { active: 65, suspended: 2, deleted: 1 },
+        }),
+      ),
+    );
+
+    renderWithProviders(<UsersPage />);
+
+    expect(
+      (await screen.findAllByRole("tab")).map((tab) => tab.textContent),
+    ).toEqual(["All 68", "Active 65", "Suspended 2"]);
   });
 
   it("UsersPage_SystemAdmin_ShowsTheSystemAdminTagOnly", async () => {
@@ -93,36 +134,23 @@ describe("UsersPage", () => {
     expect(row.queryByText("Root")).toBeNull();
   });
 
-  it("UsersPage_RootSystemAdmin_ShowsTheRootTagBesideIt", async () => {
+  it("UsersPage_RootSystemAdmin_ShowsTheSystemAdminLabelOnly", async () => {
     server.use(meAnswer(), usersAnswer(usersPageOf([rory])));
 
     renderWithProviders(<UsersPage />);
 
     const row = await rowOf("Rory Brennan");
     expect(row.getByText("System admin")).toBeVisible();
-    expect(row.getByText("Root")).toBeVisible();
+    expect(row.queryByText("Root")).toBeNull();
   });
 
-  it("UsersPage_RootTag_HasTheKeyIconAndTheNeutralTone", async () => {
-    server.use(meAnswer(), usersAnswer(usersPageOf([rory])));
-
-    renderWithProviders(<UsersPage />);
-
-    const row = await rowOf("Rory Brennan");
-    const root = row.getByText("Root");
-    expect(root.firstElementChild).toHaveClass("lucide-key");
-    expect(root).toHaveClass("bg-neutral/16", "text-neutral-text");
-    expect(row.getByText("System admin").querySelector("svg")).toBeNull();
-  });
-
-  it("UsersPage_Tags_AreNoButtonsOrLinks", async () => {
+  it("UsersPage_SystemAdminLabel_IsNoButtonOrLink", async () => {
     server.use(meAnswer(), usersAnswer(usersPageOf([rory])));
 
     renderWithProviders(<UsersPage />);
 
     const row = await rowOf("Rory Brennan");
     expect(row.getByText("System admin").closest("a, button")).toBeNull();
-    expect(row.getByText("Root").closest("a, button")).toBeNull();
   });
 
   it("UsersPage_DeletedUser_ShowsDeletedUserWithoutMenu", async () => {
@@ -192,7 +220,8 @@ describe("UsersPage", () => {
     expect(reads.count).toBe(1);
   });
 
-  it("UsersPage_DeleteFromARow_NamesTheLastOwnersOrganisationsFromGetUser", async () => {
+  it("UsersPage_DeleteFromARowOfTheLastOwner_SaysWhyAtOnceAndSendsNothing", async () => {
+    const calls: { key: string | null; body: unknown }[] = [];
     server.use(
       meAnswer(),
       usersAnswer(usersPageOf([ayse])),
@@ -201,9 +230,7 @@ describe("UsersPage", () => {
           memberships: [membershipOf(northwind, { lastOwner: true })],
         }),
       ),
-      platformCommand("delete", `users/${ayse.id}`, [
-        () => problem(409, ErrorCode.UserLastOwner, undefined, [northwind.id]),
-      ]),
+      platformCommand("delete", `users/${ayse.id}`, [], calls),
     );
 
     renderWithProviders(<UsersPage />);
@@ -211,20 +238,49 @@ describe("UsersPage", () => {
     await userEvent.click(
       screen.getByRole("menuitem", { name: "Delete user" }),
     );
-    const dialog = within(
-      await screen.findByRole("alertdialog", { name: "Delete Ayşe Yılmaz?" }),
-    );
-    await userEvent.type(
-      dialog.getByRole("textbox", {
-        name: "Type ayse@northwind.example to confirm",
-      }),
-      "ayse@northwind.example",
-    );
-    await userEvent.click(dialog.getByRole("button", { name: "Delete user" }));
 
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Ayşe Yılmaz can’t be deleted yet",
+      }),
+    );
     expect(
-      await screen.findByRole("link", { name: /Northwind Traders/ }),
-    ).toHaveAttribute("href", `/organisations/${northwind.id}`);
+      dialog.getByText(
+        sentence(
+          "Ayşe Yılmaz is the only Owner of Northwind Traders. Make someone else Owner there first.",
+        ),
+      ),
+    ).toBeVisible();
+    expect(dialog.queryByRole("textbox")).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
+
+  it("UsersPage_DeleteFromARowOfASystemAdmin_SaysWhyAtOnce", async () => {
+    server.use(
+      meAnswer(),
+      usersAnswer(usersPageOf([ciara])),
+      userAnswer(userDetailOf(ciara)),
+    );
+
+    renderWithProviders(<UsersPage />);
+    await menuOf("Ciara Byrne");
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Delete user" }),
+    );
+
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Ciara Byrne can’t be deleted",
+      }),
+    );
+    expect(
+      dialog.getByText(
+        sentence(
+          "Ciara Byrne is a system admin. Remove the system admin access in Settings › System admins first.",
+        ),
+      ),
+    ).toBeVisible();
+    expect(dialog.getByRole("button", { name: "Close" })).toBeVisible();
   });
 
   it("UsersPage_RenameFromARow_ReadsTheListAgain", async () => {
@@ -246,7 +302,7 @@ describe("UsersPage", () => {
     const name = dialog.getByRole("textbox", { name: "Name" });
     await userEvent.clear(name);
     await userEvent.type(name, "Ayşe Demir");
-    await userEvent.click(dialog.getByRole("button", { name: "Rename user" }));
+    await userEvent.click(dialog.getByRole("button", { name: "Rename" }));
 
     await expectVisibleToast(sentence("Renamed to Ayşe Demir."));
     await waitFor(() => expect(requests).toHaveLength(2));
@@ -265,16 +321,6 @@ describe("UsersPage", () => {
     expect(requests.map((request) => request.get("status"))).toEqual([null]);
   });
 
-  it("UsersPage_Tabs_AreAllActiveSuspended", async () => {
-    server.use(meAnswer(), usersAnswer());
-
-    renderWithProviders(<UsersPage />);
-
-    expect(
-      (await screen.findAllByRole("tab")).map((tab) => tab.textContent),
-    ).toEqual(["All", "Active", "Suspended"]);
-  });
-
   it.each([
     ["Active", UserResponseStatus.Active],
     ["Suspended", UserResponseStatus.Suspended],
@@ -283,7 +329,9 @@ describe("UsersPage", () => {
     server.use(meAnswer(), usersAnswer(usersPageOf([ayse]), requests));
 
     renderWithProviders(<UsersPage />);
-    await userEvent.click(await screen.findByRole("tab", { name: tab }));
+    await userEvent.click(
+      await screen.findByRole("tab", { name: new RegExp(`^${tab}`) }),
+    );
 
     await waitFor(() => expect(requests.at(-1)?.get("status")).toBe(status));
     await waitFor(() => expect(searchParam("status")).toBe(status));
@@ -326,17 +374,17 @@ describe("UsersPage", () => {
     );
   });
 
-  it("UsersPage_SortByUser_SortsByNameInTheUrl", async () => {
+  it("UsersPage_SortByName_SortsByNameInTheUrl", async () => {
     const requests: URLSearchParams[] = [];
     server.use(meAnswer(), usersAnswer(usersPageOf([ayse]), requests));
 
     renderWithProviders(<UsersPage />);
     await userEvent.click(
-      (await table()).getByRole("button", { name: "User" }),
+      (await table()).getByRole("button", { name: "Name" }),
     );
     await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("name"));
     await userEvent.click(
-      (await table()).getByRole("button", { name: "User" }),
+      (await table()).getByRole("button", { name: "Name" }),
     );
 
     await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("-name"));
@@ -353,22 +401,62 @@ describe("UsersPage", () => {
     await waitFor(() => expect(requests.at(-1)?.get("sort")).toBe("email"));
   });
 
-  it("UsersPage_NextPage_PutsThePageInTheUrl", async () => {
+  /** Two pages: Ayşe on the first, Mehmet on the second; the second answers with `second` when it is given. */
+  const twoPages = (
+    requests: URLSearchParams[] = [],
+    second?: () => Response,
+  ) =>
+    http.get("*/v1/platform/users", ({ request }) => {
+      const params = new URL(request.url).searchParams;
+      requests.push(params);
+      if (params.get("page") === "2" && second) return second();
+      return HttpResponse.json(
+        params.get("page") === "2"
+          ? usersPageOf([mehmet], { page: 2, pageSize: 1, total: 2 })
+          : usersPageOf([ayse], { pageSize: 1, total: 2 }),
+      );
+    });
+
+  it("UsersPage_MoreThanOnePage_LoadMoreAddsTheNextPageWithNoPageInTheUrl", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(meAnswer(), twoPages(requests));
+
+    renderWithProviders(<UsersPage />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Load more" }),
+    );
+
+    expect(await rowOf("Mehmet Kaya")).toBeTruthy();
+    expect(await rowOf("Ayşe Yılmaz")).toBeTruthy();
+    expect(screen.getByText("1 more user loaded.")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(requests.map((request) => request.get("page"))).toEqual(["1", "2"]);
+    expect(searchParam("page")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
+  });
+
+  it("UsersPage_LoadMoreFails_SaysSoUnderTheRowsAndTriesAgain", async () => {
     const requests: URLSearchParams[] = [];
     server.use(
       meAnswer(),
-      usersAnswer(usersPageOf([ayse], { total: 41 }), requests),
+      twoPages(requests, () => problem(500, ErrorCode.ServerError)),
     );
 
     renderWithProviders(<UsersPage />);
     await userEvent.click(
-      (
-        await screen.findAllByRole("button", { name: "Next" })
-      )[0] as HTMLElement,
+      await screen.findByRole("button", { name: "Load more" }),
     );
 
-    await waitFor(() => expect(requests.at(-1)?.get("page")).toBe("2"));
-    await waitFor(() => expect(searchParam("page")).toBe("2"));
+    expect(await screen.findByText("Couldn’t load more users")).toBeVisible();
+    expect(await rowOf("Ayşe Yılmaz")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await waitFor(() =>
+      expect(
+        requests.filter((request) => request.get("page") === "2"),
+      ).toHaveLength(2),
+    );
   });
 
   it("UsersPage_Loading_ShowsTheSkeleton", async () => {
@@ -392,11 +480,11 @@ describe("UsersPage", () => {
     server.use(meAnswer(), usersAnswer(usersPageOf([])));
 
     renderWithProviders(<UsersPage />);
-    expect(await screen.findByText("No users match “pilot”")).toBeVisible();
-    expect(screen.getByText("Search by name or email.")).toBeVisible();
-    await userEvent.click(
-      screen.getByRole("button", { name: "Clear filters" }),
-    );
+    expect(await screen.findByText("No user matches “pilot”")).toBeVisible();
+    expect(
+      screen.getByText("Search by name or by the full email address."),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Clear search" }));
 
     await waitFor(() => expect(window.location.search).toBe(""));
   });

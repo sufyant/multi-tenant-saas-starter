@@ -59,7 +59,7 @@ describe("MakeOwnerDialog", () => {
     expect(
       dialog.getByText(
         sentence(
-          "They get every permission in Northwind Traders. The organisation’s Activity shows that the platform did this.",
+          "Mehmet Kaya becomes an Owner there, with every permission. The other Owners stay Owners.",
         ),
       ),
     ).toBeVisible();
