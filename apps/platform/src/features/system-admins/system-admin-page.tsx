@@ -25,7 +25,7 @@ import { RootLabel } from "./system-admins-page";
 
 /**
  * One system admin (10.15), the page a phone card opens: Back to System admins, the name and the email, when and by whom they were
- * added, and Remove system admin. The "by" part is left out when the API does not know it (a root's first entry, or an event before
+ * added, that two-step verification is required, and Remove system admin. The "by" part is left out when the API does not know it (a root's first entry, or an event before
  * 37b-backend); a deleted admin is "Deleted user". A root has no Remove and says why; the viewer's own Remove is disabled with its
  * reason (F51). A user who is no system admin has no such page.
  */
@@ -91,9 +91,17 @@ function Detail({ user }: { user: UserDetailResponse }) {
           </bdi>
         )}
       </div>
-      {added && (
-        <DetailList rows={[{ term: t("systemAdmins.added"), value: added }]} />
-      )}
+      <DetailList
+        rows={[
+          ...(added ? [{ term: t("systemAdmins.added"), value: added }] : []),
+          // F42 requires the app of every system admin; no field says whether a new one has set it up yet, so the row says the
+          // rule, without the frame's "On" (the maintainer's decision of 2026-11-10).
+          {
+            term: t("systemAdmins.twoStepTerm"),
+            value: t("systemAdmins.twoStepText"),
+          },
+        ]}
+      />
       {user.isRootSystemAdmin ? (
         <p className="text-small text-muted-foreground">
           {t("systemAdmins.rootHint")}

@@ -53,6 +53,7 @@ export function DeleteDialog({
   const close = (open: boolean) => !open && onClose();
   const refused = (title: ReactNode, text: ReactNode) => (
     <Dialog
+      size="wide"
       open
       onOpenChange={close}
       title={title}

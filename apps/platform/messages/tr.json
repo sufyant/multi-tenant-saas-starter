@@ -357,7 +357,9 @@
     "loadedAdmins": "{count, plural, one {# sistem yöneticisi daha yüklendi.} other {# sistem yöneticisi daha yüklendi.}}",
     "moreError": "Daha fazla sistem yöneticisi yüklenemedi",
     "backToSystemAdmins": "Sistem yöneticileri",
-    "addedBy": "{date}, {name} tarafından"
+    "addedBy": "{date}, {name} tarafından",
+    "twoStepTerm": "İki adımlı doğrulama",
+    "twoStepText": "Her sistem yöneticisi için zorunlu."
   },
   "activity": {
     "today": "Bugün, {date}",

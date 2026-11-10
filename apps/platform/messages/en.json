@@ -357,7 +357,9 @@
     "loadedAdmins": "{count, plural, one {# more system admin loaded.} other {# more system admins loaded.}}",
     "moreError": "Couldn’t load more system admins",
     "backToSystemAdmins": "System admins",
-    "addedBy": "{date}, by {name}"
+    "addedBy": "{date}, by {name}",
+    "twoStepTerm": "Two-step verification",
+    "twoStepText": "Required for every system admin."
   },
   "activity": {
     "today": "Today, {date}",

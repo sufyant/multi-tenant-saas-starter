@@ -31,6 +31,15 @@ import {
   users,
 } from "./api";
 import { createUser, deleteUser } from "./clerk-users";
+import {
+  frameAdmins,
+  frameUsers,
+  mockFrameGrant,
+  mockFrameRevoke,
+  mockFrameUsers,
+  usersFail,
+  usersWait,
+} from "./frame-users";
 import { mockIdentity } from "./identity";
 import {
   frameNorthwind,
@@ -581,6 +590,42 @@ const fillCreate = (slug: string) => async (page: Page) => {
   await dialog
     .getByRole("textbox", { name: "Owner’s email" })
     .fill("maya.chen@harbourside.example");
+};
+
+/** Opens an action of the user's header menu (5.06). */
+const userAction = (name: string, action: string) => async (page: Page) => {
+  await page.getByRole("button", { name: `Actions for ${name}` }).click();
+  await page.getByRole("menuitem", { name: action }).click();
+  await page.getByRole("alertdialog").waitFor();
+};
+
+/** Add system admin with an email typed, once the lookup has answered (10.02 to 10.04). */
+const addAdmin = (email: string) => async (page: Page) => {
+  await page.getByRole("button", { name: "Add system admin" }).click();
+  const lookup = page.waitForResponse((response) =>
+    response.url().includes(`email=${encodeURIComponent(email)}`),
+  );
+  await page
+    .getByRole("alertdialog")
+    .getByRole("textbox", { name: "Email" })
+    .fill(email);
+  await lookup;
+};
+
+/** Add's second step for Omar (10.06). */
+const confirmOmar = async (page: Page) => {
+  await addAdmin("omar@northwind.example")(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page
+    .getByRole("alertdialog", { name: "Make Omar Haddad a system admin?" })
+    .waitFor();
+};
+
+/** Remove system admin from Hannah's row (10.10). */
+const removeHannah = async (page: Page) => {
+  await page.getByRole("button", { name: "Actions for Hannah Weber" }).click();
+  await page.getByRole("menuitem", { name: "Remove system admin" }).click();
+  await page.getByRole("alertdialog").waitFor();
 };
 
 const shellShots: {
@@ -1342,6 +1387,352 @@ const shellShots: {
     path: "/organisations/0198f0a2-0000-7000-8000-0000000dffff",
     ready: (page) =>
       page.getByRole("heading", { name: "Organisation not found" }).waitFor(),
+  },
+  // Users (5.01 to 5.19) and System admins (10.01 to 10.16), with the people the frames draw (`frame-users.ts`).
+  {
+    file: "5.01-users-en-light-desktop",
+    size: "desktop",
+    path: "/users",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.01-users-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/users",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.01-users-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/users",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.02-users-suspended-en-light-desktop",
+    size: "desktop",
+    path: "/users?status=suspended",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.03-users-no-match-en-light-desktop",
+    size: "desktop",
+    path: "/users?q=jonas%40harbour",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.04-users-loading-en-light-desktop",
+    size: "desktop",
+    path: "/users",
+    settled: async () => {},
+    mock: async (page) => {
+      await reduceMotion(page);
+      await usersWait(page);
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading users" }).waitFor(),
+  },
+  {
+    file: "5.05-user-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.05-user-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.05-user-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.06-user-menu-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+    open: (page) =>
+      page.getByRole("button", { name: "Actions for Ayşe Demir" }).click(),
+  },
+  {
+    file: "5.07-user-suspended-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.mark.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.08-user-system-admin-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.deniz.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.09-rename-user-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+    open: userAction("Ayşe Demir", "Rename"),
+  },
+  {
+    file: "5.10-suspend-user-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+    open: async (page) => {
+      await userAction("Ayşe Demir", "Suspend")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("textbox", { name: "Reason" })
+        .fill("Requested by the organisation");
+    },
+  },
+  {
+    file: "5.11-reactivate-user-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.mark.id}`,
+    mock: mockFrameUsers(),
+    open: (page) =>
+      page
+        .getByRole("main")
+        .getByRole("button", { name: "Reactivate", exact: true })
+        .click(),
+  },
+  {
+    file: "5.12-make-owner-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+    open: (page) =>
+      page
+        .getByRole("button", { name: "Make Owner of شركة الأفق للتجارة" })
+        .click(),
+  },
+  {
+    file: "5.13-delete-user-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.mark.id}`,
+    mock: mockFrameUsers(),
+    open: async (page) => {
+      await userAction("Mark Ellis", "Delete user")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("textbox")
+        .fill("mark@pacific");
+    },
+  },
+  {
+    file: "5.14-cannot-delete-last-owner-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+    open: userAction("Ayşe Demir", "Delete user"),
+  },
+  {
+    file: "5.15-cannot-delete-system-admin-en-light-desktop",
+    size: "desktop",
+    path: `/users/${frameUsers.deniz.id}`,
+    mock: mockFrameUsers(),
+    open: userAction("Deniz Kaya", "Delete user"),
+  },
+  {
+    file: "5.16-users-en-light-phone",
+    size: "phone",
+    path: "/users",
+    mock: mockFrameUsers(),
+    ready: (page) =>
+      page.getByRole("list", { name: "Users" }).first().waitFor(),
+  },
+  {
+    file: "5.17-user-en-light-phone",
+    size: "phone",
+    path: `/users/${frameUsers.ayse.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "5.18-users-loading-more-en-light-desktop",
+    size: "desktop",
+    path: "/users",
+    mock: async (page) => {
+      await reduceMotion(page);
+      await mockFrameUsers({ nextPage: "waits" })(page);
+    },
+    open: (page) => page.getByRole("button", { name: "Load more" }).click(),
+  },
+  {
+    file: "5.19-users-load-more-failed-en-light-desktop",
+    size: "desktop",
+    path: "/users",
+    mock: mockFrameUsers({ nextPage: "fails" }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Load more" }).click();
+      await page.getByText("Couldn’t load more users").waitFor();
+    },
+  },
+  {
+    file: "10.01-system-admins-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "10.01-system-admins-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "10.01-system-admins-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "10.02-add-system-admin-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: addAdmin("omar@northwind.example"),
+  },
+  {
+    file: "10.03-add-no-user-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: addAdmin("o.haddad@northwind.example"),
+  },
+  {
+    file: "10.04-add-already-an-admin-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: addAdmin("hannah@platform.example"),
+  },
+  {
+    file: "10.05-confirm-its-you-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameGrant("reverify"),
+    open: async (page) => {
+      await confirmOmar(page);
+      await page.getByRole("button", { name: "Make system admin" }).click();
+      await page
+        .getByRole("alertdialog", { name: "Confirm it’s you" })
+        .waitFor();
+    },
+  },
+  {
+    file: "10.06-add-confirm-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: confirmOmar,
+  },
+  {
+    file: "10.07-system-admin-added-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameGrant("grant"),
+    open: async (page) => {
+      await confirmOmar(page);
+      await page.getByRole("button", { name: "Make system admin" }).click();
+      await page
+        .getByRole("cell", { name: "omar@northwind.example" })
+        .waitFor();
+    },
+  },
+  {
+    file: "10.08-row-menu-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: (page) =>
+      page.getByRole("button", { name: "Actions for Hannah Weber" }).click(),
+  },
+  {
+    file: "10.09-your-row-menu-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: (page) =>
+      page.getByRole("button", { name: "Actions for Deniz Kaya" }).click(),
+  },
+  {
+    file: "10.10-remove-system-admin-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: removeHannah,
+  },
+  {
+    file: "10.11-system-admin-removed-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameRevoke,
+    open: async (page) => {
+      await removeHannah(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Remove" })
+        .click();
+      await page
+        .getByText("Hannah Weber is no longer a system admin.")
+        .waitFor();
+    },
+  },
+  {
+    file: "10.12-system-admins-loading-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    settled: async () => {},
+    mock: async (page) => {
+      await reduceMotion(page);
+      await usersWait(page);
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading system admins" }).waitFor(),
+  },
+  {
+    file: "10.13-system-admins-error-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: usersFail,
+    ready: (page) =>
+      page.getByText("Couldn’t load system admins").waitFor({
+        timeout: 30_000,
+      }),
+  },
+  {
+    file: "10.14-system-admins-en-light-phone",
+    size: "phone",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    ready: (page) =>
+      page.getByRole("list", { name: "System admins" }).first().waitFor(),
+  },
+  {
+    file: "10.15-system-admin-en-light-phone",
+    size: "phone",
+    path: `/settings/system-admins/${frameAdmins.hannah.id}`,
+    mock: mockFrameUsers(),
+  },
+  {
+    file: "10.16-root-label-tooltip-en-light-desktop",
+    size: "desktop",
+    path: "/settings/system-admins",
+    mock: mockFrameUsers(),
+    open: async (page) => {
+      await page.getByRole("table").getByText("Root", { exact: true }).hover();
+      await page.locator('[data-slot="tooltip-content"]').waitFor();
+    },
   },
 ];
 

@@ -357,7 +357,9 @@
     "loadedAdmins": "تم تحميل {count} من مسؤولي النظام الإضافيين.",
     "moreError": "تعذّر تحميل المزيد من مسؤولي النظام",
     "backToSystemAdmins": "مسؤولو النظام",
-    "addedBy": "{date}، بواسطة {name}"
+    "addedBy": "{date}، بواسطة {name}",
+    "twoStepTerm": "التحقق بخطوتين",
+    "twoStepText": "مطلوب لكل مسؤول نظام."
   },
   "activity": {
     "today": "اليوم، {date}",
