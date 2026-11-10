@@ -83,7 +83,7 @@ export function DeleteDialog({
       t.rich("cannotDeleteLastOwner", {
         name,
         ...isolated,
-        list: () => organisationList(lastOwnerOf),
+        ...organisationList(lastOwnerOf),
       }),
     );
 
@@ -115,7 +115,7 @@ export function DeleteDialog({
         name,
         count: organisations.length,
         ...isolated,
-        list: () => organisationList(organisations),
+        ...organisationList(organisations),
       })}
       actionLabel={t("deleteAction")}
       cancelLabel={common("cancel")}

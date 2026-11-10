@@ -68,7 +68,7 @@ export function ReactivateDialog({
         name,
         count: organisations.length,
         ...isolated,
-        list: () => organisationList(organisations),
+        ...organisationList(organisations),
       })}
       actionLabel={t("reactivateAction")}
       cancelLabel={common("cancel")}

@@ -141,7 +141,7 @@ export function SuspendDialog({
             name,
             count: lastOwnerOf.length,
             ...isolated,
-            list: () => organisationList(lastOwnerOf),
+            ...organisationList(lastOwnerOf),
           })}
         </p>
       )}
