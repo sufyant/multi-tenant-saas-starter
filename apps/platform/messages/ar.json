@@ -185,9 +185,6 @@
     "noMembersYet": "لا أعضاء بعد",
     "membersAndInvited": "{members} · {count} مدعوّ",
     "waitingForOwnerLower": "بانتظار المالك",
-    "viewWithCount": "{view} · {count}",
-    "viewSearch": "بحث",
-    "viewEmpty": "لا نتائج",
     "views": "الأقسام",
     "loadMore": "تحميل المزيد",
     "loadingMore": "جارٍ تحميل المزيد من المؤسسات…",
@@ -557,5 +554,10 @@
     "limitChange": "{key}: {from} ← {to}. تستخدم <bdi>{name}</bdi> {count}.",
     "overrideStaysUntil": "يبقى الاستثناء على {key} حتى {date}.",
     "overrideStays": "يبقى الاستثناء على {key}."
+  },
+  "viewChoice": {
+    "withCount": "{view} · {count}",
+    "search": "بحث",
+    "empty": "لا نتائج"
   }
 }

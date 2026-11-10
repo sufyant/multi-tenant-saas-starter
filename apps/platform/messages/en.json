@@ -185,9 +185,6 @@
     "noMembersYet": "No members yet",
     "membersAndInvited": "{members} · {count} invited",
     "waitingForOwnerLower": "waiting for Owner",
-    "viewWithCount": "{view} · {count}",
-    "viewSearch": "Search",
-    "viewEmpty": "Nothing found",
     "views": "Sections",
     "loadMore": "Load more",
     "loadingMore": "Loading more organisations…",
@@ -557,5 +554,10 @@
     "limitChange": "{key}: {from} → {to}. <bdi>{name}</bdi> uses {count}.",
     "overrideStaysUntil": "The override on {key} stays until {date}.",
     "overrideStays": "The override on {key} stays."
+  },
+  "viewChoice": {
+    "withCount": "{view} · {count}",
+    "search": "Search",
+    "empty": "Nothing found"
   }
 }

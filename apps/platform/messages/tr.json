@@ -185,9 +185,6 @@
     "noMembersYet": "Henüz üye yok",
     "membersAndInvited": "{members} · {count} davetli",
     "waitingForOwnerLower": "Sahip bekleniyor",
-    "viewWithCount": "{view} · {count}",
-    "viewSearch": "Ara",
-    "viewEmpty": "Sonuç yok",
     "views": "Bölümler",
     "loadMore": "Daha fazla yükle",
     "loadingMore": "Daha fazla kuruluş yükleniyor…",
@@ -557,5 +554,10 @@
     "limitChange": "{key}: {from} → {to}. <bdi>{name}</bdi> {count} kullanıyor.",
     "overrideStaysUntil": "{key} istisnası {date} tarihine kadar kalır.",
     "overrideStays": "{key} istisnası kalır."
+  },
+  "viewChoice": {
+    "withCount": "{view} · {count}",
+    "search": "Ara",
+    "empty": "Sonuç yok"
   }
 }

@@ -25,11 +25,11 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useLoadMore } from "@/shared/load-more";
 import { userNameOf } from "@/shared/name-of";
 import { leaveOf } from "@/shared/problem-screen";
 import { systemAdminPage } from "@/shared/system-admins";
 import { useDates } from "@/shared/use-dates";
-import { useNextPage } from "@/shared/use-next-page";
 import { AddDialog } from "./add-dialog";
 import { RemoveDialog } from "./remove-dialog";
 
@@ -70,8 +70,13 @@ export function SystemAdminsPage() {
       { query: { initialPageParam: 1, getNextPageParam: nextPage } },
     ),
   );
-  const next = useNextPage(list, (count) =>
-    t("systemAdmins.loadedAdmins", { count }),
+  const next = useLoadMore(
+    list,
+    {
+      loaded: (count) => t("systemAdmins.loadedAdmins", { count }),
+      failed: t("systemAdmins.moreError"),
+    },
+    { failure: "in-place" },
   );
   const locale = t("locale.format");
   const nameText = (user: UserResponse) => {
@@ -188,7 +193,7 @@ export function SystemAdminsPage() {
         <LoadMore
           hasMore={list.hasNextPage}
           loading={list.isFetchingNextPage}
-          onMore={() => void next.more()}
+          onMore={next.loadMore}
           label={t("systemAdmins.loadMore")}
           loadingLabel={t("systemAdmins.loadingMore")}
           announcement={next.announcement}

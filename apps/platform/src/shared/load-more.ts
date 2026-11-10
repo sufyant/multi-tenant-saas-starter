@@ -19,18 +19,23 @@ import { useState } from "react";
 
 /**
  * The next page of a list that grows with Load more (F9): it tells a screen reader how many rows came. A 401 goes to sign-in (F4); a
- * refusal of the caller's account is GetMe's to show (F47); any other failure says so in a toast and keeps the rows that came.
+ * refusal of the caller's account is GetMe's to show (F47); any other failure keeps the rows that came and says so, in a toast, or
+ * in place under the rows when the list's frame draws it there (`failure: "in-place"`, 5.19): `failed` is then true until a try
+ * succeeds, and `LoadMore` shows its text and Try again.
  */
 export function useLoadMore<Page extends { items: unknown[] }>(
   list: UseInfiniteQueryResult<InfiniteData<Page>>,
   texts: { loaded: (count: number) => string; failed: string },
+  { failure = "toast" }: { failure?: "toast" | "in-place" } = {},
 ) {
   const queryClient = useQueryClient();
   const failureText = useFailureText();
   const [announcement, setAnnouncement] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const loadMore = async () => {
     const before = rowsIn(list.data) ?? 0;
+    setFailed(false);
     const result = await list.fetchNextPage();
     if (!result.isFetchNextPageError) {
       setAnnouncement(texts.loaded((rowsIn(result.data) ?? 0) - before));
@@ -46,6 +51,7 @@ export function useLoadMore<Page extends { items: unknown[] }>(
       await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       return;
     }
+    if (failure === "in-place") return setFailed(true);
     showToast({
       title: texts.failed,
       description: failureText(problemOf(result.error)),
@@ -53,5 +59,5 @@ export function useLoadMore<Page extends { items: unknown[] }>(
     });
   };
 
-  return { announcement, loadMore: () => void loadMore() };
+  return { announcement, failed, loadMore: () => void loadMore() };
 }

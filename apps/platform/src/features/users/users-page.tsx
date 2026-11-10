@@ -15,13 +15,13 @@ import { ListError } from "@repo/ui/components/list-error";
 import { LoadMore } from "@repo/ui/components/load-more";
 import { Search } from "@repo/ui/components/search";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Tabs } from "@repo/ui/components/tabs";
 import { nextPage, pageSize } from "@repo/ui/lib/pages";
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
+import { useLoadMore } from "@/shared/load-more";
 import { leaveOf } from "@/shared/problem-screen";
-import { useNextPage } from "@/shared/use-next-page";
+import { ViewChoice } from "@/shared/view-choice";
 import { type Tab, tabs, useListParams } from "./use-list-params";
 import { useUserActions } from "./use-user-actions";
 import { UsersTable } from "./users-table";
@@ -40,7 +40,10 @@ const noMatchLabels = {
   [UserResponseStatus.Suspended]: "users.noMatchSuspended",
 } as const satisfies Record<Tab, string>;
 
-/** A tab's count: its status's, and All their sum, a deleted user included (`statusCounts`, 37b-backend). */
+/**
+ * A tab's count: its status's, and All their sum, a deleted user included (`statusCounts`). Each is the status's total, which no
+ * search or filter changes (frames 8.06, 4.04; the maintainer's decision of 2026-11-10, which 37b-backend-counts brings to the API).
+ */
 const countOf = (
   counts: UserListPageResponse["statusCounts"] | undefined,
   tab: Tab | typeof all,
@@ -82,7 +85,14 @@ export function UsersPage() {
       },
     ),
   );
-  const next = useNextPage(list, (count) => t("users.loadedUsers", { count }));
+  const next = useLoadMore(
+    list,
+    {
+      loaded: (count) => t("users.loadedUsers", { count }),
+      failed: t("users.moreError"),
+    },
+    { failure: "in-place" },
+  );
   const counts = list.data?.pages[0]?.statusCounts;
 
   const body = (() => {
@@ -143,7 +153,7 @@ export function UsersPage() {
         <LoadMore
           hasMore={list.hasNextPage}
           loading={list.isFetchingNextPage}
-          onMore={() => void next.more()}
+          onMore={next.loadMore}
           label={t("users.loadMore")}
           loadingLabel={t("users.loadingMore")}
           announcement={next.announcement}
@@ -166,27 +176,32 @@ export function UsersPage() {
           {t("users.intro", { product: brand.name })}
         </p>
       </div>
-      <Tabs
-        label={t("users.tabs")}
-        current={status ?? all}
-        items={[
-          { id: all, label: t("users.tabAll"), count: countOf(counts, all) },
-          ...tabs.map((tab) => ({
-            id: tab,
-            label: t(tabLabels[tab]),
-            count: countOf(counts, tab),
-          })),
-        ]}
-        onValueChange={(value) =>
-          void setParams({ status: tabs.find((tab) => tab === value) ?? null })
-        }
-      />
-      <Search
-        value={q}
-        label={t("users.search")}
-        maxLength={schemas.listUsersQueryQMax}
-        onSearch={onSearch}
-      />
+      {/* On a phone the search comes before the status choice (5.16). */}
+      <div className="flex flex-col gap-4 max-tablet:flex-col-reverse">
+        <ViewChoice
+          label={t("users.tabs")}
+          current={status ?? all}
+          items={[
+            { id: all, label: t("users.tabAll"), count: countOf(counts, all) },
+            ...tabs.map((tab) => ({
+              id: tab,
+              label: t(tabLabels[tab]),
+              count: countOf(counts, tab),
+            })),
+          ]}
+          onValueChange={(value) =>
+            void setParams({
+              status: tabs.find((tab) => tab === value) ?? null,
+            })
+          }
+        />
+        <Search
+          value={q}
+          label={t("users.search")}
+          maxLength={schemas.listUsersQueryQMax}
+          onSearch={onSearch}
+        />
+      </div>
       {body}
       {actions.dialog}
     </section>
