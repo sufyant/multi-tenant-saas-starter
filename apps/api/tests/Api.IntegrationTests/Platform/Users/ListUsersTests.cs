@@ -69,13 +69,14 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
         page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":2,"suspended":1,"deleted":2}""");
     }
 
-    // The tabs of the Users list count each status (the maintainer's decision of 2026-11-08). The counts follow the search and every
-    // other filter, and ignore only the status filter, as the Open and Closed counts of GitHub Issues do. The total counts what the
-    // filter keeps.
+    // The tabs of the Users list count each status, the totals of the whole list (the maintainer's decision of 2026-11-10, which replaces
+    // the one of 2026-11-08). Neither the search nor the status filter changes them; the total counts what both keep. The counts read the
+    // whole list, so the test has a database of its own.
     [Fact]
-    public async Task ListUsers_ASearchAndAStatusFilter_CountsTheSearchInEachStatusAndTotalsTheFilter()
+    public async Task ListUsers_ASearchAndAStatusFilter_CountsEveryUserInEachStatusAndTotalsTheFilter()
     {
-        await AddUsersAsync("Ball", "Cole", "Dunn", "Eyre");
+        await UseADatabaseOfItsOwnAsync();
+        await AddUsersAsync("Ball", "Cole", "Dunn");
         var suspended = await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: $"{_marker} Fox");
         await _testData.SuspendUserAsync(suspended);
         await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com", name: "Another Person"));
@@ -84,20 +85,25 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
 
         Users(page).Select(user => user.Name).ShouldBe([$"{_marker} Fox"]);
         page.GetProperty("total").GetInt32().ShouldBe(1);
-        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":4,"suspended":1,"deleted":0}""");
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":4,"suspended":2,"deleted":0}""");
     }
 
-    // The counts follow the isSystemAdmin filter as they follow the search.
-    [Fact]
-    public async Task ListUsers_AnIsSystemAdminFilter_CountsOnlyTheUsersItKeeps()
+    // A search that finds one user and the isSystemAdmin filter leave every count at its total. The three active users are the two
+    // added and the system admin who reads the list.
+    [Theory]
+    [InlineData("q=Ball", 1)]
+    [InlineData("isSystemAdmin=true", 1)]
+    public async Task ListUsers_ASearchOrAFilterThatKeepsOneUser_LeavesEveryCountAtItsTotal(string filter, int total)
     {
-        await _testData.AddUserAsync(email: $"user.{_marker}@example.com");
-        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"suspended.{_marker}@example.com"));
-        await _testData.AddSystemAdminAsync(email: $"admin.{_marker}@example.com");
+        await UseADatabaseOfItsOwnAsync();
+        await AddUsersAsync("Ball", "Cole");
+        await _testData.SuspendUserAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
+        await _testData.DeleteUserAsync(await _testData.AddUserAsync(email: $"{Guid.NewGuid():N}@example.com"));
 
-        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?q={_marker}&isSystemAdmin=false", Cancellation);
+        var page = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/users?{filter}", Cancellation);
 
-        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":0}""");
+        page.GetProperty("total").GetInt32().ShouldBe(total);
+        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":3,"suspended":1,"deleted":1}""");
     }
 
     // The status filter takes several values. A deleted user keeps no address or name to search for, so the test searches the active
@@ -112,10 +118,9 @@ public sealed class ListUsersTests(Database database) : IAsyncLifetime
 
         Users(page).Select(user => user.Status).ShouldBe(["active", "suspended"]);
         page.GetProperty("total").GetInt32().ShouldBe(2);
-        page.GetProperty("statusCounts").ToString().ShouldBe("""{"active":1,"suspended":1,"deleted":0}""");
     }
 
-    // K5: the counts come with the total, so a list with a status filter sends as many commands as the list without one.
+    // K5: a list with a status filter sends as many commands as the list without one.
     [Fact]
     public async Task ListUsers_AStatusFilter_SendsNoMoreSqlCommands()
     {
