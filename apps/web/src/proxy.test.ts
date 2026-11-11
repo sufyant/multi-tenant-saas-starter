@@ -80,7 +80,7 @@ describe("proxy", () => {
     expect(await needsSession(path)).toBe(true);
   });
 
-  // A signed-out navigation loads the page as a document (F63).
+  // A signed-out navigation loads the page as a document (F63). Which request is a navigation: `navigation.test.ts` of packages/ui.
   it("Proxy_AClientSideNavigationSignedOut_AsksTheBrowserToLoadThePage", async () => {
     const answer = await navigate(null);
 

@@ -94,4 +94,42 @@ describe("OrgSwitcher", () => {
 
     expect(await screen.findByRole("menu")).toBeInTheDocument();
   });
+
+  // The organisation's tile is the info tint at the top of the sidebar too (2.01, 2.03).
+  it("OrgSwitcher_Organisation_DrawsTheOrganisationsTileInTheInfoTint", () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind]}
+        title="Your organisations"
+      />,
+    );
+
+    expect(screen.getByText("N")).toHaveClass("bg-info-subtle", "text-small");
+  });
+
+  // The platform's face names the product, whose mark keeps the brand's gradient (the Platform sidebar).
+  it("OrgSwitcher_Product_KeepsTheBrandsGradient", () => {
+    const starter = {
+      id: "platform",
+      name: "Starter",
+      role: "Platform",
+      href: "/",
+    };
+    render(
+      <OrgSwitcher
+        current={starter}
+        organisations={[]}
+        title="Platform"
+        product
+      />,
+    );
+
+    expect(screen.getByText("S")).toHaveClass(
+      "bg-linear-135",
+      "from-primary",
+      "to-brand-gradient-end",
+    );
+    expect(screen.getByText("S")).not.toHaveClass("bg-info-subtle");
+  });
 });

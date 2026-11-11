@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { isNavigation } from "@repo/ui/lib/navigation";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
@@ -16,22 +17,11 @@ const isOpen = createRouteMatcher([
   "/api(/.*)?",
 ]);
 
-// A signed-out navigation loads the page as a document (F63). Next.js strips its RSC header off the proxy's request, so a navigation
-// is a GET that is no document request, by the test of Clerk's handshake, and no server action.
-const isNavigation = (request: Request) => {
-  const destination = request.headers.get("sec-fetch-dest");
-  const document = destination
-    ? destination === "document" || destination === "iframe"
-    : request.headers.get("accept")?.startsWith("text/html");
-  return (
-    request.method === "GET" && !document && !request.headers.has("next-action")
-  );
-};
-
 // The publishable key comes from the server at run time, and the sign-in page is the same in every environment (F7).
 export default clerkMiddleware(
   async (auth, request) => {
     if (isOpen(request)) return;
+    // A signed-out navigation loads the page as a document (F63).
     if (isNavigation(request) && !(await auth()).userId)
       return new NextResponse(null, { status: 401 });
     await auth.protect();

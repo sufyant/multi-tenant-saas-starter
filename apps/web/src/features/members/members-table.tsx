@@ -16,7 +16,6 @@ import {
   Table,
   type TableColumn,
 } from "@repo/ui/components/table";
-import { Tag } from "@repo/ui/components/tag";
 import { Time } from "@repo/ui/components/time";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -86,7 +85,11 @@ export function MembersTable({
   const name = (member: MemberResponse) => (
     <span className="flex min-w-0 items-center gap-2">
       <bdi className="truncate font-medium">{nameText(member)}</bdi>
-      {member.userId === meId && <Tag variant="text">{t("members.you")}</Tag>}
+      {member.userId === meId && (
+        <span className="shrink-0 text-status text-muted-foreground">
+          {t("members.you")}
+        </span>
+      )}
     </span>
   );
 

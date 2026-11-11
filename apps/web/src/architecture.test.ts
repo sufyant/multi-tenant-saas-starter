@@ -40,6 +40,8 @@ const sharedParts = [
   "groupByDay",
   "DayGroup",
   "useOrganisationAddress",
+  "OrgTile",
+  "isNavigation",
 ];
 
 describe("architecture of apps/web", () => {

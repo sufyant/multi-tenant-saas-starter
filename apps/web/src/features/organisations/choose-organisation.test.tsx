@@ -113,6 +113,23 @@ describe("ChooseOrganisation", () => {
     ).toHaveAttribute("href", "/atlas");
   });
 
+  // Each organisation's tile is the info tint, as in the switcher (1.18).
+  it("ChooseOrganisation_ManyOrganisations_DrawsEachTileInTheInfoTint", async () => {
+    server.use(
+      getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),
+      personalCount,
+      page([
+        tenant("Northwind Traders", "northwind"),
+        tenant("Atlas Logistics", "atlas"),
+      ]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    const link = await screen.findByRole("link", { name: /Northwind Traders/ });
+    expect(within(link).getByText("N")).toHaveClass("bg-info-subtle", "size-8");
+  });
+
   it("ChooseOrganisation_OneOrganisation_OpensIt", async () => {
     server.use(
       getGetMeMockHandler(getGetMeResponseMock({ language: "en" })),

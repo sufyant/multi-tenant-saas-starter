@@ -66,8 +66,13 @@ updates:
       interval: daily
     # A Node major version changes .nvmrc, the build image and the distroless runtime image
     # together (apps/web/Dockerfile). That is a planned upgrade, not a Dependabot update.
+    # A .NET major version is a planned upgrade too: .NET 10 is the LTS release that the API targets
+    # (apps/api/Dockerfile: dotnet/sdk for the build, dotnet/aspnet for the runtime). Its minor,
+    # patch and digest updates still come.
     ignore:
       - dependency-name: node
+        update-types: [version-update:semver-major]
+      - dependency-name: "dotnet/*"
         update-types: [version-update:semver-major]
     groups:
       docker-minor-and-patch:

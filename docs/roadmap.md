@@ -10,7 +10,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 35 | Cleanup, the shell and the menu | done |
 | 36 | Personal pages | done |
 | 37a | The web's organisation pages | done |
-| 37b | The platform's pages | in progress |
+| 37b | The platform's pages | done |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -110,7 +110,7 @@ Status: done.
 
 ## 5. Step 37: Organisation pages
 
-Status: in progress. It has two parts.
+Status: done. It has two parts.
 
 37a, the web's organisation pages:
 
@@ -309,6 +309,9 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 - The organisation's tile: the frames draw no tile on the platform, so the platform's `Initial` is deleted. The tile of `OrgSwitcher` becomes a component of `packages/ui`, `info-subtle` in every place; the brand gradient stays only on the product's mark (the maintainer's decision of 2026-11-08).
 - `isNavigation` of `apps/web/src/proxy.ts` and `apps/platform/src/proxy.ts` (#238) moves to one shared place; the two proxies use it.
 - It waits for 37b-frontend-1, -2 and -3.
+- As built: no screen used `Status`, `Tag`, `SubNav` or `Freshness`, so they are deleted; Members' "(you)" is muted status text, as 8.01 draws it. The Figma Components page had no Freshness component any more. `OrgTile` of `packages/ui` draws the organisation's first letter on `info-subtle` in the switcher's face (24 px), its menu (24 px) and Choose an organisation (32 px, 1.18). The platform's switcher names the product (`product`), whose mark keeps the brand's gradient. `isNavigation` is in `packages/ui/src/lib/navigation.ts`, beside the other helpers both apps run on the server, with its tests; each proxy keeps the tests of its answer: 401 to a signed-out navigation, and `protect()` for a signed-out page load and a signed-in navigation. Done.
+
+37b is done.
 
 ## 6. Step 38: Terms of use
 

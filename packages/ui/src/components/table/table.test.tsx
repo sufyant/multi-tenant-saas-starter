@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { Status } from "../status";
+import { Pill } from "../pill";
 import { Table, type TableColumn } from "./table";
 
 type Member = {
@@ -43,9 +43,9 @@ const columns: TableColumn<Member>[] = [
     header: "Status",
     card: "end",
     render: (row) => (
-      <Status tone={row.active ? "success" : "warning"}>
+      <Pill tone={row.active ? "success" : "warning"}>
         {row.active ? "Active" : "Suspended"}
-      </Status>
+      </Pill>
     ),
   },
 ];
