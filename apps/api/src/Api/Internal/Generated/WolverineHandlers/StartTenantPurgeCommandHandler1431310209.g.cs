@@ -45,8 +45,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler");
                 
                 // The actual message execution
                 (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.StartTenantPurge.StartTenantPurgeHandler.HandleAsync(startTenantPurgeCommand, tenantRepository, _tenantPurgeParticipantIEnumerable, _tenantOptions, _timeProvider, cancellation).ConfigureAwait(false);

@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Roles.DeleteRole.DeleteRoleHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Roles.DeleteRole.DeleteRoleHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Roles.DeleteRole.DeleteRoleHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Roles.DeleteRole.DeleteRoleHandler");
                 
                 // The actual message execution
                 (var outgoing1, var outgoing2) = await ControlPlane.Application.Roles.DeleteRole.DeleteRoleHandler.HandleAsync(deleteRoleCommand, tenantRepository, userRepository, _timeProvider, cancellation).ConfigureAwait(false);

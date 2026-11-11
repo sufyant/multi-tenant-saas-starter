@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -27,8 +28,8 @@ import type {
 export const getListMyTenantsResponseMock = (overrideResponse: Partial<Extract<ListPageOfMyTenantResponse, object>> = {}): ListPageOfMyTenantResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
 
 
-export const getListMyTenantsMockHandler = (overrideResponse?: ListPageOfMyTenantResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfMyTenantResponse> | ListPageOfMyTenantResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/me/tenants', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListMyTenantsMockHandler = (overrideResponse?: ListPageOfMyTenantResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<ListPageOfMyTenantResponse> | ListPageOfMyTenantResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/tenants', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

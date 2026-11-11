@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -21,6 +22,8 @@ import {
   UserResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
+  RenameUserRequest,
+  SuspendUserRequest,
   UserDetailResponse,
   UserListPageResponse,
   UserNameResponse,
@@ -41,8 +44,8 @@ export const getSuspendUserResponseMock = (overrideResponse: Partial<Extract<Use
 export const getReactivateUserResponseMock = (overrideResponse: Partial<Extract<UserResponse, object>> = {}): UserResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), status: faker.helpers.arrayElement(Object.values(UserResponseStatus)), isSystemAdmin: faker.datatype.boolean(), isRootSystemAdmin: faker.datatype.boolean(), systemAdminGrantedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), membershipCount: faker.number.int(), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
-export const getListUsersMockHandler = (overrideResponse?: UserListPageResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<UserListPageResponse> | UserListPageResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/users', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListUsersMockHandler = (overrideResponse?: UserListPageResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<UserListPageResponse> | UserListPageResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/users', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -53,8 +56,8 @@ export const getListUsersMockHandler = (overrideResponse?: UserListPageResponse 
   }, options)
 }
 
-export const getGetUserMockHandler = (overrideResponse?: UserDetailResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<UserDetailResponse> | UserDetailResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/users/:userId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetUserMockHandler = (overrideResponse?: UserDetailResponse | ((info: Parameters<HttpResponseResolver<{ userId: string }>>[0]) => Promise<UserDetailResponse> | UserDetailResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ userId: string }>('*/v1/platform/users/:userId', async (info: Parameters<HttpResponseResolver<{ userId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -65,8 +68,8 @@ export const getGetUserMockHandler = (overrideResponse?: UserDetailResponse | ((
   }, options)
 }
 
-export const getRenameUserMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/platform/users/:userId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getRenameUserMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<HttpResponseResolver<{ userId: string }, RenameUserRequest>>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
+  return http.patch<{ userId: string }, RenameUserRequest>('*/v1/platform/users/:userId', async (info: Parameters<HttpResponseResolver<{ userId: string }, RenameUserRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -77,8 +80,8 @@ export const getRenameUserMockHandler = (overrideResponse?: UserResponse | ((inf
   }, options)
 }
 
-export const getDeleteUserMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/v1/platform/users/:userId', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+export const getDeleteUserMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ userId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ userId: string }>('*/v1/platform/users/:userId', async (info: Parameters<HttpResponseResolver<{ userId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -87,8 +90,8 @@ export const getDeleteUserMockHandler = (overrideResponse?: void | ((info: Param
   }, options)
 }
 
-export const getSuspendUserMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/users/:userId/suspend', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getSuspendUserMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<HttpResponseResolver<{ userId: string }, SuspendUserRequest>>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ userId: string }, SuspendUserRequest>('*/v1/platform/users/:userId/suspend', async (info: Parameters<HttpResponseResolver<{ userId: string }, SuspendUserRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -99,8 +102,8 @@ export const getSuspendUserMockHandler = (overrideResponse?: UserResponse | ((in
   }, options)
 }
 
-export const getReactivateUserMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/users/:userId/reactivate', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getReactivateUserMockHandler = (overrideResponse?: UserResponse | ((info: Parameters<HttpResponseResolver<{ userId: string }>>[0]) => Promise<UserResponse> | UserResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ userId: string }>('*/v1/platform/users/:userId/reactivate', async (info: Parameters<HttpResponseResolver<{ userId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

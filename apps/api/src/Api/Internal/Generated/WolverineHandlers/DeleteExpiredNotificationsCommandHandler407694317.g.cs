@@ -43,8 +43,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.DeleteExpiredNotifications.DeleteExpiredNotificationsHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.DeleteExpiredNotifications.DeleteExpiredNotificationsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.DeleteExpiredNotifications.DeleteExpiredNotificationsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.DeleteExpiredNotifications.DeleteExpiredNotificationsHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Notifications.DeleteExpiredNotifications.DeleteExpiredNotificationsHandler.HandleAsync(deleteExpiredNotificationsCommand, notificationRepository, _optionsOfNotificationRetentionOptions, _timeProvider, cancellation).ConfigureAwait(false);

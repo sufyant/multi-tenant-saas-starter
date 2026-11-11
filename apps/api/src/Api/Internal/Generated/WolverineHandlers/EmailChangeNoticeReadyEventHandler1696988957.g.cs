@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var emailChangeNoticeReadyEvent = (ControlPlane.Contracts.Users.EmailChangeNoticeReadyEvent)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Users.SendEmailChangeNoticeEmail.SendEmailChangeNoticeEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Users.SendEmailChangeNoticeEmail.SendEmailChangeNoticeEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Users.SendEmailChangeNoticeEmail.SendEmailChangeNoticeEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Users.SendEmailChangeNoticeEmail.SendEmailChangeNoticeEmailHandler");
             
             // The actual message execution
             await Notifications.Application.Users.SendEmailChangeNoticeEmail.SendEmailChangeNoticeEmailHandler.HandleAsync(emailChangeNoticeReadyEvent, emailChannel, cancellation).ConfigureAwait(false);

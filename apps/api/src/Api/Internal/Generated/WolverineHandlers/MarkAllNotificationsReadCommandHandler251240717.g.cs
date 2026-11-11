@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.MarkAllNotificationsRead.MarkAllNotificationsReadHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.MarkAllNotificationsRead.MarkAllNotificationsReadHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.MarkAllNotificationsRead.MarkAllNotificationsReadHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.MarkAllNotificationsRead.MarkAllNotificationsReadHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Notifications.MarkAllNotificationsRead.MarkAllNotificationsReadHandler.HandleAsync(markAllNotificationsReadCommand, notificationRepository, _timeProvider, cancellation).ConfigureAwait(false);

@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -32,8 +33,8 @@ export const getGetMyDataExportResponseMock = (overrideResponse: Partial<Extract
 export const getDownloadDataExportResponseMock = (overrideResponse: Partial<Extract<DownloadLinkResponse, object>> = {}): DownloadLinkResponse => ({url: faker.internet.url(), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
-export const getRequestDataExportMockHandler = (overrideResponse?: DataExportResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<DataExportResponse> | DataExportResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/data-exports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getRequestDataExportMockHandler = (overrideResponse?: DataExportResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<DataExportResponse> | DataExportResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/data-exports', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -44,8 +45,8 @@ export const getRequestDataExportMockHandler = (overrideResponse?: DataExportRes
   }, options)
 }
 
-export const getGetMyDataExportMockHandler = (overrideResponse?: DataExportResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<DataExportResponse> | DataExportResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/me/data-exports/latest', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetMyDataExportMockHandler = (overrideResponse?: DataExportResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<DataExportResponse> | DataExportResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/data-exports/latest', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -56,8 +57,8 @@ export const getGetMyDataExportMockHandler = (overrideResponse?: DataExportRespo
   }, options)
 }
 
-export const getDownloadDataExportMockHandler = (overrideResponse?: DownloadLinkResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<DownloadLinkResponse> | DownloadLinkResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/data-exports/:exportId/download', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getDownloadDataExportMockHandler = (overrideResponse?: DownloadLinkResponse | ((info: Parameters<HttpResponseResolver<{ exportId: string }>>[0]) => Promise<DownloadLinkResponse> | DownloadLinkResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ exportId: string }>('*/v1/me/data-exports/:exportId/download', async (info: Parameters<HttpResponseResolver<{ exportId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -45,8 +46,8 @@ export const getListAuditEntriesResponseAuditDetailsResponseMock = (overrideResp
 export const getListAuditEntriesResponseMock = (overrideResponse: Partial<Extract<CursorPageOfAuditEntryResponse, object>> = {}): CursorPageOfAuditEntryResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', operation: faker.helpers.arrayElement(Object.values(AuditOperation)), details: faker.helpers.arrayElement([null,{...getListAuditEntriesResponseAuditDetailsResponseMock()},]), actor: {kind: faker.helpers.arrayElement(Object.values(AuditActorResponseKind)), userId: faker.helpers.arrayElement([faker.string.uuid(), null]), displayName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}, target: {kind: faker.helpers.arrayElement(Object.values(AuditTargetResponseKind)), id: faker.string.uuid(), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 
-export const getListAuditEntriesMockHandler = (overrideResponse?: CursorPageOfAuditEntryResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CursorPageOfAuditEntryResponse> | CursorPageOfAuditEntryResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/tenants/:tenantId/audit-log', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListAuditEntriesMockHandler = (overrideResponse?: CursorPageOfAuditEntryResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<CursorPageOfAuditEntryResponse> | CursorPageOfAuditEntryResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/tenants/:tenantId/audit-log', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -57,8 +58,8 @@ export const getListAuditEntriesMockHandler = (overrideResponse?: CursorPageOfAu
   }, options)
 }
 
-export const getExportAuditLogMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/tenants/:tenantId/audit-log/export', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getExportAuditLogMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }>('*/v1/tenants/:tenantId/audit-log/export', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

@@ -19,6 +19,7 @@ allow-licenses:
   - CC0-1.0
   - Unlicense
   - Unicode-3.0
+  - MIT-0
 
 # A known vulnerability of high or critical severity fails the job.
 fail-on-severity: high
@@ -29,6 +30,10 @@ comment-summary-in-pr: never
 # Unicode-3.0 is the Unicode License v3, a permissive license of the MIT kind: cldr-dates-full and cldr-bcp47, the CLDR data of the
 # time zones' cities, which packages/ui reads only in the build (F18 in docs/frontend/ARCHITECTURE.md). The maintainer's decision
 # of 2026-11-06.
+
+# MIT-0 is the MIT License without the clause that asks to keep the notice: OSI approved, and as permissive as the 0BSD above.
+# @csstools/color-helpers and @csstools/css-syntax-patches-for-csstree, which jsdom brings to the tests. The maintainer's
+# decision of 2026-11-11, in the npm update of pull request 254.
 
 # Exceptions by package, for a license outside allow-licenses. Each one names its reason (the action's README,
 # "allow-dependencies-licenses").
@@ -45,6 +50,14 @@ comment-summary-in-pr: never
 # - @fontsource-variable/instrument-sans, jetbrains-mono and noto-sans-arabic are OFL-1.1: the design's fonts. The license
 #   permits to bundle and serve them with any software; it forbids only to sell the fonts by themselves. Each package ships its
 #   LICENSE (F19 in docs/frontend/ARCHITECTURE.md). The maintainer's decision in step 35-frontend-fix.
+# - caniuse-lite is CC-BY-4.0: the browser support data that browserslist reads when next builds apps/web and apps/platform.
+#   It comes too with the next of @react-email/ui, the preview server of packages/emails (pnpm --filter @repo/emails dev), on a
+#   developer's machine. It runs only in the build and in that preview. The standalone output of each app, which is all its
+#   runtime image gets from next, holds no file of it: only its name in next's own package.json. The maintainer's decision of 2026-11-11, in the npm update of pull
+#   request 254.
+# - leac: GitHub's detection says "JSON AND MIT", but the package.json and the LICENSE of 0.7.0 say MIT. It comes with
+#   @react-email/render through html-to-text, which packages/emails runs only to render the emails (pnpm generate), and no build
+#   ships it. The same case as json-schema-typed. The maintainer's decision of 2026-11-11, in the npm update of pull request 254.
 allow-dependencies-licenses:
   - pkg:npm/axe-core
   - pkg:npm/%40axe-core/playwright
@@ -53,3 +66,5 @@ allow-dependencies-licenses:
   - pkg:npm/%40fontsource-variable/instrument-sans
   - pkg:npm/%40fontsource-variable/jetbrains-mono
   - pkg:npm/%40fontsource-variable/noto-sans-arabic
+  - pkg:npm/caniuse-lite
+  - pkg:npm/leac

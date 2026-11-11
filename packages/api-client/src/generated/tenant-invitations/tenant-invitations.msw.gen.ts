@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -22,6 +23,7 @@ import {
 } from '../endpoints.schemas.gen';
 import type {
   InvitationResponse,
+  InviteMemberRequest,
   ListPageOfInvitationResponse
 } from '../endpoints.schemas.gen';
 
@@ -31,8 +33,8 @@ export const getInviteMemberResponseMock = (overrideResponse: Partial<Extract<In
 export const getListInvitationsResponseMock = (overrideResponse: Partial<Extract<ListPageOfInvitationResponse, object>> = {}): ListPageOfInvitationResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), email: faker.string.alpha({length: {min: 10, max: 20}}), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, invitedBy: faker.string.uuid(), invitedByName: {name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), language: faker.helpers.arrayElement(Object.values(Language))})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
 
 
-export const getInviteMemberMockHandler = (overrideResponse?: InvitationResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<InvitationResponse> | InvitationResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/tenants/:tenantId/invitations', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getInviteMemberMockHandler = (overrideResponse?: InvitationResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, InviteMemberRequest>>[0]) => Promise<InvitationResponse> | InvitationResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, InviteMemberRequest>('*/v1/tenants/:tenantId/invitations', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, InviteMemberRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -43,8 +45,8 @@ export const getInviteMemberMockHandler = (overrideResponse?: InvitationResponse
   }, options)
 }
 
-export const getListInvitationsMockHandler = (overrideResponse?: ListPageOfInvitationResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfInvitationResponse> | ListPageOfInvitationResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/tenants/:tenantId/invitations', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListInvitationsMockHandler = (overrideResponse?: ListPageOfInvitationResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<ListPageOfInvitationResponse> | ListPageOfInvitationResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/tenants/:tenantId/invitations', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -55,8 +57,8 @@ export const getListInvitationsMockHandler = (overrideResponse?: ListPageOfInvit
   }, options)
 }
 
-export const getRevokeInvitationMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/v1/tenants/:tenantId/invitations/:invitationId', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+export const getRevokeInvitationMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string; invitationId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ tenantId: string; invitationId: string }>('*/v1/tenants/:tenantId/invitations/:invitationId', async (info: Parameters<HttpResponseResolver<{ tenantId: string; invitationId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

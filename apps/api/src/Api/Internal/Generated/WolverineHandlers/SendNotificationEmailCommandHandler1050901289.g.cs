@@ -27,8 +27,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var sendNotificationEmailCommand = (Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler");
             
             // The actual message execution
             await Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler.HandleAsync(sendNotificationEmailCommand, emailChannel, _optionsOfNotificationLinkOptions, cancellation).ConfigureAwait(false);

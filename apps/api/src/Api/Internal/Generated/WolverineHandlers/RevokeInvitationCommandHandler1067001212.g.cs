@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler");
                 
                 // The actual message execution
                 (var outgoing1, var outgoing2) = await ControlPlane.Application.Invitations.RevokeInvitation.RevokeInvitationHandler.HandleAsync(revokeInvitationCommand, tenantRepository, userRepository, _timeProvider, cancellation).ConfigureAwait(false);

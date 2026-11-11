@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Tenants.RecordTenantSuspended.RecordTenantSuspendedHandler.HandleAsync(tenantSuspendedEvent, auditLog, cancellation).ConfigureAwait(false);

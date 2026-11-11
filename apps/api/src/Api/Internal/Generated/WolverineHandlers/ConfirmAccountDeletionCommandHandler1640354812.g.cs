@@ -46,8 +46,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.ConfirmAccountDeletion.ConfirmAccountDeletionHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.ConfirmAccountDeletion.ConfirmAccountDeletionHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.ConfirmAccountDeletion.ConfirmAccountDeletionHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.ConfirmAccountDeletion.ConfirmAccountDeletionHandler");
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Users.ConfirmAccountDeletion.ConfirmAccountDeletionCommand>(_validatorOfConfirmAccountDeletionCommand, _failureActionOfConfirmAccountDeletionCommand, confirmAccountDeletionCommand).ConfigureAwait(false);
                 
                 // The actual message execution

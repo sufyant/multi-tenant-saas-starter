@@ -13,6 +13,8 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
+  PathParams,
   RequestHandlerOptions
 } from 'msw';
 
@@ -22,7 +24,10 @@ import {
   TenantResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
+  CreateTenantRequest,
   OwnerInvitationResponse,
+  RenameTenantRequest,
+  SuspendTenantRequest,
   TenantDetailResponse,
   TenantListPageResponse,
   TenantResponse,
@@ -53,8 +58,8 @@ export const getCloseTenantResponseMock = (overrideResponse: Partial<Extract<Ten
 export const getReopenTenantResponseMock = (overrideResponse: Partial<Extract<TenantResponse, object>> = {}): TenantResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(TenantResponseStatus)), suspensionReason: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), closedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), purgedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
 
-export const getCreateTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getCreateTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<HttpResponseResolver<PathParams, CreateTenantRequest>>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, CreateTenantRequest>('*/v1/platform/tenants', async (info: Parameters<HttpResponseResolver<PathParams, CreateTenantRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -65,8 +70,8 @@ export const getCreateTenantMockHandler = (overrideResponse?: TenantResponse | (
   }, options)
 }
 
-export const getListTenantsMockHandler = (overrideResponse?: TenantListPageResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<TenantListPageResponse> | TenantListPageResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/tenants', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListTenantsMockHandler = (overrideResponse?: TenantListPageResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<TenantListPageResponse> | TenantListPageResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/tenants', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -77,8 +82,8 @@ export const getListTenantsMockHandler = (overrideResponse?: TenantListPageRespo
   }, options)
 }
 
-export const getGetTenantMockHandler = (overrideResponse?: TenantDetailResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<TenantDetailResponse> | TenantDetailResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/tenants/:tenantId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetTenantMockHandler = (overrideResponse?: TenantDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<TenantDetailResponse> | TenantDetailResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/platform/tenants/:tenantId', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -89,8 +94,8 @@ export const getGetTenantMockHandler = (overrideResponse?: TenantDetailResponse 
   }, options)
 }
 
-export const getRenameTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/platform/tenants/:tenantId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getRenameTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, RenameTenantRequest>>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
+  return http.patch<{ tenantId: string }, RenameTenantRequest>('*/v1/platform/tenants/:tenantId', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, RenameTenantRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -101,8 +106,8 @@ export const getRenameTenantMockHandler = (overrideResponse?: TenantResponse | (
   }, options)
 }
 
-export const getSuspendTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/suspend', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getSuspendTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, SuspendTenantRequest>>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, SuspendTenantRequest>('*/v1/platform/tenants/:tenantId/suspend', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, SuspendTenantRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -113,8 +118,8 @@ export const getSuspendTenantMockHandler = (overrideResponse?: TenantResponse | 
   }, options)
 }
 
-export const getReactivateTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/reactivate', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getReactivateTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }>('*/v1/platform/tenants/:tenantId/reactivate', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -125,8 +130,8 @@ export const getReactivateTenantMockHandler = (overrideResponse?: TenantResponse
   }, options)
 }
 
-export const getCloseTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/close', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getCloseTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }>('*/v1/platform/tenants/:tenantId/close', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -137,8 +142,8 @@ export const getCloseTenantMockHandler = (overrideResponse?: TenantResponse | ((
   }, options)
 }
 
-export const getReopenTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/reopen', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getReopenTenantMockHandler = (overrideResponse?: TenantResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<TenantResponse> | TenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }>('*/v1/platform/tenants/:tenantId/reopen', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

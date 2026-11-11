@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordMemberJoined.RecordMemberJoinedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordMemberJoined.RecordMemberJoinedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Members.RecordMemberJoined.RecordMemberJoinedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Members.RecordMemberJoined.RecordMemberJoinedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Members.RecordMemberJoined.RecordMemberJoinedHandler.HandleAsync(memberJoinedEvent, auditLog, cancellation).ConfigureAwait(false);

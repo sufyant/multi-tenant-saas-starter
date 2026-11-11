@@ -43,8 +43,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin.GrantRootSystemAdminHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin.GrantRootSystemAdminHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin.GrantRootSystemAdminHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin.GrantRootSystemAdminHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin.GrantRootSystemAdminHandler.HandleAsync(grantRootSystemAdminCommand, userRepository, _systemAdminOptions, _timeProvider, cancellation).ConfigureAwait(false);

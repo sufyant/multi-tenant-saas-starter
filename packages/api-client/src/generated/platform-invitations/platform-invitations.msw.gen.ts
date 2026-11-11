@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -21,15 +22,16 @@ import {
   Language
 } from '../endpoints.schemas.gen';
 import type {
-  InvitationResponse
+  InvitationResponse,
+  InviteOwnerRequest
 } from '../endpoints.schemas.gen';
 
 
 export const getInviteOwnerResponseMock = (overrideResponse: Partial<Extract<InvitationResponse, object>> = {}): InvitationResponse => ({id: faker.string.uuid(), email: faker.string.alpha({length: {min: 10, max: 20}}), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, invitedBy: faker.string.uuid(), invitedByName: {name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), language: faker.helpers.arrayElement(Object.values(Language)), ...overrideResponse})
 
 
-export const getInviteOwnerMockHandler = (overrideResponse?: InvitationResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<InvitationResponse> | InvitationResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/invitations', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getInviteOwnerMockHandler = (overrideResponse?: InvitationResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, InviteOwnerRequest>>[0]) => Promise<InvitationResponse> | InvitationResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, InviteOwnerRequest>('*/v1/platform/tenants/:tenantId/invitations', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, InviteOwnerRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

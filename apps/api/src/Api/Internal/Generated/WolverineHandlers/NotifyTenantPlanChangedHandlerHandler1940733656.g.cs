@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Plans.NotifyTenantPlanChanged.NotifyTenantPlanChangedHandler.HandleAsync(tenantPlanChangedEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);

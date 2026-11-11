@@ -48,8 +48,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Plans.CreatePlan.CreatePlanHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Plans.CreatePlan.CreatePlanHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Plans.CreatePlan.CreatePlanHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Plans.CreatePlan.CreatePlanHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Plans.PlanView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Plans.CreatePlan.CreatePlanCommand>(_validatorOfCreatePlanCommand, _failureActionOfCreatePlanCommand, createPlanCommand).ConfigureAwait(false);
                 

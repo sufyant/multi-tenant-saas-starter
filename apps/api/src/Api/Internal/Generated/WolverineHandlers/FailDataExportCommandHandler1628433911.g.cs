@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.DataExports.FailDataExport.FailDataExportHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.DataExports.FailDataExport.FailDataExportHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.DataExports.FailDataExport.FailDataExportHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.DataExports.FailDataExport.FailDataExportHandler");
                 
                 // The actual message execution
                 await ControlPlane.Application.DataExports.FailDataExport.FailDataExportHandler.HandleAsync(failDataExportCommand, storedFileRepository, cancellation).ConfigureAwait(false);

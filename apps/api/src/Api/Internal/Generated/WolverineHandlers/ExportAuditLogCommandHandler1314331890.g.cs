@@ -43,8 +43,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Audit.Application.AuditLogs.ExportAuditLog.ExportAuditLogHandler.HandleAsync(exportAuditLogCommand, context, userDirectory, _timeProvider, cancellation).ConfigureAwait(false);

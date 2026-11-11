@@ -1733,31 +1733,29 @@ export interface VerificationCodeResponse {
 }
 
 export type CreateTenantHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type ListTenantsParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListTenantsSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
-status?: TenantResponseStatus[];
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListTenantsSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
+  status?: TenantResponseStatus[];
 };
 
 export type ListTenantsSort = typeof ListTenantsSort[keyof typeof ListTenantsSort];
@@ -1771,30 +1769,28 @@ export const ListTenantsSort = {
 } as const;
 
 export type InviteOwnerHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type ListPlansParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListPlansSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListPlansSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
 };
 
 export type ListPlansSort = typeof ListPlansSort[keyof typeof ListPlansSort];
@@ -1806,30 +1802,28 @@ export const ListPlansSort = {
 } as const;
 
 export type CreatePlanHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type GetPlanUpdatePreviewParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: GetPlanUpdatePreviewSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: GetPlanUpdatePreviewSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
 };
 
 export type GetPlanUpdatePreviewSort = typeof GetPlanUpdatePreviewSort[keyof typeof GetPlanUpdatePreviewSort];
@@ -1843,27 +1837,23 @@ export const GetPlanUpdatePreviewSort = {
 } as const;
 
 export type ListUsersParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListUsersSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
-status?: UserResponseStatus[];
-isSystemAdmin?: boolean;
-/**
- * @maxLength 320
- */
-email?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListUsersSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
+  status?: UserResponseStatus[];
+  isSystemAdmin?: boolean;
+  /** @maxLength 320 */
+  email?: string;
 };
 
 export type ListUsersSort = typeof ListUsersSort[keyof typeof ListUsersSort];
@@ -1877,51 +1867,49 @@ export const ListUsersSort = {
 } as const;
 
 export type GrantSystemAdminHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type ListPlatformNotificationsParams = {
-unread?: boolean;
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
+  unread?: boolean;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
 };
 
 export type ListPlatformAuditEntriesParams = {
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
-tenantId?: string;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  tenantId?: string;
 };
 
 export type ListMembersParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListMembersSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
-roleId?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListMembersSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
+  roleId?: string;
 };
 
 export type ListMembersSort = typeof ListMembersSort[keyof typeof ListMembersSort];
@@ -1937,31 +1925,29 @@ export const ListMembersSort = {
 } as const;
 
 export type InviteMemberHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type ListInvitationsParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListInvitationsSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
-roleId?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListInvitationsSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
+  roleId?: string;
 };
 
 export type ListInvitationsSort = typeof ListInvitationsSort[keyof typeof ListInvitationsSort];
@@ -1975,21 +1961,19 @@ export const ListInvitationsSort = {
 } as const;
 
 export type ListRolesParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListRolesSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListRolesSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
 };
 
 export type ListRolesSort = typeof ListRolesSort[keyof typeof ListRolesSort];
@@ -2001,76 +1985,74 @@ export const ListRolesSort = {
 } as const;
 
 export type CreateRoleHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type ListNotificationsParams = {
-unread?: boolean;
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
+  unread?: boolean;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
 };
 
 export type ListAuditEntriesParams = {
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
 };
 
 export type RequestEmailChangeHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type RequestAccountDeletionHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type RequestDataExportHeaders = {
-/**
- * @minLength 1
- * @maxLength 255
- * @pattern ^[!-~]+$
- */
-'Idempotency-Key': string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
 };
 
 export type ListMyTenantsParams = {
-/**
- * @minimum 1
- */
-page?: number;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: number;
-sort?: ListMyTenantsSort;
-/**
- * The search. The API trims it before it counts its length.
- * @maxLength 100
- */
-q?: string;
+  /** @minimum 1 */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  pageSize?: number;
+  sort?: ListMyTenantsSort;
+  /**
+   * The search. The API trims it before it counts its length.
+   * @maxLength 100
+   */
+  q?: string;
 };
 
 export type ListMyTenantsSort = typeof ListMyTenantsSort[keyof typeof ListMyTenantsSort];
@@ -2082,12 +2064,12 @@ export const ListMyTenantsSort = {
 } as const;
 
 export type ListMyNotificationsParams = {
-unread?: boolean;
-cursor?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
+  unread?: boolean;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
 };
 

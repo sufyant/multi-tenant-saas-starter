@@ -20,8 +20,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var raiseTenantPurgeAlarmCommand = (ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm.RaiseTenantPurgeAlarmCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm.RaiseTenantPurgeAlarmHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm.RaiseTenantPurgeAlarmHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm.RaiseTenantPurgeAlarmHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm.RaiseTenantPurgeAlarmHandler");
             
             // The actual message execution
             ControlPlane.Application.Tenants.RaiseTenantPurgeAlarm.RaiseTenantPurgeAlarmHandler.Handle(raiseTenantPurgeAlarmCommand, _tenantPurgeAlarm);

@@ -46,8 +46,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.RenameMe.RenameMeHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.RenameMe.RenameMeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.RenameMe.RenameMeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.RenameMe.RenameMeHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.GetMe.MeView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Users.RenameMe.RenameMeCommand>(_validatorOfRenameMeCommand, _failureActionOfRenameMeCommand, renameMeCommand).ConfigureAwait(false);
                 

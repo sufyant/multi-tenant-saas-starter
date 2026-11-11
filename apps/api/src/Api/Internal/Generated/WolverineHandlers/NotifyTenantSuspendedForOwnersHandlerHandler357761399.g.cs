@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantSuspendedForOwners.NotifyTenantSuspendedForOwnersHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantSuspendedForOwners.NotifyTenantSuspendedForOwnersHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantSuspendedForOwners.NotifyTenantSuspendedForOwnersHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantSuspendedForOwners.NotifyTenantSuspendedForOwnersHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Tenants.NotifyTenantSuspendedForOwners.NotifyTenantSuspendedForOwnersHandler.HandleAsync(tenantSuspendedEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);

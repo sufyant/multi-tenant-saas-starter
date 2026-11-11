@@ -30,8 +30,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var prepareDataExportCommand = (ControlPlane.Application.DataExports.PrepareDataExport.PrepareDataExportCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.DataExports.PrepareDataExport.PrepareDataExportHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.DataExports.PrepareDataExport.PrepareDataExportHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.DataExports.PrepareDataExport.PrepareDataExportHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.DataExports.PrepareDataExport.PrepareDataExportHandler");
             
             // The actual message execution
             var outgoing1 = await ControlPlane.Application.DataExports.PrepareDataExport.PrepareDataExportHandler.HandleAsync(prepareDataExportCommand, personalDataExporterIEnumerable, _fileStore, _timeProvider, cancellation).ConfigureAwait(false);

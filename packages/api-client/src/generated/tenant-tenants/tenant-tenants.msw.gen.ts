@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -32,8 +33,8 @@ export const getGetMyTenantResponseMock = (overrideResponse: Partial<Extract<MyT
       }, ...overrideResponse})
 
 
-export const getGetMyTenantMockHandler = (overrideResponse?: MyTenantDetailResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<MyTenantDetailResponse> | MyTenantDetailResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/tenants/:tenantId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetMyTenantMockHandler = (overrideResponse?: MyTenantDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<MyTenantDetailResponse> | MyTenantDetailResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/tenants/:tenantId', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.EraseFormerMember.EraseFormerMemberHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.EraseFormerMember.EraseFormerMemberHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.EraseFormerMember.EraseFormerMemberHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.EraseFormerMember.EraseFormerMemberHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.Users.EraseFormerMember.EraseFormerMemberHandler.HandleAsync(eraseFormerMemberCommand, tenantRepository, cancellation).ConfigureAwait(false);

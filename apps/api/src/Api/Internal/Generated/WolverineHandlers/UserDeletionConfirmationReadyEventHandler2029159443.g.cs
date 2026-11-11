@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var userDeletionConfirmationReadyEvent = (ControlPlane.Contracts.Users.UserDeletionConfirmationReadyEvent)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Users.SendUserDeletionConfirmationEmail.SendUserDeletionConfirmationEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Users.SendUserDeletionConfirmationEmail.SendUserDeletionConfirmationEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Users.SendUserDeletionConfirmationEmail.SendUserDeletionConfirmationEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Users.SendUserDeletionConfirmationEmail.SendUserDeletionConfirmationEmailHandler");
             
             // The actual message execution
             await Notifications.Application.Users.SendUserDeletionConfirmationEmail.SendUserDeletionConfirmationEmailHandler.HandleAsync(userDeletionConfirmationReadyEvent, emailChannel, cancellation).ConfigureAwait(false);

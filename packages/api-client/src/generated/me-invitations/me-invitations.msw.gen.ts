@@ -13,6 +13,8 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
+  PathParams,
   RequestHandlerOptions
 } from 'msw';
 
@@ -22,6 +24,8 @@ import {
   MyTenantResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
+  AcceptInvitationRequest,
+  GetInvitationPreviewRequest,
   InvitationPreviewResponse,
   MyTenantResponse,
   RoleResponse
@@ -35,8 +39,8 @@ export const getGetInvitationPreviewResponseRoleResponseMock = (overrideResponse
 export const getGetInvitationPreviewResponseMock = (overrideResponse: Partial<Extract<InvitationPreviewResponse, object>> = {}): InvitationPreviewResponse => ({tenantName: faker.string.alpha({length: {min: 10, max: 20}}), inviterName: {kind: faker.helpers.arrayElement(Object.values(InviterNameResponseKind)), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}, role: faker.helpers.arrayElement([null,{...getGetInvitationPreviewResponseRoleResponseMock()},]), expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', state: faker.helpers.arrayElement(Object.values(InvitationResponseState)), ...overrideResponse})
 
 
-export const getAcceptInvitationMockHandler = (overrideResponse?: MyTenantResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<MyTenantResponse> | MyTenantResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/invitations/accept', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getAcceptInvitationMockHandler = (overrideResponse?: MyTenantResponse | ((info: Parameters<HttpResponseResolver<PathParams, AcceptInvitationRequest>>[0]) => Promise<MyTenantResponse> | MyTenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, AcceptInvitationRequest>('*/v1/me/invitations/accept', async (info: Parameters<HttpResponseResolver<PathParams, AcceptInvitationRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -47,8 +51,8 @@ export const getAcceptInvitationMockHandler = (overrideResponse?: MyTenantRespon
   }, options)
 }
 
-export const getGetInvitationPreviewMockHandler = (overrideResponse?: InvitationPreviewResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<InvitationPreviewResponse> | InvitationPreviewResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/invitations/preview', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getGetInvitationPreviewMockHandler = (overrideResponse?: InvitationPreviewResponse | ((info: Parameters<HttpResponseResolver<PathParams, GetInvitationPreviewRequest>>[0]) => Promise<InvitationPreviewResponse> | InvitationPreviewResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, GetInvitationPreviewRequest>('*/v1/me/invitations/preview', async (info: Parameters<HttpResponseResolver<PathParams, GetInvitationPreviewRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

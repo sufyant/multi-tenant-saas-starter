@@ -13,6 +13,8 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
+  PathParams,
   RequestHandlerOptions
 } from 'msw';
 
@@ -20,8 +22,13 @@ import {
   Language
 } from '../endpoints.schemas.gen';
 import type {
+  ChangeEmailRequest,
+  ChangePreferencesRequest,
+  ConfirmAccountDeletionRequest,
   MeResponse,
   PreferencesResponse,
+  RenameMeRequest,
+  RequestEmailChangeRequest,
   VerificationCodeResponse
 } from '../endpoints.schemas.gen';
 
@@ -39,8 +46,8 @@ export const getChangeEmailResponseMock = (overrideResponse: Partial<Extract<MeR
 export const getRequestAccountDeletionResponseMock = (overrideResponse: Partial<Extract<VerificationCodeResponse, object>> = {}): VerificationCodeResponse => ({expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
-export const getGetMeMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/me', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetMeMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -51,8 +58,8 @@ export const getGetMeMockHandler = (overrideResponse?: MeResponse | ((info: Para
   }, options)
 }
 
-export const getRenameMeMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/me', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getRenameMeMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<HttpResponseResolver<PathParams, RenameMeRequest>>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
+  return http.patch<PathParams, RenameMeRequest>('*/v1/me', async (info: Parameters<HttpResponseResolver<PathParams, RenameMeRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -63,8 +70,8 @@ export const getRenameMeMockHandler = (overrideResponse?: MeResponse | ((info: P
   }, options)
 }
 
-export const getChangePreferencesMockHandler = (overrideResponse?: PreferencesResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<PreferencesResponse> | PreferencesResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/me/preferences', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getChangePreferencesMockHandler = (overrideResponse?: PreferencesResponse | ((info: Parameters<HttpResponseResolver<PathParams, ChangePreferencesRequest>>[0]) => Promise<PreferencesResponse> | PreferencesResponse), options?: RequestHandlerOptions) => {
+  return http.patch<PathParams, ChangePreferencesRequest>('*/v1/me/preferences', async (info: Parameters<HttpResponseResolver<PathParams, ChangePreferencesRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -75,8 +82,8 @@ export const getChangePreferencesMockHandler = (overrideResponse?: PreferencesRe
   }, options)
 }
 
-export const getRequestEmailChangeMockHandler = (overrideResponse?: VerificationCodeResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<VerificationCodeResponse> | VerificationCodeResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/email-change', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getRequestEmailChangeMockHandler = (overrideResponse?: VerificationCodeResponse | ((info: Parameters<HttpResponseResolver<PathParams, RequestEmailChangeRequest>>[0]) => Promise<VerificationCodeResponse> | VerificationCodeResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, RequestEmailChangeRequest>('*/v1/me/email-change', async (info: Parameters<HttpResponseResolver<PathParams, RequestEmailChangeRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -87,8 +94,8 @@ export const getRequestEmailChangeMockHandler = (overrideResponse?: Verification
   }, options)
 }
 
-export const getChangeEmailMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/email-change/confirm', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getChangeEmailMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<HttpResponseResolver<PathParams, ChangeEmailRequest>>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, ChangeEmailRequest>('*/v1/me/email-change/confirm', async (info: Parameters<HttpResponseResolver<PathParams, ChangeEmailRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -99,8 +106,8 @@ export const getChangeEmailMockHandler = (overrideResponse?: MeResponse | ((info
   }, options)
 }
 
-export const getRequestAccountDeletionMockHandler = (overrideResponse?: VerificationCodeResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<VerificationCodeResponse> | VerificationCodeResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/account-deletion', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getRequestAccountDeletionMockHandler = (overrideResponse?: VerificationCodeResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<VerificationCodeResponse> | VerificationCodeResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/account-deletion', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -111,8 +118,8 @@ export const getRequestAccountDeletionMockHandler = (overrideResponse?: Verifica
   }, options)
 }
 
-export const getConfirmAccountDeletionMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/account-deletion/confirm', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getConfirmAccountDeletionMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<PathParams, ConfirmAccountDeletionRequest>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, ConfirmAccountDeletionRequest>('*/v1/me/account-deletion/confirm', async (info: Parameters<HttpResponseResolver<PathParams, ConfirmAccountDeletionRequest>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

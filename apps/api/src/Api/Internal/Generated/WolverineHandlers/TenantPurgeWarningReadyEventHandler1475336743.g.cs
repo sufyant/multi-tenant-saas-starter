@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var tenantPurgeWarningReadyEvent = (ControlPlane.Contracts.Tenants.TenantPurgeWarningReadyEvent)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.SendTenantPurgeWarningEmail.SendTenantPurgeWarningEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.SendTenantPurgeWarningEmail.SendTenantPurgeWarningEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Tenants.SendTenantPurgeWarningEmail.SendTenantPurgeWarningEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Tenants.SendTenantPurgeWarningEmail.SendTenantPurgeWarningEmailHandler");
             
             // The actual message execution
             await Notifications.Application.Tenants.SendTenantPurgeWarningEmail.SendTenantPurgeWarningEmailHandler.HandleAsync(tenantPurgeWarningReadyEvent, emailChannel, cancellation).ConfigureAwait(false);

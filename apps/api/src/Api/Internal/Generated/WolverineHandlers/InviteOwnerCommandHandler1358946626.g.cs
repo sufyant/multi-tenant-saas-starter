@@ -50,8 +50,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.InviteOwner.InviteOwnerHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.InviteOwner.InviteOwnerHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.InviteOwner.InviteOwnerHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.InviteOwner.InviteOwnerHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Invitations.InvitationView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Invitations.InviteOwner.InviteOwnerCommand>(_validatorOfInviteOwnerCommand, _failureActionOfInviteOwnerCommand, inviteOwnerCommand).ConfigureAwait(false);
                 

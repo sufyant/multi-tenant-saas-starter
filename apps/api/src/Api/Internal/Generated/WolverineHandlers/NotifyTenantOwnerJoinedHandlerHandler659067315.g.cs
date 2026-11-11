@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Members.NotifyTenantOwnerJoined.NotifyTenantOwnerJoinedHandler.HandleAsync(memberJoinedEvent, userDirectory, cancellation).ConfigureAwait(false);
