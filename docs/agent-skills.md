@@ -65,6 +65,13 @@ The upstream skills:
 
 The TanStack Table skills are not in `.claude/skills`. They ship inside the packages, so updating the package updates them. `intent.skills` in the root `package.json` lists the enabled ones: `@tanstack/react-table#getting-started` and `#table-state`, `@tanstack/table-core#core`, `#custom-features`, `#table-features` and `#table-state`. The maintainer chose them one by one, never with "Enable all", because "Enable all" also enables the skills of every future package. `npx @tanstack/intent@0.5.6 install` writes that list and the `intent-skills` block at the top of `AGENTS.md`. The block tells an agent to run `pnpm exec intent list` and `pnpm exec intent load <package>#<skill>`, so `@tanstack/intent` is an exact root dev dependency (0.5.6, MIT, no dependencies). After adding another TanStack package, run `install` again.
 
+Intent reads the skills from the installed packages, so the check needs a full `pnpm install` from the workspace root. `intent list` scans the `node_modules` folder of each workspace package, and `@tanstack/react-table` is a dependency of `packages/ui`, not of the root. Without an install, a worktree gives one of two answers:
+
+- No `node_modules` at all: `pnpm exec intent list` fails with "Command intent not found".
+- Only the root `node_modules` (for example a copy from the main checkout): Intent runs, but it answers "No intent-enabled packages found", and each skill of `intent.skills` is "declared but was not discovered".
+
+After `pnpm install`, `intent list` names the two packages and the six skills. It also notes one hidden source with two skills. The only skills of the two packages outside `intent.skills` are the two `migrate-v8-to-v9` skills (see "Not kept" below). `intent list --show-hidden` names the source, and Intent asks the maintainer, not an agent, to run it. The text between `<!-- intent-skills:start -->` and `<!-- intent-skills:end -->` in `AGENTS.md` belongs to `intent install`, so the install rule stands after that block.
+
 The Clerk license: the repository `clerk/skills` has no `LICENSE` file. It declares MIT in its `README.md` ("License"), in `plugin.json` and in the frontmatter of each `SKILL.md` (`license: MIT`). The maintainer accepted this declaration in step 18j. If Clerk adds a `LICENSE` file, update this table.
 
 One kept skill has a dependency manifest: `clerk-nextjs-patterns/templates/nextjs-basic-auth/package.json`. Its versions are `latest`, and it passes dependency review.

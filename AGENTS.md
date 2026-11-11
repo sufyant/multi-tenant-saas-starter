@@ -10,6 +10,8 @@ Before editing files for a substantial task:
 - Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
 <!-- intent-skills:end -->
 
+Run `pnpm install` from the workspace root before the skill check. A new worktree has no `node_modules`, and Intent finds the TanStack Table skills only in `packages/ui/node_modules`. Without the install, `pnpm exec intent list` answers "Command intent not found" or "No intent-enabled packages found" (`docs/agent-skills.md`, section 3).
+
 # AGENTS.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
