@@ -37,6 +37,7 @@ setup(
     await expectAccessible(page);
     // The key shows in groups of four after "Key:" (platform frame 1.03).
     const key = page.getByText(/^[A-Z2-7]{4}( [A-Z2-7]{1,4})+$/);
+    // biome-ignore lint/performance/useDomNodeTextContent: Playwright's Locator.innerText reads the key as the page shows it; textContent can be null.
     const secret = (await key.innerText()).replaceAll(" ", "");
     await page
       .getByRole("textbox", { name: "Enter the 6-digit code the app shows" })
