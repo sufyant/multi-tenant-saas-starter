@@ -27,6 +27,19 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # A major version of these packages is a planned upgrade, not a Dependabot update. Their minor
+    # and patch updates still come.
+    # @types/node follows the Node major that the repository runs: 22 (.nvmrc, and the node ignore
+    # rule of the docker entry below). It moves with a Node upgrade.
+    # typescript: a move to TypeScript 7 is a decision of its own.
+    # @hookform/resolvers: a move to 7 is a decision of its own.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: "@hookform/resolvers"
+        update-types: [version-update:semver-major]
     groups:
       npm-minor-and-patch:
         applies-to: version-updates
