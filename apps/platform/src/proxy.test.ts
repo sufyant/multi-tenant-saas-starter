@@ -120,6 +120,12 @@ describe("proxy", () => {
     expect(answer?.body).toBeNull();
   });
 
+  it("Proxy_APageLoadSignedOut_NeedsTheSession", async () => {
+    await navigate(null, "document");
+
+    expect(protect).toHaveBeenCalled();
+  });
+
   it("Proxy_AClientSideNavigationSignedIn_NeedsTheSession", async () => {
     await navigate("user_1");
 

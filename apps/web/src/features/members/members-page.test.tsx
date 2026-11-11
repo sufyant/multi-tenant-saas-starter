@@ -211,7 +211,8 @@ describe("MembersPage", () => {
 
     const name = await (await table()).findByText("Ayşe Yılmaz");
     const you = within(name.closest("tr") as HTMLElement).getByText("(you)");
-    expect(you).toHaveClass("text-muted-foreground");
+    // Frame 8.01 draws it in the status type: 12 px, medium.
+    expect(you).toHaveClass("text-muted-foreground", "text-status");
     expect(name.compareDocumentPosition(you)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
