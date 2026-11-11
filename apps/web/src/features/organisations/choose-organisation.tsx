@@ -11,6 +11,7 @@ import {
 import { AuthHeading, AuthScreen } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
 import { ChevronRightIcon, Icon } from "@repo/ui/components/icon";
+import { OrgTile } from "@repo/ui/components/org-tile";
 import { Pill } from "@repo/ui/components/pill";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -128,12 +129,7 @@ function Organisation({
     "flex items-center gap-3 rounded-lg border border-border px-3 py-2.5";
   const content = (
     <>
-      <span
-        aria-hidden="true"
-        className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-body font-medium text-primary-foreground"
-      >
-        {tenant.name.charAt(0)}
-      </span>
+      <OrgTile name={tenant.name} size="lg" />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-body font-medium">{tenant.name}</span>
         <span className="truncate text-small text-muted-foreground">

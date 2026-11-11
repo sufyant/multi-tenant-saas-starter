@@ -254,6 +254,7 @@ export function PlatformShell({
             organisations={[]}
             title={t("shell.platform")}
             variant={place === "rail" ? "rail" : "drawer"}
+            product
           />
         )}
         main={main}

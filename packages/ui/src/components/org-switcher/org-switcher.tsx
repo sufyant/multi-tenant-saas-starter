@@ -3,6 +3,7 @@
 import type { ElementType, ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { CheckIcon, ChevronsUpDownIcon, Icon } from "../icon";
+import { OrgTile } from "../org-tile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,18 +39,15 @@ export type OrgSwitcherProps = {
   linkComponent?: ElementType;
   /** Previews only: render the menu open. */
   open?: boolean;
+  /** The face names the product, not an organisation (the platform): its mark keeps the brand's gradient. */
+  product?: boolean;
 };
 
-/** The organisation's first letter on its tile: the brand's gradient at the top of the sidebar, a quiet tint in the menu. */
-const Mark = ({ name, quiet }: { name: string; quiet?: boolean }) => (
+/** The product's mark: its first letter on the brand's gradient (the Platform sidebar). */
+const ProductMark = ({ name }: { name: string }) => (
   <span
     aria-hidden="true"
-    className={cn(
-      "flex size-6 shrink-0 items-center justify-center rounded-md font-medium",
-      quiet
-        ? "bg-info-subtle text-status text-info-text"
-        : "bg-linear-135 from-primary to-brand-gradient-end to-50% text-small text-primary-foreground",
-    )}
+    className="flex size-6 shrink-0 items-center justify-center rounded-md bg-linear-135 from-primary to-brand-gradient-end to-50% text-small font-medium text-primary-foreground"
   >
     {name.charAt(0)}
   </span>
@@ -68,12 +66,17 @@ export function OrgSwitcher({
   variant = "row",
   linkComponent: Link = "a",
   open,
+  product,
 }: OrgSwitcherProps) {
   const several = organisations.length > 1;
   const rail = variant === "rail";
   const face = (
     <>
-      <Mark name={current.name} />
+      {product ? (
+        <ProductMark name={current.name} />
+      ) : (
+        <OrgTile name={current.name} />
+      )}
       <span
         className={cn(
           "flex min-w-0 flex-1 flex-col text-start",
@@ -128,7 +131,7 @@ export function OrgSwitcher({
               aria-current={organisation.id === current.id ? "page" : undefined}
               className="min-h-10 gap-2.5 px-2 aria-[current=page]:bg-accent max-tablet:min-h-touch-target"
             >
-              <Mark name={organisation.name} quiet />
+              <OrgTile name={organisation.name} size="sm" />
               <span className="flex min-w-0 flex-1 flex-col">
                 <bdi className="truncate text-small font-medium">
                   {organisation.name}
