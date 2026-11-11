@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && { [ -d node_modules ] || pnpm install --frozen-lockfile --prefer-offline 1>&2; }",
+            "timeout": 600,
+            "statusMessage": "Installing dependencies (no node_modules)"
+          }
+        ]
+      }
+    ]
+  }
+}
