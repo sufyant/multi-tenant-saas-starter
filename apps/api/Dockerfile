@@ -22,7 +22,7 @@ RUN dotnet publish src/Api/Api.csproj --configuration Release --no-restore --out
 
 # Chiseled: no shell, no package manager. It runs in invariant globalization mode, and the code needs no ICU.
 # 10.0.13 when pinned. Dependabot updates the digest, not this note.
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:f2557fb81b1cfcfdfcde9d3bf247ed60b2cd38f00a88153f61e34737fab8ade7
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled@sha256:7c625e44e5d588b4d7b2a913e94ca4bd5098ce47442da404829e4c7936a764e1
 # The base image runs as its non-root user. Root creates /app, so the user cannot add, rename or delete files there.
 USER 0:0
 WORKDIR /app
