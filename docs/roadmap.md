@@ -341,13 +341,13 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 
 37c-backend-1, the deletion:
 
-- The key `audit.retention.days` (E1), its floor of 30 days in `ControlPlane.Domain/Plans/`, generated into the contracts with the grace of 30 days (D1), and a migration that gives every plan 365.
+- The key `audit.retention.days` (E1), its floor of 30 days in `ControlPlane.Domain/Plans/`, generated with the grace of 30 days into the contracts and into the generated TypeScript of `packages/api-client`, so the platform app reads the floor too (D1). A CHECK constraint of the floor (R15), and a migration that gives every plan 365.
 - E3's missing value that keeps every entry, and E4's sentence that retention deletes.
-- `audit.tenant_retentions` and the hold of K14. `TenantPlanChangedEvent`, `EntitlementOverrideSetEvent` and `EntitlementOverrideRemovedEvent` get an optional `retentionShortened`, `{ fromDays, toDays, goesAt }`, which ControlPlane computes in the tenant's transaction; Audit's handlers of those events start the hold in the same transaction as the entry.
+- `audit.tenant_retentions`, the hold of K14 and its lock (K6o). A tenant's first row starts with no limit, so the first run holds the older entries for 30 days. The tenant purge deletes the row. `TenantPlanChangedEvent`, `EntitlementOverrideSetEvent` and `EntitlementOverrideRemovedEvent` get an optional `retentionShortened`, `{ fromDays, toDays, goesAt }`, which ControlPlane computes in the tenant's transaction; Audit's handlers of those events start the hold in the same transaction as the entry.
 - The two functions of R19, with their floor and their tests in the shape of `PurgeTenantDataTests`.
-- The daily job of K14 and K15: at a worker's start and every 24 hours, as I7 and U8 run theirs. It reads each tenant's effective period through one ControlPlane contract, starts a hold for a plan edit and an expiry, and deletes in batches of 1000, one transaction each. The platform's log follows `Audit:Retention:Days` (K15).
+- The daily job of K14 and K15: at a worker's start and every 24 hours. Unlike the timers of I7 and U8, it sends at the start too. It reads each tenant's effective period through one ControlPlane contract, starts a hold for a plan edit and an expiry, and deletes in batches of 1000, one transaction each. The platform's log follows `Audit:Retention:Days` (K15).
 - The words of the key in three languages, for the notifications of an override (`notificationWords`, U1) and their link to the Activity log (`NotificationLinks`).
-- The documents: E1, E3, E4, E7, K3, K14, K15, R18, R19, the flows `plans-and-entitlements.md`, `notifications.md` and `reading-the-audit-logs.md`, `configuration.md` and api-catalog. The open item of section 13 for 37c goes.
+- The documents: E1, E3, E4, E7, K3, K6o, K14, K15, R11, R15, R18, R19, the flows `plans-and-entitlements.md`, `notifications.md`, `reading-the-audit-logs.md` and `tenant-purge.md`, `configuration.md` and api-catalog. The first sentence of section 13's items for 37c goes.
 
 37c-backend-2, the fields the frames read:
 
@@ -356,11 +356,13 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 - `GetAuditRetention`, `GET /v1/tenants/{tenantId}/audit-log/retention`, `tenant.audit.read`, `NotPlanGated`: `{ days, shortening }`. `days` is the effective period, null for no limit. `shortening` is `{ days, goesAt }` while a hold runs and an entry older than the new period exists, else null (12.01 to 12.11).
 - `GetPlatformAuditRetention`, `GET /v1/platform/audit-log/retention`, `platform.audit.read`: `{ days }` (7.01, 7.08).
 - The Owners' `tenant.plan_changed` gets the optional values `retentionDays` and `retentionGoesAt`, with a text without them, in three languages (U1, U2).
+- The override dialogs (4.16, 4.17) read the plan's value and the override from `GetTenantPlan`, which has them already; a shorter period is the comparison of those two fields.
+- api-catalog and `what-the-screens-read.md`. Section 13's item of 37c-backend-2 goes.
 - It waits for 37c-backend-1.
 
 37c-frontend-platform, the platform's screens:
 
-- The plan editor's card, its floor and its preview (6.04 to 6.07, 6.10, 6.11, 6.13 without its prices, 6.18, 6.19); the Plan tab's row (4.14); the Change plan dialog's sentence (4.15); the override dialogs (4.16, 4.17); the Activity log's sentence (7.01, 7.08); the Activity sentences of an override of the key.
+- The plan editor's card, its floor and its preview (6.04 to 6.06, 6.10, 6.11, 6.13 without its prices, 6.18, 6.19); the Plan tab's row (4.14); the Change plan dialog's sentence (4.15); the override dialogs (4.16, 4.17); the Activity log's sentence (7.01, 7.08); the Activity sentences of an override of the key.
 - 4.45 and 6.13's prices and meters stay step 40's.
 - It waits for 37c-design and 37c-backend-2.
 
