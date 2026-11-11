@@ -53,11 +53,15 @@ updates:
 
   # The base images in the Dockerfiles, pinned by digest. Dependabot updates the digest,
   # and the tag too where the tag names a full version.
+  # /.github/workflows holds the Playwright image of the e2e job in ci.yml (container: image:).
+  # The docker ecosystem reads every YAML file of a directory and each string under an `image`
+  # key (dependabot-core, docker/lib/dependabot/docker/file_parser.rb). It skips the `image`
+  # keys that hold an expression, as in deploy.yml and delivery.yml.
   # Daily and no cooldown: the image scan in CI fails on a vulnerability with a fix, so a fixed
   # base image must arrive at once. A cooldown protects against a new package release that is
   # later found to be harmful. A base image is pinned by digest and scanned on every update.
   - package-ecosystem: docker
-    directories: [/apps/api, /apps/web, /apps/platform]
+    directories: [/apps/api, /apps/web, /apps/platform, /.github/workflows]
     schedule:
       interval: daily
     # A Node major version changes .nvmrc, the build image and the distroless runtime image
