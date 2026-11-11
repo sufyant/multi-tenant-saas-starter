@@ -40,7 +40,7 @@
     "@tanstack/intent": "0.5.6",
     "railway": "^3.13.1",
     "turbo": "^2.10.12",
-    "typescript": "^5"
+    "typescript": "^7"
   },
   "intent": {
     "skills": [
