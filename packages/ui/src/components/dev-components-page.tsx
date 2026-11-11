@@ -24,14 +24,12 @@ import { Dialog } from "./dialog";
 import { EmptyState } from "./empty-state";
 import { EmptyValue } from "./empty-value";
 import { EnvironmentStrip } from "./environment-strip";
-import { Freshness } from "./freshness";
 import {
   BuildingIcon,
   GlobeIcon,
   HistoryIcon,
   HomeIcon,
   Icon,
-  KeyIcon,
   MonitorIcon,
   MoonIcon,
   PlusIcon,
@@ -51,11 +49,8 @@ import { Search } from "./search";
 import { SegmentedControl } from "./segmented-control";
 import { CodeStep, EmailStep, SecondFactorStep } from "./sign-in";
 import { Skeleton } from "./skeleton";
-import { Status } from "./status";
-import { SubNav } from "./sub-nav";
 import { Table, type TableColumn } from "./table";
 import { Tabs } from "./tabs";
-import { Tag } from "./tag";
 import { Time } from "./time";
 import { showToast } from "./toast";
 import { Truncate } from "./truncate";
@@ -89,7 +84,6 @@ const samples = {
     saving: "Saving…",
     active: "Active",
     suspended: "Suspended",
-    updated: "Updated",
     members: "Members",
     invitations: "Invitations",
     email: "Email",
@@ -119,7 +113,6 @@ const samples = {
     saving: "Kaydediliyor…",
     active: "Etkin",
     suspended: "Askıda",
-    updated: "Güncellendi",
     members: "Üyeler",
     invitations: "Davetler",
     email: "E-posta",
@@ -149,7 +142,6 @@ const samples = {
     saving: "جارٍ الحفظ…",
     active: "نشط",
     suspended: "موقوف",
-    updated: "آخر تحديث",
     members: "الأعضاء",
     invitations: "الدعوات",
     email: "البريد الإلكتروني",
@@ -265,7 +257,11 @@ function memberColumns(sample: Sample): TableColumn<Member>[] {
         <div className="flex flex-col">
           <span className="flex items-center gap-1.5 font-medium">
             <bdi>{row.name}</bdi>
-            {row.id === 1 && <Tag variant="text">{sample.you}</Tag>}
+            {row.id === 1 && (
+              <span className="text-status text-muted-foreground">
+                {sample.you}
+              </span>
+            )}
           </span>
           <bdi dir="ltr" className="text-small text-muted-foreground">
             {row.email}
@@ -280,9 +276,9 @@ function memberColumns(sample: Sample): TableColumn<Member>[] {
       header: "Status",
       card: "end",
       render: (row) => (
-        <Status tone={row.active ? "success" : "warning"}>
+        <Pill tone={row.active ? "success" : "warning"}>
           {row.active ? sample.active : sample.suspended}
-        </Status>
+        </Pill>
       ),
     },
     {
@@ -548,32 +544,6 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
       ),
     },
     {
-      name: "Status",
-      render: ({ sample }) => (
-        <>
-          <Status tone="info">Provisioning</Status>
-          <Status tone="success">{sample.active}</Status>
-          <Status tone="warning">{sample.suspended}</Status>
-          <Status tone="neutral">Closed</Status>
-          <Status tone="destructive">Cancelled</Status>
-        </>
-      ),
-    },
-    {
-      name: "Tag",
-      render: ({ sample }) => (
-        <>
-          <span className="flex items-center gap-1.5">
-            Ayşe Yılmaz <Tag variant="text">{sample.you}</Tag>
-          </span>
-          <span className="flex items-center gap-1.5">
-            Ciara Byrne <Tag>System admin</Tag>
-            <Tag icon={KeyIcon}>Root</Tag>
-          </span>
-        </>
-      ),
-    },
-    {
       name: "Time",
       render: ({ sample }) => (
         <>
@@ -589,26 +559,6 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
             at="2026-12-03T09:14:00Z"
             locale={sample.locale}
             timeZone={sample.timeZone}
-          />
-        </>
-      ),
-    },
-    {
-      name: "Freshness",
-      render: ({ sample }) => (
-        <>
-          <Freshness
-            at={at}
-            locale={sample.locale}
-            timeZone={sample.timeZone}
-            label={sample.updated}
-          />
-          <Freshness
-            at="2026-10-16T09:05:00Z"
-            locale={sample.locale}
-            timeZone={sample.timeZone}
-            label={sample.updated}
-            stale
           />
         </>
       ),
@@ -712,37 +662,6 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
             items={[
               { id: "members", label: sample.members, count: 6 },
               { id: "invitations", label: sample.invitations, count: 3 },
-            ]}
-          />
-        </>
-      ),
-    },
-    {
-      name: "SubNav",
-      render: ({ sample }) => (
-        <>
-          <SubNav
-            label={sample.settings}
-            current="members"
-            groups={[
-              {
-                label: "Organisation",
-                items: [
-                  { id: "general", label: "General", href: "#general" },
-                  { id: "members", label: sample.members, href: "#members" },
-                  { id: "activity", label: "Activity", href: "#activity" },
-                ],
-              },
-              {
-                label: sample.you,
-                items: [
-                  {
-                    id: "preferences",
-                    label: "Preferences",
-                    href: "#preferences",
-                  },
-                ],
-              },
             ]}
           />
         </>
@@ -1289,12 +1208,6 @@ function AppShellPreview({ sample }: { sample: Sample }) {
         onNavigate={() => {}}
       >
         <h1 className="text-page-title">{sample.members}</h1>
-        <Freshness
-          at={at}
-          locale={sample.locale}
-          timeZone={sample.timeZone}
-          label={sample.updated}
-        />
       </AppShell>
     </div>
   );

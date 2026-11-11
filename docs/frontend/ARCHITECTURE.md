@@ -263,6 +263,5 @@ These parts are not in the frontend yet. Each one comes in when its written cond
 | Billing and Usage (step 40), Terms of use and "Terms" in the footer (step 38) and Feature flags (step 39) are not in the menus yet | Steps 38 to 40 |
 | The command menu's Actions hold Invite member and Switch organisation only; the platform has no action yet | A step that adds an action to a page |
 | Inside Settings the sidebar shows no bell and no search, as the design's Settings layout draws it; ⌘K still opens the command menu | The design, if it changes |
-| The pages still use `Status` and `Tag`; the shell uses the new `Pill` and `Label` (F60). The page content moves to them in the steps of the pages | The steps of the pages |
 | The Turkish and Arabic texts of the shell, the patterns and the states of step 35-frontend have no native speaker's review | A translator's review |
 | No Playwright test runs the phone drawer's settings menu or the role and organisation changes in a browser; their unit tests do. The connection bar's Playwright tests cover a browser that says offline while the calls answer, and a real offline | A later step, if they break |
