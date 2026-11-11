@@ -395,6 +395,11 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     timeout-minutes: 25
+    # In a container, a run step without a shell runs with sh, which has no [[ (GitHub Docs, "Workflow syntax", defaults.run.shell).
+    # The secrets check uses [[, so the job sets bash, as the steps had on the runner.
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Check the Clerk test secrets
         id: secrets
