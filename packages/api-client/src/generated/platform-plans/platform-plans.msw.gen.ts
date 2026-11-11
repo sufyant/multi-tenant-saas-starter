@@ -13,6 +13,8 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
+  PathParams,
   RequestHandlerOptions
 } from 'msw';
 
@@ -20,13 +22,18 @@ import {
   EntitlementOverrideResponseState
 } from '../endpoints.schemas.gen';
 import type {
+  ChangeTenantPlanRequest,
+  CreatePlanRequest,
   EntitlementOverrideResponse,
   EntitlementValueResponse,
+  GetPlanUpdatePreviewRequest,
   ListPageOfPlanListItemResponse,
   ListPageOfTenantExcessResponse,
   PlanResponse,
+  SetEntitlementOverrideRequest,
   TenantPlanChangePreviewResponse,
-  TenantPlanResponse
+  TenantPlanResponse,
+  UpdatePlanRequest
 } from '../endpoints.schemas.gen';
 
 
@@ -67,8 +74,8 @@ export const getSetEntitlementOverrideResponseEntitlementOverrideResponseMock = 
 export const getSetEntitlementOverrideResponseMock = (overrideResponse: Partial<Extract<TenantPlanResponse, object>> = {}): TenantPlanResponse => ({tenantId: faker.string.uuid(), plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, entitlements: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), isFeature: faker.datatype.boolean(), planValue: faker.helpers.arrayElement([null,{...getSetEntitlementOverrideResponseEntitlementValueResponseMock()},]), override: faker.helpers.arrayElement([null,{...getSetEntitlementOverrideResponseEntitlementOverrideResponseMock()},]), effective: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, count: faker.number.int()})), ...overrideResponse})
 
 
-export const getListPlansMockHandler = (overrideResponse?: ListPageOfPlanListItemResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfPlanListItemResponse> | ListPageOfPlanListItemResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/plans', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListPlansMockHandler = (overrideResponse?: ListPageOfPlanListItemResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<ListPageOfPlanListItemResponse> | ListPageOfPlanListItemResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/plans', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -79,8 +86,8 @@ export const getListPlansMockHandler = (overrideResponse?: ListPageOfPlanListIte
   }, options)
 }
 
-export const getCreatePlanMockHandler = (overrideResponse?: PlanResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<PlanResponse> | PlanResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/plans', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getCreatePlanMockHandler = (overrideResponse?: PlanResponse | ((info: Parameters<HttpResponseResolver<PathParams, CreatePlanRequest>>[0]) => Promise<PlanResponse> | PlanResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, CreatePlanRequest>('*/v1/platform/plans', async (info: Parameters<HttpResponseResolver<PathParams, CreatePlanRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -91,8 +98,8 @@ export const getCreatePlanMockHandler = (overrideResponse?: PlanResponse | ((inf
   }, options)
 }
 
-export const getGetPlanMockHandler = (overrideResponse?: PlanResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PlanResponse> | PlanResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/plans/:planId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetPlanMockHandler = (overrideResponse?: PlanResponse | ((info: Parameters<HttpResponseResolver<{ planId: string }>>[0]) => Promise<PlanResponse> | PlanResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ planId: string }>('*/v1/platform/plans/:planId', async (info: Parameters<HttpResponseResolver<{ planId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -103,8 +110,8 @@ export const getGetPlanMockHandler = (overrideResponse?: PlanResponse | ((info: 
   }, options)
 }
 
-export const getUpdatePlanMockHandler = (overrideResponse?: PlanResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<PlanResponse> | PlanResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/platform/plans/:planId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getUpdatePlanMockHandler = (overrideResponse?: PlanResponse | ((info: Parameters<HttpResponseResolver<{ planId: string }, UpdatePlanRequest>>[0]) => Promise<PlanResponse> | PlanResponse), options?: RequestHandlerOptions) => {
+  return http.patch<{ planId: string }, UpdatePlanRequest>('*/v1/platform/plans/:planId', async (info: Parameters<HttpResponseResolver<{ planId: string }, UpdatePlanRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -115,8 +122,8 @@ export const getUpdatePlanMockHandler = (overrideResponse?: PlanResponse | ((inf
   }, options)
 }
 
-export const getGetPlanUpdatePreviewMockHandler = (overrideResponse?: ListPageOfTenantExcessResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ListPageOfTenantExcessResponse> | ListPageOfTenantExcessResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/plans/:planId/preview', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getGetPlanUpdatePreviewMockHandler = (overrideResponse?: ListPageOfTenantExcessResponse | ((info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => Promise<ListPageOfTenantExcessResponse> | ListPageOfTenantExcessResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ planId: string }, GetPlanUpdatePreviewRequest>('*/v1/platform/plans/:planId/preview', async (info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -127,8 +134,8 @@ export const getGetPlanUpdatePreviewMockHandler = (overrideResponse?: ListPageOf
   }, options)
 }
 
-export const getGetTenantPlanMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/tenants/:tenantId/plan', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetTenantPlanMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/platform/tenants/:tenantId/plan', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -139,8 +146,8 @@ export const getGetTenantPlanMockHandler = (overrideResponse?: TenantPlanRespons
   }, options)
 }
 
-export const getChangeTenantPlanMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
-  return http.put('*/v1/platform/tenants/:tenantId/plan', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+export const getChangeTenantPlanMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, ChangeTenantPlanRequest>>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
+  return http.put<{ tenantId: string }, ChangeTenantPlanRequest>('*/v1/platform/tenants/:tenantId/plan', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, ChangeTenantPlanRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -151,8 +158,8 @@ export const getChangeTenantPlanMockHandler = (overrideResponse?: TenantPlanResp
   }, options)
 }
 
-export const getGetTenantPlanChangePreviewMockHandler = (overrideResponse?: TenantPlanChangePreviewResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<TenantPlanChangePreviewResponse> | TenantPlanChangePreviewResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/plan/preview', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getGetTenantPlanChangePreviewMockHandler = (overrideResponse?: TenantPlanChangePreviewResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, ChangeTenantPlanRequest>>[0]) => Promise<TenantPlanChangePreviewResponse> | TenantPlanChangePreviewResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, ChangeTenantPlanRequest>('*/v1/platform/tenants/:tenantId/plan/preview', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, ChangeTenantPlanRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -163,8 +170,8 @@ export const getGetTenantPlanChangePreviewMockHandler = (overrideResponse?: Tena
   }, options)
 }
 
-export const getSetEntitlementOverrideMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
-  return http.put('*/v1/platform/tenants/:tenantId/entitlement-overrides/:key', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+export const getSetEntitlementOverrideMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string; key: string }, SetEntitlementOverrideRequest>>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
+  return http.put<{ tenantId: string; key: string }, SetEntitlementOverrideRequest>('*/v1/platform/tenants/:tenantId/entitlement-overrides/:key', async (info: Parameters<HttpResponseResolver<{ tenantId: string; key: string }, SetEntitlementOverrideRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -175,8 +182,8 @@ export const getSetEntitlementOverrideMockHandler = (overrideResponse?: TenantPl
   }, options)
 }
 
-export const getRemoveEntitlementOverrideMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/v1/platform/tenants/:tenantId/entitlement-overrides/:key', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+export const getRemoveEntitlementOverrideMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string; key: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ tenantId: string; key: string }>('*/v1/platform/tenants/:tenantId/entitlement-overrides/:key', async (info: Parameters<HttpResponseResolver<{ tenantId: string; key: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

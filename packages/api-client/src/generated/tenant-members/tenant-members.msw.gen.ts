@@ -13,10 +13,12 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
 import type {
+  ChangeMemberRoleRequest,
   ListPageOfMemberResponse,
   MemberResponse
 } from '../endpoints.schemas.gen';
@@ -27,8 +29,8 @@ export const getListMembersResponseMock = (overrideResponse: Partial<Extract<Lis
 export const getChangeMemberRoleResponseMock = (overrideResponse: Partial<Extract<MemberResponse, object>> = {}): MemberResponse => ({userId: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, deleted: faker.datatype.boolean(), joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
-export const getListMembersMockHandler = (overrideResponse?: ListPageOfMemberResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfMemberResponse> | ListPageOfMemberResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/tenants/:tenantId/members', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListMembersMockHandler = (overrideResponse?: ListPageOfMemberResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<ListPageOfMemberResponse> | ListPageOfMemberResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/tenants/:tenantId/members', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -39,8 +41,8 @@ export const getListMembersMockHandler = (overrideResponse?: ListPageOfMemberRes
   }, options)
 }
 
-export const getExportMembersMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/tenants/:tenantId/members/export', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getExportMembersMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }>('*/v1/tenants/:tenantId/members/export', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -49,8 +51,8 @@ export const getExportMembersMockHandler = (overrideResponse?: void | ((info: Pa
   }, options)
 }
 
-export const getChangeMemberRoleMockHandler = (overrideResponse?: MemberResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<MemberResponse> | MemberResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/tenants/:tenantId/members/:userId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getChangeMemberRoleMockHandler = (overrideResponse?: MemberResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string; userId: string }, ChangeMemberRoleRequest>>[0]) => Promise<MemberResponse> | MemberResponse), options?: RequestHandlerOptions) => {
+  return http.patch<{ tenantId: string; userId: string }, ChangeMemberRoleRequest>('*/v1/tenants/:tenantId/members/:userId', async (info: Parameters<HttpResponseResolver<{ tenantId: string; userId: string }, ChangeMemberRoleRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -61,8 +63,8 @@ export const getChangeMemberRoleMockHandler = (overrideResponse?: MemberResponse
   }, options)
 }
 
-export const getRemoveMemberMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/v1/tenants/:tenantId/members/:userId', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+export const getRemoveMemberMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string; userId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ tenantId: string; userId: string }>('*/v1/tenants/:tenantId/members/:userId', async (info: Parameters<HttpResponseResolver<{ tenantId: string; userId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -71,8 +73,8 @@ export const getRemoveMemberMockHandler = (overrideResponse?: void | ((info: Par
   }, options)
 }
 
-export const getLeaveTenantMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/v1/tenants/:tenantId/membership', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+export const getLeaveTenantMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ tenantId: string }>('*/v1/tenants/:tenantId/membership', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

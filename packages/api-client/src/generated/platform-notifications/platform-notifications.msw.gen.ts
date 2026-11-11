@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -31,8 +32,8 @@ export const getListPlatformNotificationsResponseMock = (overrideResponse: Parti
 export const getGetPlatformUnreadNotificationCountResponseMock = (overrideResponse: Partial<Extract<UnreadNotificationCountResponse, object>> = {}): UnreadNotificationCountResponse => ({unread: faker.number.int(), ...overrideResponse})
 
 
-export const getListPlatformNotificationsMockHandler = (overrideResponse?: CursorPageOfNotificationResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CursorPageOfNotificationResponse> | CursorPageOfNotificationResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/notifications', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListPlatformNotificationsMockHandler = (overrideResponse?: CursorPageOfNotificationResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<CursorPageOfNotificationResponse> | CursorPageOfNotificationResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/notifications', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -43,8 +44,8 @@ export const getListPlatformNotificationsMockHandler = (overrideResponse?: Curso
   }, options)
 }
 
-export const getGetPlatformUnreadNotificationCountMockHandler = (overrideResponse?: UnreadNotificationCountResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<UnreadNotificationCountResponse> | UnreadNotificationCountResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/notifications/unread-count', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetPlatformUnreadNotificationCountMockHandler = (overrideResponse?: UnreadNotificationCountResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<UnreadNotificationCountResponse> | UnreadNotificationCountResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/notifications/unread-count', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -55,8 +56,8 @@ export const getGetPlatformUnreadNotificationCountMockHandler = (overrideRespons
   }, options)
 }
 
-export const getMarkAllPlatformNotificationsReadMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/notifications/read', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getMarkAllPlatformNotificationsReadMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/platform/notifications/read', async (info: Parameters<HttpResponseResolver>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

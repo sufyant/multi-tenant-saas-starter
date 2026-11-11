@@ -1979,6 +1979,7 @@ test.describe("signed out", () => {
         path: `${folder}/entry-1.03-set-up-the-authenticator-en-light-desktop.png`,
       });
 
+      // biome-ignore lint/performance/useDomNodeTextContent: Playwright's Locator.innerText reads the key as the page shows it; textContent can be null.
       const secret = (await key.innerText()).replaceAll(" ", "");
       await page
         .getByRole("textbox", { name: "Enter the 6-digit code the app shows" })

@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -45,8 +46,8 @@ export const getListPlatformAuditEntriesResponseAuditDetailsResponseMock = (over
 export const getListPlatformAuditEntriesResponseMock = (overrideResponse: Partial<Extract<CursorPageOfAuditEntryResponse, object>> = {}): CursorPageOfAuditEntryResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), occurredAt: faker.date.past().toISOString().slice(0, 19) + 'Z', operation: faker.helpers.arrayElement(Object.values(AuditOperation)), details: faker.helpers.arrayElement([null,{...getListPlatformAuditEntriesResponseAuditDetailsResponseMock()},]), actor: {kind: faker.helpers.arrayElement(Object.values(AuditActorResponseKind)), userId: faker.helpers.arrayElement([faker.string.uuid(), null]), displayName: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}, target: {kind: faker.helpers.arrayElement(Object.values(AuditTargetResponseKind)), id: faker.string.uuid(), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.helpers.arrayElement([faker.datatype.boolean(), null])}})), nextCursor: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 
-export const getListPlatformAuditEntriesMockHandler = (overrideResponse?: CursorPageOfAuditEntryResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CursorPageOfAuditEntryResponse> | CursorPageOfAuditEntryResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/platform/audit-log', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListPlatformAuditEntriesMockHandler = (overrideResponse?: CursorPageOfAuditEntryResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<CursorPageOfAuditEntryResponse> | CursorPageOfAuditEntryResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/audit-log', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
