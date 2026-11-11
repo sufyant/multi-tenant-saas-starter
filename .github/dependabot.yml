@@ -11,6 +11,13 @@ updates:
     # within days. Cooldown applies to version updates only.
     cooldown:
       default-days: 7
+    # Microsoft.CodeAnalysis.CSharp stays at the Roslyn version that Microsoft.EntityFrameworkCore.Design
+    # and WolverineFx.RuntimeCompilation ask for (apps/api/Directory.Packages.props). Their Roslyn
+    # packages ask for exactly that version, so a newer one fails the restore. Raise it by hand. The pin
+    # warns by itself: when one of the two packages raises its Roslyn, its own update fails the restore
+    # against the pinned version, and that is the moment to raise it.
+    ignore:
+      - dependency-name: Microsoft.CodeAnalysis.CSharp
     groups:
       nuget-minor-and-patch:
         applies-to: version-updates
@@ -27,6 +34,19 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # A major version of these packages is a planned upgrade, not a Dependabot update. Their minor
+    # and patch updates still come.
+    # @types/node follows the Node major that the repository runs: 22 (.nvmrc, and the node ignore
+    # rule of the docker entry below). It moves with a Node upgrade.
+    # typescript: a move to TypeScript 7 is a decision of its own.
+    # @hookform/resolvers: a move to 7 is a decision of its own.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: "@hookform/resolvers"
+        update-types: [version-update:semver-major]
     groups:
       npm-minor-and-patch:
         applies-to: version-updates
