@@ -31,7 +31,9 @@ export CLERK_TELEMETRY_DISABLED=1
 export PLAYWRIGHT_HTML_OPEN=never
 
 pnpm turbo run build --filter=@repo/web --filter=@repo/platform
-pnpm --filter @repo/web exec playwright install --with-deps chromium
+# ci.yml runs this job in the Playwright image, which holds Chromium and its system packages, so there is no --with-deps.
+# The install finds the image's browser and does nothing; it downloads a browser only when the versions differ.
+pnpm --filter @repo/web exec playwright install chromium
 
 failed=0
 for app in web platform; do
