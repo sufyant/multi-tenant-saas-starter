@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler");
                 
                 // The actual message execution
                 await Audit.Application.Members.RecordOwnerMade.RecordOwnerMadeHandler.HandleAsync(ownerMadeEvent, auditLog, cancellation).ConfigureAwait(false);

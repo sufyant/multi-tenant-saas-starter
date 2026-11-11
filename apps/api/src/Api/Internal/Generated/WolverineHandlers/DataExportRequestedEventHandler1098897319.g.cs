@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.DataExports.RecordDataExportRequested.RecordDataExportRequestedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.DataExports.RecordDataExportRequested.RecordDataExportRequestedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.DataExports.RecordDataExportRequested.RecordDataExportRequestedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.DataExports.RecordDataExportRequested.RecordDataExportRequestedHandler");
                 
                 // The actual message execution
                 await Audit.Application.DataExports.RecordDataExportRequested.RecordDataExportRequestedHandler.HandleAsync(dataExportRequestedEvent, auditLog, cancellation).ConfigureAwait(false);

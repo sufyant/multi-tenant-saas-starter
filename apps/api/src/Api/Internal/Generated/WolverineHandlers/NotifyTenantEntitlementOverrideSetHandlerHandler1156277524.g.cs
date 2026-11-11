@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Plans.NotifyTenantEntitlementOverrideSet.NotifyTenantEntitlementOverrideSetHandler.HandleAsync(entitlementOverrideSetEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);

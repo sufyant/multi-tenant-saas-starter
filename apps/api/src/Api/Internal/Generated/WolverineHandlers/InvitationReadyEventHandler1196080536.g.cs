@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var invitationReadyEvent = (ControlPlane.Contracts.Invitations.InvitationReadyEvent)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler");
             
             // The actual message execution
             await Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler.HandleAsync(invitationReadyEvent, emailChannel, cancellation).ConfigureAwait(false);

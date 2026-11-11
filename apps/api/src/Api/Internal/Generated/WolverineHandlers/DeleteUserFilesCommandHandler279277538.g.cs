@@ -20,8 +20,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var deleteUserFilesCommand = (ControlPlane.Application.Users.DeleteUserFiles.DeleteUserFilesCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteUserFiles.DeleteUserFilesHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteUserFiles.DeleteUserFilesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteUserFiles.DeleteUserFilesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteUserFiles.DeleteUserFilesHandler");
             
             // The actual message execution
             await ControlPlane.Application.Users.DeleteUserFiles.DeleteUserFilesHandler.HandleAsync(deleteUserFilesCommand, _fileStore, cancellation).ConfigureAwait(false);

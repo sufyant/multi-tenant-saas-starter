@@ -48,8 +48,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Plans.UpdatePlan.UpdatePlanHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Plans.UpdatePlan.UpdatePlanHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Plans.UpdatePlan.UpdatePlanHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Plans.UpdatePlan.UpdatePlanHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Plans.PlanView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand>(_validatorOfUpdatePlanCommand, _failureActionOfUpdatePlanCommand, updatePlanCommand).ConfigureAwait(false);
                 

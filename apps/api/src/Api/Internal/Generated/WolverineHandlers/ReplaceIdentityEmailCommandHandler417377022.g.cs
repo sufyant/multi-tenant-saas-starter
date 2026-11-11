@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.ReplaceIdentityEmail.ReplaceIdentityEmailHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.ReplaceIdentityEmail.ReplaceIdentityEmailHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.ReplaceIdentityEmail.ReplaceIdentityEmailHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.ReplaceIdentityEmail.ReplaceIdentityEmailHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.Users.ReplaceIdentityEmail.ReplaceIdentityEmailHandler.HandleAsync(replaceIdentityEmailCommand, userRepository, cancellation).ConfigureAwait(false);

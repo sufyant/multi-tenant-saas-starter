@@ -23,8 +23,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var removeCacheTagsCommand = (Tenancy.Caching.RemoveCacheTagsCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Api.Caching.RemoveCacheTagsHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Api.Caching.RemoveCacheTagsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Api.Caching.RemoveCacheTagsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Api.Caching.RemoveCacheTagsHandler");
             
             // The actual message execution
             await Api.Caching.RemoveCacheTagsHandler.HandleAsync(removeCacheTagsCommand, _cacheRemoval, _timeProvider).ConfigureAwait(false);

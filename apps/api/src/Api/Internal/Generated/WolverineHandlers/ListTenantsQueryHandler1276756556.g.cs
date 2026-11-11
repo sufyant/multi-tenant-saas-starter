@@ -43,8 +43,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.ListTenants.ListTenantsHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.ListTenants.ListTenantsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.ListTenants.ListTenantsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.ListTenants.ListTenantsHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.ListTenants.TenantListView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution

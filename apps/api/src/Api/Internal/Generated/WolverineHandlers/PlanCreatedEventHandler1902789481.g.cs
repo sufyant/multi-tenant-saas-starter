@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Plans.RecordPlanCreated.RecordPlanCreatedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Plans.RecordPlanCreated.RecordPlanCreatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordPlanCreated.RecordPlanCreatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordPlanCreated.RecordPlanCreatedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Plans.RecordPlanCreated.RecordPlanCreatedHandler.HandleAsync(planCreatedEvent, auditLog, cancellation).ConfigureAwait(false);

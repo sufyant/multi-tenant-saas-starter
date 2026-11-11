@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteUser.DeleteUserHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteUser.DeleteUserHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteUser.DeleteUserHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteUser.DeleteUserHandler");
                 
                 // The actual message execution
                 (var outgoing1, var outgoing2) = await ControlPlane.Application.Users.DeleteUser.DeleteUserHandler.HandleAsync(deleteUserCommand, userRepository, _timeProvider, cancellation).ConfigureAwait(false);

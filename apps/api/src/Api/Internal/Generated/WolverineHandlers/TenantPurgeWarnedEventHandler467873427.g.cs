@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantPurgeWarned.RecordTenantPurgeWarnedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantPurgeWarned.RecordTenantPurgeWarnedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantPurgeWarned.RecordTenantPurgeWarnedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantPurgeWarned.RecordTenantPurgeWarnedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Tenants.RecordTenantPurgeWarned.RecordTenantPurgeWarnedHandler.HandleAsync(tenantPurgeWarnedEvent, auditLog, cancellation).ConfigureAwait(false);

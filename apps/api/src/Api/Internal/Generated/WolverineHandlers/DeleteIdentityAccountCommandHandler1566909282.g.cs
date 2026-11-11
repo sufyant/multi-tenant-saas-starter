@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var deleteIdentityAccountCommand = (ControlPlane.Application.Users.DeleteIdentityAccount.DeleteIdentityAccountCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteIdentityAccount.DeleteIdentityAccountHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteIdentityAccount.DeleteIdentityAccountHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.DeleteIdentityAccount.DeleteIdentityAccountHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.DeleteIdentityAccount.DeleteIdentityAccountHandler");
             
             // The actual message execution
             await ControlPlane.Application.Users.DeleteIdentityAccount.DeleteIdentityAccountHandler.HandleAsync(deleteIdentityAccountCommand, identityProvider, cancellation).ConfigureAwait(false);

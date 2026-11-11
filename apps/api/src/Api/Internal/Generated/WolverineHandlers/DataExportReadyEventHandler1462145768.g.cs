@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.DataExports.NotifyUserDataExportReady.NotifyUserDataExportReadyHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.DataExports.NotifyUserDataExportReady.NotifyUserDataExportReadyHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.DataExports.NotifyUserDataExportReady.NotifyUserDataExportReadyHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.DataExports.NotifyUserDataExportReady.NotifyUserDataExportReadyHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.DataExports.NotifyUserDataExportReady.NotifyUserDataExportReadyHandler.HandleAsync(dataExportReadyEvent, userDirectory, cancellation).ConfigureAwait(false);

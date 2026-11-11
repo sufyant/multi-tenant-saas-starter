@@ -47,8 +47,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Roles.UpdateRole.UpdateRoleHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Roles.UpdateRole.UpdateRoleHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Roles.UpdateRole.UpdateRoleHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Roles.UpdateRole.UpdateRoleHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Roles.RoleDetailView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Roles.UpdateRole.UpdateRoleCommand>(_validatorOfUpdateRoleCommand, _failureActionOfUpdateRoleCommand, updateRoleCommand).ConfigureAwait(false);
                 

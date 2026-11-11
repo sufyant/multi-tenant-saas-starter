@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.SystemAdmins.RecordSystemAdminGranted.RecordSystemAdminGrantedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.SystemAdmins.RecordSystemAdminGranted.RecordSystemAdminGrantedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.SystemAdmins.RecordSystemAdminGranted.RecordSystemAdminGrantedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.SystemAdmins.RecordSystemAdminGranted.RecordSystemAdminGrantedHandler");
                 
                 // The actual message execution
                 await Audit.Application.SystemAdmins.RecordSystemAdminGranted.RecordSystemAdminGrantedHandler.HandleAsync(systemAdminGrantedEvent, auditLog, cancellation).ConfigureAwait(false);

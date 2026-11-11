@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.GetUnreadNotificationCount.GetUnreadNotificationCountHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.GetUnreadNotificationCount.GetUnreadNotificationCountHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.GetUnreadNotificationCount.GetUnreadNotificationCountHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.GetUnreadNotificationCount.GetUnreadNotificationCountHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Notifications.GetUnreadNotificationCount.GetUnreadNotificationCountHandler.HandleAsync(getUnreadNotificationCountQuery, notificationQueries, cancellation).ConfigureAwait(false);

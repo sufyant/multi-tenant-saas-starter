@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.AuditLogs.ListAuditEntries.ListAuditEntriesHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Audit.Application.AuditLogs.AuditEntryView>, Audit.Infrastructure.Persistence.AuditDbContext>.BeforeAsync(context.Envelope, auditDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution

@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Notifications.DeliverNotification.DeliverNotificationHandler.HandleAsync(deliverNotificationCommand, notificationRepository, cancellation).ConfigureAwait(false);

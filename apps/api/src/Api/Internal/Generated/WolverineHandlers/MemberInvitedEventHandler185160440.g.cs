@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordMemberInvited.RecordMemberInvitedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordMemberInvited.RecordMemberInvitedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Members.RecordMemberInvited.RecordMemberInvitedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Members.RecordMemberInvited.RecordMemberInvitedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Members.RecordMemberInvited.RecordMemberInvitedHandler.HandleAsync(memberInvitedEvent, auditLog, cancellation).ConfigureAwait(false);

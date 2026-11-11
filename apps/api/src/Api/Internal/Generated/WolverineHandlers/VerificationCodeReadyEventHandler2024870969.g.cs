@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var verificationCodeReadyEvent = (ControlPlane.Contracts.Users.VerificationCodeReadyEvent)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Users.SendVerificationCodeEmail.SendVerificationCodeEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Users.SendVerificationCodeEmail.SendVerificationCodeEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Users.SendVerificationCodeEmail.SendVerificationCodeEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Users.SendVerificationCodeEmail.SendVerificationCodeEmailHandler");
             
             // The actual message execution
             await Notifications.Application.Users.SendVerificationCodeEmail.SendVerificationCodeEmailHandler.HandleAsync(verificationCodeReadyEvent, emailChannel, cancellation).ConfigureAwait(false);

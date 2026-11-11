@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Plans.GetPlanUpdatePreview.GetPlanUpdatePreviewHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Plans.GetPlanUpdatePreview.GetPlanUpdatePreviewHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Plans.GetPlanUpdatePreview.GetPlanUpdatePreviewHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Plans.GetPlanUpdatePreview.GetPlanUpdatePreviewHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.ListPage<ControlPlane.Application.Plans.GetPlanUpdatePreview.TenantExcessView>, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution

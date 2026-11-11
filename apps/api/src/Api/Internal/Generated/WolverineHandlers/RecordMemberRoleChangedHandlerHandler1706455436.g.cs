@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Members.RecordMemberRoleChanged.RecordMemberRoleChangedHandler.HandleAsync(memberRoleChangedEvent, auditLog, cancellation).ConfigureAwait(false);

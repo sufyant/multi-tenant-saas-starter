@@ -20,8 +20,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var purgeTenantDataCommand = (ControlPlane.Contracts.Tenants.PurgeTenantDataCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "Api.Storage.PurgeTenantFilesHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "Api.Storage.PurgeTenantFilesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Api.Storage.PurgeTenantFilesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Api.Storage.PurgeTenantFilesHandler");
             
             // The actual message execution
             var outgoing1 = await Api.Storage.PurgeTenantFilesHandler.HandleAsync(purgeTenantDataCommand, _fileStore, cancellation).ConfigureAwait(false);

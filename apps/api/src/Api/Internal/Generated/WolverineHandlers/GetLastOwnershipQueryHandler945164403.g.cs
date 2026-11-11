@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.GetLastOwnership.GetLastOwnershipHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.GetLastOwnership.GetLastOwnershipHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.GetLastOwnership.GetLastOwnershipHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.GetLastOwnership.GetLastOwnershipHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.Users.GetLastOwnership.GetLastOwnershipHandler.HandleAsync(getLastOwnershipQuery, tenantRepository, cancellation).ConfigureAwait(false);

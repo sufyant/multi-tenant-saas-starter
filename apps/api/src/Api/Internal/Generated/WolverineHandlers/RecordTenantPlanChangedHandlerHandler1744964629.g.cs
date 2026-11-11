@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Plans.RecordTenantPlanChanged.RecordTenantPlanChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Plans.RecordTenantPlanChanged.RecordTenantPlanChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordTenantPlanChanged.RecordTenantPlanChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordTenantPlanChanged.RecordTenantPlanChangedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Plans.RecordTenantPlanChanged.RecordTenantPlanChangedHandler.HandleAsync(tenantPlanChangedEvent, auditLog, cancellation).ConfigureAwait(false);

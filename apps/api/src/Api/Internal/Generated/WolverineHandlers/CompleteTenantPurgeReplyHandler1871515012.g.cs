@@ -37,9 +37,9 @@ namespace Internal.Generated.WolverineHandlers
             try
             {
                 // Application-specific Open Telemetry auditing
-                System.Diagnostics.Activity.Current?.SetTag("TenantId", completeTenantPurgeReply.TenantId);
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("TenantId", completeTenantPurgeReply.TenantId);
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
                 System.Guid sagaId = completeTenantPurgeReply.TenantId;
                 if (sagaId == default && !System.Guid.TryParse(context.Envelope.SagaId, out sagaId)) sagaId = completeTenantPurgeReply.TenantId;
                 if (sagaId == System.Guid.Empty) throw new Wolverine.Persistence.Sagas.IndeterminateSagaStateIdException(context.Envelope, typeof(ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga), "TenantId");
@@ -53,8 +53,8 @@ namespace Internal.Generated.WolverineHandlers
                 else
                 {
                     context.SetSagaId(sagaId);
-                    System.Diagnostics.Activity.Current?.SetTag("wolverine.saga.id", sagaId.ToString());
-                    System.Diagnostics.Activity.Current?.SetTag("wolverine.saga.type", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
+                    Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("wolverine.saga.id", sagaId.ToString());
+                    Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("wolverine.saga.type", "ControlPlane.Application.Tenants.TenantPurge.TenantPurgeSaga");
                     
                     // The actual message execution
                     var outgoing1 = tenantPurgeSaga.Handle(completeTenantPurgeReply);

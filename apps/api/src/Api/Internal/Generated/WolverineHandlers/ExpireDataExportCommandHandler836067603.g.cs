@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.DataExports.ExpireDataExport.ExpireDataExportHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.DataExports.ExpireDataExport.ExpireDataExportHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.DataExports.ExpireDataExport.ExpireDataExportHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.DataExports.ExpireDataExport.ExpireDataExportHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.DataExports.ExpireDataExport.ExpireDataExportHandler.HandleAsync(expireDataExportCommand, storedFileRepository, cancellation).ConfigureAwait(false);

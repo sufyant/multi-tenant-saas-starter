@@ -48,8 +48,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.SetEntitlementOverride.SetEntitlementOverrideHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.SetEntitlementOverride.SetEntitlementOverrideHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.SetEntitlementOverride.SetEntitlementOverrideHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.SetEntitlementOverride.SetEntitlementOverrideHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.GetTenantPlan.TenantPlanView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Tenants.SetEntitlementOverride.SetEntitlementOverrideCommand>(_validatorOfSetEntitlementOverrideCommand, _failureActionOfSetEntitlementOverrideCommand, setEntitlementOverrideCommand).ConfigureAwait(false);
                 
