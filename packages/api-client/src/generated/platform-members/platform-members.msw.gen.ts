@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -20,6 +21,7 @@ import {
   UserMembershipResponseTenantStatus
 } from '../endpoints.schemas.gen';
 import type {
+  MakeOwnerRequest,
   UserMembershipResponse
 } from '../endpoints.schemas.gen';
 
@@ -27,8 +29,8 @@ import type {
 export const getMakeOwnerResponseMock = (overrideResponse: Partial<Extract<UserMembershipResponse, object>> = {}): UserMembershipResponse => ({tenantId: faker.string.uuid(), tenantName: faker.string.alpha({length: {min: 10, max: 20}}), tenantSlug: faker.string.alpha({length: {min: 10, max: 20}}), tenantStatus: faker.helpers.arrayElement(Object.values(UserMembershipResponseTenantStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, joinedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', lastOwner: faker.datatype.boolean(), ...overrideResponse})
 
 
-export const getMakeOwnerMockHandler = (overrideResponse?: UserMembershipResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<UserMembershipResponse> | UserMembershipResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/platform/tenants/:tenantId/owners', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getMakeOwnerMockHandler = (overrideResponse?: UserMembershipResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, MakeOwnerRequest>>[0]) => Promise<UserMembershipResponse> | UserMembershipResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, MakeOwnerRequest>('*/v1/platform/tenants/:tenantId/owners', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, MakeOwnerRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

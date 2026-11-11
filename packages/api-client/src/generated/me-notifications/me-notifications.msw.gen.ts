@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -31,8 +32,8 @@ export const getListMyNotificationsResponseMock = (overrideResponse: Partial<Ext
 export const getGetMyUnreadNotificationCountResponseMock = (overrideResponse: Partial<Extract<UnreadNotificationCountResponse, object>> = {}): UnreadNotificationCountResponse => ({unread: faker.number.int(), ...overrideResponse})
 
 
-export const getListMyNotificationsMockHandler = (overrideResponse?: CursorPageOfNotificationResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CursorPageOfNotificationResponse> | CursorPageOfNotificationResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/me/notifications', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListMyNotificationsMockHandler = (overrideResponse?: CursorPageOfNotificationResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<CursorPageOfNotificationResponse> | CursorPageOfNotificationResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/notifications', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -43,8 +44,8 @@ export const getListMyNotificationsMockHandler = (overrideResponse?: CursorPageO
   }, options)
 }
 
-export const getGetMyUnreadNotificationCountMockHandler = (overrideResponse?: UnreadNotificationCountResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<UnreadNotificationCountResponse> | UnreadNotificationCountResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/me/notifications/unread-count', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getGetMyUnreadNotificationCountMockHandler = (overrideResponse?: UnreadNotificationCountResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<UnreadNotificationCountResponse> | UnreadNotificationCountResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/notifications/unread-count', async (info: Parameters<HttpResponseResolver>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -55,8 +56,8 @@ export const getGetMyUnreadNotificationCountMockHandler = (overrideResponse?: Un
   }, options)
 }
 
-export const getMarkAllMyNotificationsReadMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/notifications/read', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getMarkAllMyNotificationsReadMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/v1/me/notifications/read', async (info: Parameters<HttpResponseResolver>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -65,8 +66,8 @@ export const getMarkAllMyNotificationsReadMockHandler = (overrideResponse?: void
   }, options)
 }
 
-export const getMarkNotificationReadMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/me/notifications/:notificationId/read', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getMarkNotificationReadMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ notificationId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post<{ notificationId: string }>('*/v1/me/notifications/:notificationId/read', async (info: Parameters<HttpResponseResolver<{ notificationId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
@@ -75,8 +76,8 @@ export const getMarkNotificationReadMockHandler = (overrideResponse?: void | ((i
   }, options)
 }
 
-export const getStreamNotificationsMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/me/notifications/stream', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getStreamNotificationsMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/me/notifications/stream', async (info: Parameters<HttpResponseResolver>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,

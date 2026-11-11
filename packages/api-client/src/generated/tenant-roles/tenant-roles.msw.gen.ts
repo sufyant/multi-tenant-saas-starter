@@ -13,6 +13,7 @@ import {
   http
 } from 'msw';
 import type {
+  HttpResponseResolver,
   RequestHandlerOptions
 } from 'msw';
 
@@ -20,8 +21,10 @@ import {
   Permission
 } from '../endpoints.schemas.gen';
 import type {
+  CreateRoleRequest,
   ListPageOfRoleDetailResponse,
-  RoleDetailResponse
+  RoleDetailResponse,
+  UpdateRoleRequest
 } from '../endpoints.schemas.gen';
 
 
@@ -32,8 +35,8 @@ export const getCreateRoleResponseMock = (overrideResponse: Partial<Extract<Role
 export const getUpdateRoleResponseMock = (overrideResponse: Partial<Extract<RoleDetailResponse, object>> = {}): RoleDetailResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean(), permissions: faker.helpers.arrayElements(Object.values(Permission)), memberCount: faker.number.int(), pendingInvitationCount: faker.number.int(), ...overrideResponse})
 
 
-export const getListRolesMockHandler = (overrideResponse?: ListPageOfRoleDetailResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ListPageOfRoleDetailResponse> | ListPageOfRoleDetailResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/v1/tenants/:tenantId/roles', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+export const getListRolesMockHandler = (overrideResponse?: ListPageOfRoleDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<ListPageOfRoleDetailResponse> | ListPageOfRoleDetailResponse), options?: RequestHandlerOptions) => {
+  return http.get<{ tenantId: string }>('*/v1/tenants/:tenantId/roles', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -44,8 +47,8 @@ export const getListRolesMockHandler = (overrideResponse?: ListPageOfRoleDetailR
   }, options)
 }
 
-export const getCreateRoleMockHandler = (overrideResponse?: RoleDetailResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<RoleDetailResponse> | RoleDetailResponse), options?: RequestHandlerOptions) => {
-  return http.post('*/v1/tenants/:tenantId/roles', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+export const getCreateRoleMockHandler = (overrideResponse?: RoleDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, CreateRoleRequest>>[0]) => Promise<RoleDetailResponse> | RoleDetailResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, CreateRoleRequest>('*/v1/tenants/:tenantId/roles', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, CreateRoleRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -56,8 +59,8 @@ export const getCreateRoleMockHandler = (overrideResponse?: RoleDetailResponse |
   }, options)
 }
 
-export const getUpdateRoleMockHandler = (overrideResponse?: RoleDetailResponse | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<RoleDetailResponse> | RoleDetailResponse), options?: RequestHandlerOptions) => {
-  return http.patch('*/v1/tenants/:tenantId/roles/:roleId', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+export const getUpdateRoleMockHandler = (overrideResponse?: RoleDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string; roleId: string }, UpdateRoleRequest>>[0]) => Promise<RoleDetailResponse> | RoleDetailResponse), options?: RequestHandlerOptions) => {
+  return http.patch<{ tenantId: string; roleId: string }, UpdateRoleRequest>('*/v1/tenants/:tenantId/roles/:roleId', async (info: Parameters<HttpResponseResolver<{ tenantId: string; roleId: string }, UpdateRoleRequest>>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -68,8 +71,8 @@ export const getUpdateRoleMockHandler = (overrideResponse?: RoleDetailResponse |
   }, options)
 }
 
-export const getDeleteRoleMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
-  return http.delete('*/v1/tenants/:tenantId/roles/:roleId', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+export const getDeleteRoleMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string; roleId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ tenantId: string; roleId: string }>('*/v1/tenants/:tenantId/roles/:roleId', async (info: Parameters<HttpResponseResolver<{ tenantId: string; roleId: string }>>[0]) => {
   if (typeof overrideResponse === 'function') {await overrideResponse(info); }
 
     return new HttpResponse(null,
