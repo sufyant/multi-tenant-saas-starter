@@ -20,8 +20,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var deleteStoredFileCommand = (ControlPlane.Application.DataExports.DeleteStoredFile.DeleteStoredFileCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.DataExports.DeleteStoredFile.DeleteStoredFileHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.DataExports.DeleteStoredFile.DeleteStoredFileHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.DataExports.DeleteStoredFile.DeleteStoredFileHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.DataExports.DeleteStoredFile.DeleteStoredFileHandler");
             
             // The actual message execution
             await ControlPlane.Application.DataExports.DeleteStoredFile.DeleteStoredFileHandler.HandleAsync(deleteStoredFileCommand, _fileStore, cancellation).ConfigureAwait(false);

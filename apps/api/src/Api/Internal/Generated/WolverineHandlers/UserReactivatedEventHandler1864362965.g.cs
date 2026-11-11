@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Users.RecordUserReactivated.RecordUserReactivatedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Users.RecordUserReactivated.RecordUserReactivatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Users.RecordUserReactivated.RecordUserReactivatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Users.RecordUserReactivated.RecordUserReactivatedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Users.RecordUserReactivated.RecordUserReactivatedHandler.HandleAsync(userReactivatedEvent, auditLog, cancellation).ConfigureAwait(false);

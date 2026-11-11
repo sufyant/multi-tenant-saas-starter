@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantReopenedForOwners.NotifyTenantReopenedForOwnersHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantReopenedForOwners.NotifyTenantReopenedForOwnersHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantReopenedForOwners.NotifyTenantReopenedForOwnersHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantReopenedForOwners.NotifyTenantReopenedForOwnersHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Tenants.NotifyTenantReopenedForOwners.NotifyTenantReopenedForOwnersHandler.HandleAsync(tenantReopenedEvent, memberDirectory, userDirectory, cancellation).ConfigureAwait(false);

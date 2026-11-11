@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var getEmailTakenAtIdentityProviderQuery = (ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider.GetEmailTakenAtIdentityProviderQuery)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider.GetEmailTakenAtIdentityProviderHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider.GetEmailTakenAtIdentityProviderHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider.GetEmailTakenAtIdentityProviderHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider.GetEmailTakenAtIdentityProviderHandler");
             
             // The actual message execution
             var outgoing1 = await ControlPlane.Application.Users.GetEmailTakenAtIdentityProvider.GetEmailTakenAtIdentityProviderHandler.HandleAsync(getEmailTakenAtIdentityProviderQuery, identityProvider, cancellation).ConfigureAwait(false);

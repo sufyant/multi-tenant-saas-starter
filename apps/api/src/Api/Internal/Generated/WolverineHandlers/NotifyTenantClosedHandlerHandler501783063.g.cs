@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler");
                 
                 // The actual message execution
                 var outgoing2 = await Notifications.Application.Tenants.NotifyTenantClosed.NotifyTenantClosedHandler.HandleAsync(tenantClosedEvent, userDirectory, cancellation).ConfigureAwait(false);

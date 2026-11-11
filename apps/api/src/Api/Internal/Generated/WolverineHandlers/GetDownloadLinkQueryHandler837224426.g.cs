@@ -23,8 +23,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var getDownloadLinkQuery = (ControlPlane.Application.DataExports.GetDownloadLink.GetDownloadLinkQuery)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.DataExports.GetDownloadLink.GetDownloadLinkHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.DataExports.GetDownloadLink.GetDownloadLinkHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.DataExports.GetDownloadLink.GetDownloadLinkHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.DataExports.GetDownloadLink.GetDownloadLinkHandler");
             
             // The actual message execution
             var outgoing1 = await ControlPlane.Application.DataExports.GetDownloadLink.GetDownloadLinkHandler.HandleAsync(getDownloadLinkQuery, _fileStore, _timeProvider, cancellation).ConfigureAwait(false);

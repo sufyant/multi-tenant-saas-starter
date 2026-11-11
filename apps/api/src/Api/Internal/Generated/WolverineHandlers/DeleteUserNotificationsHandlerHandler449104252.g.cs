@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler");
                 
                 // The actual message execution
                 await Notifications.Application.Users.DeleteUserNotifications.DeleteUserNotificationsHandler.HandleAsync(userDeletedEvent, notificationRepository, cancellation).ConfigureAwait(false);

@@ -42,8 +42,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler");
                 
                 // The actual message execution
                 (var outgoing1, var outgoing2) = await ControlPlane.Application.Tenants.RemoveEntitlementOverride.RemoveEntitlementOverrideHandler.HandleAsync(removeEntitlementOverrideCommand, tenantRepository, tenantQueries, userRepository, _timeProvider, cancellation).ConfigureAwait(false);

@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.GetNotificationNames.GetNotificationNamesHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.GetNotificationNames.GetNotificationNamesHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.GetNotificationNames.GetNotificationNamesHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.GetNotificationNames.GetNotificationNamesHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Notifications.GetNotificationNames.GetNotificationNamesHandler.HandleAsync(getNotificationNamesQuery, userDirectory, cancellation).ConfigureAwait(false);

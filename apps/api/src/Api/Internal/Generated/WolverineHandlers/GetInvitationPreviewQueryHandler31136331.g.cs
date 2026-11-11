@@ -45,8 +45,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.GetInvitationPreview.GetInvitationPreviewHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Invitations.GetInvitationPreview.InvitationPreviewView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution

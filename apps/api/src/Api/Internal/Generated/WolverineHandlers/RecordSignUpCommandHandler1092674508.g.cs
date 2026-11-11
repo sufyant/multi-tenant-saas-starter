@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.RecordSignUp.RecordSignUpHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.RecordSignUp.RecordSignUpHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.RecordSignUp.RecordSignUpHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.RecordSignUp.RecordSignUpHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.Invitations.RecordSignUp.RecordSignUpHandler.HandleAsync(recordSignUpCommand, tenantRepository, _timeProvider, cancellation).ConfigureAwait(false);

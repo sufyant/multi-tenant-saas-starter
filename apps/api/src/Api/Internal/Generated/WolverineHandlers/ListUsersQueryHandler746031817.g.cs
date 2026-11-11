@@ -46,8 +46,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.ListUsers.ListUsersHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.ListUsers.ListUsersHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.ListUsers.ListUsersHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.ListUsers.ListUsersHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.ListUsers.UserListView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Users.ListUsers.ListUsersQuery>(_validatorOfListUsersQuery, _failureActionOfListUsersQuery, listUsersQuery).ConfigureAwait(false);
                 

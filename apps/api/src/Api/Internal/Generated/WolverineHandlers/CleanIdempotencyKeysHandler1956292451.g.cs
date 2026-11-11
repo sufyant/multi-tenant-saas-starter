@@ -45,8 +45,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Api.Idempotency.CleanIdempotencyKeysHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Api.Idempotency.CleanIdempotencyKeysHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Api.Idempotency.CleanIdempotencyKeysHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Api.Idempotency.CleanIdempotencyKeysHandler");
                 
                 // The actual message execution
                 await Api.Idempotency.CleanIdempotencyKeysHandler.Handle(cleanIdempotencyKeys, apiDbContext, _optionsOfIdempotencyOptions, _timeProvider, cancellation).ConfigureAwait(false);

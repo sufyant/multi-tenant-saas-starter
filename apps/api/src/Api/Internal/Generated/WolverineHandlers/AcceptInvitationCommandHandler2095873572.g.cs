@@ -47,8 +47,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.AcceptInvitation.AcceptInvitationHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.AcceptInvitation.AcceptInvitationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.AcceptInvitation.AcceptInvitationHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.AcceptInvitation.AcceptInvitationHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.MyTenantView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Invitations.AcceptInvitation.AcceptInvitationCommand>(_validatorOfAcceptInvitationCommand, _failureActionOfAcceptInvitationCommand, acceptInvitationCommand).ConfigureAwait(false);
                 

@@ -50,8 +50,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.InviteMember.InviteMemberHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.InviteMember.InviteMemberHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.InviteMember.InviteMemberHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.InviteMember.InviteMemberHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Invitations.InvitationView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Invitations.InviteMember.InviteMemberCommand>(_validatorOfInviteMemberCommand, _failureActionOfInviteMemberCommand, inviteMemberCommand).ConfigureAwait(false);
                 

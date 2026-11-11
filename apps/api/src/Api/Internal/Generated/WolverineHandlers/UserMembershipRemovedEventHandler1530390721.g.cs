@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Users.RecordUserMembershipRemoved.RecordUserMembershipRemovedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Users.RecordUserMembershipRemoved.RecordUserMembershipRemovedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Users.RecordUserMembershipRemoved.RecordUserMembershipRemovedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Users.RecordUserMembershipRemoved.RecordUserMembershipRemovedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Users.RecordUserMembershipRemoved.RecordUserMembershipRemovedHandler.HandleAsync(userMembershipRemovedEvent, auditLog, cancellation).ConfigureAwait(false);

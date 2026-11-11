@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.ListNotifications.ListNotificationsHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<SharedKernel.CursorPage<Notifications.Application.Notifications.StoredNotification>, Notifications.Infrastructure.Persistence.NotificationsDbContext>.BeforeAsync(context.Envelope, notificationsDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution

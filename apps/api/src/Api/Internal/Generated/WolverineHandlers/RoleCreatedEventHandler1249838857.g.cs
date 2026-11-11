@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Roles.RecordRoleCreated.RecordRoleCreatedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Roles.RecordRoleCreated.RecordRoleCreatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Roles.RecordRoleCreated.RecordRoleCreatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Roles.RecordRoleCreated.RecordRoleCreatedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Roles.RecordRoleCreated.RecordRoleCreatedHandler.HandleAsync(roleCreatedEvent, auditLog, cancellation).ConfigureAwait(false);

@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.DataExports.CompleteDataExport.CompleteDataExportHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.DataExports.CompleteDataExport.CompleteDataExportHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.DataExports.CompleteDataExport.CompleteDataExportHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.DataExports.CompleteDataExport.CompleteDataExportHandler");
                 
                 // The actual message execution
                 var outgoing1 = await ControlPlane.Application.DataExports.CompleteDataExport.CompleteDataExportHandler.HandleAsync(completeDataExportCommand, storedFileRepository, _timeProvider, cancellation).ConfigureAwait(false);

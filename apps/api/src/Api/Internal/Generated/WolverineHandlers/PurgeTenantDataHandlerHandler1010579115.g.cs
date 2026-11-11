@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
                 
                 // The actual message execution
                 var outgoing2 = await Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, notificationRepository, cancellation).ConfigureAwait(false);

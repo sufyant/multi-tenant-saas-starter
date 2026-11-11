@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Invitations.RecordInvitationRevoked.RecordInvitationRevokedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Invitations.RecordInvitationRevoked.RecordInvitationRevokedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Invitations.RecordInvitationRevoked.RecordInvitationRevokedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Invitations.RecordInvitationRevoked.RecordInvitationRevokedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Invitations.RecordInvitationRevoked.RecordInvitationRevokedHandler.HandleAsync(invitationRevokedEvent, auditLog, cancellation).ConfigureAwait(false);

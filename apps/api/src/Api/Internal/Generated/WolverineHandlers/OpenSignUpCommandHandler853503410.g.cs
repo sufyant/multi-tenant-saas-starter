@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var openSignUpCommand = (ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler");
             
             // The actual message execution
             var outgoing1 = await ControlPlane.Application.Invitations.OpenSignUp.OpenSignUpHandler.HandleAsync(openSignUpCommand, identityProvider, cancellation).ConfigureAwait(false);

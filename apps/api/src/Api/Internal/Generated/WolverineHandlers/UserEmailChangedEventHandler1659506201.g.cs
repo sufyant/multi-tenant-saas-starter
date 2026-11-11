@@ -37,8 +37,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Audit.Application.Users.RecordUserEmailChanged.RecordUserEmailChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Audit.Application.Users.RecordUserEmailChanged.RecordUserEmailChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Users.RecordUserEmailChanged.RecordUserEmailChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Users.RecordUserEmailChanged.RecordUserEmailChangedHandler");
                 
                 // The actual message execution
                 await Audit.Application.Users.RecordUserEmailChanged.RecordUserEmailChangedHandler.HandleAsync(userEmailChangedEvent, auditLog, cancellation).ConfigureAwait(false);

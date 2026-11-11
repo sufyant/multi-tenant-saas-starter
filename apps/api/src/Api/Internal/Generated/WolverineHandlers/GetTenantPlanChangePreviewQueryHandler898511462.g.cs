@@ -41,8 +41,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Tenants.GetTenantPlanChangePreview.GetTenantPlanChangePreviewHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Tenants.GetTenantPlanChangePreview.GetTenantPlanChangePreviewHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Tenants.GetTenantPlanChangePreview.GetTenantPlanChangePreviewHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Tenants.GetTenantPlanChangePreview.GetTenantPlanChangePreviewHandler");
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Tenants.GetTenantPlanChangePreview.TenantPlanChangePreviewView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution

@@ -24,8 +24,8 @@ namespace Internal.Generated.WolverineHandlers
             // The actual message body
             var sendIdentityEmailCommand = (ControlPlane.Application.Users.SendIdentityEmail.SendIdentityEmailCommand)context.Envelope.Message;
 
-            System.Diagnostics.Activity.Current?.SetTag("message.handler", "ControlPlane.Application.Users.SendIdentityEmail.SendIdentityEmailHandler");
-            System.Diagnostics.Activity.Current?.SetTag("handler.type", "ControlPlane.Application.Users.SendIdentityEmail.SendIdentityEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "ControlPlane.Application.Users.SendIdentityEmail.SendIdentityEmailHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Users.SendIdentityEmail.SendIdentityEmailHandler");
             
             // The actual message execution
             var outgoing1 = await ControlPlane.Application.Users.SendIdentityEmail.SendIdentityEmailHandler.HandleAsync(sendIdentityEmailCommand, identityProvider, cancellation).ConfigureAwait(false);

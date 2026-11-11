@@ -40,8 +40,8 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                System.Diagnostics.Activity.Current?.SetTag("message.handler", "Notifications.Application.Members.NotifyMemberRoleChanged.NotifyMemberRoleChangedHandler");
-                System.Diagnostics.Activity.Current?.SetTag("handler.type", "Notifications.Application.Members.NotifyMemberRoleChanged.NotifyMemberRoleChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Notifications.Application.Members.NotifyMemberRoleChanged.NotifyMemberRoleChangedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Members.NotifyMemberRoleChanged.NotifyMemberRoleChangedHandler");
                 
                 // The actual message execution
                 var outgoing1 = await Notifications.Application.Members.NotifyMemberRoleChanged.NotifyMemberRoleChangedHandler.HandleAsync(memberRoleChangedEvent, userDirectory, cancellation).ConfigureAwait(false);
