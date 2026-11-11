@@ -11,6 +11,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 36 | Personal pages | done |
 | 37a | The web's organisation pages | done |
 | 37b | The platform's pages | done |
+| 37c | Audit retention | todo |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -110,7 +111,7 @@ Status: done.
 
 ## 5. Step 37: Organisation pages
 
-Status: done. It has two parts.
+Status: done, but 37c is todo. It has three parts.
 
 37a, the web's organisation pages:
 
@@ -313,6 +314,61 @@ The parts of 37b, in their order. The frames are the Platform app page of the de
 
 37b is done.
 
+37c, audit retention (the maintainer's decisions of 2026-11-11):
+
+- The organisation's Activity log keeps its entries for a plan limit, an entitlement like seats: `audit.retention.days`. The default is 1 year, 365 days.
+- At the end of the period, a daily job deletes an entry entirely. Owners can export before, with 37a's CSV export.
+- The platform's own log keeps its entries for a deployment setting, `Audit:Retention:Days`, default 365, not tied to a plan.
+- When the period gets shorter, the entries outside the new period stay 30 days, then go. This holds for each of the four ways: a plan change, an edit of the plan's value, an override set lower or removed, and an override that expires. The Change plan dialog, the plan editor's preview and the override dialogs say so.
+- It is done before production (step 47).
+
+The rules, in `apps/api/docs/ARCHITECTURE.md`:
+
+- The deletion goes through two narrow `SECURITY DEFINER` functions in the shape of R14 and U8, one for each log (R19). Partitions do not fit a period that differs for each organisation (the maintainer's decision of 2026-11-11).
+- A floor of 30 days: each function refuses a moment later than 30 days ago, and the entitlement and the setting refuse a value under 30, so a fault in the application cannot delete a recent log. The plan editor and the override dialog say it (the maintainer's decision of 2026-11-11, with the value of this plan).
+- The key is a limit in days, a whole number of at least 30, or unlimited. A missing value never deletes: a plan without a value keeps every entry, as unlimited does (E3). Retention is the one limit that deletes (E4). Every plan gets 365 in the migration (K14).
+- A shortening starts a hold of 30 days in `audit.tenant_retentions`, the one state of each tenant. A plan change and an override start it at the command's moment, from the event; a plan edit and an expiry start it at the daily job's moment, because they have no event for the tenant (K14).
+- The Activity log says its period, in a sentence under its title, in both apps. The organisation's log shows a Banner while a hold runs and an entry older than the new period exists, with Export for a viewer who may export. The Owners' `tenant.plan_changed` notification, in the bell and by email, says which entries go and on which date, in three languages. An override change goes to the bell only, so the Banner carries the date there (the maintainer's decisions of 2026-11-11).
+
+The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same time. The pull request of this plan holds the table of every frame with its part, and the table of every value with its field.
+
+37c-design, the frames of the retention:
+
+- Platform app: the plan editor's Activity log card in 6.04, 6.05, 6.06, 6.10, 6.11 (a value under 30), 6.13 and the phone's summary 6.18; a new frame 6.19, the impact dialog of a save that shortens the period, with the count of the organisations it touches; the organisation's Plan tab row in 4.14 and 4.45; the Change plan dialog's sentence in 4.15; the override dialogs' sentences in 4.16 (the key, the floor, a lower value, an expiry) and 4.17 (a removal that shortens); the period's sentence of the platform's Activity log in 7.01 and 7.08.
+- Web app: the period's sentence under the title of 12.01 to 12.09; two new frames, 12.10, the Banner of a hold with Export, and 12.11, the same in dark.
+- No dark, Arabic or phone frame of these sections draws a plan, an override or the organisation's Activity log beyond those above, so none is added. The Billing frames 10.02, 10.03, 10.06 and 10.09 are step 40's.
+- It waits for nothing.
+
+37c-backend-1, the deletion:
+
+- The key `audit.retention.days` (E1), its floor of 30 days in `ControlPlane.Domain/Plans/`, generated into the contracts with the grace of 30 days (D1), and a migration that gives every plan 365.
+- E3's missing value that keeps every entry, and E4's sentence that retention deletes.
+- `audit.tenant_retentions` and the hold of K14. `TenantPlanChangedEvent`, `EntitlementOverrideSetEvent` and `EntitlementOverrideRemovedEvent` get an optional `retentionShortened`, `{ fromDays, toDays, goesAt }`, which ControlPlane computes in the tenant's transaction; Audit's handlers of those events start the hold in the same transaction as the entry.
+- The two functions of R19, with their floor and their tests in the shape of `PurgeTenantDataTests`.
+- The daily job of K14 and K15: at a worker's start and every 24 hours, as I7 and U8 run theirs. It reads each tenant's effective period through one ControlPlane contract, starts a hold for a plan edit and an expiry, and deletes in batches of 1000, one transaction each. The platform's log follows `Audit:Retention:Days` (K15).
+- The words of the key in three languages, for the notifications of an override (`notificationWords`, U1) and their link to the Activity log (`NotificationLinks`).
+- The documents: E1, E3, E4, E7, K3, K14, K15, R18, R19, the flows `plans-and-entitlements.md`, `notifications.md` and `reading-the-audit-logs.md`, `configuration.md` and api-catalog. The open item of section 13 for 37c goes.
+
+37c-backend-2, the fields the frames read:
+
+- `GetPlanUpdatePreview` answers `retentionShortened`, `{ count, fromDays, toDays }`: the organisations on the plan whose period gets shorter, those without an override of the key that has not expired, or null (6.19).
+- `GetTenantPlanChangePreview` answers `retentionShortened`, `{ fromDays, toDays }`, or null (4.15).
+- `GetAuditRetention`, `GET /v1/tenants/{tenantId}/audit-log/retention`, `tenant.audit.read`, `NotPlanGated`: `{ days, shortening }`. `days` is the effective period, null for no limit. `shortening` is `{ days, goesAt }` while a hold runs and an entry older than the new period exists, else null (12.01 to 12.11).
+- `GetPlatformAuditRetention`, `GET /v1/platform/audit-log/retention`, `platform.audit.read`: `{ days }` (7.01, 7.08).
+- The Owners' `tenant.plan_changed` gets the optional values `retentionDays` and `retentionGoesAt`, with a text without them, in three languages (U1, U2).
+- It waits for 37c-backend-1.
+
+37c-frontend-platform, the platform's screens:
+
+- The plan editor's card, its floor and its preview (6.04 to 6.07, 6.10, 6.11, 6.13 without its prices, 6.18, 6.19); the Plan tab's row (4.14); the Change plan dialog's sentence (4.15); the override dialogs (4.16, 4.17); the Activity log's sentence (7.01, 7.08); the Activity sentences of an override of the key.
+- 4.45 and 6.13's prices and meters stay step 40's.
+- It waits for 37c-design and 37c-backend-2.
+
+37c-frontend-web, the organisation's Activity log:
+
+- The period's sentence (12.01 to 12.09) and the Banner of a hold (12.10, 12.11), with Export only for a viewer who holds `tenant.audit.read`, the export's permission. The Activity sentences of an override of the key.
+- It waits for 37c-design and 37c-backend-2.
+
 ## 6. Step 38: Terms of use
 
 Status: todo.
@@ -355,6 +411,7 @@ The model:
 - A plan has a base fee and a fee per person. Each can be 0, monthly and yearly.
 - A plan has usage meters (a quota, stop or charge, and a unit price) and limits.
 - The seeded plans: Free (3 seats), Team (15 seats, 5 custom roles) and Business (50 seats, 20 custom roles).
+- Each seeded plan keeps the Activity log for 365 days (`audit.retention.days`, 37c), until the maintainer gives a plan another value.
 - The custom-role limit follows the same F56 rule as Members: "Create role" stays enabled and opens a dialog that says the limit, the reason and what to do, its banner is as Members', and it shows no count beside "Create role" (the maintainer's decisions of 2026-11-07).
 - A new permission, `tenant.billing.manage`. The Owner holds it by default.
 - A fourth built-in role, Billing manager, with `tenant.profile.read`, `tenant.members.read` and `tenant.billing.manage`. It is free: it takes no seat and no fee per person. Product modules never add permissions to it.
@@ -367,6 +424,7 @@ The model:
 - The customer portal manages the card, the address, the VAT ID and the invoices. The email change, the plan switch and the cancellation are off in the portal.
 - An upgrade applies at once, with proration.
 - A downgrade or a cancellation applies at the end of the period. The person can undo it until then.
+- The Change plan page and Cancel plan (10.02, 10.03, 10.06, 10.09) say when a move shortens the Activity log's period: the entries outside the new period stay 30 days, then go (37c; the maintainer's decision of 2026-11-11). Its frames get the sentence in this step's design.
 - Monthly to yearly applies at once. Yearly to monthly applies at the end of the year.
 - Billing per person is automatic. Billing starts when a person accepts an invitation. The next invoice prorates joins and removals. On a yearly plan, a join is charged at once.
 - A failed payment: Stripe retries for about 2 weeks. Then 1 week of grace follows. Then the organisation moves to the default plan. Nothing is deleted.
@@ -440,6 +498,7 @@ Status: todo.
 Status: todo.
 
 - The production environment.
+- It waits for 37c: the audit retention is done before production (the maintainer's decision of 2026-11-11).
 - The first release.
 - Rollback and a restore drill.
 - The Clerk email templates and the sign-in lockout, set on purpose.
