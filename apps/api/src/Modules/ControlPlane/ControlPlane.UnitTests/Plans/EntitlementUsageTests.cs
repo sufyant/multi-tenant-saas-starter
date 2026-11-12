@@ -17,6 +17,10 @@ public sealed class EntitlementUsageTests
     [Fact]
     public void Count_MembersMax_IsTheMembersAndThePendingInvitations() => Usage.CountOf(LimitKeys.MembersMax).ShouldBe(6);
 
+    // E4: the Activity log period counts nothing, so it is never over.
+    [Fact]
+    public void Count_AuditRetentionDays_IsZero() => Usage.CountOf("audit.retention.days").ShouldBe(0);
+
     // Every key of the list has its count, so a new key cannot be forgotten here.
     [Fact]
     public void Count_EveryKeyOfTheList_HasACount() =>

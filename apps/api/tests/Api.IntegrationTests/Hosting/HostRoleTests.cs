@@ -1,6 +1,9 @@
 using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json;
+using Audit.Application.AuditLogs.ApplyAuditRetention;
+using Audit.Application.AuditLogs.ApplyTenantAuditRetention;
+using Audit.Application.AuditLogs.DeleteExpiredPlatformEntries;
 using Audit.Application.Invitations.RecordInvitationRevoked;
 using Audit.Application.Invitations.RecordOwnerInvited;
 using Audit.Application.Members.RecordMemberInvited;
@@ -251,6 +254,50 @@ public sealed class HostRoleTests(Database database)
         runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
+    }
+
+    // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry.
+    [Fact]
+    public async Task ApplyAuditRetention_OnAWebAndAWorkerHost_RunsInTheWorkerAtItsStart()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var tenant = await new TestData(database, name).AddTenantAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = web.Services;
+        _ = worker.Services;
+
+        await Waiting.UntilAsync(async () => await RetentionDaysAsync(name, tenant.Id) == 365);
+
+        runs.In("web").ShouldBeEmpty();
+        runs.In("worker").Select(run => run.Handler).ShouldBe([typeof(ApplyAuditRetentionHandler), typeof(ApplyTenantAuditRetentionHandler), typeof(DeleteExpiredPlatformEntriesHandler)], ignoreOrder: true);
+    }
+
+    // K14: a plan change that shortens the period is announced from the web host, and the worker's Audit handler starts the hold.
+    [Fact]
+    public async Task ChangeTenantPlan_ToAShorterPeriodOnAWebAndAWorkerHost_StartsTheHoldInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, name);
+        var plan = await testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 });
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await testData.AddTenantAsync();
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var changed = await admin.ChangeTenantPlanAsync(tenant.Id, plan);
+        await Waiting.UntilAsync(async () => await RetentionDaysAsync(name, tenant.Id) == 90);
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await database.ScalarAsSuperuserAsync<bool>(
+            $"""
+            SELECT held_until = (SELECT occurred_at + interval '30 days' FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.plan_changed')
+            FROM audit.tenant_retentions WHERE tenant_id = '{tenant.Id}'
+            """,
+            name)).ShouldBeTrue();
     }
 
     // O3: an override and a new plan are announced from the web host, and their Audit handlers run in the worker, once: the plan in the
@@ -1021,6 +1068,10 @@ public sealed class HostRoleTests(Database database)
     private Task<long> AuditEntriesAsync(string databaseName, Guid tenantId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", databaseName);
+
+    // The tenant's Activity log period in its row of the retention; 0 while it has no row or no limit.
+    private async Task<int> RetentionDaysAsync(string databaseName, Guid tenantId) =>
+        await database.ScalarAsSuperuserAsync<int?>($"SELECT days FROM audit.tenant_retentions WHERE tenant_id = '{tenantId}'", databaseName) ?? 0;
 
     private Task<long> PlatformEntriesAsync(string databaseName, Guid targetId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(

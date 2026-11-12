@@ -14,6 +14,7 @@ public sealed class EntitlementKeysTests
                 ["roles.custom"] = EntitlementKind.Feature,
                 ["roles.custom.max"] = EntitlementKind.Limit,
                 ["members.max"] = EntitlementKind.Limit,
+                ["audit.retention.days"] = EntitlementKind.Limit,
             },
             ignoreOrder: true);
     }
