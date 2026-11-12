@@ -39,14 +39,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/plans",
 }));
-// clerk-js as loaded: useFreshRouter waits for it before a navigation, and asks no session for a token.
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
 vi.mock("@clerk/nextjs", () => ({
   useClerk: () => ({
     on: (_: string, handler: (status: string) => void) => handler("ready"),
     off: vi.fn(),
-    session: null,
+    session: { getToken },
   }),
 }));
+afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -811,6 +813,7 @@ describe("PlanEditor", () => {
     expect(creates[0]?.key).toMatch(/^[0-9a-f-]{36}$/);
     // 6.12: the new plan opens on its own page.
     expect(router.push).toHaveBeenCalledWith(`/plans/${partner.id}`);
+    expect(getToken).toHaveBeenCalledBefore(router.push);
     expect(
       screen.getByText(
         "Give it to an organisation from that organisation’s Plan tab.",

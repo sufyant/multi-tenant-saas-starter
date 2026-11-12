@@ -66,6 +66,7 @@ test("CreatePlan_SessionExpiredOnThePage_ShowsTheToastOnItsPage", async ({
     page.getByRole("heading", { level: 1, name: "Pro" }),
   ).toBeVisible();
   await expect(page.getByText("Pro created")).toBeVisible();
+  await expectAccessible(page);
 });
 
 test("PlanEditor_Pro_ShowsEveryKeyByArea", async ({ page }) => {

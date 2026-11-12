@@ -83,6 +83,7 @@ test("CreateRole_SessionExpiredOnThePage_ShowsTheToastOnTheList", async ({
   await expect(
     page.getByText("Maintenance planner is ready to give.").first(),
   ).toBeVisible();
+  await expectAccessible(page);
 });
 
 test("Role_CustomRole_OpensItsEditor", async ({ page }) => {
