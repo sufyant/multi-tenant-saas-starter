@@ -63,6 +63,15 @@ public sealed class EffectiveEntitlementsTests
         effective.ValueOf("members.max").ShouldBe(EntitlementValue.Limit(0));
     }
 
+    // E3: a missing value of the Activity log period keeps every entry, as unlimited does; a period of 0 would delete the whole log.
+    [Fact]
+    public void Compute_ARetentionThePlanLacks_IsUnlimited()
+    {
+        var effective = EffectiveEntitlements.Of(new Dictionary<string, EntitlementValue>(), [], Now);
+
+        effective.ValueOf("audit.retention.days").ShouldBe(EntitlementValue.Unlimited);
+    }
+
     [Fact]
     public void Compute_Unlimited_StaysUnlimited() => EffectiveEntitlements.Of(Pro, [], Now).ValueOf("members.max").ShouldBe(EntitlementValue.Unlimited);
 

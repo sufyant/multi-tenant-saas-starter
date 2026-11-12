@@ -9,6 +9,7 @@ namespace ControlPlane.Application.Tenants.SetEntitlementOverride;
 
 // K6a: an override belongs to the tenant (M1), so the tenant row is locked first, and a limit that a tenant command checks under the same
 // lock sees the override before or after it. Setting the value, expiry and reason it has announces nothing (I1). Rejections come first (W7).
+// The event names a shorter Activity log period, from the effective values before and after the override (K14).
 public static class SetEntitlementOverrideHandler
 {
     public static async Task<(Result<TenantPlanView>, OutgoingMessages)> HandleAsync(
@@ -33,6 +34,8 @@ public static class SetEntitlementOverrideHandler
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         var now = time.GetUtcNow();
+        var before = await queries.FindTenantPlanAsync(now, cancellationToken)
+            ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         var existing = await tenants.FindOverrideAsync(command.Key, cancellationToken);
         var set = tenant.SetOverride(existing, command.Key, value.Value, command.ExpiresAt, command.Reason, actor, now);
         if (!set.IsSuccess)
@@ -66,6 +69,7 @@ public static class SetEntitlementOverrideHandler
             old?.ExpiresAt,
             EntitlementValueView.RecordOf(entry.Value),
             entry.ExpiresAt,
-            entry.Reason)]);
+            entry.Reason,
+            RetentionShortenings.Between(before, view, now))]);
     }
 }

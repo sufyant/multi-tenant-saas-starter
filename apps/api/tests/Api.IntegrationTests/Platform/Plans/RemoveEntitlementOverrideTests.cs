@@ -19,6 +19,19 @@ public sealed class RemoveEntitlementOverrideTests(Database database) : IAsyncLi
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // An unlimited override removed: the plan's 365 days apply again, which is shorter.
+    [Fact]
+    public async Task RemoveEntitlementOverride_ThePlansShorterPeriodAppliesAgain_StartsTheHoldAtTheRemovalsMoment()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenant.Id, "audit.retention.days", PlanRequests.Unlimited))).EnsureSuccessStatusCode();
+
+        (await _api.WaitingForMessagesAsync(() => admin.RemoveOverrideAsync(tenant.Id, "audit.retention.days"))).EnsureSuccessStatusCode();
+
+        (await new AuditEntries(database).RetentionHoldAsync(tenant.Id, "tenant.entitlement_override_removed")).ShouldBe("365|t|t");
+    }
+
     [Fact]
     public async Task RemoveEntitlementOverride_AnOverride_GivesThePlansValueBack()
     {

@@ -9,17 +9,19 @@ namespace Audit.Application.Plans.RecordTenantPlanChanged;
 // The audit entries of a tenant's new plan, written when ControlPlane announces it, under that tenant. The system admin who changed it
 // acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3). Both logs hold the old and the
 // new plan.
+// A shorter Activity log period starts the tenant's hold, after the entry, in the same transaction (K14).
 public static class RecordTenantPlanChangedHandler
 {
-    public static Task HandleAsync(TenantPlanChangedEvent changed, IAuditLog log, CancellationToken cancellationToken)
+    public static async Task HandleAsync(TenantPlanChangedEvent changed, IAuditLog log, IRetentionStore retention, CancellationToken cancellationToken)
     {
         var tenant = AuditTarget.Tenant(changed.TenantId, changed.TenantName);
         var details = JsonSerializer.Serialize(
             new TenantPlanChangedDetails(new AuditPlan(changed.OldPlanId, changed.OldPlanName), new AuditPlan(changed.NewPlanId, changed.NewPlanName)),
             JsonSerializerOptions.Web);
-        return log.RecordAsync(
+        var recorded = await log.RecordAsync(
             new PlatformAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.User(changed.ChangedBy), AuditOperations.TenantPlanChanged, tenant, details),
             new TenantAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.Platform, AuditOperations.TenantPlanChanged, tenant, details),
             cancellationToken);
+        await RetentionHolds.StartAsync(retention, recorded, changed.RetentionShortened, changed.OccurredAt, cancellationToken);
     }
 }

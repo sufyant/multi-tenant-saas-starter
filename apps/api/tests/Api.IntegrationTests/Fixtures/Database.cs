@@ -99,8 +99,9 @@ public sealed class Database : IAsyncLifetime
             return;
         }
 
-        // The notifications' retention deletes by the host's clock too (U8).
-        foreach (var cleanup in services.Where(service => service.ImplementationType == typeof(IdempotencyCleanup) || service.ImplementationType?.Name == "NotificationRetention").ToList())
+        // The notifications' retention deletes by the host's clock too (U8), and so does the audit retention (K14, K15).
+        foreach (var cleanup in services.Where(service => service.ImplementationType == typeof(IdempotencyCleanup)
+            || service.ImplementationType?.Name is "NotificationRetention" or "AuditRetentionJob").ToList())
         {
             services.Remove(cleanup);
         }

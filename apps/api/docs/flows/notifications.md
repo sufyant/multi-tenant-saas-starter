@@ -39,7 +39,7 @@ Each type also has an area and an actor in the catalog (U1). The list shows them
 | `organisations` | Organisations, Kuruluşlar, المؤسسات | `tenant.owner_joined` and every status type | the new Owner, who accepted; the system admin who changed the status; none for `tenant.purged` |
 | `your_account` | Your account, Hesabınız, حسابك | `user.data_export_ready` | none: the worker completed the export |
 
-- An override leads to the page of its key: `members.max` to the members (`tenant_members`), `roles.custom` and `roles.custom.max` to the roles (`tenant_roles`), any other key to the tenant's general settings (`tenant_settings`).
+- An override leads to the page of its key: `members.max` to the members (`tenant_members`), `roles.custom` and `roles.custom.max` to the roles (`tenant_roles`), `audit.retention.days` to the Activity log (`tenant_activity_log`, step 37c), any other key to the tenant's general settings (`tenant_settings`). The key's words in the three languages are in `notificationWords.entitlementKey` (U1): "Activity log days", "Etkinlik kaydı gün sayısı" and "أيام الاحتفاظ بسجل النشاط". A web that does not know a link kind yet leads to the start page, or to the organisation's Home when the bell is inside it, and reports it (F55).
 - A value keeps a person by user id only (K3). The read names them now, so a deleted user reads as "Deleted user" in the reader's language, and a renamed one by the new name (U2). A tenant's, a plan's and a role's name stay as they were at that moment.
 - An entitlement's value is a number, `unlimited`, `on`, `off`, or `not_set` when the plan has no value of the key; each word is written in the language. A date is written in the reader's language and time zone.
 - Nobody is told of their own action, and a deleted or suspended user is told nothing (`NotificationFanOut`).
@@ -97,7 +97,7 @@ The live channel is `ILiveChannel` (U6). The worker writes the notification, and
 | `PurgeTenantDataCommand` | the tenant purge (`tenant-purge.md`) | Notifications, `PurgeTenantDataHandler` | Yes, the tenant's |
 | `UserDeletedEvent` | ControlPlane, after a user's deletion (`user-deletion.md`) | Notifications, `DeleteUserNotificationsHandler` | Yes, Notifications', which declares the user |
 
-- The retention deletes the notifications older than `Notifications:Retention:Days` (90), read or not, in batches of 1000, one transaction each (U8).
+- The retention deletes the notifications older than `Notifications:Retention:Days` (90), read or not, in batches of 1000, one transaction each (U8). The retention of the audit logs is Audit's, and deletes no notification (`reading-the-audit-logs.md`).
 - The tenant purge deletes every notification about the tenant, in every recipient's list, the platform's included: the Owners' reactivated and reopened go too, because their link leads nowhere then. Any other personal notification is about no tenant and stays.
 - A user's deletion deletes their notifications.
 

@@ -11,6 +11,7 @@ public sealed class NotificationLinksTests
     [InlineData("members.max", NotificationLinkKind.TenantMembers)]
     [InlineData("roles.custom", NotificationLinkKind.TenantRoles)]
     [InlineData("roles.custom.max", NotificationLinkKind.TenantRoles)]
+    [InlineData("audit.retention.days", NotificationLinkKind.TenantActivityLog)]
     [InlineData("storage.max", NotificationLinkKind.TenantSettings)]
     public void Of_AnOverride_LeadsToThePageOfItsKey(string key, NotificationLinkKind link)
     {

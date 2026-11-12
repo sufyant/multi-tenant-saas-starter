@@ -31,7 +31,7 @@ public sealed class GetPlanTests(Database database) : IAsyncLifetime
 
         (plan.GetProperty("name").GetString(), plan.GetProperty("isDefault").GetBoolean()).ShouldBe(("Pro", false));
         plan.GetProperty("entitlements").GetRawText().ShouldBe(
-            """{"members.max":{"enabled":null,"maximum":null,"unlimited":true},"roles.custom":{"enabled":true,"maximum":null,"unlimited":false},"roles.custom.max":{"enabled":null,"maximum":20,"unlimited":false}}""");
+            """{"audit.retention.days":{"enabled":null,"maximum":365,"unlimited":false},"members.max":{"enabled":null,"maximum":null,"unlimited":true},"roles.custom":{"enabled":true,"maximum":null,"unlimited":false},"roles.custom.max":{"enabled":null,"maximum":20,"unlimited":false}}""");
     }
 
     [Fact]

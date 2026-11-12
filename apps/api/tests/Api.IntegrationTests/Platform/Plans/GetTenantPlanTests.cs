@@ -20,6 +20,19 @@ public sealed class GetTenantPlanTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // E3: an effective read answers a missing value as unlimited; the plan's own value stays not set.
+    [Fact]
+    public async Task GetTenantPlan_APlanWithoutTheRetention_IsUnlimited()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new()));
+
+        var entry = PlanRequests.EntitlementOf(await admin.TenantPlanAsync(tenant.Id), "audit.retention.days");
+
+        entry.GetProperty("effective").GetProperty("unlimited").GetBoolean().ShouldBeTrue();
+        entry.GetProperty("planValue").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
+    }
+
     [Fact]
     public async Task GetTenantPlan_AProTenant_AnswersEveryKeyWithItsValuesAndCount()
     {
@@ -32,7 +45,7 @@ public sealed class GetTenantPlanTests(Database database) : IAsyncLifetime
         var plan = await admin.TenantPlanAsync(tenant.Id);
 
         plan.GetProperty("plan").GetProperty("id").GetGuid().ShouldBe(SeedPlans.Pro);
-        plan.GetProperty("entitlements").EnumerateArray().Select(entry => entry.GetProperty("key").GetString()).ShouldBe(["members.max", "roles.custom", "roles.custom.max"]);
+        plan.GetProperty("entitlements").EnumerateArray().Select(entry => entry.GetProperty("key").GetString()).ShouldBe(["audit.retention.days", "members.max", "roles.custom", "roles.custom.max"]);
         var limit = PlanRequests.EntitlementOf(plan, "roles.custom.max");
         (limit.GetProperty("isFeature").GetBoolean(), limit.GetProperty("planValue").GetProperty("maximum").GetInt32(), limit.GetProperty("count").GetInt32())
             .ShouldBe((false, 20, 1));

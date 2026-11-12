@@ -11,4 +11,10 @@ internal static class LimitKeys
 
     /// <summary>How many members the tenant may have. Its pending invitations that have not expired count too.</summary>
     public const string MembersMax = "members.max";
+
+    /// <summary>
+    /// How many days the tenant's Activity log keeps an entry: at least <see cref="AuditRetention.Floor"/>, or unlimited. A missing value
+    /// keeps every entry, as unlimited does (E3). It is the one limit that deletes (E4, K14).
+    /// </summary>
+    public const string AuditRetentionDays = "audit.retention.days";
 }

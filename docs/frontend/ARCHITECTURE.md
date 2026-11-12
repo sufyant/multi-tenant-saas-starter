@@ -25,7 +25,7 @@ flowchart LR
 
 | I look for | I find it in | Rule |
 | --- | --- | --- |
-| An API type, an enum, a Zod schema or a query's options | `packages/api-client/src/generated/`, one folder for each operation tag (`tenant-members/`), and `endpoints.schemas.gen.ts` for the types and enums. `@repo/api-client` exports them | F1, F2, F3 |
+| An API type, an enum, a Zod schema or a query's options | `packages/api-client/src/generated/`, one folder for each operation tag (`tenant-members/`), and `endpoints.schemas.gen.ts` for the types and enums. `@repo/api-client` exports them. Beside the folder, `audit-retention.gen.ts` holds the floor and the hold of the Activity log period, which the API's entitlement generator writes (`AuditRetention`) | F1, F2, F3 |
 | The one `fetch` of the client | `packages/api-client/src/mutator.ts` | F1 |
 | What a screen does with an error answer | `packages/api-client/src/problem-details.ts`; a failed call's code and reference in `problem.ts` (`problemOf`) | F4 |
 | The response headers an operation declares | `packages/api-client/src/generated/operations.gen.ts`, read through `declaredResponseHeaders` | F6 |

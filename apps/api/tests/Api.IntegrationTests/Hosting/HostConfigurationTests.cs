@@ -55,6 +55,7 @@ public sealed class HostConfigurationTests(Database database)
         { "Notifications:Resend:Timeout", "-00:00:01" },
         { "Notifications:Resend:FromAddress", "App <no-reply@app.test>" },
         { "Notifications:Resend:FromAddress", "not an email" },
+        { "Audit:Retention:Days", "29" },
         { "Host:ShutdownTimeout", "00:00:00" },
         { "Host:ManagementPort", "0" },
         { "Host:ManagementPort", "65536" },

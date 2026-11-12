@@ -21,6 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
+            var retentionStore = new Audit.Infrastructure.Persistence.AuditLogs.RetentionStore(auditDbContext);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
             var entitlementOverrideRemovedEvent = (ControlPlane.Contracts.Plans.EntitlementOverrideRemovedEvent)context.Envelope.Message;
@@ -41,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordTenantEntitlementOverrideRemoved.RecordTenantEntitlementOverrideRemovedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Plans.RecordTenantEntitlementOverrideRemoved.RecordTenantEntitlementOverrideRemovedHandler.HandleAsync(entitlementOverrideRemovedEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Plans.RecordTenantEntitlementOverrideRemoved.RecordTenantEntitlementOverrideRemovedHandler.HandleAsync(entitlementOverrideRemovedEvent, auditLog, retentionStore, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

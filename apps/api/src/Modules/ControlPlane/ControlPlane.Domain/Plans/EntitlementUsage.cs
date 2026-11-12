@@ -8,12 +8,13 @@ internal sealed record EntitlementUsage(int CustomRoles, int Members, int Pendin
 {
     /// <summary>
     /// The count of the key: what a limit counts, and, for a feature, what the tenant has that uses it. A feature is in use while the
-    /// count is more than 0.
+    /// count is more than 0. The Activity log period counts nothing, so it is never over (E4).
     /// </summary>
     public int CountOf(string key) => key switch
     {
         FeatureKeys.RolesCustom or LimitKeys.RolesCustomMax => CustomRoles,
         LimitKeys.MembersMax => Members + PendingInvitations,
+        LimitKeys.AuditRetentionDays => 0,
         _ => throw new ArgumentException("The key is not on the code's list.", nameof(key)),
     };
 }

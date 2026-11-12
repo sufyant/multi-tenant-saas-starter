@@ -7,6 +7,8 @@ namespace ControlPlane.Contracts.Plans;
 /// tenant's id travels in the message's envelope. It names both plans as they were at that moment.
 /// </summary>
 /// <param name="ChangedBy">The user id of the system admin who changed the plan.</param>
+/// <param name="RetentionShortened">The Activity log period that got shorter with the plan, none when it did not (K14). None in an event of the
+/// version before step 37c.</param>
 [MessageName("tenant-plan-changed")]
 public sealed record TenantPlanChangedEvent(
     Guid EventId,
@@ -17,4 +19,5 @@ public sealed record TenantPlanChangedEvent(
     Guid OldPlanId,
     string OldPlanName,
     Guid NewPlanId,
-    string NewPlanName);
+    string NewPlanName,
+    AuditRetentionShortening? RetentionShortened = null);

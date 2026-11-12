@@ -17,6 +17,9 @@ internal static class TenantTables
                 INSERT INTO audit.entries (id, occurred_at, actor_kind, actor_id, kind, operation, target_kind, target_id, tenant_id)
                 VALUES (gen_random_uuid(), now(), 'User', gen_random_uuid(), 'Command', 'Isolation', 'Tenant', '{tenant}', '{tenant}')
                 """),
+        ["audit.tenant_retentions"] = new(
+            ApplicationMayUpdate: true,
+            tenant => $"INSERT INTO audit.tenant_retentions (tenant_id, days) VALUES ('{tenant}', 365)"),
         ["control_plane.invitations"] = new(ApplicationMayUpdate: true, tenant => InvitationRow(tenant, MemberRole)),
         ["control_plane.memberships"] = new(ApplicationMayUpdate: true, tenant => MembershipRow(tenant, MemberRole)),
         ["control_plane.role_permissions"] = new(

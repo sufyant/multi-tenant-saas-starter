@@ -15,13 +15,13 @@ public interface IAuditLog
     /// Writes the entries of one event, unless they are stored already. An event may arrive twice; its id is each entry's id. When
     /// the event gives a tenant's entry, that entry decides: both are written in one transaction, and a transaction that declares
     /// a tenant cannot read the platform's log (R11). Should two copies race, the second fails on the entry's key, and its retry
-    /// finds the entries stored.
+    /// finds the entries stored. Answers whether it wrote them, so a copy of the event does nothing more (K14).
     /// </summary>
-    internal Task RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken);
+    internal Task<bool> RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Deletes every entry of the active tenant's log, for the tenant purge, through the one function that may delete entries (R14). No
-    /// other code deletes or changes an entry (K3).
+    /// Deletes every entry of the active tenant's log and its row of the retention, for the tenant purge, through the one function that
+    /// deletes a whole log (R14). Only the retention's functions delete entries besides it, and no code changes one (K3, R19).
     /// </summary>
     internal Task PurgeTenantEntriesAsync(CancellationToken cancellationToken);
 

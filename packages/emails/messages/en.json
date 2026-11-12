@@ -186,6 +186,7 @@
       "not_set": "not set"
     },
     "entitlementKey": {
+      "audit.retention.days": "Activity log days",
       "members.max": "Members limit",
       "roles.custom": "Custom roles",
       "roles.custom.max": "Custom roles limit"

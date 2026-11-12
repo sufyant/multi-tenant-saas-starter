@@ -9,7 +9,8 @@ using Wolverine;
 namespace ControlPlane.Application.Tenants.ChangeTenantPlan;
 
 // K6a: the tenant row is locked first, so a limit that a tenant command checks under the same lock sees the plan before or after the
-// change, never between. The command sets a state (I1): the plan the tenant is on announces nothing. Rejections come first (W7).
+// change, never between. The command sets a state (I1): the plan the tenant is on announces nothing. Rejections come first (W7). The
+// event names a shorter Activity log period, from the effective values before and after the change (K14).
 public static class ChangeTenantPlanHandler
 {
     public static async Task<(Result<TenantPlanView>, OutgoingMessages)> HandleAsync(
@@ -40,6 +41,8 @@ public static class ChangeTenantPlanHandler
         }
 
         var now = time.GetUtcNow();
+        var before = await queries.FindTenantPlanAsync(now, cancellationToken)
+            ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         await tenants.SaveChangesAsync(cancellationToken);
         var view = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
@@ -50,6 +53,7 @@ public static class ChangeTenantPlanHandler
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
-        return (view, [new TenantPlanChangedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor, oldPlan.Id, oldPlan.Name, plan.Id, plan.Name)]);
+        return (view, [new TenantPlanChangedEvent(
+            Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor, oldPlan.Id, oldPlan.Name, plan.Id, plan.Name, RetentionShortenings.Between(before, view, now))]);
     }
 }

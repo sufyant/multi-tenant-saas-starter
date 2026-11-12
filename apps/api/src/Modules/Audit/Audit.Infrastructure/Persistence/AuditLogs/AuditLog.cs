@@ -9,7 +9,7 @@ namespace Audit.Infrastructure.Persistence.AuditLogs;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class AuditLog(AuditDbContext audit) : IAuditLog
 {
-    async Task IAuditLog.RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken)
+    async Task<bool> IAuditLog.RecordAsync(PlatformAuditEntry? platform, TenantAuditEntry? tenant, CancellationToken cancellationToken)
     {
         // An event that arrives again has the same moment and id, so the lookup reads the key (R18).
         var stored = tenant is not null
@@ -17,7 +17,7 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
             : await audit.PlatformEntries.AnyAsync(entry => entry.OccurredAt == platform!.OccurredAt && entry.Id == platform.Id, cancellationToken);
         if (stored)
         {
-            return;
+            return false;
         }
 
         if (platform is not null)
@@ -31,13 +31,19 @@ public sealed class AuditLog(AuditDbContext audit) : IAuditLog
         }
 
         await audit.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
-    // R14: the application may only execute the function, which deletes the entries of the tenant the transaction declares.
+    // R14: the application may only execute the function, which deletes the entries of the tenant the transaction declares. The row of the
+    // retention is the tenant's state, which the application may delete, and row level security keeps the deletion to the tenant (K14). The
+    // purge locks the row first, as every writer of it does (K6o), so a step of the retention that waits for the purge then finds no entry.
     async Task IAuditLog.PurgeTenantEntriesAsync(CancellationToken cancellationToken)
     {
         _ = audit.MessageTenantId ?? throw new InvalidOperationException("A tenant's log is purged inside the tenant.");
+        await audit.Database.ExecuteSqlAsync($"INSERT INTO audit.tenant_retentions (days) VALUES (NULL) ON CONFLICT (tenant_id) DO NOTHING", cancellationToken);
+        await audit.Database.ExecuteSqlAsync($"SELECT 1 FROM audit.tenant_retentions FOR UPDATE", cancellationToken);
         await audit.Database.ExecuteSqlAsync($"SELECT audit.purge_tenant_entries()", cancellationToken);
+        await audit.Retentions.ExecuteDeleteAsync(cancellationToken);
     }
 
     async Task<IReadOnlyList<AuditEntry>> IAuditLog.ListTenantEntriesAsync(CursorRequest page, CancellationToken cancellationToken) =>
