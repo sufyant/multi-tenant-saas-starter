@@ -43,7 +43,13 @@ vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
     user: { primaryEmailAddress: { emailAddress: "ali@northwind.io" } },
   }),
-  useClerk: () => ({ signOut: clerk.signOut }),
+  // clerk-js as loaded: useFreshRouter waits for it before a navigation, and asks no session for a token.
+  useClerk: () => ({
+    signOut: clerk.signOut,
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: null,
+  }),
   useSignUp: () => ({ signUp: clerk.signUp }),
   useSignIn: () => ({
     signIn: { status: "needs_identifier" },

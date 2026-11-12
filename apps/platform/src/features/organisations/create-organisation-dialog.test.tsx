@@ -35,6 +35,14 @@ import { OrganisationsPage } from "./organisations-page";
 
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// clerk-js as loaded: useFreshRouter waits for it before a navigation, and asks no session for a token.
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: null,
+  }),
+}));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));

@@ -39,6 +39,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/plans",
 }));
+// clerk-js as loaded: useFreshRouter waits for it before a navigation, and asks no session for a token.
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: null,
+  }),
+}));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));

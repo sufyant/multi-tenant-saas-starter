@@ -28,6 +28,7 @@ import { buttonVariants } from "@repo/ui/components/ui/button";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { Input as InputBase } from "@repo/ui/components/ui/input";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -266,7 +267,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
   const text = useEntitlementText();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const { key, renew } = useIntentKey();
   const markHint = useId();
   const plans = useQuery(getListPlansQueryOptions(plansQuery));
@@ -308,7 +309,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
       description: description || undefined,
     });
     // A new plan opens on its own page (6.12); a saved plan stays on screen in its saved state (6.08).
-    if (created) router.push(planPage(saved.id));
+    if (created) void router.push(planPage(saved.id));
     else
       form.reset({
         name: saved.name,
