@@ -13,15 +13,15 @@ public sealed class AuditRetentionTests
     public void ReadTheGrace_TheHold_Is30Days() => AuditRetention.Grace.ShouldBe(30);
 
     [Fact]
-    public void ShorteningOf_UnlimitedTo365Days_IsFromNoLimitTo365() =>
+    public void ShorteningOf_FromUnlimitedToAYear_IsFromNoLimitToAYear() =>
         AuditRetention.ShorteningOf(EntitlementValue.Unlimited, EntitlementValue.Limit(365)).ShouldBe((null, 365));
 
     [Fact]
-    public void ShorteningOf_365To90Days_IsFrom365To90() =>
+    public void ShorteningOf_FromAYearToNinetyDays_IsFromAYearToNinetyDays() =>
         AuditRetention.ShorteningOf(EntitlementValue.Limit(365), EntitlementValue.Limit(90)).ShouldBe((365, 90));
 
     [Fact]
-    public void ShorteningOf_90To365Days_IsNone() =>
+    public void ShorteningOf_FromNinetyDaysToAYear_IsNone() =>
         AuditRetention.ShorteningOf(EntitlementValue.Limit(90), EntitlementValue.Limit(365)).ShouldBeNull();
 
     [Fact]
@@ -29,6 +29,6 @@ public sealed class AuditRetentionTests
         AuditRetention.ShorteningOf(EntitlementValue.Limit(365), EntitlementValue.Limit(365)).ShouldBeNull();
 
     [Fact]
-    public void ShorteningOf_365DaysToUnlimited_IsNone() =>
+    public void ShorteningOf_FromAYearToUnlimited_IsNone() =>
         AuditRetention.ShorteningOf(EntitlementValue.Limit(365), EntitlementValue.Unlimited).ShouldBeNull();
 }

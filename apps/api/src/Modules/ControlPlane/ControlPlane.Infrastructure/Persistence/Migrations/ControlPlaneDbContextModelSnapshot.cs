@@ -146,11 +146,13 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("plan_entitlements", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_plan_entitlements_key", "key IN ('members.max', 'roles.custom', 'roles.custom.max')");
+                            t.HasCheckConstraint("ck_plan_entitlements_audit_retention_floor", "key <> 'audit.retention.days' OR unlimited OR maximum >= 30");
+
+                            t.HasCheckConstraint("ck_plan_entitlements_key", "key IN ('audit.retention.days', 'members.max', 'roles.custom', 'roles.custom.max')");
 
                             t.HasCheckConstraint("ck_plan_entitlements_maximum", "maximum >= 0");
 
-                            t.HasCheckConstraint("ck_plan_entitlements_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
+                            t.HasCheckConstraint("ck_plan_entitlements_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('audit.retention.days', 'members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
                         });
                 });
 
@@ -374,11 +376,13 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("entitlement_overrides", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_entitlement_overrides_key", "key IN ('members.max', 'roles.custom', 'roles.custom.max')");
+                            t.HasCheckConstraint("ck_entitlement_overrides_audit_retention_floor", "key <> 'audit.retention.days' OR unlimited OR maximum >= 30");
+
+                            t.HasCheckConstraint("ck_entitlement_overrides_key", "key IN ('audit.retention.days', 'members.max', 'roles.custom', 'roles.custom.max')");
 
                             t.HasCheckConstraint("ck_entitlement_overrides_maximum", "maximum >= 0");
 
-                            t.HasCheckConstraint("ck_entitlement_overrides_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
+                            t.HasCheckConstraint("ck_entitlement_overrides_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('audit.retention.days', 'members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
                         });
                 });
 

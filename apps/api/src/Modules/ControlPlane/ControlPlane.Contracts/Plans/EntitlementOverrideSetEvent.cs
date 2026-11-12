@@ -8,6 +8,8 @@ namespace ControlPlane.Contracts.Plans;
 /// </summary>
 /// <param name="SetBy">The user id of the system admin who set it.</param>
 /// <param name="OldValue">The override's value before, none for a new one.</param>
+/// <param name="RetentionShortened">The Activity log period that got shorter with the override, none when it did not (K14). None in an event
+/// of the version before step 37c.</param>
 [MessageName("entitlement-override-set")]
 public sealed record EntitlementOverrideSetEvent(
     Guid EventId,
@@ -20,4 +22,5 @@ public sealed record EntitlementOverrideSetEvent(
     DateTimeOffset? OldExpiresAt,
     EntitlementValueRecord NewValue,
     DateTimeOffset? NewExpiresAt,
-    string Reason);
+    string Reason,
+    AuditRetentionShortening? RetentionShortened = null);

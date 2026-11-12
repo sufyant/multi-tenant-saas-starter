@@ -644,6 +644,7 @@ export const NotificationLinkResponseKind = {
   TenantMembers: 'tenant_members',
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
+  TenantActivityLog: 'tenant_activity_log',
   PlatformTenant: 'platform_tenant',
   AccountSecurity: 'account_security',
 } as const;
@@ -1046,6 +1047,7 @@ export type LimitKey = typeof LimitKey[keyof typeof LimitKey];
 export const LimitKey = {
   RolesCustomMax: 'roles.custom.max',
   MembersMax: 'members.max',
+  AuditRetentionDays: 'audit.retention.days',
 } as const;
 
 export interface ListFilterOfTenantResponseStatus {

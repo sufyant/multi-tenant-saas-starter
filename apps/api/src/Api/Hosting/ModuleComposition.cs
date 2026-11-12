@@ -21,10 +21,12 @@ internal static class ModuleComposition
         builder.Services.AddNotificationsInfrastructure();
         builder.Services.AddAuditInfrastructure();
 
-        // The hourly retention of the notifications runs where the background work runs (W5), as the idempotency cleanup does (I7).
+        // The hourly retention of the notifications and the daily retention of the audit logs run where the background work runs (W5), as
+        // the idempotency cleanup does (I7).
         if (!OpenApiDocumentBuild.IsRunning && role is HostRole.Worker or HostRole.All)
         {
             builder.Services.AddNotificationRetention();
+            builder.Services.AddAuditRetention();
         }
 
         // The modules that take part in the tenant purge, named to ControlPlane through its contract: the purge waits for a reply of

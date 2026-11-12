@@ -1,4 +1,6 @@
 using Audit.Domain.AuditEntries;
+using Audit.Domain.Retention;
+using ControlPlane.Contracts.Plans;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tenancy;
@@ -8,7 +10,8 @@ namespace Audit.Infrastructure.Persistence;
 
 /// <summary>
 /// The <c>audit</c> schema: each tenant's log, a table with a tenant column under row level security, and the platform's log, a table
-/// without one, which only a transaction that declares neither a tenant nor a user may read (K3, R6, R11).
+/// without one, which only a transaction that declares neither a tenant nor a user may read (K3, R6, R11); and each tenant's row of the
+/// retention, under row level security (K14).
 /// </summary>
 /// <remarks>Public (W9); its sets are internal to the module.</remarks>
 public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMessageContext? messaging = null)
@@ -19,6 +22,8 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
     internal DbSet<TenantAuditEntry> Entries => Set<TenantAuditEntry>();
 
     internal DbSet<PlatformAuditEntry> PlatformEntries => Set<PlatformAuditEntry>();
+
+    internal DbSet<TenantRetention> Retentions => Set<TenantRetention>();
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -41,6 +46,19 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, IMe
             MapEntry(entry);
             // K5: the tenant filter of the platform's log reads the entries about one target, in the order of the log.
             entry.HasIndex(e => new { e.TargetKind, e.TargetId, e.OccurredAt, e.Id });
+        });
+
+        // K14: one row for each tenant, keyed by the tenant column, which TenantDbContext gives every tenant entity. R15: a period is none
+        // or at least the floor, and a hold's start comes only with its end.
+        modelBuilder.Entity<TenantRetention>(retention =>
+        {
+            retention.ToTable("tenant_retentions", table =>
+            {
+                table.HasCheckConstraint("ck_tenant_retentions_days", $"days IS NULL OR days >= {AuditRetention.Floor}");
+                table.HasCheckConstraint("ck_tenant_retentions_hold", "held_from IS NULL OR held_until IS NOT NULL");
+            });
+            retention.Property<Guid>("TenantId");
+            retention.HasKey("TenantId");
         });
     }
 

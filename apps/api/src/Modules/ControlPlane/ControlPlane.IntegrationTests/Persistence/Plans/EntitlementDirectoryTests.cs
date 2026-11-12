@@ -20,7 +20,7 @@ public sealed class EntitlementDirectoryTests(Database database)
         var found = await FindAsync(tenant);
 
         found.Features.ShouldBe(new Dictionary<string, bool> { ["roles.custom"] = false });
-        found.Limits.ShouldBe(new Dictionary<string, int?> { ["members.max"] = 5, ["roles.custom.max"] = 0 }, ignoreOrder: true);
+        found.Limits.ShouldBe(new Dictionary<string, int?> { ["members.max"] = 5, ["roles.custom.max"] = 0, ["audit.retention.days"] = 365 }, ignoreOrder: true);
     }
 
     [Fact]

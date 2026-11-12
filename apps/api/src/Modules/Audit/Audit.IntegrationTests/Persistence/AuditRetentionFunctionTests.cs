@@ -13,7 +13,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     private const string Before = "now() - interval '3000 days'";
 
     [Fact]
-    public async Task DeleteExpiredEntries_AsTheApplicationInATenant_DeletesOnlyThatTenantsOlderEntries()
+    public async Task ExecuteDeleteExpiredEntries_AsTheApplicationInATenant_DeletesOnlyThatTenantsOlderEntries()
     {
         var tenant = Guid.CreateVersion7();
         var other = Guid.CreateVersion7();
@@ -29,7 +29,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredEntries_ABatch_BoundsTheCount()
+    public async Task ExecuteDeleteExpiredEntries_ABatch_BoundsTheCount()
     {
         var tenant = Guid.CreateVersion7();
         await AddTenantEntriesAsync(tenant, 3, "3001 days");
@@ -41,7 +41,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredEntries_WithoutADeclaredTenant_IsRefusedAndDeletesNothing()
+    public async Task ExecuteDeleteExpiredEntries_WithoutADeclaredTenant_IsRefusedAndDeletesNothing()
     {
         var tenant = Guid.CreateVersion7();
         await AddTenantEntriesAsync(tenant, 1, "3001 days");
@@ -53,7 +53,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredEntries_AMomentInsideTheFloor_IsRefusedAndDeletesNothing()
+    public async Task ExecuteDeleteExpiredEntries_AMomentInsideTheFloor_IsRefusedAndDeletesNothing()
     {
         var tenant = Guid.CreateVersion7();
         await AddTenantEntriesAsync(tenant, 1, "29 days 12 hours");
@@ -65,7 +65,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredPlatformEntries_InATransactionThatDeclaresNothing_DeletesTheOlderEntries()
+    public async Task ExecuteDeleteExpiredPlatformEntries_InATransactionThatDeclaresNothing_DeletesTheOlderEntries()
     {
         var target = Guid.CreateVersion7();
         await AddPlatformEntriesAsync(target, 2, "3001 days");
@@ -77,7 +77,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredPlatformEntries_InATenantsTransaction_IsRefusedAndDeletesNothing()
+    public async Task ExecuteDeleteExpiredPlatformEntries_InATenantsTransaction_IsRefusedAndDeletesNothing()
     {
         var target = Guid.CreateVersion7();
         await AddPlatformEntriesAsync(target, 1, "3001 days");
@@ -89,7 +89,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredPlatformEntries_AsAUser_IsRefusedAndDeletesNothing()
+    public async Task ExecuteDeleteExpiredPlatformEntries_AsAUser_IsRefusedAndDeletesNothing()
     {
         var target = Guid.CreateVersion7();
         await AddPlatformEntriesAsync(target, 1, "3001 days");
@@ -101,7 +101,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     }
 
     [Fact]
-    public async Task DeleteExpiredPlatformEntries_AMomentInsideTheFloor_IsRefusedAndDeletesNothing()
+    public async Task ExecuteDeleteExpiredPlatformEntries_AMomentInsideTheFloor_IsRefusedAndDeletesNothing()
     {
         var target = Guid.CreateVersion7();
         await AddPlatformEntriesAsync(target, 1, "29 days 12 hours");
@@ -140,7 +140,7 @@ public sealed class AuditRetentionFunctionTests(Database database)
     {
         var definition = await database.ScalarAsSuperuserAsync<string>(sql);
 
-        definition.ShouldContain($"'{AuditRetention.Floor} days'");
+        definition.ShouldNotBeNull().ShouldContain($"'{AuditRetention.Floor} days'");
     }
 
     private Task<object?> AddTenantEntriesAsync(Guid tenantId, int count, string age) =>

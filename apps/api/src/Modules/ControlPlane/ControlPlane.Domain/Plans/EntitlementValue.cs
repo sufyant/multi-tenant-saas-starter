@@ -54,13 +54,13 @@ internal sealed record EntitlementValue
         };
 
     /// <summary>
-    /// The value for the key, when the key is on the code's list and the value has the key's kind; else 400
-    /// <c>plan.entitlement_invalid</c>, with the key.
+    /// The value for the key, when the key is on the code's list, the value has the key's kind, and an Activity log period is at least
+    /// <see cref="AuditRetention.Floor"/> days or unlimited; else 400 <c>plan.entitlement_invalid</c>, with the key.
     /// </summary>
     public static Result<EntitlementValue> For(string key, EntitlementValue value) =>
-        EntitlementKeys.KindOf(key) == value.Kind
+        EntitlementKeys.KindOf(key) == value.Kind && !(key == LimitKeys.AuditRetentionDays && value.Maximum < AuditRetention.Floor)
             ? value
-            : Error.Validation(ControlPlaneErrorCodes.PlanEntitlementInvalid, "The key is not on the list, or the value is not of the key's kind.") with
+            : Error.Validation(ControlPlaneErrorCodes.PlanEntitlementInvalid, "The key is not on the list, the value is not of the key's kind, or a period is under its floor.") with
             {
                 Entitlement = key,
             };

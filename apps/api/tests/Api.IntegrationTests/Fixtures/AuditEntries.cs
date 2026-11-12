@@ -74,5 +74,15 @@ internal sealed class AuditEntries(Database database)
         return id;
     }
 
+    // K14: the tenant's hold after a command that shortened the Activity log period: "days|no older bound|held_until is the moment of
+    // the command's platform entry plus 30 days". A tenant's first row holds every entry, so it has no older bound.
+    public Task<string?> RetentionHoldAsync(Guid tenantId, string operation) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT concat_ws('|', days, held_from IS NULL, held_until = (
+                SELECT occurred_at + interval '30 days' FROM audit.platform_entries WHERE target_id = '{tenantId}' AND operation = '{operation}'))
+            FROM audit.tenant_retentions WHERE tenant_id = '{tenantId}'
+            """);
+
     private static string Text(object? value) => value is null ? "NULL" : $"'{value}'";
 }

@@ -55,6 +55,7 @@ export const ListNotificationsResponse = zod.object({
   TenantMembers: 'tenant_members',
   TenantRoles: 'tenant_roles',
   TenantSettings: 'tenant_settings',
+  TenantActivityLog: 'tenant_activity_log',
   PlatformTenant: 'platform_tenant',
   AccountSecurity: 'account_security',
 }).describe('Where a notification leads, which the web turns into a URL.'),

@@ -22,6 +22,10 @@ public enum NotificationLinkResponseKind
     [JsonStringEnumMemberName("tenant_settings")]
     TenantSettings,
 
+    /// <summary>The tenant's Activity log.</summary>
+    [JsonStringEnumMemberName("tenant_activity_log")]
+    TenantActivityLog,
+
     /// <summary>The tenant's page in the platform.</summary>
     [JsonStringEnumMemberName("platform_tenant")]
     PlatformTenant,

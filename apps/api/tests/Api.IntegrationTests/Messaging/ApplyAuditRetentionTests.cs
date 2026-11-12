@@ -1,6 +1,7 @@
 using System.Globalization;
 using Audit.Application.AuditLogs.ApplyAuditRetention;
 using Audit.Application.AuditLogs.ApplyTenantAuditRetention;
+using Audit.Application.AuditLogs.DeleteExpiredEntries;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -166,6 +167,7 @@ public sealed class ApplyAuditRetentionTests(Database database) : IAsyncLifetime
     public async Task ApplyAuditRetention_APurgingTenant_WritesNoRow()
     {
         var tenant = await _testData.AddTenantAsync(status: "Purging");
+        await AddEntriesAsync(tenant.Id, 1, days: 10);
 
         await ApplyAsync();
 
@@ -177,6 +179,7 @@ public sealed class ApplyAuditRetentionTests(Database database) : IAsyncLifetime
     public async Task ApplyTenantAuditRetention_ATenantPurgedSinceTheList_WritesNoRow()
     {
         var tenant = await _testData.AddTenantRowAsync(status: "Purged");
+        await AddEntriesAsync(tenant.Id, 1, days: 10);
 
         await _api.WaitingForMessagesAsync(async () =>
         {
@@ -187,6 +190,53 @@ public sealed class ApplyAuditRetentionTests(Database database) : IAsyncLifetime
         });
 
         (await RowAsync(tenant.Id)).ShouldBeNull();
+    }
+
+    // A purge between the two steps: the purge deleted every entry and the row, so the second step finds no entry and keeps no row.
+    [Fact]
+    public async Task DeleteExpiredEntries_ATenantPurgedBetweenTheSteps_KeepsNoRow()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        await AddRowAsync(tenant.Id, "365", "NULL", "NULL");
+
+        await _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>()
+                .InvokeForTenantAsync(tenant.Id.ToString(), new DeleteExpiredEntriesCommand(tenant.Id, 90, Now, 0), TestContext.Current.CancellationToken);
+            return 0;
+        });
+
+        (await RowAsync(tenant.Id)).ShouldBeNull();
+    }
+
+    // The maintainer's decision of 2026-11-12: a second step older than a minute reads the period again, because a lengthening since the
+    // first step would keep entries that the old period deletes. Here the plan keeps 730 days, and the old message still says 90.
+    [Fact]
+    public async Task DeleteExpiredEntries_AMessageOlderThanAMinute_ReadsThePeriodAgainAndKeepsWhatItKeeps()
+    {
+        var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new() { [Key] = 730 }));
+        await AddRowAsync(tenant.Id, "90", "NULL", "NULL");
+        await AddEntriesAsync(tenant.Id, 1, days: 100);
+
+        await DeleteExpiredEntriesAsync(new DeleteExpiredEntriesCommand(tenant.Id, 90, Now.AddMinutes(-2), 0));
+
+        (await EntriesAsync(tenant.Id)).ShouldBe(1);
+        (await RowAsync(tenant.Id)).ShouldBe("730|-|-");
+    }
+
+    // After three readings in one run, a message that is still old skips the tenant until the next run: a day late keeps entries longer.
+    [Fact]
+    public async Task DeleteExpiredEntries_StillOldAfterThreeReadings_SkipsTheTenantUntilTheNextRun()
+    {
+        var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new() { [Key] = 730 }));
+        await AddRowAsync(tenant.Id, "90", "NULL", "NULL");
+        await AddEntriesAsync(tenant.Id, 1, days: 100);
+
+        await DeleteExpiredEntriesAsync(new DeleteExpiredEntriesCommand(tenant.Id, 90, Now.AddMinutes(-2), 3));
+
+        (await EntriesAsync(tenant.Id)).ShouldBe(1);
+        (await RowAsync(tenant.Id)).ShouldBe("90|-|-");
     }
 
     // K15: the platform's log follows Audit:Retention:Days, 100 days here, in batches of one transaction each.
@@ -203,8 +253,17 @@ public sealed class ApplyAuditRetentionTests(Database database) : IAsyncLifetime
 
     private static string Text(DateTimeOffset moment) => moment.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
-    private Task ApplyAsync() =>
-        _api.WaitingForMessagesAsync(async () =>
+    private async Task DeleteExpiredEntriesAsync(DeleteExpiredEntriesCommand command) =>
+        await _api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = _api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>()
+                .InvokeForTenantAsync(command.TenantId.ToString(), command, TestContext.Current.CancellationToken);
+            return 0;
+        });
+
+    private async Task ApplyAsync() =>
+        await _api.WaitingForMessagesAsync(async () =>
         {
             using var scope = _api.Services.CreateScope();
             await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeAsync(new ApplyAuditRetentionCommand(), TestContext.Current.CancellationToken);

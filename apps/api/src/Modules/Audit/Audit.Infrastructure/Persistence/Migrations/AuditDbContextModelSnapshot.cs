@@ -18,7 +18,7 @@ namespace Audit.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("audit")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -160,6 +160,37 @@ namespace Audit.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_entries_kind", "kind IN ('Command')");
 
                             t.HasCheckConstraint("ck_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role', 'Plan')");
+                        });
+                });
+
+            modelBuilder.Entity("Audit.Domain.Retention.TenantRetention", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<int?>("Days")
+                        .HasColumnType("integer")
+                        .HasColumnName("days");
+
+                    b.Property<DateTimeOffset?>("HeldFrom")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("held_from");
+
+                    b.Property<DateTimeOffset?>("HeldUntil")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("held_until");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_tenant_retentions");
+
+                    b.ToTable("tenant_retentions", "audit", t =>
+                        {
+                            t.HasCheckConstraint("ck_tenant_retentions_days", "days IS NULL OR days >= 30");
+
+                            t.HasCheckConstraint("ck_tenant_retentions_hold", "held_from IS NULL OR held_until IS NOT NULL");
                         });
                 });
 #pragma warning restore 612, 618

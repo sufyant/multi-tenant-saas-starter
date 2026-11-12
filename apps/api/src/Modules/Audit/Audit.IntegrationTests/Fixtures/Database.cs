@@ -96,6 +96,7 @@ public sealed class Database : IAsyncLifetime
         return changed;
     }
 
+    // The same, for a scalar; the transaction commits, so a function that deletes keeps its deletion.
     public async Task<T?> ScalarInTenantAsync<T>(Guid tenantId, string sql)
     {
         await using var connection = new NpgsqlConnection(ApplicationConnectionString);
@@ -104,6 +105,7 @@ public sealed class Database : IAsyncLifetime
         await DeclareAsync(connection, transaction, "app.tenant_id", tenantId);
         await using var command = new NpgsqlCommand(sql, connection, transaction);
         var value = await command.ExecuteScalarAsync();
+        await transaction.CommitAsync();
 
         return value is null or DBNull ? default : (T)value;
     }

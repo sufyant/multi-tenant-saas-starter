@@ -25,6 +25,29 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    [Fact]
+    public async Task ChangeTenantPlan_ToAShorterPeriod_StartsTheHoldAtTheChangesMoment()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        var plan = await _testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 });
+
+        (await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, plan))).EnsureSuccessStatusCode();
+
+        (await new AuditEntries(database).RetentionHoldAsync(tenant.Id, "tenant.plan_changed")).ShouldBe("90|t|t");
+    }
+
+    [Fact]
+    public async Task ChangeTenantPlan_ToALongerPeriod_WritesNoRow()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 }));
+
+        (await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Pro))).EnsureSuccessStatusCode();
+
+        (await new AuditEntries(database).RetentionHoldAsync(tenant.Id, "tenant.plan_changed")).ShouldBeNull();
+    }
+
     // A Pro tenant with a custom role moves to Free: its member keeps the role and its permissions, a new custom role is refused, deleting
     // stays allowed.
     [Fact]

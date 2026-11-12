@@ -1,3 +1,4 @@
+export { AuditRetention } from "./audit-retention.gen";
 export { type BffOptions, createBff } from "./bff";
 export {
   isServerUnreachable,

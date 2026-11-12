@@ -8,7 +8,8 @@ using Wolverine;
 namespace ControlPlane.Application.Tenants.RemoveEntitlementOverride;
 
 // K6a: the tenant row is locked first, as for setting an override. An override removed before is not found. Rejections come first (W7).
-// The event names the plan's value, which applies again, read under the same lock: all fields empty when the plan has none.
+// The event names the plan's value, which applies again, read under the same lock: all fields empty when the plan has none. It also names
+// a shorter Activity log period, from the effective values before and after the removal (K14).
 public static class RemoveEntitlementOverrideHandler
 {
     public static async Task<(Result, OutgoingMessages)> HandleAsync(
@@ -30,19 +31,30 @@ public static class RemoveEntitlementOverrideHandler
             return (Result.Failure(removed.Error), []);
         }
 
+        var now = time.GetUtcNow();
+        var before = await queries.FindTenantPlanAsync(now, cancellationToken)
+            ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         var entry = removed.Value;
         tenants.RemoveOverride(entry);
         await tenants.SaveChangesAsync(cancellationToken);
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
-        var now = time.GetUtcNow();
         var plan = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         var planValue = plan.Entitlements.Single(entitlement => entitlement.Key == entry.Key).PlanValue is { } value
             ? new EntitlementValueRecord(value.Enabled, value.Maximum, value.Unlimited)
             : new EntitlementValueRecord(null, null, Unlimited: false);
         return (Result.Success(), [new EntitlementOverrideRemovedEvent(
-            Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor, entry.Key, EntitlementValueView.RecordOf(entry.Value), entry.ExpiresAt, planValue)]);
+            Guid.CreateVersion7(now),
+            now,
+            tenant.Id,
+            tenant.Name,
+            actor,
+            entry.Key,
+            EntitlementValueView.RecordOf(entry.Value),
+            entry.ExpiresAt,
+            planValue,
+            RetentionShortenings.Between(before, plan, now))]);
     }
 }

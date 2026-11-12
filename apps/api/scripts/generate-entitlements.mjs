@@ -1,4 +1,6 @@
-// Writes the entitlement keys of ControlPlane.Contracts from their one source, ControlPlane.Domain's FeatureKeys and LimitKeys (D1).
+// Writes the entitlement keys of ControlPlane.Contracts from their one source, ControlPlane.Domain's FeatureKeys and LimitKeys, and the
+// numbers of the Activity log period from AuditRetention (D1), also for the TypeScript of packages/api-client, which the platform's plan
+// editor and override dialogs read.
 // Contracts never references Domain (section 2), so it reads generated copies, and CI fails when a copy differs from what this script
 // writes (scripts/ci/check-generated.sh). Run it from apps/api: node scripts/generate-entitlements.mjs
 import { readFileSync, writeFileSync } from "node:fs";
@@ -20,10 +22,24 @@ const kinds = [
     name: "Limits",
     summary: ["/// The limit keys of the entitlement list (docs/flows/plans-and-entitlements.md)."],
   },
+  {
+    source: "ControlPlane.Domain/Plans/AuditRetention.cs",
+    output: "ControlPlane.Contracts/Plans/AuditRetention.g.cs",
+    name: "AuditRetention",
+    type: "int",
+    typescript: "../../packages/api-client/src/audit-retention.gen.ts",
+    summary: [
+      "/// The days of the tenant's Activity log period: Floor, the shortest period, which the deletion also keeps, and Grace, the hold",
+      "/// of a shorter period (apps/api/docs/ARCHITECTURE.md, K14 and R19).",
+    ],
+  },
 ];
 
 for (const kind of kinds) {
-  const constants = [...readFileSync(`${folder}/${kind.source}`, "utf8").matchAll(/^ {4}public const string (\w+) = ("[^"]+");$/gm)];
+  const type = kind.type ?? "string";
+  const value = type === "string" ? '"[^"]+"' : "\\d+";
+  const pattern = new RegExp(`^ {4}public const ${type} (\\w+) = (${value});$`, "gm");
+  const constants = [...readFileSync(`${folder}/${kind.source}`, "utf8").matchAll(pattern)];
   if (constants.length === 0) {
     throw new Error(`${kind.source} declares no key.`);
   }
@@ -38,10 +54,28 @@ for (const kind of kinds) {
     "/// </summary>",
     `public static class ${kind.name}`,
     "{",
-    constants.map(([, name, value]) => `    public const string ${name} = ${value};`).join("\n\n"),
+    constants.map(([, name, value]) => `    public const ${type} ${name} = ${value};`).join("\n\n"),
     "}",
     "",
   ];
 
   writeFileSync(`${folder}/${kind.output}`, lines.join("\n"));
+}
+
+// The numbers of a kind with a TypeScript copy, as one constant object of the same names.
+for (const kind of kinds.filter((each) => each.typescript)) {
+  const pattern = new RegExp("^ {4}public const int (\\w+) = (\\d+);$", "gm");
+  const constants = [...readFileSync(`${folder}/${kind.source}`, "utf8").matchAll(pattern)];
+  const lines = [
+    `// Written by apps/api/scripts/generate-entitlements.mjs from apps/api/src/Modules/ControlPlane/${kind.source}. Do not edit it: run \`pnpm generate\`.`,
+    "",
+    "/**",
+    ...kind.summary.map((line) => line.replace(/^\/\/\//, " *")),
+    " */",
+    `export const ${kind.name} = {`,
+    ...constants.map(([, name, value]) => `  ${name}: ${value},`),
+    "} as const;",
+    "",
+  ];
+  writeFileSync(kind.typescript, lines.join("\n"));
 }

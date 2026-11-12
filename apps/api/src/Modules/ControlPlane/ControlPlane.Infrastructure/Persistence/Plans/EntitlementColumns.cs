@@ -7,7 +7,8 @@ namespace ControlPlane.Infrastructure.Persistence.Plans;
 
 // R15: a row of a value holds a key of the code's list and one value of the key's kind: a feature's state, or a limit's number of 0 or
 // more, or unlimited, which is a column of its own, never a number. The lists come from the code, so a new key changes the model, and
-// PendingModelChangesTests asks for its migration. A plan's values and an override share the columns and the rules.
+// PendingModelChangesTests asks for its migration. A plan's values and an override share the columns and the rules. The Activity log
+// period is unlimited or at least its floor (E1, R19).
 internal static class EntitlementColumns
 {
     public const int KeyMaxLength = 100;
@@ -22,5 +23,8 @@ internal static class EntitlementColumns
             $"({CheckConstraints.OneOf("key", EntitlementKeys.Features)} AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) "
             + $"OR ({CheckConstraints.OneOf("key", EntitlementKeys.Limits)} AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)"));
         row.ToTable(builder => builder.HasCheckConstraint($"ck_{table}_maximum", "maximum >= 0"));
+        row.ToTable(builder => builder.HasCheckConstraint(
+            $"ck_{table}_audit_retention_floor",
+            $"key <> '{LimitKeys.AuditRetentionDays}' OR unlimited OR maximum >= {AuditRetention.Floor}"));
     }
 }

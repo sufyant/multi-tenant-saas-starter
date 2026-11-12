@@ -26,6 +26,17 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Fact]
+    public async Task UpdatePlan_ARetentionUnderTheFloor_IsInvalidWithTheKey()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var plan = await _testData.AddPlanAsync(new() { ["audit.retention.days"] = 365 });
+
+        var updated = await admin.UpdatePlanAsync(plan, $"Plan {Guid.NewGuid():N}", new Dictionary<string, object> { ["audit.retention.days"] = PlanRequests.Max(29) });
+
+        (updated.StatusCode, await PlanRequests.ProblemOfAsync(updated)).ShouldBe((HttpStatusCode.BadRequest, ("plan.entitlement_invalid", "audit.retention.days")));
+    }
+
+    [Fact]
     public async Task UpdatePlan_NewValues_KeepsExactlyThemAndTheTenantsOnThePlanSeeThemAtOnce()
     {
         var admin = await AdminAsync();
