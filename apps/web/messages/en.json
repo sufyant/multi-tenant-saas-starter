@@ -550,6 +550,7 @@
     "rolesCustomOff": "Your organisation’s plan doesn’t include custom roles.",
     "rolesLimit": "Your organisation’s plan allows {limit, plural, one {# custom role} other {# custom roles}}.",
     "rolesLimitAction": "Delete one to create another.",
+    "rolesNone": "Your organisation’s plan allows no custom roles.",
     "rolesCount": "{count} of {limit, plural, one {# custom role} other {# custom roles}}",
     "rolesOver": "You have {count, plural, one {# custom role} other {# custom roles}}; your plan allows {limit}.",
     "rolesOverText": "Delete roles to create new ones. Every role and its members keep working.",

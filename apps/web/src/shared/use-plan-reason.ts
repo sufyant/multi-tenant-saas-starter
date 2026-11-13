@@ -30,12 +30,13 @@ export function usePlanReason(): {
     const neutral = { title: t("errors.plan.limit_reached"), text: null };
     if (key === LimitKey.RolesCustomMax) {
       const { limit } = plan.limit(key);
-      return limit === null
-        ? neutral
-        : {
-            title: t("plans.rolesLimit", { limit }),
-            text: t("plans.rolesLimitAction"),
-          };
+      if (limit === null) return neutral;
+      // A limit of 0 leaves nothing to delete to make room.
+      if (limit === 0) return { title: t("plans.rolesNone"), text: null };
+      return {
+        title: t("plans.rolesLimit", { limit }),
+        text: t("plans.rolesLimitAction"),
+      };
     }
     if (key === LimitKey.MembersMax) {
       const { limit } = plan.limit(key);
