@@ -653,6 +653,25 @@ describe("The Activity log's period", () => {
     ).toBeInTheDocument();
   });
 
+  // No frame draws a failed period: the page shows the log without the sentence and the Banner.
+  it("ActivityPage_PeriodFails_ShowsTheLogWithoutPeriodOrBanner", async () => {
+    server.use(
+      http.get("*/v1/tenants/:tenantId/audit-log/retention", () =>
+        problem(500, ErrorCode.ServerError),
+      ),
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    expect(
+      await findSentence("Khalid Al-Harbi joined the organisation."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Entries are kept/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   // The export's permission is the log's own (tenant.audit.read): a viewer without it sees neither the Banner nor its Export.
   it("ActivityPage_ViewerWithoutTheExportsPermission_ReadsNoPeriodAndShowsNoExport", async () => {
     const tenants: string[] = [];
