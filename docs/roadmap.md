@@ -11,7 +11,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 36 | Personal pages | done |
 | 37a | The web's organisation pages | done |
 | 37b | The platform's pages | done |
-| 37c | Audit retention | todo |
+| 37c | Audit retention | in progress |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -111,7 +111,7 @@ Status: done.
 
 ## 5. Step 37: Organisation pages
 
-Status: done, but 37c is todo. It has three parts.
+Status: done, but 37c is in progress. It has three parts.
 
 37a, the web's organisation pages:
 
@@ -338,6 +338,7 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 - Web app: the period's sentence under the title of 12.01 to 12.09; two new frames, 12.10, the Banner of a hold with Export, and 12.11, the same in dark.
 - No dark, Arabic or phone frame of these sections draws a plan, an override or the organisation's Activity log beyond those above, so none is added. The Billing frames 10.02, 10.03, 10.06 and 10.09 are step 40's.
 - It waits for nothing.
+- As built: the plan editor has an Activity log area with one row, "Keeps entries": days, Unlimited, and the floor and the hold in its help (6.04 to 6.06, 6.10, 6.13). 6.11 refuses 7 with "Enter 30 days or more." 6.18 lists "Activity log 365 days". 6.19 is the impact dialog of a save from 365 to 90 days, with the count of the organisations it touches. The override dialog 4.16 draws a lower value, with the floor under Value. A new frame, 4.49, draws a longer override with an end date: the expiry that shortens the period. 4.17 removes an override of the key, over a Plan tab that shows it. In a sentence the key is "Activity log" (4.14, 4.15, 4.17), as the frame table of the plan's pull request writes it. The period's sentence is "Entries are kept for 365 days." in 7.01, 7.08 and 12.01 to 12.09. 12.10 and 12.11 draw the Banner with Export CSV, and a note says that a viewer without the export's permission sees no Export. The frames are in English; a note in sections 6 and 12 of the Figma file holds the Turkish and Arabic texts. Done.
 
 37c-backend-1, the deletion:
 
@@ -363,7 +364,7 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 
 37c-frontend-platform, the platform's screens:
 
-- The plan editor's card, its floor and its preview (6.04 to 6.06, 6.10, 6.11, 6.13 without its prices, 6.18, 6.19); the Plan tab's row (4.14); the Change plan dialog's sentence (4.15); the override dialogs (4.16, 4.17); the Activity log's sentence (7.01, 7.08); the Activity sentences of an override of the key.
+- The plan editor's card, its floor and its preview (6.04 to 6.06, 6.10, 6.11, 6.13 without its prices, 6.18, 6.19); the Plan tab's row (4.14); the Change plan dialog's sentence (4.15); the override dialogs (4.16, 4.17, 4.49); the Activity log's sentence (7.01, 7.08); the Activity sentences of an override of the key.
 - 4.45 and 6.13's prices and meters stay step 40's.
 - It waits for 37c-design and 37c-backend-2.
 
