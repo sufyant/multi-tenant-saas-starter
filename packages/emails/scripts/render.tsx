@@ -189,7 +189,7 @@ await write(
 );
 // Each language's title and body of every notification type, its texts without an optional value, the footer of a type of the email, and
 // the words of each closed list:
-// an entitlement key, an entitlement's value and a person the read cannot name.
+// an entitlement key, an entitlement's value, a person the read cannot name, and the forms of a number of days.
 // The API renders a notification from them in the reader's language, in the bell and in the generic email (U2).
 await write(
   "notifications.json",

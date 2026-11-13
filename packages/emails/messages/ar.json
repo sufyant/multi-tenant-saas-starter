@@ -98,7 +98,7 @@
     },
     "tenant.plan_changed": {
       "title": "أصبحت {tenantName} على خطة {newPlanName}",
-      "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة. يحتفظ سجل النشاط الآن بالإدخالات لمدة {retentionDays} يومًا. تُحذف الإدخالات الأقدم من {retentionDays} يومًا في {retentionGoesAt}. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ.",
+      "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة. يحتفظ سجل النشاط الآن بالإدخالات لمدة {retentionDays}. تُحذف الإدخالات الأقدم من {retentionDays} في {retentionGoesAt}. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ.",
       "without": {
         "retentionDays": {
           "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة."
@@ -202,6 +202,14 @@
       "organisation_plan": "خطة المؤسسة",
       "organisations": "المؤسسات",
       "your_account": "حسابك"
+    },
+    "days": {
+      "zero": "# يوم",
+      "one": "يوم واحد",
+      "two": "يومين",
+      "few": "# أيام",
+      "many": "# يومًا",
+      "other": "# يوم"
     }
   }
 }

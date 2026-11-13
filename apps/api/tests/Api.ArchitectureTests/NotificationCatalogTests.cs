@@ -307,7 +307,7 @@ public sealed class NotificationCatalogTests
                 used)
             : [$"{kind.Type}: no text without {optional.Name} in {tag}"]);
         var wordGaps = kind.Values
-            .SelectMany(value => WordsOf(value).Select(word => (value.Kind == NotificationValueKind.Word ? value.Name : ListOf(value.Kind), word)))
+            .SelectMany(value => WordsOf(value, language).Select(word => (value.Kind == NotificationValueKind.Word ? value.Name : ListOf(value.Kind), word)))
             .Where(word => !found.Words(word.Item1).Contains(word.word))
             .Select(word => $"{kind.Type}: no word {word.word} of {word.Item1} in {tag}");
         var footerGaps = kind.Channels.Contains(NotificationChannel.Email) && !found.HasFooter ? [$"{kind.Type}: no footer in {tag}"] : Array.Empty<string>();
@@ -328,10 +328,12 @@ public sealed class NotificationCatalogTests
             : [$"{what}: the texts in {tag} use {string.Join(", ", expected)}? they use {string.Join(", ", actual)}"];
     }
 
-    // The words each value needs in every language: its closed list, the words of an entitlement's value, the name of every key of
-    // ControlPlane's entitlement list, or a person the read cannot name.
-    private static IEnumerable<string> WordsOf(NotificationValue value) => value.Kind switch
+    // The words each value needs in the language: its closed list, the words of an entitlement's value, the name of every key of
+    // ControlPlane's entitlement list, a person the read cannot name, or the form of a number of days for each plural category of the
+    // language.
+    private static IEnumerable<string> WordsOf(NotificationValue value, Language language) => value.Kind switch
     {
+        NotificationValueKind.Days => NotificationText.PluralCategoriesOf(language),
         NotificationValueKind.Word => value.Words ?? [],
         NotificationValueKind.Entitlement => ["unlimited", "on", "off", "not_set"],
         NotificationValueKind.EntitlementKey => OperationsOf(typeof(Features)).Concat(OperationsOf(typeof(Limits))),
@@ -343,6 +345,7 @@ public sealed class NotificationCatalogTests
     {
         NotificationValueKind.Entitlement => NotificationText.EntitlementWords,
         NotificationValueKind.EntitlementKey => NotificationText.EntitlementKeyWords,
+        NotificationValueKind.Days => NotificationText.DaysWords,
         _ => NotificationText.PersonWords,
     };
 

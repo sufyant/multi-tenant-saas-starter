@@ -98,7 +98,7 @@
     },
     "tenant.plan_changed": {
       "title": "{tenantName} artık {newPlanName} planında",
-      "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır. Etkinlik kaydı artık kayıtları {retentionDays} gün saklıyor. {retentionDays} günden eski kayıtlar {retentionGoesAt} tarihinde silinir. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın.",
+      "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır. Etkinlik kaydı artık kayıtları {retentionDays} saklıyor. {retentionDays}den eski kayıtlar {retentionGoesAt} tarihinde silinir. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın.",
       "without": {
         "retentionDays": {
           "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
@@ -202,6 +202,10 @@
       "organisation_plan": "Kuruluş planı",
       "organisations": "Kuruluşlar",
       "your_account": "Hesabınız"
+    },
+    "days": {
+      "one": "# gün",
+      "other": "# gün"
     }
   }
 }

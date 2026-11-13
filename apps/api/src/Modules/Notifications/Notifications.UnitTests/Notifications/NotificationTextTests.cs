@@ -255,7 +255,7 @@ public sealed class NotificationTextTests
     }
 
     // A value of each kind, in the names the catalog gives them: Ada for a person, a built-in role, the first word of a closed list, a key,
-    // a number for an entitlement, a moment for a date, and a name otherwise. Every optional value is there.
+    // a number for an entitlement, a moment for a date, 30 for a number of days, and a name otherwise. Every optional value is there.
     internal static Dictionary<string, string> SampleValues(string type) =>
         NotificationCatalog.Of(type).Values
             .SelectMany(value => value.Kind switch
@@ -266,6 +266,7 @@ public sealed class NotificationTextTests
                 NotificationValueKind.EntitlementKey => [(value.Name, "members.max")],
                 NotificationValueKind.Entitlement => [(value.Name, "50")],
                 NotificationValueKind.Date => [(value.Name, "2026-11-29T12:00:00.0000000+00:00")],
+                NotificationValueKind.Days => [(value.Name, "30")],
                 _ => [(value.Name, value.Name == "tenantName" ? "Acme" : "Pro")],
             })
             .ToDictionary(pair => pair.Item1, pair => pair.Item2);

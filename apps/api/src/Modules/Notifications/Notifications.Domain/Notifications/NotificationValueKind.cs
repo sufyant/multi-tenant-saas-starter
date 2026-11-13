@@ -23,4 +23,9 @@ public enum NotificationValueKind
 
     /// <summary>A moment, stored in ISO 8601, written as a date in the reader's language and time zone.</summary>
     Date,
+
+    /// <summary>
+    /// A number of days, stored as digits, written with its noun in the form of the number's CLDR plural category in the language.
+    /// </summary>
+    Days,
 }
