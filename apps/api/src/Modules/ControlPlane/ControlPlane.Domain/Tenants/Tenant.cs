@@ -233,7 +233,8 @@ internal sealed class Tenant
     /// <summary>
     /// Gives the key this value for this tenant, over its plan's value, until the expiry, if there is one, with the system admin's reason,
     /// kept without the spaces around it. The key is on the code's list, the value has its kind, and an expiry comes after now. An active
-    /// or a suspended tenant only. Answers the override, the existing one changed or a new one, and its value before, if it had one.
+    /// or a suspended tenant only. A limit that depends on a feature needs the feature's effective value on (E1). Answers the override, the
+    /// existing one changed or a new one, and its value before, if it had one.
     /// </summary>
     public Result<OverrideChange> SetOverride(
         EntitlementOverride? existing,
@@ -242,7 +243,8 @@ internal sealed class Tenant
         DateTimeOffset? expiresAt,
         string reason,
         Guid setBy,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        EffectiveEntitlements entitlements)
     {
         var changeable = CheckPlatformChange();
         if (!changeable.IsSuccess)
@@ -261,15 +263,21 @@ internal sealed class Tenant
             return Error.Validation(ControlPlaneErrorCodes.PlanEntitlementInvalid, "An override expires after now.") with { Entitlement = key };
         }
 
+        var old = existing?.ToValue();
+        if (existing is not null && old == new OverrideValue(key, value, expiresAt) && existing.Reason == reason.Trim())
+        {
+            return new OverrideChange(existing, old, Changed: false);
+        }
+
+        // E1: the override it has is no change (I1); setting or changing one of a dependent limit needs the feature on.
+        if (EntitlementKeys.FeatureOf(key) is { } feature && !entitlements.ValueOf(feature).IsOn)
+        {
+            return EntitlementValue.FeatureRequired(key);
+        }
+
         if (existing is null)
         {
             return new OverrideChange(new EntitlementOverride(Id, key, value, expiresAt, reason, setBy, now), null, Changed: true);
-        }
-
-        var old = existing.ToValue();
-        if (old == new OverrideValue(key, value, expiresAt) && existing.Reason == reason.Trim())
-        {
-            return new OverrideChange(existing, old, Changed: false);
         }
 
         existing.Set(value, expiresAt, reason, setBy, now);

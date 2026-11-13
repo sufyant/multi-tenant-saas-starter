@@ -126,6 +126,7 @@
     "plan": {
       "default_required": "There is always one default plan. To change it, make another plan the default first.",
       "entitlement_invalid": "Enter a whole number, 0 or more.",
+      "feature_required": "Turn on the feature of this limit first.",
       "feature_unavailable": "This organisation's plan does not include this feature.",
       "limit_reached": "This organisation has reached a limit of its plan.",
       "name_invalid": "Enter a name.",

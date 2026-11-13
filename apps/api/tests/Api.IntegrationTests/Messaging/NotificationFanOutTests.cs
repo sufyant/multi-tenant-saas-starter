@@ -210,13 +210,14 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
             "keyName=roles.custom, tenantName=Acme Ltd, value=off");
     }
 
-    // The plan's value applies again; a key the plan has no value of is closed, and reads as "not set".
+    // The plan's value applies again; a key the plan has no value of is closed, and reads as "not set". The plan has roles.custom on, so
+    // an override of its limit can be set (E1).
     [Theory]
     [InlineData("members.max", "unlimited")]
     [InlineData("roles.custom.max", "not_set")]
     public async Task NotifyTenantEntitlementOverrideRemoved_TheOverrideGoes_WritesOneForEachOwnerWithThePlansValue(string key, string value)
     {
-        var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new() { ["members.max"] = TestData.Unlimited }));
+        var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new() { ["roles.custom"] = true, ["members.max"] = TestData.Unlimited }));
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var platform = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         await _api.WaitingForMessagesAsync(() => platform.SetOverrideAsync(tenant.Id, key, new { maximum = 5 }));

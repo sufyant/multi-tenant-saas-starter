@@ -45,6 +45,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode PlanEntitlementInvalid = ErrorCode.Declare("plan.entitlement_invalid");
 
+    public static readonly ErrorCode PlanFeatureRequired = ErrorCode.Declare("plan.feature_required");
+
     public static readonly ErrorCode PlanFeatureUnavailable = ErrorCode.Declare("plan.feature_unavailable");
 
     public static readonly ErrorCode PlanLimitReached = ErrorCode.Declare("plan.limit_reached");

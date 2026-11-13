@@ -15,6 +15,15 @@ internal static class EntitlementKeys
 
     public static IReadOnlyList<string> Limits { get; } = [.. ConstantsOf(typeof(LimitKeys))];
 
+    /// <summary>Each limit that depends on a feature, with that feature, read from the limit's <see cref="DependsOnAttribute"/>.</summary>
+    public static IReadOnlyDictionary<string, string> Dependencies { get; } =
+        typeof(LimitKeys).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => field.IsLiteral && field.GetCustomAttribute<DependsOnAttribute>() is not null)
+            .ToFrozenDictionary(field => (string)field.GetRawConstantValue()!, field => field.GetCustomAttribute<DependsOnAttribute>()!.Feature, StringComparer.Ordinal);
+
+    /// <summary>The feature a limit depends on; none for a limit that depends on none, and for any other text.</summary>
+    public static string? FeatureOf(string limit) => Dependencies.GetValueOrDefault(limit);
+
     /// <summary>The kind of a key of the list; none for any other text.</summary>
     public static EntitlementKind? KindOf(string key) => All.TryGetValue(key, out var kind) ? kind : null;
 

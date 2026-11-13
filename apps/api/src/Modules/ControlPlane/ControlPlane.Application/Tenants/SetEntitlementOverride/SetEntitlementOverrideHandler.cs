@@ -8,7 +8,8 @@ using Wolverine;
 namespace ControlPlane.Application.Tenants.SetEntitlementOverride;
 
 // K6a: an override belongs to the tenant (M1), so the tenant row is locked first, and a limit that a tenant command checks under the same
-// lock sees the override before or after it. Setting the value, expiry and reason it has announces nothing (I1). Rejections come first (W7).
+// lock sees the override before or after it. A limit that depends on a feature reads the feature's effective value under the same lock, from
+// the database, as a limit check does (E1, E6). Setting the value, expiry and reason it has announces nothing (I1). Rejections come first (W7).
 // The event names a shorter Activity log period, from the effective values before and after the override (K14).
 public static class SetEntitlementOverrideHandler
 {
@@ -37,7 +38,8 @@ public static class SetEntitlementOverrideHandler
         var before = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         var existing = await tenants.FindOverrideAsync(command.Key, cancellationToken);
-        var set = tenant.SetOverride(existing, command.Key, value.Value, command.ExpiresAt, command.Reason, actor, now);
+        var entitlements = await tenants.FindEntitlementsAsync(tenant, now, cancellationToken);
+        var set = tenant.SetOverride(existing, command.Key, value.Value, command.ExpiresAt, command.Reason, actor, now, entitlements);
         if (!set.IsSuccess)
         {
             return (set.Error, []);

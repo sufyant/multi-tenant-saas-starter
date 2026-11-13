@@ -126,6 +126,7 @@
     "plan": {
       "default_required": "Her zaman bir varsayılan plan vardır. Değiştirmek için önce başka bir planı varsayılan yapın.",
       "entitlement_invalid": "0 veya daha büyük bir tam sayı girin.",
+      "feature_required": "Önce bu sınırın özelliğini açın.",
       "feature_unavailable": "Bu kuruluşun planı bu özelliği içermiyor.",
       "limit_reached": "Bu kuruluş planının bir sınırına ulaştı.",
       "name_invalid": "Bir ad girin.",

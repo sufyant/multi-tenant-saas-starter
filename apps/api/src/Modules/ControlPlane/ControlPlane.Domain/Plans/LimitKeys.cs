@@ -7,6 +7,7 @@ namespace ControlPlane.Domain.Plans;
 internal static class LimitKeys
 {
     /// <summary>How many custom roles the tenant may have. The built-in roles do not count.</summary>
+    [DependsOn(FeatureKeys.RolesCustom)]
     public const string RolesCustomMax = "roles.custom.max";
 
     /// <summary>How many members the tenant may have. Its pending invitations that have not expired count too.</summary>
