@@ -32,7 +32,7 @@ public sealed class DeleteExpiredEntriesTests(Database database)
         var step = InTenant.RunAsync(database.Services, tenantId, scope =>
             DeleteExpiredEntriesHandler.HandleAsync(
                 new DeleteExpiredEntriesCommand(tenantId, 365, TimeProvider.System.GetUtcNow(), 0), scope.GetRequiredService<IRetentionStore>(), TimeProvider.System, Cancellation));
-        await WaitingForALockAsync();
+        await WaitingForALockAsync(purge.ProcessID);
         await RunAsync(purge, purging, "SELECT audit.purge_tenant_entries()");
         await RunAsync(purge, purging, "DELETE FROM audit.tenant_retentions");
         await purging.CommitAsync(Cancellation);
@@ -47,15 +47,16 @@ public sealed class DeleteExpiredEntriesTests(Database database)
         await command.ExecuteNonQueryAsync(Cancellation);
     }
 
-    // The step waits for the purge's lock: a session of the application waits on a lock.
-    private async Task WaitingForALockAsync()
+    // The step waits for the purge's lock: one session waits for a lock that the purge's session holds. The other test classes run at
+    // the same time on the same server, and their writers wait for their own locks, so only the sessions behind the purge count.
+    private async Task WaitingForALockAsync(int purge)
     {
         var waiting = 0L;
         for (var tries = 0; tries < 100 && waiting == 0; tries++)
         {
             await Task.Delay(50, Cancellation);
             waiting = await database.ScalarAsSuperuserAsync<long>(
-                "SELECT count(*) FROM pg_stat_activity WHERE usename = 'api_application' AND wait_event_type = 'Lock'");
+                $"SELECT count(*) FROM pg_stat_activity WHERE {purge} = ANY(pg_blocking_pids(pid))");
         }
 
         waiting.ShouldBe(1);
