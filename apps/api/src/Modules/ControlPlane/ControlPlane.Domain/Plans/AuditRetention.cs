@@ -13,6 +13,9 @@ internal static class AuditRetention
     /// <summary>The hold: when a period gets shorter, the entries that the period before kept stay this long, then go.</summary>
     public const int Grace = 30;
 
+    /// <summary>The period a plan starts with: the plan editor's start for a new plan, and the value the migration gave every plan.</summary>
+    public const int Default = 365;
+
     /// <summary>
     /// How the period changes from one effective value to the next: the old period (none for no limit) and the new one, when the new one
     /// is shorter, so it deletes an entry that the old one kept; none when it is as long or longer. Unlimited keeps every entry.

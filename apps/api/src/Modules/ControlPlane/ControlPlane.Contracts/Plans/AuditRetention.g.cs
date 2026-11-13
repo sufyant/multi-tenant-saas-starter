@@ -3,12 +3,14 @@
 namespace ControlPlane.Contracts.Plans;
 
 /// <summary>
-/// The days of the tenant's Activity log period: Floor, the shortest period, which the deletion also keeps, and Grace, the hold
-/// of a shorter period (apps/api/docs/ARCHITECTURE.md, K14 and R19).
+/// The days of the tenant's Activity log period: Floor, the shortest period, which the deletion also keeps, Grace, the hold
+/// of a shorter period, and Default, the period a new plan starts with (apps/api/docs/ARCHITECTURE.md, K14 and R19).
 /// </summary>
 public static class AuditRetention
 {
     public const int Floor = 30;
 
     public const int Grace = 30;
+
+    public const int Default = 365;
 }

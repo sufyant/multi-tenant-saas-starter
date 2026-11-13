@@ -83,7 +83,7 @@ function detailValues(
   const valueText = (
     key: string,
     value: AuditEntitlementValueResponse | null,
-  ) => text.inSentence(isFeatureKey(key), value);
+  ) => text.inSentence(isFeatureKey(key), value, key);
   switch (details?.operation) {
     case TenantCreatedDetailsResponseOperation.TenantCreated:
       return { onPlan: "yes", plan: planLink(details.plan) };

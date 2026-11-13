@@ -410,13 +410,15 @@
     "changeSeparator": "; ",
     "nameKey": "ad",
     "description": "Kuruluşlardaki, kullanıcılardaki, planlardaki ve sistem yöneticilerindeki değişiklikler.",
+    "period": "Kayıtlar {daysCount} gün saklanır.",
     "loadingOlder": "Eski etkinlikler yükleniyor…",
     "loadedOlder": "{count, plural, one {# kayıt daha yüklendi.} other {# kayıt daha yüklendi.}}"
   },
   "entitlements": {
     "areas": {
       "roles": "Roller",
-      "members": "Üyeler"
+      "members": "Üyeler",
+      "audit": "Etkinlik kaydı"
     },
     "keys": {
       "roles_custom": {
@@ -431,6 +433,15 @@
       "members_max": {
         "name": "Yer sayısı",
         "description": "Üyeler ve süresi dolmamış bekleyen davetler."
+      },
+      "audit_retention_days": {
+        "name": "Etkinlik kaydı",
+        "row": "Kayıtları saklar",
+        "description": "Gün olarak, en az {floor}. Süre kısalınca eski kayıtlar {graceCount} gün daha kalır, sonra silinir.",
+        "days": "{count, plural, one {# gün} other {# gün}}",
+        "unit": "gün",
+        "floor": "En az {floor} gün girin.",
+        "notSet": "Ayarlanmadı: süre sınırı yok"
       }
     },
     "turnsOff": "{key}: {plan} planında kapalı.",
@@ -477,6 +488,7 @@
     "notSaved": "Plan kaydedilmedi",
     "impactTitle": "<bdi>{plan}</bdi> değişiklikleri kaydedilsin mi?",
     "impactText": "Bu değişiklik {count} kuruluşu bir sınırın üstüne çıkarıyor. Hiçbir şey silinmez veya kilitlenmez: sınırın altına inene kadar yenisini ekleyemezler. Birini olduğu gibi tutmak için önce ona istisna verin.",
+    "retentionText": "Bu düzenleme {count} kuruluşun etkinlik kaydını {from, select, none {süre sınırı olmayan bir süreden} other {{from} günden}} {toCount} güne kısaltır. {toCount} günden eski kayıtları {graceCount} gün daha kalır, sonra silinir. {count, plural, one {Onu olduğu gibi tutmak için önce ona istisna verin.} other {Birini olduğu gibi tutmak için önce ona istisna verin.}}",
     "organisation": "Kuruluş",
     "limit": "Sınır",
     "now": "Şu an",
@@ -553,7 +565,14 @@
     "changeTo": "{plan} planına geç",
     "limitChange": "{key}: {from} → {to}. <bdi>{name}</bdi> {count} kullanıyor.",
     "overrideStaysUntil": "{key} istisnası {date} tarihine kadar kalır.",
-    "overrideStays": "{key} istisnası kalır."
+    "overrideStays": "{key} istisnası kalır.",
+    "retentionHint": "Gün olarak, en az {floor}. <plan></plan> {value} verir.",
+    "retentionShorter": "Bu süre <plan></plan> planının {valueCount} gününden kısa. {daysCount} günden eski kayıtlar {graceCount} gün daha kalır, sonra silinir.",
+    "retentionShorterThanNoLimit": "<plan></plan> kayıtları süre sınırı olmadan saklar. {daysCount} günden eski kayıtlar {graceCount} gün daha kalır, sonra silinir.",
+    "retentionExpiry": "{date} tarihinde süre <plan></plan> planının {valueCount} gününe döner. Sonra {valueCount} günden eski kayıtlar {graceCount} gün daha kalır, sonra silinir.",
+    "removeRetentionText": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planının değerine döner: {value}. {valueCount} günden eski kayıtları {graceCount} gün daha kalır, sonra silinir.",
+    "removeRetentionKeeps": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planının değerine döner: {value}.",
+    "retentionChange": "{key}: {from, select, none {süre sınırı yok} other {{from}}} → {toCount} gün. {toCount} günden eski kayıtlar {graceCount} gün daha kalır, sonra silinir."
   },
   "viewChoice": {
     "withCount": "{view} · {count}",

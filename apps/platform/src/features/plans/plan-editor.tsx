@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AuditRetention,
   createPlan,
   ErrorCode,
   FieldErrorCode,
@@ -38,6 +39,7 @@ import { type ReactNode, useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
+  belowFloor,
   type Draft,
   draftOf,
   entitlementAreas,
@@ -45,6 +47,7 @@ import {
   isWholeNumber,
   lowers,
   requestOf,
+  retentionKey,
   useEntitlementText,
   valueFrom,
 } from "@/shared/entitlements";
@@ -58,22 +61,44 @@ import { ImpactDialog } from "./impact-dialog";
 
 // The generated schema of UpdatePlan, which CreatePlan shares (F11): the API trims the name and needs 1 to 100 characters; the
 // generated schema has the limit only, so the form adds the trim and the minimum. The values are one draft per key of the list,
-// in its order, because a key's dots would nest a field's path.
+// in its order, because a key's dots would nest a field's path. The Activity log's period has a floor (6.11).
 const editing = schemas.UpdatePlanBody.omit({ entitlements: true }).extend({
   name: z.string().trim().min(1).max(schemas.updatePlanBodyNameMax),
-  drafts: z.array(
-    z.object({
-      enabled: z.boolean().nullable(),
-      text: z.string().refine(isWholeNumber),
-      unlimited: z.boolean(),
+  drafts: z
+    .array(
+      z.object({
+        enabled: z.boolean().nullable(),
+        text: z.string().refine(isWholeNumber),
+        unlimited: z.boolean(),
+      }),
+    )
+    .superRefine((drafts, context) => {
+      drafts.forEach((draft, index) => {
+        if (belowFloor(entitlementKeys[index]?.key ?? "", draft))
+          context.addIssue({
+            code: "custom",
+            path: [index, "text"],
+            message: "floor",
+          });
+      });
     }),
-  ),
 });
 type Editing = z.infer<typeof editing>;
 
-/** The values of a plan as the form starts them: one draft per key, empty where the plan has no value. */
+/**
+ * The values of a plan as the form starts them: one draft per key, empty where the plan has no value. A new plan starts empty but for
+ * the Activity log, which starts at the default period (6.10).
+ */
 const draftsOf = (plan: PlanResponse | null): Draft[] =>
-  entitlementKeys.map(({ key }) => draftOf(plan?.entitlements[key] ?? null));
+  entitlementKeys.map(({ key }) =>
+    draftOf(
+      plan
+        ? (plan.entitlements[key] ?? null)
+        : key === retentionKey
+          ? { enabled: null, maximum: AuditRetention.Default, unlimited: false }
+          : null,
+    ),
+  );
 
 /**
  * Exactly the values on screen (the API's UpdatePlan: a key left out is closed). Every key of the list is here, from the generated
@@ -197,7 +222,7 @@ function Summary({ plan, onEdit }: { plan: PlanResponse; onEdit: () => void }) {
                   {text.name(key)}
                 </dt>
                 <dd className="text-body">
-                  {text.label(isFeature, plan.entitlements[key] ?? null)}
+                  {text.label(isFeature, plan.entitlements[key] ?? null, key)}
                 </dd>
               </div>
             )),
@@ -362,8 +387,9 @@ function Form({ plan }: { plan: PlanResponse | null }) {
   const preview = useMutation({
     mutationFn: ({ id, body }: { id: string; body: UpdatePlanRequest }) =>
       getPlanUpdatePreview(id, { entitlements: body.entitlements }),
+    // A shorter Activity log that no organisation follows (each has an override, #271) shortens nothing: no dialog.
     onSuccess: (first, { id, body }) =>
-      first.total === 0
+      first.total === 0 && !(first.retentionShortened?.count ?? 0)
         ? update.mutate({ id, body })
         : setImpact({ body, first }),
     onError: refused,
@@ -405,9 +431,11 @@ function Form({ plan }: { plan: PlanResponse | null }) {
       return t("plans.nameTooLong", { max: schemas.updatePlanBodyNameMax });
     return t("plans.nameRequired");
   })();
+  // After a save a value is checked again as it is typed, as the name is (6.11).
   const setDraft = (index: number, draft: Draft) => {
-    form.setValue(`drafts.${index}`, draft, { shouldDirty: true });
     form.clearErrors(`drafts.${index}.text`);
+    form.setValue(`drafts.${index}`, draft, { shouldDirty: true });
+    if (form.formState.isSubmitted) void form.trigger(`drafts.${index}.text`);
   };
   const markText = locked
     ? t("plans.defaultLocked")
@@ -484,19 +512,22 @@ function Form({ plan }: { plan: PlanResponse | null }) {
                 key={key}
                 group
                 labelId={`${markHint}-${index}`}
-                label={text.name(key)}
+                label={text.row(key)}
                 description={text.description(key)}
               >
                 <ValueField
                   isFeature={isFeature}
-                  label={text.name(key)}
+                  label={text.row(key)}
                   draft={draft}
                   onChange={(next) => setDraft(index, next)}
                   error={
                     errors.drafts?.[index]?.text
-                      ? t("plans.numberInvalid")
+                      ? key === retentionKey
+                        ? text.floor()
+                        : t("plans.numberInvalid")
                       : undefined
                   }
+                  unit={text.unit(key, draft.text)}
                   showUnset
                 />
               </Row>

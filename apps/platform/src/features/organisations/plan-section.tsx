@@ -17,7 +17,11 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useId, useState } from "react";
-import { entitlementAreas, useEntitlementText } from "@/shared/entitlements";
+import {
+  entitlementAreas,
+  retentionKey,
+  useEntitlementText,
+} from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { leaveOf } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
@@ -65,26 +69,30 @@ export function PlanSection({
   const name = organisation.name;
   const personName = usePersonName();
 
-  /** The value that applies: a limit with a number says how much of it the organisation uses. */
+  /** The value that applies: a limit with a number says how much of it the organisation uses; the Activity log counts nothing. */
   const applies = (row: TenantEntitlementResponse) =>
-    !row.isFeature && !row.effective.unlimited && row.effective.maximum !== null
+    !row.isFeature &&
+    row.key !== retentionKey &&
+    !row.effective.unlimited &&
+    row.effective.maximum !== null
       ? t("planSection.countOf", {
           count: row.count,
           limit: row.effective.maximum,
         })
-      : text.label(row.isFeature, row.effective);
+      : text.label(row.isFeature, row.effective, row.key);
 
   /** What the plan gives, then the override: "Team gives 5. Override: 10 until 31 Dec 2026 · Reason: pilot · by Deniz Kaya". */
   const details = (row: TenantEntitlementResponse, planName: string) => {
     const override = row.override;
-    const value = override && text.label(row.isFeature, override.value);
+    const value =
+      override && text.label(row.isFeature, override.value, row.key);
     return (
       <span className="text-small text-muted-foreground">
         {row.key === LimitKey.MembersMax
           ? membersText(organisation, plan.data).sentence
           : t.rich("planSection.planGives", {
               plan: () => <bdi>{planName}</bdi>,
-              value: text.label(row.isFeature, row.planValue),
+              value: text.label(row.isFeature, row.planValue, row.key),
             })}
         {override && " "}
         {override &&

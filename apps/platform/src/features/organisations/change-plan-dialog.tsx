@@ -20,6 +20,7 @@ import { useState } from "react";
 import {
   entitlementAreas,
   isFeatureKey,
+  retentionKey,
   useEntitlementText,
 } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
@@ -115,7 +116,9 @@ export function ChangePlanDialog({
         chosen !== plan.plan.id &&
         preview.data &&
         t.rich(
-          excesses.length > 0 || preview.data.overriddenKeys.length > 0
+          excesses.length > 0 ||
+            preview.data.overriddenKeys.length > 0 ||
+            preview.data.retentionShortened
             ? "changeFromToWhat"
             : "changeFromTo",
           { from: plan.plan.name, to: chosenName, ...isolated },
@@ -151,6 +154,20 @@ export function ChangePlanDialog({
                     })}
               </li>
             ))}
+            {preview.data.retentionShortened && (
+              <li>
+                {t("retentionChange", {
+                  ...text.periods,
+                  key: text.name(retentionKey),
+                  from:
+                    preview.data.retentionShortened.fromDays === null
+                      ? "none"
+                      : String(preview.data.retentionShortened.fromDays),
+                  to: text.days(preview.data.retentionShortened.toDays),
+                  toCount: preview.data.retentionShortened.toDays,
+                })}
+              </li>
+            )}
             {preview.data.overriddenKeys.map((key) => {
               const expiresAt = rowOf(key)?.override?.expiresAt;
               return (

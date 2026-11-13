@@ -72,6 +72,21 @@ export function ImpactDialog({
     })),
   );
 
+  // The organisations whose Activity log the edit shortens (6.19); a count of 0 shortens nothing (#271).
+  const shortened = first.retentionShortened?.count
+    ? first.retentionShortened
+    : null;
+  const shortenedText =
+    shortened &&
+    t("retentionText", {
+      ...text.periods,
+      count: shortened.count,
+      from: shortened.fromDays === null ? "none" : String(shortened.fromDays),
+      to: text.days(shortened.toDays),
+      toCount: shortened.toDays,
+    });
+  const overText = t("impactText", { count: first.total });
+
   const columns: TableColumn<Row>[] = [
     {
       key: "organisation",
@@ -121,51 +136,56 @@ export function ImpactDialog({
       open
       onOpenChange={(open) => !open && onCancel()}
       title={t.rich("impactTitle", { plan: plan.name, ...isolated })}
-      description={t("impactText", { count: first.total })}
+      description={shortenedText || overText}
       actionLabel={t("saveAnyway")}
       cancelLabel={common("cancel")}
       pending={pending}
       onConfirm={onConfirm}
     >
-      <div className="flex flex-col gap-3">
-        {pages.isError ? (
-          <Banner tone="destructive" title={t("previewError")}>
-            {failureText(problemOf(pages.error))}
-          </Banner>
-        ) : (
-          <Table
-            columns={columns}
-            rows={rows}
-            rowKey="id"
-            label={t.markup("impactTitle", {
-              plan: plan.name,
-              bdi: (chunks) => chunks,
-            })}
-            rowCount={rows.length}
-            page={1}
-            pageSize={Math.max(rows.length, 1)}
-            pager={{
-              previous: common("previous"),
-              next: common("next"),
-              page: (current, count) =>
-                common("page", { page: current, count }),
-            }}
-          />
-        )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-small text-muted-foreground">
-            {t("shown", { shown: tenants.length, total })}
-          </p>
-          {pages.hasNextPage && (
-            <Button
-              disabled={pages.isFetchingNextPage}
-              onClick={() => void pages.fetchNextPage()}
-            >
-              {t("loadMore")}
-            </Button>
+      {total > 0 && (
+        <div className="flex flex-col gap-3">
+          {shortenedText && (
+            <p className="text-body text-muted-foreground">{overText}</p>
           )}
+          {pages.isError ? (
+            <Banner tone="destructive" title={t("previewError")}>
+              {failureText(problemOf(pages.error))}
+            </Banner>
+          ) : (
+            <Table
+              columns={columns}
+              rows={rows}
+              rowKey="id"
+              label={t.markup("impactTitle", {
+                plan: plan.name,
+                bdi: (chunks) => chunks,
+              })}
+              rowCount={rows.length}
+              page={1}
+              pageSize={Math.max(rows.length, 1)}
+              pager={{
+                previous: common("previous"),
+                next: common("next"),
+                page: (current, count) =>
+                  common("page", { page: current, count }),
+              }}
+            />
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-small text-muted-foreground">
+              {t("shown", { shown: tenants.length, total })}
+            </p>
+            {pages.hasNextPage && (
+              <Button
+                disabled={pages.isFetchingNextPage}
+                onClick={() => void pages.fetchNextPage()}
+              >
+                {t("loadMore")}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </Dialog>
   );
 }
