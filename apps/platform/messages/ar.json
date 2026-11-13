@@ -549,6 +549,7 @@
     "changeTitle": "تغيير خطة <bdi>{name}</bdi>",
     "newPlan": "الخطة الجديدة",
     "current": "الحالية",
+    "currentChosen": "هذه هي الخطة الحالية. اختر خطة أخرى.",
     "planSearch": "ابحث في الخطط",
     "planEmpty": "لم يُعثر على خطة",
     "changed": "نُقلت <bdi>{name}</bdi> إلى <bdi>{plan}</bdi>",

@@ -29,6 +29,8 @@ export type DialogProps = {
   action?: "primary" | "secondary";
   /** The confirm cannot run yet, for example before a step has found what it needs. */
   actionDisabled?: boolean;
+  /** The id of text the dialog already shows that says why the action is disabled: its description while `actionDisabled` (F52). */
+  actionReasonId?: string;
   /** A step after the first: Back in place of Cancel, which returns to the step before and keeps the dialog open. */
   back?: { label: string; onBack: () => void };
   /** The confirm button repeats the verb: "Remove member". */
@@ -87,6 +89,7 @@ export function Dialog({
   size = "default",
   action = "primary",
   actionDisabled = false,
+  actionReasonId,
   back,
   actionLabel,
   cancelLabel,
@@ -195,6 +198,7 @@ export function Dialog({
           <Button
             variant={tone === "destructive" ? "destructive" : action}
             disabled={blocked || pending}
+            aria-describedby={actionDisabled ? actionReasonId : undefined}
             aria-busy={pending || undefined}
             onClick={onConfirm}
             icon={

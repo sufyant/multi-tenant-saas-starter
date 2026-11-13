@@ -549,6 +549,7 @@
     "changeTitle": "Change the plan of <bdi>{name}</bdi>",
     "newPlan": "New plan",
     "current": "Current",
+    "currentChosen": "This is the current plan. Choose another.",
     "planSearch": "Search plans",
     "planEmpty": "No plan found",
     "changed": "<bdi>{name}</bdi> moved to <bdi>{plan}</bdi>",

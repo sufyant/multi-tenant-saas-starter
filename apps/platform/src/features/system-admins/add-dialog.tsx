@@ -20,7 +20,7 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { z } from "zod";
 import { reportError } from "@/error-tracking/report-error";
 import { isolated } from "@/shared/isolated";
@@ -56,6 +56,9 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<Step>("find");
   const [typed, setTyped] = useState("");
   const [looked, setLooked] = useState("");
+  const textId = useId();
+  const emailId = useId();
+  const bannerId = useId();
 
   const address = typed.trim();
   useEffect(() => {
@@ -195,10 +198,17 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
       open
       onOpenChange={close}
       title={t("add")}
-      description={t("addText")}
+      description={<span id={textId}>{t("addText")}</span>}
       actionLabel={t("continue")}
       cancelLabel={common("cancel")}
       actionDisabled={!person || person.isSystemAdmin}
+      actionReasonId={
+        person?.isSystemAdmin
+          ? bannerId
+          : noUser || manyUsers
+            ? `${emailId}-note`
+            : textId
+      }
       onConfirm={() => setStep("confirm")}
     >
       <form
@@ -210,6 +220,7 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         className="flex flex-col gap-3"
       >
         <Input
+          id={emailId}
           label={t("email")}
           type="email"
           dir="ltr"
@@ -224,10 +235,14 @@ export function AddDialog({ onClose }: { onClose: () => void }) {
         {person?.isSystemAdmin && (
           <Banner
             tone="info"
-            title={t.rich("alreadyAdmin", {
-              name: userNameOf(person, users("deletedUser")),
-              ...isolated,
-            })}
+            title={
+              <span id={bannerId}>
+                {t.rich("alreadyAdmin", {
+                  name: userNameOf(person, users("deletedUser")),
+                  ...isolated,
+                })}
+              </span>
+            }
           />
         )}
       </form>
