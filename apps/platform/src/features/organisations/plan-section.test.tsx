@@ -1003,6 +1003,29 @@ describe("PlanSection", () => {
     expect(dialog.getByRole("button", { name: "Add override" })).toBeEnabled();
   });
 
+  it("AddOverride_DependentLimitWithItsFeatureOff_DescribesTheActionWithTheNote", async () => {
+    await renderSection(
+      active,
+      featureOffPlan({
+        [LimitKey.RolesCustomMax]: { override: null, effective: max(20) },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await userEvent.click(
+      dialog.getByRole("combobox", { name: "Feature or limit" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Custom roles limit" }),
+    );
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Add override" }),
+      "Turn on Custom roles first.",
+    );
+  });
+
   // 37d (4.52): the removal stays allowed, and says when the plan's value applies.
   it("RemoveOverride_DependentLimitWithItsFeatureOff_SaysThePlansValueAppliesWhenTheFeatureTurnsOn", async () => {
     const calls: Call[] = [];
