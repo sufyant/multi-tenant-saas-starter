@@ -7,4 +7,4 @@ namespace ControlPlane.Application.Tenants.GetTenantPlanChangePreview;
 /// an override of the tenant still holds, which the change does not touch. No excess when the tenant stays within every key. A shorter
 /// Activity log period, none when the new plan keeps it as long or longer (K14).
 /// </summary>
-public sealed record TenantPlanChangePreviewView(IReadOnlyList<ExcessView> Excesses, IReadOnlyList<string> OverriddenKeys, RetentionShorteningView? RetentionShortened);
+public sealed record TenantPlanChangePreviewView(IReadOnlyList<ExcessView> Excesses, IReadOnlyList<string> OverriddenKeys, RetentionShortenedView? RetentionShortened);

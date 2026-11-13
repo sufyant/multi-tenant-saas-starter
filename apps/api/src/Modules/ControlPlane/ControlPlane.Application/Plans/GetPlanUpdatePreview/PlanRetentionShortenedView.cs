@@ -5,4 +5,4 @@ namespace ControlPlane.Application.Plans.GetPlanUpdatePreview;
 /// purging or purged and have no override of the key that has not expired, and the plan's period before and after, in days, none for no
 /// limit.
 /// </summary>
-public sealed record PlanRetentionShorteningView(int Count, int? FromDays, int ToDays);
+public sealed record PlanRetentionShortenedView(int Count, int? FromDays, int ToDays);

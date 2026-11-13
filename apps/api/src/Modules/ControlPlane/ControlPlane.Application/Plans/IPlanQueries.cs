@@ -22,7 +22,7 @@ public interface IPlanQueries
     /// off, under each tenant's overrides at this moment: a page of them, those that go furthest over first. The search matches the
     /// tenant's name or slug. With it, a shorter Activity log period and how many tenants it shortens. None when no plan has the id.
     /// </summary>
-    internal Task<PlanUpdatePreviewView?> GetPlanUpdatePreviewAsync(
+    internal Task<PlanUpdatePreviewPageView?> GetPlanUpdatePreviewAsync(
         Guid planId,
         IReadOnlyDictionary<string, EntitlementValue> values,
         ListRequest<GetPlanUpdatePreviewSort> list,

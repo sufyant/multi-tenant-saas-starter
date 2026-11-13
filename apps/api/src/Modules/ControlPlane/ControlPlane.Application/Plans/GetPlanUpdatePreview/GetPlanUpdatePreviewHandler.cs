@@ -5,7 +5,7 @@ namespace ControlPlane.Application.Plans.GetPlanUpdatePreview;
 
 public static class GetPlanUpdatePreviewHandler
 {
-    public static async Task<Result<PlanUpdatePreviewView>> HandleAsync(
+    public static async Task<Result<PlanUpdatePreviewPageView>> HandleAsync(
         GetPlanUpdatePreviewQuery query,
         IPlanQueries plans,
         TimeProvider time,

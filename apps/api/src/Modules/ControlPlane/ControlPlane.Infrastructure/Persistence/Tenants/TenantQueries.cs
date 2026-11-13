@@ -230,7 +230,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         // K14: the tenant's Activity log period now and on the new plan, under its overrides at this moment, as ChangeTenantPlan reads them.
         var before = EffectiveEntitlements.Of(await controlPlane.PlanValuesAsync(found.Plan.Id, cancellationToken), overrides, now).ValueOf(LimitKeys.AuditRetentionDays);
         var after = EffectiveEntitlements.Of(plan, overrides, now).ValueOf(LimitKeys.AuditRetentionDays);
-        var shortened = AuditRetention.ShorteningOf(before, after) is { } shortening ? new RetentionShorteningView(shortening.FromDays, shortening.ToDays) : null;
+        var shortened = AuditRetention.ShorteningOf(before, after) is { } shortening ? new RetentionShortenedView(shortening.FromDays, shortening.ToDays) : null;
         return new TenantPlanChangePreviewView([.. preview.Excesses.Select(ExcessView.Of)], preview.OverriddenKeys, shortened);
     }
 

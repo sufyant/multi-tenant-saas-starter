@@ -109,7 +109,7 @@ public static class PlanEndpoints
             return list.Error;
         }
 
-        var preview = await bus.InvokeAsync<Result<PlanUpdatePreviewView>>(
+        var preview = await bus.InvokeAsync<Result<PlanUpdatePreviewPageView>>(
             new GetPlanUpdatePreviewQuery(planId, ToViews(request.Entitlements), list.Value), cancellationToken);
         return preview.Map(found => new PlanUpdatePreviewPageResponse(
             [.. found.Page.Items.Select(tenant => new TenantExcessResponse(

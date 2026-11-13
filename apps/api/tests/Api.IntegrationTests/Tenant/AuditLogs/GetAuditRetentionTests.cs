@@ -112,7 +112,7 @@ public sealed class GetAuditRetentionTests(Database database) : IAsyncLifetime
     }
 
     // A plan edit has no event for the tenant: the job starts the hold at its next run. Until then the answer is the hold that the job
-    // would start at this moment, so the date shown is never earlier than the job's.
+    // would start at this moment, so the date shown is at most a day earlier than the job's, never later.
     [Fact]
     public async Task GetAuditRetention_APlanEditedShorterBeforeTheJobsRun_AnswersTheHoldTheJobWouldStart()
     {

@@ -106,6 +106,20 @@ public sealed class GetPlanUpdatePreviewTests(Database database) : IAsyncLifetim
         PlanAnswers.RetentionShortened(await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(shortened);
     }
 
+    // The plan's period still gets shorter when every tenant on it holds its own period by an override, so the field answers a count of 0.
+    [Fact]
+    public async Task GetPlanUpdatePreview_EveryTenantHoldsAnOverride_AnswersTheShorteningWithACountOf0()
+    {
+        var admin = await AdminAsync();
+        var planId = await PlanAnswers.RetentionPlanAsync(_testData, 365);
+        var held = await _testData.AddTenantAsync(planId: planId);
+        await _testData.AddOverrideRowAsync(held.Id, PlanAnswers.RetentionKey, 730, DateTimeOffset.UtcNow.AddDays(1));
+
+        var previewed = await admin.GetPlanUpdatePreviewAsync(planId, RetentionValues(90));
+
+        PlanAnswers.RetentionShortened(await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe("0:365>90");
+    }
+
     // The count is the edit's, not the page's: a search and a page of the list leave it whole.
     [Fact]
     public async Task GetPlanUpdatePreview_ASearchThatMatchesNoTenant_CountsEveryTenantItShortens()

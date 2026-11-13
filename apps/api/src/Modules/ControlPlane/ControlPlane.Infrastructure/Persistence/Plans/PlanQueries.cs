@@ -73,7 +73,7 @@ public sealed class PlanQueries(ControlPlaneDbContext controlPlane) : IPlanQueri
     // The tenants on the plan, with their summaries and overrides, in three queries; the preview of each is computed here, at this moment,
     // and the page is taken from those that go over. A purged tenant has no data left to count, so it is not listed. A shorter Activity log
     // period reads the plan's values and counts its tenants in two more queries (K14).
-    async Task<PlanUpdatePreviewView?> IPlanQueries.GetPlanUpdatePreviewAsync(
+    async Task<PlanUpdatePreviewPageView?> IPlanQueries.GetPlanUpdatePreviewAsync(
         Guid planId,
         IReadOnlyDictionary<string, EntitlementValue> values,
         ListRequest<GetPlanUpdatePreviewSort> list,
@@ -120,13 +120,13 @@ public sealed class PlanQueries(ControlPlaneDbContext controlPlane) : IPlanQueri
                 [.. found.Preview.Excesses.Select(ExcessView.Of)],
                 found.Preview.OverriddenKeys))
             .ToList();
-        return new PlanUpdatePreviewView(ListPage.Of(page, list.Paging, over.Count), await RetentionShortenedAsync(planId, values, now, cancellationToken));
+        return new PlanUpdatePreviewPageView(ListPage.Of(page, list.Paging, over.Count), await RetentionShortenedAsync(planId, values, now, cancellationToken));
     }
 
     // K14, E4: the plan's period before and after the edit, and the tenants on the plan that follow it: an override of the key that has not
     // expired holds the tenant's own period (E3), and a purging or a purged tenant's log goes with its purge (R14). The count is the edit's,
     // so no search or page narrows it.
-    private async Task<PlanRetentionShorteningView?> RetentionShortenedAsync(
+    private async Task<PlanRetentionShortenedView?> RetentionShortenedAsync(
         Guid planId,
         IReadOnlyDictionary<string, EntitlementValue> values,
         DateTimeOffset now,
@@ -146,6 +146,6 @@ public sealed class PlanQueries(ControlPlaneDbContext controlPlane) : IPlanQueri
                 && !controlPlane.EntitlementOverrides.Any(entry =>
                     entry.TenantId == tenant.Id && entry.Key == LimitKeys.AuditRetentionDays && (entry.ExpiresAt == null || entry.ExpiresAt > now)),
             cancellationToken);
-        return new PlanRetentionShorteningView(count, shortening.FromDays, shortening.ToDays);
+        return new PlanRetentionShortenedView(count, shortening.FromDays, shortening.ToDays);
     }
 }
