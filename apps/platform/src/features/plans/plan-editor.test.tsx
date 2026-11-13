@@ -920,7 +920,7 @@ describe("PlanEditor", () => {
     expect(await screen.findByText("Page not found")).toBeVisible();
   });
 
-  it("Create_Empty_StartsUnsetAndSendsTheValuesSet", async () => {
+  it("Create_Empty_StartsUnsetBesideTheActivityLogAndSendsTheValuesSet", async () => {
     const creates: Call[] = [];
     server.use(
       plansCommand(
@@ -956,6 +956,8 @@ describe("PlanEditor", () => {
       screen.getByRole("textbox", { name: "Name" }),
       "Starter",
     );
+    // 6.10: the Activity log starts at the default period, the generated AuditRetention.Default.
+    expect(limitField("Keeps entries")).toHaveValue(365);
     await userEvent.click(row("Custom roles").getByRole("switch"));
     await setLimit("Seats", "10");
     await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
@@ -968,6 +970,7 @@ describe("PlanEditor", () => {
         entitlements: {
           [FeatureKey.RolesCustom]: { enabled: true },
           [LimitKey.MembersMax]: { maximum: 10 },
+          [LimitKey.AuditRetentionDays]: { maximum: 365 },
         },
       },
     ]);
