@@ -86,7 +86,7 @@ internal static class ErrorTracking
         // no event. The SDK reports every exception the handler caught, so the answer's status decides.
         builder.Services.AddOptions<SentryAspNetCoreOptions>().Configure<IHttpContextAccessor>((sentry, http) =>
             sentry.SetBeforeSend((sentryEvent, _) =>
-                IsAnsweredBelow500(sentryEvent, http) ? null : PersonalDataFilter.Apply(sentryEvent)));
+                IsAnsweredBelow500(sentryEvent, http) ? null : DeadLetterFingerprint.Apply(PersonalDataFilter.Apply(sentryEvent))));
 
         return builder;
     }

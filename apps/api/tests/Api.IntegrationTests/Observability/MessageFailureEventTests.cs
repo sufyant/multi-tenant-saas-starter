@@ -11,7 +11,7 @@ namespace Api.IntegrationTests.Observability;
 // Wolverine repeats needs no person, so it is no event. Each test reads only the events of its own message or request: the SDK's hub
 // also takes an exception that no code observed, from any test of the process.
 [Collection(nameof(ErrorTrackingHosts))]
-[RuntimeHandlerCode("The test handlers of RetryProbe, ScheduledRetryProbe and Explode always fail, and Greet validates its name; no module handler does.")]
+[RuntimeHandlerCode("The test handlers of RetryProbe, ScheduledRetryProbe, CausedProbe and Explode always fail, and Greet validates its name; no module handler does.")]
 public sealed class MessageFailureEventTests(Database database)
 {
     [Fact]
@@ -40,6 +40,28 @@ public sealed class MessageFailureEventTests(Database database)
         await ErrorEvents.FlushAsync();
         host.Services.GetRequiredService<RetryAttempts>().Count(probe.Id).ShouldBe(2);
         Mentioning(events, nameof(ScheduledRetryProbe)).ShouldHaveSingleItem().Message.ShouldNotBeNull().Formatted.ShouldNotBeNull().ShouldContain("was moved to the error queue");
+    }
+
+    // The error tracker alerts once for a new error. Each dead letter's fingerprint is its message type and its cause, without the ids,
+    // so a repeat of a cause joins its error and a new cause is a new error (section 7, "Error tracking", rule 9).
+    [Fact]
+    public async Task HandleQueuedMessage_TwoDeadLettersOfOneCauseAndOneOfAnother_FingerprintsEachCauseOnce()
+    {
+        var events = new ErrorEvents();
+        await using var host = await StartWorkerAsync(events);
+        var refused = $"The sender's domain is refused {Guid.NewGuid()}.";
+        var down = $"The email service is down {Guid.NewGuid()}.";
+
+        await host.Host.MessageBus().SendAsync(new CausedProbe(Guid.NewGuid(), refused));
+        await host.Host.MessageBus().SendAsync(new CausedProbe(Guid.NewGuid(), refused));
+        await host.Host.MessageBus().SendAsync(new CausedProbe(Guid.NewGuid(), down));
+
+        await Waiting.UntilAsync(() => Caused(events, refused).Count == 2 && Caused(events, down).Count == 1);
+        await ErrorEvents.FlushAsync();
+        var first = Caused(events, refused)[0].Fingerprint;
+        first.ShouldContain(nameof(CausedProbe));
+        Caused(events, refused)[1].Fingerprint.ShouldBe(first);
+        Caused(events, down).ShouldHaveSingleItem().Fingerprint.ShouldNotBe(first);
     }
 
     // Wolverine logs the failed command, and the exception handler answers 500 for the same exception.
@@ -92,7 +114,9 @@ public sealed class MessageFailureEventTests(Database database)
 
         await Waiting.UntilAsync(() => Mentioning(events, nameof(RecordHandling)).Count > 0);
         await ErrorEvents.FlushAsync();
-        Mentioning(events, nameof(RecordHandling)).ShouldHaveSingleItem().Message.ShouldNotBeNull().Formatted.ShouldNotBeNull().ShouldContain("moved to the dead letter queue");
+        var deadLetter = Mentioning(events, nameof(RecordHandling)).ShouldHaveSingleItem();
+        deadLetter.Message.ShouldNotBeNull().Formatted.ShouldNotBeNull().ShouldContain("moved to the dead letter queue");
+        deadLetter.Fingerprint.ShouldBe(["dead-letter", nameof(RecordHandling), "no handler", ""]);
     }
 
     private static List<SentryEvent> Of(ErrorEvents events, string path) =>
@@ -100,6 +124,9 @@ public sealed class MessageFailureEventTests(Database database)
 
     private static List<SentryEvent> Mentioning(ErrorEvents events, string messageType) =>
         events.Where(sentryEvent => sentryEvent.Message?.Formatted?.Contains(messageType, StringComparison.Ordinal) == true);
+
+    private static List<SentryEvent> Caused(ErrorEvents events, string cause) =>
+        events.Where(sentryEvent => sentryEvent.SentryExceptions?.Any(exception => exception.Value?.StartsWith(cause, StringComparison.Ordinal) == true) == true);
 
     private static List<SentryEvent> Failed(ErrorEvents events, string failure) =>
         events.Where(sentryEvent => sentryEvent.SentryExceptions?.Any(exception => exception.Value == failure) == true);

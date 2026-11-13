@@ -36,6 +36,13 @@ public static class ScheduledRetryProbeHandler
     }
 }
 
+// A failure whose message names the probe's id, as a third party's answer names its request: the id varies, the cause does not.
+public static class CausedProbeHandler
+{
+    public static void Handle(CausedProbe command) =>
+        throw new InvalidOperationException($"{command.Cause} Request {command.Id} failed with 403.");
+}
+
 public sealed class RetryAttempts
 {
     private readonly ConcurrentDictionary<Guid, int> _counts = new();
@@ -48,3 +55,5 @@ public sealed record RetryProbe(Guid Id);
 public sealed record SpecificRetryProbe(Guid Id);
 
 public sealed record ScheduledRetryProbe(Guid Id);
+
+public sealed record CausedProbe(Guid Id, string Cause);
