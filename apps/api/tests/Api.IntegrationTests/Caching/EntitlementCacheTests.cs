@@ -86,8 +86,8 @@ public sealed class EntitlementCacheTests(Valkey valkey, Database database) : IC
     {
         var admin = await AdminAsync();
         var (tenantId, owner) = await OwnerAsync(SeedPlans.Free);
-        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5)))).EnsureSuccessStatusCode();
         (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom", PlanRequests.On, _time.GetUtcNow().AddMinutes(1)))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5)))).EnsureSuccessStatusCode();
         var before = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read"]);
 
         _time.Advance(TimeSpan.FromMinutes(1));

@@ -2133,7 +2133,7 @@ public sealed class TenantTests
     [Fact]
     public void SetOverride_ANewKey_AddsItWithItsReasonAndWhoSetIt()
     {
-        var set = Active().SetOverride(null, LimitKeys.MembersMax, EntitlementValue.Unlimited, Now.AddDays(14), "  A trial  ", InviterId, Now);
+        var set = Active().SetOverride(null, LimitKeys.MembersMax, EntitlementValue.Unlimited, Now.AddDays(14), "  A trial  ", InviterId, Now, NothingEntitled());
 
         var entry = set.Value.Override;
         (entry.Key, entry.Value, entry.ExpiresAt, entry.Reason, entry.SetBy, entry.SetAt).ShouldBe(
@@ -2147,7 +2147,7 @@ public sealed class TenantTests
         var tenant = Active();
         var existing = new EntitlementOverride(Id, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, "More seats", InviterId, Now);
 
-        var set = tenant.SetOverride(existing, LimitKeys.MembersMax, EntitlementValue.Limit(20), null, "Even more seats", InviterId, Now);
+        var set = tenant.SetOverride(existing, LimitKeys.MembersMax, EntitlementValue.Limit(20), null, "Even more seats", InviterId, Now, NothingEntitled());
 
         (set.Value.Override, set.Value.Old, set.Value.Changed).ShouldBe((existing, new OverrideValue(LimitKeys.MembersMax, EntitlementValue.Limit(10), null), true));
         existing.Value.ShouldBe(EntitlementValue.Limit(20));
@@ -2158,28 +2158,49 @@ public sealed class TenantTests
     {
         var existing = new EntitlementOverride(Id, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, "More seats", InviterId, Now);
 
-        var set = Active().SetOverride(existing, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, " More seats ", Guid.NewGuid(), Now.AddDays(1));
+        var set = Active().SetOverride(existing, LimitKeys.MembersMax, EntitlementValue.Limit(10), null, " More seats ", Guid.NewGuid(), Now.AddDays(1), NothingEntitled());
 
         (set.Value.Changed, existing.SetAt).ShouldBe((false, Now));
+    }
+
+    // E1 and I1: the override a dependent limit already has is no change, so it answers it while the feature is off.
+    [Fact]
+    public void SetOverride_TheOverrideADependentLimitHasWithTheFeatureOff_ChangesNothing()
+    {
+        var existing = new EntitlementOverride(Id, LimitKeys.RolesCustomMax, EntitlementValue.Limit(5), null, "A trial", InviterId, Now);
+
+        var set = Active().SetOverride(existing, LimitKeys.RolesCustomMax, EntitlementValue.Limit(5), null, "A trial", InviterId, Now, NothingEntitled());
+
+        set.Value.Changed.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void SetOverride_AnotherValueOfADependentLimitWithTheFeatureOff_IsInvalidWithTheLimit()
+    {
+        var existing = new EntitlementOverride(Id, LimitKeys.RolesCustomMax, EntitlementValue.Limit(5), null, "A trial", InviterId, Now);
+
+        var set = Active().SetOverride(existing, LimitKeys.RolesCustomMax, EntitlementValue.Limit(6), null, "A trial", InviterId, Now, NothingEntitled());
+
+        (set.Error.Code, set.Error.Entitlement, existing.Value).ShouldBe((ControlPlaneErrorCodes.PlanFeatureRequired, LimitKeys.RolesCustomMax, EntitlementValue.Limit(5)));
     }
 
     [Fact]
     public void SetOverride_AValueOfTheWrongKind_IsInvalidWithTheKey()
     {
-        var set = Active().SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.Limit(3), null, "A trial", InviterId, Now);
+        var set = Active().SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.Limit(3), null, "A trial", InviterId, Now, NothingEntitled());
 
         (set.Error.Code, set.Error.Entitlement).ShouldBe((ControlPlaneErrorCodes.PlanEntitlementInvalid, FeatureKeys.RolesCustom));
     }
 
     [Fact]
     public void SetOverride_AnExpiryThatHasPassed_IsInvalid() =>
-        Active().SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.On, Now, "A trial", InviterId, Now).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanEntitlementInvalid);
+        Active().SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.On, Now, "A trial", InviterId, Now, NothingEntitled()).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanEntitlementInvalid);
 
     [Theory]
     [InlineData("Closed")]
     [InlineData("Purged")]
     public void SetOverride_ClosedOrPurged_IsAConflict(string status) =>
-        InStatus(status).SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.On, null, "A trial", InviterId, Now).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
+        InStatus(status).SetOverride(null, FeatureKeys.RolesCustom, EntitlementValue.On, null, "A trial", InviterId, Now, NothingEntitled()).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotActive);
 
     [Fact]
     public void RemoveOverride_None_IsNotFound() => Active().RemoveOverride(null).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanOverrideNotFound);
@@ -2235,6 +2256,9 @@ public sealed class TenantTests
 
     private static InvitationFacts Facts(int owners, bool member = false, int sent = 0, IReadOnlyList<Invitation>? pending = null, int members = 1) =>
         new(owners, member, sent, pending ?? [], members);
+
+    // The effective entitlements of a tenant without a value of any key: every key is closed.
+    private static EffectiveEntitlements NothingEntitled() => EffectiveEntitlements.Of(new Dictionary<string, EntitlementValue>(), [], Now);
 
     // The effective entitlements of a tenant at this moment, with these values; a key left out is closed.
     private static EffectiveEntitlements EntitledTo(bool customRoles, EntitlementValue customRolesMax, EntitlementValue membersMax) =>

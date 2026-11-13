@@ -65,6 +65,16 @@ internal sealed record EntitlementValue
                 Entitlement = key,
             };
 
+    /// <summary>
+    /// The refusal of a change of a limit that depends on a feature while the feature is off: 400 <c>plan.feature_required</c>, with the
+    /// limit's key (E1).
+    /// </summary>
+    public static Error FeatureRequired(string limit) =>
+        Error.Validation(ControlPlaneErrorCodes.PlanFeatureRequired, "The limit depends on a feature that is off; turn the feature on first.") with
+        {
+            Entitlement = limit,
+        };
+
     /// <summary>Whether a limit lets the tenant add one more thing it counts: an unlimited limit always does, a number while the count is under it.</summary>
     public bool Allows(int count) => IsUnlimited || count < Maximum;
 

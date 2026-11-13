@@ -60,8 +60,8 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
         var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
         var expiresAt = _time.GetUtcNow().AddDays(14);
 
-        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5), expiresAt))).EnsureSuccessStatusCode();
         var set = await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom", PlanRequests.On, expiresAt, "  A trial  "));
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5), expiresAt))).EnsureSuccessStatusCode();
         var created = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read"]);
 
         set.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -79,8 +79,8 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
     {
         var (admin, _) = await AdminAsync();
         var (tenantId, owner) = await PlanAnswers.FreeTenantAsync(_testData, _api);
-        (await admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5))).EnsureSuccessStatusCode();
         (await admin.SetOverrideAsync(tenantId, "roles.custom", PlanRequests.On, _time.GetUtcNow().AddMinutes(1))).EnsureSuccessStatusCode();
+        (await admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5))).EnsureSuccessStatusCode();
         var before = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read"]);
 
         _time.Advance(TimeSpan.FromMinutes(2));
@@ -154,6 +154,58 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.entitlement_override_set|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
         (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe(
             """{"key": "members.max", "reason": null, "newValue": {"enabled": null, "maximum": 50, "unlimited": false}, "oldValue": null, "newExpiresAt": null, "oldExpiresAt": null}""");
+    }
+
+    // E1: an override of a limit that depends on a feature is set only while the tenant's effective value of the feature is on.
+    [Fact]
+    public async Task SetEntitlementOverride_ADependentLimitWithTheFeatureOff_IsInvalidWithTheLimitAndSetsNothing()
+    {
+        var (admin, _) = await AdminAsync();
+        var (tenantId, _) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+
+        var set = await admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5));
+
+        (set.StatusCode, await PlanRequests.ProblemOfAsync(set)).ShouldBe((HttpStatusCode.BadRequest, ("plan.feature_required", "roles.custom.max")));
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.entitlement_overrides WHERE tenant_id = '{tenantId}'")).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task SetEntitlementOverride_ADependentLimitWithTheFeatureOn_SetsIt()
+    {
+        var (admin, _) = await AdminAsync();
+        var (tenantId, _) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 5);
+
+        var set = await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(30)));
+
+        set.StatusCode.ShouldBe(HttpStatusCode.OK);
+        PlanRequests.EntitlementOf(await set.Content.ReadFromJsonAsync<JsonElement>(Cancellation), "roles.custom.max").GetProperty("effective").GetProperty("maximum").GetInt32().ShouldBe(30);
+    }
+
+    // The effective value counts: a feature override that turns the feature on lets a limit override be set on a plan without the feature.
+    [Fact]
+    public async Task SetEntitlementOverride_AFeatureOverrideThatTurnsTheFeatureOn_LetsALimitOverrideBeSet()
+    {
+        var (admin, _) = await AdminAsync();
+        var (tenantId, _) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom", PlanRequests.On))).EnsureSuccessStatusCode();
+
+        var set = await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5)));
+
+        set.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    // An expired feature override no longer counts: the plan's value, off, applies (E3).
+    [Fact]
+    public async Task SetEntitlementOverride_AFeatureOverrideThatExpired_RefusesALimitOverride()
+    {
+        var (admin, _) = await AdminAsync();
+        var (tenantId, _) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom", PlanRequests.On, _time.GetUtcNow().AddMinutes(1)))).EnsureSuccessStatusCode();
+        _time.Advance(TimeSpan.FromMinutes(2));
+
+        var set = await admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5));
+
+        (set.StatusCode, await PlanRequests.ProblemOfAsync(set)).ShouldBe((HttpStatusCode.BadRequest, ("plan.feature_required", "roles.custom.max")));
     }
 
     private async Task<(HttpClient Client, Guid UserId)> AdminAsync()

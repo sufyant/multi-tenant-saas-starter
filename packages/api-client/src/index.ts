@@ -9,6 +9,7 @@ export * from "./generated/endpoints.schemas.gen";
 export * from "./generated/index.gen";
 export * as schemas from "./generated/zod/index.zod.gen";
 export { savedUnderKey } from "./idempotency";
+export { LimitFeatures } from "./limit-features.gen";
 export {
   type ApiClientOptions,
   type ApiFetchInit,

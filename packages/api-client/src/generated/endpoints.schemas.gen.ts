@@ -845,6 +845,7 @@ export const ErrorCode = {
   PagingSortInvalid: 'paging.sort_invalid',
   PlanDefaultRequired: 'plan.default_required',
   PlanEntitlementInvalid: 'plan.entitlement_invalid',
+  PlanFeatureRequired: 'plan.feature_required',
   PlanFeatureUnavailable: 'plan.feature_unavailable',
   PlanLimitReached: 'plan.limit_reached',
   PlanNameInvalid: 'plan.name_invalid',

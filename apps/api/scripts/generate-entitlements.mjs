@@ -1,6 +1,6 @@
 // Writes the entitlement keys of ControlPlane.Contracts from their one source, ControlPlane.Domain's FeatureKeys and LimitKeys, and the
 // numbers of the Activity log period from AuditRetention (D1), also for the TypeScript of packages/api-client, which the platform's plan
-// editor and override dialogs read.
+// editor and override dialogs read. It also writes, for the same screens, the feature that each limit of LimitKeys depends on (E1).
 // Contracts never references Domain (section 2), so it reads generated copies, and CI fails when a copy differs from what this script
 // writes (scripts/ci/check-generated.sh). Run it from apps/api: node scripts/generate-entitlements.mjs
 import { readFileSync, writeFileSync } from "node:fs";
@@ -79,3 +79,40 @@ for (const kind of kinds.filter((each) => each.typescript)) {
   ];
   writeFileSync(kind.typescript, lines.join("\n"));
 }
+
+// The feature each limit depends on, from the limit's [DependsOn(FeatureKeys.X)] in LimitKeys, by the keys' values (E1).
+const featureValues = new Map(
+  [...readFileSync(`${folder}/ControlPlane.Domain/Plans/FeatureKeys.cs`, "utf8").matchAll(/^ {4}public const string (\w+) = "([^"]+)";$/gm)].map(
+    ([, name, value]) => [name, value],
+  ),
+);
+const dependencies = [
+  ...readFileSync(`${folder}/ControlPlane.Domain/Plans/LimitKeys.cs`, "utf8").matchAll(
+    /^ {4}\[DependsOn\(FeatureKeys\.(\w+)\)\]\n {4}public const string \w+ = "([^"]+)";$/gm,
+  ),
+].map(([, feature, limit]) => {
+  if (!featureValues.has(feature)) {
+    throw new Error(`LimitKeys.cs: ${limit} depends on FeatureKeys.${feature}, which FeatureKeys.cs does not declare.`);
+  }
+  return [limit, featureValues.get(feature)];
+});
+// An attribute in another shape would lose its pair here in silence, so every [DependsOn of LimitKeys must match the pattern above.
+const declared = readFileSync(`${folder}/ControlPlane.Domain/Plans/LimitKeys.cs`, "utf8").split("[DependsOn(").length - 1;
+if (declared !== dependencies.length) {
+  throw new Error(`LimitKeys.cs: write each [DependsOn(FeatureKeys.X)] on its own line, just above its limit's constant.`);
+}
+writeFileSync(
+  "../../packages/api-client/src/limit-features.gen.ts",
+  [
+    "// Written by apps/api/scripts/generate-entitlements.mjs from apps/api/src/Modules/ControlPlane/ControlPlane.Domain/Plans/LimitKeys.cs. Do not edit it: run `pnpm generate`.",
+    "",
+    "/**",
+    " * The feature that each limit depends on: the limit changes only while the feature is on (apps/api/docs/ARCHITECTURE.md, E1). A",
+    " * limit that is not here depends on no feature.",
+    " */",
+    "export const LimitFeatures = {",
+    ...dependencies.map(([limit, feature]) => `  "${limit}": "${feature}",`),
+    "} as const;",
+    "",
+  ].join("\n"),
+);

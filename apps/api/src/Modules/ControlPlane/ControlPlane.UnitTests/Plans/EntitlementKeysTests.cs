@@ -36,4 +36,22 @@ public sealed class EntitlementKeysTests
 
     [Fact]
     public void KindOf_AKeyNotOnTheList_IsNone() => EntitlementKeys.KindOf("roles.unknown").ShouldBeNull();
+
+    // E1: a limit names the feature it depends on, once, in its declaration in LimitKeys.
+    [Fact]
+    public void ListDependencies_TheCodesList_HoldsEachDependentLimitWithItsFeature()
+    {
+        EntitlementKeys.Dependencies.ShouldBe(new Dictionary<string, string> { ["roles.custom.max"] = "roles.custom" }, ignoreOrder: true);
+    }
+
+    [Fact]
+    public void ListDependencies_EveryDependentLimit_NamesAFeatureOfTheList()
+    {
+        var wrong = EntitlementKeys.Dependencies.Where(pair => EntitlementKeys.KindOf(pair.Key) != EntitlementKind.Limit || EntitlementKeys.KindOf(pair.Value) != EntitlementKind.Feature);
+
+        wrong.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void FeatureOf_ALimitWithoutAFeature_IsNone() => EntitlementKeys.FeatureOf("members.max").ShouldBeNull();
 }

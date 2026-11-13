@@ -33,6 +33,21 @@ public sealed class CreatePlanTests(Database database) : IAsyncLifetime
         (created.StatusCode, await PlanRequests.ProblemOfAsync(created)).ShouldBe((HttpStatusCode.BadRequest, ("plan.entitlement_invalid", "audit.retention.days")));
     }
 
+    // E1: a new plan's dependent limit is a change, so it needs its feature on in the same request.
+    [Fact]
+    public async Task CreatePlan_ADependentLimitWithItsFeatureOff_IsInvalidWithTheLimit()
+    {
+        var admin = await AdminAsync();
+
+        var created = await admin.CreatePlanAsync($"Plan {Guid.NewGuid():N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.Off,
+            ["roles.custom.max"] = PlanRequests.Max(5),
+        });
+
+        (created.StatusCode, await PlanRequests.ProblemOfAsync(created)).ShouldBe((HttpStatusCode.BadRequest, ("plan.feature_required", "roles.custom.max")));
+    }
+
     [Fact]
     public async Task CreatePlan_ANameAndValues_CreatesThePlanWithItsAddress()
     {

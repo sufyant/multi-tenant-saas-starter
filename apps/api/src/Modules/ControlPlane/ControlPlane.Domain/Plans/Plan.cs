@@ -44,7 +44,7 @@ internal sealed class Plan
     public static Result<Plan> Create(Guid id, string name, IReadOnlyDictionary<string, EntitlementValue> values, bool nameTaken, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
-        var allowed = Check(trimmed, values, nameTaken);
+        var allowed = Check(trimmed, new Dictionary<string, EntitlementValue>(), values, nameTaken);
         if (!allowed.IsSuccess)
         {
             return allowed.Error;
@@ -62,7 +62,7 @@ internal sealed class Plan
     public Result<PlanEdit> Edit(string name, IReadOnlyDictionary<string, EntitlementValue> values, bool nameTaken)
     {
         var trimmed = name.Trim();
-        var allowed = Check(trimmed, values, nameTaken);
+        var allowed = Check(trimmed, ValueMap, values, nameTaken);
         if (!allowed.IsSuccess)
         {
             return allowed.Error;
@@ -86,7 +86,11 @@ internal sealed class Plan
         return before;
     }
 
-    private static Result Check(string trimmedName, IReadOnlyDictionary<string, EntitlementValue> values, bool nameTaken)
+    private static Result Check(
+        string trimmedName,
+        IReadOnlyDictionary<string, EntitlementValue> before,
+        IReadOnlyDictionary<string, EntitlementValue> values,
+        bool nameTaken)
     {
         if (trimmedName.Length is < 1 or > NameMaxLength)
         {
@@ -104,6 +108,21 @@ internal sealed class Plan
             if (!valid.IsSuccess)
             {
                 return valid.Error;
+            }
+        }
+
+        return CheckDependentLimits(before, values);
+    }
+
+    // E1: a dependent limit that gets another value, or a first one, needs the plan's feature on after the edit. A limit left out loses its
+    // value, which only closes it, so the deletion stays allowed; a feature turned off keeps its limit's value.
+    private static Result CheckDependentLimits(IReadOnlyDictionary<string, EntitlementValue> before, IReadOnlyDictionary<string, EntitlementValue> values)
+    {
+        foreach (var (limit, feature) in EntitlementKeys.Dependencies)
+        {
+            if (values.GetValueOrDefault(limit) is { } value && value != before.GetValueOrDefault(limit) && values.GetValueOrDefault(feature)?.IsOn != true)
+            {
+                return EntitlementValue.FeatureRequired(limit);
             }
         }
 
