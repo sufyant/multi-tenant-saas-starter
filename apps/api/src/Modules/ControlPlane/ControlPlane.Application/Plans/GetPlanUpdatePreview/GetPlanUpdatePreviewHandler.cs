@@ -5,7 +5,7 @@ namespace ControlPlane.Application.Plans.GetPlanUpdatePreview;
 
 public static class GetPlanUpdatePreviewHandler
 {
-    public static async Task<Result<ListPage<TenantExcessView>>> HandleAsync(
+    public static async Task<Result<PlanUpdatePreviewPageView>> HandleAsync(
         GetPlanUpdatePreviewQuery query,
         IPlanQueries plans,
         TimeProvider time,
@@ -23,8 +23,8 @@ public static class GetPlanUpdatePreviewHandler
             return invalid.Error;
         }
 
-        return await plans.GetPlanUpdatePreviewAsync(query.PlanId, values.Value, query.List, time.GetUtcNow(), cancellationToken) is { } page
-            ? page
+        return await plans.GetPlanUpdatePreviewAsync(query.PlanId, values.Value, query.List, time.GetUtcNow(), cancellationToken) is { } preview
+            ? preview
             : Plan.NotFound;
     }
 }

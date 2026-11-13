@@ -93,7 +93,7 @@ public static class PlanEndpoints
             new UpdatePlanCommand(user.Id(), planId, request.Name, request.IsDefault, ToViews(request.Entitlements)), cancellationToken)).Map(ToResponse);
 
     // A preview only reads, so it takes no idempotency key (I1). It reads across tenants, so it runs without one.
-    private static async Task<Result<ListPage<TenantExcessResponse>>> GetPlanUpdatePreview(
+    private static async Task<Result<PlanUpdatePreviewPageResponse>> GetPlanUpdatePreview(
         Guid planId,
         GetPlanUpdatePreviewRequest request,
         int? page,
@@ -109,10 +109,15 @@ public static class PlanEndpoints
             return list.Error;
         }
 
-        var preview = await bus.InvokeAsync<Result<ListPage<TenantExcessView>>>(
+        var preview = await bus.InvokeAsync<Result<PlanUpdatePreviewPageView>>(
             new GetPlanUpdatePreviewQuery(planId, ToViews(request.Entitlements), list.Value), cancellationToken);
-        return preview.Map(found => found.Map(tenant => new TenantExcessResponse(
-            tenant.TenantId, tenant.Name, tenant.Slug, tenant.Furthest, [.. tenant.Excesses.Select(ToResponse)], tenant.OverriddenKeys)));
+        return preview.Map(found => new PlanUpdatePreviewPageResponse(
+            [.. found.Page.Items.Select(tenant => new TenantExcessResponse(
+                tenant.TenantId, tenant.Name, tenant.Slug, tenant.Furthest, [.. tenant.Excesses.Select(ToResponse)], tenant.OverriddenKeys))],
+            found.Page.Page,
+            found.Page.PageSize,
+            found.Page.Total,
+            found.RetentionShortened is { } shortened ? new PlanRetentionShortenedResponse(shortened.Count, shortened.FromDays, shortened.ToDays) : null));
     }
 
     private static async Task<Result<TenantPlanResponse>> GetTenantPlan(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
@@ -134,7 +139,10 @@ public static class PlanEndpoints
         IMessageBus bus,
         CancellationToken cancellationToken) =>
         (await bus.InvokeForTenantAsync<Result<TenantPlanChangePreviewView>>(tenantId.ToString(), new GetTenantPlanChangePreviewQuery(request.PlanId), cancellationToken))
-            .Map(preview => new TenantPlanChangePreviewResponse([.. preview.Excesses.Select(ToResponse)], preview.OverriddenKeys));
+            .Map(preview => new TenantPlanChangePreviewResponse(
+                [.. preview.Excesses.Select(ToResponse)],
+                preview.OverriddenKeys,
+                preview.RetentionShortened is { } shortened ? new RetentionShortenedResponse(shortened.FromDays, shortened.ToDays) : null));
 
     // Setting an override sets a state, so it takes no idempotency key (I1).
     private static async Task<Result<TenantPlanResponse>> SetEntitlementOverride(

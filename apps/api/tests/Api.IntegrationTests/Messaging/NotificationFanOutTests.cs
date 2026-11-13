@@ -162,6 +162,25 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
         (await _rows.ValueListOfAsync(firstId, "tenant.plan_changed")).ShouldEndWith(", oldPlanName=Pro, tenantName=Acme Ltd");
     }
 
+    // K14: a plan change that shortens the Activity log period names the new period and the moment the older entries go, the event's
+    // moment plus the hold of 30 days.
+    [Fact]
+    public async Task NotifyTenantPlanChanged_APlanThatShortensTheActivityLog_WritesThePeriodAndWhenTheOlderEntriesGo()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var platform = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var plan = await _testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 }, $"Short {Guid.NewGuid():N}");
+        var before = DateTimeOffset.UtcNow;
+
+        await _api.WaitingForMessagesAsync(() => platform.ChangeTenantPlanAsync(tenant.Id, plan));
+
+        var values = await _rows.ValueListOfAsync(await _testData.UserIdOfAsync(owner), "tenant.plan_changed");
+        values.ShouldContain(", retentionDays=90, retentionGoesAt=");
+        var goesAt = DateTimeOffset.Parse(values.Split("retentionGoesAt=")[1].Split(", ")[0], System.Globalization.CultureInfo.InvariantCulture);
+        goesAt.ShouldBeInRange(before.AddDays(30), DateTimeOffset.UtcNow.AddDays(30));
+    }
+
     [Fact]
     public async Task NotifyTenantEntitlementOverrideSet_AnOverrideWithAnEnd_WritesOneForEachOwnerWithTheKeyTheValueAndTheEnd()
     {

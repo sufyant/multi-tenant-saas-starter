@@ -7,6 +7,19 @@ namespace Api.IntegrationTests.Fixtures;
 // The tenants and the answers of the plan checks, which the tests of several use cases share.
 internal static class PlanAnswers
 {
+    public const string RetentionKey = "audit.retention.days";
+
+    // A plan of the test's own with this Activity log period; 0 is unlimited.
+    public static Task<Guid> RetentionPlanAsync(TestData testData, int days) =>
+        testData.AddPlanAsync(new() { [RetentionKey] = days == 0 ? TestData.Unlimited : days });
+
+    // A preview's retentionShortened as "from>to", with "unlimited" for no limit, a count first when it has one ("4:365>90"), or "none"
+    // when it is null.
+    public static string RetentionShortened(JsonElement preview) =>
+        preview.GetProperty("retentionShortened") is { ValueKind: JsonValueKind.Object } shortened
+            ? $"{CountOf(shortened)}{DaysOf(shortened.GetProperty("fromDays"))}>{shortened.GetProperty("toDays").GetInt32()}"
+            : "none";
+
     // A tenant on the Free plan, roles.custom off, and its Owner.
     public static async Task<(Guid TenantId, HttpClient Owner)> FreeTenantAsync(TestData testData, ApiFactory api)
     {
@@ -29,4 +42,8 @@ internal static class PlanAnswers
         var problem = await answer.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken);
         (problem.GetProperty("code").GetString(), problem.GetProperty("entitlement").GetString()).ShouldBe(("plan.feature_unavailable", "roles.custom"));
     }
+
+    private static string CountOf(JsonElement shortened) => shortened.TryGetProperty("count", out var count) ? $"{count.GetInt32()}:" : string.Empty;
+
+    private static string DaysOf(JsonElement days) => days.ValueKind == JsonValueKind.Null ? "unlimited" : $"{days.GetInt32()}";
 }

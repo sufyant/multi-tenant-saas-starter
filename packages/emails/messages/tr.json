@@ -98,7 +98,12 @@
     },
     "tenant.plan_changed": {
       "title": "{tenantName} artık {newPlanName} planında",
-      "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır.",
+      "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır. Etkinlik kaydı artık kayıtları {retentionDays} gün saklıyor. {retentionDays} günden eski kayıtlar {retentionGoesAt} tarihinde silinir. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın.",
+      "without": {
+        "retentionDays": {
+          "body": "Platform, kuruluşunuzu {oldPlanName} planından {newPlanName} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
+        }
+      },
       "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz için aldınız."
     },
     "tenant.entitlement_override_set": {

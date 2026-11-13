@@ -9,8 +9,8 @@ import {
   getGetPlanQueryOptions,
   getListPlansQueryOptions,
   getPlanUpdatePreview,
-  type ListPageOfTenantExcessResponse,
   type PlanResponse,
+  type PlanUpdatePreviewPageResponse,
   ProblemDetailsError,
   problemOf,
   savedUnderKey,
@@ -274,7 +274,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
   const currentDefault = plans.data?.items.find((item) => item.isDefault);
   const [impact, setImpact] = useState<{
     body: UpdatePlanRequest;
-    first: ListPageOfTenantExcessResponse;
+    first: PlanUpdatePreviewPageResponse;
   } | null>(null);
   const form = useForm<Editing>({
     resolver: zodResolver(editing),

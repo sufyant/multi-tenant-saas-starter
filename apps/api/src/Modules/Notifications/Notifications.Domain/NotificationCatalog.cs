@@ -99,14 +99,21 @@ public static class NotificationCatalog
             WebOnly(),
             [Tenant(), Person("memberName"), Role("roleName")],
             Actor: "memberName"),
-        // The plan sets what the organisation may do, so the email tells its Owners too (U5).
+        // The plan sets what the organisation may do, so the email tells its Owners too (U5). A shorter Activity log period names the new
+        // period and the moment the older entries go; the two are there together or not at all (K14).
         new(
             TenantPlanChanged,
             NotificationBell.Tenant,
             NotificationLinkKind.TenantSettings,
             OrganisationPlan,
             WebAndEmail(),
-            [Tenant(), new("oldPlanName", NotificationValueKind.Text), new("newPlanName", NotificationValueKind.Text)]),
+            [
+                Tenant(),
+                new("oldPlanName", NotificationValueKind.Text),
+                new("newPlanName", NotificationValueKind.Text),
+                new("retentionDays", NotificationValueKind.Entitlement, Optional: true),
+                new("retentionGoesAt", NotificationValueKind.Date, Optional: true, With: "retentionDays"),
+            ]),
 
         // An override without an end has no expiry. An override leads to the page of its key (NotificationLinks).
         new(

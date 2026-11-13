@@ -9,6 +9,8 @@ namespace Api.IntegrationTests.Platform.Plans;
 // count and the new value. It never blocks the change.
 public sealed class GetTenantPlanChangePreviewTests(Database database) : IAsyncLifetime
 {
+    private const string Key = PlanAnswers.RetentionKey;
+
     private readonly TestData _testData = new(database);
 
     private ApiFactory _api = null!;
@@ -51,6 +53,42 @@ public sealed class GetTenantPlanChangePreviewTests(Database database) : IAsyncL
 
         (previewed.StatusCode, (await PlanRequests.ProblemOfAsync(previewed)).Code).ShouldBe((HttpStatusCode.NotFound, "plan.not_found"));
     }
+
+    // K14, E4: the new plan's Activity log period against the tenant's at this moment, as ChangeTenantPlan names it in its event. Only a
+    // shorter period answers, with the period before (null for no limit); 0 stands for unlimited.
+    [Theory]
+    [InlineData(365, 90, "365>90")]
+    [InlineData(365, 365, "none")]
+    [InlineData(365, 730, "none")]
+    [InlineData(365, 0, "none")]
+    [InlineData(0, 90, "unlimited>90")]
+    public async Task GetTenantPlanChangePreview_AnotherActivityLogPeriod_AnswersOnlyAShorterOne(int days, int newDays, string shortened)
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync(planId: await RetentionPlanAsync(days));
+
+        var previewed = await admin.GetTenantPlanChangePreviewAsync(tenant.Id, await RetentionPlanAsync(newDays));
+
+        previewed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        PlanAnswers.RetentionShortened(await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(shortened);
+    }
+
+    // E3: an override that has not expired holds the period, so the new plan shortens nothing; one that expired holds nothing.
+    [Theory]
+    [InlineData(1, "none")]
+    [InlineData(-1, "365>90")]
+    public async Task GetTenantPlanChangePreview_AnOverrideOfThePeriod_HoldsItOnlyUntilItExpires(int expiresInDays, string shortened)
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync(planId: await RetentionPlanAsync(365));
+        await _testData.AddOverrideRowAsync(tenant.Id, Key, 730, DateTimeOffset.UtcNow.AddDays(expiresInDays));
+
+        var previewed = await admin.GetTenantPlanChangePreviewAsync(tenant.Id, await RetentionPlanAsync(90));
+
+        PlanAnswers.RetentionShortened(await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(shortened);
+    }
+
+    private Task<Guid> RetentionPlanAsync(int days) => PlanAnswers.RetentionPlanAsync(_testData, days);
 
     private async Task<Guid> TenantWithRolesMembersAndInvitationsAsync()
     {

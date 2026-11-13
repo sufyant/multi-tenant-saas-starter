@@ -491,6 +491,24 @@ export interface AuditEntryResponse {
 }
 
 /**
+ * The period of a running hold, in days, and the moment the entries older than it go, at the hold's end.
+ */
+export interface AuditRetentionShorteningResponse {
+  days: number;
+  goesAt: string;
+}
+
+/**
+ * The tenant's Activity log period, in days, null for no limit, and the shortening that the Banner shows: null unless a hold runs and an
+ * entry it keeps is older than the period.
+ */
+export interface AuditRetentionResponse {
+  /** @nullable */
+  days: number | null;
+  shortening: null | AuditRetentionShorteningResponse;
+}
+
+/**
  * The six digits that went to the new address.
  */
 export interface ChangeEmailRequest {
@@ -1160,26 +1178,6 @@ export interface ListPageOfRoleDetailResponse {
 }
 
 /**
- * A tenant that a plan edit would put over: its id, name and slug, how far over its furthest key it goes, each such key, and the keys
- * that an override of the tenant still holds, which the edit does not touch.
- */
-export interface TenantExcessResponse {
-  tenantId: string;
-  name: string;
-  slug: string;
-  furthest: number;
-  excesses: ExcessResponse[];
-  overriddenKeys: string[];
-}
-
-export interface ListPageOfTenantExcessResponse {
-  items: TenantExcessResponse[];
-  page: number;
-  pageSize: number;
-  total: number;
-}
-
-/**
  * The id of the user to make an Owner, a member of the tenant, as the user's detail lists the user's memberships. It is required: a
  * request without one is refused, so it never falls back to an empty id.
  */
@@ -1264,6 +1262,49 @@ export interface PlanResponse {
   tenantCount: number;
   entitlements: PlanResponseEntitlements;
   createdAt: string;
+}
+
+/**
+ * A plan edit that makes the plan's Activity log period shorter: how many organisations on the plan it shortens, those without an
+ * override of the key that has not expired, and the plan's period before, in days, null for no limit, and after.
+ */
+export interface PlanRetentionShortenedResponse {
+  count: number;
+  /** @nullable */
+  fromDays: number | null;
+  toDays: number;
+}
+
+/**
+ * A tenant that a plan edit would put over: its id, name and slug, how far over its furthest key it goes, each such key, and the keys
+ * that an override of the tenant still holds, which the edit does not touch.
+ */
+export interface TenantExcessResponse {
+  tenantId: string;
+  name: string;
+  slug: string;
+  furthest: number;
+  excesses: ExcessResponse[];
+  overriddenKeys: string[];
+}
+
+/**
+ * A page of the tenants a plan edit would put over, in the list contract, and a shorter Activity log period, null when the edit keeps it
+ * as long or longer. The period's count is the edit's whole, which no search or page changes.
+ */
+export interface PlanUpdatePreviewPageResponse {
+  items: TenantExcessResponse[];
+  page: number;
+  pageSize: number;
+  total: number;
+  retentionShortened: null | PlanRetentionShortenedResponse;
+}
+
+/**
+ * How long the platform's log keeps an entry, in days: the deployment setting, never unlimited.
+ */
+export interface PlatformAuditRetentionResponse {
+  days: number;
 }
 
 /**
@@ -1397,6 +1438,16 @@ export const ReservedSlug = {
   TwitterImage: 'twitter-image',
   Www: 'www',
 } as const;
+
+/**
+ * A change that makes the tenant's Activity log period shorter: the period before, in days, null for no limit, and the new one. The
+ * entries older than the new period stay 30 days, then go.
+ */
+export interface RetentionShortenedResponse {
+  /** @nullable */
+  fromDays: number | null;
+  toDays: number;
+}
 
 /**
  * The tenant's value of the key in the route, over its plan's value; its expiry, after now, or null for one that never expires; and the
@@ -1557,11 +1608,13 @@ export interface TenantListPageResponse {
 
 /**
  * What a change of the tenant's plan would put it over: each key with the count and the new value, empty when it stays within every
- * key, and the keys an override of the tenant still holds, which the change does not touch.
+ * key, and the keys an override of the tenant still holds, which the change does not touch. A shorter Activity log period, null when the
+ * new plan keeps it as long or longer.
  */
 export interface TenantPlanChangePreviewResponse {
   excesses: ExcessResponse[];
   overriddenKeys: string[];
+  retentionShortened: null | RetentionShortenedResponse;
 }
 
 /**

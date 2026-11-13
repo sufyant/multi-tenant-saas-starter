@@ -302,3 +302,15 @@ export const ExportAuditLogParams = zod.object({
 
 export const ExportAuditLogResponse = zod.void()
 
+export const GetAuditRetentionParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const GetAuditRetentionResponse = zod.object({
+  "days": zod.int().nullable(),
+  "shortening": zod.union([zod.null(),zod.object({
+  "days": zod.int(),
+  "goesAt": zod.iso.datetime({"offset":true})
+}).describe('The period of a running hold, in days, and the moment the entries older than it go, at the hold\'s end.')])
+}).describe('The tenant\'s Activity log period, in days, null for no limit, and the shortening that the Banner shows: null unless a hold runs and an\nentry it keeps is older than the period.')
+

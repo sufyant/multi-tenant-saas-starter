@@ -15,7 +15,7 @@ namespace Notifications.Application.Notifications;
 /// here, so a text is written once. A person is named from <c>people</c>, which the caller reads now by user id: a deleted user, or one
 /// the directory does not know, reads as "Deleted user", and a user without a name as "Unnamed user", in the language. A built-in role, a
 /// word of a closed list and an entitlement's word are written in the language, a date in the language and the reader's time zone, and any
-/// other value as stored. A type whose optional value is missing takes its text without that value. A type, a word or a value the texts do
+/// other value as stored. A type whose optional value is missing takes its text without that value, or without the value it goes with. A type, a word or a value the texts do
 /// not have is a mistake of ours, as in an email.
 /// </summary>
 public sealed partial record NotificationText(string Title, string Body)
@@ -92,8 +92,9 @@ public sealed partial record NotificationText(string Title, string Body)
         var kind = NotificationCatalog.Of(type);
         if (kind.Values.FirstOrDefault(value => value.Optional && !values.ContainsKey(value.Name)) is { } missing)
         {
-            var without = text.Without?.GetValueOrDefault(missing.Name)
-                ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no text of {type} without {missing.Name}.");
+            var name = missing.With ?? missing.Name;
+            var without = text.Without?.GetValueOrDefault(name)
+                ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no text of {type} without {name}.");
             text = new TypeTexts(without.Title ?? text.Title, without.Body, null, null);
         }
 

@@ -18,6 +18,12 @@ public sealed class RetentionStore(AuditDbContext audit) : IRetentionStore
             ?? throw new InvalidOperationException("The tenant's row of the retention was written and locked in this transaction.");
     }
 
+    async Task<TenantRetention> IRetentionStore.FindTenantAsync(CancellationToken cancellationToken) =>
+        await audit.Retentions.AsNoTracking().SingleOrDefaultAsync(cancellationToken) ?? TenantRetention.Unwritten();
+
+    Task<bool> IRetentionStore.HasEntriesOlderThanAsync(DateTimeOffset before, DateTimeOffset? from, CancellationToken cancellationToken) =>
+        audit.Entries.AnyAsync(entry => entry.OccurredAt < before && (from == null || entry.OccurredAt >= from), cancellationToken);
+
     Task<bool> IRetentionStore.HasEntriesAsync(CancellationToken cancellationToken) => audit.Entries.AnyAsync(cancellationToken);
 
     Task IRetentionStore.RemoveTenantAsync(TenantRetention row, CancellationToken cancellationToken)

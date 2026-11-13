@@ -293,3 +293,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "nextCursor": zod.string().nullable()
 })
 
+export const GetPlatformAuditRetentionResponse = zod.object({
+  "days": zod.int()
+}).describe('How long the platform\'s log keeps an entry, in days: the deployment setting, never unlimited.')
+

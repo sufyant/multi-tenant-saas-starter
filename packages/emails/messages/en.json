@@ -98,7 +98,12 @@
     },
     "tenant.plan_changed": {
       "title": "{tenantName} is now on {newPlanName}",
-      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan.",
+      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan. The Activity log now keeps entries for {retentionDays} days. Entries older than {retentionDays} days go on {retentionGoesAt}. To keep a copy of the older ones, export them before then.",
+      "without": {
+        "retentionDays": {
+          "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan."
+        }
+      },
       "footer": "You received this because you are an Owner of this organisation."
     },
     "tenant.entitlement_override_set": {

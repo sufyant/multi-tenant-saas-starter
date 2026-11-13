@@ -146,6 +146,36 @@ public sealed class NotificationTextTests
         NotificationText.Render(NotificationCatalog.TenantEntitlementOverrideRemoved, values, People, language, null).Body.ShouldBe(body);
     }
 
+    // K14: a plan change that shortens the Activity log period says which entries go and on which date, in the words of 12.10.
+    [Theory]
+    [InlineData(Language.En, "The platform moved your organisation from Free to Pro. Its features and limits follow the new plan. The Activity log now keeps entries for 90 days. Entries older than 90 days go on 1 Dec 2026. To keep a copy of the older ones, export them before then.")]
+    [InlineData(Language.Tr, "Platform, kuruluşunuzu Free planından Pro planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır. Etkinlik kaydı artık kayıtları 90 gün saklıyor. 90 günden eski kayıtlar 1 Ara 2026 tarihinde silinir. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın.")]
+    [InlineData(Language.Ar, "نقلت المنصة مؤسستك من خطة Free إلى خطة Pro. تتبع الميزات والحدود الخطة الجديدة. يحتفظ سجل النشاط الآن بالإدخالات لمدة 90 يومًا. تُحذف الإدخالات الأقدم من 90 يومًا في 1 ديسمبر 2026. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ.")]
+    public void Render_APlanChangeThatShortensTheActivityLog_SaysWhichEntriesGoAndWhen(Language language, string body)
+    {
+        var values = new Dictionary<string, string>
+        {
+            ["tenantName"] = "Acme",
+            ["oldPlanName"] = "Free",
+            ["newPlanName"] = "Pro",
+            ["retentionDays"] = "90",
+            ["retentionGoesAt"] = "2026-12-01T12:00:00.0000000+00:00",
+        };
+
+        NotificationText.Render(NotificationCatalog.TenantPlanChanged, values, People, language, null).Body.ShouldBe(body);
+    }
+
+    [Theory]
+    [InlineData(Language.En, "The platform moved your organisation from Free to Pro. Its features and limits follow the new plan.")]
+    [InlineData(Language.Tr, "Platform, kuruluşunuzu Free planından Pro planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır.")]
+    [InlineData(Language.Ar, "نقلت المنصة مؤسستك من خطة Free إلى خطة Pro. تتبع الميزات والحدود الخطة الجديدة.")]
+    public void Render_APlanChangeThatShortensNothing_TakesTheTextWithoutTheActivityLog(Language language, string body)
+    {
+        var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["oldPlanName"] = "Free", ["newPlanName"] = "Pro" };
+
+        NotificationText.Render(NotificationCatalog.TenantPlanChanged, values, People, language, null).Body.ShouldBe(body);
+    }
+
     // Noon in UTC on 29 November is already 30 November in Auckland (UTC+13).
     [Theory]
     [InlineData(null, "Ada Lovelace closed Acme. It will be deleted on 29 Nov 2026 unless someone reopens it.")]

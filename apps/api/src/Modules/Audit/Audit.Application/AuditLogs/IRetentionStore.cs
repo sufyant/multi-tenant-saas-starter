@@ -15,6 +15,15 @@ public interface IRetentionStore
     /// </summary>
     internal Task<TenantRetention> LockTenantAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The active tenant's row as it is, without a lock and without tracking, for a read that changes nothing; an unwritten one when the
+    /// job has not written it yet.
+    /// </summary>
+    internal Task<TenantRetention> FindTenantAsync(CancellationToken cancellationToken);
+
+    /// <summary>Whether the active tenant's log holds an entry older than the moment, and from the start on when there is one.</summary>
+    internal Task<bool> HasEntriesOlderThanAsync(DateTimeOffset before, DateTimeOffset? from, CancellationToken cancellationToken);
+
     /// <summary>Whether the active tenant's log holds an entry.</summary>
     internal Task<bool> HasEntriesAsync(CancellationToken cancellationToken);
 
