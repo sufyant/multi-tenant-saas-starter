@@ -48,7 +48,7 @@ export type SentenceValues<N> = Record<string, string | ((chunks: N) => N)>;
 export type PlanWords<N> = {
   plan: (name: string) => () => N;
   key: (key: string) => () => N;
-  value: (value: AuditEntitlementValueResponse) => string;
+  value: (value: AuditEntitlementValueResponse, key: string) => string;
 };
 
 /**
@@ -74,7 +74,7 @@ export function detailValues<N>(
     case TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet:
       return {
         key: words.key(details.key),
-        value: words.value(details.newValue),
+        value: words.value(details.newValue, details.key),
         expires: details.newExpiresAt ? "yes" : "no",
         date: details.newExpiresAt ? date(details.newExpiresAt) : "",
       };
@@ -104,11 +104,12 @@ export function detailValues<N>(
 /** The message of a key the web knows; any other key shows as it is, never as a blank. */
 export const keyLabels: Record<
   string,
-  "rolesCustom" | "rolesCustomMax" | "membersMax"
+  "rolesCustom" | "rolesCustomMax" | "membersMax" | "auditRetentionDays"
 > = {
   [FeatureKey.RolesCustom]: "rolesCustom",
   [LimitKey.RolesCustomMax]: "rolesCustomMax",
   [LimitKey.MembersMax]: "membersMax",
+  [LimitKey.AuditRetentionDays]: "auditRetentionDays",
 };
 
 /** Which sides of a role's permissions changed: the `select` of the sentence of `role.updated`. */
@@ -123,15 +124,24 @@ export function changeOf(details: RoleUpdatedDetailsResponse): string {
 /** A list shows this many permissions by name, and counts the rest (the Messages board). */
 export const namedPermissions = 3;
 
-/** A plan's value in the reader's words: unlimited, on or off, or the number. */
+/** The words of a plan's value. */
+export type ValueTranslate = {
+  (
+    key: "plans.values.unlimited" | "plans.values.on" | "plans.values.off",
+  ): string;
+  (key: "plans.values.days", values: { days: number }): string;
+};
+
+/** A plan's value in the reader's words: unlimited, on or off, the Activity log's days, or the number. */
 export function planValue(
   value: AuditEntitlementValueResponse,
-  t: (
-    key: "plans.values.unlimited" | "plans.values.on" | "plans.values.off",
-  ) => string,
+  key: string,
+  t: ValueTranslate,
 ): string {
   if (value.unlimited) return t("plans.values.unlimited");
   if (value.enabled !== null)
     return t(value.enabled ? "plans.values.on" : "plans.values.off");
+  if (key === LimitKey.AuditRetentionDays && value.maximum !== null)
+    return t("plans.values.days", { days: value.maximum });
   return String(value.maximum);
 }

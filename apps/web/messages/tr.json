@@ -378,7 +378,13 @@
     "exportedCapped": "Dosyada en yeni {cap} kayıt var.",
     "fileTime": "Zaman (UTC)",
     "fileWho": "Kim",
-    "fileWhat": "Ne"
+    "fileWhat": "Ne",
+    "retention": {
+      "kept": "Kayıtlar {days, plural, other {# gün}} saklanır.",
+      "keptNoLimit": "Kayıtlar süre sınırı olmadan saklanır.",
+      "goesTitle": "{days, plural, other {# günden}} eski kayıtlar {date} tarihinde silinir.",
+      "goesText": "Etkinlik kaydı artık kayıtları {days, plural, other {# gün}} saklıyor. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın."
+    }
   },
   "blocked": {
     "suspendedTitle": "{organisation} askıya alındı",
@@ -554,12 +560,14 @@
     "keys": {
       "rolesCustom": "Özel roller",
       "rolesCustomMax": "Özel rol sınırı",
-      "membersMax": "Üye sınırı"
+      "membersMax": "Üye sınırı",
+      "auditRetentionDays": "Etkinlik kaydı"
     },
     "values": {
       "on": "açık",
       "off": "kapalı",
-      "unlimited": "sınırsız"
+      "unlimited": "sınırsız",
+      "days": "{days, plural, other {# gün}}"
     },
     "membersOverText": "{members} üye ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
     "noSeat": "Boş yer yok",

@@ -56,7 +56,7 @@ export function sentenceText(
       const keyLabel = keyLabels[key];
       return keyLabel ? t(`plans.keys.${keyLabel}`) : key;
     },
-    value: (value) => planValue(value, t),
+    value: (value, key) => planValue(value, key, t),
   };
   const people = {
     actor: () => actorName(entry.actor, t),
