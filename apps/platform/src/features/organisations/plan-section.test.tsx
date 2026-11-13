@@ -5,6 +5,7 @@ import {
   LimitKey,
   TenantResponseStatus,
 } from "@repo/api-client";
+import { expectShownReason } from "@repo/ui/test/dialog";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -632,6 +633,22 @@ describe("PlanSection", () => {
       ),
     ).toBeVisible();
     expect(previews[0]?.body).toEqual({ planId: free.id });
+  });
+
+  it("ChangePlan_CurrentPlanChosen_SaysToChooseAnother", async () => {
+    await renderSection();
+
+    await userEvent.click(screen.getByRole("button", { name: "Change plan" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Change the plan of Burren Supply",
+      }),
+    );
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Change plan" }),
+      "This is the current plan. Choose another.",
+    );
   });
 
   it("ChangePlan_Confirmed_PutsThePlanAndReadsAgain", async () => {

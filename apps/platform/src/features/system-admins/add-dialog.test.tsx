@@ -1,4 +1,5 @@
 import { ErrorCode, type UserResponse } from "@repo/api-client";
+import { expectShownReason } from "@repo/ui/test/dialog";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -223,6 +224,43 @@ describe("AddSystemAdminDialog", () => {
     ).toBeVisible();
     expect(dialog.queryByText("Mehmet Kaya")).toBeNull();
     expect(dialog.getByRole("button", { name: "Continue" })).toBeDisabled();
+  });
+
+  it("Add_NoPersonYet_DescribesContinueWithTheDialogsText", async () => {
+    server.use(meAs(ciara), users([]));
+
+    const dialog = await openAdd();
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Continue" }),
+      "Type the person’s full email address. There are no suggestions.",
+    );
+  });
+
+  it("Add_NoUser_DescribesContinueWithTheFieldsError", async () => {
+    server.use(meAs(ciara), users([]));
+
+    const dialog = await find("mehmet@northwind.ex");
+    await dialog.findByText(
+      "No user has this email. They must sign in once first.",
+    );
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Continue" }),
+      "No user has this email. They must sign in once first.",
+    );
+  });
+
+  it("Add_AlreadyASystemAdmin_DescribesContinueWithTheBanner", async () => {
+    server.use(meAs(ciara), users([tomas]));
+
+    const dialog = await find("tomas@starter.example");
+    await dialog.findByText(sentence("Tomás Ryan is already a system admin."));
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Continue" }),
+      "Tomás Ryan is already a system admin.",
+    );
   });
 
   it("Add_OtherCase_FindsTheUser", async () => {
