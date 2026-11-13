@@ -61,6 +61,20 @@ const renderSection = async (
   await screen.findByRole("group", { name: "Plan" });
 };
 
+/** Burren Supply with Custom roles off by an override (4.50): Pro gives it, the override turns it off. */
+const featureOffPlan = (rows: Parameters<typeof burrenPlan>[0] = {}) =>
+  burrenPlan({
+    [FeatureKey.RolesCustom]: {
+      override: ciaraOverride({
+        value: off,
+        expiresAt: null,
+        reason: "Contract paused",
+      }),
+      effective: off,
+    },
+    ...rows,
+  });
+
 /** The row of a key in the section's card: a group named by the key. */
 const rowOf = (name: string) => within(screen.getByRole("group", { name }));
 
@@ -895,5 +909,101 @@ describe("PlanSection", () => {
       await dialog.findByText(sentence("From Pro to Free.")),
     ).toBeVisible();
     expect(dialog.queryByText(/Activity log/)).toBeNull();
+  });
+
+  // 37d (4.50): Custom roles off by an override; its limit says Off, keeps the plan's value and the override, and only Remove works.
+  it("Section_DependentLimitWithItsFeatureOff_SaysOffAndAllowsOnlyRemove", async () => {
+    await renderSection(active, featureOffPlan());
+
+    const limit = rowOf("Custom roles limit");
+    expect(limit.getByText("Off")).toBeVisible();
+    expect(limit.queryByText("14 of 25")).toBeNull();
+    expect(
+      limit.getByText(
+        sentence(
+          "Pro gives 20. Override: 25 until 31 Dec 2026 · Reason: Moving their old roles over; review at year end. · by Ciara Byrne",
+        ),
+      ),
+    ).toBeVisible();
+    expect(limit.getByText("Turn on Custom roles first.")).toBeVisible();
+    expect(
+      limit.getByRole("button", {
+        name: "Edit the override on Custom roles limit",
+      }),
+    ).toBeDisabled();
+    expect(
+      limit.getByRole("button", {
+        name: "Remove the override on Custom roles limit",
+      }),
+    ).toBeEnabled();
+    expect(rowOf("Custom roles").getByText("Off")).toBeVisible();
+    expect(
+      rowOf("Custom roles").getByRole("button", {
+        name: "Edit the override on Custom roles",
+      }),
+    ).toBeEnabled();
+  });
+
+  // 37d (4.51): Add override of the limit while the organisation's feature is off: the value and the action are disabled.
+  it("AddOverride_DependentLimitWithItsFeatureOff_DisablesTheValueAndTheAction", async () => {
+    await renderSection(
+      active,
+      featureOffPlan({
+        [LimitKey.RolesCustomMax]: { override: null, effective: max(20) },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await userEvent.click(
+      dialog.getByRole("combobox", { name: "Feature or limit" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Custom roles limit" }),
+    );
+
+    const field = dialog.getByRole("spinbutton", { name: "Value" });
+    expect(field).toBeDisabled();
+    expect(field).toHaveValue(20);
+    expect(field).toHaveAccessibleDescription("Turn on Custom roles first.");
+    expect(dialog.getByRole("button", { name: "Add override" })).toBeDisabled();
+    await userEvent.click(
+      dialog.getByRole("combobox", { name: "Feature or limit" }),
+    );
+    await userEvent.click(await screen.findByRole("option", { name: "Seats" }));
+    expect(dialog.getByRole("button", { name: "Add override" })).toBeEnabled();
+  });
+
+  // 37d (4.52): the removal stays allowed, and says when the plan's value applies.
+  it("RemoveOverride_DependentLimitWithItsFeatureOff_SaysThePlansValueAppliesWhenTheFeatureTurnsOn", async () => {
+    const calls: Call[] = [];
+    await renderSection(active, featureOffPlan());
+    server.use(
+      plansCommand(
+        "delete",
+        `tenants/${burren.id}/entitlement-overrides/${LimitKey.RolesCustomMax}`,
+        [() => new HttpResponse(null, { status: 204 })],
+        calls,
+      ),
+    );
+
+    await removeOverride("Custom roles limit");
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Remove the override on Custom roles limit?",
+      }),
+    );
+    expect(
+      dialog.getByText(
+        sentence(
+          "Burren Supply goes back to Pro’s value: 20. It applies when Custom roles turns on.",
+        ),
+      ),
+    ).toBeVisible();
+    await userEvent.click(
+      dialog.getByRole("button", { name: "Remove override" }),
+    );
+
+    await waitFor(() => expect(calls).toHaveLength(1));
   });
 });
