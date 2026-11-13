@@ -36,6 +36,7 @@ import {
   plansAnswer,
   plansCommand,
   tenantPlanAnswer,
+  unlimited,
 } from "../../../test/plans";
 import { renderWithProviders, sentence } from "../../../test/render";
 import { PlanSection } from "./plan-section";
@@ -713,6 +714,44 @@ describe("PlanSection", () => {
       ),
     ).toBeVisible();
     expect(dialog.queryByText(/goes back/)).toBeNull();
+  });
+
+  // A plan with no limit keeps every entry, so any number is shorter: the sentence names no period of the plan.
+  it("AddOverride_ActivityLogOfAPlanWithNoLimit_SaysThePlanKeepsEveryEntry", async () => {
+    await renderSection(
+      active,
+      burrenPlan({
+        [LimitKey.AuditRetentionDays]: {
+          planValue: unlimited,
+          effective: unlimited,
+        },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("combobox", {
+        name: "Feature or limit",
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Activity log" }),
+    );
+    const dialog = within(await screen.findByRole("alertdialog"));
+    // It starts from the value that applies: unlimited.
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Unlimited" }));
+    await userEvent.type(
+      dialog.getByRole("spinbutton", { name: "Value" }),
+      "60",
+    );
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "Pro keeps entries with no time limit. Entries older than 60 days stay 30 days, then go.",
+        ),
+      ),
+    ).toBeVisible();
   });
 
   // 4.49: a longer value until a day shortens the period on that day.
