@@ -117,6 +117,8 @@ const totp = (verified: boolean) => ({
  * iPhone in Istanbul two hours ago and Firefox on Windows in Berlin on 3 October follow it; without, as in 6.05, it is alone.
  * With `authenticator`, Set up works without touching the user at Clerk: Clerk's answers make the frame's secret, take any code
  * and give the frame's backup codes, and from then on the person has the authenticator (6.25 to 6.27).
+ * The route waits for Clerk's answer, so it can still run when the test ends, and a context that closes under it fails the
+ * test. A test file that calls this removes its routes in its `afterEach`: `page.unrouteAll({ behavior: "ignoreErrors" })`.
  */
 export async function mockIdentity(
   page: Page,

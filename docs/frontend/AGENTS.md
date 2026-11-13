@@ -98,6 +98,7 @@ The rules are in section 6 of `docs/frontend/ARCHITECTURE.md`. In short:
 - Playwright with `@clerk/testing`, and axe on every page (WCAG 2.2 AA).
 - Test names: `Operation_Scenario_ExpectedOutcome`; an architecture test `Rule_Scope_Expectation`. No `if`, loop, `?:` or `??` in a test body.
 - Fix a flaky test at its root; never add a retry.
+- A Playwright route that awaits (`route.fetch`, a response's body) can outlive its test, and a context that closes under it fails the test. A test file with such a route calls `page.unrouteAll({ behavior: "ignoreErrors" })` in its `afterEach`. Not `"wait"`: a route that holds its answer on purpose, as a loading shot does, never ends.
 
 ## Writing
 
