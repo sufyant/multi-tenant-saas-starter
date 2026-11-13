@@ -98,7 +98,12 @@
     },
     "tenant.plan_changed": {
       "title": "أصبحت {tenantName} على خطة {newPlanName}",
-      "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة.",
+      "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة. يحتفظ سجل النشاط الآن بالإدخالات لمدة {retentionDays} يومًا. تُحذف الإدخالات الأقدم من {retentionDays} يومًا في {retentionGoesAt}. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ.",
+      "without": {
+        "retentionDays": {
+          "body": "نقلت المنصة مؤسستك من خطة {oldPlanName} إلى خطة {newPlanName}. تتبع الميزات والحدود الخطة الجديدة."
+        }
+      },
       "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة."
     },
     "tenant.entitlement_override_set": {

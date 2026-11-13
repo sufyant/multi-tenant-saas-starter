@@ -2187,7 +2187,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListPageOfTenantExcessResponse"
+                  "$ref": "#/components/schemas/PlanUpdatePreviewPageResponse"
                 }
               }
             }
@@ -4423,6 +4423,115 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CursorPageOfAuditEntryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/audit-log/retention": {
+      "get": {
+        "tags": [
+          "Platform/AuditLogs"
+        ],
+        "operationId": "GetPlatformAuditRetention",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformAuditRetentionResponse"
                 }
               }
             }
@@ -7000,6 +7109,126 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/audit-log/retention": {
+      "get": {
+        "tags": [
+          "Tenant/AuditLogs"
+        ],
+        "operationId": "GetAuditRetention",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditRetentionResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -9755,6 +9984,51 @@
         },
         "description": "A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse."
       },
+      "AuditRetentionResponse": {
+        "required": [
+          "days",
+          "shortening"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "shortening": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditRetentionShorteningResponse"
+              }
+            ]
+          }
+        },
+        "description": "The tenant's Activity log period, in days, null for no limit, and the shortening that the Banner shows: null unless a hold runs and an\nentry it keeps is older than the period."
+      },
+      "AuditRetentionShorteningResponse": {
+        "required": [
+          "days",
+          "goesAt"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goesAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The period of a running hold, in days, and the moment the entries older than it go, at the hold's end."
+      },
       "AuditRoleResponse": {
         "required": [
           "id",
@@ -10853,35 +11127,6 @@
           }
         }
       },
-      "ListPageOfTenantExcessResponse": {
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TenantExcessResponse"
-            }
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "MakeOwnerRequest": {
         "required": [
           "userId"
@@ -11567,6 +11812,32 @@
         },
         "description": "A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was\ncreated. A key the plan has no value for is closed."
       },
+      "PlanRetentionShortenedResponse": {
+        "required": [
+          "count",
+          "fromDays",
+          "toDays"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fromDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A plan edit that makes the plan's Activity log period shorter: how many organisations on the plan it shortens, those without an\noverride of the key that has not expired, and the plan's period before, in days, null for no limit, and after."
+      },
       "PlanUpdatedDetailsResponse": {
         "required": [
           "oldName",
@@ -11623,6 +11894,60 @@
             ]
           }
         }
+      },
+      "PlanUpdatePreviewPageResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total",
+          "retentionShortened"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantExcessResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "retentionShortened": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlanRetentionShortenedResponse"
+              }
+            ]
+          }
+        },
+        "description": "A page of the tenants a plan edit would put over, in the list contract, and a shorter Activity log period, null when the edit keeps it\nas long or longer. The period's count is the edit's whole, which no search or page changes."
+      },
+      "PlatformAuditRetentionResponse": {
+        "required": [
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How long the platform's log keeps an entry, in days: the deployment setting, never unlimited."
       },
       "PreferencesResponse": {
         "required": [
@@ -11869,6 +12194,27 @@
           "TwitterImage",
           "Www"
         ]
+      },
+      "RetentionShortenedResponse": {
+        "required": [
+          "fromDays",
+          "toDays"
+        ],
+        "type": "object",
+        "properties": {
+          "fromDays": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "toDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A change that makes the tenant's Activity log period shorter: the period before, in days, null for no limit, and the new one. The\nentries older than the new period stay 30 days, then go."
       },
       "RoleCreatedDetailsResponse": {
         "required": [
@@ -12637,7 +12983,8 @@
       "TenantPlanChangePreviewResponse": {
         "required": [
           "excesses",
-          "overriddenKeys"
+          "overriddenKeys",
+          "retentionShortened"
         ],
         "type": "object",
         "properties": {
@@ -12652,9 +12999,19 @@
             "items": {
               "type": "string"
             }
+          },
+          "retentionShortened": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RetentionShortenedResponse"
+              }
+            ]
           }
         },
-        "description": "What a change of the tenant's plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch."
+        "description": "What a change of the tenant's plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch. A shorter Activity log period, null when the\nnew plan keeps it as long or longer."
       },
       "TenantPlanResponse": {
         "required": [

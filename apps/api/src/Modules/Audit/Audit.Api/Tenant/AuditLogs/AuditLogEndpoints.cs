@@ -4,6 +4,8 @@ using Audit.Api.Authentication;
 using Audit.Application.AuditLogs;
 using Audit.Application.AuditLogs.ExportAuditLog;
 using Audit.Application.AuditLogs.GetAuditEntryNames;
+using Audit.Application.AuditLogs.GetAuditRetention;
+using Audit.Application.AuditLogs.GetAuditRetentionPeriod;
 using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
@@ -24,6 +26,7 @@ public static class AuditLogEndpoints
     {
         tenant.MapGet("/audit-log", ListAuditEntries).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
         tenant.MapPost("/audit-log/export", ExportAuditLog).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
+        tenant.MapGet("/audit-log/retention", GetAuditRetention).RequireAuthorization(AuditLogPermissions.TenantAuditRead).WithMetadata(new NotPlanGated());
     }
 
     internal static AuditEntryResponse ToResponse(AuditEntryView entry) => new(
@@ -114,5 +117,21 @@ public static class AuditLogEndpoints
 
         var named = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new GetAuditEntryNamesQuery(entries.Value), cancellationToken);
         return named.Map(found => found.Map(ToResponse));
+    }
+
+    // K14: two queries, as for the names of a page (W1): the period from ControlPlane, then the hold from Audit's row and entries. The
+    // tenant comes from the route: the host has declared it for both.
+    private static async Task<Result<AuditRetentionResponse>> GetAuditRetention(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken)
+    {
+        var period = await bus.InvokeAsync<Result<AuditRetentionPeriodView>>(new GetAuditRetentionPeriodQuery(tenantId), cancellationToken);
+        if (!period.IsSuccess)
+        {
+            return period.Error;
+        }
+
+        var retention = await bus.InvokeAsync<Result<AuditRetentionView>>(new GetAuditRetentionQuery(period.Value.Days), cancellationToken);
+        return retention.Map(found => new AuditRetentionResponse(
+            found.Days,
+            found.Shortening is { } shortening ? new AuditRetentionShorteningResponse(shortening.Days, shortening.GoesAt) : null));
     }
 }

@@ -20,9 +20,9 @@ public interface IPlanQueries
     /// <summary>
     /// The tenants on the plan, but a purged tenant, that these values would put over a limit, or whose feature in use they would turn
     /// off, under each tenant's overrides at this moment: a page of them, those that go furthest over first. The search matches the
-    /// tenant's name or slug. None when no plan has the id.
+    /// tenant's name or slug. With it, a shorter Activity log period and how many tenants it shortens. None when no plan has the id.
     /// </summary>
-    internal Task<ListPage<TenantExcessView>?> GetPlanUpdatePreviewAsync(
+    internal Task<PlanUpdatePreviewView?> GetPlanUpdatePreviewAsync(
         Guid planId,
         IReadOnlyDictionary<string, EntitlementValue> values,
         ListRequest<GetPlanUpdatePreviewSort> list,

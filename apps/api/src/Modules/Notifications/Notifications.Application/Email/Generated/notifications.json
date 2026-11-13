@@ -22,8 +22,13 @@
       },
       "tenant.plan_changed": {
         "title": "{{tenantName}} is now on {{newPlanName}}",
-        "body": "The platform moved your organisation from {{oldPlanName}} to {{newPlanName}}. Its features and limits follow the new plan.",
-        "footer": "You received this because you are an Owner of this organisation."
+        "body": "The platform moved your organisation from {{oldPlanName}} to {{newPlanName}}. Its features and limits follow the new plan. The Activity log now keeps entries for {{retentionDays}} days. Entries older than {{retentionDays}} days go on {{retentionGoesAt}}. To keep a copy of the older ones, export them before then.",
+        "footer": "You received this because you are an Owner of this organisation.",
+        "without": {
+          "retentionDays": {
+            "body": "The platform moved your organisation from {{oldPlanName}} to {{newPlanName}}. Its features and limits follow the new plan."
+          }
+        }
       },
       "tenant.entitlement_override_set": {
         "title": "A plan value changed for {{tenantName}}",
@@ -147,8 +152,13 @@
       },
       "tenant.plan_changed": {
         "title": "{{tenantName}} artık {{newPlanName}} planında",
-        "body": "Platform, kuruluşunuzu {{oldPlanName}} planından {{newPlanName}} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır.",
-        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz için aldınız."
+        "body": "Platform, kuruluşunuzu {{oldPlanName}} planından {{newPlanName}} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır. Etkinlik kaydı artık kayıtları {{retentionDays}} gün saklıyor. {{retentionDays}} günden eski kayıtlar {{retentionGoesAt}} tarihinde silinir. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın.",
+        "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz için aldınız.",
+        "without": {
+          "retentionDays": {
+            "body": "Platform, kuruluşunuzu {{oldPlanName}} planından {{newPlanName}} planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır."
+          }
+        }
       },
       "tenant.entitlement_override_set": {
         "title": "{{tenantName}} için bir plan değeri değişti",
@@ -272,8 +282,13 @@
       },
       "tenant.plan_changed": {
         "title": "أصبحت {{tenantName}} على خطة {{newPlanName}}",
-        "body": "نقلت المنصة مؤسستك من خطة {{oldPlanName}} إلى خطة {{newPlanName}}. تتبع الميزات والحدود الخطة الجديدة.",
-        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة."
+        "body": "نقلت المنصة مؤسستك من خطة {{oldPlanName}} إلى خطة {{newPlanName}}. تتبع الميزات والحدود الخطة الجديدة. يحتفظ سجل النشاط الآن بالإدخالات لمدة {{retentionDays}} يومًا. تُحذف الإدخالات الأقدم من {{retentionDays}} يومًا في {{retentionGoesAt}}. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ.",
+        "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة.",
+        "without": {
+          "retentionDays": {
+            "body": "نقلت المنصة مؤسستك من خطة {{oldPlanName}} إلى خطة {{newPlanName}}. تتبع الميزات والحدود الخطة الجديدة."
+          }
+        }
       },
       "tenant.entitlement_override_set": {
         "title": "تغيّرت قيمة في خطة {{tenantName}}",

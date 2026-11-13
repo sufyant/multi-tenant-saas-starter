@@ -4,9 +4,9 @@ import {
   FeatureKey,
   LimitKey,
   type ListPageOfPlanListItemResponse,
-  type ListPageOfTenantExcessResponse,
   type PlanListItemResponse,
   type PlanResponse,
+  type PlanUpdatePreviewPageResponse,
   type TenantEntitlementResponse,
   type TenantExcessResponse,
   type TenantPlanResponse,
@@ -163,12 +163,13 @@ export const excess = (
 /** One page of GetPlanUpdatePreview. */
 export const previewPage = (
   items: TenantExcessResponse[],
-  values: Partial<ListPageOfTenantExcessResponse> = {},
-): ListPageOfTenantExcessResponse => ({
+  values: Partial<PlanUpdatePreviewPageResponse> = {},
+): PlanUpdatePreviewPageResponse => ({
   items,
   page: 1,
   pageSize: 20,
   total: items.length,
+  retentionShortened: null,
   ...values,
 });
 

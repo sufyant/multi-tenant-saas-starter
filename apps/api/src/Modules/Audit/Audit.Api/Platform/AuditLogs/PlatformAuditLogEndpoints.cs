@@ -4,6 +4,7 @@ using Audit.Application.AuditLogs.GetAuditEntryNames;
 using Audit.Application.AuditLogs.ListPlatformAuditEntries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 using SharedKernel;
 using Wolverine;
 
@@ -12,8 +13,16 @@ namespace Audit.Api.Platform.AuditLogs;
 /// <summary>The platform's audit log: what system admins did, above tenants.</summary>
 public static class PlatformAuditLogEndpoints
 {
-    public static void Map(RouteGroupBuilder platform) =>
+    public static void Map(RouteGroupBuilder platform)
+    {
         platform.MapGet("/audit-log", ListPlatformAuditEntries).RequireAuthorization(AuditLogPermissions.PlatformAuditRead);
+        platform.MapGet("/audit-log/retention", GetPlatformAuditRetention).RequireAuthorization(AuditLogPermissions.PlatformAuditRead);
+    }
+
+    // K15: the deployment setting that the daily job reads, validated at the start, not a plan's value. No table holds it, so no message
+    // and no transaction is needed to read it.
+    private static Result<PlatformAuditRetentionResponse> GetPlatformAuditRetention(IOptions<AuditRetentionOptions> retention) =>
+        new PlatformAuditRetentionResponse(retention.Value.Days);
 
     // The log is above tenants, so the query runs without a tenant, and the platform door declares no user: the only transaction that
     // reads the platform's log (R11). K5's exception: a cursor, newest first, and no total. The tenant filter keeps the entries about that

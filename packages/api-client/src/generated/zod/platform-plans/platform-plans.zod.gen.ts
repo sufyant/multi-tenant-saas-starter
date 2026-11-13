@@ -175,8 +175,13 @@ export const GetPlanUpdatePreviewResponse = zod.object({
 }).describe('A tenant that a plan edit would put over: its id, name and slug, how far over its furthest key it goes, each such key, and the keys\nthat an override of the tenant still holds, which the edit does not touch.')),
   "page": zod.int(),
   "pageSize": zod.int(),
-  "total": zod.int()
-})
+  "total": zod.int(),
+  "retentionShortened": zod.union([zod.null(),zod.object({
+  "count": zod.int(),
+  "fromDays": zod.int().nullable(),
+  "toDays": zod.int()
+}).describe('A plan edit that makes the plan\'s Activity log period shorter: how many organisations on the plan it shortens, those without an\noverride of the key that has not expired, and the plan\'s period before, in days, null for no limit, and after.')])
+}).describe('A page of the tenants a plan edit would put over, in the list contract, and a shorter Activity log period, null when the edit keeps it\nas long or longer. The period\'s count is the edit\'s whole, which no search or page changes.')
 
 export const GetTenantPlanParams = zod.object({
   "tenantId": zod.uuid()
@@ -293,8 +298,12 @@ export const GetTenantPlanChangePreviewResponse = zod.object({
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
   "amount": zod.int()
 }).describe('One key a change would put a tenant over: what the tenant has that the key counts (`count`), the new effective value, and how far\nover it goes (`amount`): the count less a limit, or the whole count for a feature that turns off while the tenant uses it.')),
-  "overriddenKeys": zod.array(zod.string())
-}).describe('What a change of the tenant\'s plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch.')
+  "overriddenKeys": zod.array(zod.string()),
+  "retentionShortened": zod.union([zod.null(),zod.object({
+  "fromDays": zod.int().nullable(),
+  "toDays": zod.int()
+}).describe('A change that makes the tenant\'s Activity log period shorter: the period before, in days, null for no limit, and the new one. The\nentries older than the new period stay 30 days, then go.')])
+}).describe('What a change of the tenant\'s plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch. A shorter Activity log period, null when the\nnew plan keeps it as long or longer.')
 
 export const SetEntitlementOverrideParams = zod.object({
   "tenantId": zod.uuid(),

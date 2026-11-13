@@ -28,8 +28,10 @@ import type {
   EntitlementValueResponse,
   GetPlanUpdatePreviewRequest,
   ListPageOfPlanListItemResponse,
-  ListPageOfTenantExcessResponse,
   PlanResponse,
+  PlanRetentionShortenedResponse,
+  PlanUpdatePreviewPageResponse,
+  RetentionShortenedResponse,
   SetEntitlementOverrideRequest,
   TenantPlanChangePreviewResponse,
   TenantPlanResponse,
@@ -51,7 +53,9 @@ export const getUpdatePlanResponseMock = (overrideResponse: Partial<Extract<Plan
         [faker.string.alphanumeric(5)]: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}
       }, createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getGetPlanUpdatePreviewResponseMock = (overrideResponse: Partial<Extract<ListPageOfTenantExcessResponse, object>> = {}): ListPageOfTenantExcessResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), furthest: faker.number.int(), excesses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), count: faker.number.int(), newValue: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, amount: faker.number.int()})), overriddenKeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}})))})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
+export const getGetPlanUpdatePreviewResponsePlanRetentionShortenedResponseMock = (overrideResponse: Partial<PlanRetentionShortenedResponse> = {}): PlanRetentionShortenedResponse => ({...{count: faker.number.int(), fromDays: faker.helpers.arrayElement([faker.number.int(), null]), toDays: faker.number.int()}, ...overrideResponse});
+
+export const getGetPlanUpdatePreviewResponseMock = (overrideResponse: Partial<Extract<PlanUpdatePreviewPageResponse, object>> = {}): PlanUpdatePreviewPageResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({tenantId: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), furthest: faker.number.int(), excesses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), count: faker.number.int(), newValue: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, amount: faker.number.int()})), overriddenKeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}})))})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), retentionShortened: faker.helpers.arrayElement([null,{...getGetPlanUpdatePreviewResponsePlanRetentionShortenedResponseMock()},]), ...overrideResponse})
 
 export const getGetTenantPlanResponseEntitlementValueResponseMock = (overrideResponse: Partial<EntitlementValueResponse> = {}): EntitlementValueResponse => ({...{enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, ...overrideResponse});
 
@@ -65,7 +69,9 @@ export const getChangeTenantPlanResponseEntitlementOverrideResponseMock = (overr
 
 export const getChangeTenantPlanResponseMock = (overrideResponse: Partial<Extract<TenantPlanResponse, object>> = {}): TenantPlanResponse => ({tenantId: faker.string.uuid(), plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, entitlements: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), isFeature: faker.datatype.boolean(), planValue: faker.helpers.arrayElement([null,{...getChangeTenantPlanResponseEntitlementValueResponseMock()},]), override: faker.helpers.arrayElement([null,{...getChangeTenantPlanResponseEntitlementOverrideResponseMock()},]), effective: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, count: faker.number.int()})), ...overrideResponse})
 
-export const getGetTenantPlanChangePreviewResponseMock = (overrideResponse: Partial<Extract<TenantPlanChangePreviewResponse, object>> = {}): TenantPlanChangePreviewResponse => ({excesses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), count: faker.number.int(), newValue: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, amount: faker.number.int()})), overriddenKeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), ...overrideResponse})
+export const getGetTenantPlanChangePreviewResponseRetentionShortenedResponseMock = (overrideResponse: Partial<RetentionShortenedResponse> = {}): RetentionShortenedResponse => ({...{fromDays: faker.helpers.arrayElement([faker.number.int(), null]), toDays: faker.number.int()}, ...overrideResponse});
+
+export const getGetTenantPlanChangePreviewResponseMock = (overrideResponse: Partial<Extract<TenantPlanChangePreviewResponse, object>> = {}): TenantPlanChangePreviewResponse => ({excesses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), count: faker.number.int(), newValue: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, amount: faker.number.int()})), overriddenKeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), retentionShortened: faker.helpers.arrayElement([null,{...getGetTenantPlanChangePreviewResponseRetentionShortenedResponseMock()},]), ...overrideResponse})
 
 export const getSetEntitlementOverrideResponseEntitlementValueResponseMock = (overrideResponse: Partial<EntitlementValueResponse> = {}): EntitlementValueResponse => ({...{enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, ...overrideResponse});
 
@@ -122,7 +128,7 @@ export const getUpdatePlanMockHandler = (overrideResponse?: PlanResponse | ((inf
   }, options)
 }
 
-export const getGetPlanUpdatePreviewMockHandler = (overrideResponse?: ListPageOfTenantExcessResponse | ((info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => Promise<ListPageOfTenantExcessResponse> | ListPageOfTenantExcessResponse), options?: RequestHandlerOptions) => {
+export const getGetPlanUpdatePreviewMockHandler = (overrideResponse?: PlanUpdatePreviewPageResponse | ((info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => Promise<PlanUpdatePreviewPageResponse> | PlanUpdatePreviewPageResponse), options?: RequestHandlerOptions) => {
   return http.post<{ planId: string }, GetPlanUpdatePreviewRequest>('*/v1/platform/plans/:planId/preview', async (info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => {
 
 

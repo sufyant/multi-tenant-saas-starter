@@ -4,8 +4,8 @@ import {
   type ExcessResponse,
   type GetPlanUpdatePreviewRequestEntitlements,
   getPlanUpdatePreview,
-  type ListPageOfTenantExcessResponse,
   type PlanResponse,
+  type PlanUpdatePreviewPageResponse,
   problemOf,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
@@ -38,7 +38,7 @@ export function ImpactDialog({
   plan: Pick<PlanResponse, "id" | "name">;
   entitlements: GetPlanUpdatePreviewRequestEntitlements;
   /** The first page, which the save asked before it opened the dialog. */
-  first: ListPageOfTenantExcessResponse;
+  first: PlanUpdatePreviewPageResponse;
   pending: boolean;
   onCancel: () => void;
   onConfirm: () => void;

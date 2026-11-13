@@ -164,6 +164,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "GetAuditRetention",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/audit-log/retention",
+    "tag": "Tenant/AuditLogs",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetInvitationPreview",
     "method": "POST",
     "path": "/v1/me/invitations/preview",
@@ -228,6 +238,16 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/plans/{planId}/preview",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetPlatformAuditRetention",
+    "method": "GET",
+    "path": "/v1/platform/audit-log/retention",
+    "tag": "Platform/AuditLogs",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

@@ -31,9 +31,9 @@ import type {
   GetPlanUpdatePreviewParams,
   GetPlanUpdatePreviewRequest,
   ListPageOfPlanListItemResponse,
-  ListPageOfTenantExcessResponse,
   ListPlansParams,
   PlanResponse,
+  PlanUpdatePreviewPageResponse,
   ProblemDetails,
   SetEntitlementOverrideRequest,
   TenantPlanChangePreviewResponse,
@@ -419,7 +419,7 @@ export const getGetPlanUpdatePreviewUrl = (planId: string,
 
 export const getPlanUpdatePreview = async (planId: string,
     getPlanUpdatePreviewRequest: GetPlanUpdatePreviewRequest,
-    params?: GetPlanUpdatePreviewParams, options?: Parameters<typeof apiFetch>[1]): Promise<ListPageOfTenantExcessResponse> => {
+    params?: GetPlanUpdatePreviewParams, options?: Parameters<typeof apiFetch>[1]): Promise<PlanUpdatePreviewPageResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -435,7 +435,7 @@ export const getPlanUpdatePreview = async (planId: string,
     }
     return headers;
   };
-return apiFetch<ListPageOfTenantExcessResponse>(getGetPlanUpdatePreviewUrl(planId,params),
+return apiFetch<PlanUpdatePreviewPageResponse>(getGetPlanUpdatePreviewUrl(planId,params),
   {
     ...options,
     method: 'POST',

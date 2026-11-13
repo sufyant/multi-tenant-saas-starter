@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuditRetentionResponse,
   CursorPageOfAuditEntryResponse,
   ListAuditEntriesParams,
   ProblemDetails
@@ -256,6 +257,100 @@ export const exportAuditLog = async (tenantId: string, options?: Parameters<type
 
   }
 );}
+
+
+
+export const getGetAuditRetentionUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/audit-log/retention`
+}
+
+export const getAuditRetention = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<AuditRetentionResponse> => {
+
+  return apiFetch<AuditRetentionResponse>(getGetAuditRetentionUrl(tenantId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAuditRetentionQueryKey = (tenantId: string,) => {
+    return [
+    "getAuditRetention", ...(tenantId ? [tenantId] : [])
+    ] as const;
+    }
+
+
+export const getGetAuditRetentionQueryOptions = <TData = Awaited<ReturnType<typeof getAuditRetention>>, TError = ErrorType<ProblemDetails>>(tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAuditRetentionQueryKey(tenantId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuditRetention>>> = ({ signal }) => getAuditRetention(tenantId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: tenantId !== null && tenantId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAuditRetentionQueryResult = NonNullable<Awaited<ReturnType<typeof getAuditRetention>>>
+export type GetAuditRetentionQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetAuditRetention<TData = Awaited<ReturnType<typeof getAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuditRetention>>,
+          TError,
+          Awaited<ReturnType<typeof getAuditRetention>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuditRetention<TData = Awaited<ReturnType<typeof getAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuditRetention>>,
+          TError,
+          Awaited<ReturnType<typeof getAuditRetention>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuditRetention<TData = Awaited<ReturnType<typeof getAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetAuditRetention<TData = Awaited<ReturnType<typeof getAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+ tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAuditRetentionQueryOptions(tenantId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
 
 
 

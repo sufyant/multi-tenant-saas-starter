@@ -27,6 +27,7 @@ import type {
 import type {
   CursorPageOfAuditEntryResponse,
   ListPlatformAuditEntriesParams,
+  PlatformAuditRetentionResponse,
   ProblemDetails
 } from '../endpoints.schemas.gen';
 
@@ -213,6 +214,100 @@ export function useListPlatformAuditEntries<TData = Awaited<ReturnType<typeof li
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListPlatformAuditEntriesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetPlatformAuditRetentionUrl = () => {
+
+
+
+
+  return `/v1/platform/audit-log/retention`
+}
+
+export const getPlatformAuditRetention = async ( options?: Parameters<typeof apiFetch>[1]): Promise<PlatformAuditRetentionResponse> => {
+
+  return apiFetch<PlatformAuditRetentionResponse>(getGetPlatformAuditRetentionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformAuditRetentionQueryKey = () => {
+    return [
+    "getPlatformAuditRetention"
+    ] as const;
+    }
+
+
+export const getGetPlatformAuditRetentionQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError = ErrorType<ProblemDetails>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformAuditRetentionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformAuditRetention>>> = ({ signal }) => getPlatformAuditRetention({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlatformAuditRetentionQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformAuditRetention>>>
+export type GetPlatformAuditRetentionQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetPlatformAuditRetention<TData = Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformAuditRetention>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformAuditRetention>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlatformAuditRetention<TData = Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformAuditRetention>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformAuditRetention>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPlatformAuditRetention<TData = Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetPlatformAuditRetention<TData = Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPlatformAuditRetentionQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -9,8 +9,8 @@ using SharedKernel;
 namespace Api.ArchitectureTests;
 
 // U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email
-// (U5), its texts in every language with exactly the values it declares, a text without each optional value, every word of a closed
-// list in every language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
+// (U5), its texts in every language with exactly the values it declares, a text without each optional value (one for a pair that goes
+// together), every word of a closed list in every language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
 // shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. A type's area has its word in every
 // language, and its actor is a person of its values. U9: a type has the name of its event's audit operation, or is named apart with its reason.
 public sealed class NotificationCatalogTests
@@ -270,6 +270,10 @@ public sealed class NotificationCatalogTests
                 gaps.Add($"{kind.Type}: the actor {actor} is no person of its values");
             }
 
+            gaps.AddRange(kind.Values
+                .Where(value => value.With is { } with && (!value.Optional || !kind.Values.Any(other => other.Name == with && other.Optional && other.With is null)))
+                .Select(value => $"{kind.Type}: {value.Name} goes with {value.With}, which is no optional value of its own"));
+
             var named = handlers.Count(handler => handler.Type == kind.Type);
             if (named != 1)
             {
@@ -295,8 +299,12 @@ public sealed class NotificationCatalogTests
 
         var declared = kind.Values.Select(value => value.Name).ToList();
         var placeholderGaps = PlaceholderGaps(kind.Type, tag, declared, found.Placeholders(null));
-        var withoutGaps = kind.Values.Where(value => value.Optional).SelectMany(optional => found.Placeholders(optional.Name) is { } used
-            ? PlaceholderGaps($"{kind.Type} without {optional.Name}", tag, declared.Where(name => name != optional.Name), used)
+        var withoutGaps = kind.Values.Where(value => value.Optional && value.With is null).SelectMany(optional => found.Placeholders(optional.Name) is { } used
+            ? PlaceholderGaps(
+                $"{kind.Type} without {optional.Name}",
+                tag,
+                declared.Where(name => name != optional.Name && !kind.Values.Any(value => value.Name == name && value.With == optional.Name)),
+                used)
             : [$"{kind.Type}: no text without {optional.Name} in {tag}"]);
         var wordGaps = kind.Values
             .SelectMany(value => WordsOf(value).Select(word => (value.Kind == NotificationValueKind.Word ? value.Name : ListOf(value.Kind), word)))

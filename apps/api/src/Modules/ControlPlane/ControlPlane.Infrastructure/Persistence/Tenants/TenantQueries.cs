@@ -226,7 +226,12 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
 
         var overrides = (await controlPlane.OverridesOfAsync([found.TenantId], cancellationToken))[found.TenantId].Select(entry => entry.ToValue()).ToList();
         var preview = PlanPreview.Of(plan, overrides, EntitlementReads.UsageOf(found.Summary, now), now);
-        return new TenantPlanChangePreviewView([.. preview.Excesses.Select(ExcessView.Of)], preview.OverriddenKeys);
+
+        // K14: the tenant's Activity log period now and on the new plan, under its overrides at this moment, as ChangeTenantPlan reads them.
+        var before = EffectiveEntitlements.Of(await controlPlane.PlanValuesAsync(found.Plan.Id, cancellationToken), overrides, now).ValueOf(LimitKeys.AuditRetentionDays);
+        var after = EffectiveEntitlements.Of(plan, overrides, now).ValueOf(LimitKeys.AuditRetentionDays);
+        var shortened = AuditRetention.ShorteningOf(before, after) is { } shortening ? new RetentionShorteningView(shortening.FromDays, shortening.ToDays) : null;
+        return new TenantPlanChangePreviewView([.. preview.Excesses.Select(ExcessView.Of)], preview.OverriddenKeys, shortened);
     }
 
     // The user is found by the identity provider's id in control_plane.users, which belongs to no tenant. The page is one query:

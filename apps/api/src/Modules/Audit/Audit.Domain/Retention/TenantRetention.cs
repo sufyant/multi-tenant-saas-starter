@@ -20,6 +20,9 @@ internal sealed class TenantRetention : ITenantEntity
 
     public DateTimeOffset? HeldUntil { get; private set; }
 
+    /// <summary>A tenant's row before its first run writes it: no limit and no hold, as the job writes it (K6o).</summary>
+    public static TenantRetention Unwritten() => new();
+
     /// <summary>
     /// The period got shorter at this moment, to these days: every entry that the period before kept at the moment stays until the moment
     /// plus the grace. During a running hold, the hold keeps its older start and takes the later end, so an entry stays longer, never
@@ -73,6 +76,18 @@ internal sealed class TenantRetention : ITenantEntity
 
         var outside = now.AddDays(-days);
         return HeldUntil is null ? outside : HeldFrom is { } from ? Earlier(from, outside) : null;
+    }
+
+    /// <summary>
+    /// The hold the job would find at this moment, for a screen: the row follows the tenant's effective period and clears an ended hold,
+    /// as the job's step does, on a row the read never saves. While a hold runs, the entries older than the period and kept from
+    /// <c>HeldFrom</c> on (none: every entry) go when it ends. None when no hold runs, or when no limit deletes anything.
+    /// </summary>
+    public (int Days, DateTimeOffset? HeldFrom, DateTimeOffset GoesAt)? HoldAt(int? days, DateTimeOffset now, TimeSpan grace)
+    {
+        Follow(days, now, grace);
+        _ = ExpiresBefore(now);
+        return Days is { } kept && HeldUntil is { } end ? (kept, HeldFrom, end) : null;
     }
 
     private static DateTimeOffset Earlier(DateTimeOffset first, DateTimeOffset second) => first < second ? first : second;
