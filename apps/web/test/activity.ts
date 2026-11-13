@@ -3,6 +3,7 @@ import {
   type AuditDetailsResponse,
   type AuditEntryResponse,
   AuditOperation,
+  type AuditRetentionResponse,
   type AuditRoleResponse,
   type AuditTargetResponse,
   AuditTargetResponseKind,
@@ -23,7 +24,10 @@ import {
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
 } from "@repo/api-client";
-import { getListAuditEntriesMockHandler } from "@repo/api-client/msw";
+import {
+  getGetAuditRetentionMockHandler,
+  getListAuditEntriesMockHandler,
+} from "@repo/api-client/msw";
 
 // The tenant log's entries of the Activity board, and the answers of ListAuditEntries.
 
@@ -161,5 +165,22 @@ export function auditLogAnswer(
     const cursor = new URL(request.url).searchParams.get("cursor");
     cursors.push(cursor);
     return pages[cursor ?? ""] ?? { items: [], nextCursor: null };
+  });
+}
+
+/** The plans' period of the Activity log: 365 days, with no shortening (12.01). */
+export const keptForAYear: AuditRetentionResponse = {
+  days: 365,
+  shortening: null,
+};
+
+/** GetAuditRetention that answers the period and the shortening given. Each request's tenant is recorded. */
+export function retentionAnswer(
+  retention: AuditRetentionResponse = keptForAYear,
+  tenants: string[] = [],
+) {
+  return getGetAuditRetentionMockHandler(({ params }) => {
+    tenants.push(String(params.tenantId));
+    return retention;
   });
 }

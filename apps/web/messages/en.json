@@ -378,7 +378,13 @@
     "exportedCapped": "The file holds the newest {cap} entries.",
     "fileTime": "Time (UTC)",
     "fileWho": "Who",
-    "fileWhat": "What"
+    "fileWhat": "What",
+    "retention": {
+      "kept": "Entries are kept for {days, plural, one {# day} other {# days}}.",
+      "keptNoLimit": "Entries are kept with no time limit.",
+      "goesTitle": "Entries older than {days, plural, one {# day} other {# days}} go on {date}.",
+      "goesText": "The Activity log now keeps entries for {days, plural, one {# day} other {# days}}. To keep a copy of the older ones, export them before then."
+    }
   },
   "blocked": {
     "suspendedTitle": "{organisation} is suspended",
@@ -554,12 +560,14 @@
     "keys": {
       "rolesCustom": "Custom roles",
       "rolesCustomMax": "Custom roles limit",
-      "membersMax": "Members limit"
+      "membersMax": "Members limit",
+      "auditRetentionDays": "Activity log"
     },
     "values": {
       "on": "on",
       "off": "off",
-      "unlimited": "unlimited"
+      "unlimited": "unlimited",
+      "days": "{days, plural, one {# day} other {# days}}"
     },
     "membersOverText": "{members, plural, one {# member} other {# members}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}.{invitations, plural, =0 {} one { The invitation can still be accepted.} other { The # invitations can still be accepted.}} You can’t invite anyone new until you’re under {limit}. Nobody loses access.",
     "noSeat": "No free seat",

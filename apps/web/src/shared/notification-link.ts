@@ -12,6 +12,8 @@ const tenantPages: Partial<Record<NotificationLinkResponseKind, string>> = {
   [NotificationLinkResponseKind.TenantRoles]: "settings/roles",
   // General shows "Your role" and the plan to every role (`apps/api/docs/flows/notifications.md`, section 1).
   [NotificationLinkResponseKind.TenantSettings]: "settings/general",
+  // An override of the Activity log's period (37c).
+  [NotificationLinkResponseKind.TenantActivityLog]: "settings/activity",
 };
 
 const start = "/";

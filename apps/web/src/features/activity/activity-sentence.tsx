@@ -76,7 +76,7 @@ export function ActivitySentence({
       const label = keyLabels[key];
       return label ? t(`plans.keys.${label}`) : <bdi dir="ltr">{key}</bdi>;
     },
-    value: (value) => planValue(value, t),
+    value: (value, key) => planValue(value, key, t),
   };
   const people = {
     actor: person(actorName(entry.actor, t)),

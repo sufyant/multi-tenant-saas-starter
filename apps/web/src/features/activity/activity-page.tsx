@@ -3,6 +3,7 @@
 import {
   actionFor,
   ErrorCode,
+  getGetAuditRetentionQueryOptions,
   getGetMeQueryOptions,
   getListAuditEntriesInfiniteQueryOptions,
   Permission,
@@ -10,6 +11,8 @@ import {
   problemOf,
 } from "@repo/api-client";
 import { ActivityLog } from "@repo/ui/components/activity-log";
+import { Banner } from "@repo/ui/components/banner";
+import { Button } from "@repo/ui/components/button";
 import { EmptyState } from "@repo/ui/components/empty-state";
 import { UserPlusIcon } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
@@ -17,6 +20,7 @@ import { LoadMore } from "@repo/ui/components/load-more";
 import { RowMenu } from "@repo/ui/components/row-menu";
 import { signInAgainUrl } from "@repo/ui/components/sign-in";
 import { showToast } from "@repo/ui/components/toast";
+import { formatDate } from "@repo/ui/lib/format-date-time";
 import { pageSize, rowsIn } from "@repo/ui/lib/pages";
 import {
   useInfiniteQuery,
@@ -36,7 +40,10 @@ import { ExportActivityDialog } from "./export-activity-dialog";
  * Settings > Activity log (12.01 to 12.08): the tenant log, newest first, grouped by day in the viewer's zone, under the frame's
  * description and no Freshness (F59). "Show older activity" reads the next page by its cursor (K5) until `nextCursor` is null,
  * with the Loading more row and the live region of F9; a failed page says so under the entries with Try again (12.06). The More
- * menu beside the title exports the log as a CSV file (12.08). Only who may read the log sees it (F5).
+ * menu beside the title exports the log as a CSV file (12.08). Only who may read the log sees it (F5). Under the description the
+ * log says its period, and while a shorter period holds older entries a Banner says when they go, with Export (12.10, 12.11);
+ * the export's permission is the log's own, so every viewer of the page may export. Both come from GetAuditRetention, and the
+ * screen computes no period and no date.
  */
 export function ActivityPage() {
   const t = useTranslations();
@@ -60,6 +67,11 @@ export function ActivityPage() {
     },
   );
   const log = useInfiniteQuery(options);
+  const retention = useQuery(
+    getGetAuditRetentionQueryOptions(tenant.id, {
+      query: { enabled: readsLog },
+    }),
+  );
 
   if (!readsLog)
     return (
@@ -70,6 +82,7 @@ export function ActivityPage() {
 
   const timeZone = me.data?.timeZone;
   const locale = t("locale.format");
+  const shortening = retention.data?.shortening;
 
   // A cursor the API no longer reads (paging.cursor_invalid) starts the log again from the newest entry (the Messages board).
   const showOlder = async () => {
@@ -181,7 +194,32 @@ export function ActivityPage() {
         <p className="text-body text-muted-foreground">
           {t("activity.description")}
         </p>
+        {retention.data && (
+          <p className="text-body text-muted-foreground">
+            {/* The days, or no time limit for null (12.01). */}
+            {retention.data.days === null
+              ? t("activity.retention.keptNoLimit")
+              : t("activity.retention.kept", { days: retention.data.days })}
+          </p>
+        )}
       </div>
+      {/* The date waits for GetMe, so it names the day in the viewer's zone (F18). */}
+      {shortening && !me.isPending && (
+        <Banner
+          tone="warning"
+          title={t("activity.retention.goesTitle", {
+            days: shortening.days,
+            date: formatDate(shortening.goesAt, { locale, timeZone }),
+          })}
+          action={
+            <Button onClick={() => setExporting(true)}>
+              {t("activity.exportCsv")}
+            </Button>
+          }
+        >
+          {t("activity.retention.goesText", { days: shortening.days })}
+        </Banner>
+      )}
       {body}
       {exporting && (
         <ExportActivityDialog onClose={() => setExporting(false)} />

@@ -1,6 +1,7 @@
 import {
   AuditActorResponseKind,
   AuditOperation,
+  type AuditRetentionResponse,
   BuiltInRole,
   ErrorCode,
   TenantPurgeWarnedDetailsResponseOperation,
@@ -20,7 +21,13 @@ import {
   it,
   vi,
 } from "vitest";
-import { auditLogAnswer, detailsOf, entry } from "../../../test/activity";
+import {
+  auditLogAnswer,
+  detailsOf,
+  entry,
+  keptForAYear,
+  retentionAnswer,
+} from "../../../test/activity";
 import { savedFiles } from "../../../test/download";
 import {
   meOf,
@@ -92,10 +99,18 @@ const days = async () => {
   ]);
 };
 
-/** The tenant's answers for a viewer of the role, whose time zone is the one given. The first handler that matches answers. */
-const answer = (role: BuiltInRole, timeZone = "Europe/Dublin") => [
+/**
+ * The tenant's answers for a viewer of the role, whose time zone is the one given, and the log's period. The first handler that
+ * matches answers.
+ */
+const answer = (
+  role: BuiltInRole,
+  timeZone = "Europe/Dublin",
+  retention: AuditRetentionResponse = keptForAYear,
+) => [
   http.get("*/v1/me", () => HttpResponse.json({ ...meOf(role), timeZone })),
   ...tenantAnswers(role),
+  retentionAnswer(retention),
 ];
 
 /** The paragraph of an entry's sentence: the names inside it are elements of their own. */
@@ -461,6 +476,219 @@ describe("ActivityPage", () => {
       ),
     );
     vi.unstubAllGlobals();
+  });
+});
+
+/** A hold of 30 days runs to 1 Dec 2026 in Dublin, and entries older than the new period of 90 days exist (12.10). */
+const shortened: AuditRetentionResponse = {
+  days: 90,
+  shortening: { days: 90, goesAt: "2026-12-01T10:00:00Z" },
+};
+
+/** The Banner whose title is the text given. */
+const bannerOf = async (title: string) =>
+  (await screen.findByText(title)).closest('[role="status"]') as HTMLElement;
+
+/** The period's sentence under the description: a paragraph of its own. */
+const periodSentence = (text: string) =>
+  screen.findByText(text, { selector: "p" });
+
+describe("The Activity log's period", () => {
+  it("ActivityPage_APeriod_SaysHowLongEntriesAreKept", async () => {
+    server.use(
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    expect(
+      await periodSentence("Entries are kept for 365 days."),
+    ).toBeVisible();
+  });
+
+  it("ActivityPage_NoLimit_SaysEntriesAreKeptWithNoTimeLimit", async () => {
+    server.use(
+      ...answer(BuiltInRole.Owner, "Europe/Dublin", {
+        days: null,
+        shortening: null,
+      }),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    expect(
+      await periodSentence("Entries are kept with no time limit."),
+    ).toBeVisible();
+  });
+
+  it.each([
+    ["tr", 365, "Kayıtlar 365 gün saklanır."],
+    ["tr", null, "Kayıtlar süre sınırı olmadan saklanır."],
+    ["ar", 30, "تُحفظ الإدخالات لمدة 30 يومًا."],
+    ["ar", 90, "تُحفظ الإدخالات لمدة 90 يومًا."],
+    ["ar", 100, "تُحفظ الإدخالات لمدة 100 يوم."],
+    ["ar", 365, "تُحفظ الإدخالات لمدة 365 يومًا."],
+    ["ar", null, "تُحفظ الإدخالات دون حد زمني."],
+  ] as const)(
+    "ActivityPage_PeriodIn%s_%s_SaysItInTheLanguagesPlural",
+    async (locale, days, text) => {
+      server.use(
+        ...answer(BuiltInRole.Owner, "Europe/Dublin", {
+          days,
+          shortening: null,
+        }),
+        auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+      );
+
+      renderInTenant(<ActivityPage />, { url, locale });
+
+      expect(await periodSentence(text)).toBeVisible();
+    },
+  );
+
+  it("ActivityPage_NoShortening_ShowsNoBanner", async () => {
+    server.use(
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    await periodSentence("Entries are kept for 365 days.");
+    expect(screen.queryByText(/go on/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Export CSV" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // 12.10: the Banner names the new period and the hold's end, in the viewer's zone, and offers the export.
+  it("ActivityPage_AShortening_ShowsTheBannerWithItsDateAndExport", async () => {
+    server.use(
+      ...answer(BuiltInRole.Owner, "Europe/Dublin", shortened),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    const banner = await bannerOf(
+      "Entries older than 90 days go on 1 Dec 2026.",
+    );
+    expect(banner).toHaveTextContent(
+      "The Activity log now keeps entries for 90 days. To keep a copy of the older ones, export them before then.",
+    );
+    expect(await periodSentence("Entries are kept for 90 days.")).toBeVisible();
+    await userEvent.click(
+      within(banner).getByRole("button", { name: "Export CSV" }),
+    );
+    expect(
+      await screen.findByRole("alertdialog", {
+        name: "Export the activity log",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivityPage_AShorteningEndingAfterMidnightInTheViewersZone_NamesTheViewersDay", async () => {
+    server.use(
+      // 30 Nov at 23:30 in UTC is 1 Dec at 08:30 in Tokyo.
+      ...answer(BuiltInRole.Owner, "Asia/Tokyo", {
+        days: 90,
+        shortening: { days: 90, goesAt: "2026-11-30T23:30:00Z" },
+      }),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    expect(
+      await bannerOf("Entries older than 90 days go on 1 Dec 2026."),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      "tr",
+      "90 günden eski kayıtlar 1 Ara 2026 tarihinde silinir.",
+      "Etkinlik kaydı artık kayıtları 90 gün saklıyor. Eskilerin bir kopyasını tutmak için o tarihten önce dışa aktarın.",
+      "CSV olarak dışa aktar",
+    ],
+    [
+      "ar",
+      "تُحذف الإدخالات الأقدم من 90 يومًا في 1 ديسمبر 2026.",
+      "يحتفظ سجل النشاط الآن بالإدخالات لمدة 90 يومًا. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ.",
+      "تصدير CSV",
+    ],
+  ] as const)(
+    "ActivityPage_AShorteningIn%s_ShowsTheBannersTexts",
+    async (locale, title, text, action) => {
+      server.use(
+        ...answer(BuiltInRole.Owner, "Europe/Dublin", shortened),
+        auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+      );
+
+      renderInTenant(<ActivityPage />, { url, locale });
+
+      const banner = await bannerOf(title);
+      expect(banner).toHaveTextContent(text);
+      expect(
+        within(banner).getByRole("button", { name: action }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("ActivityPage_ArabicBannerOf100Days_UsesTheFormOfOther", async () => {
+    server.use(
+      ...answer(BuiltInRole.Owner, "Europe/Dublin", {
+        days: 100,
+        shortening: { days: 100, goesAt: "2026-12-01T10:00:00Z" },
+      }),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url, locale: "ar" });
+
+    expect(
+      await bannerOf("تُحذف الإدخالات الأقدم من 100 يوم في 1 ديسمبر 2026."),
+    ).toBeInTheDocument();
+  });
+
+  // No frame draws a failed period: the page shows the log without the sentence and the Banner.
+  it("ActivityPage_PeriodFails_ShowsTheLogWithoutPeriodOrBanner", async () => {
+    server.use(
+      http.get("*/v1/tenants/:tenantId/audit-log/retention", () =>
+        problem(500, ErrorCode.ServerError),
+      ),
+      ...answer(BuiltInRole.Owner),
+      auditLogAnswer({ "": { items: [joined], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    expect(
+      await findSentence("Khalid Al-Harbi joined the organisation."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Entries are kept/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  // The export's permission is the log's own (tenant.audit.read): a viewer without it sees neither the Banner nor its Export.
+  it("ActivityPage_ViewerWithoutTheExportsPermission_ReadsNoPeriodAndShowsNoExport", async () => {
+    const tenants: string[] = [];
+    server.use(
+      ...tenantAnswers(BuiltInRole.Member),
+      retentionAnswer(shortened, tenants),
+      auditLogAnswer({ "": { items: [], nextCursor: null } }),
+    );
+
+    renderInTenant(<ActivityPage />, { url });
+
+    await screen.findByRole("heading", { name: "You can’t open this page" });
+    expect(
+      screen.queryByRole("button", { name: "Export CSV" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(tenants).toEqual([]);
   });
 });
 

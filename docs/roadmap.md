@@ -379,6 +379,7 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 
 - The period's sentence (12.01 to 12.09) and the Banner of a hold (12.10, 12.11), with Export only for a viewer who holds `tenant.audit.read`, the export's permission. The Activity sentences of an override of the key.
 - It waits for 37c-design and 37c-backend-2.
+- As built: the page reads `GetAuditRetention` beside the log. The sentence stands under the description: "Entries are kept for 365 days.", or "with no time limit" for null. While `shortening` is not null, the warning Banner stands between the header and the log, with the date in the viewer's zone (F18) and Export CSV, which opens 12.08's dialog. The export's permission is the page's own, `tenant.audit.read`, so a viewer who sees the Banner may export, and a viewer without it sees "You can’t open this page" and reads no period. While the period loads or fails, the page shows neither the sentence nor the Banner, and the log works as before. In a sentence of an override the key is "Activity log" and its value counts days ("90 days"). Every count of days is an ICU plural in each language; Arabic has its six forms. The link kind `tenant_activity_log` opens the log. 12.09, the capped toast, gets its shot. Done.
 
 ## 6. Step 38: Terms of use
 

@@ -378,7 +378,13 @@
     "exportedCapped": "يحتوي الملف على أحدث {cap} إدخال.",
     "fileTime": "الوقت (UTC)",
     "fileWho": "من",
-    "fileWhat": "ماذا"
+    "fileWhat": "ماذا",
+    "retention": {
+      "kept": "تُحفظ الإدخالات لمدة {days, plural, zero {# يوم} one {يوم واحد} two {يومين} few {# أيام} many {# يومًا} other {# يوم}}.",
+      "keptNoLimit": "تُحفظ الإدخالات دون حد زمني.",
+      "goesTitle": "تُحذف الإدخالات الأقدم من {days, plural, zero {# يوم} one {يوم واحد} two {يومين} few {# أيام} many {# يومًا} other {# يوم}} في {date}.",
+      "goesText": "يحتفظ سجل النشاط الآن بالإدخالات لمدة {days, plural, zero {# يوم} one {يوم واحد} two {يومين} few {# أيام} many {# يومًا} other {# يوم}}. للاحتفاظ بنسخة من الإدخالات الأقدم، صدّرها قبل ذلك التاريخ."
+    }
   },
   "blocked": {
     "suspendedTitle": "{organisation} موقوفة",
@@ -554,12 +560,14 @@
     "keys": {
       "rolesCustom": "الأدوار المخصصة",
       "rolesCustomMax": "حد الأدوار المخصصة",
-      "membersMax": "حد الأعضاء"
+      "membersMax": "حد الأعضاء",
+      "auditRetentionDays": "سجل النشاط"
     },
     "values": {
       "on": "مفعّلة",
       "off": "معطّلة",
-      "unlimited": "غير محدود"
+      "unlimited": "غير محدود",
+      "days": "{days, plural, zero {# يوم} one {يوم واحد} two {يومين} few {# أيام} many {# يومًا} other {# يوم}}"
     },
     "membersOverText": "{members} من الأعضاء و{invitations} من الدعوات المعلّقة.{invitations, plural, =0 {} one { لا يزال قبول الدعوة ممكنًا.} other { لا يزال قبول الدعوات ممكنًا.}} لا يمكنك دعوة أي شخص جديد حتى يقل العدد عن {limit}. لا يفقد أحد وصوله.",
     "noSeat": "لا يوجد مقعد متاح",

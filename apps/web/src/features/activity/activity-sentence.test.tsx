@@ -4,6 +4,7 @@ import {
   AuditOperation,
   type AuditTargetResponse,
   AuditTargetResponseKind,
+  LimitKey,
   MemberRoleChangedDetailsResponseOperation,
   Permission,
   RoleUpdatedDetailsResponseOperation,
@@ -635,6 +636,86 @@ describe("ActivitySentence", () => {
     },
   );
 
+  /** An override of the Activity log's period, set by the platform: `days` days, or unlimited for null. */
+  const retentionOverride = (days: number | null) =>
+    entry({
+      operation: AuditOperation.TenantEntitlementOverrideSet,
+      actor: thePlatform,
+      target: northwindTarget,
+      details: {
+        operation:
+          TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+        key: LimitKey.AuditRetentionDays,
+        oldValue: null,
+        oldExpiresAt: null,
+        newValue: {
+          enabled: null,
+          maximum: days,
+          unlimited: days === null,
+        },
+        newExpiresAt: null,
+        reason: null,
+      },
+    });
+
+  // In a sentence the key is "Activity log" (#265), and its value counts days in the language's plural.
+  it.each([
+    [
+      "en",
+      90,
+      "Platform The platform set this organisation’s Activity log to 90 days.",
+    ],
+    [
+      "en",
+      null,
+      "Platform The platform set this organisation’s Activity log to unlimited.",
+    ],
+    [
+      "tr",
+      90,
+      "Platform Platform bu kuruluşun Etkinlik kaydı değerini 90 gün yaptı.",
+    ],
+    ["ar", 30, "المنصة جعلت المنصة سجل النشاط لهذه المؤسسة 30 يومًا."],
+    ["ar", 90, "المنصة جعلت المنصة سجل النشاط لهذه المؤسسة 90 يومًا."],
+    ["ar", 100, "المنصة جعلت المنصة سجل النشاط لهذه المؤسسة 100 يوم."],
+    ["ar", 365, "المنصة جعلت المنصة سجل النشاط لهذه المؤسسة 365 يومًا."],
+  ] as const)(
+    "ActivitySentence_RetentionOverrideIn%s_%s_NamesTheActivityLogAndItsDays",
+    (language, days, text) => {
+      renderWithProviders(
+        <ActivitySentence entry={retentionOverride(days)} />,
+        language,
+      );
+
+      expect(shown(text)).toBeInTheDocument();
+    },
+  );
+
+  it("ActivitySentence_RetentionOverrideRemoved_NamesTheActivityLog", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantEntitlementOverrideRemoved,
+          actor: thePlatform,
+          target: northwindTarget,
+          details: {
+            operation:
+              TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved,
+            key: LimitKey.AuditRetentionDays,
+            oldValue: { enabled: null, maximum: 730, unlimited: false },
+            oldExpiresAt: null,
+          },
+        })}
+      />,
+    );
+
+    expect(
+      shown(
+        "Platform The platform removed this organisation’s override on Activity log.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("ActivitySentence_OverrideSetWithAReason_NeverShowsTheReason", () => {
     const { container } = renderWithProviders(
       <ActivitySentence
@@ -729,6 +810,31 @@ describe("sentenceText", () => {
         "Europe/Dublin",
       ),
     ).toBe(container.textContent);
+  });
+
+  it("SentenceText_RetentionOverride_WritesTheDays", () => {
+    const logged = entry({
+      operation: AuditOperation.TenantEntitlementOverrideSet,
+      actor: thePlatform,
+      details: {
+        operation:
+          TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+        key: LimitKey.AuditRetentionDays,
+        oldValue: null,
+        oldExpiresAt: null,
+        newValue: { enabled: null, maximum: 100, unlimited: false },
+        newExpiresAt: null,
+        reason: null,
+      },
+    });
+
+    expect(
+      sentenceText(
+        logged,
+        createTranslator({ locale: "ar", messages: messages.ar }),
+        "Europe/Dublin",
+      ),
+    ).toBe("جعلت المنصة سجل النشاط لهذه المؤسسة 100 يوم.");
   });
 
   it("SentenceText_PlatformActor_HasNoBadge", () => {
