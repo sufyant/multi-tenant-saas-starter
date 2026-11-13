@@ -11,6 +11,7 @@ import {
   type RoleDetailResponse,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
+import { activityFileCap } from "../src/features/activity/file-cap";
 import { lastOrganisationCookie } from "../src/shared/last-organisation-cookie";
 import {
   roles as builtInRoles,
@@ -18,6 +19,7 @@ import {
   invitationCode,
   manyMembers,
   me,
+  mockActivityExport,
   mockActivityFrame,
   mockApi,
   mockAuditLog,
@@ -27,6 +29,7 @@ import {
   mockMembersExport,
   mockNotifications,
   mockRename,
+  mockRetention,
   mockTenantStatus,
   northwind,
   northwindTeam,
@@ -34,6 +37,7 @@ import {
   pendingInvitation,
   pro,
   roleChanged,
+  shortenedTo90,
   type Team,
   ufukTeam,
 } from "./api";
@@ -2144,6 +2148,53 @@ shellShots.push(
     team: northwindTeam(),
     mock: (page) => mockActivityFrame(page),
     open: openLogExport,
+  },
+  {
+    file: "12.09-export-activity-log-capped-en-light-desktop",
+    size: "desktop",
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: async (page) => {
+      await mockActivityFrame(page);
+      await mockActivityExport(page, activityFileCap);
+    },
+    open: async (page) => {
+      await openLogExport(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Export CSV" })
+        .click();
+      await page
+        .getByText("The file holds the newest 100,000 entries.")
+        .waitFor();
+    },
+  },
+  {
+    file: "12.10-activity-log-older-entries-go-en-light-desktop",
+    size: "desktop",
+    fullPage: true,
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: async (page) => {
+      await mockActivityFrame(page);
+      await mockRetention(page, shortenedTo90);
+    },
+    ready: (page) =>
+      page.getByText("Entries older than 90 days go on 1 Dec 2026.").waitFor(),
+  },
+  {
+    file: "12.11-activity-log-older-entries-go-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    fullPage: true,
+    path: `${settings}/activity`,
+    team: northwindTeam(),
+    mock: async (page) => {
+      await mockActivityFrame(page);
+      await mockRetention(page, shortenedTo90);
+    },
+    ready: (page) =>
+      page.getByText("Entries older than 90 days go on 1 Dec 2026.").waitFor(),
   },
 );
 

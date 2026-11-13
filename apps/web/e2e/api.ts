@@ -4,6 +4,7 @@ import {
   type AuditDetailsResponse,
   type AuditEntryResponse,
   AuditOperation,
+  type AuditRetentionResponse,
   AuditTargetResponseKind,
   BuiltInRole,
   type ChangeMemberRoleRequest,
@@ -213,6 +214,7 @@ export async function mockApi(
       },
     }),
   );
+  await mockRetention(page);
   await page.route(`**/api/v1/tenants/${northwind.id}/roles*`, (route) => {
     const items = [...Object.values(roles), ...customRoles];
     return route.fulfill({
@@ -1019,6 +1021,48 @@ export const auditPages: Record<string, CursorPageOfAuditEntryResponse> = {
     nextCursor: null,
   },
 };
+
+/** The plans' period of the Activity log, as 12.01 to 12.09 draw it: 365 days, and no shortening. */
+export const keptForAYear: AuditRetentionResponse = {
+  days: 365,
+  shortening: null,
+};
+
+/** A shorter period of 90 days whose hold ends on 1 Dec 2026, with older entries (12.10, 12.11). */
+export const shortenedTo90: AuditRetentionResponse = {
+  days: 90,
+  shortening: { days: 90, goesAt: "2026-12-01T10:00:00Z" },
+};
+
+/** GetAuditRetention answers the period and the shortening given. A later route wins, so a frame can give its own. */
+export async function mockRetention(
+  page: Page,
+  retention: AuditRetentionResponse = keptForAYear,
+): Promise<void> {
+  await page.route(
+    `**/api/v1/tenants/${northwind.id}/audit-log/retention`,
+    (route) => route.fulfill({ json: retention }),
+  );
+}
+
+/** The CSV file of the Activity log at its cap, from the web's server: the header and `records` rows (12.09). */
+export async function mockActivityExport(
+  page: Page,
+  records: number,
+): Promise<void> {
+  await page.route(
+    `**/api/exports/tenants/${northwind.id}/audit-log*`,
+    (route) =>
+      route.fulfill({
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition":
+            'attachment; filename="northwind-activity-log-2026-11-01.csv"',
+        },
+        body: `\uFEFFTime (UTC),Who,What\r\n${"2026-11-01T11:40:00.000Z,Khalid Al-Harbi,Khalid Al-Harbi joined the organisation.\r\n".repeat(records)}`,
+      }),
+  );
+}
 
 /** ListAuditEntries answers the page of the request's cursor. */
 export async function mockAuditLog(
