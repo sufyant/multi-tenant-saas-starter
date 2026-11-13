@@ -165,6 +165,62 @@ public sealed class NotificationTextTests
         NotificationText.Render(NotificationCatalog.TenantPlanChanged, values, People, language, null).Body.ShouldBe(body);
     }
 
+    // A number of days takes the plural form of its CLDR category in the language: English "one" and "other", Turkish one form, and
+    // Arabic "few" for 3 to 10, "many" for 11 to 99 and "other" for 100 to 102, after the last two digits (Unicode CLDR, "Language Plural
+    // Rules"). The Arabic texts name the number after "لمدة" and "من", so its dual is the genitive.
+    [Theory]
+    [InlineData(Language.En, "1", "keeps entries for 1 day. Entries older than 1 day go on")]
+    [InlineData(Language.En, "30", "keeps entries for 30 days. Entries older than 30 days go on")]
+    [InlineData(Language.En, "90", "keeps entries for 90 days. Entries older than 90 days go on")]
+    [InlineData(Language.En, "100", "keeps entries for 100 days. Entries older than 100 days go on")]
+    [InlineData(Language.En, "365", "keeps entries for 365 days. Entries older than 365 days go on")]
+    [InlineData(Language.Tr, "1", "kayıtları 1 gün saklıyor. 1 günden eski kayıtlar")]
+    [InlineData(Language.Tr, "30", "kayıtları 30 gün saklıyor. 30 günden eski kayıtlar")]
+    [InlineData(Language.Tr, "90", "kayıtları 90 gün saklıyor. 90 günden eski kayıtlar")]
+    [InlineData(Language.Tr, "100", "kayıtları 100 gün saklıyor. 100 günden eski kayıtlar")]
+    [InlineData(Language.Tr, "365", "kayıtları 365 gün saklıyor. 365 günden eski kayıtlar")]
+    [InlineData(Language.Ar, "1", "بالإدخالات لمدة يوم واحد. تُحذف الإدخالات الأقدم من يوم واحد في")]
+    [InlineData(Language.Ar, "30", "بالإدخالات لمدة 30 يومًا. تُحذف الإدخالات الأقدم من 30 يومًا في")]
+    [InlineData(Language.Ar, "90", "بالإدخالات لمدة 90 يومًا. تُحذف الإدخالات الأقدم من 90 يومًا في")]
+    [InlineData(Language.Ar, "100", "بالإدخالات لمدة 100 يوم. تُحذف الإدخالات الأقدم من 100 يوم في")]
+    [InlineData(Language.Ar, "365", "بالإدخالات لمدة 365 يومًا. تُحذف الإدخالات الأقدم من 365 يومًا في")]
+    public void Render_APlanChangeOfANumberOfDays_WritesThePluralFormOfTheLanguage(Language language, string days, string written)
+    {
+        var values = new Dictionary<string, string>
+        {
+            ["tenantName"] = "Acme",
+            ["oldPlanName"] = "Free",
+            ["newPlanName"] = "Pro",
+            ["retentionDays"] = days,
+            ["retentionGoesAt"] = "2026-12-01T12:00:00.0000000+00:00",
+        };
+
+        NotificationText.Render(NotificationCatalog.TenantPlanChanged, values, People, language, null).Body.ShouldContain(written);
+    }
+
+    // Arabic's other categories, which no period of the Activity log reaches (its floor is 30 days), have their forms too.
+    [Theory]
+    [InlineData("0", "لمدة 0 يوم.")]
+    [InlineData("2", "لمدة يومين.")]
+    [InlineData("3", "لمدة 3 أيام.")]
+    [InlineData("10", "لمدة 10 أيام.")]
+    [InlineData("11", "لمدة 11 يومًا.")]
+    [InlineData("102", "لمدة 102 يوم.")]
+    [InlineData("103", "لمدة 103 أيام.")]
+    public void Render_ANumberOfDaysInArabic_WritesTheFormOfEveryCategory(string days, string written)
+    {
+        var values = new Dictionary<string, string>
+        {
+            ["tenantName"] = "Acme",
+            ["oldPlanName"] = "Free",
+            ["newPlanName"] = "Pro",
+            ["retentionDays"] = days,
+            ["retentionGoesAt"] = "2026-12-01T12:00:00.0000000+00:00",
+        };
+
+        NotificationText.Render(NotificationCatalog.TenantPlanChanged, values, People, Language.Ar, null).Body.ShouldContain(written);
+    }
+
     [Theory]
     [InlineData(Language.En, "The platform moved your organisation from Free to Pro. Its features and limits follow the new plan.")]
     [InlineData(Language.Tr, "Platform, kuruluşunuzu Free planından Pro planına geçirdi. Özellikler ve sınırlar yeni plana göre uygulanır.")]
