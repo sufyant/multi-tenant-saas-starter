@@ -5,11 +5,14 @@ import {
   getListTenantsInfiniteQueryKey,
   getListTenantsQueryKey,
   InvitationResponseState,
+  type TenantEntitlementResponse,
   type TenantListItemResponse,
+  type TenantPlanResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
 import type { PillTone } from "@repo/ui/components/pill";
 import type { QueryClient } from "@tanstack/react-query";
+import { waitsForFeature } from "@/shared/entitlements";
 import { afterAccountRefusal } from "@/shared/refusal";
 
 /** What the list and the detail page both know of an organisation: an item of ListTenants, or the answer of GetTenant. */
@@ -147,3 +150,18 @@ export function afterRefusal(
   if (id && code && changedMeanwhile.has(code))
     void refreshOrganisation(queryClient, id);
 }
+
+/**
+ * Whether a limit waits for its feature in the organisation: the effective value of the feature, the plan's and an override's, is
+ * not on (37d). Its own value stays, and applies when the feature turns on.
+ */
+export const waitsInOrganisation = (
+  plan: TenantPlanResponse,
+  row: TenantEntitlementResponse,
+) =>
+  waitsForFeature(
+    row.key,
+    (feature) =>
+      plan.entitlements.find((other) => other.key === feature)?.effective ??
+      null,
+  );

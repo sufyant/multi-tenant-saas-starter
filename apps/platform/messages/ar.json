@@ -445,6 +445,7 @@
       }
     },
     "turnsOff": "{key}: متوقفة في {plan}.",
+    "requiresFeature": "فعّل {feature} أولًا.",
     "on": "مفعّل",
     "off": "متوقف",
     "unlimited": "غير محدود",
@@ -572,6 +573,7 @@
     "retentionExpiry": "في {date} تعود المدة إلى {value} التي تعطيها <plan></plan>. بعدها تبقى الإدخالات الأقدم من {value} مدة {grace}، ثم تُحذف.",
     "removeRetentionText": "تعود <bdi>{name}</bdi> إلى قيمة <bdi>{plan}</bdi>: {value}. تبقى إدخالاتها الأقدم من {value} مدة {grace}، ثم تُحذف.",
     "removeRetentionKeeps": "تعود <bdi>{name}</bdi> إلى قيمة <bdi>{plan}</bdi>: {value}.",
+    "removeDependentText": "تعود <bdi>{name}</bdi> إلى قيمة <bdi>{plan}</bdi>: {value}. تُطبَّق عند تفعيل {feature}.",
     "retentionChange": "{key}: {from, select, none {دون حد زمني} other {{from}}} ← {to}. تبقى الإدخالات الأقدم من {to} مدة {grace}، ثم تُحذف."
   },
   "viewChoice": {

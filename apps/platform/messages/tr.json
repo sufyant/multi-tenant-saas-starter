@@ -445,6 +445,7 @@
       }
     },
     "turnsOff": "{key}: {plan} planında kapalı.",
+    "requiresFeature": "Önce {feature} özelliğini açın.",
     "on": "Açık",
     "off": "Kapalı",
     "unlimited": "Sınırsız",
@@ -572,6 +573,7 @@
     "retentionExpiry": "{date} tarihinde süre <plan></plan> planının {valueCount} gününe döner. Sonra {valueCount} günden eski kayıtlar {graceCount} gün daha kalır, sonra silinir.",
     "removeRetentionText": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planının değerine döner: {value}. {valueCount} günden eski kayıtları {graceCount} gün daha kalır, sonra silinir.",
     "removeRetentionKeeps": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planının değerine döner: {value}.",
+    "removeDependentText": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planının değerine döner: {value}. Bu değer {feature} özelliği açılınca geçerli olur.",
     "retentionChange": "{key}: {from, select, none {süre sınırı yok} other {{from}}} → {toCount} gün. {toCount} günden eski kayıtlar {graceCount} gün daha kalır, sonra silinir."
   },
   "viewChoice": {

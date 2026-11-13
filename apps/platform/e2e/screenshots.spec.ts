@@ -446,6 +446,27 @@ const teamShortens = async (page: Page) => {
   );
 };
 
+/** Team with Custom roles turned off and its stored limit of 5 kept (6.25). */
+const teamCustomRolesOff = async (page: Page) => {
+  await mockFramePlans(page);
+  await page.route(`**/api/v1/platform/plans/${framePlans.team.id}`, (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({
+          json: {
+            ...framePlans.team,
+            entitlements: {
+              ...framePlans.team.entitlements,
+              [FeatureKey.RolesCustom]: value({ enabled: false }),
+            },
+          },
+        })
+      : route.fallback(),
+  );
+};
+
+/** Turns Custom roles off in the plan editor, the one switch of the form (6.21 to 6.24). */
+const turnCustomRolesOff = (page: Page) => page.getByRole("switch").click();
+
 /** The Activity log's field of the plan editor (6.04). */
 const keepsEntriesField = (page: Page) =>
   page.getByRole("group", { name: "Keeps entries" }).getByRole("spinbutton");
@@ -1060,6 +1081,44 @@ const shellShots: {
     path: teamPath,
     mock: mockFramePlans,
   },
+  // A limit whose feature is off (6.21 to 6.25): Team, with Custom roles turned off in the form and its stored 5 disabled.
+  ...(
+    [
+      { file: "6.21-plan-team-custom-roles-off-en-light-desktop" },
+      {
+        file: "6.22-plan-team-custom-roles-off-en-dark-desktop",
+        scheme: "dark" as const,
+      },
+      {
+        file: "6.23-plan-team-custom-roles-off-ar-light-desktop",
+        language: Language.Ar,
+      },
+    ] as const
+  ).map((shot) => ({
+    ...shot,
+    size: "desktop" as const,
+    path: teamPath,
+    mock: mockFramePlans,
+    open: turnCustomRolesOff,
+    fullPage: true,
+  })),
+  {
+    file: "6.24-plan-team-custom-roles-off-en-light-phone",
+    size: "phone",
+    path: teamPath,
+    fullPage: true,
+    mock: mockFramePlans,
+    open: async (page) => {
+      await page.getByRole("button", { name: "Edit plan" }).click();
+      await turnCustomRolesOff(page);
+    },
+  },
+  {
+    file: "6.25-plan-team-custom-roles-off-summary-en-light-phone",
+    size: "phone",
+    path: teamPath,
+    mock: teamCustomRolesOff,
+  },
   // Activity log (7.01 to 7.08). The frames draw no dark and no Arabic log; 7.01 is taken in both too.
   {
     file: "7.01-activity-en-light-desktop",
@@ -1321,6 +1380,46 @@ const shellShots: {
       page
         .getByRole("button", {
           name: "Remove the override on Activity log",
+        })
+        .click(),
+  },
+  // Custom roles off by an override (4.50 to 4.52): its limit says Off, can only be removed, and cannot be added.
+  {
+    file: "4.50-organisation-plan-custom-roles-off-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) =>
+      mockFrameOrganisations(page, undefined, { customRolesOff: true }),
+  },
+  {
+    file: "4.51-add-override-custom-roles-limit-off-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) =>
+      mockFrameOrganisations(page, undefined, {
+        customRolesOff: true,
+        limitOverride: false,
+      }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Add override" }).click();
+      const dialog = page.getByRole("alertdialog");
+      await dialog.getByRole("combobox", { name: "Feature or limit" }).click();
+      await page.getByRole("option", { name: "Custom roles limit" }).click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await dialog.getByLabel("Until").fill("2026-12-31");
+      await dialog.getByRole("textbox", { name: "Reason" }).fill("Pilot");
+    },
+  },
+  {
+    file: "4.52-remove-override-custom-roles-limit-off-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) =>
+      mockFrameOrganisations(page, undefined, { customRolesOff: true }),
+    open: (page) =>
+      page
+        .getByRole("button", {
+          name: "Remove the override on Custom roles limit",
         })
         .click(),
   },

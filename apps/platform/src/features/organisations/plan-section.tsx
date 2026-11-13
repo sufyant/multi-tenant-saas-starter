@@ -27,6 +27,7 @@ import { leaveOf } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
 import { ChangePlanDialog } from "./change-plan-dialog";
 import { useMembersText } from "./members-text";
+import { waitsInOrganisation } from "./organisation";
 import { OverrideDialog } from "./override-dialog";
 import { usePersonName } from "./person-name";
 import { RemoveOverrideDialog } from "./remove-override-dialog";
@@ -68,18 +69,24 @@ export function PlanSection({
     organisation.status === TenantResponseStatus.Purging;
   const name = organisation.name;
   const personName = usePersonName();
+  const waitsId = useId();
 
-  /** The value that applies: a limit with a number says how much of it the organisation uses; the Activity log counts nothing. */
-  const applies = (row: TenantEntitlementResponse) =>
-    !row.isFeature &&
-    row.key !== retentionKey &&
-    !row.effective.unlimited &&
-    row.effective.maximum !== null
-      ? t("planSection.countOf", {
-          count: row.count,
-          limit: row.effective.maximum,
-        })
-      : text.label(row.isFeature, row.effective, row.key);
+  /**
+   * The value that applies: a limit with a number says how much of it the organisation uses; the Activity log counts nothing. A
+   * limit whose feature is off says Off (4.50).
+   */
+  const applies = (row: TenantEntitlementResponse, waits: boolean) =>
+    waits
+      ? text.off()
+      : !row.isFeature &&
+          row.key !== retentionKey &&
+          !row.effective.unlimited &&
+          row.effective.maximum !== null
+        ? t("planSection.countOf", {
+            count: row.count,
+            limit: row.effective.maximum,
+          })
+        : text.label(row.isFeature, row.effective, row.key);
 
   /** What the plan gives, then the override: "Team gives 5. Override: 10 until 31 Dec 2026 · Reason: pilot · by Deniz Kaya". */
   const details = (row: TenantEntitlementResponse, planName: string) => {
@@ -142,9 +149,14 @@ export function PlanSection({
     const rows = [...plan.data.entitlements].sort(
       (one, other) => place(one.key) - place(other.key),
     );
+    const waits = (row: TenantEntitlementResponse) =>
+      waitsInOrganisation(plan.data, row);
+    // A limit whose feature is off applies nothing yet, so it is over nothing (4.50).
+    const over = (row: TenantEntitlementResponse) =>
+      waits(row) ? 0 : overBy(row);
     return (
       <>
-        {!readOnly && rows.some((row) => overBy(row) > 0) && (
+        {!readOnly && rows.some((row) => over(row) > 0) && (
           <Banner
             tone="warning"
             title={t.rich("planSection.overTitle", { name, ...isolated })}
@@ -168,6 +180,11 @@ export function PlanSection({
                       aria-label={t("planSection.editOverrideOn", {
                         key: text.name(row.key),
                       })}
+                      // An override of a limit whose feature is off cannot change; Remove stays allowed (4.50, 4.52).
+                      disabled={waits(row)}
+                      aria-describedby={
+                        waits(row) ? `${waitsId}-${row.key}` : undefined
+                      }
                       onClick={() =>
                         setOpen({ dialog: "override", key: row.key })
                       }
@@ -188,14 +205,22 @@ export function PlanSection({
               }
             >
               <span className="flex flex-wrap items-center gap-2">
-                <span>{applies(row)}</span>
-                {overBy(row) > 0 && (
+                <span>{applies(row, waits(row))}</span>
+                {over(row) > 0 && (
                   <Pill tone="warning">
-                    {t("planSection.overBy", { count: overBy(row) })}
+                    {t("planSection.overBy", { count: over(row) })}
                   </Pill>
                 )}
               </span>
               {details(row, current.name)}
+              {waits(row) && (
+                <span
+                  id={`${waitsId}-${row.key}`}
+                  className="text-small text-muted-foreground"
+                >
+                  {text.requiresFeature(row.key)}
+                </span>
+              )}
             </Row>
           ))}
         </div>

@@ -5,6 +5,7 @@ import {
   type EntitlementValueRequest,
   type EntitlementValueResponse,
   FeatureKey,
+  LimitFeatures,
   LimitKey,
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
@@ -66,6 +67,19 @@ export function lowers(isFeature: boolean, before: Value, after: Value) {
   if (isFeature) return before?.enabled === true && after?.enabled !== true;
   return roomOf(after) < roomOf(before);
 }
+
+/** The feature that a limit depends on, from the generated client (the API's E1); none for a limit that depends on no feature. */
+export const featureOf = (key: string): string | undefined =>
+  (LimitFeatures as Record<string, string>)[key];
+
+/**
+ * Whether a limit waits for its feature: it depends on one, and the feature's value is not on. A feature with no value is closed, so
+ * it is off. `read` gives a key's value where the screen holds it: the editor's form, a plan or an organisation's effective value.
+ */
+export const waitsForFeature = (key: string, read: (key: string) => Value) => {
+  const feature = featureOf(key);
+  return feature !== undefined && read(feature)?.enabled !== true;
+};
 
 /** The limit of the Activity log's period, in days: a whole number from the floor, or unlimited (the API's K14). */
 export const retentionKey: string = LimitKey.AuditRetentionDays;
@@ -149,6 +163,11 @@ export function useEntitlementText() {
         ? t("sentence.unlimited")
         : numberOf(key, value.maximum ?? 0);
     },
+    /** Why a limit cannot change while its feature is off: "Turn on Custom roles first.", with the feature's name (37d). */
+    requiresFeature: (key: string) =>
+      t("requiresFeature", { feature: keyText(featureOf(key) ?? key, "name") }),
+    /** The value of a limit whose feature is off: the word of a feature that is off, so one state has one word (4.50, 6.25). */
+    off: () => t("off"),
     /** What turning a feature off on a plan leaves (4.15), for a key that has its own text. */
     turnsOff: (key: string, count: number, plan: string) => {
       const path =

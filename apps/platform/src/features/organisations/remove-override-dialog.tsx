@@ -14,9 +14,17 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { retentionKey, useEntitlementText } from "@/shared/entitlements";
+import {
+  featureOf,
+  retentionKey,
+  useEntitlementText,
+} from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
-import { afterRefusal, refreshOrganisation } from "./organisation";
+import {
+  afterRefusal,
+  refreshOrganisation,
+  waitsInOrganisation,
+} from "./organisation";
 
 /**
  * Remove an override (4.17): the organisation goes back to its plan's value, which the description names with the count it has
@@ -62,6 +70,12 @@ export function RemoveOverrideDialog({
       value,
       ...isolated,
     };
+    // A limit whose feature is off: the plan's value applies when the feature turns on (4.52).
+    if (waitsInOrganisation(plan, row))
+      return t.rich("removeDependentText", {
+        ...values,
+        feature: text.name(featureOf(row.key) ?? ""),
+      });
     if (row.key !== retentionKey)
       return t.rich("removeText", { ...values, count: row.count });
     if (!shortens) return t.rich("removeRetentionKeeps", values);

@@ -44,12 +44,14 @@ import {
   draftOf,
   entitlementAreas,
   entitlementKeys,
+  featureOf,
   isWholeNumber,
   lowers,
   requestOf,
   retentionKey,
   useEntitlementText,
   valueFrom,
+  waitsForFeature,
 } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { NotFoundPage } from "@/shared/not-found-page";
@@ -222,7 +224,16 @@ function Summary({ plan, onEdit }: { plan: PlanResponse; onEdit: () => void }) {
                   {text.name(key)}
                 </dt>
                 <dd className="text-body">
-                  {text.label(isFeature, plan.entitlements[key] ?? null, key)}
+                  {waitsForFeature(
+                    key,
+                    (feature) => plan.entitlements[feature] ?? null,
+                  )
+                    ? text.off()
+                    : text.label(
+                        isFeature,
+                        plan.entitlements[key] ?? null,
+                        key,
+                      )}
                 </dd>
               </div>
             )),
@@ -351,14 +362,23 @@ function Form({ plan }: { plan: PlanResponse | null }) {
       form.setError("name", { message: "nameTaken" });
     if (code === ErrorCode.PlanNameInvalid)
       form.setError("name", { message: FieldErrorCode.Required });
-    if (code === ErrorCode.PlanEntitlementInvalid) {
+    // A value the API refuses shows under its key: a wrong value, or a limit changed while its feature is off (37d).
+    if (
+      code === ErrorCode.PlanEntitlementInvalid ||
+      code === ErrorCode.PlanFeatureRequired
+    ) {
       const index = entitlementKeys.findIndex(
         (item) =>
           error instanceof ProblemDetailsError &&
           item.key === error.problem?.entitlement,
       );
       if (index >= 0)
-        form.setError(`drafts.${index}.text`, { message: "invalid" });
+        form.setError(`drafts.${index}.text`, {
+          message:
+            code === ErrorCode.PlanFeatureRequired
+              ? "featureRequired"
+              : "invalid",
+        });
     }
     const [nameCode] =
       (error instanceof ProblemDetailsError && error.problem?.errors?.name) ||
@@ -413,6 +433,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
       code === ErrorCode.PlanNameTaken ||
       code === ErrorCode.PlanNameInvalid ||
       code === ErrorCode.PlanEntitlementInvalid ||
+      code === ErrorCode.PlanFeatureRequired ||
       code === ErrorCode.RequestValidationFailed
     )
       return null;
@@ -432,8 +453,13 @@ function Form({ plan }: { plan: PlanResponse | null }) {
     return t("plans.nameRequired");
   })();
   // After a save a value is checked again as it is typed, as the name is (6.11).
+  // A feature's change also clears the refusal of the limits that depend on it (37d).
   const setDraft = (index: number, draft: Draft) => {
     form.clearErrors(`drafts.${index}.text`);
+    entitlementKeys.forEach((item, other) => {
+      if (featureOf(item.key) === entitlementKeys[index]?.key)
+        form.clearErrors(`drafts.${other}.text`);
+    });
     form.setValue(`drafts.${index}`, draft, { shouldDirty: true });
     if (form.formState.isSubmitted) void form.trigger(`drafts.${index}.text`);
   };
@@ -507,6 +533,15 @@ function Form({ plan }: { plan: PlanResponse | null }) {
             const index = entitlementKeys.findIndex((item) => item.key === key);
             const draft = drafts[index];
             if (!draft) return null;
+            // A limit whose feature is off in this form keeps its value, disabled, until the feature is turned on (37d).
+            const waits = waitsForFeature(key, (feature) => {
+              const other =
+                drafts[
+                  entitlementKeys.findIndex((item) => item.key === feature)
+                ];
+              return other ? valueFrom(true, other) : null;
+            });
+            const message = errors.drafts?.[index]?.text?.message;
             return (
               <Row
                 key={key}
@@ -521,13 +556,17 @@ function Form({ plan }: { plan: PlanResponse | null }) {
                   draft={draft}
                   onChange={(next) => setDraft(index, next)}
                   error={
-                    errors.drafts?.[index]?.text
-                      ? key === retentionKey
-                        ? text.floor()
-                        : t("plans.numberInvalid")
-                      : undefined
+                    !message
+                      ? undefined
+                      : message === "featureRequired"
+                        ? text.requiresFeature(key)
+                        : key === retentionKey
+                          ? text.floor()
+                          : t("plans.numberInvalid")
                   }
                   unit={text.unit(key, draft.text)}
+                  disabled={waits}
+                  note={waits ? text.requiresFeature(key) : undefined}
                   showUnset
                 />
               </Row>

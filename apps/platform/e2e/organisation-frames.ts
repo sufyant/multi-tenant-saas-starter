@@ -205,14 +205,40 @@ const longerRetention: TenantEntitlementResponse["override"] = {
   setAt: "2026-10-28T10:20:00Z",
 };
 
+/** Northwind's override that turns Custom roles off (4.50 to 4.52). */
+const customRolesPaused: TenantEntitlementResponse["override"] = {
+  value: value({ enabled: false }),
+  expiresAt: null,
+  state: EntitlementOverrideResponseState.Active,
+  reason: "contract paused",
+  setById: "0198f0a2-0000-7000-8000-00000000b0d1",
+  setBy: deniz,
+  setAt: "2026-11-02T09:30:00Z",
+};
+
+/** The overrides a shot gives Northwind beside its override of the custom roles limit. */
+type FrameOverrides = {
+  /** The Activity log's override, which 4.17 removes. */
+  retentionOverride?: boolean;
+  /** Custom roles turned off by an override (4.50 to 4.52). */
+  customRolesOff?: boolean;
+  /** The override of the custom roles limit; 4.51 draws the limit without it. */
+  limitOverride?: boolean;
+};
+
 /**
  * The organisation's plan: Team gives 15 seats, 5 custom roles and an Activity log of 365 days, Free 3 seats and 90 days, Business
  * no limit of seats and 365 days (4.14, 4.15).
  */
 const planOf = (
   organisation: (typeof frameOrganisations)[keyof typeof frameOrganisations],
-  retentionOverride: boolean,
+  {
+    retentionOverride = false,
+    customRolesOff = false,
+    limitOverride = true,
+  }: FrameOverrides,
 ): TenantPlanResponse => {
+  const northwind = organisation.id === frameNorthwind.id;
   const seats = organisation.memberCount + organisation.pendingInvitationCount;
   const team = organisation.plan.id === planNames.team.id;
   const free = organisation.plan.id === planNames.free.id;
@@ -225,13 +251,14 @@ const planOf = (
         true,
         value({ enabled: !free }),
         team ? 4 : 0,
+        customRolesOff && northwind ? customRolesPaused : null,
       ),
       key(
         LimitKey.RolesCustomMax,
         false,
         value(free ? { maximum: 0 } : team ? { maximum: 5 } : { maximum: 20 }),
         team ? 4 : 0,
-        organisation.id === frameNorthwind.id
+        limitOverride && northwind
           ? {
               value: value({ maximum: 10 }),
               expiresAt: "2026-12-31T00:00:00Z",
@@ -256,9 +283,7 @@ const planOf = (
         false,
         value({ maximum: free ? 90 : 365 }),
         0,
-        retentionOverride && organisation.id === frameNorthwind.id
-          ? longerRetention
-          : null,
+        retentionOverride && northwind ? longerRetention : null,
       ),
     ],
   };
@@ -320,15 +345,15 @@ const northwindLog: AuditEntryResponse[] = [
 
 /**
  * ListTenants, GetTenant, GetTenantPlan and the organisation's entries answer the frames' organisations; a command goes on to the
- * shot's own route. `items` gives the list another set of organisations, such as none for 4.06; `retentionOverride` gives
- * Northwind the override of the Activity log that 4.17 removes.
+ * shot's own route. `items` gives the list another set of organisations, such as none for 4.06; `overrides` gives Northwind the
+ * override of the Activity log that 4.17 removes, or Custom roles turned off (4.50 to 4.52).
  */
 export async function mockFrameOrganisations(
   page: Page,
   items: TenantListItemResponse[] = Object.values(frameOrganisations).map(
     listItemOf,
   ),
-  { retentionOverride = false }: { retentionOverride?: boolean } = {},
+  overrides: FrameOverrides = {},
 ): Promise<void> {
   const all = Object.values(frameOrganisations);
   await page.route("**/api/v1/platform/tenants*", (route) =>
@@ -351,7 +376,7 @@ export async function mockFrameOrganisations(
     const id = new URL(route.request().url()).pathname.split("/").at(-2);
     const found = all.find((organisation) => organisation.id === id);
     return found
-      ? route.fulfill({ json: planOf(found, retentionOverride) })
+      ? route.fulfill({ json: planOf(found, overrides) })
       : route.fallback();
   });
   await page.route("**/api/v1/platform/plans*", (route) =>
