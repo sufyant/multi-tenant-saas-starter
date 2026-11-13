@@ -186,6 +186,7 @@
       "not_set": "غير محدد"
     },
     "entitlementKey": {
+      "audit.retention.days": "أيام الاحتفاظ بسجل النشاط",
       "members.max": "حد الأعضاء",
       "roles.custom": "الأدوار المخصصة",
       "roles.custom.max": "حد الأدوار المخصصة"

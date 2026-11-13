@@ -42,8 +42,14 @@ import {
 } from "../../../test/tenant";
 import { MembersPage } from "./members-page";
 
+// clerk-js as loaded: useFreshRouter waits for it before a navigation, and asks no session for a token.
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ signOut: vi.fn() }),
+  useClerk: () => ({
+    signOut: vi.fn(),
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: null,
+  }),
   useUser: () => ({ user: null }),
 }));
 

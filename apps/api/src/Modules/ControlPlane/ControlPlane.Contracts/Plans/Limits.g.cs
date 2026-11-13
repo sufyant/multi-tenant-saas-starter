@@ -10,4 +10,6 @@ public static class Limits
     public const string RolesCustomMax = "roles.custom.max";
 
     public const string MembersMax = "members.max";
+
+    public const string AuditRetentionDays = "audit.retention.days";
 }

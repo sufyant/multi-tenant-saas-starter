@@ -5,7 +5,8 @@ namespace ControlPlane.Domain.Plans;
 
 /// <summary>
 /// The value of every key of the code's list for one tenant at one moment: the plan's value, overlaid by the tenant's override while it
-/// has not expired. A key that the plan has no value for, and no override holds, is closed: a feature is off and a limit is 0. It is
+/// has not expired. A key that the plan has no value for, and no override holds, is closed: a feature is off and a limit is 0, apart
+/// from the Activity log period, which is then unlimited. It is
 /// computed at each read from the stored values and expiries, with the moment of the read, so an override stops at its expiry, with no
 /// wait for a cache.
 /// </summary>
@@ -23,7 +24,7 @@ internal sealed class EffectiveEntitlements
         var active = overrides.Where(entry => entry.IsActiveAt(now)).ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.Ordinal);
         return new(EntitlementKeys.All.ToFrozenDictionary(
             key => key.Key,
-            key => active.GetValueOrDefault(key.Key) ?? plan.GetValueOrDefault(key.Key) ?? EntitlementValue.ClosedOf(key.Value),
+            key => active.GetValueOrDefault(key.Key) ?? plan.GetValueOrDefault(key.Key) ?? MissingValueOf(key.Key, key.Value),
             StringComparer.Ordinal));
     }
 
@@ -44,4 +45,9 @@ internal sealed class EffectiveEntitlements
         ValueOf(limit).Allows(count)
             ? Result.Success()
             : Error.Conflict(ControlPlaneErrorCodes.PlanLimitReached, "The tenant has as many as its plan allows.") with { Entitlement = limit };
+
+    // A key without a value is closed, but a missing Activity log period keeps every entry, as unlimited does: a period of 0 would delete
+    // the whole log, and a missing value never deletes (E3).
+    private static EntitlementValue MissingValueOf(string key, EntitlementKind kind) =>
+        key == LimitKeys.AuditRetentionDays ? EntitlementValue.Unlimited : EntitlementValue.ClosedOf(kind);
 }

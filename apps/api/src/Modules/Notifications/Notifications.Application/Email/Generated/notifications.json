@@ -110,6 +110,7 @@
         "not_set": "not set"
       },
       "entitlementKey": {
+        "audit.retention.days": "Activity log days",
         "members.max": "Members limit",
         "roles.custom": "Custom roles",
         "roles.custom.max": "Custom roles limit"
@@ -234,6 +235,7 @@
         "not_set": "ayarlanmadı"
       },
       "entitlementKey": {
+        "audit.retention.days": "Etkinlik kaydı gün sayısı",
         "members.max": "Üye sınırı",
         "roles.custom": "Özel roller",
         "roles.custom.max": "Özel rol sınırı"
@@ -358,6 +360,7 @@
         "not_set": "غير محدد"
       },
       "entitlementKey": {
+        "audit.retention.days": "أيام الاحتفاظ بسجل النشاط",
         "members.max": "حد الأعضاء",
         "roles.custom": "الأدوار المخصصة",
         "roles.custom.max": "حد الأدوار المخصصة"

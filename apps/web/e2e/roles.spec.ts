@@ -9,6 +9,7 @@ import {
   roles,
 } from "./api";
 import { expectAccessible } from "./axe";
+import { expireTheSession } from "./session-expiry";
 
 const base = `/${northwind.slug}/settings/roles`;
 
@@ -41,6 +42,46 @@ test("NewRole_Owner_ShowsTheEmptyEditor", async ({ page }) => {
 
   await expect(
     page.getByRole("heading", { level: 1, name: "New role" }),
+  ).toBeVisible();
+  await expectAccessible(page);
+});
+
+/** CreateRole answers the new role with what the editor sent. */
+const answersCreateRole = (page: Page) =>
+  page.route(`**/api/v1/tenants/${northwind.id}/roles`, (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({
+          status: 201,
+          json: {
+            id: "0198f0a2-0000-7000-8000-0000000002c9",
+            name: "Maintenance planner",
+            builtIn: false,
+            memberCount: 0,
+            pendingInvitationCount: 0,
+            permissions: route.request().postDataJSON().permissions,
+          },
+        })
+      : route.fallback(),
+  );
+
+// The toast of a new role must reach the list also when the session token expired before clerk-js refreshed it (F63, 9.05).
+test("CreateRole_SessionExpiredOnThePage_ShowsTheToastOnTheList", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await open(page, `${base}/new`);
+  await answersCreateRole(page);
+  await page
+    .getByRole("main")
+    .getByRole("textbox", { name: "Name" })
+    .fill("Maintenance planner");
+  await expireTheSession(page, base);
+
+  await page.getByRole("button", { name: "Create role" }).click();
+
+  await expect(page).toHaveURL(base);
+  await expect(
+    page.getByText("Maintenance planner is ready to give.").first(),
   ).toBeVisible();
   await expectAccessible(page);
 });

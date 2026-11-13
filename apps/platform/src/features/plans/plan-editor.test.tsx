@@ -39,6 +39,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/plans",
 }));
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: { getToken },
+  }),
+}));
+afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -84,12 +94,13 @@ describe("PlanEditor", () => {
 
     expect(screen.getByText("6 organisations are on this plan.")).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Pro");
-    // The areas in the frames' order (6.04): the plan, then Members, then Roles.
+    // The areas in the frames' order (6.04): the plan, then Members, then Roles. The API's new key audit.retention.days follows as
+    // an area the frames do not draw yet; 37c-frontend-platform gives it the Activity log card.
     expect(
       screen
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
-    ).toEqual(["Plan", "Members", "Roles"]);
+    ).toEqual(["Plan", "Members", "Roles", "audit"]);
     expect(
       row("Custom roles").getByRole("switch", { name: "Custom roles" }),
     ).toBeChecked();
@@ -108,7 +119,8 @@ describe("PlanEditor", () => {
       row("Seats").getByRole("checkbox", { name: "Unlimited" }),
     ).toBeChecked();
     expect(limitField("Seats")).toBeDisabled();
-    expect(screen.queryByText("Not set: closed")).toBeNull();
+    // Only the new key, which this plan's mock does not hold, is not set.
+    expect(screen.getAllByText("Not set: closed")).toHaveLength(1);
   });
 
   it("Edit_OneOrganisation_SaysOne", async () => {
@@ -801,6 +813,7 @@ describe("PlanEditor", () => {
     expect(creates[0]?.key).toMatch(/^[0-9a-f-]{36}$/);
     // 6.12: the new plan opens on its own page.
     expect(router.push).toHaveBeenCalledWith(`/plans/${partner.id}`);
+    expect(getToken).toHaveBeenCalledBefore(router.push);
     expect(
       screen.getByText(
         "Give it to an organisation from that organisation’s Plan tab.",

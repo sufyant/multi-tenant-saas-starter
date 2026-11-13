@@ -30,6 +30,7 @@ public sealed class MigratedSchemaTests(Database database)
             """
             audit.entries: forced
             audit.platform_entries: forced
+            audit.tenant_retentions: forced
             control_plane.invitations: forced
             control_plane.memberships: forced
             control_plane.role_permissions: forced
@@ -59,8 +60,10 @@ public sealed class MigratedSchemaTests(Database database)
             """
             audit.entries own_actions: PERMISSIVE SELECT {api_application} USING (actor_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK -
             audit.entries tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            audit.platform_entries owner_delete: PERMISSIVE DELETE {api_owner} USING (occurred_at < (now() - '30 days'::interval)) WITH CHECK -
             audit.platform_entries platform_insert: PERMISSIVE INSERT {public} USING - WITH CHECK true
             audit.platform_entries platform_read: PERMISSIVE SELECT {public} USING ((NULLIF(current_setting('app.tenant_id'::text, true), ''::text) IS NULL) AND (NULLIF(current_setting('app.user_id'::text, true), ''::text) IS NULL)) WITH CHECK -
+            audit.tenant_retentions tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.invitations own_accepted_invitations: PERMISSIVE SELECT {public} USING (accepted_by = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK -
             control_plane.invitations tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.memberships own_memberships: PERMISSIVE SELECT {public} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK -
@@ -118,6 +121,8 @@ public sealed class MigratedSchemaTests(Database database)
             default for tables in audit: INSERT, SELECT
             default for tables in control_plane: DELETE, INSERT, SELECT, UPDATE
             default for tables in notifications: DELETE, INSERT, SELECT, UPDATE
+            function audit.delete_expired_entries(timestamp with time zone,integer): EXECUTE
+            function audit.delete_expired_platform_entries(timestamp with time zone,integer): EXECUTE
             function audit.purge_tenant_entries(): EXECUTE
             function notifications.delete_expired_notifications(timestamp with time zone,integer): EXECUTE
             function notifications.purge_tenant_notifications(): EXECUTE
@@ -131,6 +136,7 @@ public sealed class MigratedSchemaTests(Database database)
             table audit.__ef_migrations_history: SELECT
             table audit.entries: INSERT, SELECT
             table audit.platform_entries: INSERT, SELECT
+            table audit.tenant_retentions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.__ef_migrations_history: SELECT
             table control_plane.default_plans: DELETE, INSERT, SELECT, UPDATE
             table control_plane.entitlement_overrides: DELETE, INSERT, SELECT, UPDATE

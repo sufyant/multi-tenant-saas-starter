@@ -46,6 +46,21 @@ public sealed class PurgeTenantDataTests(Database database)
         (await EntriesOfAsync(purged.TenantId)).ShouldBe(0);
     }
 
+    // K14: the purge deletes the tenant's row of the retention with its log.
+    [Fact]
+    public async Task PurgeTenantData_ATenantWithARetentionRow_DeletesTheRow()
+    {
+        var purged = await ClosedAsync();
+        var other = await ClosedAsync();
+        await database.ScalarAsSuperuserAsync<object>(
+            $"INSERT INTO audit.tenant_retentions (tenant_id, days) VALUES ('{purged.TenantId}', 365), ('{other.TenantId}', 365)");
+
+        await PurgeAsync(purged.TenantId);
+
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.tenant_retentions WHERE tenant_id = '{purged.TenantId}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.tenant_retentions WHERE tenant_id = '{other.TenantId}'")).ShouldBe(1);
+    }
+
     // The function takes no tenant: it deletes only the entries of the tenant the transaction declares, so no call reaches another
     // tenant's log (R4).
     [Fact]

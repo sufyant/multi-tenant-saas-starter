@@ -21,6 +21,7 @@ import {
 } from "@repo/ui/components/sign-in";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -82,7 +83,7 @@ export function AcceptInvitationPage({
 }) {
   const code = useInvitationCode(fromLink);
   const t = useTranslations();
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const queryClient = useQueryClient();
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
@@ -139,7 +140,7 @@ export function AcceptInvitationPage({
         queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() }),
       ]);
       showToast({ title: t("invitations.joined", { tenant: tenant.name }) });
-      router.push(`/${tenant.slug}`);
+      await router.push(`/${tenant.slug}`);
     },
   });
 

@@ -71,4 +71,22 @@ public sealed class EntitlementValueTests
     [Fact]
     public void CheckValue_UnlimitedOfALimitKey_IsTheValue() =>
         EntitlementValue.For("members.max", EntitlementValue.Unlimited).Value.ShouldBe(EntitlementValue.Unlimited);
+
+    // E1, R19: the Activity log period is at least the floor of 30 days, or unlimited, so a fault cannot delete a recent log.
+    [Fact]
+    public void CheckValue_ARetentionUnderTheFloor_IsInvalidWithTheKey()
+    {
+        var checkedValue = EntitlementValue.For("audit.retention.days", EntitlementValue.Limit(29));
+
+        checkedValue.Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanEntitlementInvalid);
+        checkedValue.Error.Entitlement.ShouldBe("audit.retention.days");
+    }
+
+    [Fact]
+    public void CheckValue_ARetentionAtTheFloor_IsTheValue() =>
+        EntitlementValue.For("audit.retention.days", EntitlementValue.Limit(30)).Value.ShouldBe(EntitlementValue.Limit(30));
+
+    [Fact]
+    public void CheckValue_AnUnlimitedRetention_IsTheValue() =>
+        EntitlementValue.For("audit.retention.days", EntitlementValue.Unlimited).Value.ShouldBe(EntitlementValue.Unlimited);
 }

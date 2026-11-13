@@ -64,8 +64,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
         found.GetProperty("planName").GetString().ShouldBe("Pro");
-        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"members.max":null,"roles.custom":true,"roles.custom.max":20}""");
-        found.GetProperty("usage").GetRawText().ShouldBe("""{"members.max":3,"roles.custom.max":1}""");
+        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"audit.retention.days":365,"members.max":null,"roles.custom":true,"roles.custom.max":20}""");
+        found.GetProperty("usage").GetRawText().ShouldBe("""{"audit.retention.days":0,"members.max":3,"roles.custom.max":1}""");
     }
 
     // An override over the plan's value is the effective value the tenant reads.
@@ -80,7 +80,7 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
         found.GetProperty("planName").GetString().ShouldBe("Free");
-        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"members.max":12,"roles.custom":false,"roles.custom.max":0}""");
+        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"audit.retention.days":365,"members.max":12,"roles.custom":false,"roles.custom.max":0}""");
     }
 
     // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner holds the tenant pool, an Admin all of it but

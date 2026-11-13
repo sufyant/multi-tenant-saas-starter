@@ -12,7 +12,11 @@ public sealed class ContractsShapeTests
     // Infrastructure project of the module that publishes the contract. A class that another module's handler takes is public and
     // sealed, so that Wolverine's generated code builds it on the handler's DbContext (W1, W9).
     private static readonly string[] BuiltByWolverine =
-        ["ControlPlane.Infrastructure.Persistence.Users.UserDirectory", "ControlPlane.Infrastructure.Persistence.Members.MemberDirectory"];
+        [
+            "ControlPlane.Infrastructure.Persistence.Users.UserDirectory",
+            "ControlPlane.Infrastructure.Persistence.Members.MemberDirectory",
+            "ControlPlane.Infrastructure.Persistence.Plans.AuditRetentionDirectory",
+        ];
 
     public static TheoryData<string> Modules => [.. Solution.Modules];
 

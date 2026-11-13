@@ -11,6 +11,7 @@ import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -27,7 +28,7 @@ export function LeaveDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const { tenant } = useTenant();
   const organisation = tenant.name;
 
@@ -41,13 +42,13 @@ export function LeaveDialog({ onClose }: { onClose: () => void }) {
     },
   });
 
-  const left = () => {
+  const left = async () => {
     onClose();
     showToast({
       title: t("members.left", { organisation }),
       description: t("members.leftText"),
     });
-    router.replace("/");
+    await router.replace("/");
     // The start page reads the person's organisations afresh: the cached list still holds this one, which would open it again.
     queryClient.removeQueries({ queryKey: getListMyTenantsQueryKey() });
     queryClient.removeQueries({

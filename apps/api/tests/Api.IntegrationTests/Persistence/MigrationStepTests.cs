@@ -234,7 +234,7 @@ public sealed class MigrationStepTests(Database database)
             SELECT string_agg(key || '=' || coalesce(enabled::text, maximum::text, 'unlimited'), ',' ORDER BY key)
             FROM control_plane.plan_entitlements WHERE plan_id = '{SeedPlans.Pro}'
             """,
-            before)).ShouldBe("members.max=unlimited,roles.custom=true,roles.custom.max=20");
+            before)).ShouldBe("audit.retention.days=365,members.max=unlimited,roles.custom=true,roles.custom.max=20");
         (await database.ScalarAsSuperuserAsync<string>(
             $"SELECT custom_role_count || ':' || array_to_string(pending_invitation_expiries, ',') FROM control_plane.tenant_summaries WHERE tenant_id = '{active.Id}'",
             before)).ShouldBe("2:2030-01-02 03:04:05+00");

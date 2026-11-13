@@ -1922,6 +1922,8 @@ shellShots.push(
     open: async (page) => {
       await roleName(page).fill("Maintenance planner");
       await page.getByRole("button", { name: "Create role" }).click();
+      // The list first: the toast shows before the navigation ends, and the editor's animations end only when it goes.
+      await page.getByRole("heading", { level: 1, name: "Roles" }).waitFor();
       await page
         .getByText("Maintenance planner is ready to give.")
         .first()

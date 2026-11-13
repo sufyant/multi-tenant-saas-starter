@@ -18,6 +18,9 @@ public enum NotificationLinkKind
     /// <summary>The tenant's general settings.</summary>
     TenantSettings,
 
+    /// <summary>The tenant's Activity log.</summary>
+    TenantActivityLog,
+
     /// <summary>The tenant's page in the platform.</summary>
     PlatformTenant,
 

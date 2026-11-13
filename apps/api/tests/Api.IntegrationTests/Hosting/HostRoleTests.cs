@@ -1,6 +1,10 @@
 using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json;
+using Audit.Application.AuditLogs.ApplyAuditRetention;
+using Audit.Application.AuditLogs.ApplyTenantAuditRetention;
+using Audit.Application.AuditLogs.DeleteExpiredEntries;
+using Audit.Application.AuditLogs.DeleteExpiredPlatformEntries;
 using Audit.Application.Invitations.RecordInvitationRevoked;
 using Audit.Application.Invitations.RecordOwnerInvited;
 using Audit.Application.Members.RecordMemberInvited;
@@ -138,6 +142,15 @@ public sealed class HostRoleTests(Database database)
         new(typeof(CompleteDataExportCommand), typeof(CompleteDataExportHandler)),
     ];
 
+    // A worker runs the audit retention at its start (K14), whose handlers a test of another flow does not expect.
+    private static readonly Action<IServiceCollection> WithoutAuditRetention = services =>
+    {
+        foreach (var job in services.Where(service => service.ImplementationType?.Name == "AuditRetentionJob").ToList())
+        {
+            services.Remove(job);
+        }
+    };
+
     // A reopen period of seconds: the warning comes 2 s after the closure and the purge 10 s after it, by Wolverine's clock.
     private static readonly Dictionary<string, string?> ShortReopenPeriod = new()
     {
@@ -251,6 +264,58 @@ public sealed class HostRoleTests(Database database)
         runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
+    }
+
+    // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row
+    // stays only for a tenant with an entry.
+    [Fact]
+    public async Task ApplyAuditRetention_OnAWebAndAWorkerHost_RunsInTheWorkerAtItsStart()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var tenant = await new TestData(database, name).AddTenantAsync();
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO audit.entries (id, tenant_id, occurred_at, actor_kind, kind, operation, target_kind, target_id)
+            VALUES (gen_random_uuid(), '{tenant.Id}', now(), 'Platform', 'Command', 'tenant.suspended', 'Tenant', '{tenant.Id}')
+            """,
+            name);
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, auditRetention: true);
+        await using var worker = Host(name, "worker", runs, auditRetention: true);
+        _ = web.Services;
+        _ = worker.Services;
+
+        await Waiting.UntilAsync(async () => await RetentionDaysAsync(name, tenant.Id) == 365
+            && runs.In("worker").Any(run => run.Handler == typeof(DeleteExpiredPlatformEntriesHandler)));
+
+        runs.In("web").ShouldBeEmpty();
+        runs.In("worker").Select(run => run.Handler).ShouldBe([typeof(ApplyAuditRetentionHandler), typeof(ApplyTenantAuditRetentionHandler), typeof(DeleteExpiredEntriesHandler), typeof(DeleteExpiredPlatformEntriesHandler)], ignoreOrder: true);
+    }
+
+    // K14: a plan change that shortens the period is announced from the web host, and the worker's Audit handler starts the hold.
+    [Fact]
+    public async Task ChangeTenantPlan_ToAShorterPeriodOnAWebAndAWorkerHost_StartsTheHoldInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var testData = new TestData(database, name);
+        var plan = await testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 });
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var tenant = await testData.AddTenantAsync();
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        var changed = await admin.ChangeTenantPlanAsync(tenant.Id, plan);
+        await Waiting.UntilAsync(async () => await RetentionDaysAsync(name, tenant.Id) == 90);
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await database.ScalarAsSuperuserAsync<bool>(
+            $"""
+            SELECT held_until = (SELECT occurred_at + interval '30 days' FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.plan_changed')
+            FROM audit.tenant_retentions WHERE tenant_id = '{tenant.Id}'
+            """,
+            name)).ShouldBeTrue();
     }
 
     // O3: an override and a new plan are announced from the web host, and their Audit handlers run in the worker, once: the plan in the
@@ -991,11 +1056,26 @@ public sealed class HostRoleTests(Database database)
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
 
-    private ApiFactory Host(string databaseName, string role, HandlerRuns runs, HostPorts? ports = null, IReadOnlyDictionary<string, string?>? settings = null) => new(
+    // Only the audit retention's own test keeps the job in its hosts.
+    private ApiFactory Host(
+        string databaseName,
+        string role,
+        HandlerRuns runs,
+        HostPorts? ports = null,
+        IReadOnlyDictionary<string, string?>? settings = null,
+        bool auditRetention = false) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
         settings: new Dictionary<string, string?>(settings ?? new Dictionary<string, string?>()) { ["Host:Role"] = role },
-        configureServices: HandlerRunsOfHost.Register(role, runs),
+        configureServices: services =>
+        {
+            HandlerRunsOfHost.Register(role, runs)(services);
+            if (!auditRetention)
+            {
+                WithoutAuditRetention(services);
+            }
+        },
         ports: ports);
+
 
     // A host with the probe module's DbContext, the two handlers of ProbePinged, and a handler that writes and one that always fails.
     private ApiFactory ProbeHost(string databaseName, string role, HandlerRuns runs) => new(
@@ -1004,6 +1084,7 @@ public sealed class HostRoleTests(Database database)
         configureServices: services =>
         {
             HandlerRunsOfHost.Register(role, runs)(services);
+            WithoutAuditRetention(services);
             services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
                 (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
                 TenancyServiceCollectionExtensions.MessageSchema);
@@ -1021,6 +1102,10 @@ public sealed class HostRoleTests(Database database)
     private Task<long> AuditEntriesAsync(string databaseName, Guid tenantId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", databaseName);
+
+    // The tenant's Activity log period in its row of the retention; 0 while it has no row or no limit.
+    private async Task<int> RetentionDaysAsync(string databaseName, Guid tenantId) =>
+        await database.ScalarAsSuperuserAsync<int?>($"SELECT days FROM audit.tenant_retentions WHERE tenant_id = '{tenantId}'", databaseName) ?? 0;
 
     private Task<long> PlatformEntriesAsync(string databaseName, Guid targetId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(

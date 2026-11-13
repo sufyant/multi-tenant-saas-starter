@@ -10681,13 +10681,15 @@
       "LimitKey": {
         "enum": [
           "roles.custom.max",
-          "members.max"
+          "members.max",
+          "audit.retention.days"
         ],
         "type": "string",
         "description": "A limit key of the entitlement list: a number of 0 or more, or unlimited.",
         "x-enumNames": [
           "RolesCustomMax",
-          "MembersMax"
+          "MembersMax",
+          "AuditRetentionDays"
         ]
       },
       "ListFilterOfTenantResponseStatus": {
@@ -11207,6 +11209,7 @@
           "tenant_members",
           "tenant_roles",
           "tenant_settings",
+          "tenant_activity_log",
           "platform_tenant",
           "account_security"
         ],
@@ -11217,6 +11220,7 @@
           "TenantMembers",
           "TenantRoles",
           "TenantSettings",
+          "TenantActivityLog",
           "PlatformTenant",
           "AccountSecurity"
         ]

@@ -29,6 +29,28 @@ public sealed class SetEntitlementOverrideTests(Database database) : IAsyncLifet
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    [Fact]
+    public async Task SetEntitlementOverride_ARetentionUnderTheFloor_IsInvalidWithTheKey()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+
+        var set = await admin.SetOverrideAsync(tenant.Id, "audit.retention.days", PlanRequests.Max(29));
+
+        (set.StatusCode, await PlanRequests.ProblemOfAsync(set)).ShouldBe((HttpStatusCode.BadRequest, ("plan.entitlement_invalid", "audit.retention.days")));
+    }
+
+    [Fact]
+    public async Task SetEntitlementOverride_AShorterPeriod_StartsTheHoldAtTheOverridesMoment()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenant.Id, "audit.retention.days", PlanRequests.Max(90)))).EnsureSuccessStatusCode();
+
+        (await new AuditEntries(database).RetentionHoldAsync(tenant.Id, "tenant.entitlement_override_set")).ShouldBe("90|t|t");
+    }
+
     // A trial: roles.custom on, with five of them, for a Free tenant for fourteen days. The tenant's plan shows the override, with who set
     // it and when.
     [Fact]

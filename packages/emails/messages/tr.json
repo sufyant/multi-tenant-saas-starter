@@ -186,6 +186,7 @@
       "not_set": "ayarlanmadı"
     },
     "entitlementKey": {
+      "audit.retention.days": "Etkinlik kaydı gün sayısı",
       "members.max": "Üye sınırı",
       "roles.custom": "Özel roller",
       "roles.custom.max": "Özel rol sınırı"

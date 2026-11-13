@@ -24,6 +24,16 @@ public sealed class CreatePlanTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Fact]
+    public async Task CreatePlan_ARetentionUnderTheFloor_IsInvalidWithTheKey()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var created = await admin.CreatePlanAsync($"Plan {Guid.NewGuid():N}", new Dictionary<string, object> { ["audit.retention.days"] = PlanRequests.Max(29) });
+
+        (created.StatusCode, await PlanRequests.ProblemOfAsync(created)).ShouldBe((HttpStatusCode.BadRequest, ("plan.entitlement_invalid", "audit.retention.days")));
+    }
+
+    [Fact]
     public async Task CreatePlan_ANameAndValues_CreatesThePlanWithItsAddress()
     {
         var admin = await AdminAsync();

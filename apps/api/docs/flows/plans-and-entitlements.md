@@ -9,17 +9,20 @@ A system admin decides from the platform what each tenant may use, with no deplo
 | `roles.custom` | feature | the tenant's custom roles, which use it | off | on |
 | `roles.custom.max` | limit | the tenant's custom roles | 0 | 20 |
 | `members.max` | limit | the tenant's members and its pending invitations that have not expired | 5 | unlimited |
+| `audit.retention.days` | limit | nothing: the days the tenant's Activity log keeps an entry (K14) | 365 | 365 |
 
 - The migration `AddPlansAndEntitlements` seeds Free and Pro, marks Free default and moves every existing tenant to Pro. Pro holds what every tenant had before: custom roles on, 20 of them, members without a limit. The migration takes nothing away.
 - A pending invitation counts toward `members.max`. Example: a limit of 10 and 9 members. Without the invitations, 5 invitations could go out and 14 members could join. With them, one invitation can go out.
-- A key that a plan has no value for is closed: a feature is off, a limit is 0 (E3).
-- The OpenAPI document lists the keys as two enums, `FeatureKey` and `LimitKey` (N11i). A client reads them from the generated client. So a client that lists every key shows a key added in code at once, closed until a system admin gives it a value.
+- The migration `AddRetentionLimit` (step 37c) gives every plan 365 days of `audit.retention.days`. A plan that a system admin creates later gets the value its editor sends.
+- The Activity log period is a whole number of at least 30 days, `AuditRetention.Floor`, or unlimited. A value under 30 answers 400 `plan.entitlement_invalid` with the key, from `CreatePlan`, `UpdatePlan`, `GetPlanUpdatePreview` and `SetEntitlementOverride`. The CHECK constraints `ck_plan_entitlements_audit_retention_floor` and `ck_entitlement_overrides_audit_retention_floor` refuse it too (E1, R15).
+- A key that a plan has no value for is closed: a feature is off, a limit is 0 (E3). One key is not: a missing `audit.retention.days` keeps every entry, as unlimited does, because a period of 0 would delete the whole log.
+- The OpenAPI document lists the keys as two enums, `FeatureKey` and `LimitKey` (N11i). The floor and the hold of the Activity log period, 30 days each, reach the clients as `AuditRetention.Floor` and `AuditRetention.Grace` of `@repo/api-client`, a file that the generator of the keys writes (D1). A client reads them from the generated client. So a client that lists every key shows a key added in code at once, closed until a system admin gives it a value.
 
 ## 2. The effective value
 
 1. The tenant's override of the key applies while it has not expired.
 2. Else the plan's value applies.
-3. Else the key is closed.
+3. Else the key is closed, apart from `audit.retention.days`, which is then unlimited: `GetTenantPlan` answers its effective value as unlimited and its `planValue` as null.
 
 The value is computed at each read, with the moment of the read (E3). An override that expires stops at once, and stays, shown expired, until a system admin removes it.
 
@@ -52,7 +55,7 @@ The tenant's method takes the effective entitlements, which the handler reads un
 - `AcceptInvitation` is not limited: the invitation counted already, so an acceptance adds nothing to the count and never fails on the limit.
 - Two creations at the edge run one after the other under the tenant's lock, so only one passes (`CreateRole_TwoAtOnceWithOnePlaceLeft_NeverPassTheLimit`).
 
-Over a limit (E4): nothing is deleted, what exists keeps working, nothing new that counts is added until the count is under the limit, and deleting stays allowed.
+Over a limit (E4): nothing is deleted, what exists keeps working, nothing new that counts is added until the count is under the limit, and deleting stays allowed. `audit.retention.days` counts nothing and is never over. It is the one limit that deletes: the daily job deletes the entries outside the period, after the hold of 30 days that a shorter period starts (K14, `reading-the-audit-logs.md`).
 
 ## 5. The platform
 
@@ -98,6 +101,7 @@ The preview of a plan edit is a page in the list contract (K5). It lists only th
 | `RemoveEntitlementOverride` | `EntitlementOverrideRemovedEvent` | `RecordTenantEntitlementOverrideRemovedHandler` | platform and tenant | `tenant.entitlement_override_removed`; details: the key and the value and expiry it had |
 
 - A plan in the details is Audit's own `AuditPlanResponse`, `{ id, name }`, the plan as it was at that moment.
+- `TenantPlanChangedEvent`, `EntitlementOverrideSetEvent` and `EntitlementOverrideRemovedEvent` carry the optional `retentionShortened`, `{ fromDays, toDays, goesAt }`, when the change makes the tenant's Activity log period shorter. ControlPlane reads the effective values before and after the change, in the tenant's transaction under its lock. `fromDays` is null for no limit, and `goesAt` is the event's moment plus 30 days. Audit's handler starts the tenant's hold at the event's moment, in the transaction that writes the entry (K14).
 - The reason of an override is the provider's own note, so only the platform's entry keeps it, as for `tenant.suspended`.
 - A plan edit writes no entry in the logs of the tenants on the plan (`reading-the-audit-logs.md`).
 - A tenant's purge deletes its overrides with its other data (`tenant-purge.md`). The platform's log keeps its own entries about them.
