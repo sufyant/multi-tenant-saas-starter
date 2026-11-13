@@ -11,7 +11,8 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 36 | Personal pages | done |
 | 37a | The web's organisation pages | done |
 | 37b | The platform's pages | done |
-| 37c | Audit retention | in progress |
+| 37c | Audit retention | done |
+| 37d | Dependent limits | in progress |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -111,7 +112,7 @@ Status: done.
 
 ## 5. Step 37: Organisation pages
 
-Status: done, but 37c is in progress. It has three parts.
+Status: done, but 37d is in progress. It has four parts.
 
 37a, the web's organisation pages:
 
@@ -381,6 +382,36 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 - The period's sentence (12.01 to 12.09) and the Banner of a hold (12.10, 12.11), with Export only for a viewer who holds `tenant.audit.read`, the export's permission. The Activity sentences of an override of the key.
 - It waits for 37c-design and 37c-backend-2.
 - As built: the page reads `GetAuditRetention` beside the log. The sentence stands under the description: "Entries are kept for 365 days.", or "with no time limit" for null. While `shortening` is not null, the warning Banner stands between the header and the log, with the date in the viewer's zone (F18) and Export CSV, which opens 12.08's dialog. The export's permission is the page's own, `tenant.audit.read`, so a viewer who sees the Banner may export, and a viewer without it sees "You can’t open this page" and reads no period. While the period loads or fails, the page shows neither the sentence nor the Banner, and the log works as before. In a sentence of an override the key is "Activity log" and its value counts days ("90 days"). Every count of days is an ICU plural in each language; Arabic has its six forms. The link kind `tenant_activity_log` opens the log. 12.09, the capped toast, gets its shot. Done.
+
+37c is done.
+
+37d, dependent limits (the maintainer's decisions of 2026-11-13):
+
+- A limit may depend on a feature (E1). Today one pair exists: `roles.custom.max` depends on `roles.custom`. The rule is general, for every later pair.
+- While the feature is off, the limit cannot be changed: on a plan (the plan editor), and for one organisation by its effective value of the feature (the override dialogs). The screen disables the limit's field and says "Turn on Custom roles first.", with the feature's own name.
+- The API refuses a change of the limit while its feature is off, with 400. Removing an override of the limit stays allowed (E4); the plan's value applies when the feature turns on.
+- The stored value stays. When the feature turns on again, the limit shows its stored value again. Turning the feature off deletes nothing.
+- The Plan tab shows the limit while its effective feature is off as "Off", the word of a feature that is off, so one state has one word. The line under it keeps the value that comes back: the plan's and the override's.
+- Rejected: one key with 0 as off (it loses "off also stops editing the existing custom roles", E5), and a greyed hint only (the API would keep a value with no effect).
+- 37d takes over from 40a the limit of a feature that is off (37b's line, 6.05).
+
+The parts of 37d, in their order. 37d-design and 37d-backend run at the same time; 37d-frontend-platform waits for both. The pull request of 37d-design holds the table of every frame with its part, and the table of every value with its field.
+
+37d-design, the frames of a dependent limit:
+
+- Platform app: the plan editor's sentence in 6.05 and 6.10; new frames 6.21 (Team, Custom roles turned off, the stored 5 disabled), 6.22 (the same in dark), 6.23 (the same in Arabic), 6.24 (the phone editor) and 6.25 (the phone's summary, "Off"); the Plan tab with the feature off by an override, 4.50; the Add override dialog of the limit with its field disabled, 4.51; the Remove override dialog of the limit, which stays allowed, 4.52. A note in section 6 of the Figma file holds the Turkish and Arabic texts.
+- It waits for nothing.
+
+37d-backend, the rule in the API:
+
+- The dependency is declared once in code, beside the keys (E1), and reaches the platform app through the generator, as `AuditRetention` does (D1), so the screen reads the pair and does not hard-code it. The plan editor's New plan (6.10) has no plan to read yet, so a field of a response is not enough.
+- `CreatePlan`, `UpdatePlan`, `GetPlanUpdatePreview` and `SetEntitlementOverride` refuse a change of a dependent limit while its feature is off, with 400 and the key. A request that turns the feature on and changes the limit together passes. `RemoveEntitlementOverride` is not refused.
+- It waits for nothing.
+
+37d-frontend-platform, the platform's screens:
+
+- The plan editor (6.05, 6.10, 6.21 to 6.25), the Plan tab (4.50) and the override dialogs (4.51, 4.52), from the dependency of 37d-backend and the effective value of the feature in `GetTenantPlan`.
+- It waits for 37d-design and 37d-backend.
 
 ## 6. Step 38: Terms of use
 
