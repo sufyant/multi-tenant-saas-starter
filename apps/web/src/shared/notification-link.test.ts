@@ -25,8 +25,14 @@ describe("notificationHref", () => {
       NotificationLinkResponseKind.TenantSettings,
       "/northwind/settings/general",
     ],
+    // An override of the Activity log's period (#267).
+    [
+      NotificationLinkResponseKind.TenantActivityLog,
+      "/northwind/settings/activity",
+    ],
   ])("NotificationHref_%s_LeadsToThatTenantsPageBySlug", (kind, href) => {
     expect(notificationHref(about(kind), tenants)).toBe(href);
+    expect(reportError).not.toHaveBeenCalled();
   });
 
   it("NotificationHref_Start_LeadsToTheStartPage", () => {
