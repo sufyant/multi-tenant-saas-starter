@@ -35,7 +35,11 @@ import {
 import { isolated } from "@/shared/isolated";
 import { useDates } from "@/shared/use-dates";
 import { ValueField } from "@/shared/value-field";
-import { afterRefusal, refreshOrganisation } from "./organisation";
+import {
+  afterRefusal,
+  refreshOrganisation,
+  waitsInOrganisation,
+} from "./organisation";
 
 // The generated schema of SetEntitlementOverride (F11): the reason is trimmed and 1 to 500 characters, as the API counts it. The
 // value is a draft of the key's kind, and the expiry a calendar day of the date field, or empty for none.
@@ -105,6 +109,9 @@ export function OverrideDialog({
   const key = form.watch("key");
   const draft = form.watch("draft");
   const isFeature = rowOf(key)?.isFeature ?? false;
+  // A limit whose feature is off for this organisation cannot be overridden: its value and the action are disabled (4.51).
+  const current = rowOf(key);
+  const waits = current ? waitsInOrganisation(plan, current) : false;
 
   const save = useMutation({
     mutationFn: (values: Overriding) => {
@@ -138,6 +145,7 @@ export function OverrideDialog({
   });
 
   const submit = form.handleSubmit((values) => {
+    if (waits) return;
     // A limit needs a number or Unlimited: an override always has a value. The Activity log's period has a floor (4.16).
     if (
       valueFrom(isFeature, values.draft) === null ||
@@ -234,6 +242,7 @@ export function OverrideDialog({
       actionLabel={editing ? t("save") : t("addOverride")}
       cancelLabel={common("cancel")}
       pending={save.isPending}
+      actionDisabled={waits}
       onConfirm={() => void submit()}
     >
       <form
@@ -290,6 +299,8 @@ export function OverrideDialog({
                     : all("plans.numberInvalid")
                   : undefined
               }
+              disabled={waits}
+              note={waits ? text.requiresFeature(key) : undefined}
             />
           </div>
           {retention && (

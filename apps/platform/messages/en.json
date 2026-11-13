@@ -445,6 +445,7 @@
       }
     },
     "turnsOff": "{key}: off on {plan}.",
+    "requiresFeature": "Turn on {feature} first.",
     "on": "On",
     "off": "Off",
     "unlimited": "Unlimited",
@@ -572,6 +573,7 @@
     "retentionExpiry": "On {date} the period goes back to <plan></plan>’s {value}. Then entries older than {value} stay {grace}, then go.",
     "removeRetentionText": "<bdi>{name}</bdi> goes back to <bdi>{plan}</bdi>’s value: {value}. Its entries older than {value} stay {grace}, then go.",
     "removeRetentionKeeps": "<bdi>{name}</bdi> goes back to <bdi>{plan}</bdi>’s value: {value}.",
+    "removeDependentText": "<bdi>{name}</bdi> goes back to <bdi>{plan}</bdi>’s value: {value}. It applies when {feature} turns on.",
     "retentionChange": "{key}: {from, select, none {no time limit} other {{from}}} → {to}. Entries older than {to} stay {grace}, then go."
   },
   "viewChoice": {

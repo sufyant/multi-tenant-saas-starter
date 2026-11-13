@@ -1147,4 +1147,175 @@ describe("PlanEditor", () => {
       screen.getByRole("button", { name: "Edit plan" }),
     ).toBeInTheDocument();
   });
+
+  // 37d (6.05, 6.21): a limit that depends on a feature which is off shows its stored value, disabled, with the sentence that names
+  // the feature (LimitFeatures of @repo/api-client).
+  it("Edit_DependentLimitWithItsFeatureOff_IsDisabledWithItsStoredValueAndTheSentence", async () => {
+    server.use(planAnswer(free));
+
+    renderWithProviders(<PlanEditor planId={free.id} />);
+    await screen.findByRole("heading", { level: 1, name: "Free" });
+
+    expect(limitField("Custom roles limit")).toBeDisabled();
+    expect(limitField("Custom roles limit")).toHaveValue(0);
+    expect(
+      row("Custom roles limit").getByRole("checkbox", { name: "Unlimited" }),
+    ).toBeDisabled();
+    expect(limitField("Custom roles limit")).toHaveAccessibleDescription(
+      "Turn on Custom roles first.",
+    );
+    expect(limitField("Seats")).toBeEnabled();
+  });
+
+  // 37d: the same form turns the feature on, and the limit is enabled at once; off again, it is disabled and keeps its value.
+  it("Edit_FeatureTurnedOnInTheForm_EnablesTheLimitAtOnce", async () => {
+    server.use(planAnswer(free));
+    renderWithProviders(<PlanEditor planId={free.id} />);
+    await screen.findByRole("heading", { level: 1, name: "Free" });
+
+    await userEvent.click(row("Custom roles").getByRole("switch"));
+    expect(limitField("Custom roles limit")).toBeEnabled();
+    expect(
+      row("Custom roles limit").queryByText("Turn on Custom roles first."),
+    ).toBeNull();
+    await setLimit("Custom roles limit", "4");
+    await userEvent.click(row("Custom roles").getByRole("switch"));
+
+    expect(limitField("Custom roles limit")).toBeDisabled();
+    expect(limitField("Custom roles limit")).toHaveValue(4);
+  });
+
+  // 37d (6.21): turning the feature off deletes nothing: the save sends the stored value of the limit, which the API keeps.
+  it("Save_FeatureTurnedOff_KeepsTheLimitsStoredValue", async () => {
+    const updates: Call[] = [];
+    await openPro();
+    server.use(
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+      plansCommand("post", `plans/${pro.id}/preview`, [nobodyOver]),
+    );
+
+    await userEvent.click(row("Custom roles").getByRole("switch"));
+    expect(limitField("Custom roles limit")).toBeDisabled();
+    expect(limitField("Custom roles limit")).toHaveValue(20);
+    await save();
+
+    await expectVisibleToast(sentence("Pro saved"));
+    expect(updates.map((call) => call.body)).toEqual([
+      {
+        name: "Pro",
+        isDefault: false,
+        entitlements: {
+          [FeatureKey.RolesCustom]: { enabled: false },
+          [LimitKey.RolesCustomMax]: { maximum: 20 },
+          [LimitKey.MembersMax]: { unlimited: true },
+          [LimitKey.AuditRetentionDays]: { maximum: 365 },
+        },
+      },
+    ]);
+  });
+
+  // 37d (6.10): a new plan's feature has no value, so its limit is disabled until the feature is turned on.
+  it("Create_Empty_DisablesTheDependentLimitUntilTheFeatureIsOn", async () => {
+    renderWithProviders(<PlanEditor planId={null} />);
+    await screen.findByRole("heading", { level: 1, name: "New plan" });
+
+    expect(limitField("Custom roles limit")).toBeDisabled();
+    expect(limitField("Custom roles limit")).toHaveAttribute(
+      "placeholder",
+      "Not set",
+    );
+    expect(
+      row("Custom roles limit").getByText("Turn on Custom roles first."),
+    ).toBeVisible();
+    await userEvent.click(row("Custom roles").getByRole("switch"));
+    expect(limitField("Custom roles limit")).toBeEnabled();
+  });
+
+  // 37d: a client that sends a changed limit with its feature off gets 400 plan.feature_required; the screen says so on the field.
+  it("Save_FeatureRequired_ShowsTheSentenceUnderTheLimit", async () => {
+    await openPro();
+    server.use(
+      plansCommand("patch", `plans/${pro.id}`, [
+        () =>
+          HttpResponse.json(
+            {
+              status: 400,
+              title: "Refused",
+              code: ErrorCode.PlanFeatureRequired,
+              entitlement: LimitKey.RolesCustomMax,
+              traceId:
+                "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+            },
+            { status: 400 },
+          ),
+      ]),
+    );
+
+    await changeName();
+    await save();
+
+    expect(
+      await row("Custom roles limit").findByText("Turn on Custom roles first."),
+    ).toBeVisible();
+    expect(limitField("Custom roles limit")).toHaveAccessibleDescription(
+      "Turn on Custom roles first.",
+    );
+    expect(limitField("Custom roles limit")).toBeInvalid();
+    expect(screen.queryByText("Plan not saved")).toBeNull();
+  });
+
+  // 37d: a change of the feature clears the refusal of the limit that depends on it.
+  it("Save_FeatureRequiredThenTheFeatureChanged_ClearsTheLimitsError", async () => {
+    await openPro();
+    server.use(
+      plansCommand("patch", `plans/${pro.id}`, [
+        () =>
+          HttpResponse.json(
+            {
+              status: 400,
+              title: "Refused",
+              code: ErrorCode.PlanFeatureRequired,
+              entitlement: LimitKey.RolesCustomMax,
+              traceId:
+                "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+            },
+            { status: 400 },
+          ),
+      ]),
+    );
+    await changeName();
+    await save();
+    expect(
+      await row("Custom roles limit").findByText("Turn on Custom roles first."),
+    ).toBeVisible();
+
+    await userEvent.click(row("Custom roles").getByRole("switch"));
+
+    expect(limitField("Custom roles limit")).toBeValid();
+  });
+
+  // 37d (6.25): on a phone, a limit whose feature is off says Off, the word of a feature that is off.
+  it("Summary_DependentLimitWithItsFeatureOff_SaysOff", async () => {
+    server.use(
+      planAnswer({
+        ...pro,
+        entitlements: {
+          ...pro.entitlements,
+          [FeatureKey.RolesCustom]: {
+            enabled: false,
+            maximum: null,
+            unlimited: false,
+          },
+        },
+      }),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+    await screen.findByRole("heading", { level: 1, name: "Pro" });
+
+    const summary = within(screen.getByRole("region", { name: "Limits" }));
+    expect(
+      summary.getByText("Custom roles limit", { selector: "dt" })
+        .nextElementSibling?.textContent,
+    ).toBe("Off");
+  });
 });

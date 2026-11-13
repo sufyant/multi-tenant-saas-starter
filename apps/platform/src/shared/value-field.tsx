@@ -11,7 +11,8 @@ import { type Draft, useEntitlementText, valueFrom } from "./entitlements";
  * The control of one key's value (the Plans frames and the OrgPlan board, F52): a `Switch` for a feature, with On or Off in the
  * override dialog; a whole number with an Unlimited `Checkbox` for a limit. Unlimited empties and locks the number. In the plan
  * editor (`showUnset`) the switch stands alone (6.04), a feature with no value says "Not set: closed" beside it and a limit with
- * no value shows its placeholder, "Not set" (6.10); an override always has a value, so its dialog leaves that out.
+ * no value shows its placeholder, "Not set" (6.10); an override always has a value, so its dialog leaves that out. A limit whose
+ * feature is off (37d) is `disabled` with its value kept, and `note` under it says why (F52); an error takes the note's place.
  */
 export function ValueField({
   isFeature,
@@ -21,6 +22,8 @@ export function ValueField({
   error,
   showUnset = false,
   unit,
+  disabled = false,
+  note,
 }: {
   isFeature: boolean;
   /** The accessible name of the switch and of the number. */
@@ -31,11 +34,17 @@ export function ValueField({
   showUnset?: boolean;
   /** The unit after the number: the Activity log's days (6.04). */
   unit?: string;
+  /** The value cannot change: the number and Unlimited are disabled, and the value stays shown. */
+  disabled?: boolean;
+  /** Why the value cannot change, under it in the muted colour. */
+  note?: string;
 }) {
   const t = useTranslations();
   const text = useEntitlementText();
   const unlimitedId = useId();
   const errorId = useId();
+  const noteId = useId();
+  const described = error ? errorId : note ? noteId : undefined;
   const unset = showUnset && isFeature && draft.enabled === null;
   return (
     <div
@@ -74,9 +83,9 @@ export function ValueField({
               step={1}
               aria-label={label}
               aria-invalid={error ? true : undefined}
-              aria-describedby={error ? errorId : undefined}
+              aria-describedby={described}
               placeholder={draft.unlimited ? "" : t("plans.numberPlaceholder")}
-              disabled={draft.unlimited}
+              disabled={disabled || draft.unlimited}
               value={draft.text}
               onChange={(event) =>
                 onChange({ ...draft, text: event.target.value })
@@ -91,12 +100,17 @@ export function ValueField({
             <span className="flex items-center gap-2">
               <Checkbox
                 id={unlimitedId}
+                disabled={disabled}
+                aria-describedby={described}
                 checked={draft.unlimited}
                 onCheckedChange={(unlimited) =>
                   onChange({ ...draft, unlimited, text: "" })
                 }
               />
-              <label htmlFor={unlimitedId} className="text-body">
+              <label
+                htmlFor={unlimitedId}
+                className={disabled ? "text-body opacity-45" : "text-body"}
+              >
                 {t("entitlements.unlimited")}
               </label>
             </span>
@@ -107,6 +121,12 @@ export function ValueField({
       {error && (
         <p id={errorId} className="text-small text-destructive-text">
           {error}
+        </p>
+      )}
+      {!error && note && (
+        // The note starts where the field starts, in the dialog too (4.51).
+        <p id={noteId} className="self-start text-small text-muted-foreground">
+          {note}
         </p>
       )}
     </div>
