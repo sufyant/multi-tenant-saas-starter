@@ -5,6 +5,12 @@ import { mockApi } from "./api";
 import { expectAccessible } from "./axe";
 import { mockIdentity } from "./identity";
 
+// A route that reads Clerk's answer (e2e/identity.ts) can still wait for it when the test ends. The context then closes under
+// it, the read fails, and Playwright fails the finished test with that error. So each test removes its routes before the
+// context closes, and a route still running ends without an error. Waiting for those routes instead would hang: a loading
+// shot holds its answer on purpose.
+test.afterEach(({ page }) => page.unrouteAll({ behavior: "ignoreErrors" }));
+
 // Account and security (F62): the API's parts are mocked; the identity provider's parts read the real development instance, where
 // the setup's temporary user has this one session and an authenticator.
 test("Account_English_SaysTwoStepIsOnAndShowsThisDevice", async ({ page }) => {

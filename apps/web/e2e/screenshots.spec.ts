@@ -55,6 +55,12 @@ test.skip(
   "Set E2E_SCREENSHOTS=1 to take the screenshots.",
 );
 
+// A route that reads Clerk's answer (e2e/identity.ts, and the second factor of the sign-in frames) can still wait for it when
+// the test ends. The context then closes under it, the read fails, and Playwright fails the finished test with that error. So
+// each test removes its routes before the context closes, and a route still running ends without an error. Waiting for those
+// routes instead would hang: a loading shot and the bell's stream hold their answers on purpose.
+test.afterEach(({ page }) => page.unrouteAll({ behavior: "ignoreErrors" }));
+
 const folder = "test-results/screenshots";
 // CI runs the production build, which has no /dev/components (F33): its shots run on a development server only.
 const productionBuild = Boolean(process.env.CI);
