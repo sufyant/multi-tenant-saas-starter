@@ -85,9 +85,10 @@ A preview reads and changes nothing, and never blocks the change. It lists:
 
 - each key whose new effective value is a limit under the tenant's count, with the count, the new value and how far over the tenant goes;
 - each feature that turns off while the tenant uses it, with what uses it: `roles.custom` off for a tenant with 14 custom roles;
-- the keys that an override of the tenant still holds, which the change does not touch.
+- the keys that an override of the tenant still holds, which the change does not touch;
+- a shorter Activity log period, `retentionShortened`, or null (K14). A tenant's plan change gives `{ fromDays, toDays }`, the tenant's period now and on the new plan under its overrides at this moment; `fromDays` is null for no limit. A plan edit gives `{ count, fromDays, toDays }`: the plan's period before and after, and how many tenants on the plan follow it, those that are not purging or purged and have no override of the key that has not expired. An expired override holds nothing (E3). The count is the edit's whole, which no search or page narrows. The entries outside the new period stay 30 days, then go; the dialogs say so with `AuditRetention.Grace`.
 
-The preview of a plan edit is a page in the list contract (K5). It lists only the tenants on the plan that would go over, a purged tenant never. It searches the tenant's name or slug, and orders the tenant that goes furthest over first, then by name, with the total. The counts come from the tenants' summaries (R12): the custom roles and the expiry of each pending invitation, written with every change under the tenant's lock. Row level security hides the roles and the invitations across tenants; the summaries and the overrides are outside it (R6).
+The preview of a plan edit is a page in the list contract (K5), `PlanUpdatePreviewPageResponse`: the list's fields and `retentionShortened`. It lists only the tenants on the plan that would go over, a purged tenant never. It searches the tenant's name or slug, and orders the tenant that goes furthest over first, then by name, with the total. The counts come from the tenants' summaries (R12): the custom roles and the expiry of each pending invitation, written with every change under the tenant's lock. Row level security hides the roles and the invitations across tenants; the summaries and the overrides are outside it (R6).
 
 ## 7. Audit
 
