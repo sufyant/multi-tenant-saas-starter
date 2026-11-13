@@ -12,7 +12,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 37a | The web's organisation pages | done |
 | 37b | The platform's pages | done |
 | 37c | Audit retention | done |
-| 37d | Dependent limits | in progress |
+| 37d | Dependent limits | done |
 | 38 | Terms of use | todo |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
@@ -112,7 +112,7 @@ Status: done.
 
 ## 5. Step 37: Organisation pages
 
-Status: done, but 37d is in progress. It has four parts.
+Status: done. It has four parts.
 
 37a, the web's organisation pages:
 
@@ -401,17 +401,22 @@ The parts of 37d, in their order. 37d-design and 37d-backend run at the same tim
 
 - Platform app: the plan editor's sentence in 6.05 and 6.10; new frames 6.21 (Team, Custom roles turned off, the stored 5 disabled), 6.22 (the same in dark), 6.23 (the same in Arabic), 6.24 (the phone editor) and 6.25 (the phone's summary, "Off"); the Plan tab with the feature off by an override, 4.50; the Add override dialog of the limit with its field disabled, 4.51; the Remove override dialog of the limit, which stays allowed, 4.52. A note in section 6 of the Figma file holds the Turkish and Arabic texts.
 - It waits for nothing.
+- Done (#275).
 
 37d-backend, the rule in the API:
 
 - The dependency is declared once in code, beside the keys (E1), and reaches the platform app through the generator, as `AuditRetention` does (D1), so the screen reads the pair and does not hard-code it. The plan editor's New plan (6.10) has no plan to read yet, so a field of a response is not enough.
-- `CreatePlan`, `UpdatePlan`, `GetPlanUpdatePreview` and `SetEntitlementOverride` refuse a change of a dependent limit while its feature is off, with 400 and the key. A request that turns the feature on and changes the limit together passes. `RemoveEntitlementOverride` is not refused.
+- `CreatePlan`, `UpdatePlan` and `SetEntitlementOverride` refuse a change of a dependent limit while its feature is off, with 400 and the key. A request that turns the feature on and changes the limit together passes. `RemoveEntitlementOverride` is not refused. `GetPlanUpdatePreview` never blocks an edit: the save refuses it (E4).
 - It waits for nothing.
+- As built: `[DependsOn(FeatureKeys.RolesCustom)]` on `roles.custom.max` declares the pair, and the generator writes it as `LimitFeatures` of `@repo/api-client`. The code is `plan.feature_required`, with the limit's key in `entitlement`. A value the limit already has is no change, and a limit left out of a plan's edit closes it. An override reads the tenant's effective feature, an override of the feature included. Done (#276).
 
 37d-frontend-platform, the platform's screens:
 
 - The plan editor (6.05, 6.10, 6.21 to 6.25), the Plan tab (4.50) and the override dialogs (4.51, 4.52), from the dependency of 37d-backend and the effective value of the feature in `GetTenantPlan`.
 - It waits for 37d-design and 37d-backend.
+- As built: the screens read the pair from `LimitFeatures`, so no component names a key of the pair. The plan editor disables the limit while the form's value of its feature is not on, keeps its value and says "Turn on Custom roles first." under it; turning the feature on in the same form enables it at once, and turning it off deletes nothing. A save's 400 `plan.feature_required` shows the sentence under the limit's field. The phone's summary says Off for the limit (6.25). The Plan tab reads the effective feature of `GetTenantPlan`: the limit says Off with the lines of the plan's value and the override and the sentence, Edit is disabled and Remove stays; such a limit is over nothing, so it has no "over by" and no banner. Add override disables the value and the action for the limit; Remove override says that the plan's value applies when Custom roles turns on. Done.
+
+37d is done.
 
 ## 6. Step 38: Terms of use
 
