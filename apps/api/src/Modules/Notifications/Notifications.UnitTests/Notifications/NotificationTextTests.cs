@@ -166,8 +166,8 @@ public sealed class NotificationTextTests
     }
 
     // A number of days takes the plural form of its CLDR category in the language: English "one" and "other", Turkish one form, and
-    // Arabic "few" for 3 to 10, "many" for 11 to 99 and "other" for 100 to 102, after the last two digits (Unicode CLDR, "Language Plural
-    // Rules"). The Arabic texts name the number after "لمدة" and "من", so its dual is the genitive.
+    // Arabic "few" when the last two digits are 3 to 10, "many" when they are 11 to 99, and "other" for the rest, as 100 to 102 (Unicode
+    // CLDR, "Language Plural Rules"). The Arabic texts name the number after "لمدة" and "من", so its dual is the genitive.
     [Theory]
     [InlineData(Language.En, "1", "keeps entries for 1 day. Entries older than 1 day go on")]
     [InlineData(Language.En, "30", "keeps entries for 30 days. Entries older than 30 days go on")]

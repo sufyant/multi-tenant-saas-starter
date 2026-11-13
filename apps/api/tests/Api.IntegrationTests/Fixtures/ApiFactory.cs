@@ -74,7 +74,6 @@ internal sealed class ApiFactory(
 
     public HostPorts Ports => ports ?? throw new InvalidOperationException("The factory was given no ports.");
 
-    // Clients of the host's real ports. The test server has no port, so the host runs on Kestrel instead.
     // A host on a database of its own runs the audit retention at its start in the roles worker and all (K14). Its handlers join the
     // spans and the messages of every tenant on that database, so a test of another flow that counts them removes it (section 9, rule 6).
     public static void RemoveAuditRetention(IServiceCollection services)
@@ -85,6 +84,7 @@ internal sealed class ApiFactory(
         }
     }
 
+    // Clients of the host's real ports. The test server has no port, so the host runs on Kestrel instead.
     public HttpClient PublicClient() => ClientOn(Ports.Public);
 
     public HttpClient ManagementClient() => ClientOn(Ports.Management);
