@@ -32,7 +32,7 @@ public sealed class DeleteExpiredEntriesTests(Database database)
         var step = InTenant.RunAsync(database.Services, tenantId, scope =>
             DeleteExpiredEntriesHandler.HandleAsync(
                 new DeleteExpiredEntriesCommand(tenantId, 365, TimeProvider.System.GetUtcNow(), 0), scope.GetRequiredService<IRetentionStore>(), TimeProvider.System, Cancellation));
-        await WaitingForALockAsync();
+        await WaitingForALockAsync(purge.ProcessID);
         await RunAsync(purge, purging, "SELECT audit.purge_tenant_entries()");
         await RunAsync(purge, purging, "DELETE FROM audit.tenant_retentions");
         await purging.CommitAsync(Cancellation);
@@ -47,25 +47,18 @@ public sealed class DeleteExpiredEntriesTests(Database database)
         await command.ExecuteNonQueryAsync(Cancellation);
     }
 
-    // The step waits for the purge's lock: a session of the application waits on a lock.
-    private async Task WaitingForALockAsync()
+    // The step waits for the purge's lock: one session waits for a lock that the purge's session holds. The other test classes run at
+    // the same time on the same server, and their writers wait for their own locks, so only the sessions behind the purge count.
+    private async Task WaitingForALockAsync(int purge)
     {
         var waiting = 0L;
         for (var tries = 0; tries < 100 && waiting == 0; tries++)
         {
             await Task.Delay(50, Cancellation);
             waiting = await database.ScalarAsSuperuserAsync<long>(
-                "SELECT count(*) FROM pg_stat_activity WHERE usename = 'api_application' AND wait_event_type = 'Lock'");
+                $"SELECT count(*) FROM pg_stat_activity WHERE {purge} = ANY(pg_blocking_pids(pid))");
         }
 
-        // TEMPORARY DIAGNOSTIC: which sessions wait.
-        var who = await database.ScalarAsSuperuserAsync<string>(
-            """
-            SELECT string_agg(format('pid=%s app=%s event=%s/%s blockedby=%s xact=%s now=%s query=[%s] blocker=[%s]', a.pid, a.application_name,
-                a.wait_event_type, a.wait_event, pg_blocking_pids(a.pid), a.xact_start, clock_timestamp(), a.query,
-                (SELECT string_agg(b.query, ' || ') FROM pg_stat_activity b WHERE b.pid = ANY(pg_blocking_pids(a.pid)))), E'\n')
-            FROM pg_stat_activity a WHERE a.usename = 'api_application' AND a.wait_event_type = 'Lock'
-            """);
-        waiting.ShouldBe(1, who);
+        waiting.ShouldBe(1);
     }
 }
