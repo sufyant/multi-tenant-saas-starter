@@ -114,5 +114,99 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         (await _audit.PlatformDetailsAsync(planId))!.ShouldContain("\"oldEntitlements\": {\"members.max\": {\"enabled\": null, \"maximum\": 3, \"unlimited\": false}}");
     }
 
+    // E1: a limit that depends on a feature changes only while the plan's value of the feature is on, after the same request's changes.
+    [Fact]
+    public async Task UpdatePlan_ADependentLimitChangedWithItsFeatureOff_IsInvalidWithTheLimitAndKeepsIt()
+    {
+        var admin = await AdminAsync();
+        var planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = false, ["roles.custom.max"] = 3 });
+
+        var updated = await admin.UpdatePlanAsync(planId, $"Plan {planId:N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.Off,
+            ["roles.custom.max"] = PlanRequests.Max(5),
+        });
+
+        (updated.StatusCode, await PlanRequests.ProblemOfAsync(updated)).ShouldBe((HttpStatusCode.BadRequest, ("plan.feature_required", "roles.custom.max")));
+        (await StoredMaximumAsync(planId, "roles.custom.max")).ShouldBe(3);
+    }
+
+    [Fact]
+    public async Task UpdatePlan_ADependentLimitChangedWithItsFeatureOn_SavesIt()
+    {
+        var admin = await AdminAsync();
+        var planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = true, ["roles.custom.max"] = 3 });
+
+        var updated = await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, $"Plan {planId:N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.On,
+            ["roles.custom.max"] = PlanRequests.Max(5),
+        }));
+
+        updated.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await StoredMaximumAsync(planId, "roles.custom.max")).ShouldBe(5);
+    }
+
+    [Fact]
+    public async Task UpdatePlan_TheFeatureTurnedOnAndItsLimitChangedInOneRequest_SavesBoth()
+    {
+        var admin = await AdminAsync();
+        var planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = false, ["roles.custom.max"] = 3 });
+
+        var updated = await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, $"Plan {planId:N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.On,
+            ["roles.custom.max"] = PlanRequests.Max(5),
+        }));
+
+        updated.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await StoredMaximumAsync(planId, "roles.custom.max")).ShouldBe(5);
+    }
+
+    // Turning the feature off deletes no value: the plan keeps its limit, which applies again when the feature turns on again.
+    [Fact]
+    public async Task UpdatePlan_TheFeatureTurnedOff_KeepsTheStoredLimitForWhenItTurnsOnAgain()
+    {
+        var admin = await AdminAsync();
+        var planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = true, ["roles.custom.max"] = 1 });
+        var tenant = await _testData.AddTenantAsync(planId: planId);
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+
+        var off = await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, $"Plan {planId:N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.Off,
+            ["roles.custom.max"] = PlanRequests.Max(1),
+        }));
+        var on = await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, $"Plan {planId:N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.On,
+            ["roles.custom.max"] = PlanRequests.Max(1),
+        }));
+        var first = await owner.CreateRoleAsync(tenant.Id, "Billing", ["tenant.profile.read"]);
+        var second = await owner.CreateRoleAsync(tenant.Id, "Support", ["tenant.profile.read"]);
+
+        (off.StatusCode, on.StatusCode, first.StatusCode, second.StatusCode)
+            .ShouldBe((HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.Created, HttpStatusCode.Conflict));
+    }
+
+    // An explicit deletion only closes the limit, so it stays allowed while the feature is off (the maintainer's decision of 2026-11-13).
+    [Fact]
+    public async Task UpdatePlan_ADependentLimitLeftOutWithItsFeatureOff_RemovesIt()
+    {
+        var admin = await AdminAsync();
+        var planId = await _testData.AddPlanAsync(new() { ["roles.custom"] = false, ["roles.custom.max"] = 3 });
+
+        var updated = await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, $"Plan {planId:N}", new Dictionary<string, object>
+        {
+            ["roles.custom"] = PlanRequests.Off,
+        }));
+
+        updated.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.plan_entitlements WHERE plan_id = '{planId}' AND key = 'roles.custom.max'")).ShouldBe(0);
+    }
+
+    private Task<int> StoredMaximumAsync(Guid planId, string key) =>
+        database.ScalarAsSuperuserAsync<int>($"SELECT maximum FROM control_plane.plan_entitlements WHERE plan_id = '{planId}' AND key = '{key}'");
+
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 }

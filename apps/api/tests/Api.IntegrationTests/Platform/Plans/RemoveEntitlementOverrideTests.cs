@@ -45,6 +45,23 @@ public sealed class RemoveEntitlementOverrideTests(Database database) : IAsyncLi
         (removed.StatusCode, created.StatusCode).ShouldBe((HttpStatusCode.NoContent, HttpStatusCode.Forbidden));
     }
 
+    // E1: removing an override of a dependent limit stays allowed while the feature is off, and turning the feature off removes no
+    // override of its limit.
+    [Fact]
+    public async Task RemoveEntitlementOverride_TheFeatureOverrideRemoved_KeepsTheLimitOverrideWhichCanThenBeRemoved()
+    {
+        var admin = await AdminAsync();
+        var (tenantId, _) = await PlanAnswers.FreeTenantAsync(_testData, _api);
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom", PlanRequests.On))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => admin.SetOverrideAsync(tenantId, "roles.custom.max", PlanRequests.Max(5)))).EnsureSuccessStatusCode();
+
+        var feature = await _api.WaitingForMessagesAsync(() => admin.RemoveOverrideAsync(tenantId, "roles.custom"));
+        var kept = await database.ScalarAsSuperuserAsync<int>($"SELECT maximum FROM control_plane.entitlement_overrides WHERE tenant_id = '{tenantId}' AND key = 'roles.custom.max'");
+        var limit = await _api.WaitingForMessagesAsync(() => admin.RemoveOverrideAsync(tenantId, "roles.custom.max"));
+
+        (feature.StatusCode, kept, limit.StatusCode).ShouldBe((HttpStatusCode.NoContent, 5, HttpStatusCode.NoContent));
+    }
+
     [Fact]
     public async Task RemoveEntitlementOverride_None_IsNotFound()
     {
