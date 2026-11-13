@@ -944,6 +944,18 @@ describe("PlanSection", () => {
     ).toBeEnabled();
   });
 
+  // 37d: a limit whose feature is off applies nothing yet, so a count above it is over nothing.
+  it("Section_DependentLimitWithItsFeatureOffAndACountAboveIt_IsOverNothing", async () => {
+    await renderSection(
+      active,
+      featureOffPlan({ [LimitKey.RolesCustomMax]: { count: 30 } }),
+    );
+
+    expect(rowOf("Custom roles limit").getByText("Off")).toBeVisible();
+    expect(screen.queryByText(/Over by/)).toBeNull();
+    expect(screen.queryByText(/is over a limit/)).toBeNull();
+  });
+
   // 37d (4.51): Add override of the limit while the organisation's feature is off: the value and the action are disabled.
   it("AddOverride_DependentLimitWithItsFeatureOff_DisablesTheValueAndTheAction", async () => {
     await renderSection(

@@ -1264,6 +1264,36 @@ describe("PlanEditor", () => {
     expect(screen.queryByText("Plan not saved")).toBeNull();
   });
 
+  // 37d: a change of the feature clears the refusal of the limit that depends on it.
+  it("Save_FeatureRequiredThenTheFeatureChanged_ClearsTheLimitsError", async () => {
+    await openPro();
+    server.use(
+      plansCommand("patch", `plans/${pro.id}`, [
+        () =>
+          HttpResponse.json(
+            {
+              status: 400,
+              title: "Refused",
+              code: ErrorCode.PlanFeatureRequired,
+              entitlement: LimitKey.RolesCustomMax,
+              traceId:
+                "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+            },
+            { status: 400 },
+          ),
+      ]),
+    );
+    await changeName();
+    await save();
+    expect(
+      await row("Custom roles limit").findByText("Turn on Custom roles first."),
+    ).toBeVisible();
+
+    await userEvent.click(row("Custom roles").getByRole("switch"));
+
+    expect(limitField("Custom roles limit")).toBeValid();
+  });
+
   // 37d (6.25): on a phone, a limit whose feature is off says Off, the word of a feature that is off.
   it("Summary_DependentLimitWithItsFeatureOff_SaysOff", async () => {
     server.use(
