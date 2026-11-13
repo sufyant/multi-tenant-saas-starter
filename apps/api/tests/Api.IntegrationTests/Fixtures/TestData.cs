@@ -67,6 +67,20 @@ internal sealed class TestData(Database database, string databaseName = Database
             """,
             databaseName);
 
+    // An override of the tenant that a system admin set before, with plain SQL, because an override set through the API cannot expire in
+    // the past. Its value is a number or Unlimited.
+    public async Task AddOverrideRowAsync(Guid tenantId, string key, object value, DateTimeOffset? expiresAt)
+    {
+        var admin = await UserIdOfAsync(await AddSystemAdminAsync());
+        var expiry = expiresAt is { } end ? $"'{end:O}'" : "NULL";
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.entitlement_overrides (tenant_id, key, enabled, maximum, unlimited, expires_at, reason, set_by, set_at)
+            VALUES ('{tenantId}', '{key}', {ColumnsOf(value)}, {expiry}, 'A trial', '{admin}', now() - interval '60 days')
+            """,
+            databaseName);
+    }
+
     // Puts the tenant on the plan, with plain SQL.
     public Task SetTenantPlanAsync(Guid tenantId, Guid planId) =>
         database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET plan_id = '{planId}' WHERE id = '{tenantId}'", databaseName);

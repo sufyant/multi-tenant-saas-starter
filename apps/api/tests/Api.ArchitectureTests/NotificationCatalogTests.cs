@@ -83,6 +83,25 @@ public sealed class NotificationCatalogTests
         ]);
     }
 
+    // Two optional values that a type has or lacks together share one text without them, under the first one's name: the second one
+    // names the first (With), and needs no text of its own. Here the texts use the planted second value nowhere, so only the main texts
+    // miss it.
+    [Fact]
+    public void DeclareNotificationTypes_APlantedPairOfOptionalValues_SharesTheTextWithoutTheFirst()
+    {
+        var kind = NotificationCatalog.Of(NotificationCatalog.TenantEntitlementOverrideSet);
+        var planted = kind with { Values = [.. kind.Values, new("setAt", NotificationValueKind.Date, Optional: true, With: "expiresAt")] };
+
+        var gaps = Gaps([planted], HandlerTypes(typeof(NotificationText).Assembly), TextsOf);
+
+        gaps.ShouldBe(
+        [
+            "tenant.entitlement_override_set: the texts in en use expiresAt, keyName, setAt, tenantName, value? they use expiresAt, keyName, tenantName, value",
+            "tenant.entitlement_override_set: the texts in tr use expiresAt, keyName, setAt, tenantName, value? they use expiresAt, keyName, tenantName, value",
+            "tenant.entitlement_override_set: the texts in ar use expiresAt, keyName, setAt, tenantName, value? they use expiresAt, keyName, tenantName, value",
+        ]);
+    }
+
     // The list names each item's area in the reader's language, so a type's area needs its word in every language. Its actor is one of
     // its people.
     [Fact]

@@ -81,6 +81,48 @@ public sealed class GetPlanUpdatePreviewTests(Database database) : IAsyncLifetim
         page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("tenantId").GetGuid()).ShouldBe([second]);
     }
 
+    // K14, E4: the tenants on the plan whose Activity log period the edit shortens, those without an override of the key that has not
+    // expired. A purging tenant's log goes with its purge, so it is not counted. 0 stands for unlimited.
+    [Theory]
+    [InlineData(365, 90, "2:365>90")]
+    [InlineData(365, 365, "none")]
+    [InlineData(365, 730, "none")]
+    [InlineData(365, 0, "none")]
+    [InlineData(0, 90, "2:unlimited>90")]
+    public async Task GetPlanUpdatePreview_AnotherActivityLogPeriod_CountsTheTenantsItShortensWithoutAnOverrideThatHasNotExpired(int days, int newDays, string shortened)
+    {
+        var admin = await AdminAsync();
+        var planId = await PlanAnswers.RetentionPlanAsync(_testData, days);
+        await _testData.AddTenantAsync(planId: planId);
+        var held = await _testData.AddTenantAsync(planId: planId);
+        await _testData.AddOverrideRowAsync(held.Id, PlanAnswers.RetentionKey, 730, DateTimeOffset.UtcNow.AddDays(1));
+        var expired = await _testData.AddTenantAsync(planId: planId);
+        await _testData.AddOverrideRowAsync(expired.Id, PlanAnswers.RetentionKey, 730, DateTimeOffset.UtcNow.AddDays(-1));
+        await _testData.AddTenantAsync(status: "Purging", planId: planId);
+
+        var previewed = await admin.GetPlanUpdatePreviewAsync(planId, RetentionValues(newDays));
+
+        previewed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        PlanAnswers.RetentionShortened(await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe(shortened);
+    }
+
+    // The count is the edit's, not the page's: a search and a page of the list leave it whole.
+    [Fact]
+    public async Task GetPlanUpdatePreview_ASearchThatMatchesNoTenant_CountsEveryTenantItShortens()
+    {
+        var admin = await AdminAsync();
+        var planId = await PlanAnswers.RetentionPlanAsync(_testData, 365);
+        await _testData.AddTenantAsync(planId: planId);
+
+        var previewed = await admin.GetPlanUpdatePreviewAsync(planId, RetentionValues(90), $"?q={Guid.NewGuid():N}&pageSize=1");
+
+        var page = await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (page.GetProperty("total").GetInt32(), PlanAnswers.RetentionShortened(page)).ShouldBe((0, "1:365>90"));
+    }
+
+    private static Dictionary<string, object> RetentionValues(int days) =>
+        new() { [PlanAnswers.RetentionKey] = days == 0 ? PlanRequests.Unlimited : PlanRequests.Max(days) };
+
     private static Dictionary<string, object> NewValues() =>
         new() { ["roles.custom"] = PlanRequests.On, ["roles.custom.max"] = PlanRequests.Max(1), ["members.max"] = PlanRequests.Max(3) };
 
