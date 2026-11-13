@@ -142,15 +142,6 @@ public sealed class HostRoleTests(Database database)
         new(typeof(CompleteDataExportCommand), typeof(CompleteDataExportHandler)),
     ];
 
-    // A worker runs the audit retention at its start (K14), whose handlers a test of another flow does not expect.
-    private static readonly Action<IServiceCollection> WithoutAuditRetention = services =>
-    {
-        foreach (var job in services.Where(service => service.ImplementationType?.Name == "AuditRetentionJob").ToList())
-        {
-            services.Remove(job);
-        }
-    };
-
     // A reopen period of seconds: the warning comes 2 s after the closure and the purge 10 s after it, by Wolverine's clock.
     private static readonly Dictionary<string, string?> ShortReopenPeriod = new()
     {
@@ -1071,7 +1062,7 @@ public sealed class HostRoleTests(Database database)
             HandlerRunsOfHost.Register(role, runs)(services);
             if (!auditRetention)
             {
-                WithoutAuditRetention(services);
+                ApiFactory.RemoveAuditRetention(services);
             }
         },
         ports: ports);
@@ -1084,7 +1075,7 @@ public sealed class HostRoleTests(Database database)
         configureServices: services =>
         {
             HandlerRunsOfHost.Register(role, runs)(services);
-            WithoutAuditRetention(services);
+            ApiFactory.RemoveAuditRetention(services);
             services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
                 (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
                 TenancyServiceCollectionExtensions.MessageSchema);

@@ -33,13 +33,7 @@ public sealed class GetAuditRetentionTests(Database database) : IAsyncLifetime
         _api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application, _databaseName),
             time: _clock,
-            configureServices: services =>
-            {
-                foreach (var job in services.Where(service => service.ImplementationType?.Name == "AuditRetentionJob").ToList())
-                {
-                    services.Remove(job);
-                }
-            });
+            configureServices: ApiFactory.RemoveAuditRetention);
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();

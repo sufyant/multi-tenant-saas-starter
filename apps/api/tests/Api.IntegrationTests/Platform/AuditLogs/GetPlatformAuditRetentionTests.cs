@@ -19,13 +19,7 @@ public sealed class GetPlatformAuditRetentionTests(Database database) : IAsyncLi
         _api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application),
             settings: new Dictionary<string, string?> { ["Audit:Retention:Days"] = "100" },
-            configureServices: services =>
-            {
-                foreach (var job in services.Where(service => service.ImplementationType?.Name == "AuditRetentionJob").ToList())
-                {
-                    services.Remove(job);
-                }
-            });
+            configureServices: ApiFactory.RemoveAuditRetention);
         return ValueTask.CompletedTask;
     }
 
