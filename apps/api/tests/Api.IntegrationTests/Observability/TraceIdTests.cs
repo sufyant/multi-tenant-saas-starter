@@ -53,12 +53,17 @@ public sealed class TraceIdTests(Database database)
 
     private static string NameOf(Type message) => message.GetCustomAttribute<MessageNameAttribute>()!.Name;
 
-    // The worker writes the invitation email to its log: in Development without Resend, that is the email channel.
+    // The worker writes the invitation email to its log: in Development without Resend, that is the email channel. The worker runs no
+    // audit retention: at its start, the job's handlers would join the spans of the new tenant.
     private ApiFactory Host(string databaseName, string role, LogRecords logs) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
         fakeEmailChannel: false,
         settings: new Dictionary<string, string?> { ["Host:Role"] = role },
-        configureServices: services => services.ConfigureOpenTelemetryLoggerProvider(logging => logging.AddProcessor(logs)));
+        configureServices: services =>
+        {
+            ApiFactory.RemoveAuditRetention(services);
+            services.ConfigureOpenTelemetryLoggerProvider(logging => logging.AddProcessor(logs));
+        });
 
     // The handler spans Wolverine starts in any host of this process. It names a handler's span after the name of the message it
     // handles.

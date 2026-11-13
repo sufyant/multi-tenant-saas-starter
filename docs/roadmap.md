@@ -363,6 +363,12 @@ The parts of 37c, in their order. 37c-design and 37c-backend-1 run at the same t
 - It waits for 37c-backend-1.
 - As built: `GetAuditRetention` follows the pattern of an audit page and its names: the endpoint sends two queries, the period through `IAuditRetentionDirectory`, the job's contract, on ControlPlane's DbContext, then Audit's row and entries on Audit's (W1). The row follows the period and clears an ended hold in memory by the job's own methods and is never saved, so the read writes no row and takes no lock. A plan edit and an expiry, which the job holds at its next run, answer the hold the job would start at the moment of the read: up to a day earlier than the job's date, never later (`what-the-screens-read.md` says which date each screen shows). The plan edit's count leaves out a purging tenant too, whose log goes with its purge, and no search or page narrows it; `retentionShortened` is null only when the plan's period stays as long or gets longer, so a count of 0 can come. The preview's answer is `PlanUpdatePreviewPageResponse`, the list fields and `retentionShortened`; the platform app takes the new type name and the field in its test data, with no screen change. `GetPlatformAuditRetention`'s endpoint reads the setting, with no message and no transaction. The two values of `tenant.plan_changed` go together: a notification value may name the optional value it goes with (`With`, U1), and the two share one text without them. 4.49's sentence needs no other field. Done.
 
+37c-fixes, two faults that 37c left:
+
+- `TraceIdTests` runs its worker on a database of its own, so the worker kept the audit retention job, and the job's handlers joined the new tenant's spans. Its hosts remove the job (`ApiFactory.RemoveAuditRetention`, section 9 rule 6 of the API's architecture). A run with the job every 500 ms found no other test it disturbs.
+- A number of days in a notification is a value of its own kind, written in the form of the number's CLDR plural category in each language (U1, U2). Arabic writes "3 أيام", "30 يومًا" and "100 يوم". `tenant.plan_changed`'s `retentionDays` is the one such value.
+- Done.
+
 37c-frontend-platform, the platform's screens:
 
 - The plan editor's card, its floor and its preview (6.04 to 6.06, 6.10, 6.11, 6.13 without its prices, 6.18, 6.19); the Plan tab's row (4.14); the Change plan dialog's sentence (4.15); the override dialogs (4.16, 4.17, 4.49); the Activity log's sentence (7.01, 7.08); the Activity sentences of an override of the key.

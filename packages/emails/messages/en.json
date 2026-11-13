@@ -98,7 +98,7 @@
     },
     "tenant.plan_changed": {
       "title": "{tenantName} is now on {newPlanName}",
-      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan. The Activity log now keeps entries for {retentionDays} days. Entries older than {retentionDays} days go on {retentionGoesAt}. To keep a copy of the older ones, export them before then.",
+      "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan. The Activity log now keeps entries for {retentionDays}. Entries older than {retentionDays} go on {retentionGoesAt}. To keep a copy of the older ones, export them before then.",
       "without": {
         "retentionDays": {
           "body": "The platform moved your organisation from {oldPlanName} to {newPlanName}. Its features and limits follow the new plan."
@@ -202,6 +202,10 @@
       "organisation_plan": "Organisation plan",
       "organisations": "Organisations",
       "your_account": "Your account"
+    },
+    "days": {
+      "one": "# day",
+      "other": "# days"
     }
   }
 }

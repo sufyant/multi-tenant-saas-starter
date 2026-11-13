@@ -10,7 +10,7 @@ namespace Api.ArchitectureTests;
 
 // U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email
 // (U5), its texts in every language with exactly the values it declares, a text without each optional value (one for a pair that goes
-// together), every word of a closed list in every language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
+// together), every word of a closed list in every language, the form of a number of days for each plural category of the language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
 // shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. A type's area has its word in every
 // language, and its actor is a person of its values. U9: a type has the name of its event's audit operation, or is named apart with its reason.
 public sealed class NotificationCatalogTests
@@ -117,6 +117,23 @@ public sealed class NotificationCatalogTests
             "tenant.purged: no word billing of area in en",
             "tenant.purged: no word billing of area in tr",
             "tenant.purged: no word billing of area in ar",
+        ]);
+    }
+
+    // A number of days needs the form of each plural category of the language (U2). Here the Arabic words have only English's two forms.
+    [Fact]
+    public void DeclareNotificationTypes_APlantedLanguageWithoutTheFormsOfItsPluralCategories_IsFound()
+    {
+        var kind = NotificationCatalog.Of(NotificationCatalog.TenantPlanChanged);
+
+        var gaps = Gaps([kind], HandlerTypes(typeof(NotificationText).Assembly), (type, language) => WithArabicDaysForms(TextsOf(type, language), language, ["one", "other"]));
+
+        gaps.ShouldBe(
+        [
+            "tenant.plan_changed: no word zero of days in ar",
+            "tenant.plan_changed: no word two of days in ar",
+            "tenant.plan_changed: no word few of days in ar",
+            "tenant.plan_changed: no word many of days in ar",
         ]);
     }
 
@@ -252,6 +269,10 @@ public sealed class NotificationCatalogTests
                 NotificationText.FooterPlaceholdersOf(language, type))
             : null;
 
+    // The texts of a language with other Arabic forms of a number of days.
+    private static Texts? WithArabicDaysForms(Texts? texts, Language language, IReadOnlyCollection<string> forms) =>
+        texts is null || language != Language.Ar ? texts : texts with { Words = list => list == NotificationText.DaysWords ? forms : texts.Words(list) };
+
     private static List<string> Gaps(
         IEnumerable<NotificationKind> kinds,
         IReadOnlyList<(Type Handler, string Type)> handlers,
@@ -307,7 +328,7 @@ public sealed class NotificationCatalogTests
                 used)
             : [$"{kind.Type}: no text without {optional.Name} in {tag}"]);
         var wordGaps = kind.Values
-            .SelectMany(value => WordsOf(value).Select(word => (value.Kind == NotificationValueKind.Word ? value.Name : ListOf(value.Kind), word)))
+            .SelectMany(value => WordsOf(value, language).Select(word => (value.Kind == NotificationValueKind.Word ? value.Name : ListOf(value.Kind), word)))
             .Where(word => !found.Words(word.Item1).Contains(word.word))
             .Select(word => $"{kind.Type}: no word {word.word} of {word.Item1} in {tag}");
         var footerGaps = kind.Channels.Contains(NotificationChannel.Email) && !found.HasFooter ? [$"{kind.Type}: no footer in {tag}"] : Array.Empty<string>();
@@ -328,10 +349,12 @@ public sealed class NotificationCatalogTests
             : [$"{what}: the texts in {tag} use {string.Join(", ", expected)}? they use {string.Join(", ", actual)}"];
     }
 
-    // The words each value needs in every language: its closed list, the words of an entitlement's value, the name of every key of
-    // ControlPlane's entitlement list, or a person the read cannot name.
-    private static IEnumerable<string> WordsOf(NotificationValue value) => value.Kind switch
+    // The words each value needs in the language: its closed list, the words of an entitlement's value, the name of every key of
+    // ControlPlane's entitlement list, a person the read cannot name, or the form of a number of days for each plural category of the
+    // language.
+    private static IEnumerable<string> WordsOf(NotificationValue value, Language language) => value.Kind switch
     {
+        NotificationValueKind.Days => NotificationText.PluralCategoriesOf(language),
         NotificationValueKind.Word => value.Words ?? [],
         NotificationValueKind.Entitlement => ["unlimited", "on", "off", "not_set"],
         NotificationValueKind.EntitlementKey => OperationsOf(typeof(Features)).Concat(OperationsOf(typeof(Limits))),
@@ -343,6 +366,7 @@ public sealed class NotificationCatalogTests
     {
         NotificationValueKind.Entitlement => NotificationText.EntitlementWords,
         NotificationValueKind.EntitlementKey => NotificationText.EntitlementKeyWords,
+        NotificationValueKind.Days => NotificationText.DaysWords,
         _ => NotificationText.PersonWords,
     };
 

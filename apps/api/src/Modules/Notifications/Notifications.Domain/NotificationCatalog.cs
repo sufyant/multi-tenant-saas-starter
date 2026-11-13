@@ -111,7 +111,7 @@ public static class NotificationCatalog
                 Tenant(),
                 new("oldPlanName", NotificationValueKind.Text),
                 new("newPlanName", NotificationValueKind.Text),
-                new("retentionDays", NotificationValueKind.Entitlement, Optional: true),
+                new("retentionDays", NotificationValueKind.Days, Optional: true),
                 new("retentionGoesAt", NotificationValueKind.Date, Optional: true, With: "retentionDays"),
             ]),
 

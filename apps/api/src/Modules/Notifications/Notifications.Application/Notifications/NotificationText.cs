@@ -14,8 +14,8 @@ namespace Notifications.Application.Notifications;
 /// writes into <c>Email/Generated/notifications.json</c>, filled with its stored values. The bell and the generic email both render it
 /// here, so a text is written once. A person is named from <c>people</c>, which the caller reads now by user id: a deleted user, or one
 /// the directory does not know, reads as "Deleted user", and a user without a name as "Unnamed user", in the language. A built-in role, a
-/// word of a closed list and an entitlement's word are written in the language, a date in the language and the reader's time zone, and any
-/// other value as stored. A type whose optional value is missing takes its text without that value, or without the value it goes with. A type, a word or a value the texts do
+/// word of a closed list and an entitlement's word are written in the language, a date in the language and the reader's time zone, a number
+/// of days with its noun in the form of its plural category in the language, and any other value as stored. A type whose optional value is missing takes its text without that value, or without the value it goes with. A type, a word or a value the texts do
 /// not have is a mistake of ours, as in an email.
 /// </summary>
 public sealed partial record NotificationText(string Title, string Body)
@@ -31,6 +31,9 @@ public sealed partial record NotificationText(string Title, string Body)
 
     /// <summary>The name of each area of the list, under <c>notificationWords</c>.</summary>
     public const string AreaWords = "area";
+
+    /// <summary>The form of a number of days for each CLDR plural category, under <c>notificationWords</c>; <c>#</c> stands for the number.</summary>
+    public const string DaysWords = "days";
 
     private static readonly Dictionary<Language, Texts> ByLanguage = Read();
 
@@ -60,6 +63,16 @@ public sealed partial record NotificationText(string Title, string Body)
             ?? throw new InvalidOperationException($"The notification texts in {Tag(language)} have no footer of {type}.");
         return Fill(footer, Written(NotificationCatalog.Of(type), values, people, texts, language, timeZone));
     }
+
+    /// <summary>
+    /// The CLDR plural categories of the language's cardinal numbers, whose forms the words of a number of days need, for the architecture
+    /// test of the catalog (U1).
+    /// </summary>
+    public static IReadOnlyCollection<string> PluralCategoriesOf(Language language) => language switch
+    {
+        Language.Ar => ["zero", "one", "two", "few", "many", "other"],
+        _ => ["one", "other"],
+    };
 
     /// <summary>The words of a closed list in the language, for the architecture test of the catalog (U1).</summary>
     public static IReadOnlyCollection<string> WordsOf(Language language, string list) =>
@@ -146,9 +159,23 @@ public sealed partial record NotificationText(string Title, string Body)
                 ? stored
                 : WordOf(texts, language, EntitlementWords, stored),
             NotificationValueKind.Date => EmailLanguage.Of(language).Dates.Write(DateTimeOffset.Parse(stored, CultureInfo.InvariantCulture), timeZone).Day,
+            NotificationValueKind.Days => WordOf(texts, language, DaysWords, PluralCategoryOf(language, int.Parse(stored, NumberStyles.None, CultureInfo.InvariantCulture)))
+                .Replace("#", stored, StringComparison.Ordinal),
             _ => stored,
         };
     }
+
+    // The CLDR plural category of a whole number (Unicode CLDR, "Language Plural Rules"). Arabic: zero, one and two by the number, few
+    // for 3 to 10 and many for 11 to 99 by its last two digits, other for the rest. English and Turkish: one for 1, other for the rest.
+    private static string PluralCategoryOf(Language language, int number) => (language, number, number % 100) switch
+    {
+        (Language.Ar, 0, _) => "zero",
+        (_, 1, _) => "one",
+        (Language.Ar, 2, _) => "two",
+        (Language.Ar, _, >= 3 and <= 10) => "few",
+        (Language.Ar, _, >= 11) => "many",
+        _ => "other",
+    };
 
     private static string NameOf(string stored, IReadOnlyDictionary<Guid, UserName> people, Texts texts, Language language) =>
         people.TryGetValue(Guid.Parse(stored), out var person) && !person.Deleted
