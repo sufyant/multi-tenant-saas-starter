@@ -58,6 +58,14 @@ public sealed class DeleteExpiredEntriesTests(Database database)
                 "SELECT count(*) FROM pg_stat_activity WHERE usename = 'api_application' AND wait_event_type = 'Lock'");
         }
 
-        waiting.ShouldBe(1);
+        // TEMPORARY DIAGNOSTIC: which sessions wait.
+        var who = await database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(format('pid=%s app=%s event=%s/%s blockedby=%s xact=%s now=%s query=[%s] blocker=[%s]', a.pid, a.application_name,
+                a.wait_event_type, a.wait_event, pg_blocking_pids(a.pid), a.xact_start, clock_timestamp(), a.query,
+                (SELECT string_agg(b.query, ' || ') FROM pg_stat_activity b WHERE b.pid = ANY(pg_blocking_pids(a.pid)))), E'\n')
+            FROM pg_stat_activity a WHERE a.usename = 'api_application' AND a.wait_event_type = 'Lock'
+            """);
+        waiting.ShouldBe(1, who);
     }
 }
