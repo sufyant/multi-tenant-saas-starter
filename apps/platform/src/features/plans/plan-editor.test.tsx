@@ -155,6 +155,28 @@ describe("PlanEditor", () => {
     expect(calls).toEqual([]);
   });
 
+  // 6.11: after a save, a value is checked again as it is typed, as the name is, so a refused name and the floor show together.
+  it("Save_RefusedNameThenAPeriodUnderTheFloor_ShowsBoth", async () => {
+    await openPro();
+    server.use(
+      plansCommand("patch", `plans/${pro.id}`, [
+        () => problem(409, ErrorCode.PlanNameTaken),
+      ]),
+    );
+
+    await changeName();
+    await save();
+    expect(
+      await screen.findByText("Another plan has this name."),
+    ).toBeVisible();
+    await setLimit("Keeps entries", "7");
+
+    expect(
+      await row("Keeps entries").findByText("Enter 30 days or more."),
+    ).toBeVisible();
+    expect(screen.getByText("Another plan has this name.")).toBeVisible();
+  });
+
   // 6.19: a save that shortens the period of some organisations says how many, the periods and the hold.
   it("Save_ShortensTheActivityLog_ShowsTheOrganisationsAndTheHold", async () => {
     const updates: Call[] = [];
