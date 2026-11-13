@@ -29,8 +29,14 @@ import { ActivityPage } from "./activity-page";
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
+/** GetPlatformAuditRetention: the deployment's period of the platform's log. */
+const periodAnswer = (days = 365) =>
+  http.get("*/v1/platform/audit-log/retention", () =>
+    HttpResponse.json({ days }),
+  );
 // Only Date is fake: "now" is 16 Oct 2026, 14:32 in Dublin, the boards' moment.
 beforeEach(() => {
+  server.use(periodAnswer());
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-16T13:32:00Z"));
 });
@@ -133,6 +139,35 @@ describe("ActivityPage", () => {
     ).toBeInTheDocument();
     expect(await screen.findByRole("listitem")).toBeInTheDocument();
     expect(screen.queryByText("Updated", { exact: false })).toBeNull();
+  });
+
+  // 7.01, 7.08: the period of the platform's log, under the description; on a phone the one visible line above the entries.
+  it("ActivityPage_Period_SaysHowLongEntriesAreKept", async () => {
+    server.use(
+      meIn(),
+      periodAnswer(365),
+      auditLogAnswer({ "": { items: [suspendedJohn], nextCursor: null } }),
+    );
+
+    renderWithProviders(<ActivityPage />);
+
+    expect(
+      await screen.findByText("Entries are kept for 365 days."),
+    ).toBeVisible();
+  });
+
+  it("ActivityPage_PeriodInArabic_TakesTheArabicPluralOfItsDays", async () => {
+    server.use(
+      meIn(),
+      periodAnswer(100),
+      auditLogAnswer({ "": { items: [suspendedJohn], nextCursor: null } }),
+    );
+
+    renderWithProviders(<ActivityPage />, "ar");
+
+    expect(
+      await screen.findByText("تُحفظ الإدخالات لمدة 100 يوم."),
+    ).toBeVisible();
   });
 
   it("ActivityPage_WholeLog_SendsNoTenantId", async () => {

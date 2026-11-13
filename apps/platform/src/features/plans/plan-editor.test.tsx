@@ -94,13 +94,12 @@ describe("PlanEditor", () => {
 
     expect(screen.getByText("6 organisations are on this plan.")).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Pro");
-    // The areas in the frames' order (6.04): the plan, then Members, then Roles. The API's new key audit.retention.days follows as
-    // an area the frames do not draw yet; 37c-frontend-platform gives it the Activity log card.
+    // The areas in the frames' order (6.04): the plan, then Members, Roles and Activity log.
     expect(
       screen
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
-    ).toEqual(["Plan", "Members", "Roles", "audit"]);
+    ).toEqual(["Plan", "Members", "Roles", "Activity log"]);
     expect(
       row("Custom roles").getByRole("switch", { name: "Custom roles" }),
     ).toBeChecked();
@@ -119,8 +118,165 @@ describe("PlanEditor", () => {
       row("Seats").getByRole("checkbox", { name: "Unlimited" }),
     ).toBeChecked();
     expect(limitField("Seats")).toBeDisabled();
-    // Only the new key, which this plan's mock does not hold, is not set.
-    expect(screen.getAllByText("Not set: closed")).toHaveLength(1);
+    expect(screen.queryByText("Not set: closed")).toBeNull();
+  });
+
+  // 6.04: the Activity log's one row, its days with their unit, Unlimited, and the floor and the hold in its help.
+  it("Edit_ActivityLog_ShowsKeepsEntriesWithTheFloorAndTheHold", async () => {
+    await openPro();
+
+    expect(limitField("Keeps entries")).toHaveValue(365);
+    expect(row("Keeps entries").getByText("days")).toBeVisible();
+    expect(
+      row("Keeps entries").getByText(
+        "Days, 30 or more. When the period gets shorter, older entries stay 30 days, then go.",
+      ),
+    ).toBeVisible();
+    expect(
+      row("Keeps entries").getByRole("checkbox", { name: "Unlimited" }),
+    ).not.toBeChecked();
+  });
+
+  // 6.11: a period under the floor is refused before it is sent.
+  it("Save_ActivityLogUnderTheFloor_SendsNothingAndShowsTheFloor", async () => {
+    const calls: Call[] = [];
+    await openPro();
+    server.use(
+      plansCommand("post", `plans/${pro.id}/preview`, [nobodyOver], calls),
+      plansCommand("patch", `plans/${pro.id}`, [updated], calls),
+    );
+
+    await setLimit("Keeps entries", "7");
+    await save();
+
+    expect(
+      await row("Keeps entries").findByText("Enter 30 days or more."),
+    ).toBeVisible();
+    expect(calls).toEqual([]);
+  });
+
+  // 6.19: a save that shortens the period of some organisations says how many, the periods and the hold.
+  it("Save_ShortensTheActivityLog_ShowsTheOrganisationsAndTheHold", async () => {
+    const updates: Call[] = [];
+    await openPro();
+    server.use(
+      plansCommand("post", `plans/${pro.id}/preview`, [
+        () =>
+          HttpResponse.json(
+            previewPage([], {
+              retentionShortened: { count: 4, fromDays: 365, toDays: 90 },
+            }),
+          ),
+      ]),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+
+    await setLimit("Keeps entries", "90");
+    await save();
+
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Save changes to Pro?" }),
+    );
+    expect(
+      dialog.getByText(
+        "This edit shortens the Activity log of 4 organisations from 365 to 90 days. Their entries older than 90 days stay 30 days, then go. To keep one as it is, give it an override first.",
+      ),
+    ).toBeVisible();
+    expect(dialog.queryByRole("table")).toBeNull();
+    expect(updates).toEqual([]);
+    await userEvent.click(dialog.getByRole("button", { name: "Save anyway" }));
+    await waitFor(() => expect(updates).toHaveLength(1));
+  });
+
+  it("Save_ShortensFromNoLimitForOneOrganisation_SaysNoTimeLimit", async () => {
+    await openPro();
+    server.use(
+      plansCommand("post", `plans/${pro.id}/preview`, [
+        () =>
+          HttpResponse.json(
+            previewPage([], {
+              retentionShortened: { count: 1, fromDays: null, toDays: 90 },
+            }),
+          ),
+      ]),
+    );
+
+    await setLimit("Keeps entries", "90");
+    await save();
+
+    expect(
+      await screen.findByText(
+        "This edit shortens the Activity log of 1 organisation from no time limit to 90 days. Its entries older than 90 days stay 30 days, then go. To keep it as it is, give it an override first.",
+      ),
+    ).toBeVisible();
+  });
+
+  // #271: a count of 0 says that no organisation follows the plan's shorter period (each has an override), so nothing is shortened.
+  it("Save_ShortensButNoOrganisationFollows_SavesAtOnce", async () => {
+    const updates: Call[] = [];
+    await openPro();
+    server.use(
+      plansCommand("post", `plans/${pro.id}/preview`, [
+        () =>
+          HttpResponse.json(
+            previewPage([], {
+              retentionShortened: { count: 0, fromDays: 365, toDays: 90 },
+            }),
+          ),
+      ]),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+
+    await setLimit("Keeps entries", "90");
+    await save();
+
+    await expectVisibleToast(sentence("Pro saved"));
+    expect(updates).toHaveLength(1);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  it("Save_ShortensAndPutsOver_SaysBothAndListsTheOrganisations", async () => {
+    await openPro();
+    server.use(
+      plansCommand("post", `plans/${pro.id}/preview`, [
+        () =>
+          HttpResponse.json(
+            previewPage(
+              [
+                excess(
+                  "0198f0a2-0000-7000-8000-000000000002",
+                  "Burren Supply",
+                  "burren-supply",
+                  14,
+                  10,
+                ),
+              ],
+              { retentionShortened: { count: 4, fromDays: 365, toDays: 90 } },
+            ),
+          ),
+      ]),
+    );
+
+    await setLimit("Custom roles limit", "10");
+    await setLimit("Keeps entries", "90");
+    await save();
+
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Save changes to Pro?" }),
+    );
+    expect(
+      dialog.getByText(
+        /^This edit shortens the Activity log of 4 organisations/,
+      ),
+    ).toBeVisible();
+    expect(
+      dialog.getByText(/^This edit puts 1 organisation over a limit/),
+    ).toBeVisible();
+    expect(
+      within(dialog.getByRole("table")).getByRole("link", {
+        name: /Burren Supply/,
+      }),
+    ).toBeVisible();
   });
 
   it("Edit_OneOrganisation_SaysOne", async () => {
@@ -210,6 +366,7 @@ describe("PlanEditor", () => {
           [FeatureKey.RolesCustom]: { enabled: true },
           [LimitKey.RolesCustomMax]: { maximum: 30 },
           [LimitKey.MembersMax]: { unlimited: true },
+          [LimitKey.AuditRetentionDays]: { maximum: 365 },
         },
       },
     ]);
@@ -278,6 +435,7 @@ describe("PlanEditor", () => {
       entitlements: {
         [FeatureKey.RolesCustom]: { enabled: true },
         [LimitKey.RolesCustomMax]: { maximum: 20 },
+        [LimitKey.AuditRetentionDays]: { maximum: 365 },
       },
     });
   });
@@ -302,6 +460,7 @@ describe("PlanEditor", () => {
       entitlements: {
         [FeatureKey.RolesCustom]: { enabled: true },
         [LimitKey.MembersMax]: { unlimited: true },
+        [LimitKey.AuditRetentionDays]: { maximum: 365 },
       },
     });
   });
@@ -342,6 +501,7 @@ describe("PlanEditor", () => {
         [FeatureKey.RolesCustom]: { enabled: false },
         [LimitKey.RolesCustomMax]: { maximum: 20 },
         [LimitKey.MembersMax]: { unlimited: true },
+        [LimitKey.AuditRetentionDays]: { maximum: 365 },
       },
     });
   });
@@ -458,6 +618,7 @@ describe("PlanEditor", () => {
           [FeatureKey.RolesCustom]: { enabled: true },
           [LimitKey.RolesCustomMax]: { maximum: 10 },
           [LimitKey.MembersMax]: { unlimited: true },
+          [LimitKey.AuditRetentionDays]: { maximum: 365 },
         },
       },
     ]);
@@ -955,7 +1116,8 @@ describe("PlanEditor", () => {
       value("Seats"),
       value("Custom roles"),
       value("Custom roles limit"),
-    ]).toEqual(["Unlimited", "On", "20"]);
+      value("Activity log"),
+    ]).toEqual(["Unlimited", "On", "20", "365 days"]);
     expect(
       screen.getByRole("button", { name: "Edit plan" }),
     ).toBeInTheDocument();

@@ -937,4 +937,50 @@ describe("ActivitySentence of the plans", () => {
       ),
     ).toBeInTheDocument();
   });
+  it("ActivitySentence_OverrideOfTheActivityLog_SaysItsDays", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantEntitlementOverrideSet,
+        target: burrenTarget,
+        details: {
+          operation:
+            TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet,
+          key: LimitKey.AuditRetentionDays,
+          oldValue: value({ maximum: 365 }),
+          oldExpiresAt: null,
+          newValue: value({ maximum: 60 }),
+          newExpiresAt: null,
+          reason: "Data minimisation request",
+        },
+      }),
+    );
+
+    expect(
+      await findSentence(
+        "Ciara Byrne set Burren Supply’s Activity log to 60 days, no expiry (before: 365 days). Reason: Data minimisation request.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivitySentence_OverrideOfTheActivityLogRemoved_SaysItsDays", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TenantEntitlementOverrideRemoved,
+        target: burrenTarget,
+        details: {
+          operation:
+            TenantEntitlementOverrideRemovedDetailsResponseOperation.TenantEntitlementOverrideRemoved,
+          key: LimitKey.AuditRetentionDays,
+          oldValue: value({ maximum: 730 }),
+          oldExpiresAt: "2027-01-31T00:00:00Z",
+        },
+      }),
+    );
+
+    expect(
+      await findSentence(
+        "Ciara Byrne removed Burren Supply’s override on Activity log (730 days, until 31 Jan 2027).",
+      ),
+    ).toBeInTheDocument();
+  });
 });

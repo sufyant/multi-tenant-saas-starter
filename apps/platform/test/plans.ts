@@ -60,6 +60,7 @@ export const free = plan(
     [FeatureKey.RolesCustom]: off,
     [LimitKey.RolesCustomMax]: max(0),
     [LimitKey.MembersMax]: max(5),
+    [LimitKey.AuditRetentionDays]: max(365),
   },
   true,
 );
@@ -67,6 +68,7 @@ export const pro = plan("0198f0a2-0000-7000-8000-0000000000b2", "Pro", 6, {
   [FeatureKey.RolesCustom]: on,
   [LimitKey.RolesCustomMax]: max(20),
   [LimitKey.MembersMax]: unlimited,
+  [LimitKey.AuditRetentionDays]: max(365),
 });
 export const partner = plan(
   "0198f0a2-0000-7000-8000-0000000000b3",
@@ -76,6 +78,7 @@ export const partner = plan(
     [FeatureKey.RolesCustom]: on,
     [LimitKey.RolesCustomMax]: max(50),
     [LimitKey.MembersMax]: unlimited,
+    [LimitKey.AuditRetentionDays]: max(365),
   },
 );
 
@@ -187,7 +190,7 @@ export const ciaraOverride = (
   ...values,
 });
 
-/** Burren Supply on Pro: 14 custom roles and 22 members, with an override of the custom roles limit (the OrgPlan board). */
+/** Burren Supply on Pro: 14 custom roles and 22 members, with an override of the custom roles limit (the OrgPlan board), and Pro's Activity log of 365 days (4.14). */
 export const burrenPlan = (
   rows: Partial<Record<string, Partial<TenantEntitlementResponse>>> = {},
 ): TenantPlanResponse => ({
@@ -220,6 +223,15 @@ export const burrenPlan = (
       effective: unlimited,
       count: 22,
       ...rows[LimitKey.MembersMax],
+    },
+    {
+      key: LimitKey.AuditRetentionDays,
+      isFeature: false,
+      planValue: max(365),
+      override: null,
+      effective: max(365),
+      count: 0,
+      ...rows[LimitKey.AuditRetentionDays],
     },
   ],
 });
