@@ -23,10 +23,12 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
+  belowFloor,
   type Draft,
   draftOf,
   isWholeNumber,
   requestOf,
+  retentionKey,
   useEntitlementText,
   valueFrom,
 } from "@/shared/entitlements";
@@ -79,7 +81,7 @@ export function OverrideDialog({
   const text = useEntitlementText();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const { timeZone } = useDates();
+  const { timeZone, date } = useDates();
   const rowOf = (key: string) =>
     plan.entitlements.find((row) => row.key === key) ?? plan.entitlements[0];
   const first = rowOf(entitlementKey ?? plan.entitlements[0]?.key ?? "");
@@ -136,8 +138,11 @@ export function OverrideDialog({
   });
 
   const submit = form.handleSubmit((values) => {
-    // A limit needs a number or Unlimited: an override always has a value.
-    if (valueFrom(isFeature, values.draft) === null) {
+    // A limit needs a number or Unlimited: an override always has a value. The Activity log's period has a floor (4.16).
+    if (
+      valueFrom(isFeature, values.draft) === null ||
+      belowFloor(values.key, values.draft)
+    ) {
       form.setError("draft.text", { message: "invalid" });
       return;
     }
@@ -163,6 +168,52 @@ export function OverrideDialog({
   })();
 
   const errors = form.formState.errors;
+  const expires = form.watch("expires");
+  const retention = (() => {
+    if (key !== retentionKey) return null;
+    const planValue = rowOf(key)?.planValue ?? null;
+    const planDays = planValue?.unlimited ? null : (planValue?.maximum ?? null);
+    const typed = valueFrom(false, draft);
+    const values = {
+      ...text.periods,
+      plan: () => <bdi>{plan.plan.name}</bdi>,
+      value: planDays === null ? "" : text.days(planDays),
+      valueCount: planDays ?? 0,
+    };
+    const hint = t.rich("retentionHint", {
+      ...values,
+      value: text.label(false, planValue, key),
+    });
+    // A shorter period than the plan's, from the floor on; and a longer one until a day, which goes back to the plan's then (4.49).
+    const days = typed?.maximum ?? null;
+    if (
+      days !== null &&
+      !belowFloor(key, draft) &&
+      days < (planDays ?? Infinity)
+    )
+      return {
+        hint,
+        sentence: t.rich(
+          planDays === null
+            ? "retentionShorterThanNoLimit"
+            : "retentionShorter",
+          { ...values, days: text.days(days), daysCount: days },
+        ),
+      };
+    const longer =
+      typed !== null &&
+      planDays !== null &&
+      (typed.unlimited || (typed.maximum ?? 0) > planDays);
+    if (longer && expires)
+      return {
+        hint,
+        sentence: t.rich("retentionExpiry", {
+          ...values,
+          date: date(startOfDay(expires, { timeZone })),
+        }),
+      };
+    return { hint, sentence: null };
+  })();
   const reasonError = errors.reason?.message
     ? errors.reason.message === FieldErrorCode.TooLong ||
       errors.reason.message === "validation.too_long"
@@ -233,10 +284,22 @@ export function OverrideDialog({
                 form.clearErrors("draft");
               }}
               error={
-                errors.draft?.text ? all("plans.numberInvalid") : undefined
+                errors.draft?.text
+                  ? key === retentionKey
+                    ? text.floor()
+                    : all("plans.numberInvalid")
+                  : undefined
               }
             />
           </div>
+          {retention && (
+            <p className="text-small text-muted-foreground">{retention.hint}</p>
+          )}
+          {retention?.sentence && (
+            <p className="text-small text-muted-foreground">
+              {retention.sentence}
+            </p>
+          )}
         </div>
         <Input
           type="date"

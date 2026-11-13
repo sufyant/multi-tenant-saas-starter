@@ -258,7 +258,8 @@ const changeEmail = (address?: string) => async (page: Page) => {
   await page.getByRole("alertdialog", { name: "Check your email" }).waitFor();
 };
 
-// The Plans frames (6.01 to 6.18): Free, the default; Team; Business, each created on 1 Jan 2026, with the values the frames draw.
+// The Plans frames (6.01 to 6.19): Free, the default; Team; Business, each created on 1 Jan 2026, with the values the frames draw.
+// Each keeps the Activity log for 365 days (6.04, 6.05, 6.18).
 const value = (
   values: Partial<EntitlementValueResponse>,
 ): EntitlementValueResponse => ({
@@ -289,6 +290,7 @@ const framePlans = {
     {
       [FeatureKey.RolesCustom]: value({ enabled: false }),
       [LimitKey.MembersMax]: value({ maximum: 3 }),
+      [LimitKey.AuditRetentionDays]: value({ maximum: 365 }),
     },
     true,
   ),
@@ -296,11 +298,13 @@ const framePlans = {
     [FeatureKey.RolesCustom]: value({ enabled: true }),
     [LimitKey.RolesCustomMax]: value({ maximum: 5 }),
     [LimitKey.MembersMax]: value({ maximum: 15 }),
+    [LimitKey.AuditRetentionDays]: value({ maximum: 365 }),
   }),
   business: framePlan("0198f0a2-0000-7000-8000-00000000c103", "Business", 1, {
     [FeatureKey.RolesCustom]: value({ enabled: true }),
     [LimitKey.RolesCustomMax]: value({ maximum: 20 }),
     [LimitKey.MembersMax]: value({ unlimited: true }),
+    [LimitKey.AuditRetentionDays]: value({ maximum: 365 }),
   }),
 };
 const nonprofit = framePlan(
@@ -310,6 +314,7 @@ const nonprofit = framePlan(
   {
     [FeatureKey.RolesCustom]: value({ enabled: false }),
     [LimitKey.MembersMax]: value({ maximum: 10 }),
+    [LimitKey.AuditRetentionDays]: value({ maximum: 365 }),
   },
 );
 const teamPath = `/plans/${framePlans.team.id}`;
@@ -417,6 +422,28 @@ const teamPreview =
     );
   };
 
+/** The preview of Team's edit from 365 to 90 days: it shortens the Activity log of 4 organisations, and puts none over (6.19). */
+const teamShortens = async (page: Page) => {
+  await mockFramePlans(page);
+  await page.route(
+    `**/api/v1/platform/plans/${framePlans.team.id}/preview*`,
+    (route) =>
+      route.fulfill({
+        json: {
+          items: [],
+          page: 1,
+          pageSize: 20,
+          total: 0,
+          retentionShortened: { count: 4, fromDays: 365, toDays: 90 },
+        },
+      }),
+  );
+};
+
+/** The Activity log's field of the plan editor (6.04). */
+const keepsEntriesField = (page: Page) =>
+  page.getByRole("group", { name: "Keeps entries" }).getByRole("spinbutton");
+
 /** The Seats field of the plan editor. */
 const seatsField = (page: Page) =>
   page.getByRole("group", { name: "Seats" }).getByRole("spinbutton");
@@ -438,6 +465,19 @@ const createAnswers =
     await page.route("**/api/v1/platform/plans", (route) =>
       route.request().method() === "POST" ? answer(route) : route.fallback(),
     );
+  };
+
+/** Add override on Northwind's Activity log: the value, until 31 Jan 2027, and the reason (4.16, 4.49). */
+const overrideActivityLog =
+  (days: string, reason: string) => async (page: Page) => {
+    await page.getByRole("button", { name: "Add override" }).click();
+    const dialog = page.getByRole("alertdialog");
+    await dialog.getByRole("combobox", { name: "Feature or limit" }).click();
+    await page.getByRole("option", { name: "Activity log" }).click();
+    await page.getByRole("listbox").waitFor({ state: "hidden" });
+    await dialog.getByRole("spinbutton", { name: "Value" }).fill(days);
+    await dialog.getByLabel("Until").fill("2027-01-31");
+    await dialog.getByRole("textbox", { name: "Reason" }).fill(reason);
   };
 
 /** Reduced motion stops a skeleton's pulse, so a loading frame is the same in every run. */
@@ -834,7 +874,7 @@ const shellShots: {
     mock: fullState,
     open: changeEmail("deniz.kaya@platform.example"),
   },
-  // Plans (6.01 to 6.12, 6.17, 6.18). The frames draw no dark and no Arabic plan; 6.01 and 6.04 are taken in both too.
+  // Plans (6.01 to 6.12, 6.17 to 6.19). The frames draw no dark and no Arabic plan; 6.01 and 6.04 are taken in both too.
   {
     file: "6.01-plans-en-light-desktop",
     size: "desktop",
@@ -945,6 +985,19 @@ const shellShots: {
     },
   },
   {
+    file: "6.19-save-shorter-activity-log-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: teamShortens,
+    open: async (page) => {
+      await keepsEntriesField(page).fill("90");
+      await page.getByRole("button", { name: "Save changes" }).click();
+      await page
+        .getByRole("alertdialog", { name: "Save changes to Team?" })
+        .waitFor();
+    },
+  },
+  {
     file: "6.10-new-plan-en-light-desktop",
     size: "desktop",
     path: "/plans/new",
@@ -957,11 +1010,15 @@ const shellShots: {
     mock: createAnswers((route) =>
       route.fulfill(problem(409, ErrorCode.PlanNameTaken)),
     ),
+    // The API refuses the name; then a period under the floor shows its rule as it is typed, as the frame draws both.
     open: async (page) => {
       await page.getByRole("textbox", { name: "Name" }).fill("Team");
       await seatsField(page).fill("10");
+      await keepsEntriesField(page).fill("30");
       await page.getByRole("button", { name: "Create plan" }).click();
       await page.getByText("Another plan has this name.").waitFor();
+      await keepsEntriesField(page).fill("7");
+      await page.getByText("Enter 30 days or more.").waitFor();
     },
   },
   {
@@ -1099,7 +1156,7 @@ const shellShots: {
     path: "/activity",
     mock: logAnswers(frameLog.slice(0, 2), () => {}),
   },
-  // Organisations (4.01 to 4.26, 4.43, 4.44, 4.46) and "Organisation not found" (2.23). The frames draw no dark and no Arabic
+  // Organisations (4.01 to 4.26, 4.43, 4.44, 4.46, 4.49) and "Organisation not found" (2.23). The frames draw no dark and no Arabic
   // organisation; 4.01 and 4.09 are taken in both too.
   ...(
     [
@@ -1239,28 +1296,25 @@ const shellShots: {
     size: "desktop",
     path: `${northwindPath}?tab=plan`,
     mock: (page) => mockFrameOrganisations(page),
-    open: async (page) => {
-      await page.getByRole("button", { name: "Add override" }).click();
-      const dialog = page.getByRole("alertdialog");
-      await dialog.getByRole("combobox", { name: "Feature or limit" }).click();
-      await page.getByRole("option", { name: "Seats" }).click();
-      await page.getByRole("listbox").waitFor({ state: "hidden" });
-      await dialog.getByRole("spinbutton", { name: "Value" }).fill("20");
-      await dialog.getByLabel("Until").fill("2027-01-31");
-      await dialog
-        .getByRole("textbox", { name: "Reason" })
-        .fill("Seasonal staff");
-    },
+    open: overrideActivityLog("60", "Data minimisation request"),
+  },
+  {
+    file: "4.49-add-override-longer-until-a-date-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) => mockFrameOrganisations(page),
+    open: overrideActivityLog("730", "Legal review"),
   },
   {
     file: "4.17-remove-override-en-light-desktop",
     size: "desktop",
     path: `${northwindPath}?tab=plan`,
-    mock: (page) => mockFrameOrganisations(page),
+    mock: (page) =>
+      mockFrameOrganisations(page, undefined, { retentionOverride: true }),
     open: (page) =>
       page
         .getByRole("button", {
-          name: "Remove the override on Custom roles limit",
+          name: "Remove the override on Activity log",
         })
         .click(),
   },

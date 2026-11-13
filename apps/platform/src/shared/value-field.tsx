@@ -20,6 +20,7 @@ export function ValueField({
   onChange,
   error,
   showUnset = false,
+  unit,
 }: {
   isFeature: boolean;
   /** The accessible name of the switch and of the number. */
@@ -28,6 +29,8 @@ export function ValueField({
   onChange: (draft: Draft) => void;
   error?: string;
   showUnset?: boolean;
+  /** The unit after the number: the Activity log's days (6.04). */
+  unit?: string;
 }) {
   const t = useTranslations();
   const text = useEntitlementText();
@@ -84,6 +87,7 @@ export function ValueField({
                   : "h-control-md w-28 rounded-md bg-card px-3 text-body tabular-nums pointer-coarse:h-control-lg"
               }
             />
+            {unit && <span className="text-body">{unit}</span>}
             <span className="flex items-center gap-2">
               <Checkbox
                 id={unlimitedId}

@@ -410,13 +410,15 @@
     "changeSeparator": "؛ ",
     "nameKey": "الاسم",
     "description": "التغييرات على المؤسسات والمستخدمين والخطط ومسؤولي النظام.",
+    "period": "تُحفظ الإدخالات لمدة {days}.",
     "loadingOlder": "جارٍ تحميل النشاط الأقدم…",
     "loadedOlder": "تم تحميل {count} من الإدخالات الإضافية."
   },
   "entitlements": {
     "areas": {
       "roles": "الأدوار",
-      "members": "الأعضاء"
+      "members": "الأعضاء",
+      "audit": "سجل النشاط"
     },
     "keys": {
       "roles_custom": {
@@ -431,6 +433,15 @@
       "members_max": {
         "name": "المقاعد",
         "description": "الأعضاء والدعوات المعلّقة التي لم تنتهِ صلاحيتها."
+      },
+      "audit_retention_days": {
+        "name": "سجل النشاط",
+        "row": "يحتفظ بالإدخالات",
+        "description": "بالأيام، {floor} أو أكثر. عند تقصير المدة، تبقى الإدخالات الأقدم {grace}، ثم تُحذف.",
+        "days": "{count, plural, zero {# يوم} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+        "unit": "{count, plural, zero {يوم} one {يوم} two {يوم} few {أيام} many {يومًا} other {يوم}}",
+        "floor": "أدخل {floorDays} أو أكثر.",
+        "notSet": "غير محدد: دون حد زمني"
       }
     },
     "turnsOff": "{key}: متوقفة في {plan}.",
@@ -477,6 +488,7 @@
     "notSaved": "لم تُحفظ الخطة",
     "impactTitle": "حفظ التغييرات على <bdi>{plan}</bdi>؟",
     "impactText": "{count, plural, one {يجعل هذا التعديل مؤسسة واحدة فوق حدٍّ ما. لا يُحذف شيء ولا يُقفل شيء: لا يمكنها إضافة المزيد حتى تعود تحت الحد. لإبقائها كما هي، امنحها استثناءً أولًا.} other {يجعل هذا التعديل # مؤسسات فوق حدٍّ ما. لا يُحذف شيء ولا يُقفل شيء: لا يمكنها إضافة المزيد حتى تعود تحت الحد. لإبقاء مؤسسة كما هي، امنحها استثناءً أولًا.}}",
+    "retentionText": "{count, plural, one {يقصّر هذا التعديل سجل النشاط لمؤسسة واحدة من {from, select, none {دون حد زمني} other {{from}}} إلى {to}. تبقى إدخالاتها الأقدم من {to} مدة {grace}، ثم تُحذف. لإبقائها كما هي، امنحها استثناءً أولًا.} two {يقصّر هذا التعديل سجل النشاط لمؤسستين من {from, select, none {دون حد زمني} other {{from}}} إلى {to}. تبقى إدخالاتهما الأقدم من {to} مدة {grace}، ثم تُحذف. لإبقاء مؤسسة كما هي، امنحها استثناءً أولًا.} few {يقصّر هذا التعديل سجل النشاط لـ # مؤسسات من {from, select, none {دون حد زمني} other {{from}}} إلى {to}. تبقى إدخالاتها الأقدم من {to} مدة {grace}، ثم تُحذف. لإبقاء مؤسسة كما هي، امنحها استثناءً أولًا.} other {يقصّر هذا التعديل سجل النشاط لـ # مؤسسة من {from, select, none {دون حد زمني} other {{from}}} إلى {to}. تبقى إدخالاتها الأقدم من {to} مدة {grace}، ثم تُحذف. لإبقاء مؤسسة كما هي، امنحها استثناءً أولًا.}}",
     "organisation": "المؤسسة",
     "limit": "الحد",
     "now": "الآن",
@@ -553,7 +565,14 @@
     "changeTo": "التغيير إلى {plan}",
     "limitChange": "{key}: {from} ← {to}. تستخدم <bdi>{name}</bdi> {count}.",
     "overrideStaysUntil": "يبقى الاستثناء على {key} حتى {date}.",
-    "overrideStays": "يبقى الاستثناء على {key}."
+    "overrideStays": "يبقى الاستثناء على {key}.",
+    "retentionHint": "بالأيام، {floor} أو أكثر. تعطي <plan></plan> {value}.",
+    "retentionShorter": "هذه المدة أقصر من {value} التي تعطيها <plan></plan>. تبقى الإدخالات الأقدم من {days} مدة {grace}، ثم تُحذف.",
+    "retentionShorterThanNoLimit": "تحفظ <plan></plan> الإدخالات دون حد زمني. تبقى الإدخالات الأقدم من {days} مدة {grace}، ثم تُحذف.",
+    "retentionExpiry": "في {date} تعود المدة إلى {value} التي تعطيها <plan></plan>. بعدها تبقى الإدخالات الأقدم من {value} مدة {grace}، ثم تُحذف.",
+    "removeRetentionText": "تعود <bdi>{name}</bdi> إلى قيمة <bdi>{plan}</bdi>: {value}. تبقى إدخالاتها الأقدم من {value} مدة {grace}، ثم تُحذف.",
+    "removeRetentionKeeps": "تعود <bdi>{name}</bdi> إلى قيمة <bdi>{plan}</bdi>: {value}.",
+    "retentionChange": "{key}: {from, select, none {دون حد زمني} other {{from}}} ← {to}. تبقى الإدخالات الأقدم من {to} مدة {grace}، ثم تُحذف."
   },
   "viewChoice": {
     "withCount": "{view} · {count}",

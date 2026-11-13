@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AuditRetention,
   type EntitlementValueRequest,
   type EntitlementValueResponse,
   FeatureKey,
@@ -66,6 +67,16 @@ export function lowers(isFeature: boolean, before: Value, after: Value) {
   return roomOf(after) < roomOf(before);
 }
 
+/** The limit of the Activity log's period, in days: a whole number from the floor, or unlimited (the API's K14). */
+export const retentionKey: string = LimitKey.AuditRetentionDays;
+
+/** A period under the floor, which the API refuses (`plan.entitlement_invalid`): the screen refuses it before it sends. */
+export const belowFloor = (key: string, draft: Draft) =>
+  key === retentionKey &&
+  !draft.unlimited &&
+  /^\d+$/.test(draft.text) &&
+  Number(draft.text) < AuditRetention.Floor;
+
 /** A key as a message key: the dots of `roles.custom.max` would nest it. */
 const messageKeyOf = (key: string) => key.replaceAll(".", "_");
 
@@ -75,32 +86,68 @@ const messageKeyOf = (key: string) => key.replaceAll(".", "_");
  */
 export function useEntitlementText() {
   const t = useTranslations("entitlements");
-  const keyText = (key: string, part: "name" | "description") => {
-    const path =
-      `keys.${messageKeyOf(key)}.${part}` as "keys.roles_custom.name";
-    return t.has(path) ? t(path) : part === "name" ? key : "";
+  /** The Activity log's days: `365 days`, in the plural of each language. */
+  const days = (count: number) =>
+    t("keys.audit_retention_days.days", { count });
+  // The floor and the hold of the Activity log's period, which its texts say (`@repo/api-client`'s generated constants).
+  const periods = {
+    floor: AuditRetention.Floor,
+    floorDays: days(AuditRetention.Floor),
+    grace: days(AuditRetention.Grace),
+    graceCount: AuditRetention.Grace,
   };
+  const keyText = (key: string, part: "name" | "description" | "row") => {
+    const path =
+      `keys.${messageKeyOf(key)}.${part}` as "keys.audit_retention_days.description";
+    if (t.has(path)) return t(path, periods);
+    if (part === "row") return keyText(key, "name");
+    return part === "name" ? key : "";
+  };
+  /** A limit's number, which the Activity log says in days. */
+  const numberOf = (key: string | undefined, maximum: number) =>
+    key === retentionKey ? days(maximum) : String(maximum);
   return {
     name: (key: string) => keyText(key, "name"),
+    /** The name of a key's row in the plan editor, under its area: the Activity log's one row is "Keeps entries" (6.04). */
+    row: (key: string) => keyText(key, "row"),
     description: (key: string) => keyText(key, "description"),
+    days,
+    periods,
+    /** The unit after a key's number in the plan editor: the Activity log's days; none for another key. */
+    unit: (key: string, text: string) =>
+      key === retentionKey
+        ? t("keys.audit_retention_days.unit", {
+            count: /^\d+$/.test(text) ? Number(text) : 0,
+          })
+        : undefined,
+    /** Why a key's number is refused: the floor of the Activity log, else a whole number from 0. */
+    floor: () => t("keys.audit_retention_days.floor", periods),
     area: (area: string) => {
       const path = `areas.${area}` as "areas.roles";
       return t.has(path) ? t(path) : area;
     },
-    /** A value in a table or a field: `On`, `Unlimited`, `20`, `Not set: closed`. */
-    label: (isFeature: boolean, value: Value) => {
-      if (!value) return t("notSet");
+    /**
+     * A value in a table or a field: `On`, `Unlimited`, `20`, `Not set: closed`. With its key, the Activity log says its days, and no
+     * value keeps every entry (E3).
+     */
+    label: (isFeature: boolean, value: Value, key?: string) => {
+      if (!value)
+        return key === retentionKey
+          ? t("keys.audit_retention_days.notSet")
+          : t("notSet");
       if (isFeature) return value.enabled ? t("on") : t("off");
-      return value.unlimited ? t("unlimited") : String(value.maximum ?? 0);
+      return value.unlimited
+        ? t("unlimited")
+        : numberOf(key, value.maximum ?? 0);
     },
-    /** A value inside a sentence of Activity: `on`, `unlimited`, `20`, `not set`. */
-    inSentence: (isFeature: boolean, value: Value) => {
+    /** A value inside a sentence of Activity: `on`, `unlimited`, `20`, `365 days`, `not set`. */
+    inSentence: (isFeature: boolean, value: Value, key?: string) => {
       if (!value) return t("sentence.notSet");
       if (isFeature)
         return value.enabled ? t("sentence.on") : t("sentence.off");
       return value.unlimited
         ? t("sentence.unlimited")
-        : String(value.maximum ?? 0);
+        : numberOf(key, value.maximum ?? 0);
     },
     /** What turning a feature off on a plan leaves (4.15), for a key that has its own text. */
     turnsOff: (key: string, count: number, plan: string) => {

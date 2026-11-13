@@ -14,7 +14,7 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useEntitlementText } from "@/shared/entitlements";
+import { retentionKey, useEntitlementText } from "@/shared/entitlements";
 import { isolated } from "@/shared/isolated";
 import { afterRefusal, refreshOrganisation } from "./organisation";
 
@@ -49,6 +49,29 @@ export function RemoveOverrideDialog({
     onError: (error) => afterRefusal(queryClient, organisation.id, error),
   });
 
+  // The Activity log goes back to the plan's period; when that is shorter than the value that applies, older entries go (4.17).
+  const planDays = row.planValue?.maximum ?? null;
+  const shortens =
+    planDays !== null &&
+    (row.effective.unlimited || (row.effective.maximum ?? 0) > planDays);
+  const description = (() => {
+    const value = text.label(row.isFeature, row.planValue, row.key);
+    const values = {
+      name: organisation.name,
+      plan: plan.plan.name,
+      value,
+      ...isolated,
+    };
+    if (row.key !== retentionKey)
+      return t.rich("removeText", { ...values, count: row.count });
+    if (!shortens) return t.rich("removeRetentionKeeps", values);
+    return t.rich("removeRetentionText", {
+      ...values,
+      ...text.periods,
+      valueCount: planDays,
+    });
+  })();
+
   const failure = (() => {
     const problem = problemOf(remove.error);
     if (!remove.error) return null;
@@ -70,13 +93,7 @@ export function RemoveOverrideDialog({
       onOpenChange={(open) => !open && onClose()}
       tone="destructive"
       title={t("removeTitle", { key: text.name(row.key) })}
-      description={t.rich("removeText", {
-        name: organisation.name,
-        plan: plan.plan.name,
-        value: text.label(row.isFeature, row.planValue),
-        count: row.count,
-        ...isolated,
-      })}
+      description={description}
       actionLabel={t("removeOverride")}
       cancelLabel={common("cancel")}
       pending={remove.isPending}

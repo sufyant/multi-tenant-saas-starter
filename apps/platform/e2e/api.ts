@@ -435,6 +435,9 @@ export async function mockPlatform(
   language: Language = Language.En,
 ): Promise<void> {
   await mockApi(page, language);
+  await page.route("**/api/v1/platform/audit-log/retention", (route) =>
+    route.fulfill({ json: { days: 365 } }),
+  );
   const details = [...Object.values(organisations), created];
   await page.route("**/api/v1/platform/tenants*", (route) =>
     route.fulfill({

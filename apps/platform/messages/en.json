@@ -410,13 +410,15 @@
     "changeSeparator": "; ",
     "nameKey": "name",
     "description": "Changes to organisations, users, plans and system admins.",
+    "period": "Entries are kept for {days}.",
     "loadingOlder": "Loading older activity…",
     "loadedOlder": "{count, plural, one {# more entry loaded.} other {# more entries loaded.}}"
   },
   "entitlements": {
     "areas": {
       "roles": "Roles",
-      "members": "Members"
+      "members": "Members",
+      "audit": "Activity log"
     },
     "keys": {
       "roles_custom": {
@@ -431,6 +433,15 @@
       "members_max": {
         "name": "Seats",
         "description": "Members plus pending invitations that have not expired."
+      },
+      "audit_retention_days": {
+        "name": "Activity log",
+        "row": "Keeps entries",
+        "description": "Days, {floor} or more. When the period gets shorter, older entries stay {grace}, then go.",
+        "days": "{count, plural, one {# day} other {# days}}",
+        "unit": "{count, plural, one {day} other {days}}",
+        "floor": "Enter {floorDays} or more.",
+        "notSet": "Not set: no time limit"
       }
     },
     "turnsOff": "{key}: off on {plan}.",
@@ -477,6 +488,7 @@
     "notSaved": "Plan not saved",
     "impactTitle": "Save changes to <bdi>{plan}</bdi>?",
     "impactText": "{count, plural, one {This edit puts # organisation over a limit. Nothing is deleted or locked: it can’t add more until it is under it. To keep it as it is, give it an override first.} other {This edit puts # organisations over a limit. Nothing is deleted or locked: they can’t add more until they are under it. To keep one as it is, give it an override first.}}",
+    "retentionText": "{count, plural, one {This edit shortens the Activity log of # organisation from {from, select, none {no time limit} other {{from}}} to {to}. Its entries older than {to} stay {grace}, then go. To keep it as it is, give it an override first.} other {This edit shortens the Activity log of # organisations from {from, select, none {no time limit} other {{from}}} to {to}. Their entries older than {to} stay {grace}, then go. To keep one as it is, give it an override first.}}",
     "organisation": "Organisation",
     "limit": "Limit",
     "now": "Now",
@@ -553,7 +565,14 @@
     "changeTo": "Change to {plan}",
     "limitChange": "{key}: {from} → {to}. <bdi>{name}</bdi> uses {count}.",
     "overrideStaysUntil": "The override on {key} stays until {date}.",
-    "overrideStays": "The override on {key} stays."
+    "overrideStays": "The override on {key} stays.",
+    "retentionHint": "Days, {floor} or more. <plan></plan> gives {value}.",
+    "retentionShorter": "This is shorter than <plan></plan>’s {value}. Entries older than {days} stay {grace}, then go.",
+    "retentionShorterThanNoLimit": "<plan></plan> keeps entries with no time limit. Entries older than {days} stay {grace}, then go.",
+    "retentionExpiry": "On {date} the period goes back to <plan></plan>’s {value}. Then entries older than {value} stay {grace}, then go.",
+    "removeRetentionText": "<bdi>{name}</bdi> goes back to <bdi>{plan}</bdi>’s value: {value}. Its entries older than {value} stay {grace}, then go.",
+    "removeRetentionKeeps": "<bdi>{name}</bdi> goes back to <bdi>{plan}</bdi>’s value: {value}.",
+    "retentionChange": "{key}: {from, select, none {no time limit} other {{from}}} → {to}. Entries older than {to} stay {grace}, then go."
   },
   "viewChoice": {
     "withCount": "{view} · {count}",

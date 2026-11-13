@@ -36,6 +36,7 @@ import {
   plansAnswer,
   plansCommand,
   tenantPlanAnswer,
+  unlimited,
 } from "../../../test/plans";
 import { renderWithProviders, sentence } from "../../../test/render";
 import { PlanSection } from "./plan-section";
@@ -117,7 +118,23 @@ describe("PlanSection", () => {
         .getAllByRole("group")
         .map((group) => group.getAttribute("aria-labelledby"))
         .map((id) => document.getElementById(id ?? "")?.textContent),
-    ).toEqual(["Plan", "Seats", "Custom roles", "Custom roles limit"]);
+    ).toEqual([
+      "Plan",
+      "Seats",
+      "Custom roles",
+      "Custom roles limit",
+      "Activity log",
+    ]);
+  });
+
+  // 4.14: the period in days, with what the plan gives; it counts nothing, so it has no "of".
+  it("Section_ActivityLog_ShowsItsDaysAndWhatThePlanGives", async () => {
+    await renderSection();
+
+    expect(rowOf("Activity log").getByText("365 days")).toBeVisible();
+    expect(
+      rowOf("Activity log").getByText(sentence("Pro gives 365 days.")),
+    ).toBeVisible();
   });
 
   it("Section_LimitedSeats_SaysTheSeatsInTheMembersSentence", async () => {
@@ -658,5 +675,225 @@ describe("PlanSection", () => {
       await dialog.findByText("This plan no longer exists."),
     ).toBeVisible();
     await waitFor(() => expect(plansRequests.length).toBeGreaterThan(0));
+  });
+  /** Opens Add override on the Activity log and types a value, and a day when one is given. */
+  const overrideActivityLog = async (value: string, until?: string) => {
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("combobox", {
+        name: "Feature or limit",
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Activity log" }),
+    );
+    const dialog = within(
+      await screen.findByRole("alertdialog", { name: "Add an override" }),
+    );
+    const field = dialog.getByRole("spinbutton", { name: "Value" });
+    await userEvent.clear(field);
+    await userEvent.type(field, value);
+    if (until) await userEvent.type(dialog.getByLabelText("Until"), until);
+    return dialog;
+  };
+
+  // 4.16: the floor under Value, and a lower value says which entries stay 30 days.
+  it("AddOverride_ActivityLogShorter_SaysTheFloorAndTheHold", async () => {
+    await renderSection();
+
+    const dialog = await overrideActivityLog("60", "2027-01-31");
+
+    expect(
+      dialog.getByText(sentence("Days, 30 or more. Pro gives 365 days.")),
+    ).toBeVisible();
+    expect(
+      dialog.getByText(
+        sentence(
+          "This is shorter than Pro’s 365 days. Entries older than 60 days stay 30 days, then go.",
+        ),
+      ),
+    ).toBeVisible();
+    expect(dialog.queryByText(/goes back/)).toBeNull();
+  });
+
+  // A plan with no limit keeps every entry, so any number is shorter: the sentence names no period of the plan.
+  it("AddOverride_ActivityLogOfAPlanWithNoLimit_SaysThePlanKeepsEveryEntry", async () => {
+    await renderSection(
+      active,
+      burrenPlan({
+        [LimitKey.AuditRetentionDays]: {
+          planValue: unlimited,
+          effective: unlimited,
+        },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("combobox", {
+        name: "Feature or limit",
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Activity log" }),
+    );
+    const dialog = within(await screen.findByRole("alertdialog"));
+    // It starts from the value that applies: unlimited.
+    await userEvent.click(dialog.getByRole("checkbox", { name: "Unlimited" }));
+    await userEvent.type(
+      dialog.getByRole("spinbutton", { name: "Value" }),
+      "60",
+    );
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "Pro keeps entries with no time limit. Entries older than 60 days stay 30 days, then go.",
+        ),
+      ),
+    ).toBeVisible();
+  });
+
+  // 4.49: a longer value until a day shortens the period on that day.
+  it("AddOverride_ActivityLogLongerUntilADay_SaysWhenItGoesBack", async () => {
+    await renderSection();
+
+    const dialog = await overrideActivityLog("730", "2027-01-31");
+
+    expect(
+      dialog.getByText(
+        sentence(
+          "On 31 Jan 2027 the period goes back to Pro’s 365 days. Then entries older than 365 days stay 30 days, then go.",
+        ),
+      ),
+    ).toBeVisible();
+    expect(dialog.queryByText(/is shorter than/)).toBeNull();
+  });
+
+  it("AddOverride_ActivityLogLongerWithNoDay_SaysNoHold", async () => {
+    await renderSection();
+
+    const dialog = await overrideActivityLog("730");
+
+    expect(dialog.queryByText(/stay 30 days/)).toBeNull();
+  });
+
+  it("AddOverride_ActivityLogUnderTheFloor_SendsNothingAndShowsTheFloor", async () => {
+    const calls: Call[] = [];
+    await renderSection();
+    server.use(
+      plansCommand(
+        "put",
+        `tenants/${burren.id}/entitlement-overrides/${LimitKey.AuditRetentionDays}`,
+        [() => HttpResponse.json(burrenPlan())],
+        calls,
+      ),
+    );
+
+    const dialog = await overrideActivityLog("7");
+    await userEvent.type(
+      dialog.getByRole("textbox", { name: "Reason" }),
+      "Data minimisation request",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add override" }));
+
+    expect(await dialog.findByText("Enter 30 days or more.")).toBeVisible();
+    expect(calls).toEqual([]);
+  });
+
+  /** Burren Supply with an override of the Activity log: the value that applies is the override's. */
+  const withRetentionOverride = (days: number) =>
+    burrenPlan({
+      [LimitKey.AuditRetentionDays]: {
+        override: ciaraOverride({ value: max(days), expiresAt: null }),
+        effective: max(days),
+      },
+    });
+
+  // 4.17: removing a longer override shortens the period back to the plan's.
+  it("RemoveOverride_ActivityLogLonger_SaysTheHold", async () => {
+    await renderSection(active, withRetentionOverride(730));
+
+    await removeOverride("Activity log");
+
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Remove the override on Activity log?",
+      }),
+    );
+    expect(
+      dialog.getByText(
+        sentence(
+          "Burren Supply goes back to Pro’s value: 365 days. Its entries older than 365 days stay 30 days, then go.",
+        ),
+      ),
+    ).toBeVisible();
+  });
+
+  it("RemoveOverride_ActivityLogShorter_SaysNoHold", async () => {
+    await renderSection(active, withRetentionOverride(60));
+
+    await removeOverride("Activity log");
+
+    expect(
+      await screen.findByText(
+        sentence("Burren Supply goes back to Pro’s value: 365 days."),
+      ),
+    ).toBeVisible();
+  });
+
+  /** Opens Change plan, chooses Free and waits for its preview. */
+  const previewFree = async (retentionShortened: unknown) => {
+    await renderSection();
+    server.use(
+      plansCommand("post", `tenants/${burren.id}/plan/preview`, [
+        () =>
+          HttpResponse.json({
+            excesses: [],
+            overriddenKeys: [],
+            retentionShortened,
+          }),
+      ]),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Change plan" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await userEvent.click(dialog.getByRole("combobox", { name: "New plan" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Free/ }));
+    return dialog;
+  };
+
+  // 4.15: a move that shortens the period says from and to, and which entries stay 30 days.
+  it("ChangePlan_ShortensTheActivityLog_SaysTheHold", async () => {
+    const dialog = await previewFree({ fromDays: 365, toDays: 90 });
+
+    expect(
+      await dialog.findByText(
+        sentence("From Pro to Free. Here is what changes:"),
+      ),
+    ).toBeVisible();
+    expect(
+      dialog.getByText(
+        "Activity log: 365 → 90 days. Entries older than 90 days stay 30 days, then go.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("ChangePlan_ShortensFromNoLimit_SaysNoTimeLimit", async () => {
+    const dialog = await previewFree({ fromDays: null, toDays: 90 });
+
+    expect(
+      await dialog.findByText(
+        "Activity log: no time limit → 90 days. Entries older than 90 days stay 30 days, then go.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("ChangePlan_NoShortening_SaysNothingOfTheActivityLog", async () => {
+    const dialog = await previewFree(null);
+
+    expect(
+      await dialog.findByText(sentence("From Pro to Free.")),
+    ).toBeVisible();
+    expect(dialog.queryByText(/Activity log/)).toBeNull();
   });
 });

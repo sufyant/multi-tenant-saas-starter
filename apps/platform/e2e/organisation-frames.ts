@@ -191,9 +191,27 @@ const key = (
   count,
 });
 
-/** The organisation's plan: Team gives 15 seats and 5 custom roles, Free 3 seats, Business no limit (4.14, 4.15). */
+/**
+ * Northwind's override of the Activity log, which 4.17 removes: 730 days until 31 Jan 2027. 4.14 draws the period with no
+ * override.
+ */
+const longerRetention: TenantEntitlementResponse["override"] = {
+  value: value({ maximum: 730 }),
+  expiresAt: "2027-01-31T00:00:00Z",
+  state: EntitlementOverrideResponseState.Active,
+  reason: "Legal review",
+  setById: "0198f0a2-0000-7000-8000-00000000b0d1",
+  setBy: deniz,
+  setAt: "2026-10-28T10:20:00Z",
+};
+
+/**
+ * The organisation's plan: Team gives 15 seats, 5 custom roles and an Activity log of 365 days, Free 3 seats and 90 days, Business
+ * no limit of seats and 365 days (4.14, 4.15).
+ */
 const planOf = (
   organisation: (typeof frameOrganisations)[keyof typeof frameOrganisations],
+  retentionOverride: boolean,
 ): TenantPlanResponse => {
   const seats = organisation.memberCount + organisation.pendingInvitationCount;
   const team = organisation.plan.id === planNames.team.id;
@@ -232,6 +250,15 @@ const planOf = (
           free ? { maximum: 3 } : team ? { maximum: 15 } : { unlimited: true },
         ),
         seats,
+      ),
+      key(
+        LimitKey.AuditRetentionDays,
+        false,
+        value({ maximum: free ? 90 : 365 }),
+        0,
+        retentionOverride && organisation.id === frameNorthwind.id
+          ? longerRetention
+          : null,
       ),
     ],
   };
@@ -293,13 +320,15 @@ const northwindLog: AuditEntryResponse[] = [
 
 /**
  * ListTenants, GetTenant, GetTenantPlan and the organisation's entries answer the frames' organisations; a command goes on to the
- * shot's own route. `items` gives the list another set of organisations, such as none for 4.06.
+ * shot's own route. `items` gives the list another set of organisations, such as none for 4.06; `retentionOverride` gives
+ * Northwind the override of the Activity log that 4.17 removes.
  */
 export async function mockFrameOrganisations(
   page: Page,
   items: TenantListItemResponse[] = Object.values(frameOrganisations).map(
     listItemOf,
   ),
+  { retentionOverride = false }: { retentionOverride?: boolean } = {},
 ): Promise<void> {
   const all = Object.values(frameOrganisations);
   await page.route("**/api/v1/platform/tenants*", (route) =>
@@ -321,7 +350,9 @@ export async function mockFrameOrganisations(
     if (route.request().method() !== "GET") return route.fallback();
     const id = new URL(route.request().url()).pathname.split("/").at(-2);
     const found = all.find((organisation) => organisation.id === id);
-    return found ? route.fulfill({ json: planOf(found) }) : route.fallback();
+    return found
+      ? route.fulfill({ json: planOf(found, retentionOverride) })
+      : route.fallback();
   });
   await page.route("**/api/v1/platform/plans*", (route) =>
     route.request().method() === "GET"
@@ -354,7 +385,7 @@ export async function mockFrameOrganisations(
   );
 }
 
-/** The preview of a change to Free (4.15): the seats go over, custom roles turn off, the override stays. */
+/** The preview of a change to Free (4.15): the seats go over, custom roles turn off, the override stays, the Activity log gets shorter. */
 export const freePreview = {
   excesses: [
     {
@@ -371,6 +402,7 @@ export const freePreview = {
     },
   ],
   overriddenKeys: [LimitKey.RolesCustomMax],
+  retentionShortened: { fromDays: 365, toDays: 90 },
 };
 
 export const freePlanId = planNames.free.id;
