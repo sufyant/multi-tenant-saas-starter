@@ -21,6 +21,7 @@ import {
   describe,
   expect,
   it,
+  type Mock,
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../../test/render";
@@ -34,6 +35,8 @@ const clerk = vi.hoisted(() => ({
   signOut: (() => {}) as unknown,
   signUp: {} as unknown,
 }));
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
 const push = vi.hoisted(() => ({
   fn: (() => {}) as unknown,
   replace: (() => {}) as unknown,
@@ -43,7 +46,12 @@ vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
     user: { primaryEmailAddress: { emailAddress: "ali@northwind.io" } },
   }),
-  useClerk: () => ({ signOut: clerk.signOut }),
+  useClerk: () => ({
+    signOut: clerk.signOut,
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: { getToken },
+  }),
   useSignUp: () => ({ signUp: clerk.signUp }),
   useSignIn: () => ({
     signIn: { status: "needs_identifier" },
@@ -149,6 +157,7 @@ describe("AcceptInvitationPage", () => {
     );
 
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
+    expect(getToken).toHaveBeenCalledBefore(push.fn as Mock);
     expect(accepted).toHaveBeenCalledWith({ code });
   });
 
@@ -184,6 +193,7 @@ describe("AcceptInvitationPage", () => {
     );
 
     await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
+    expect(getToken).toHaveBeenCalledBefore(push.fn as Mock);
     expect(accepted).toHaveBeenCalledWith({
       code,
       name: "Ali Kaya",

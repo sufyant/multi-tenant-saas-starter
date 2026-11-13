@@ -23,6 +23,7 @@ import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
 import { useOrganisationAddress } from "@repo/ui/lib/organisation-address";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -64,7 +65,7 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
   const all = useTranslations();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const me = useQuery(getGetMeQueryOptions());
   const plans = useQuery(getListPlansQueryOptions(plansQuery));
   const defaultPlan = plans.data?.items.find((plan) => plan.isDefault);
@@ -161,7 +162,7 @@ export function CreateOrganisationDialog({ onClose }: { onClose: () => void }) {
               title: t.rich("created", { name: created.name, ...isolated }),
               description: t("createdText", { email: body.ownerEmail }),
             });
-            if (location) router.push(pageOf(location));
+            if (location) void router.push(pageOf(location));
           },
         },
       ),

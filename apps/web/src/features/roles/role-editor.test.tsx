@@ -32,6 +32,16 @@ import { RolePage } from "./role-page";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: { getToken },
+  }),
+}));
+afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -275,6 +285,7 @@ describe("CreateRole", () => {
       },
     ]);
     expect(push).toHaveBeenCalledWith(list);
+    expect(getToken).toHaveBeenCalledBefore(push);
   });
 
   it.each([
@@ -579,6 +590,7 @@ describe("NewRolePage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create role" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith(list));
+    expect(getToken).toHaveBeenCalledBefore(push);
   });
 });
 
@@ -700,6 +712,7 @@ describe("UpdateRole", () => {
       await screen.findByText("This role no longer exists."),
     ).toBeInTheDocument();
     expect(push).toHaveBeenCalledWith(list);
+    expect(getToken).toHaveBeenCalledBefore(push);
   });
 
   it("UpdateRole_RefusedNotPermitted_Toasts", async () => {
@@ -740,6 +753,7 @@ describe("Editor pages", () => {
 
     expect(await screen.findByText("Role deleted")).toBeInTheDocument();
     expect(push).toHaveBeenCalledWith(list);
+    expect(getToken).toHaveBeenCalledBefore(push);
     expect(
       screen.queryByRole("alertdialog", {
         name: "Discard changes to Reviewer?",

@@ -35,6 +35,16 @@ import { OrganisationsPage } from "./organisations-page";
 
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: { getToken },
+  }),
+}));
+afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -125,6 +135,7 @@ describe("CreateOrganisationDialog", () => {
       screen.getByText("niamh@liffeydesign.example was invited as Owner."),
     ).toBeVisible();
     expect(router.push).toHaveBeenCalledWith(`/organisations/${newId}`);
+    expect(getToken).toHaveBeenCalledBefore(router.push);
     expect(calls.map((call) => call.body)).toEqual([
       {
         name: "Liffey Design",

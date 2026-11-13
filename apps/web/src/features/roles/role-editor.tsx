@@ -18,6 +18,7 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -59,7 +60,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
   const t = useTranslations();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const can = useCan();
   const { tenant, detail } = useTenant();
   const roles = useTenantRoles();
@@ -150,7 +151,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
           description: t("roles.goneText"),
           tone: "info",
         });
-        router.push(list);
+        void router.push(list);
       }
     },
   });
@@ -220,7 +221,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
               title: t("roles.created"),
               description: t("roles.createdText", { name: saved.name }),
             });
-            router.push(list);
+            void router.push(list);
           },
         },
       ),
@@ -303,7 +304,7 @@ export function RoleEditor({ role }: { role?: RoleDetailResponse }) {
           onDeleted={() => {
             setDone(true);
             guard.release();
-            router.push(list);
+            void router.push(list);
           }}
         />
       )}

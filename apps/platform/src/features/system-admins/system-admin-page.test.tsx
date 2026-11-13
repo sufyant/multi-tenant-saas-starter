@@ -27,7 +27,17 @@ import { SystemAdminPage } from "./system-admin-page";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
-vi.mock("@clerk/nextjs", () => ({ useSession: () => ({ session: null }) }));
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
+vi.mock("@clerk/nextjs", () => ({
+  useSession: () => ({ session: null }),
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: { getToken },
+  }),
+}));
+afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -143,6 +153,7 @@ describe("SystemAdminPage", () => {
     await waitFor(() =>
       expect(router.push).toHaveBeenCalledWith("/settings/system-admins"),
     );
+    expect(getToken).toHaveBeenCalledBefore(router.push);
   });
 
   it("SystemAdminPage_OwnPage_DisablesRemoveWithTheReason", async () => {

@@ -10,6 +10,7 @@ import {
 } from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { Skeleton } from "@repo/ui/components/skeleton";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -55,7 +56,7 @@ function Detail({ user }: { user: UserDetailResponse }) {
   const t = useTranslations();
   const { date } = useDates();
   const me = useQuery(getGetMeQueryOptions());
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const [removing, setRemoving] = useState(false);
   const reasonId = useId();
   const name = userNameOf(user, t("users.deletedUser"));
@@ -131,7 +132,7 @@ function Detail({ user }: { user: UserDetailResponse }) {
         <RemoveDialog
           user={user}
           onClose={() => setRemoving(false)}
-          onRemoved={() => router.push(systemAdminsPage)}
+          onRemoved={() => void router.push(systemAdminsPage)}
         />
       )}
     </section>

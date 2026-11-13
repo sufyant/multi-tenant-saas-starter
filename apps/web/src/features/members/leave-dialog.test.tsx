@@ -26,7 +26,17 @@ import { MembersPage } from "./members-page";
 
 const router = vi.hoisted(() => ({ replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
-vi.mock("@clerk/nextjs", () => ({ useClerk: () => ({ signOut: vi.fn() }) }));
+// clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
+const getToken = vi.hoisted(() => vi.fn(async () => "token"));
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    signOut: vi.fn(),
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: { getToken },
+  }),
+}));
+afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -142,6 +152,7 @@ describe("LeaveDialog", () => {
     ).toBeInTheDocument();
     expect(calls.count).toBe(1);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
+    expect(getToken).toHaveBeenCalledBefore(router.replace);
   });
 
   // 8.46: the web knows the last Owner before the click, from ListMembers filtered by the Owner role.

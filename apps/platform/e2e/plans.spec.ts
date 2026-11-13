@@ -9,6 +9,7 @@ import {
   plans,
 } from "./api";
 import { expectAccessible } from "./axe";
+import { expireTheSession } from "./session-expiry";
 
 // Settings › Plans, the plan editor with its impact preview, and an organisation's Plan section with an override (the Plans
 // boards).
@@ -30,6 +31,41 @@ test("Plans_List_ShowsEachPlanAndTheDefault", async ({ page }) => {
   );
   await expect(page.getByRole("row", { name: /Pro/ })).toContainText("6");
   await expect(page.getByRole("link", { name: "New plan" })).toBeVisible();
+  await expectAccessible(page);
+});
+
+/** CreatePlan answers Pro, so the page of the new plan reads a plan that the mocks know. */
+const answersCreatePlan = (page: Page) =>
+  page.route("**/api/v1/platform/plans", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({
+          status: 201,
+          json: plans.pro,
+          headers: { Location: `/api/v1/platform/plans/${plans.pro.id}` },
+        })
+      : route.fallback(),
+  );
+
+// The toast of a new plan must reach its page also when the session token expired before clerk-js refreshed it (F63, 6.12).
+test("CreatePlan_SessionExpiredOnThePage_ShowsTheToastOnItsPage", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await open(page, "/plans/new");
+  await answersCreatePlan(page);
+  await page.getByRole("textbox", { name: "Name" }).fill("Pro");
+  await page
+    .getByRole("group", { name: "Seats" })
+    .getByRole("spinbutton")
+    .fill("10");
+  await expireTheSession(page, `/plans/${plans.pro.id}`);
+
+  await page.getByRole("button", { name: "Create plan" }).click();
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Pro" }),
+  ).toBeVisible();
+  await expect(page.getByText("Pro created")).toBeVisible();
   await expectAccessible(page);
 });
 
