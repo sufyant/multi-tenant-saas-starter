@@ -35,6 +35,6 @@ public sealed class GetTermsOfUseTests(Database database)
         terms.GetProperty("activeUserCount").GetInt32().ShouldBe(2);
         terms.GetProperty("versions").EnumerateArray()
             .Select(version => $"{version.GetProperty("id").GetGuid()} {version.GetProperty("state").GetString()} {version.GetProperty("acceptedCount").GetInt32()} {version.GetProperty("locked").GetBoolean()}")
-            .ShouldBe([$"{scheduled} scheduled 0 False", $"{dropped} cancelled 0 False", $"{current} current 1 True", $"{replaced} replaced 0 False"]);
+            .ShouldBe([$"{scheduled} scheduled 0 False", $"{dropped} cancelled 0 False", $"{current} in_force 1 True", $"{replaced} replaced 0 False"]);
     }
 }

@@ -1833,15 +1833,16 @@ export interface TermsInForceResponse {
 }
 
 /**
- * Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in
- * force, until a later version takes effect, then replaced; or cancelled before its day.
+ * Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then in force until a
+ * later version takes effect, then replaced; or cancelled before its day. The values are words no other code of the screens uses as a
+ * literal (F3).
  */
 export type TermsVersionResponseState = typeof TermsVersionResponseState[keyof typeof TermsVersionResponseState];
 
 
 export const TermsVersionResponseState = {
   Scheduled: 'scheduled',
-  Current: 'current',
+  InForce: 'in_force',
   Replaced: 'replaced',
   Cancelled: 'cancelled',
 } as const;

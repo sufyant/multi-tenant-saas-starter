@@ -14955,15 +14955,15 @@
       "TermsVersionResponseState": {
         "enum": [
           "scheduled",
-          "current",
+          "in_force",
           "replaced",
           "cancelled"
         ],
         "type": "string",
-        "description": "Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in\nforce, until a later version takes effect, then replaced; or cancelled before its day.",
+        "description": "Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then in force until a\nlater version takes effect, then replaced; or cancelled before its day. The values are words no other code of the screens uses as a\nliteral (F3).",
         "x-enumNames": [
           "Scheduled",
-          "Current",
+          "InForce",
           "Replaced",
           "Cancelled"
         ]

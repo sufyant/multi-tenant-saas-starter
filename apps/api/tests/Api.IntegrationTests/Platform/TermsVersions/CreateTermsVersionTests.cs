@@ -77,7 +77,7 @@ public sealed class CreateTermsVersionTests(Database database)
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await own.Admin.TermsOfUseAsync()).GetProperty("versions").EnumerateArray().Select(version => version.GetProperty("state").GetString())
-            .ShouldBe(["scheduled", "current"]);
+            .ShouldBe(["scheduled", "in_force"]);
     }
 
     // K3: a version belongs to no tenant, so its creation goes to the platform's log only, by the system admin, with its values.
