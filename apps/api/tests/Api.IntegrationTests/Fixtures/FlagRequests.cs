@@ -66,12 +66,14 @@ internal sealed class OwnFlags : IAsyncDisposable
 
     public HttpClient Admin { get; }
 
-    // flags runs before the host starts, so the worker's job at the start sees what it stores.
+    // The template's kill switch, emails.send, is stored as the sync would store it, and flags runs, before the host starts, so the
+    // worker's sync at the start finds the template's flag stored and changes nothing a test reads (G2).
     public static async Task<OwnFlags> CreateAsync(Database database, Func<string, Task>? flags = null)
     {
         var name = await database.CreateMigratedDatabaseAsync();
         var data = new TestData(database, name);
         var adminId = await data.AddSystemAdminAsync();
+        await AddFlagAsync(database, name, "emails.send", type: "KillSwitch", everyoneElse: true);
         if (flags is not null)
         {
             await flags(name);

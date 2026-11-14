@@ -7,7 +7,6 @@ public sealed class SetFeatureFlagEveryoneElseTests(Database database)
     public async Task SetFeatureFlagEveryoneElse_AKillSwitchTurnedOff_RecordsItsOwnOperation()
     {
         await using var own = await OwnFlags.CreateAsync(database);
-        await own.AddFlagAsync("emails.send", type: "KillSwitch", everyoneElse: true);
 
         var flag = await FlagRequests.JsonAsync(await own.Api.WaitingForMessagesAsync(() => own.Admin.SetFeatureFlagEveryoneElseAsync("emails.send", false)));
 

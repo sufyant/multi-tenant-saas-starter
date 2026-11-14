@@ -10,7 +10,6 @@ public sealed class GetTenantFeatureFlagsTests(Database database)
     {
         await using var own = await OwnFlags.CreateAsync(database);
         await own.AddFlagAsync("roles.bulk_edit");
-        await own.AddFlagAsync("emails.send", type: "KillSwitch", everyoneElse: true);
         await own.AddFlagAsync("search.fuzzy");
         await own.AddFlagAsync("exports.old", everyoneElse: true, removed: true);
         var (tenantId, _) = await own.Data.AddTenantAsync();

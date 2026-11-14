@@ -302,7 +302,8 @@ public sealed class HostRoleTests(Database database)
         _ = worker.Services;
 
         await Waiting.UntilAsync(async () =>
-            await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.notifications WHERE type = 'feature_flags.ready_to_remove'", name) == 1);
+            await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.notifications WHERE type = 'feature_flags.ready_to_remove'", name) == 1
+            && runs.In("worker").Any(run => run.Handler == typeof(RecordFeatureFlagAddedToCodeHandler)));
 
         runs.In("web").ShouldBeEmpty();
         runs.WithoutNotificationsIn("worker").Select(run => run.Handler).ShouldBe(

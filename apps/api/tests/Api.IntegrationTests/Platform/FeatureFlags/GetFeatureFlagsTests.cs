@@ -11,7 +11,6 @@ public sealed class GetFeatureFlagsTests(Database database)
         await using var own = await OwnFlags.CreateAsync(database);
         await own.AddFlagAsync("roles.bulk_edit", everyoneElse: true, daysAgo: 40);
         await own.AddFlagAsync("reports.beta", daysAgo: 34);
-        await own.AddFlagAsync("emails.send", type: "KillSwitch", everyoneElse: true, daysAgo: 90);
         await own.AddFlagAsync("search.fuzzy");
         await own.AddFlagAsync("exports.old", removed: true);
 
