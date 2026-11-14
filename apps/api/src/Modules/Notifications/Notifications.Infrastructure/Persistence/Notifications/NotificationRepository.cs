@@ -11,10 +11,13 @@ public sealed class NotificationRepository(NotificationsDbContext notifications)
     Task INotificationRepository.DeclareUserAsync(Guid userId, CancellationToken cancellationToken) =>
         notifications.DeclareRecipientAsync(userId, cancellationToken);
 
-    Task<bool> INotificationRepository.ExistsAsync(Guid notificationId, CancellationToken cancellationToken) =>
-        notifications.Notifications.AnyAsync(notification => notification.Id == notificationId, cancellationToken);
+    async Task<bool> INotificationRepository.ExistsAsync(Guid notificationId, CancellationToken cancellationToken) =>
+        await notifications.Notifications.AnyAsync(notification => notification.Id == notificationId, cancellationToken)
+        || await notifications.EmailDeliveries.AnyAsync(delivery => delivery.Id == notificationId, cancellationToken);
 
     void INotificationRepository.Add(Notification notification) => notifications.Notifications.Add(notification);
+
+    void INotificationRepository.Add(EmailDelivery delivery) => notifications.EmailDeliveries.Add(delivery);
 
     Task<Notification?> INotificationRepository.FindNotificationForUpdateAsync(Guid notificationId, CancellationToken cancellationToken) =>
         notifications.Notifications
@@ -42,8 +45,11 @@ public sealed class NotificationRepository(NotificationsDbContext notifications)
         return marked;
     }
 
-    Task INotificationRepository.DeleteAllAsync(CancellationToken cancellationToken) =>
-        notifications.Notifications.ExecuteDeleteAsync(cancellationToken);
+    async Task INotificationRepository.DeleteAllAsync(CancellationToken cancellationToken)
+    {
+        await notifications.Notifications.ExecuteDeleteAsync(cancellationToken);
+        await notifications.EmailDeliveries.ExecuteDeleteAsync(cancellationToken);
+    }
 
     // U8: the application may only execute the function, which deletes the notifications about the tenant the transaction declares.
     async Task INotificationRepository.PurgeTenantAsync(CancellationToken cancellationToken)

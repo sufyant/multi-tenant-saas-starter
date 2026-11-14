@@ -23,6 +23,29 @@ namespace Notifications.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Notifications.Domain.Notifications.EmailDelivery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("DeliveredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_email_deliveries");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_email_deliveries_user_id");
+
+                    b.ToTable("email_deliveries", "notifications");
+                });
+
             modelBuilder.Entity("Notifications.Domain.Notifications.Notification", b =>
                 {
                     b.Property<Guid>("Id")

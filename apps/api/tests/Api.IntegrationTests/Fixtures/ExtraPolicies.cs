@@ -15,6 +15,7 @@ internal static class ExtraPolicies
         ("control_plane.roles", "own_roles", "SELECT"),
         ("control_plane.stored_files", "own_files", "ALL"),
         ("control_plane.verification_codes", "own_verification_codes", "ALL"),
+        ("notifications.email_deliveries", "own_email_deliveries", "ALL"),
         ("notifications.notifications", "own_notifications", "ALL"),
         ("notifications.notifications", "owner_delete", "DELETE"),
         ("notifications.notifications", "owner_read", "SELECT"),

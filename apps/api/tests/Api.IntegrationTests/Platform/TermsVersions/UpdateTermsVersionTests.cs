@@ -8,6 +8,10 @@ namespace Api.IntegrationTests.Platform.TermsVersions;
 // requires acceptance lock; its day and summary still change (the maintainer's decision of 2026-11-14).
 public sealed class UpdateTermsVersionTests(Database database)
 {
+    private const string AcceptAtSignIn = "You accept them the next time you sign in.";
+
+    private const string NothingToDo = "You do not need to do anything.";
+
     private const string NewLink = "https://brand.example/terms/2026-v2";
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -98,5 +102,44 @@ public sealed class UpdateTermsVersionTests(Database database)
         var updated = await own.Admin.UpdateTermsVersionAsync(Guid.NewGuid(), TermsRequests.Today.AddDays(5));
 
         (updated.StatusCode, await TermsRequests.CodeOfAsync(updated)).ShouldBe((HttpStatusCode.NotFound, "terms_version.not_found"));
+    }
+
+    // The edit that turns the email on sends one email, with the values after the edit.
+    [Fact]
+    public async Task UpdateTermsVersion_TheEmailTurnedOn_EmailsTheValuesAfterTheEdit()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        await own.AddTenantUserAsync(tenantId);
+        var versionId = await own.Api.WaitingForMessagesAsync(() =>
+            own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10), summary: "Before the edit.", requiresAcceptance: false, sendsEmail: false));
+
+        await own.Api.WaitingForMessagesAsync(() => own.Admin.UpdateTermsVersionAsync(
+            versionId, new DateOnly(2027, 3, 15), "https://brand.example/terms/2027", "After the edit.", requiresAcceptance: true));
+
+        var email = own.Api.Email.Sent.ShouldHaveSingleItem();
+        email.Text.ShouldContain("15 Mar 2027");
+        email.Text.ShouldContain("After the edit.");
+        email.Text.ShouldContain("https://brand.example/terms/2027");
+        email.Text.ShouldContain(AcceptAtSignIn);
+        email.Text.ShouldNotContain("Before the edit.");
+    }
+
+    // An edit that leaves the email off sends nothing, and so does an edit after the email went.
+    [Fact]
+    public async Task UpdateTermsVersion_ChangingNothingOfTheEmail_EmailsNobody()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        await own.AddTenantUserAsync(tenantId);
+        var silent = await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10), sendsEmail: false));
+
+        await own.Api.WaitingForMessagesAsync(() => own.Admin.UpdateTermsVersionAsync(silent, TermsRequests.Today.AddDays(12), summary: "Still silent.", sendsEmail: false));
+        var stillSilent = own.Api.Email.Sent.Count;
+        (await own.Admin.CancelTermsVersionAsync(silent)).EnsureSuccessStatusCode();
+        var told = await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10)));
+        await own.Api.WaitingForMessagesAsync(() => own.Admin.UpdateTermsVersionAsync(told, TermsRequests.Today.AddDays(12), summary: "A later summary."));
+
+        (stillSilent, own.Api.Email.Sent.Count).ShouldBe((0, 1));
     }
 }

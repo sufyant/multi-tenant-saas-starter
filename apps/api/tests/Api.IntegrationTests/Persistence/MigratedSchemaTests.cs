@@ -38,6 +38,7 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.stored_files: forced
             control_plane.tenant_purge_sagas: forced
             control_plane.verification_codes: forced
+            notifications.email_deliveries: forced
             notifications.notifications: forced
             """);
     }
@@ -76,6 +77,7 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.stored_files own_files: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             control_plane.tenant_purge_sagas tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.verification_codes own_verification_codes: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
+            notifications.email_deliveries own_email_deliveries: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications own_notifications: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             notifications.notifications owner_delete: PERMISSIVE DELETE {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
             notifications.notifications owner_read: PERMISSIVE SELECT {api_owner} USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) OR (created_at < (now() - '1 day'::interval))) WITH CHECK -
@@ -160,6 +162,7 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.users: DELETE, INSERT, SELECT, UPDATE
             table control_plane.verification_codes: DELETE, INSERT, SELECT, UPDATE
             table notifications.__ef_migrations_history: SELECT
+            table notifications.email_deliveries: DELETE, INSERT, SELECT, UPDATE
             table notifications.notifications: DELETE, INSERT, SELECT, UPDATE
             """);
     }

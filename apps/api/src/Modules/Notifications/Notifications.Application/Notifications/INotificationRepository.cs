@@ -11,9 +11,12 @@ public interface INotificationRepository
     /// <summary>Declares the user whose notifications the rest of the transaction reads and writes.</summary>
     internal Task DeclareUserAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>Whether a delivery of this id was made: its notification, or the record of a delivery by email only.</summary>
     internal Task<bool> ExistsAsync(Guid notificationId, CancellationToken cancellationToken);
 
     internal void Add(Notification notification);
+
+    internal void Add(EmailDelivery delivery);
 
     /// <summary>The notification, locked for the change (K6a).</summary>
     internal Task<Notification?> FindNotificationForUpdateAsync(Guid notificationId, CancellationToken cancellationToken);
@@ -21,7 +24,7 @@ public interface INotificationRepository
     /// <summary>Marks every unread notification of the bell read, and answers how many it marked.</summary>
     internal Task<int> MarkAllReadAsync(Inbox inbox, DateTimeOffset now, CancellationToken cancellationToken);
 
-    /// <summary>Deletes every notification of the declared user, for the user's deletion.</summary>
+    /// <summary>Deletes every notification and every delivery record of the declared user, for the user's deletion.</summary>
     internal Task DeleteAllAsync(CancellationToken cancellationToken);
 
     /// <summary>Deletes every notification about the declared tenant, in every recipient's list, for the tenant's purge (U8).</summary>
