@@ -21,6 +21,15 @@ describe("notificationHref", () => {
     ).toBe(`/organisations/${tenantId}`);
   });
 
+  it("NotificationHref_PlatformFeatureFlags_LeadsToFeatureFlags", () => {
+    expect(
+      notificationHref({
+        kind: NotificationLinkResponseKind.PlatformFeatureFlags,
+        tenantId: null,
+      }),
+    ).toBe("/settings/feature-flags");
+  });
+
   it("NotificationHref_AKindThePlatformDoesNotKnow_LeadsToTheStartPageAndIsReportedOnce", () => {
     const unknown = {
       kind: "platform_billing",

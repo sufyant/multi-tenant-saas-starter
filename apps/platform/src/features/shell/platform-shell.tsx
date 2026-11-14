@@ -26,6 +26,7 @@ import {
   BuildingIcon,
   CreditCardIcon,
   FileTextIcon,
+  FlagIcon,
   LockIcon,
   SettingsIcon,
   ShieldCheckIcon,
@@ -39,6 +40,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
+import { featureFlagsPage } from "@/shared/feature-flags";
 import { LocaleSync } from "@/shared/locale-sync";
 import { userNameOf } from "@/shared/name-of";
 import { NoAccess } from "@/shared/no-access";
@@ -59,6 +61,12 @@ const userIdOf = (pathname: string) =>
 /** The version of a terms version's page, `/settings/terms/<id>` or its edit, or null on any other page; New version is `new`. */
 const termsVersionIdOf = (pathname: string) =>
   /^\/settings\/terms\/([^/]+)/.exec(pathname)?.[1] ?? null;
+
+/** The key of a flag's page, `/settings/feature-flags/<key>`, or null on any other page. */
+const flagKeyOf = (pathname: string) => {
+  const key = /^\/settings\/feature-flags\/([^/]+)/.exec(pathname)?.[1];
+  return key ? decodeURIComponent(key) : null;
+};
 
 /** The plan of a plan's page, `/plans/<id>`, or null on any other page; New plan is `new`. */
 const planIdOf = (pathname: string) =>
@@ -145,6 +153,7 @@ export function PlatformShell({
     }),
   );
   const day = useDay();
+  const flagKey = flagKeyOf(pathname);
   const unread = useQuery({
     ...platformBell().count,
     enabled: me.data?.isSystemAdmin === true,
@@ -209,6 +218,12 @@ export function PlatformShell({
       icon: FileTextIcon,
       href: termsPage,
     },
+    {
+      id: "feature-flags",
+      label: t("shell.featureFlags"),
+      icon: FlagIcon,
+      href: featureFlagsPage,
+    },
   ];
   // Profile and Account and security sit under `/settings` (decision 69) but belong to the account menu, not to Settings (F59).
   const inSettings =
@@ -245,12 +260,14 @@ export function PlatformShell({
           ? planId === "new"
             ? t("plans.createTitle")
             : plan.data?.name
-          : current === "terms" && termsVersionId
-            ? termsVersionId === "new"
-              ? t("terms.newTitle")
-              : termsVersion.data &&
-                day(termsVersion.data.version.effectiveDate)
-            : undefined;
+          : current === "feature-flags" && flagKey
+            ? flagKey
+            : current === "terms" && termsVersionId
+              ? termsVersionId === "new"
+                ? t("terms.newTitle")
+                : termsVersion.data &&
+                  day(termsVersion.data.version.effectiveDate)
+              : undefined;
   // A page of one record starts at its section (5.05, 6.04, 10.15): "Plans › Team". A section's page starts at the platform.
   const crumbs = detail
     ? [{ label: pageName, href: item?.href }, { label: detail }]

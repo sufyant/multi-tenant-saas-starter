@@ -14,7 +14,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 37c | Audit retention | done |
 | 37d | Dependent limits | done |
 | 38 | Terms of use | done |
-| 39 | Feature flags | in progress |
+| 39 | Feature flags | done |
 | 40 | Billing | todo |
 | 41 | Extension points | todo |
 | 42 | Observability | todo |
@@ -494,7 +494,7 @@ Not this step: 1.27 (Create an account · accept the terms) is 40d's. It uses 38
 
 ## 7. Step 39: Feature flags
 
-Status: in progress.
+Status: done.
 
 - We build them in-house.
 - The code defines each flag with its type and a default. The types are release and kill switch.
@@ -557,7 +557,8 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 - In the web, one hook that reads the organisation's flags, so a product's screen asks `useFeatureFlag("roles.bulk_edit")`. No screen of the template uses it yet; a test does. The keys are `FeatureFlagKeys` of `@repo/api-client`; the template's one flag is `emails.send`.
 - It waits for 39-design and 39-backend.
 - It runs in two pull requests: 39-frontend-1, the decisions of 2026-11-14 and the web's hook; then 39-frontend-2, Settings › Feature flags with its rows, 4.09 and the bell.
-- As built in 39-frontend-1: the platform's Settings holds System admins and Terms of use, and the main menu's Settings opens System admins; Feature flags joins it with its page in 39-frontend-2. Profile and Account and security keep `/settings/profile` and `/settings/account` and show in the main menu's shell, with no row current (F59). The command menu groups Go to, My account and Settings; its Actions (Create organisation, Open the web app) stay an open item of `docs/frontend/ARCHITECTURE.md`, section 10. The user's page shows the two terms rows; a version in force that requires no acceptance says "From {date} · no acceptance needed", as nobody accepts it (the coordinator's choice of 2026-11-14 inside the maintainer's decision; added to "Note · 39 copy"). The web's `useFeatureFlag` is F65. Done.
+- As built in 39-frontend-1: the platform's Settings holds System admins and Terms of use, and the main menu's Settings opens System admins; Feature flags joins it with its page in 39-frontend-2. Profile and Account and security keep `/settings/profile` and `/settings/account` and show in the main menu's shell, with no row current (F59). The command menu groups Go to, My account and Settings; its Actions (Create organisation, Open the web app) stay an open item of `docs/frontend/ARCHITECTURE.md`, section 10. The user's page shows the two terms rows; a version in force that requires no acceptance says "From {date} · no acceptance needed", as nobody accepts it (the coordinator's choice of 2026-11-14 inside the maintainer's decision; added to "Note · 39 copy"). The web's `useFeatureFlag` is F65. Done (#294).
+- As built in 39-frontend-2: Settings › Feature flags (12.01 to 12.33) at `/settings/feature-flags`, with its tabs in the URL, and a flag's page at `/settings/feature-flags/<key>`; the crumbs of a flag's page are "Feature flags › <key>" (F59). Each rule changes on its own on the phone too: the phone shows the desktop's rules card, stacked, and a percentage opens the phone's full-screen form (the Dialogs on a phone pattern), so 12.20 to 12.23 now draw that card and 12.21 the form. The percentage is any whole number from 0 to 100, chosen in a searchable list. Add organisation lists the first 100 organisations by name (`ListTenants`), without the ones already listed. 4.09's card shows under the Overview; the bell's `platform_feature_flags` opens Settings › Feature flags; the platform's Activity log says the seven sentences of 7.10. Done.
 
 ## 8. Step 40: Billing
 
@@ -689,7 +690,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 39, in the parts of section 7. 39-start and 39-design are done; 39-backend runs now, and 39-frontend waits for both. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
+3. Step 39, in the parts of section 7. 39-start, 39-design, 39-backend and 39-frontend are done. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).

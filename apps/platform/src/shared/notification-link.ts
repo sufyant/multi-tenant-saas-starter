@@ -3,13 +3,14 @@ import {
   NotificationLinkResponseKind,
 } from "@repo/api-client";
 import { reportError } from "@/error-tracking/report-error";
+import { featureFlagsPage } from "./feature-flags";
 
 const start = "/";
 const reported = new Set<string>();
 
 /**
  * Where a notification leads on the platform (`apps/api/docs/flows/notifications.md`, section 3): `platform_tenant` opens the
- * organisation's page. A kind the platform does not know goes to the start page, and is reported once (F55).
+ * organisation's page, `platform_feature_flags` Settings › Feature flags (3.07). A kind the platform does not know goes to the start page, and is reported once (F55).
  */
 export function notificationHref(link: NotificationLinkResponse): string {
   if (
@@ -17,6 +18,8 @@ export function notificationHref(link: NotificationLinkResponse): string {
     link.tenantId
   )
     return `/organisations/${link.tenantId}`;
+  if (link.kind === NotificationLinkResponseKind.PlatformFeatureFlags)
+    return featureFlagsPage;
   if (!reported.has(link.kind)) {
     reported.add(link.kind);
     reportError(

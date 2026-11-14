@@ -11,6 +11,7 @@ import {
   EntitlementOverrideResponseState,
   type EntitlementValueResponse,
   ErrorCode,
+  FeatureFlagResponseType,
   FeatureKey,
   InvitationResponseState,
   Language,
@@ -24,6 +25,8 @@ import {
   type RenameMeRequest,
   type RoleResponse,
   type TenantDetailResponse,
+  type TenantFeatureFlagResponse,
+  TenantFeatureFlagResponseReason,
   type TenantListItemResponse,
   type TenantPlanResponse,
   TenantResponseStatus,
@@ -432,6 +435,40 @@ export const tenantsPage = (
 };
 
 /** What the platform's pages read: GetMe, the organisations, the users and the platform's log. */
+/** The flags on for Northwind Traders (4.09). */
+export const northwindFlags: TenantFeatureFlagResponse[] = [
+  {
+    key: "members.new_table",
+    type: FeatureFlagResponseType.Release,
+    reason: TenantFeatureFlagResponseReason.Listed,
+    percentage: 0,
+  },
+  {
+    key: "roles.bulk_edit",
+    type: FeatureFlagResponseType.Release,
+    reason: TenantFeatureFlagResponseReason.Listed,
+    percentage: 10,
+  },
+  {
+    key: "activity.export_v2",
+    type: FeatureFlagResponseType.Release,
+    reason: TenantFeatureFlagResponseReason.Everyone,
+    percentage: 0,
+  },
+  {
+    key: "users.search_v2",
+    type: FeatureFlagResponseType.Release,
+    reason: TenantFeatureFlagResponseReason.Everyone,
+    percentage: 0,
+  },
+  {
+    key: "emails.send",
+    type: FeatureFlagResponseType.KillSwitch,
+    reason: TenantFeatureFlagResponseReason.Everyone,
+    percentage: 0,
+  },
+];
+
 export async function mockPlatform(
   page: Page,
   language: Language = Language.En,
@@ -448,6 +485,10 @@ export async function mockPlatform(
         new URL(route.request().url()).searchParams,
       ),
     }),
+  );
+  // The flags on for an organisation (4.09): the frame's five for every organisation.
+  await page.route("**/api/v1/platform/tenants/*/feature-flags", (route) =>
+    route.fulfill({ json: northwindFlags }),
   );
   await page.route("**/api/v1/platform/tenants/*", (route) => {
     const id = new URL(route.request().url()).pathname.split("/").at(-1);

@@ -269,6 +269,7 @@ describe("PlatformShell", () => {
       "Back to the platform",
       "System admins",
       "Terms of use",
+      "Feature flags",
     ]);
   });
 
@@ -343,6 +344,30 @@ describe("PlatformShell", () => {
       dialog.getByRole("option", { name: "System admins" }),
     ).toBeInTheDocument();
     expect(dialog.getByRole("option", { name: "Profile" })).toBeInTheDocument();
+    expect(
+      dialog.getByRole("option", { name: "Feature flags" }),
+    ).toBeInTheDocument();
+  });
+
+  // A flag's page names its section and the flag (F59): "Feature flags › roles.bulk_edit".
+  it("PlatformShell_FlagPage_NamesTheFlagAfterFeatureFlags", async () => {
+    navigation.pathname = "/settings/feature-flags/roles.bulk_edit";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(crumbs.getByRole("link", { name: "Feature flags" })).toHaveAttribute(
+      "href",
+      "/settings/feature-flags",
+    );
+    expect(crumbs.getByText("roles.bulk_edit")).toBeInTheDocument();
   });
 
   // The platform's own item of the account menu (2.03): the web app of WEB_APP_URL, which the server layout gives the shell.

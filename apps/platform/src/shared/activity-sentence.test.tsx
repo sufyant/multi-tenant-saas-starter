@@ -6,6 +6,11 @@ import {
   type AuditTargetResponse,
   AuditTargetResponseKind,
   type AuditTermsVersionResponse,
+  FeatureFlagAddedToCodeDetailsResponseOperation,
+  FeatureFlagPercentageSetDetailsResponseOperation,
+  FeatureFlagRemovedFromCodeDetailsResponseOperation,
+  FeatureFlagTenantListedDetailsResponseOperation,
+  FeatureFlagTenantUnlistedDetailsResponseOperation,
   FeatureKey,
   LimitKey,
   PlanCreatedDetailsResponseOperation,
@@ -91,7 +96,23 @@ const platformOperations = [
   AuditOperation.TermsVersionCreated,
   AuditOperation.TermsVersionUpdated,
   AuditOperation.TermsVersionCancelled,
+  AuditOperation.FeatureFlagAddedToCode,
+  AuditOperation.FeatureFlagRemovedFromCode,
+  AuditOperation.FeatureFlagTenantListed,
+  AuditOperation.FeatureFlagTenantUnlisted,
+  AuditOperation.FeatureFlagPercentageSet,
+  AuditOperation.FeatureFlagEveryoneElseOn,
+  AuditOperation.FeatureFlagEveryoneElseOff,
 ];
+
+/** A flag as the target of an entry: its id, and its key as its name (step 39). */
+const flagTarget = (key: string): AuditTargetResponse => ({
+  kind: AuditTargetResponseKind.FeatureFlag,
+  id: "0198f0a2-0000-7000-8000-0000000000a9",
+  name: key,
+  deleted: null,
+  email: null,
+});
 
 /** The sentence of the operation in a message file, found by its path: `activity.operations.tenant.created`. */
 const sentenceIn = (language: keyof typeof messages, operation: string) =>
@@ -356,6 +377,87 @@ const cases: Case[] = [
     null,
     "Ciara Byrne suspended the user Deleted user.",
   ],
+  // The seven sentences of the flags (7.10).
+  [
+    "FeatureFlagEveryoneElseOn",
+    AuditOperation.FeatureFlagEveryoneElseOn,
+    ciara,
+    flagTarget("emails.send"),
+    null,
+    "Ciara Byrne turned emails.send on for everyone.",
+  ],
+  [
+    "FeatureFlagEveryoneElseOff",
+    AuditOperation.FeatureFlagEveryoneElseOff,
+    ciara,
+    flagTarget("emails.send"),
+    null,
+    "Ciara Byrne turned emails.send off for everyone.",
+  ],
+  [
+    "FeatureFlagPercentageSet",
+    AuditOperation.FeatureFlagPercentageSet,
+    ciara,
+    flagTarget("roles.bulk_edit"),
+    {
+      operation:
+        FeatureFlagPercentageSetDetailsResponseOperation.FeatureFlagPercentageSet,
+      from: 10,
+      to: 50,
+    },
+    "Ciara Byrne set the percentage of roles.bulk_edit to 50% (before: 10%).",
+  ],
+  [
+    "FeatureFlagTenantListed",
+    AuditOperation.FeatureFlagTenantListed,
+    ciara,
+    flagTarget("roles.bulk_edit"),
+    {
+      operation:
+        FeatureFlagTenantListedDetailsResponseOperation.FeatureFlagTenantListed,
+      tenantId: northwind.id,
+      tenantName: "Northwind Traders",
+    },
+    "Ciara Byrne added Northwind Traders to the list of roles.bulk_edit.",
+  ],
+  [
+    "FeatureFlagTenantUnlisted",
+    AuditOperation.FeatureFlagTenantUnlisted,
+    ciara,
+    flagTarget("members.new_table"),
+    {
+      operation:
+        FeatureFlagTenantUnlistedDetailsResponseOperation.FeatureFlagTenantUnlisted,
+      tenantId: northwind.id,
+      tenantName: "Blue Harbour",
+    },
+    "Ciara Byrne removed Blue Harbour from the list of members.new_table.",
+  ],
+  [
+    "FeatureFlagAddedToCode",
+    AuditOperation.FeatureFlagAddedToCode,
+    thePlatform,
+    flagTarget("roles.bulk_edit"),
+    {
+      operation:
+        FeatureFlagAddedToCodeDetailsResponseOperation.FeatureFlagAddedToCode,
+      revision: "3f9e21c",
+      defaultValue: false,
+    },
+    "roles.bulk_edit was added to code in 3f9e21c. Its default value is off.",
+  ],
+  [
+    "FeatureFlagRemovedFromCode",
+    AuditOperation.FeatureFlagRemovedFromCode,
+    thePlatform,
+    flagTarget("invitations.csv_import"),
+    {
+      operation:
+        FeatureFlagRemovedFromCodeDetailsResponseOperation.FeatureFlagRemovedFromCode,
+      revision: "7c41d09",
+    },
+    "invitations.csv_import was removed from code in 7c41d09.",
+  ],
   [
     "UnnamedActor",
     AuditOperation.TenantClosed,
@@ -460,6 +562,19 @@ describe("ActivitySentence", () => {
     expect(
       await screen.findByRole("link", { name: "Northwind Traders" }),
     ).toHaveAttribute("href", `/organisations/${northwind.id}`);
+  });
+
+  it("ActivitySentence_TargetFeatureFlag_LinksToItsPageByItsKey", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.FeatureFlagEveryoneElseOn,
+        target: flagTarget("emails.send"),
+      }),
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "emails.send" }),
+    ).toHaveAttribute("href", "/settings/feature-flags/emails.send");
   });
 
   it("ActivitySentence_TargetUser_LinksToTheUsersPage", async () => {
