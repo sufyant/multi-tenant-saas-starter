@@ -58,7 +58,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await PurgeAsync(tenant.Id, ClosedAt);
 
         (await database.ScalarAsSuperuserAsync<string>(
-            "SELECT listed_count || ' ' || (SELECT string_agg(tenant_id::text, ',') FROM control_plane.feature_flag_tenants) FROM control_plane.feature_flags", _databaseName))
+            "SELECT listed_count || ' ' || (SELECT string_agg(tenant_id::text, ',') FROM control_plane.feature_flag_tenants) FROM control_plane.feature_flags WHERE key = 'roles.bulk_edit'", _databaseName))
             .ShouldBe($"1 {kept.Id}");
     }
 

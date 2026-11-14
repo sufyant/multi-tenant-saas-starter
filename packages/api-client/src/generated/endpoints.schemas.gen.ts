@@ -2274,10 +2274,30 @@ export interface UserMembershipResponse {
 }
 
 /**
+ * A terms version for the user's page: its id and day, whether it requires acceptance, and when the user accepted it, null for not yet.
+ */
+export interface UserTermsVersionResponse {
+  versionId: string;
+  effectiveDate: string;
+  requiresAcceptance: boolean;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+/**
+ * Whether the user accepted the terms: the version in force, null before the first version takes effect, and the scheduled version, null
+ * when none is scheduled or it requires no acceptance.
+ */
+export interface UserTermsResponse {
+  inForce: null | UserTermsVersionResponse;
+  scheduled: null | UserTermsVersionResponse;
+}
+
+/**
  * One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason
  * (null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who
  * granted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before
- * it was kept), and every membership by the tenant's name.
+ * it was kept), every membership by the tenant's name, and whether the user accepted the terms.
  */
 export interface UserDetailResponse {
   id: string;
@@ -2299,6 +2319,7 @@ export interface UserDetailResponse {
   suspensionReason: string | null;
   systemAdminGrantedBy: null | UserNameResponse;
   memberships: UserMembershipResponse[];
+  terms: UserTermsResponse;
 }
 
 /**

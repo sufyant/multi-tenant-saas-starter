@@ -32,6 +32,12 @@ public interface ITermsVersionQueries
     /// <summary>What the signed-in person must do about the terms on this day; nothing for a person who is not a user yet.</summary>
     internal Task<MyTermsView> GetMyTermsAsync(string externalUserId, DateOnly today, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Whether the user accepted the version in force on this day, and the scheduled version when it requires acceptance (the user's page in
+    /// the platform; the maintainer's decision of 2026-11-14).
+    /// </summary>
+    internal Task<UserTermsView> FindUserTermsAsync(Guid userId, DateOnly today, CancellationToken cancellationToken);
+
     /// <summary>The version in force on this day; none before the first version takes effect.</summary>
     internal Task<TermsInForceView?> FindVersionInForceAsync(DateOnly today, CancellationToken cancellationToken);
 }

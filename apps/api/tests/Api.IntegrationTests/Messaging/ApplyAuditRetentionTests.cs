@@ -37,7 +37,11 @@ public sealed class ApplyAuditRetentionTests(Database database) : IAsyncLifetime
             database.ConnectionStringFor(DatabaseRoles.Application, _databaseName),
             time: _clock,
             settings: new Dictionary<string, string?> { ["Audit:Retention:Days"] = "100" },
-            configureServices: ApiFactory.RemoveAuditRetention);
+            configureServices: services =>
+            {
+                ApiFactory.RemoveAuditRetention(services);
+                ApiFactory.RemoveFeatureFlagJob(services);
+            });
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();

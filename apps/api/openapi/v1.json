@@ -16848,7 +16848,8 @@
           "suspendedBy",
           "suspensionReason",
           "systemAdminGrantedBy",
-          "memberships"
+          "memberships",
+          "terms"
         ],
         "type": "object",
         "properties": {
@@ -16930,9 +16931,12 @@
             "items": {
               "$ref": "#/components/schemas/UserMembershipResponse"
             }
+          },
+          "terms": {
+            "$ref": "#/components/schemas/UserTermsResponse"
           }
         },
-        "description": "One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason\n(null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who\ngranted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before\nit was kept), and every membership by the tenant's name."
+        "description": "One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason\n(null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who\ngranted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before\nit was kept), every membership by the tenant's name, and whether the user accepted the terms."
       },
       "UserListPageResponse": {
         "required": [
@@ -17134,6 +17138,66 @@
           }
         },
         "description": "How many users are in each status, without the search or any filter: the tabs of the Users list."
+      },
+      "UserTermsResponse": {
+        "required": [
+          "inForce",
+          "scheduled"
+        ],
+        "type": "object",
+        "properties": {
+          "inForce": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserTermsVersionResponse"
+              }
+            ]
+          },
+          "scheduled": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserTermsVersionResponse"
+              }
+            ]
+          }
+        },
+        "description": "Whether the user accepted the terms: the version in force, null before the first version takes effect, and the scheduled version, null\nwhen none is scheduled or it requires no acceptance."
+      },
+      "UserTermsVersionResponse": {
+        "required": [
+          "versionId",
+          "effectiveDate",
+          "requiresAcceptance",
+          "acceptedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "acceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A terms version for the user's page: its id and day, whether it requires acceptance, and when the user accepted it, null for not yet."
       },
       "VerificationCodeResponse": {
         "required": [

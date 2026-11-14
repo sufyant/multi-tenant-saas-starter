@@ -2,6 +2,7 @@
 #pragma warning disable
 using ControlPlane.Application.SystemAdmins;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
@@ -13,17 +14,20 @@ namespace Internal.Generated.WolverineHandlers
         private readonly ControlPlane.Application.SystemAdmins.SystemAdminOptions _systemAdminOptions;
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
+        private readonly System.TimeProvider _timeProvider;
 
-        public GetUserQueryHandler1899348855(ControlPlane.Application.SystemAdmins.SystemAdminOptions systemAdminOptions, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public GetUserQueryHandler1899348855(ControlPlane.Application.SystemAdmins.SystemAdminOptions systemAdminOptions, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider)
         {
             _systemAdminOptions = systemAdminOptions;
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
+            _timeProvider = timeProvider;
         }
 
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
+            var termsVersionQueries = new ControlPlane.Infrastructure.Persistence.TermsVersions.TermsVersionQueries(controlPlaneDbContext);
             var userQueries = new ControlPlane.Infrastructure.Persistence.Users.UserQueries(controlPlaneDbContext, _systemAdminOptions);
             // The actual message body
             var getUserQuery = (ControlPlane.Application.Users.GetUser.GetUserQuery)context.Envelope.Message;
@@ -45,7 +49,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.GetUser.UserDetailView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Users.GetUser.GetUserHandler.HandleAsync(getUserQuery, userQueries, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Users.GetUser.GetUserHandler.HandleAsync(getUserQuery, userQueries, termsVersionQueries, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

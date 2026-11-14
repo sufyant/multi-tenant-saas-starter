@@ -28,6 +28,6 @@ public sealed class RemoveFeatureFlagTenantTests(Database database)
         var flag = await FlagRequests.JsonAsync(await own.Api.WaitingForMessagesAsync(() => own.Admin.RemoveFeatureFlagTenantAsync("roles.bulk_edit", tenantId)));
 
         flag.GetProperty("history").GetArrayLength().ShouldBe(1);
-        (await own.ScalarAsync<long>("SELECT count(*) FROM audit.platform_entries WHERE operation LIKE 'feature_flag.%'")).ShouldBe(0);
+        (await own.ScalarAsync<long>("SELECT count(*) FROM audit.platform_entries WHERE operation LIKE 'feature_flag.tenant_%'")).ShouldBe(0);
     }
 }

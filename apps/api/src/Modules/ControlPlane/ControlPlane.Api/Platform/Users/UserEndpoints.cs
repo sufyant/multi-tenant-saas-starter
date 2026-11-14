@@ -4,6 +4,7 @@ using ControlPlane.Api.Statuses;
 using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Application;
+using ControlPlane.Application.TermsVersions;
 using ControlPlane.Application.Users;
 using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Application.Users.GetLastOwnership;
@@ -186,5 +187,9 @@ public static class UserEndpoints
         user.SuspendedBy is { } suspendedBy ? InvitationEndpoints.ToResponse(suspendedBy) : null,
         user.SuspensionReason,
         user.SystemAdminGrantedBy is { } grantedBy ? InvitationEndpoints.ToResponse(grantedBy) : null,
-        [.. user.Memberships.Select(ToResponse)]);
+        [.. user.Memberships.Select(ToResponse)],
+        new UserTermsResponse(ToResponse(user.Terms?.InForce), ToResponse(user.Terms?.Scheduled)));
+
+    private static UserTermsVersionResponse? ToResponse(UserTermsVersionView? version) =>
+        version is null ? null : new(version.VersionId, version.EffectiveDate, version.RequiresAcceptance, version.AcceptedAt);
 }
