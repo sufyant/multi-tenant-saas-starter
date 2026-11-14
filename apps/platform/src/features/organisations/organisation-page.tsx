@@ -36,6 +36,7 @@ import { ProblemScreen } from "@/shared/problem-screen";
 import { TextLink } from "@/shared/text-link";
 import { useDates } from "@/shared/use-dates";
 import { ViewChoice } from "@/shared/view-choice";
+import { FeatureFlagsCard } from "./feature-flags-card";
 import { useMembersText } from "./members-text";
 import {
   actionsOf,
@@ -261,6 +262,7 @@ function Organisation({
       {shown === "overview" && (
         <Overview organisation={organisation} address={address} />
       )}
+      {shown === "overview" && <FeatureFlagsCard tenantId={organisation.id} />}
       {shown === "plan" && <PlanSection organisation={organisation} />}
       {shown === "activity" && (
         <OrganisationActivity tenantId={organisation.id} />

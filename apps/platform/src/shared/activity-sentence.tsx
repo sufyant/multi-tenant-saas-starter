@@ -8,6 +8,11 @@ import {
   type AuditPlanResponse,
   type AuditTargetResponse,
   AuditTargetResponseKind,
+  FeatureFlagAddedToCodeDetailsResponseOperation,
+  FeatureFlagPercentageSetDetailsResponseOperation,
+  FeatureFlagRemovedFromCodeDetailsResponseOperation,
+  FeatureFlagTenantListedDetailsResponseOperation,
+  FeatureFlagTenantUnlistedDetailsResponseOperation,
   PlanUpdatedDetailsResponseOperation,
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
@@ -29,6 +34,7 @@ import {
   isFeatureKey,
   useEntitlementText,
 } from "./entitlements";
+import { featureFlagPage } from "./feature-flags";
 import { isolated } from "./isolated";
 import { planPage } from "./plans";
 import { termsVersionPage, useDay } from "./terms";
@@ -45,6 +51,9 @@ function hrefOf(target: AuditTargetResponse): string | null {
   if (target.kind === AuditTargetResponseKind.Plan) return planPage(target.id);
   if (target.kind === AuditTargetResponseKind.TermsVersion)
     return termsVersionPage(target.id);
+  // A flag's page goes by its key, which is the target's name (step 39).
+  if (target.kind === AuditTargetResponseKind.FeatureFlag && target.name)
+    return featureFlagPage(target.name);
   return null;
 }
 
@@ -242,6 +251,22 @@ function detailValues(
       return {
         date: day(details.effectiveDate),
         count: details.acceptanceCount,
+      };
+    // The seven sentences of the flags (7.10). A deploy that named no commit has none; the sentence keeps its place empty.
+    case FeatureFlagAddedToCodeDetailsResponseOperation.FeatureFlagAddedToCode:
+      return {
+        revision: details.revision ?? "",
+        defaultValue: details.defaultValue ? "on" : "off",
+      };
+    case FeatureFlagRemovedFromCodeDetailsResponseOperation.FeatureFlagRemovedFromCode:
+      return { revision: details.revision ?? "" };
+    case FeatureFlagPercentageSetDetailsResponseOperation.FeatureFlagPercentageSet:
+      return { from: details.from, to: details.to };
+    case FeatureFlagTenantListedDetailsResponseOperation.FeatureFlagTenantListed:
+    case FeatureFlagTenantUnlistedDetailsResponseOperation.FeatureFlagTenantUnlisted:
+      return {
+        organisation: () =>
+          linked(`/organisations/${details.tenantId}`, details.tenantName),
       };
     case TenantRenamedDetailsResponseOperation.TenantRenamed:
       return { oldName: details.oldName, newName: details.newName };
