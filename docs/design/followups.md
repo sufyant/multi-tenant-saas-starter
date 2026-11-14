@@ -6,4 +6,5 @@ This document lists the changes that the Figma file still needs, so that its fra
 
 - The Activity frames still say "invited someone". After #280 they show the invitee's address, for a viewer who holds `tenant.invitations.read`; any other viewer reads "someone" (`docs/decisions.md`, section 2).
 - 37c-design (#265) did not compare Tabs, EmptyState and the Combobox filter with the code.
+- Frame 1.27 (Create an account · accept the terms) has the same title as 1.09, "Terms of use updated". 1.27 is 40d's frame; 40d fixes its title.
 - Frame 9.06 (a limit of 0) and frame 4.15 (the current plan chosen) do not draw the states that #279 built. #279's description lists the new texts.
