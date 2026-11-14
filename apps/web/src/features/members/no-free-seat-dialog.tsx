@@ -11,8 +11,8 @@ import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
 /**
  * "No free seat" (8.43 at the limit, 8.45 over it): "Invite member" stays enabled at and over the limit and opens this dialog,
  * which says the seats, how they split, and what to do (F56). Its one way to support is "Request a plan change", the brand's
- * support contact; "View invitations" opens the Invitations tab for whom may read it. Until the members' total has come, the
- * dialog says the limit's reason without the split.
+ * support contact; "View invitations" opens the Invitations tab for whom may read it. Until the members' total has come, and at a
+ * limit of 0, the dialog says the limit's reason without the split.
  */
 export function NoFreeSeatDialog({
   members,
@@ -33,7 +33,8 @@ export function NoFreeSeatDialog({
   const requestChange = () => window.open(brand.supportUrl, "_self");
 
   const text = (() => {
-    if (members === undefined || limit.limit === null)
+    // A limit of 0 has no seat to free, so the dialog says only the limit's reason.
+    if (members === undefined || limit.limit === null || limit.limit === 0)
       return sentenceOf(planReason.limit(LimitKey.MembersMax));
     const values = {
       ...plan.seats(LimitKey.MembersMax, members),

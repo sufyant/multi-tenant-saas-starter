@@ -556,6 +556,7 @@
     "rolesOverText": "Yenilerini oluşturmak için rol silin. Her rol ve üyeleri çalışmaya devam eder.",
     "membersLimit": "Planınız {limit} yere izin veriyor: üyeler ve bekleyen davetler.",
     "membersLimitAction": "Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin.",
+    "membersNone": "Planınız hiç yere izin vermiyor.",
     "membersOver": "Planınız {limit} yer veriyor. {count} yer kullanıyorsunuz.",
     "contact": "Bize ulaşın",
     "keys": {

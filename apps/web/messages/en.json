@@ -556,6 +556,7 @@
     "rolesOverText": "Delete roles to create new ones. Every role and its members keep working.",
     "membersLimit": "Your plan allows {limit, plural, one {# seat} other {# seats}}: members and pending invitations.",
     "membersLimitAction": "Remove a member or cancel an invitation to invite someone.",
+    "membersNone": "Your plan allows no seats.",
     "membersOver": "Your plan gives {limit, plural, one {# seat} other {# seats}}. You use {count}.",
     "contact": "Contact us",
     "keys": {

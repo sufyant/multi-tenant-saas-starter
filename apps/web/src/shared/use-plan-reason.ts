@@ -40,12 +40,13 @@ export function usePlanReason(): {
     }
     if (key === LimitKey.MembersMax) {
       const { limit } = plan.limit(key);
-      return limit === null
-        ? neutral
-        : {
-            title: t("plans.membersLimit", { limit }),
-            text: t("plans.membersLimitAction"),
-          };
+      if (limit === null) return neutral;
+      // A limit of 0 frees no seat when a member goes or an invitation is cancelled.
+      if (limit === 0) return { title: t("plans.membersNone"), text: null };
+      return {
+        title: t("plans.membersLimit", { limit }),
+        text: t("plans.membersLimitAction"),
+      };
     }
     return neutral;
   };
