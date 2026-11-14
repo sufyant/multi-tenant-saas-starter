@@ -251,6 +251,20 @@ describe("AddSystemAdminDialog", () => {
     );
   });
 
+  it("Add_TwoUsersWithTheEmail_DescribesContinueWithTheFieldsError", async () => {
+    server.use(meAs(ciara), users([mehmet, mehmetAgain]));
+
+    const dialog = await find("mehmet@northwind.example");
+    await dialog.findByText(
+      "More than one user has this email. Ask a developer to check the accounts.",
+    );
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Continue" }),
+      "More than one user has this email. Ask a developer to check the accounts.",
+    );
+  });
+
   it("Add_AlreadyASystemAdmin_DescribesContinueWithTheBanner", async () => {
     server.use(meAs(ciara), users([tomas]));
 
