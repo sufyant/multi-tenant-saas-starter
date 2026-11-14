@@ -18,6 +18,9 @@ import {
   TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
+  TermsVersionCancelledDetailsResponseOperation,
+  TermsVersionCreatedDetailsResponseOperation,
+  TermsVersionUpdatedDetailsResponseOperation,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
@@ -47,6 +50,14 @@ import {
   freePreview,
   mockFrameOrganisations,
 } from "./organisation-frames";
+import {
+  frameTerms,
+  mockFrameAdd,
+  mockFrameCancel,
+  mockFrameTerms,
+  termsFail,
+  termsWait,
+} from "./terms-frames";
 import { enrolledUser, signInWithEmailCode, totpCode } from "./two-step";
 
 /** The bell's tabs; a page may have tabs of its own. */
@@ -614,6 +625,71 @@ const frameLog: AuditEntryResponse[] = [
 ];
 
 /** The log answers its first page with these entries and a next cursor; the next page answers as the shot says. */
+/** A day the form accepts in every run: 1 Dec of next year. The mocked answer still adds the frames' 1 Dec 2026 (11.04). */
+const nextYearsDay = `${new Date().getUTCFullYear() + 1}-12-01`;
+
+/** The four kinds of sentence of a terms version (7.09), by Deniz Kaya. */
+const termsTarget = {
+  kind: AuditTargetResponseKind.TermsVersion,
+  id: frameTerms.scheduled.id,
+  name: null,
+  deleted: false,
+  email: null,
+};
+const termsValues = {
+  effectiveDate: "2026-12-15",
+  url: "https://starter.example/terms/2026-12",
+  summary: null,
+  requiresAcceptance: true,
+  sendsEmail: true,
+};
+const termsLog: AuditEntryResponse[] = [
+  logEntry(1, 0, AuditOperation.TermsVersionCancelled, {
+    target: termsTarget,
+    details: {
+      operation:
+        TermsVersionCancelledDetailsResponseOperation.TermsVersionCancelled,
+      effectiveDate: "2026-12-15",
+      url: termsValues.url,
+      requiresAcceptance: true,
+      acceptanceCount: 18,
+    },
+  }),
+  logEntry(2, 1, AuditOperation.TermsVersionUpdated, {
+    target: termsTarget,
+    details: {
+      operation:
+        TermsVersionUpdatedDetailsResponseOperation.TermsVersionUpdated,
+      old: { ...termsValues, effectiveDate: "2026-12-01" },
+      new: termsValues,
+    },
+  }),
+  logEntry(3, 2, AuditOperation.TermsVersionCreated, {
+    target: termsTarget,
+    details: {
+      operation:
+        TermsVersionCreatedDetailsResponseOperation.TermsVersionCreated,
+      ...termsValues,
+      effectiveDate: "2026-12-01",
+    },
+  }),
+  logEntry(4, 3, AuditOperation.TermsVersionCreated, {
+    actor: {
+      ...deniz,
+      userId: "0198f0a2-0000-7000-8000-00000000b0d2",
+      displayName: "Hannah Weber",
+    },
+    target: { ...termsTarget, id: frameTerms.inForce.id },
+    details: {
+      operation:
+        TermsVersionCreatedDetailsResponseOperation.TermsVersionCreated,
+      ...termsValues,
+      effectiveDate: "2026-11-01",
+      requiresAcceptance: false,
+    },
+  }),
+];
+
 const logAnswers =
   (
     first: AuditEntryResponse[],
@@ -1909,6 +1985,175 @@ const shellShots: {
       await page.getByRole("table").getByText("Root", { exact: true }).hover();
       await page.locator('[data-slot="tooltip-content"]').waitFor();
     },
+  },
+  // Terms of use (11.01 to 11.17), with the versions and people the frames draw (`terms-frames.ts`).
+  {
+    file: "11.01-terms-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms",
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.16-terms-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/terms",
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.17-terms-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/settings/terms",
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.02-new-version-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms/new",
+    mock: mockFrameAdd,
+    open: async (page) => {
+      await page.getByLabel("Applies from").fill(nextYearsDay);
+      await page
+        .getByRole("textbox", { name: "Link" })
+        .fill("https://starter.example/terms/2026-12");
+      await page
+        .getByRole("textbox", { name: "Summary" })
+        .fill(frameTerms.scheduled.summary ?? "");
+    },
+  },
+  {
+    file: "11.03-new-version-errors-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms/new",
+    mock: mockFrameAdd,
+    open: async (page) => {
+      await page.getByLabel("Applies from").fill("2026-11-01");
+      await page
+        .getByRole("textbox", { name: "Link" })
+        .fill("starter.example/terms");
+      await page.getByRole("button", { name: "Add version" }).click();
+      await page.getByText("Pick today or a later date.").waitFor();
+    },
+  },
+  {
+    file: "11.04-version-added-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms/new",
+    mock: mockFrameAdd,
+    open: async (page) => {
+      await page.getByLabel("Applies from").fill(nextYearsDay);
+      await page
+        .getByRole("textbox", { name: "Link" })
+        .fill("https://starter.example/terms/2026-12");
+      await page.getByRole("button", { name: "Add version" }).click();
+      await page.getByText("Terms of use from 1 Dec 2026 added").waitFor();
+      await page.getByRole("cell", { name: "0 of 67 accepted" }).waitFor();
+    },
+  },
+  {
+    file: "11.05-version-accepted-en-light-desktop",
+    size: "desktop",
+    path: `/settings/terms/${frameTerms.scheduled.id}`,
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.06-version-not-yet-en-light-desktop",
+    size: "desktop",
+    path: `/settings/terms/${frameTerms.scheduled.id}?people=not_yet`,
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.07-terms-loading-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms",
+    settled: async () => {},
+    mock: async (page) => {
+      await reduceMotion(page);
+      await termsWait(page);
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading the terms of use" }).waitFor(),
+  },
+  {
+    file: "11.08-terms-error-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms",
+    mock: termsFail,
+    ready: (page) =>
+      page
+        .getByText("Couldn’t load the terms of use")
+        .waitFor({ timeout: 30_000 }),
+  },
+  {
+    file: "11.09-terms-nothing-scheduled-en-light-desktop",
+    size: "desktop",
+    path: "/settings/terms",
+    mock: mockFrameAdd,
+  },
+  {
+    file: "11.10-edit-version-en-light-desktop",
+    size: "desktop",
+    path: `/settings/terms/${frameTerms.scheduled.id}/edit`,
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.11-cancel-version-en-light-desktop",
+    size: "desktop",
+    path: `/settings/terms/${frameTerms.scheduled.id}`,
+    mock: mockFrameCancel,
+    open: async (page) => {
+      await page
+        .getByRole("button", { name: "Cancel version" })
+        .first()
+        .click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+  {
+    file: "11.12-version-in-force-en-light-desktop",
+    size: "desktop",
+    path: `/settings/terms/${frameTerms.inForce.id}`,
+    mock: mockFrameTerms(),
+  },
+  {
+    file: "11.13-version-cancelled-en-light-desktop",
+    size: "desktop",
+    path: `/settings/terms/${frameTerms.scheduled.id}`,
+    mock: mockFrameCancel,
+    open: async (page) => {
+      await page
+        .getByRole("button", { name: "Cancel version" })
+        .first()
+        .click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Cancel version" })
+        .click();
+      await page.getByText("Version from 1 Dec 2026 cancelled").waitFor();
+      await page.getByRole("link", { name: "Add version" }).waitFor();
+    },
+  },
+  {
+    file: "11.14-terms-en-light-phone",
+    size: "phone",
+    path: "/settings/terms",
+    mock: mockFrameTerms(),
+    ready: (page) =>
+      page.getByRole("list", { name: "Terms of use" }).last().waitFor(),
+  },
+  {
+    file: "11.15-terms-version-en-light-phone",
+    size: "phone",
+    path: `/settings/terms/${frameTerms.scheduled.id}`,
+    mock: mockFrameTerms(),
+    ready: (page) => page.getByText("Effective date").waitFor(),
+  },
+  {
+    file: "7.09-activity-terms-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    mock: logAnswers(termsLog),
   },
 ];
 

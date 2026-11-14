@@ -21,6 +21,7 @@ import {
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../../test/render";
+import { scheduled, versionAnswer } from "../../../test/terms";
 import { PlatformShell } from "./platform-shell";
 
 const navigation = vi.hoisted(() => ({ pathname: "/" }));
@@ -263,6 +264,7 @@ describe("PlatformShell", () => {
       "Profile",
       "Account and security",
       "System admins",
+      "Terms of use",
     ]);
   });
 
@@ -369,6 +371,49 @@ describe("PlatformShell", () => {
     expect(
       crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
     ).toEqual(["System admins", "Tomás Ryan"]);
+  });
+
+  it("PlatformShell_TermsVersionPage_NamesItsDayAfterTermsOfUse", async () => {
+    navigation.pathname = `/settings/terms/${scheduled.id}/edit`;
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+      versionAnswer(scheduled),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("1 Dec 2026")).toBeInTheDocument();
+    expect(
+      crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
+    ).toEqual(["Terms of use", "1 Dec 2026"]);
+    expect(crumbs.getByRole("link", { name: "Terms of use" })).toHaveAttribute(
+      "href",
+      "/settings/terms",
+    );
+  });
+
+  it("PlatformShell_NewTermsVersion_NamesNewVersionAfterTermsOfUse", async () => {
+    navigation.pathname = "/settings/terms/new";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(await crumbs.findByText("New version")).toBeInTheDocument();
+    expect(
+      crumbs.getAllByRole("listitem").map((crumb) => crumb.textContent),
+    ).toEqual(["Terms of use", "New version"]);
   });
 
   it("PlatformShell_PlanPage_NamesThePlanAfterPlans", async () => {

@@ -18,7 +18,8 @@
     "myAccount": "Hesabım",
     "systemAdmins": "Sistem yöneticileri",
     "settingsMyAccount": "Ayarlar · Hesabım",
-    "settingsPlatform": "Ayarlar · Platform"
+    "settingsPlatform": "Ayarlar · Platform",
+    "termsOfUse": "Kullanım koşulları"
   },
   "profile": {
     "title": "Profil",
@@ -404,6 +405,11 @@
       "plan": {
         "created": "<actor></actor>, <target></target> planını oluşturdu.",
         "updated": "{change, select, renamed {<actor></actor>, <name>{oldName}</name> planının adını <target></target> olarak değiştirdi.} default {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı.} defaultAndChanges {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı ve şunları değiştirdi: <changes></changes>.} one {<actor></actor>, <target></target> planını değiştirdi: <changes></changes>.} other {<actor></actor>, <target></target> planında birkaç değeri değiştirdi: <changes></changes>.}}"
+      },
+      "terms_version": {
+        "created": "{kind, select, both {<actor></actor>, <link>{date} tarihli Kullanım koşullarını</link> ekledi; kişilerin kabul etmesi gerekir. Herkese e-posta gider.} mustAccept {<actor></actor>, <link>{date} tarihli Kullanım koşullarını</link> ekledi; kişilerin kabul etmesi gerekir.} email {<actor></actor>, <link>{date} tarihli Kullanım koşullarını</link> ekledi; herkese e-posta gider.} other {<actor></actor>, <link>{date} tarihli Kullanım koşullarını</link> ekledi; bildirim gitmez.}}",
+        "updated": "{change, select, emailed {<actor></actor>, <link>{date} tarihli Kullanım koşulları</link> için herkese e-posta gönderdi.} other {<actor></actor>, <link>{date} tarihli Kullanım koşullarını</link> değiştirdi: {changes}.}}",
+        "cancelled": "<actor></actor>, <link>{date} tarihli Kullanım koşullarını</link> iptal etti. {count} kabul kaydında saklanır."
       }
     },
     "change": "{key}, <bdi>{old}</bdi> değerinden <bdi>{new}</bdi> değerine",
@@ -412,7 +418,13 @@
     "description": "Kuruluşlardaki, kullanıcılardaki, planlardaki ve sistem yöneticilerindeki değişiklikler.",
     "period": "Kayıtlar {daysCount} gün saklanır.",
     "loadingOlder": "Eski etkinlikler yükleniyor…",
-    "loadedOlder": "{count, plural, one {# kayıt daha yüklendi.} other {# kayıt daha yüklendi.}}"
+    "loadedOlder": "{count, plural, one {# kayıt daha yüklendi.} other {# kayıt daha yüklendi.}}",
+    "termsChanges": {
+      "date": "tarih (önce: {old})",
+      "link": "bağlantı",
+      "summary": "özet",
+      "requirement": "kabul gerektirip gerektirmediği"
+    }
   },
   "entitlements": {
     "areas": {
@@ -581,5 +593,78 @@
     "withCount": "{view} · {count}",
     "search": "Ara",
     "empty": "Sonuç yok"
+  },
+  "terms": {
+    "title": "Kullanım koşulları",
+    "text": "Kişilerin kabul ettiği koşullar. Kabul gerektiren bir sürüm, herkesten devam etmeden önce onu kabul etmesini ister.",
+    "add": "Sürüm ekle",
+    "scheduledExists": "{date} için zaten planlanmış bir sürüm var. Önce onu düzenleyin veya iptal edin.",
+    "appliesFrom": "Geçerlilik başlangıcı",
+    "link": "Bağlantı",
+    "acceptance": "Kabul",
+    "state": {
+      "scheduled": "Planlandı",
+      "in_force": "Mevcut",
+      "replaced": "Yenisiyle değişti",
+      "cancelled": "İptal edildi"
+    },
+    "inForce": "Yürürlükte",
+    "acceptedOf": "{total} kişiden {accepted} kişi kabul etti",
+    "everyoneAccepted": "Herkes kabul etti",
+    "noticeOnly": "Yalnızca bildirim",
+    "noNotice": "Bildirim yok",
+    "loading": "Kullanım koşulları yükleniyor",
+    "error": "Kullanım koşulları yüklenemedi",
+    "newTitle": "Yeni sürüm",
+    "newText": "Yeni bir sürüm kendi tarihinden itibaren geçerli olur. O zamana kadar mevcut koşullar geçerli kalır.",
+    "appliesFromHint": "Yeni koşulların geçerli olduğu ilk gün.",
+    "linkHint": "Koşulların tam metninin bulunduğu yer.",
+    "summary": "Özet",
+    "summaryHint": "İsteğe bağlı. Nelerin değiştiğini birkaç satırla anlatın.",
+    "summaryPlaceholder": "Nelerin değiştiğine dair birkaç satır",
+    "requiresAcceptance": "Kabul gerektirir",
+    "requiresAcceptanceHint": "Herkes devam etmeden önce kabul eder.",
+    "sendEmail": "E-posta gönder",
+    "sendEmailHint": "Herkes bir e-posta alır. Kabul gerekmiyorsa ana sayfada bir bildirim de görür. Küçük bir değişiklikte kapatın.",
+    "emailWentOut": "E-posta {date} tarihinde gönderildi. Yeniden gönderilemez.",
+    "locked": "Bu sürümü {count} kişi kabul etti. Bunu değiştirmek için sürümü iptal edip yeni bir sürüm ekleyin.",
+    "dateInvalid": "Bugünü veya daha sonraki bir tarihi seçin.",
+    "linkInvalid": "https:// ile başlayan tam bir bağlantı girin.",
+    "summaryTooLong": "En fazla {max} karakter kullanın.",
+    "added": "{date} tarihli Kullanım koşulları eklendi",
+    "addedText": "Kişilerden bugünden itibaren bunları kabul etmeleri istenir.",
+    "notSaved": "Sürüm kaydedilmedi",
+    "saved": "{date} tarihli sürüm kaydedildi",
+    "versionTitle": "{date} tarihli Kullanım koşulları",
+    "stateRequiresAcceptance": "{state} · kabul gerektirir",
+    "inForceText": "Bu sürüm yürürlükte. Hiç değişmez: kişilerin neyi kabul ettiğinin kaydıdır. Koşulları değiştirmek için yeni bir sürüm ekleyin.",
+    "edit": "Sürümü düzenle",
+    "cancel": "Sürümü iptal et",
+    "yes": "Evet",
+    "no": "Hayır",
+    "email": "E-posta",
+    "sentOn": "{date} tarihinde gönderildi",
+    "off": "Kapalı",
+    "accepted": "Kabul edenler",
+    "notYet": "Henüz kabul etmeyenler",
+    "name": "Ad",
+    "loadingPeople": "Kişiler yükleniyor",
+    "peopleError": "Kişiler yüklenemedi",
+    "loadMore": "Daha fazla yükle",
+    "loadingMore": "Daha fazla kişi yükleniyor…",
+    "loadedPeople": "{count, plural, other {# kişi daha yüklendi.}}",
+    "moreError": "Daha fazla kişi yüklenemedi",
+    "editTitle": "Sürümü düzenle",
+    "editText": "Bu sürümü {date} tarihinde yürürlüğe girene kadar değiştirebilirsiniz. O tarihten sonra hiç değişmez.",
+    "save": "Değişiklikleri kaydet",
+    "cancelTitle": "{date} tarihli sürüm iptal edilsin mi?",
+    "cancelText": "Bu sürüm yürürlüğe girmez.{current, select, none {} other { {current} tarihli sürüm geçerli kalır.}}{count, plural, =0 {} other { Bu sürümün # kabulü kaydında saklanır.}}",
+    "keep": "Sürümü koru",
+    "notCancelled": "Sürüm iptal edilmedi",
+    "cancelled": "{date} tarihli sürüm iptal edildi",
+    "cancelledText": "{current} tarihli sürüm geçerli kalır.",
+    "effectiveDate": "Yürürlük tarihi",
+    "acceptsAtSignIn": "Kişiler bunu bir sonraki oturum açışlarında kabul eder.",
+    "opensNewTab": "(yeni sekmede açılır)"
   }
 }

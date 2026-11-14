@@ -18,7 +18,8 @@
     "myAccount": "حسابي",
     "systemAdmins": "مسؤولو النظام",
     "settingsMyAccount": "الإعدادات · حسابي",
-    "settingsPlatform": "الإعدادات · المنصة"
+    "settingsPlatform": "الإعدادات · المنصة",
+    "termsOfUse": "شروط الاستخدام"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -404,6 +405,11 @@
       "plan": {
         "created": "أنشأ <actor></actor> الخطة <target></target>.",
         "updated": "{change, select, renamed {غيّر <actor></actor> اسم الخطة <name>{oldName}</name> إلى <target></target>.} default {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>.} defaultAndChanges {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>، وغيّر <changes></changes>.} one {غيّر <actor></actor> الخطة <target></target>: <changes></changes>.} other {غيّر <actor></actor> عدة قيم في الخطة <target></target>: <changes></changes>.}}"
+      },
+      "terms_version": {
+        "created": "{kind, select, both {أضاف <actor></actor> <link>شروط الاستخدام المطبّقة من {date}</link>، وعلى الأشخاص قبولها. يتلقى الجميع رسالة بريد إلكتروني.} mustAccept {أضاف <actor></actor> <link>شروط الاستخدام المطبّقة من {date}</link>، وعلى الأشخاص قبولها.} email {أضاف <actor></actor> <link>شروط الاستخدام المطبّقة من {date}</link>، مع رسالة بريد إلكتروني للجميع.} other {أضاف <actor></actor> <link>شروط الاستخدام المطبّقة من {date}</link>، من دون إشعار.}}",
+        "updated": "{change, select, emailed {أرسل <actor></actor> رسالة بريد إلكتروني إلى الجميع بشأن <link>شروط الاستخدام المطبّقة من {date}</link>.} other {غيّر <actor></actor> <link>شروط الاستخدام المطبّقة من {date}</link>: {changes}.}}",
+        "cancelled": "ألغى <actor></actor> <link>شروط الاستخدام المطبّقة من {date}</link>. تُحفظ الموافقات ({count}) في سجلها."
       }
     },
     "change": "{key} من <bdi>{old}</bdi> إلى <bdi>{new}</bdi>",
@@ -412,7 +418,13 @@
     "description": "التغييرات على المؤسسات والمستخدمين والخطط ومسؤولي النظام.",
     "period": "تُحفظ الإدخالات لمدة {days}.",
     "loadingOlder": "جارٍ تحميل النشاط الأقدم…",
-    "loadedOlder": "تم تحميل {count} من الإدخالات الإضافية."
+    "loadedOlder": "تم تحميل {count} من الإدخالات الإضافية.",
+    "termsChanges": {
+      "date": "التاريخ (قبل: {old})",
+      "link": "الرابط",
+      "summary": "الملخص",
+      "requirement": "اشتراط القبول"
+    }
   },
   "entitlements": {
     "areas": {
@@ -581,5 +593,78 @@
     "withCount": "{view} · {count}",
     "search": "بحث",
     "empty": "لا نتائج"
+  },
+  "terms": {
+    "title": "شروط الاستخدام",
+    "text": "الشروط التي يوافق عليها الأشخاص. النسخة التي تتطلب القبول تطلب من الجميع قبولها قبل المتابعة.",
+    "add": "إضافة نسخة",
+    "scheduledExists": "توجد نسخة مجدولة بالفعل في {date}. عدّلها أو ألغها أولًا.",
+    "appliesFrom": "تُطبَّق من",
+    "link": "الرابط",
+    "acceptance": "القبول",
+    "state": {
+      "scheduled": "مجدولة",
+      "in_force": "الحالية",
+      "replaced": "استُبدلت",
+      "cancelled": "أُلغيت"
+    },
+    "inForce": "سارية",
+    "acceptedOf": "قبِلها {accepted} من {total}",
+    "everyoneAccepted": "قبِلها الجميع",
+    "noticeOnly": "إشعار فقط",
+    "noNotice": "بلا إشعار",
+    "loading": "جارٍ تحميل شروط الاستخدام",
+    "error": "تعذّر تحميل شروط الاستخدام",
+    "newTitle": "نسخة جديدة",
+    "newText": "تُطبَّق النسخة الجديدة اعتبارًا من تاريخها. حتى ذلك الحين، تبقى الشروط الحالية سارية.",
+    "appliesFromHint": "أول يوم تُطبَّق فيه الشروط الجديدة.",
+    "linkHint": "مكان النص الكامل للشروط.",
+    "summary": "الملخص",
+    "summaryHint": "اختياري. بضعة أسطر عمّا تغيّر.",
+    "summaryPlaceholder": "بضعة أسطر عمّا تغيّر",
+    "requiresAcceptance": "يتطلب القبول",
+    "requiresAcceptanceHint": "يقبلها الجميع قبل المتابعة.",
+    "sendEmail": "إرسال بريد إلكتروني",
+    "sendEmailHint": "يتلقى الجميع رسالة بريد إلكتروني. وإن لم يلزم القبول، يرون أيضًا إشعارًا في الصفحة الرئيسية. أوقفه عند تغيير بسيط.",
+    "emailWentOut": "أُرسلت الرسالة في {date}. لا يمكن إرسالها مرة أخرى.",
+    "locked": "{count, plural, one {قبِل شخص واحد هذه النسخة.} two {قبِل شخصان هذه النسخة.} few {قبِل # أشخاص هذه النسخة.} other {قبِل # شخصًا هذه النسخة.}} لتغيير ذلك، ألغها وأضف نسخة جديدة.",
+    "dateInvalid": "اختر اليوم أو تاريخًا لاحقًا.",
+    "linkInvalid": "أدخل رابطًا كاملًا يبدأ بـ https://.",
+    "summaryTooLong": "استخدم {max} حرفًا على الأكثر.",
+    "added": "أُضيفت شروط الاستخدام المطبّقة من {date}",
+    "addedText": "يُطلب من الأشخاص قبولها اعتبارًا من اليوم.",
+    "notSaved": "لم تُحفظ النسخة",
+    "saved": "حُفظت النسخة المطبّقة من {date}",
+    "versionTitle": "شروط الاستخدام المطبّقة من {date}",
+    "stateRequiresAcceptance": "{state} · تتطلب القبول",
+    "inForceText": "هذه النسخة سارية. لا تتغير أبدًا: فهي سجل ما وافق عليه الأشخاص. لتغيير الشروط، أضف نسخة جديدة.",
+    "edit": "تعديل النسخة",
+    "cancel": "إلغاء النسخة",
+    "yes": "نعم",
+    "no": "لا",
+    "email": "البريد الإلكتروني",
+    "sentOn": "أُرسل في {date}",
+    "off": "متوقف",
+    "accepted": "قبِلوها",
+    "notYet": "لم يقبلوها بعد",
+    "name": "الاسم",
+    "loadingPeople": "جارٍ تحميل الأشخاص",
+    "peopleError": "تعذّر تحميل الأشخاص",
+    "loadMore": "تحميل المزيد",
+    "loadingMore": "جارٍ تحميل المزيد من الأشخاص…",
+    "loadedPeople": "{count, plural, one {حُمِّل شخص واحد آخر.} two {حُمِّل شخصان آخران.} few {حُمِّل # أشخاص آخرين.} other {حُمِّل # شخصًا آخر.}}",
+    "moreError": "تعذّر تحميل المزيد من الأشخاص",
+    "editTitle": "تعديل النسخة",
+    "editText": "يمكنك تغيير هذه النسخة حتى تدخل حيّز التنفيذ في {date}. بعد ذلك لا تتغير أبدًا.",
+    "save": "حفظ التغييرات",
+    "cancelTitle": "إلغاء النسخة المطبّقة من {date}؟",
+    "cancelText": "لن تدخل حيّز التنفيذ.{current, select, none {} other { تبقى النسخة المطبّقة من {current} سارية.}}{count, plural, =0 {} other { تُحفظ موافقات هذه النسخة (#) في سجلها.}}",
+    "keep": "الإبقاء على النسخة",
+    "notCancelled": "لم تُلغَ النسخة",
+    "cancelled": "أُلغيت النسخة المطبّقة من {date}",
+    "cancelledText": "تبقى نسخة {current} سارية.",
+    "effectiveDate": "تاريخ السريان",
+    "acceptsAtSignIn": "يقبلها الأشخاص في المرة التالية التي يسجّلون فيها الدخول.",
+    "opensNewTab": "(يُفتح في علامة تبويب جديدة)"
   }
 }

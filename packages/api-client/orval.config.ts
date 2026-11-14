@@ -46,6 +46,9 @@ export default defineConfig({
           ListPlatformNotifications: {
             query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
           },
+          ListTermsVersionPeople: {
+            query: { useInfinite: true, useInfiniteQueryParam: "cursor" },
+          },
           // A paged list that grows with Load more (F9): its page parameter is `page`.
           ListMembers: {
             query: { useInfinite: true, useInfiniteQueryParam: "page" },

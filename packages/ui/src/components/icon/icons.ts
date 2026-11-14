@@ -16,6 +16,7 @@ export {
   CopyIcon,
   CreditCardIcon,
   ExternalLinkIcon,
+  FileTextIcon,
   FlaskConicalIcon,
   GlobeIcon,
   HistoryIcon,

@@ -18,6 +18,9 @@ import {
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
+  TermsVersionCancelledDetailsResponseOperation,
+  TermsVersionCreatedDetailsResponseOperation,
+  TermsVersionUpdatedDetailsResponseOperation,
 } from "@repo/api-client";
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
@@ -28,6 +31,7 @@ import {
 } from "./entitlements";
 import { isolated } from "./isolated";
 import { planPage } from "./plans";
+import { termsVersionPage, useDay } from "./terms";
 import { TextLink } from "./text-link";
 import { useDates } from "./use-dates";
 
@@ -39,6 +43,8 @@ function hrefOf(target: AuditTargetResponse): string | null {
   if (target.kind === AuditTargetResponseKind.User)
     return `/users/${target.id}`;
   if (target.kind === AuditTargetResponseKind.Plan) return planPage(target.id);
+  if (target.kind === AuditTargetResponseKind.TermsVersion)
+    return termsVersionPage(target.id);
   return null;
 }
 
@@ -48,7 +54,10 @@ const linked = (href: string | null, content: ReactNode) => {
   return href ? <TextLink href={href}>{name}</TextLink> : name;
 };
 
-type Rich = Record<string, string | ((chunks: ReactNode) => ReactNode)>;
+type Rich = Record<
+  string,
+  string | number | ((chunks: ReactNode) => ReactNode)
+>;
 
 /** A plan of the details, with its name as it was then, linked to its page. */
 const planLink = (plan: AuditPlanResponse) => () =>
@@ -71,6 +80,14 @@ type Texts = {
   none: string;
   text: ReturnType<typeof useEntitlementText>;
   date: (at: string) => string;
+  /** A terms version's day, a calendar day of UTC. */
+  day: (day: string) => string;
+  /** The words of a terms version's edit, joined as the language joins a list: "the link, the summary and the date (before: …)". */
+  termsChanges: (words: string[]) => string;
+  termsWord: (
+    word: "date" | "link" | "summary" | "requirement",
+    old?: string,
+  ) => string;
 };
 
 /**
@@ -79,7 +96,17 @@ type Texts = {
  */
 function detailValues(
   details: AuditDetailsResponse | null,
-  { change: changeText, separator, nameKey, none, text, date }: Texts,
+  {
+    change: changeText,
+    separator,
+    nameKey,
+    none,
+    text,
+    date,
+    day,
+    termsChanges,
+    termsWord,
+  }: Texts,
 ): Rich {
   const valueText = (
     key: string,
@@ -176,6 +203,46 @@ function detailValues(
         ...(previous ? { previous: planLink(previous) } : {}),
       };
     }
+    case TermsVersionCreatedDetailsResponseOperation.TermsVersionCreated:
+      // The two switches give the four sentences of 7.09.
+      return {
+        date: day(details.effectiveDate),
+        kind: details.requiresAcceptance
+          ? details.sendsEmail
+            ? "both"
+            : "mustAccept"
+          : details.sendsEmail
+            ? "email"
+            : "none",
+      };
+    case TermsVersionUpdatedDetailsResponseOperation.TermsVersionUpdated: {
+      // The version by its day after the edit, and each value that changed, in the order of the form (11.10). The email switch
+      // turned on is its own sentence (7.09): it sent the email.
+      const { old, new: next } = details;
+      const words = [
+        ...(old.effectiveDate !== next.effectiveDate
+          ? [termsWord("date", day(old.effectiveDate))]
+          : []),
+        ...(old.url !== next.url ? [termsWord("link")] : []),
+        ...(old.summary !== next.summary ? [termsWord("summary")] : []),
+        ...(old.requiresAcceptance !== next.requiresAcceptance
+          ? [termsWord("requirement")]
+          : []),
+      ];
+      return {
+        date: day(next.effectiveDate),
+        change:
+          words.length === 0 && !old.sendsEmail && next.sendsEmail
+            ? "emailed"
+            : "other",
+        changes: termsChanges(words),
+      };
+    }
+    case TermsVersionCancelledDetailsResponseOperation.TermsVersionCancelled:
+      return {
+        date: day(details.effectiveDate),
+        count: details.acceptanceCount,
+      };
     case TenantRenamedDetailsResponseOperation.TenantRenamed:
       return { oldName: details.oldName, newName: details.newName };
     case TenantSuspendedDetailsResponseOperation.TenantSuspended:
@@ -214,6 +281,7 @@ function detailValues(
 export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const t = useTranslations();
   const { date } = useDates();
+  const day = useDay();
   const text = useEntitlementText();
   const { actor, target } = entry;
   const actorName =
@@ -237,6 +305,13 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
       none: t("entitlements.sentence.none"),
       text,
       date,
+      day,
+      termsChanges: (words) =>
+        new Intl.ListFormat(t("locale.format"), {
+          type: "conjunction",
+        }).format(words),
+      termsWord: (word, old) =>
+        t(`activity.termsChanges.${word}`, { old: old ?? "" }),
     }),
     actor: () => <bdi className="font-medium">{actorName}</bdi>,
     target: () => linked(hrefOf(target), targetName),

@@ -475,6 +475,14 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 
 - 11.01 to 11.15 and the command menu's "Terms of use" (2 · Shell). The Activity log sentences of 38-design.
 - It waits for 38-design and 38-backend.
+- Done (`apps/platform/src/features/terms/`, on `/settings/terms`, `/settings/terms/new`, `/settings/terms/[versionId]` and `/settings/terms/[versionId]/edit`). The points it settled:
+  - The list hides a cancelled version, as 11.13 draws it; the cancelled version's page stays, and the Activity log links to it. Before the first version the page shows its text and Add version only.
+  - A version's day is a calendar day of UTC, so the screens write it in UTC, never in the system admin's zone (F18). The reason of a disabled Add version names the full day ("1 Dec 2026"), as a scheduled day can be in the next year; 11.01, 11.04, 11.14, 11.16 and 11.17 now say so, and 11.07 and 11.08 no longer show it, as the reason needs the list's answer.
+  - Edit version's Save changes stays off until a value changes, as the plan editor's (6.04); 11.10 now draws it disabled.
+  - A version's people show for a version that requires acceptance only, in two tabs in the URL (`?people=not_yet`); the phone's version page has its values and actions only (11.15).
+  - The Activity log's "changed" sentence names the date, the link, the summary and the acceptance; an edit that only turns the email on says "sent an email" (7.09).
+  - `ListTermsVersionPeople` is an infinite query of the generated client, by its cursor (F9).
+  - A version's page and the forms name the section and the record in the breadcrumb, "Terms of use › 1 Dec 2026" and "Terms of use › New version" (F59), and the phone's top bar names the day; 11.02, 11.03, 11.05, 11.06 and 11.10 to 11.12 and 11.15 now draw it.
 
 38-frontend-web, the gate, the notice and the link:
 
@@ -626,7 +634,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 38, in the parts of section 6. 38-start, 38-design and 38-backend are done; the frames of the email switch are merged (#286), so the two frontend parts can start. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
+3. Step 38, in the parts of section 6. 38-start, 38-design, 38-backend and 38-frontend-platform are done; 38-frontend-web is the part left. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
