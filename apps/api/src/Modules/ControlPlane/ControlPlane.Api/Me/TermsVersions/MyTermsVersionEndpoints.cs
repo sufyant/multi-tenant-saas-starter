@@ -12,7 +12,7 @@ using Wolverine;
 namespace ControlPlane.Api.Me.TermsVersions;
 
 /// <summary>The terms the signed-in person must accept or read, after sign-in (docs/flows/terms-of-use.md). They run without a tenant.</summary>
-public static class MyTermsEndpoints
+public static class MyTermsVersionEndpoints
 {
     public static void Map(RouteGroupBuilder me)
     {

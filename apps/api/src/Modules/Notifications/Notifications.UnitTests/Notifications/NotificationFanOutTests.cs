@@ -4,7 +4,7 @@ namespace Notifications.UnitTests.Notifications;
 
 // A fan-out to every user goes at a pace: the first deliveries of each second at once, the later ones a second later each, so one event
 // never sends more emails a second than the setting allows (Resend, "Rate limit").
-public sealed class NotificationFanOutPaceTests
+public sealed class NotificationFanOutTests
 {
     [Theory]
     [InlineData(0, 0)]

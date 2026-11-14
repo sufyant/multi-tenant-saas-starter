@@ -33,15 +33,6 @@ public interface ITermsVersionRepository
     /// <summary>Records the acceptance; a second acceptance of the same version by the same user records nothing more (O4).</summary>
     internal Task AcceptAsync(TermsAcceptance acceptance, CancellationToken cancellationToken);
 
-    /// <summary>Whether the user accepted the version.</summary>
-    internal Task<bool> HasAcceptedAsync(Guid versionId, Guid userId, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Adds the acceptance of a user the transaction may add too, as accepting an invitation adds a new user; the caller saves, and the
-    /// user's row goes first.
-    /// </summary>
-    internal void Add(TermsAcceptance acceptance);
-
     /// <summary>Records the dismissal; a second one of the same notice by the same user records nothing more.</summary>
     internal Task DismissAsync(TermsNoticeDismissal dismissal, CancellationToken cancellationToken);
 

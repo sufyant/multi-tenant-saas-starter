@@ -21,7 +21,7 @@ namespace ControlPlane.Api.Platform.TermsVersions;
 /// The terms of use a system admin manages: the versions, the scheduled one's edit and cancellation, and each version's people
 /// (docs/flows/terms-of-use.md). A version belongs to no tenant, so every read and command runs without one.
 /// </summary>
-public static class TermsEndpoints
+public static class TermsVersionEndpoints
 {
     public static void Map(RouteGroupBuilder platform)
     {

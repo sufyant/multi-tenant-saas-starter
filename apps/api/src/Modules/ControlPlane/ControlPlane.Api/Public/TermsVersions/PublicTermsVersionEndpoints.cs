@@ -9,7 +9,7 @@ using Wolverine;
 namespace ControlPlane.Api.Public.TermsVersions;
 
 /// <summary>The terms version in force, for anyone before sign-in: the "Terms" link of the entry pages opens its link.</summary>
-public static class PublicTermsEndpoints
+public static class PublicTermsVersionEndpoints
 {
     /// <summary>
     /// How long a browser or a cache in between may keep the answer. A new version takes effect at the start of its day and a version in

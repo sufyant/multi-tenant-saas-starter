@@ -41,18 +41,18 @@ public static class ControlPlaneModule
         PlatformInvitationEndpoints.Map(platform);
         PlatformMemberEndpoints.Map(platform);
         PlanEndpoints.Map(platform);
-        TermsEndpoints.Map(platform);
+        TermsVersionEndpoints.Map(platform);
         UserEndpoints.Map(platform);
         SystemAdminEndpoints.Map(platform);
         MyProfileEndpoints.Map(me);
         DataExportEndpoints.Map(me);
         MyTenantEndpoints.Map(me);
         MyInvitationEndpoints.Map(me);
-        MyTermsEndpoints.Map(me);
+        MyTermsVersionEndpoints.Map(me);
         TenantProfileEndpoints.Map(tenant);
         MemberEndpoints.Map(tenant);
         InvitationEndpoints.Map(tenant);
         RoleEndpoints.Map(tenant);
-        PublicTermsEndpoints.Map(publicRoutes);
+        PublicTermsVersionEndpoints.Map(publicRoutes);
     }
 }

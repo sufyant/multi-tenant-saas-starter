@@ -108,12 +108,6 @@ public static class AcceptInvitationHandler
             users.Add(user);
         }
 
-        // GDPR, Article 7(1): the acceptance is the record of the text the person agreed to. A known user who accepted it already keeps
-        // their first acceptance.
-        if (termsVersion is { Value: { } accepting } && (existing is null || !await terms.HasAcceptedAsync(accepting.Id, user.Id, cancellationToken)))
-        {
-            terms.Add(new TermsAcceptance(accepting.Id, user.Id, now));
-        }
 
         var membership = accepted.Value;
         var roles = await tenants.FindRolesAsync(cancellationToken);
@@ -125,6 +119,14 @@ public static class AcceptInvitationHandler
             && (await tenants.FindOwnerAddressesAsync(cancellationToken)).Count == 0;
         var invitedBy = await tenants.FindMembershipAsync(invitation.InvitedBy, cancellationToken) is null ? (Guid?)null : invitation.InvitedBy;
         await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
+
+        // GDPR, Article 7(1): the acceptance is the record of the text the person agreed to. The new user's row is saved first, for the
+        // acceptance's key. A known user who accepted it already, by the gate at the same moment too, keeps their first acceptance (I1).
+        if (termsVersion is { Value: { } accepting })
+        {
+            await terms.SaveChangesAsync(cancellationToken);
+            await terms.AcceptAsync(new TermsAcceptance(accepting.Id, user.Id, now), cancellationToken);
+        }
         return (
             MyTenantView.Of(tenant, role),
             [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id, tenant.Name, invitedBy, firstOwner, role.Name, role.BuiltIn is not null)]);

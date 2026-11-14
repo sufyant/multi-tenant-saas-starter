@@ -40,13 +40,13 @@ Neither writes an audit entry: the acceptance is its own record, the user, the v
 
 ## 5. Accept invitation
 
-An invitee who has no account yet ticks the terms on Accept invitation (1.15). `AcceptInvitation` then sends `termsVersionId`, the version in force. In the tenant's transaction, after the tenant's checks and before any change (W7), the version is locked against an edit; a version that is not in force answers 409 `terms_version.changed`, and nothing is added. The acceptance is added with the new user, in the same transaction. A known user who accepted it already keeps their first acceptance. The checkbox covers the version in force only: a scheduled version that requires acceptance asks at the gate right after.
+An invitee who has no account yet ticks the terms on Accept invitation (1.15). `AcceptInvitation` then sends `termsVersionId`, the version in force. In the tenant's transaction, after the tenant's checks and before any change (W7), the version is locked against an edit; a version that is not in force answers 409 `terms_version.changed`, and nothing is added. The acceptance is added after the new user's row, in the same transaction. A known user who accepted it already, even by the gate at the same moment, keeps their first acceptance (I1). The checkbox covers the version in force only: a scheduled version that requires acceptance asks at the gate right after.
 
 ## 6. The notice email
 
 1. `TermsVersionCreatedEvent` reaches Notifications. A version that requires acceptance tells nobody: the gate asks for it.
 2. A version that requires no acceptance tells every user who may accept, but the system admin who created it (U3), with the type `terms_version.created`. It goes by email only: Home shows the notice from `GetMyTerms`, not from the bell (U5).
-3. The fan-out reaches every user at once, so it gives a pace: `Notifications:Pace:DeliveriesPerSecond` (5) deliveries each second. Each later delivery is a message scheduled a second after the ones before it. Example: 1000 users take 200 seconds. Resend allows 10 requests a second to the whole team by default, so half of it stays for the invitations and the codes of the same seconds (Resend, "Rate limit").
+3. The fan-out reaches every user at once, so it gives a pace: `Notifications:Pace:DeliveriesPerSecond` (5) deliveries each second. Each later delivery is a message scheduled a second after the ones before it. Example: 1000 users take 200 seconds. Resend allows 10 requests a second to the whole team by default, so half of it stays for the invitations and the codes of the same seconds (Resend, "Rate limit"). Wolverine releases scheduled messages at each poll of its store, 5 s by default, so the deliveries of a few seconds may still go together. An email that Resend refuses for its rate limit (429) takes the growing retries of `Notifications:InvitationEmails:RetryDelays`, so it goes later and does not reach the dead letter queue at once (U3).
 4. The email's texts are in `packages/emails/messages/*.json`: the day, written in the reader's language and in no time zone, the link, and the summary, or a text without it.
 
 An edit or a cancellation sends no email.

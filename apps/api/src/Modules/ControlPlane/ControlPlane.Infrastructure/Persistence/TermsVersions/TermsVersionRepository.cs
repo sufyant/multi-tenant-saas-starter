@@ -46,11 +46,6 @@ public sealed class TermsVersionRepository(ControlPlaneDbContext controlPlane) :
             """,
             cancellationToken);
 
-    async Task<bool> ITermsVersionRepository.HasAcceptedAsync(Guid versionId, Guid userId, CancellationToken cancellationToken) =>
-        await controlPlane.TermsAcceptances.AnyAsync(acceptance => acceptance.VersionId == versionId && acceptance.UserId == userId, cancellationToken);
-
-    void ITermsVersionRepository.Add(TermsAcceptance acceptance) => controlPlane.TermsAcceptances.Add(acceptance);
-
     async Task ITermsVersionRepository.DismissAsync(TermsNoticeDismissal dismissal, CancellationToken cancellationToken) =>
         await controlPlane.Database.ExecuteSqlAsync(
             $"""
