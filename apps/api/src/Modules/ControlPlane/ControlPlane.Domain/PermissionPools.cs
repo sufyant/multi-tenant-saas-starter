@@ -38,6 +38,14 @@ internal static class PermissionPools
 
     public const string PlatformPlansUpdate = "platform.plans.update";
 
+    public const string PlatformTermsRead = "platform.terms.read";
+
+    public const string PlatformTermsCreate = "platform.terms.create";
+
+    public const string PlatformTermsUpdate = "platform.terms.update";
+
+    public const string PlatformTermsCancel = "platform.terms.cancel";
+
     public const string PlatformUsersRead = "platform.users.read";
 
     public const string PlatformUsersSuspend = "platform.users.suspend";
@@ -118,6 +126,10 @@ internal static class PermissionPools
         PlatformPlansRead,
         PlatformPlansCreate,
         PlatformPlansUpdate,
+        PlatformTermsRead,
+        PlatformTermsCreate,
+        PlatformTermsUpdate,
+        PlatformTermsCancel,
         PlatformUsersRead,
         PlatformUsersSuspend,
         PlatformUsersReactivate,

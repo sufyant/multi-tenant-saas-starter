@@ -8,7 +8,8 @@ internal static class TablesWithoutTenant
     public const string MigrationHistory = "__ef_migrations_history";
 
     // ControlPlane's data above tenants (the roles belong to a tenant, A2), the tenants' summaries and entitlement overrides, which the
-    // platform reads across tenants as it reads the tenants (R12), the plans, their values and the default mark, the platform's audit log,
+    // platform reads across tenants as it reads the tenants (R12), the plans, their values and the default mark, the terms versions
+    // and the users' acceptances and dismissals of them, which belong to no tenant (step 38), the platform's audit log,
     // and the host's idempotency keys. Notifications belong to a user (U3): their own policy keeps each
     // user to their rows (ExtraPolicies).
     public static readonly IReadOnlySet<string> Tables = new HashSet<string>(StringComparer.Ordinal)
@@ -23,6 +24,9 @@ internal static class TablesWithoutTenant
         "control_plane.system_admins",
         "control_plane.stored_files",
         "control_plane.verification_codes",
+        "control_plane.terms_versions",
+        "control_plane.terms_acceptances",
+        "control_plane.terms_notice_dismissals",
         "api.idempotency_keys",
         "audit.platform_entries",
         "notifications.notifications",
