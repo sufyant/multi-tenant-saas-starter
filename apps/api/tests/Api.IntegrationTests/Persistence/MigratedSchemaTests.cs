@@ -140,6 +140,9 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.__ef_migrations_history: SELECT
             table control_plane.default_plans: DELETE, INSERT, SELECT, UPDATE
             table control_plane.entitlement_overrides: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.feature_flag_changes: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.feature_flag_tenants: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.feature_flags: DELETE, INSERT, SELECT, UPDATE
             table control_plane.invitations: DELETE, INSERT, SELECT, UPDATE
             table control_plane.memberships: DELETE, INSERT, SELECT, UPDATE
             table control_plane.plan_entitlements: DELETE, INSERT, SELECT, UPDATE
@@ -414,6 +417,13 @@ public sealed class MigratedSchemaTests(Database database)
             fk_default_plans_plans_plan_id: RESTRICT
             fk_entitlement_overrides_tenants_tenant_id: RESTRICT
             fk_entitlement_overrides_users_set_by: RESTRICT
+            fk_feature_flag_changes_feature_flags_flag_id: RESTRICT
+            fk_feature_flag_changes_tenants_tenant_id: RESTRICT
+            fk_feature_flag_changes_users_actor_id: RESTRICT
+            fk_feature_flag_tenants_feature_flags_flag_id: RESTRICT
+            fk_feature_flag_tenants_tenants_tenant_id: RESTRICT
+            fk_feature_flag_tenants_users_listed_by: RESTRICT
+            fk_feature_flags_users_last_changed_by: RESTRICT
             fk_invitations_roles_tenant_id_role_id: SET NULL (role_id)
             fk_invitations_tenants_tenant_id: RESTRICT
             fk_invitations_users_accepted_by: RESTRICT
