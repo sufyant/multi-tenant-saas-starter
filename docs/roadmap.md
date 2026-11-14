@@ -15,7 +15,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 37d | Dependent limits | done |
 | 38 | Terms of use | done |
 | 39 | Feature flags | done |
-| 40 | Billing | todo |
+| 40 | Billing | in progress |
 | 41 | Extension points | todo |
 | 42 | Observability | todo |
 | 43 | Accessibility and end-to-end tests | todo |
@@ -562,7 +562,7 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 
 ## 8. Step 40: Billing
 
-Status: todo.
+Status: in progress.
 
 The model:
 
@@ -614,6 +614,69 @@ The model:
 - The sign-up flow: sign up, accept the terms, create the organisation, start a 14-day Business trial, invite the team.
 - A person creates at most 3 organisations.
 - Sign-up needs a captcha and a verified email.
+
+Open (40-start, 2026-11-14), asked one at a time; each answer goes here with its date:
+
+- Is billing a switch of the product's configuration, off by default, or always on? 8.42, 8.44 and 9.18 draw a product "without billing".
+- Which meter does the template ship? The frames count "AI requests", which the template does not have.
+- One currency for each deployment, or more? The frames show euros.
+- Does the Plan row stay on General (F56, 7.01)? The built page has it; the frame 7.01 does not.
+
+Decided by the frames, and 40-start's choices (2026-11-14):
+
+- A trial lives in our app. It has no Stripe subscription and no card; the first payment opens Stripe Checkout and ends the trial (10.08: "No card needed until you pay. Paying ends the trial."; 1.28).
+- The plan's prices are kept in our app and written to Stripe as Products and Prices. A Stripe Price never changes, so a price change makes a new Price (Stripe, "Change prices"). Usage goes to Stripe as meter events of Billing Meters (Stripe, "Usage-based billing").
+- Stripe's settings are code, as Clerk's are: the customer portal's settings and the webhook endpoint live in `.stripe/`. Agents may run `pnpm stripe:plan`; only the maintainer runs `pnpm stripe:apply` (`AGENTS.md`, "Repository settings").
+- A webhook is signed (the A5 exception above), handled once for each Stripe event id, and goes through the durable inbox.
+- Our app sends the lifecycle emails of 13.16 to 13.25. Stripe sends the receipts and the invoices. Stripe's own failed-payment emails stay off, so a person gets one email, not two.
+- An amount in the API is a whole number of the currency's minor unit with its currency code (Fowler, *Patterns of Enterprise Application Architecture*, "Money").
+- The platform's Sign-up frames (13.01 to 13.05) go: the platform's Settings holds only System admins, Terms of use and Feature flags (the decision of 2026-11-14 in section 7). The number of organisations a person can create (3) is set in the product's configuration, beside the sign-up mode.
+- Seats count members and pending invitations, without the Billing manager (10.01: "11 members, 1 of them a billing manager who uses no seat, and 2 pending invitations: 12 of 15 seats").
+
+The parts of 40, in their order. Each part is one pull request or more; the pull request of 40-start holds the table of every frame with its part, and the table of every value with its field.
+
+40-design, before the frontend parts, one thread at a time:
+
+- The answers of the open points above: the meter's name in every Billing, Usage and bar frame; 7.01 with or without the Plan row.
+- 14.09 (General as a Billing manager) says "Your role: Member"; it says "Billing manager".
+- 1.27 gets its own title (`docs/design/followups.md`). Platform 11.17 highlights only Terms of use.
+- The Activity log sentences of billing, in the web's log (section 12) and the platform's (section 7, as 7.10): a plan change, a cancellation and its undo, a payment failed, the move to the default plan, a trial given or extended, Contract on or off, a price change, the spending cap.
+- The sentence of a shorter Activity log period on 10.02, 10.03, 10.06 and 10.09 (37c; the maintainer's decision of 2026-11-11).
+- The dark and Arabic forms of Usage (11.01), as the earlier steps drew one of each.
+- Remove the platform's 13.01 to 13.05.
+- A note with the Turkish and Arabic texts of the step's frames.
+- It waits for the answers above; it runs beside the backend parts.
+
+40a-backend, prices and the Billing manager:
+
+- 40a's points above: a plan's base fee and fee per person, monthly and yearly; its meters and limits; the seeded plans; `tenant.billing.manage`; the Billing manager role, free, without a seat.
+- The plan's prices and meters in the platform's plan endpoints (6.13), and the seat count without the Billing manager in `GetMyTenant` and the platform's tenant plan.
+- It waits for nothing.
+
+40a-frontend: the platform's 6.13; the web's 14.01 to 14.10, 14.13, 9.14, 9.18 and 9.19, and the Billing manager in the role lists (14.02 to 14.07). It waits for 40-design and 40a-backend.
+
+40b-backend, Stripe:
+
+- 40b's points above, behind one interface (`IBillingProvider`) with a fake for the tests. Checkout, the portal, the webhooks, the subscription's state, the dunning (retrying, grace, moved to the default plan), the scheduled changes and their undo, Contract, the price change and its three options (6.14 to 6.16), the billing email, and the emails and bells of 13.18 to 13.21, 3.17 and 3.18.
+- It waits for 40a-backend.
+
+40b-frontend: the web's 10.01 to 10.07, 10.10 to 10.13, 10.15 to 10.24, 14.11, 14.14, 2.31 to 2.33, 3.17 and 3.18, and Members' and Roles' card and Contract forms (8.39, 8.40, 8.43, 8.45, 9.14, 9.19); the platform's 4.27, 4.31 to 4.36, 4.38, 4.45, 6.14 to 6.16 and the Organisation's "Plan and billing" tab. It waits for 40-design and 40b-backend.
+
+40c-backend, usage metering:
+
+- 40c's points above: the meters in code, the totals of each organisation for each period, the report to Stripe, the bells and emails at 80% and 100% (13.22, 13.23), the spending cap and its stop (13.24).
+- It waits for 40b-backend.
+
+40c-frontend: the web's 11.01 to 11.09, 14.12, 14.15, 2.34 to 2.37; the platform's 4.37 and 4.42. It waits for 40-design and 40c-backend.
+
+40d-backend, trial and sign-up:
+
+- 40d's points above: the trial and its end, Give trial and Extend trial, the trial's emails and bells (13.16, 13.17, 3.19, 3.20), sign-up behind its configuration switch with the identity provider's sign-up mode (`.clerk/`), Create your organisation with its limit, and the welcome email (13.25).
+- It waits for 40b-backend.
+
+40d-frontend: the web's 1.24 to 1.34, 2.38, 2.39, 10.08, 10.09, 10.14, 3.19 and 3.20; the platform's 4.28 to 4.30, 4.39, 4.47 and 4.48. It waits for 40-design and 40d-backend.
+
+Which parts run at the same time: 40-design runs beside any backend part. A frontend part runs beside the next backend part (40a-frontend beside 40b-backend). 40c-backend and 40d-backend touch different modules' use cases but both build on 40b's subscription state, so they run one after the other, 40c first.
 
 ## 9. Step 41: Extension points
 
@@ -690,10 +753,10 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 39, in the parts of section 7. 39-start, 39-design, 39-backend and 39-frontend are done. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
+3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
+5. Step 40, in the parts of section 8. 40-start is done; four points wait for the maintainer (section 8, "Open"). Then steps 41 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:
