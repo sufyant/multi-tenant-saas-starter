@@ -282,7 +282,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 
     // The flags whose first rule lists the tenant forget it, each locked after the tenant, in the order of the flags' ids, so two purges
-    // that share a flag take it in one order (K6c). A command that changes a listing takes the tenant's row first too (K6a).
+    // that share a flag take it in one order. A command that changes a listing takes the tenant's row first too (K6p).
     private async Task ForgetInFeatureFlagsAsync(Tenant purged, CancellationToken cancellationToken)
     {
         var now = purged.PurgedAt ?? throw new InvalidOperationException("A purged tenant has the moment of its purge.");

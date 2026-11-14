@@ -204,8 +204,9 @@ public static class NotificationCatalog
                 new("summary", NotificationValueKind.Text, Optional: true),
             ]),
 
-        // The weekly cleanup of the feature flags tells every system admin, in the platform's bell only: a flag to remove is the platform's
-        // housekeeping, no change of anyone's access (U5). It leads to the platform's Feature flags.
+        // The weekly cleanup of the feature flags tells every system admin, in the platform's bell only, as the platform tells them of an
+        // organisation's new Owner: the product fixes its channel, and no access changes, so no email goes (U5, G6). It leads to the
+        // platform's Feature flags.
         FeatureFlagCleanup(FeatureFlagsReadyToRemove),
         FeatureFlagCleanup(FeatureFlagsUnused),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);

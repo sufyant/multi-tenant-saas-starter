@@ -8,7 +8,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.FeatureFlags.AddFeatureFlagTenant;
 
-// K6a, K6c: the organisation's row is held against a change first, so its purge or closure runs before or after the listing, never
+// K6p: the organisation's row is held against a change first, so its purge or closure runs before or after the listing, never
 // between; then the flag is locked. A closed, purging or purged organisation is not listed (409 tenant.not_active), as its plan is
 // read-only (E2). An organisation listed already answers as it is and announces nothing (I1).
 public static class AddFeatureFlagTenantHandler

@@ -49,8 +49,12 @@ internal sealed partial class FeatureFlagEvaluation(ControlPlaneDbContext contro
             StringComparer.Ordinal);
     }
 
-    private async Task<TenantFeatureFlagRows> ReadAsync(Guid tenantId, CancellationToken cancellationToken) =>
-        new(await controlPlane.FeatureFlags
+    // W1's fourth exception: a handler of any module asks, and Wolverine locates the evaluation from the message's scope, so the read
+    // opens a short read-only transaction of its own when the DbContext has none. It declares nobody: the flags belong to no tenant (R6).
+    private async Task<TenantFeatureFlagRows> ReadAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        await using var transaction = controlPlane.Database.CurrentTransaction is null ? await controlPlane.Database.BeginTransactionAsync(cancellationToken) : null;
+        var rows = await controlPlane.FeatureFlags
             .Where(flag => flag.RemovedAt == null)
             .OrderBy(flag => flag.Key)
             .Select(flag => new FeatureFlagRuleRow(
@@ -58,5 +62,12 @@ internal sealed partial class FeatureFlagEvaluation(ControlPlaneDbContext contro
                 controlPlane.FeatureFlagTenants.Any(listed => listed.FlagId == flag.Id && listed.TenantId == tenantId),
                 flag.Percentage,
                 flag.EveryoneElse))
-            .ToArrayAsync(cancellationToken));
+            .ToArrayAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return new(rows);
+    }
 }

@@ -6,7 +6,7 @@ using Wolverine;
 
 namespace ControlPlane.Application.FeatureFlags.RemoveFeatureFlagTenant;
 
-// K6a, K6c: the organisation's row first, held against a change, then the flag, in the order of a listing and of the purge. An
+// K6p: the organisation's row first, held against a change, then the flag, in the order of a listing and of the purge. An
 // organisation of any status leaves the rule. One that is not listed answers as it is and announces nothing (I1).
 public static class RemoveFeatureFlagTenantHandler
 {
