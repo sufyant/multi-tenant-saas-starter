@@ -1,16 +1,11 @@
 "use client";
 
-import { brand } from "@repo/brand";
-import {
-  AuthCard,
-  AuthFooter,
-  AuthLayout,
-} from "@repo/ui/components/auth-layout";
+import { AuthCard, AuthLayout } from "@repo/ui/components/auth-layout";
 import { Button } from "@repo/ui/components/button";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { setLocale } from "@/i18n/set-locale";
+import { TermsAuthFooter } from "@/shared/terms-link";
 
 /** The key of this tab's storage that carries the deleted account's address to its page, once. */
 export const deletedEmailKey = "deleted-account-email";
@@ -28,15 +23,7 @@ export function DeletedAccount() {
     sessionStorage.removeItem(deletedEmailKey);
   }, []);
   return (
-    <AuthLayout
-      brand={t("meta.title")}
-      footer={
-        <AuthFooter
-          onLanguageChange={setLocale}
-          privacyUrl={brand.privacyUrl}
-        />
-      }
-    >
+    <AuthLayout brand={t("meta.title")} footer={<TermsAuthFooter />}>
       <AuthCard>
         <h1 className="text-page-title">{t("securityPage.deletedTitle")}</h1>
         <p className="text-body text-muted-foreground">

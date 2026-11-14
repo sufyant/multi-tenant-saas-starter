@@ -26,6 +26,9 @@ import {
   type MyTenantDetailResponse,
   type MyTenantResponse,
   type MyTenantResponseStatus,
+  type MyTermsResponse,
+  MyTermsResponseAction,
+  type MyTermsVersionResponse,
   NotificationLinkResponseKind,
   type NotificationResponse,
   NotificationType,
@@ -36,6 +39,7 @@ import {
   type RoleResponse,
   RoleUpdatedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  type TermsInForceResponse,
 } from "@repo/api-client";
 
 // The API at the browser's door: the page's calls to /api/v1 get these answers, so a page test needs no API and no database.
@@ -187,12 +191,40 @@ export const pro: Plan = {
   usage: { "members.max": 0, "roles.custom.max": customRoles.length },
 };
 
+/** The version in force of the terms' frames: 1 June 2026, before the frames' new version of 1 December. */
+export const termsInForce: TermsInForceResponse = {
+  id: "0198f0a2-0000-7000-8000-00000000a601",
+  effectiveDate: "2026-06-01",
+  url: "https://starter.example/terms/2026-06",
+};
+
+/** The frames' new version (1.09, 4.03): 1 December 2026, with the summary of 1.09. */
+export const decemberTerms: MyTermsVersionResponse = {
+  id: "0198f0a2-0000-7000-8000-00000000a612",
+  effectiveDate: "2026-12-01",
+  url: "https://starter.example/terms/2026-12",
+  summary:
+    "We now keep exported data files for 7 days, and section 6 names the companies that process your data.",
+  requiresAcceptance: true,
+};
+
+/** GetMyTerms answers this, on every signed-in page; the person must do nothing by default. */
+export const mockMyTerms = (page: Page, answer: MyTermsResponse) =>
+  page.route("**/api/v1/me/terms", (route) => route.fulfill({ json: answer }));
+
 export async function mockApi(
   page: Page,
   language: Language = Language.En,
 ): Promise<void> {
   await page.route("**/api/v1/me", (route) =>
     route.fulfill({ json: me(language) }),
+  );
+  await mockMyTerms(page, {
+    action: MyTermsResponseAction.Nothing,
+    version: null,
+  });
+  await page.route("**/api/v1/public/terms", (route) =>
+    route.fulfill({ json: termsInForce }),
   );
   await mockDataExport(page);
   // The personal bell of the pages without an organisation (F57).

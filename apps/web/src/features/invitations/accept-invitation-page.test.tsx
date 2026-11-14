@@ -9,6 +9,7 @@ import {
   getGetInvitationPreviewMockHandler,
   getGetMeMockHandler,
   getGetMeResponseMock,
+  getGetTermsInForceMockHandler,
 } from "@repo/api-client/msw";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -105,7 +106,18 @@ const knownUser = getGetMeMockHandler(
   }),
 );
 
-const server = setupServer();
+// Before the first version no terms are in force (204): the form shows no box. A test with a version in force says so.
+const noTermsInForce = http.get(
+  "*/v1/public/terms",
+  () => new HttpResponse(null, { status: 204 }),
+);
+const termsInForce = {
+  id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e31",
+  effectiveDate: "2026-06-01",
+  url: "https://starter.example/terms/2026-06",
+};
+
+const server = setupServer(noTermsInForce);
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
@@ -197,7 +209,111 @@ describe("AcceptInvitationPage", () => {
     expect(accepted).toHaveBeenCalledWith({
       code,
       name: "Ali Kaya",
+      termsVersionId: null,
     });
+  });
+
+  it("AcceptInvitationPage_NewPersonWithTermsInForce_AcceptsThemWithTheInvitation", async () => {
+    setUp();
+    const accepted = vi.fn();
+    server.use(
+      notAUser,
+      getGetInvitationPreviewMockHandler(pending),
+      getGetTermsInForceMockHandler(termsInForce),
+      getAcceptInvitationMockHandler(async ({ request }) => {
+        accepted(await request.json());
+        return {
+          id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
+          name: "Northwind Traders",
+          slug: "northwind",
+          status: "active",
+          role: roleOf.member,
+        };
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    // Frame 1.15: the link of the version in force, and the box that enables Accept and continue.
+    await user.type(
+      await screen.findByRole("textbox", { name: "Name" }),
+      "Ali Kaya",
+    );
+    expect(
+      screen.getByRole("button", { name: "Read the terms ↗" }),
+    ).toHaveAttribute("href", termsInForce.url);
+    expect(
+      screen.getByRole("button", { name: "Accept and continue" }),
+    ).toBeDisabled();
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "I have read and agree to the Terms of use",
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Accept and continue" }),
+    );
+
+    await vi.waitFor(() => expect(push.fn).toHaveBeenCalledWith("/northwind"));
+    expect(accepted).toHaveBeenCalledWith({
+      code,
+      name: "Ali Kaya",
+      termsVersionId: termsInForce.id,
+    });
+  });
+
+  it("AcceptInvitationPage_KnownPersonWithTermsInForce_ShowsNoBox", async () => {
+    setUp();
+    server.use(
+      knownUser,
+      getGetInvitationPreviewMockHandler(pending),
+      getGetTermsInForceMockHandler(termsInForce),
+    );
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    expect(
+      await screen.findByRole("button", { name: "Accept and continue" }),
+    ).toBeEnabled();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  it("AcceptInvitationPage_TermsInForceChanged_SaysSoAndShowsTheNewLink", async () => {
+    setUp();
+    const newer = { ...termsInForce, url: "https://starter.example/terms/v2" };
+    const answer = vi
+      .fn<() => typeof termsInForce>()
+      .mockReturnValueOnce(termsInForce)
+      .mockReturnValue(newer);
+    server.use(
+      notAUser,
+      getGetInvitationPreviewMockHandler(pending),
+      getGetTermsInForceMockHandler(() => answer()),
+      http.post("*/v1/me/invitations/accept", () =>
+        problem(409, ErrorCode.TermsVersionChanged),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    await user.type(
+      await screen.findByRole("textbox", { name: "Name" }),
+      "Ali Kaya",
+    );
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(
+      screen.getByRole("button", { name: "Accept and continue" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "The terms changed since you opened them. Read them again, then accept.",
+      ),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Read the terms ↗" }),
+      ).toHaveAttribute("href", newer.url),
+    );
   });
 
   it("AcceptInvitationPage_NewPersonWithoutAName_SaysFillItInAndSendsNothing", async () => {

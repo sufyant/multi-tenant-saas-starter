@@ -1,10 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type InvitationPreviewResponse, schemas } from "@repo/api-client";
+import {
+  type InvitationPreviewResponse,
+  schemas,
+  type TermsInForceResponse,
+} from "@repo/api-client";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
+import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { useTranslations } from "next-intl";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { InvitationHeading } from "./join-card";
@@ -17,10 +23,19 @@ const names = schemas.AcceptInvitationBody.pick({ name: true }).extend({
 
 export type Names = z.infer<typeof names>;
 
-/** A new person types their name before they join (the AcceptNewPerson board, in frame 1.13's card): the identity provider keeps none (A7). */
+/** What a new person sends with the invitation: their name, and the terms version in force they accepted, or null without one. */
+export type NewPerson = Names & { termsVersionId: string | null };
+
+/**
+ * A new person types their name before they join (the AcceptNewPerson board, in frame 1.13's card): the identity provider keeps
+ * none (A7). With a terms version in force, they read it and tick the box, which enables Accept (frame 1.15); the API records the
+ * acceptance with the new user. The box covers the version in force only: a scheduled version that requires acceptance asks at the
+ * gate right after.
+ */
 export function NewPersonForm({
   preview,
   email,
+  terms,
   onJoin,
   pending,
   error,
@@ -28,13 +43,17 @@ export function NewPersonForm({
 }: {
   preview: InvitationPreviewResponse;
   email: string;
-  onJoin: (names: Names) => void;
+  /** The terms version in force, or undefined before the first version. */
+  terms?: TermsInForceResponse;
+  onJoin: (person: NewPerson) => void;
   pending: boolean;
   error?: string;
   /** The API's field errors, as message keys, keyed by the field's JSON name (F4). */
   fieldErrors?: Partial<Record<keyof Names, string>>;
 }) {
   const t = useTranslations();
+  const agreeId = useId();
+  const [agreed, setAgreed] = useState(false);
   const form = useForm<Names>({
     resolver: zodResolver(names),
     defaultValues: { name: "" },
@@ -51,7 +70,9 @@ export function NewPersonForm({
       </p>
       <form
         noValidate
-        onSubmit={form.handleSubmit(onJoin)}
+        onSubmit={form.handleSubmit((values) =>
+          onJoin({ ...values, termsVersionId: terms?.id ?? null }),
+        )}
         className="flex flex-col gap-3"
       >
         <Input
@@ -60,11 +81,32 @@ export function NewPersonForm({
           error={message("name")}
           {...form.register("name")}
         />
+        {terms && (
+          <>
+            <Button
+              variant="ghost"
+              className="self-center"
+              render={<a href={terms.url} target="_blank" rel="noreferrer" />}
+              nativeButton={false}
+            >
+              {t("terms.read")}
+            </Button>
+            <div className="flex items-start justify-center gap-2 text-body">
+              <Checkbox
+                id={agreeId}
+                checked={agreed}
+                onCheckedChange={setAgreed}
+                className="mt-0.5"
+              />
+              <label htmlFor={agreeId}>{t("terms.agree")}</label>
+            </div>
+          </>
+        )}
         <Button
           type="submit"
           variant="primary"
           className="w-full"
-          disabled={pending}
+          disabled={pending || (terms !== undefined && !agreed)}
         >
           {t("invitations.accept")}
         </Button>

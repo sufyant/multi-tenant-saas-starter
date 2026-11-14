@@ -23,6 +23,8 @@ export type SsoCallbackProps = {
   onLanguageChange: (language: Language) => Promise<void>;
   /** The brand's privacy policy. */
   privacyUrl: string;
+  /** The link of the terms version in force, which the footer shows as "Terms"; undefined hides it. */
+  termsUrl?: string;
 };
 
 /**
@@ -36,6 +38,7 @@ export function SsoCallback({
   platformLabel,
   onLanguageChange,
   privacyUrl,
+  termsUrl,
 }: SsoCallbackProps) {
   const t = useTranslations("signIn");
   const common = useTranslations("common");
@@ -58,6 +61,7 @@ export function SsoCallback({
           <AuthFooter
             onLanguageChange={onLanguageChange}
             privacyUrl={privacyUrl}
+            termsUrl={termsUrl}
           />
         }
       >
