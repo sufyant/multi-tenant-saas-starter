@@ -94,7 +94,10 @@ describe("useFeatureFlag", () => {
       focusManager.setFocused(true);
     });
 
-    expect(await screen.findByText("emails.send false")).toBeInTheDocument();
+    // The second answer would say true: it must not come within half a second.
+    await expect(
+      screen.findByText("emails.send true", undefined, { timeout: 500 }),
+    ).rejects.toThrow();
     expect(reads.count).toBe(1);
   });
 });
