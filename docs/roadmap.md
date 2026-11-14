@@ -651,7 +651,7 @@ The parts of 40, in their order. Each part is one pull request or more; the pull
 
 - 40a's points above: a plan's base fee and fee per person, monthly and yearly; its meters and limits; the seeded plans; `tenant.billing.manage`; the Billing manager role, free, without a seat.
 - The plan's prices and meters in the platform's plan endpoints (6.13), and the seat count without the Billing manager in `GetMyTenant` and the platform's tenant plan.
-- It waits for nothing.
+- It waits for the API's terms gate (the maintainer's piece of 2026-11-14), so two threads do not change the API at the same time.
 
 40a-frontend: the platform's 6.13; the web's 14.01 to 14.10, 14.13, 9.14, 9.18 and 9.19, and the Billing manager in the role lists (14.02 to 14.07). It waits for 40-design and 40a-backend.
 
