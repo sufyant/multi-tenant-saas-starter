@@ -749,24 +749,62 @@ const isCallOf = (node: ts.Node, name: string): node is ts.CallExpression =>
   ts.isIdentifier(node.expression) &&
   node.expression.text === name;
 
+const mutates = (file: ts.SourceFile): boolean => {
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (isCallOf(node, "useMutation")) found = true;
+    else ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+};
+
+/** The file of a local import: relative to the importing file, or under `alias` for `@/`. A package's import is null. */
+function localModule(
+  from: string,
+  specifier: string,
+  alias: string | undefined,
+): string | null {
+  const base = specifier.startsWith(".")
+    ? join(dirname(from), specifier)
+    : alias && specifier.startsWith("@/")
+      ? join(alias, specifier.slice(2))
+      : null;
+  if (base === null) return null;
+  const candidates = [".tsx", ".ts", "/index.tsx", "/index.ts"].map(
+    (end) => base + end,
+  );
+  return candidates.find((path) => existsSync(path)) ?? null;
+}
+
 /**
  * Rule F63: a navigation after a change goes through `useFreshRouter`, so it carries a fresh session token and keeps the toast. A
- * file that calls `useMutation` and pushes or replaces through a bare `useRouter()` is a finding, at the router's line. A refresh
- * is no navigation, and a file without a mutation navigates after no change of its own.
+ * push or a replace through a bare `useRouter()` is a finding, at the router's line, in a file that calls `useMutation`, and at
+ * the element's line where it runs in a callback given to a component of a local file that calls `useMutation`: a child dialog
+ * that calls it after its change. The callback is the attribute's function, or a `const` function of the file that the attribute
+ * names. `alias` is the folder that `@/` points to. A refresh is no navigation, and a package's component is not followed.
  */
 export function navigationsAfterAChange(
   root: string,
-  options: Options = {},
+  options: Options & { alias?: string } = {},
 ): Finding[] {
   const findings: Finding[] = [];
   for (const path of filesUnder(root)) {
     if (!isCode(path) || isTest(path) || ignored(root, path, options)) continue;
     const file = sourceFile(path);
-    let mutates = false;
     const routers = new Map<string, ts.Node>();
-    const navigating = new Set<string>();
+    const navigations: ts.CallExpression[] = [];
+    const imports = new Map<string, string>();
     const visit = (node: ts.Node) => {
-      if (isCallOf(node, "useMutation")) mutates = true;
+      if (
+        ts.isImportDeclaration(node) &&
+        ts.isStringLiteral(node.moduleSpecifier)
+      )
+        for (const element of node.importClause?.namedBindings &&
+        ts.isNamedImports(node.importClause.namedBindings)
+          ? node.importClause.namedBindings.elements
+          : [])
+          imports.set(element.name.text, node.moduleSpecifier.text);
       if (
         ts.isVariableDeclaration(node) &&
         ts.isIdentifier(node.name) &&
@@ -780,16 +818,135 @@ export function navigationsAfterAChange(
         ts.isIdentifier(node.expression.expression) &&
         ["push", "replace"].includes(node.expression.name.text)
       )
-        navigating.add(node.expression.expression.text);
+        navigations.push(node);
       ts.forEachChild(node, visit);
     };
     visit(file);
-    if (!mutates) continue;
-    for (const [name, node] of routers)
-      if (navigating.has(name))
+    const bare = navigations.filter((call) =>
+      routers.has(
+        (
+          (call.expression as ts.PropertyAccessExpression)
+            .expression as ts.Identifier
+        ).text,
+      ),
+    );
+    if (bare.length === 0) continue;
+    const routerOf = (call: ts.CallExpression) =>
+      (
+        (call.expression as ts.PropertyAccessExpression)
+          .expression as ts.Identifier
+      ).text;
+
+    if (mutates(file)) {
+      const names = new Set(bare.map(routerOf));
+      for (const [name, node] of routers)
+        if (names.has(name))
+          findings.push(
+            `${relative(root, path)}:${lineOf(file, node)}: ${name} navigates in a file with a mutation; wrap it, useFreshRouter(useRouter()) (F63)`,
+          );
+      continue;
+    }
+
+    // The callbacks given to components: each attribute whose value is a function, or names a const function of the file.
+    const constFunctions = new Map<string, ts.Node>();
+    const attributes: { attribute: ts.JsxAttribute; callback: ts.Node }[] = [];
+    const isFunction = (node: ts.Node) =>
+      ts.isArrowFunction(node) || ts.isFunctionExpression(node);
+    const collect = (node: ts.Node) => {
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.initializer &&
+        isFunction(node.initializer)
+      )
+        constFunctions.set(node.name.text, node.initializer);
+      ts.forEachChild(node, collect);
+    };
+    collect(file);
+    const collectAttributes = (node: ts.Node) => {
+      if (
+        ts.isJsxAttribute(node) &&
+        node.initializer &&
+        ts.isJsxExpression(node.initializer) &&
+        node.initializer.expression
+      ) {
+        const value = node.initializer.expression;
+        const callback = isFunction(value)
+          ? value
+          : ts.isIdentifier(value)
+            ? constFunctions.get(value.text)
+            : undefined;
+        if (callback) attributes.push({ attribute: node, callback });
+      }
+      ts.forEachChild(node, collectAttributes);
+    };
+    collectAttributes(file);
+
+    const within = (inner: ts.Node, outer: ts.Node) =>
+      inner.pos >= outer.pos && inner.end <= outer.end;
+    const mutating = new Map<string, boolean>();
+    for (const { attribute, callback } of attributes) {
+      const element = attribute.parent.parent;
+      if (
+        !ts.isJsxOpeningElement(element) &&
+        !ts.isJsxSelfClosingElement(element)
+      )
+        continue;
+      const tag = element.tagName.getText(file);
+      const specifier = imports.get(tag);
+      const child = specifier && localModule(path, specifier, options.alias);
+      if (!child) continue;
+      if (!mutating.has(child)) mutating.set(child, mutates(sourceFile(child)));
+      if (!mutating.get(child)) continue;
+      const call = bare.find((navigation) => within(navigation, callback));
+      if (call)
         findings.push(
-          `${relative(root, path)}:${lineOf(file, node)}: ${name} navigates in a file with a mutation; wrap it, useFreshRouter(useRouter()) (F63)`,
+          `${relative(root, path)}:${lineOf(file, element)}: ${routerOf(call)} navigates in a callback of ${tag}, whose file has a mutation; wrap it, useFreshRouter(useRouter()) (F63)`,
         );
+    }
+  }
+  return findings;
+}
+
+/**
+ * Rule F52: a `Dialog` that disables its action names the reason it shows, `actionReasonId`, so the disabled action has a
+ * description. A literal `actionDisabled={false}` disables nothing.
+ */
+export function dialogActionReasons(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const path of filesUnder(root)) {
+    if (!path.endsWith(".tsx") || isTest(path) || ignored(root, path, options))
+      continue;
+    const file = sourceFile(path);
+    const visit = (node: ts.Node) => {
+      if (
+        (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+        node.tagName.getText(file) === "Dialog"
+      ) {
+        const attribute = (name: string) =>
+          node.attributes.properties.find(
+            (property): property is ts.JsxAttribute =>
+              ts.isJsxAttribute(property) &&
+              property.name.getText(file) === name,
+          );
+        const disabled = attribute("actionDisabled");
+        const value =
+          disabled?.initializer && ts.isJsxExpression(disabled.initializer)
+            ? disabled.initializer.expression
+            : undefined;
+        const disables =
+          disabled !== undefined && value?.kind !== ts.SyntaxKind.FalseKeyword;
+        if (disables && !attribute("actionReasonId"))
+          findings.push(
+            `${relative(root, path)}:${lineOf(file, node)}: Dialog disables its action without actionReasonId; point it at the reason the dialog shows (F52)`,
+          );
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
   }
   return findings;
 }

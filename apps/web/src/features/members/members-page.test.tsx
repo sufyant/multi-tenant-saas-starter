@@ -1089,6 +1089,36 @@ describe("MembersPage", () => {
     );
   });
 
+  it("MembersPage_ALimitOfZero_SaysThePlanAllowsNoSeats", async () => {
+    // A limit of 0: the members already count, so the count is over it, and no removal or cancel frees a seat to invite.
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 0 }, { "members.max": 4 }),
+      ),
+      membersAnswer(),
+      invitationsAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    await screen.findByRole("tab", { name: "Members 4" });
+
+    const reason = "Your plan allows no seats.";
+    const banner = await screen.findByRole("status");
+    expect(banner).toHaveTextContent(reason);
+    expect(banner).not.toHaveTextContent(/Remove a member|under 0/);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Invite member" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "No free seat",
+    });
+    expect(dialog).toHaveTextContent(reason);
+    expect(dialog).not.toHaveTextContent(/Remove a member|under 0/);
+  });
+
   it("MembersPage_OverTheLimitForAMember_ShowsNoBanner", async () => {
     server.use(
       ...tenantAnswers(

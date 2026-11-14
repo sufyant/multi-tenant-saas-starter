@@ -6,6 +6,7 @@ import {
   contractEnumValues,
   dateFormattingOutsideFormatter,
   defaultBreakpointClasses,
+  dialogActionReasons,
   differingFiles,
   duplicateRuleIds,
   enumLiterals,
@@ -56,6 +57,15 @@ describe("architecture of packages/ui", () => {
     expect(
       userFacingLiterals(src, {
         ignore: ["components/dev-components-page.tsx"],
+      }),
+    ).toEqual([]);
+  });
+
+  it("F52_PackagesUi_DisablesNoDialogActionWithoutItsReason", () => {
+    // Set up of two-step verification waits for Clerk's key with every field disabled: a wait, not a reason to read.
+    expect(
+      dialogActionReasons(src, {
+        ignore: ["components/account-security/two-step-card.tsx"],
       }),
     ).toEqual([]);
   });

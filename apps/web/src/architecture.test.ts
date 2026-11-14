@@ -6,6 +6,7 @@ import {
   dateFormattingOutsideFormatter,
   declarationsOf,
   defaultBreakpointClasses,
+  dialogActionReasons,
   enumLiterals,
   enumValues,
   messageKeySets,
@@ -121,7 +122,13 @@ describe("architecture of apps/web", () => {
   });
 
   it("F63_AppsWebFeatures_NavigateAfterAChangeWithAFreshToken", () => {
-    expect(navigationsAfterAChange(join(src, "features"))).toEqual([]);
+    expect(
+      navigationsAfterAChange(join(src, "features"), { alias: src }),
+    ).toEqual([]);
+  });
+
+  it("F52_AppsWeb_DisablesNoDialogActionWithoutItsReason", () => {
+    expect(dialogActionReasons(src)).toEqual([]);
   });
 
   it("F29_AppsWeb_DeclaresNoSecondCopyOfAContractHelper", () => {

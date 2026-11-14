@@ -354,11 +354,13 @@ export function MembersPage() {
     );
   })();
 
-  // The banner's text (8.09, 8.43): at the limit the limit's reason; over it the seats and what still works.
+  // The banner's text (8.09, 8.43): at the limit the limit's reason; over it the seats and what still works. A limit of 0 is
+  // always over, yet nothing gets under it, so it says the limit's reason too.
   const banner = (() => {
     if (!canInvite || !memberLimit.full || memberLimit.limit === null)
       return null;
-    if (memberLimit.atLimit) return planReason.limit(LimitKey.MembersMax);
+    if (memberLimit.atLimit || memberLimit.limit === 0)
+      return planReason.limit(LimitKey.MembersMax);
     return {
       title: t("plans.membersOver", {
         count: memberLimit.count,
