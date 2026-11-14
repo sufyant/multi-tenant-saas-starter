@@ -423,7 +423,7 @@ The parts of 37d, in their order. 37d-design and 37d-backend run at the same tim
 
 Status: in progress.
 
-- The platform manages the versions. A version has an effective date, a link, an optional summary, and whether it requires acceptance.
+- The platform manages the versions. A version has an effective date, a link, an optional summary, whether it requires acceptance, and whether it sends an email.
 - An effective date is never in the past.
 - One scheduled version at a time. A system admin can edit or cancel it before it takes effect.
 - A version in force never changes.
@@ -435,7 +435,8 @@ Status: in progress.
 Decided by the frames (38-start, 2026-11-14):
 
 - A version that requires acceptance asks for it from the moment it is scheduled, before its effective date: the gate after sign-in (1.09 to 1.12, 1.14) says the date it applies from, and has Accept and Sign out only. 11.01 and 11.05 count acceptances of a scheduled version.
-- A version that requires no acceptance gives a notice on Home (4.03) with Read the terms and a close button, and an email (the field's help in 11.02).
+- A version that requires no acceptance and sends an email gives a notice on Home (4.03) with Read the terms and a close button, and the email (13.37 to 13.39). A version that requires acceptance and sends an email has its own email text (13.40 to 13.42).
+- "Send an email" is a second switch beside "Requires acceptance", on by default (11.02). The two switches give three kinds of change: a minor one (no acceptance, no email, no notice), a medium one (no acceptance; the email and the notice) and a major one (acceptance and the email). A version that requires acceptance and sends no email shows only the gate. The email goes when the version is added with the switch on, or when a system admin turns the switch on later. Once the email has gone, the switch locks, as an email cannot be taken back: 11.10 disables it with its reason (F52). Until then it stays editable, like the summary. The list says "No notice" for a minor version (11.01, 11.14), and a version's page has an Email row (11.05, 11.12, 11.15). Why: a material change of the terms needs a notice (Regulation (EU) 2019/1150, Article 3(2): 15 days for business users); a typo does not (the maintainer's decision of 2026-11-14).
 - An invitee who has no account yet accepts the version in force on Accept invitation (1.15).
 - Cancelling a scheduled version keeps its acceptances in its record (11.11, 11.13).
 - Only one version may be scheduled: Add version is disabled with its reason while one is (11.01, 11.14; F52).
@@ -454,11 +455,11 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 
 38-backend, the versions and the acceptances:
 
-- A terms version and its acceptances in ControlPlane: the version's effective date, link, summary, `requiresAcceptance`, and its state (scheduled, current, replaced, cancelled), which the date derives; an acceptance is the user, the version and the moment.
+- A terms version and its acceptances in ControlPlane: the version's effective date, link, summary, `requiresAcceptance`, `sendsEmail`, the moment its email went out, and its state (scheduled, current, replaced, cancelled), which the date derives; an acceptance is the user, the version and the moment.
 - Platform endpoints, `platform.terms.read`, `platform.terms.create`, `platform.terms.update` and `platform.terms.cancel`, in the pattern of the other platform permissions: list the versions with their acceptance count (11.01, 11.09); one version with its people, Accepted and Not yet, with a cursor (11.05, 11.06, 11.12, 11.15); add (11.02 to 11.04); edit and cancel the scheduled version (11.10, 11.11, 11.13). Every change writes the platform's Activity log.
 - Tenant user endpoints: what the signed-in person must do (nothing, accept a version, or see a notice), accept a version (1.09 to 1.12), close a notice (4.03). Accept invitation records the acceptance of the version in force (1.15).
 - A public endpoint, anonymous and cached: the version in force, its link and its date. No version in force answers 204, and the "Terms" link stays hidden.
-- The notice email to the active users when a version that requires no acceptance is added, through Notifications, in three languages.
+- The notice email to the active users when a version with `sendsEmail` is added, or when the switch turns on later, through Notifications, in three languages. The edit endpoint refuses to turn the switch off after the email went out, with 409.
 - It waits for nothing.
 
 38-frontend-platform, Settings › Terms of use:
