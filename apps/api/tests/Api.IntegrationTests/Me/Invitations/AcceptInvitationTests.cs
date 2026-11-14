@@ -662,7 +662,7 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await own.ScalarAsync<long>(
             $"SELECT count(*) FROM control_plane.terms_acceptances JOIN control_plane.users ON users.id = user_id WHERE external_id = '{invitee}' AND version_id = '{versionId}'"))
             .ShouldBe(1);
-        TermsRequests.AskOf(await own.Api.CreateClient(invitee).MyTermsAsync()).ShouldBe("none");
+        TermsRequests.AskOf(await own.Api.CreateClient(invitee).MyTermsAsync()).ShouldBe("nothing");
     }
 
     // Step 38: the checkbox covers the version in force only; a scheduled one is the gate's, after sign-in.

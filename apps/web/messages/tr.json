@@ -349,6 +349,11 @@
         "reopened": "<actor></actor> bu kuruluşu yeniden açtı.",
         "suspended": "<actor></actor> bu kuruluşu askıya aldı."
       },
+      "terms_version": {
+        "cancelled": "<actor></actor> kullanım koşullarının bir sürümünü iptal etti.",
+        "created": "<actor></actor> kullanım koşullarının bir sürümünü ekledi.",
+        "updated": "<actor></actor> kullanım koşullarının bir sürümünü değiştirdi."
+      },
       "user": {
         "data_export_downloaded": "<actor></actor> verilerinin bir kopyasını indirdi.",
         "data_export_requested": "<actor></actor> verilerinin bir kopyasını istedi.",

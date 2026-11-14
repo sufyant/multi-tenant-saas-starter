@@ -27,10 +27,10 @@ A system admin manages the versions of the terms of use from the platform. A ten
 
 `GetMyTerms` answers what the signed-in person must do, in this order (`TermsGate`):
 
-1. The version in force requires acceptance and the person did not accept it: `accept` that version.
-2. The scheduled version requires acceptance and the person did not accept it: `accept` that version. A version that requires acceptance asks from the moment it is created, before its day; the gate says the day it applies from.
+1. The version in force requires acceptance and the person did not accept it: `acceptance` of that version.
+2. The scheduled version requires acceptance and the person did not accept it: `acceptance` of that version. A version that requires acceptance asks from the moment it is created, before its day; the gate says the day it applies from.
 3. The scheduled version, then the version in force, requires no acceptance, the person neither accepted nor dismissed it, and the person became a user before the version was created: `notice` of that version. A person who became a user later knew no earlier terms, so the notice tells them nothing.
-4. Else `none`. A signed-in person who is not a user yet must do nothing: they accept the version in force with their invitation (section 5).
+4. Else `nothing`. The values are words that no other code of the screens uses as a literal (F3). A signed-in person who is not a user yet must do nothing: they accept the version in force with their invitation (section 5).
 
 `AcceptTermsVersion` takes the link the person read. It accepts the version in force or the scheduled one only, with that link; else 409 `terms_version.changed`, and the person reads the terms again. It locks the version row against an edit, but not against another acceptance (`FOR SHARE`, K6): an edit that changes the link waits, and then finds the acceptance and refuses the link. A second acceptance keeps the first moment (I1). It answers what the person must do next: after the version in force, the scheduled one may ask in turn.
 

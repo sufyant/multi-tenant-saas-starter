@@ -463,6 +463,7 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 - It waits for nothing.
 - Done (`apps/api/docs/flows/terms-of-use.md`). The points it settled, which the frontend parts read:
   - A version's day takes effect at 00:00 UTC; "today or later" is the UTC day. A version of today is in force at once.
+  - `GetMyTerms` answers `action` `nothing`, `acceptance` or `notice`, in place of 38-start's `none`, `accept` and `notice`: `packages/ui` uses "none" and "accept" as other literals, which F3 forbids for a value of the contract.
   - The gate asks for the version in force first, then the scheduled one. A notice goes only to a user who existed before the version, and stops when the person closes it or accepted the version.
   - The acceptance takes the link the person read, so a link that changed answers 409 `terms_version.changed`. An acceptance and a dismissal write no audit entry: the acceptance is its own record (`ARCHITECTURE.md`, K3).
   - The versions' list is one read, `GetTermsOfUse`, without the list contract: the versions are few. A version's people page by a cursor, `status=accepted` or `status=not_yet`.

@@ -12849,15 +12849,15 @@
       },
       "MyTermsResponseAction": {
         "enum": [
-          "none",
-          "accept",
+          "nothing",
+          "acceptance",
           "notice"
         ],
         "type": "string",
-        "description": "What the signed-in person must do about the terms: nothing; accept the version, which the gate after sign-in asks; or read the notice\nof a version that requires no acceptance, which Home shows until the person closes it.",
+        "description": "What the signed-in person must do about the terms: nothing; give their acceptance of the version, which the gate after sign-in asks;\nor read the notice of a version that requires no acceptance, which Home shows until the person closes it. The values are words no other\ncode of the screens uses as a literal (F3).",
         "x-enumNames": [
-          "None",
-          "Accept",
+          "Nothing",
+          "Acceptance",
           "Notice"
         ]
       },

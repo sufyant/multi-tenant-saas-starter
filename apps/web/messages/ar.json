@@ -349,6 +349,11 @@
         "reopened": "أعادت <actor></actor> فتح هذه المؤسسة.",
         "suspended": "<actor></actor> أوقف هذه المؤسسة."
       },
+      "terms_version": {
+        "cancelled": "<actor></actor> ألغى إصدارًا من شروط الاستخدام.",
+        "created": "<actor></actor> أضاف إصدارًا من شروط الاستخدام.",
+        "updated": "<actor></actor> غيّر إصدارًا من شروط الاستخدام."
+      },
       "user": {
         "data_export_downloaded": "نزّل <actor></actor> نسخة من بياناته.",
         "data_export_requested": "طلب <actor></actor> نسخة من بياناته.",

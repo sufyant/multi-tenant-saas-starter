@@ -9,10 +9,10 @@ import * as zod from 'zod';
 
 export const GetMyTermsResponse = zod.object({
   "action": zod.enum({
-  None: 'none',
-  Accept: 'accept',
+  Nothing: 'nothing',
+  Acceptance: 'acceptance',
   Notice: 'notice',
-}).describe('What the signed-in person must do about the terms: nothing; accept the version, which the gate after sign-in asks; or read the notice\nof a version that requires no acceptance, which Home shows until the person closes it.'),
+}).describe('What the signed-in person must do about the terms: nothing; give their acceptance of the version, which the gate after sign-in asks;\nor read the notice of a version that requires no acceptance, which Home shows until the person closes it. The values are words no other\ncode of the screens uses as a literal (F3).'),
   "version": zod.union([zod.null(),zod.object({
   "id": zod.uuid(),
   "effectiveDate": zod.iso.date(),
@@ -32,10 +32,10 @@ export const AcceptTermsVersionBody = zod.object({
 
 export const AcceptTermsVersionResponse = zod.object({
   "action": zod.enum({
-  None: 'none',
-  Accept: 'accept',
+  Nothing: 'nothing',
+  Acceptance: 'acceptance',
   Notice: 'notice',
-}).describe('What the signed-in person must do about the terms: nothing; accept the version, which the gate after sign-in asks; or read the notice\nof a version that requires no acceptance, which Home shows until the person closes it.'),
+}).describe('What the signed-in person must do about the terms: nothing; give their acceptance of the version, which the gate after sign-in asks;\nor read the notice of a version that requires no acceptance, which Home shows until the person closes it. The values are words no other\ncode of the screens uses as a literal (F3).'),
   "version": zod.union([zod.null(),zod.object({
   "id": zod.uuid(),
   "effectiveDate": zod.iso.date(),
@@ -51,10 +51,10 @@ export const DismissTermsNoticeParams = zod.object({
 
 export const DismissTermsNoticeResponse = zod.object({
   "action": zod.enum({
-  None: 'none',
-  Accept: 'accept',
+  Nothing: 'nothing',
+  Acceptance: 'acceptance',
   Notice: 'notice',
-}).describe('What the signed-in person must do about the terms: nothing; accept the version, which the gate after sign-in asks; or read the notice\nof a version that requires no acceptance, which Home shows until the person closes it.'),
+}).describe('What the signed-in person must do about the terms: nothing; give their acceptance of the version, which the gate after sign-in asks;\nor read the notice of a version that requires no acceptance, which Home shows until the person closes it. The values are words no other\ncode of the screens uses as a literal (F3).'),
   "version": zod.union([zod.null(),zod.object({
   "id": zod.uuid(),
   "effectiveDate": zod.iso.date(),

@@ -23,9 +23,9 @@ public sealed class GetMyTermsTests(Database database)
         var afterCurrent = await person.AcceptTermsVersionAsync(current);
         var afterScheduled = await person.AcceptTermsVersionAsync(scheduled, "https://brand.example/terms/next");
 
-        first.ShouldBe($"accept:{current}");
-        TermsRequests.AskOf(await afterCurrent.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe($"accept:{scheduled}");
-        TermsRequests.AskOf(await afterScheduled.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe("none");
+        first.ShouldBe($"acceptance:{current}");
+        TermsRequests.AskOf(await afterCurrent.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe($"acceptance:{scheduled}");
+        TermsRequests.AskOf(await afterScheduled.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe("nothing");
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public sealed class GetMyTermsTests(Database database)
 
         TermsRequests.AskOf(before).ShouldBe($"notice:{versionId}");
         before.GetProperty("version").GetProperty("summary").GetString().ShouldBe("New");
-        TermsRequests.AskOf(await dismissed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe("none");
-        TermsRequests.AskOf(await person.MyTermsAsync()).ShouldBe("none");
+        TermsRequests.AskOf(await dismissed.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).ShouldBe("nothing");
+        TermsRequests.AskOf(await person.MyTermsAsync()).ShouldBe("nothing");
     }
 
     // A notice tells of a change: a person who became a user after the version knew no earlier terms.
@@ -54,7 +54,7 @@ public sealed class GetMyTermsTests(Database database)
         await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today, requiresAcceptance: false));
         var (_, person) = await own.AddTenantUserAsync(tenantId);
 
-        TermsRequests.AskOf(await person.MyTermsAsync()).ShouldBe("none");
+        TermsRequests.AskOf(await person.MyTermsAsync()).ShouldBe("nothing");
     }
 
     [Fact]
@@ -63,6 +63,6 @@ public sealed class GetMyTermsTests(Database database)
         await using var own = await OwnTerms.CreateAsync(database);
         await own.Admin.AddTermsVersionAsync(TermsRequests.Today);
 
-        TermsRequests.AskOf(await own.Api.CreateClient($"user_{Guid.NewGuid():N}").MyTermsAsync()).ShouldBe("none");
+        TermsRequests.AskOf(await own.Api.CreateClient($"user_{Guid.NewGuid():N}").MyTermsAsync()).ShouldBe("nothing");
     }
 }

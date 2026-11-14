@@ -349,6 +349,11 @@
         "reopened": "<actor></actor> reopened this organisation.",
         "suspended": "<actor></actor> suspended this organisation."
       },
+      "terms_version": {
+        "cancelled": "<actor></actor> cancelled a version of the terms of use.",
+        "created": "<actor></actor> added a version of the terms of use.",
+        "updated": "<actor></actor> changed a version of the terms of use."
+      },
       "user": {
         "data_export_downloaded": "<actor></actor> downloaded a copy of their data.",
         "data_export_requested": "<actor></actor> asked for a copy of their data.",
