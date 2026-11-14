@@ -13,6 +13,7 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantOwnerInvitedDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
@@ -205,7 +206,20 @@ const cases: Case[] = [
     ciara,
     tenantTarget(),
     null,
-    "Ciara Byrne invited a new Owner of Northwind Traders.",
+    "Ciara Byrne invited someone as Owner of Northwind Traders.",
+  ],
+  [
+    "TenantOwnerInvitedWithItsAddress",
+    AuditOperation.TenantOwnerInvited,
+    ciara,
+    tenantTarget(),
+    {
+      operation: TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited,
+      invitationId: "0198f0a2-0000-7000-8000-0000000000a1",
+      replacedInvitationId: null,
+      email: "sufyan@example.com",
+    },
+    "Ciara Byrne invited sufyan@example.com as Owner of Northwind Traders.",
   ],
   [
     "TenantOwnerMade",
@@ -584,6 +598,7 @@ const planTarget = (plan: {
   id: plan.id,
   name: plan.name,
   deleted: null,
+  email: null,
 });
 const value = (
   values: Partial<{ enabled: boolean; maximum: number; unlimited: boolean }>,

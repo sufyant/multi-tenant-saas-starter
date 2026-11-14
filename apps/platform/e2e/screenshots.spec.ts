@@ -526,6 +526,7 @@ const theTenant = (name: string) => ({
   id: organisations.northwind.id,
   name,
   deleted: null,
+  email: null,
 });
 const logEntry = (
   id: number,
@@ -580,6 +581,7 @@ const frameLog: AuditEntryResponse[] = [
       id: "0198f0a2-0000-7000-8000-00000000b0e1",
       name: "Mark Ellis",
       deleted: false,
+      email: null,
     },
   }),
   logEntry(5, 13, AuditOperation.TenantPlanChanged, {
@@ -597,6 +599,7 @@ const frameLog: AuditEntryResponse[] = [
       id: "0198f0a2-0000-7000-8000-00000000b0e2",
       name: null,
       deleted: true,
+      email: null,
     },
   }),
   logEntry(7, 21, AuditOperation.TenantPurged, {

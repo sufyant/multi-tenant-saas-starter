@@ -14,6 +14,7 @@ import {
   actorName,
   changeOf,
   detailValues,
+  inviteeValues,
   keyLabels,
   namedPermissions,
   type PlanWords,
@@ -27,7 +28,7 @@ const person = (name: string) => () => (
 
 /**
  * One entry of the tenant log as a sentence (the Activity board): the actor, what they did and to whom, from the message of the
- * operation. It holds no email address: an invitation is "someone" or "an invitation" (K3). A date in it follows the viewer's
+ * operation. An invitation is named by its address, which the API reads now, or "someone" once it is erased (K3, A8). A date in it follows the viewer's
  * zone (`timeZone`, from GetMe) and the language's format, as the other dates of Activity do (F18).
  */
 export function ActivitySentence({
@@ -82,6 +83,11 @@ export function ActivitySentence({
     actor: person(actorName(entry.actor, t)),
     target: person(targetName(entry.target, t)),
     name: (chunks: ReactNode) => <bdi className="font-medium">{chunks}</bdi>,
+    invitee: (chunks: ReactNode) => (
+      <bdi dir="ltr" className="font-medium">
+        {chunks}
+      </bdi>
+    ),
   };
   const details = entry.details;
   // A rename of a role has a sentence of its own, before the sentence of its permissions when both changed.
@@ -110,6 +116,7 @@ export function ActivitySentence({
       {(!renamed || permissionsChanged) &&
         t.rich(`activity.operations.${entry.operation}`, {
           ...detailValues<ReactNode>(details, role, permissions, date, words),
+          ...inviteeValues(entry),
           ...people,
           actorKind: entry.actor.kind,
         })}

@@ -3,6 +3,7 @@ import {
   AuditActorResponseKind,
   type AuditDetailsResponse,
   type AuditEntitlementValueResponse,
+  type AuditEntryResponse,
   type AuditRoleResponse,
   type AuditTargetResponse,
   FeatureKey,
@@ -15,6 +16,7 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantOwnerInvitedDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
@@ -35,10 +37,29 @@ export function actorName(actor: AuditActorResponse, t: Translate): string {
   return actor.displayName ?? t("activity.unnamedUser");
 }
 
-/** The person the action was done to. An invitation has no name, and a sentence about it names no one. */
+/** The person the action was done to. An invitation has no name: a sentence about it names its address (`inviteeValues`). */
 export function targetName(target: AuditTargetResponse, t: Translate): string {
   if (target.deleted) return t("activity.deletedUser");
   return target.name ?? t("activity.unnamedUser");
+}
+
+/**
+ * The address of the invitation an entry points to, which the API reads now from the invitation (K3): its target's, or the details' of
+ * `tenant.owner_invited`. Once a user's deletion erased it (A8), the sentence says "someone".
+ */
+export function inviteeValues(entry: AuditEntryResponse): {
+  addressed: "yes" | "no";
+  address: string;
+} {
+  const address =
+    entry.target.email ??
+    (entry.details?.operation ===
+    TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited
+      ? entry.details.email
+      : null);
+  return address
+    ? { addressed: "yes", address }
+    : { addressed: "no", address: "" };
 }
 
 /** The values of a sentence: a text, or a tag that writes a node (the screen's elements, or the file's text). */

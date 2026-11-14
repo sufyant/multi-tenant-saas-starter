@@ -309,10 +309,10 @@
         "exported": "<actor></actor> exported the activity log."
       },
       "invitation": {
-        "revoked": "<actor></actor> revoked an invitation."
+        "revoked": "{addressed, select, yes {<actor></actor> revoked the invitation to <invitee>{address}</invitee>.} other {<actor></actor> revoked an invitation.}}"
       },
       "member": {
-        "invited": "<actor></actor> invited someone as <role></role>.",
+        "invited": "{addressed, select, yes {<actor></actor> invited <invitee>{address}</invitee> as <role></role>.} other {<actor></actor> invited someone as <role></role>.}}",
         "joined": "<target></target> joined the organisation.",
         "left": "<actor></actor> left the organisation.",
         "removed": "<actor></actor> removed <target></target> (<role></role>) from the organisation.",
@@ -339,7 +339,7 @@
         "created": "{plan, select, none {<actor></actor> created this organisation.} other {<actor></actor> created this organisation on <planName></planName>.}}",
         "entitlement_override_removed": "<actor></actor> removed this organisation’s override on <key></key>.",
         "entitlement_override_set": "{expires, select, yes {<actor></actor> set this organisation’s <key></key> to {value} until {date}.} other {<actor></actor> set this organisation’s <key></key> to {value}.}}",
-        "owner_invited": "<actor></actor> invited someone as Owner.",
+        "owner_invited": "{addressed, select, yes {<actor></actor> invited <invitee>{address}</invitee> as Owner.} other {<actor></actor> invited someone as Owner.}}",
         "owner_made": "<actor></actor> made a member an Owner.",
         "plan_changed": "<actor></actor> moved this organisation from <oldPlan></oldPlan> to <newPlan></newPlan>.",
         "purge_warned": "The Owners were told that <target></target> will be deleted on {date}.",

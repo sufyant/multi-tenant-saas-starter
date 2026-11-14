@@ -4,6 +4,7 @@ using Audit.Api.Authentication;
 using Audit.Application.AuditLogs;
 using Audit.Application.AuditLogs.ExportAuditLog;
 using Audit.Application.AuditLogs.GetAuditEntryNames;
+using Audit.Application.AuditLogs.GetAuditInvitationEmails;
 using Audit.Application.AuditLogs.GetAuditRetention;
 using Audit.Application.AuditLogs.GetAuditRetentionPeriod;
 using Audit.Application.AuditLogs.ListAuditEntries;
@@ -12,7 +13,9 @@ using Audit.Application.Members;
 using Audit.Application.Plans;
 using Audit.Application.Tenants;
 using Audit.Application.Roles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
 using Wolverine;
@@ -35,7 +38,12 @@ public static class AuditLogEndpoints
         entry.Operation,
         DetailsOf(entry),
         new AuditActorResponse(ResponseStatus.OfActor(entry.Actor.Kind), entry.Actor.UserId, entry.Actor.DisplayName, entry.Actor.Deleted),
-        new AuditTargetResponse(ResponseStatus.OfTarget(entry.Target.Kind), entry.Target.Id, entry.Target.Name, entry.Target.Deleted));
+        new AuditTargetResponse(
+            ResponseStatus.OfTarget(entry.Target.Kind),
+            entry.Target.Id,
+            entry.Target.Name,
+            entry.Target.Deleted,
+            AuditInvitationEmails.OfTarget(entry)));
 
     // Each stored shape answers its response. A shape the response has no type for is a fault, not an answer. The user the details point
     // to is named on read; a page that was never named answers no name, as for an id no user has.
@@ -64,7 +72,7 @@ public static class AuditLogEndpoints
         TenantEntitlementOverrideRemovedDetails removed => new TenantEntitlementOverrideRemovedDetailsResponse(removed.Key, ValueOf(removed.OldValue), removed.OldExpiresAt),
         RoleCreatedDetails created => new RoleCreatedDetailsResponse(created.Permissions),
         RoleUpdatedDetails updated => new RoleUpdatedDetailsResponse(updated.OldName, updated.NewName, updated.PermissionsAdded, updated.PermissionsRemoved),
-        TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId),
+        TenantOwnerInvitedDetails invited => new TenantOwnerInvitedDetailsResponse(invited.InvitationId, invited.ReplacedInvitationId, entry.InvitationEmail),
         TenantOwnerMadeDetails made => new TenantOwnerMadeDetailsResponse(
             made.UserId,
             entry.DetailsUserName,
@@ -100,6 +108,8 @@ public static class AuditLogEndpoints
     private static async Task<Result<CursorPage<AuditEntryResponse>>> ListAuditEntries(
         string? cursor,
         int? limit,
+        HttpContext http,
+        IAuthorizationService authorization,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -116,7 +126,20 @@ public static class AuditLogEndpoints
         }
 
         var named = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new GetAuditEntryNamesQuery(entries.Value), cancellationToken);
-        return named.Map(found => found.Map(ToResponse));
+        if (!named.IsSuccess)
+        {
+            return named.Error;
+        }
+
+        // The address is personal data: a caller sees it only with the permission that shows it on the invitations' page. The
+        // invitations are the tenant's rows, read in the tenant the host declared; a page without one, or a caller without the
+        // permission, sends no query.
+        var invitations = AuditInvitationEmails.Of(named.Value.Items);
+        var mayRead = invitations.Count > 0 && (await authorization.AuthorizeAsync(http.User, http, AuditLogPermissions.TenantInvitationsRead)).Succeeded;
+        var emails = mayRead
+            ? await bus.InvokeAsync<IReadOnlyDictionary<Guid, string>>(new GetAuditInvitationEmailsQuery(invitations), cancellationToken)
+            : new Dictionary<Guid, string>();
+        return AuditInvitationEmails.With(named.Value, emails).Map(ToResponse);
     }
 
     // K14: two queries, as for the names of a page (W1): the period from ControlPlane, then the hold from Audit's row and entries. The

@@ -381,7 +381,7 @@
         "reactivated": "<actor></actor>, <target></target> kuruluşunu yeniden etkinleştirdi.",
         "closed": "<actor></actor>, <target></target> kuruluşunu kapattı.",
         "reopened": "<actor></actor>, <target></target> kuruluşunu yeniden açtı.",
-        "owner_invited": "<actor></actor>, <target></target> kuruluşuna yeni bir Sahip davet etti.",
+        "owner_invited": "{addressed, select, yes {<actor></actor>, <invitee>{address}</invitee> adresini <target></target> kuruluşuna Sahip olarak davet etti.} other {<actor></actor>, <target></target> kuruluşuna birini Sahip olarak davet etti.}}",
         "owner_made": "{owner, select, named {<actor></actor>, <member></member> kullanıcısını <target></target> kuruluşunda Sahip yaptı.} deletedUser {<actor></actor>, <member>silinmiş bir kullanıcıyı</member> <target></target> kuruluşunda Sahip yaptı.} other {<actor></actor>, <member>bir üyeyi</member> <target></target> kuruluşunda Sahip yaptı.}}",
         "purge_warned": "<target></target> kuruluşunun Sahiplerine kuruluşun {date} tarihinde silineceği bildirildi.",
         "purged": "<target></target> silindi.",

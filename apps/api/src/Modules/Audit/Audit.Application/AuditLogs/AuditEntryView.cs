@@ -2,7 +2,7 @@ namespace Audit.Application.AuditLogs;
 
 /// <summary>
 /// One entry of an audit log as a reader sees it: the stored entry, with each person's name resolved now (K3). It holds no email
-/// address. The kinds are the Domain's names (<c>User</c>, <c>Tenant</c>); the details are the type of the entry's operation, or null.
+/// address but the address of the invitation it points to, read now. The kinds are the Domain's names (<c>User</c>, <c>Tenant</c>); the details are the type of the entry's operation, or null.
 /// </summary>
 public sealed record AuditEntryView(
     Guid Id,
@@ -20,4 +20,10 @@ public sealed record AuditEntryView(
 
     /// <summary>Whether the user the details point to was deleted; null for details that point to no user, or before the names are read.</summary>
     public bool? DetailsUserDeleted { get; init; }
+
+    /// <summary>
+    /// The address now of the invitation the entry points to, as its target or in its details; null for an entry that points to no
+    /// invitation, for an address a user's deletion erased (A8), and before the addresses are read (<see cref="AuditInvitationEmails"/>).
+    /// </summary>
+    public string? InvitationEmail { get; init; }
 }

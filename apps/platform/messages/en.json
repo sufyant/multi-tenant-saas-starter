@@ -381,7 +381,7 @@
         "reactivated": "<actor></actor> reactivated <target></target>.",
         "closed": "<actor></actor> closed <target></target>.",
         "reopened": "<actor></actor> reopened <target></target>.",
-        "owner_invited": "<actor></actor> invited a new Owner of <target></target>.",
+        "owner_invited": "{addressed, select, yes {<actor></actor> invited <invitee>{address}</invitee> as Owner of <target></target>.} other {<actor></actor> invited someone as Owner of <target></target>.}}",
         "owner_made": "{owner, select, named {<actor></actor> made <member></member> an Owner of <target></target>.} deletedUser {<actor></actor> made <member>Deleted user</member> an Owner of <target></target>.} other {<actor></actor> made <member>a member</member> an Owner of <target></target>.}}",
         "purge_warned": "The Owners of <target></target> were warned that it will be deleted on {date}.",
         "purged": "<target></target> was deleted.",

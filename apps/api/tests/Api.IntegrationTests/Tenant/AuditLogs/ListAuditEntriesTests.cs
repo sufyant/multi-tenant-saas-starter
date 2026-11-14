@@ -7,7 +7,8 @@ using Tenancy;
 namespace Api.IntegrationTests.Tenant.AuditLogs;
 
 // GET /v1/tenants/{tenantId}/audit-log: the tenant's audit log, "Activity" on the screen, for its Owners and Admins. K5's exception: a
-// cursor, newest first by the moment and then the id, and no total. Names are resolved on read (K3); the answer holds no email address.
+// cursor, newest first by the moment and then the id, and no total. Names are resolved on read (K3). The answer holds no email address,
+// except an invitation's for a caller who may read the invitations.
 // Each test adds the records of a tenant of its own.
 public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
 {
@@ -192,6 +193,74 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
         ]);
     }
 
+    // K3: an entry keeps an invitation's id, never its address. The read takes the address from the invitation row now, as it takes a
+    // person's name from the user row. A user's deletion erases the address there (A8), so it leaves the log too, and the entry names
+    // nobody.
+    [Fact]
+    public async Task ListAuditEntries_EntriesThatNameAnInvitation_ShowItsAddressNowOrNone()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var actor = await _testData.UserIdOfAsync(owner);
+        var address = $"{Guid.NewGuid():N}@example.com";
+        var invited = await _testData.AddInvitationAsync(tenant.Id, email: address);
+        var erased = await _testData.AddInvitationAsync(tenant.Id, status: "Cancelled");
+        await database.ExecuteInTenantAsync(tenant.Id, $"UPDATE control_plane.invitations SET email = NULL WHERE id = '{erased}'");
+        await _audit.AddTenantEntryAsync(
+            tenant.Id, Start, "User", actor, "member.invited", "Invitation", invited,
+            details: $$"""{"role":"admin","replacedInvitationId":null,"roleId":"{{Guid.CreateVersion7()}}","roleBuiltIn":true}""");
+        await _audit.AddTenantEntryAsync(tenant.Id, Start.AddMinutes(1), "User", actor, "invitation.revoked", "Invitation", erased);
+        await _audit.AddTenantEntryAsync(
+            tenant.Id, Start.AddMinutes(2), "Platform", null, "tenant.owner_invited", "Tenant", tenant.Id, "Acme",
+            $$"""{"invitationId":"{{invited}}","replacedInvitationId":null}""");
+
+        var items = (await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation)).GetProperty("items");
+
+        items[0].GetProperty("details").GetProperty("email").GetString().ShouldBe(address);
+        items[0].GetProperty("target").GetProperty("email").ValueKind.ShouldBe(JsonValueKind.Null);
+        items[1].GetProperty("target").GetProperty("email").ValueKind.ShouldBe(JsonValueKind.Null);
+        items[2].GetProperty("target").GetProperty("email").GetString().ShouldBe(address);
+    }
+
+    // The address is personal data: it follows tenant.invitations.read, the permission that shows it on the invitations' page. Three
+    // operations point to an invitation: member.invited and invitation.revoked as their target, tenant.owner_invited in its details. The
+    // web's CSV file reads this endpoint as the caller, page by page, so the file holds none either. Such a caller costs no query of the
+    // addresses: an Owner's read of the same page sends more commands.
+    [Fact]
+    public async Task ListAuditEntries_ARoleThatMayNotReadTheInvitations_ShowsNoAddressAndReadsNone()
+    {
+        using var commands = new SqlCommands();
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var role = await _testData.AddCustomRoleAsync(tenant.Id, "Auditor", "tenant.audit.read");
+        var auditor = await _testData.AddMemberWithRoleAsync(tenant.Id, role);
+        var actor = await _testData.UserIdOfAsync(auditor);
+        var invited = await _testData.AddInvitationAsync(tenant.Id, email: $"{Guid.NewGuid():N}@example.com");
+        await _audit.AddTenantEntryAsync(
+            tenant.Id, Start, "User", actor, "member.invited", "Invitation", invited,
+            details: $$"""{"role":"admin","replacedInvitationId":null,"roleId":"{{Guid.CreateVersion7()}}","roleBuiltIn":true}""");
+        await _audit.AddTenantEntryAsync(
+            tenant.Id, Start.AddMinutes(1), "Platform", null, "tenant.owner_invited", "Tenant", tenant.Id, "Acme",
+            $$"""{"invitationId":"{{invited}}","replacedInvitationId":null}""");
+        var revokedAddress = $"{Guid.NewGuid():N}@example.com";
+        var revoked = await _testData.AddInvitationAsync(tenant.Id, email: revokedAddress, status: "Cancelled");
+        await _audit.AddTenantEntryAsync(tenant.Id, Start.AddMinutes(2), "User", actor, "invitation.revoked", "Invitation", revoked);
+
+        Func<HttpClient, Task<HttpResponseMessage>> read = client => client.GetAsync($"/v1/tenants/{tenant.Id}/audit-log", Cancellation);
+
+        var byAuditor = await commands.CountAsync(() => _api.CreateClient(auditor), read);
+        var byOwner = await commands.CountAsync(() => _api.CreateClient(owner), read);
+        var items = (await _api.CreateClient(auditor).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation)).GetProperty("items");
+        var ownersItems = (await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/audit-log", Cancellation)).GetProperty("items");
+
+        (byOwner - byAuditor).ShouldBeGreaterThan(0);
+        ownersItems[0].GetProperty("target").GetProperty("email").GetString().ShouldBe(revokedAddress);
+        items.EnumerateArray().Select(item => item.GetProperty("operation").GetString()).ShouldBe(["invitation.revoked", "tenant.owner_invited", "member.invited"]);
+        items[0].GetProperty("target").GetProperty("email").ValueKind.ShouldBe(JsonValueKind.Null);
+        items[1].GetProperty("details").GetProperty("email").ValueKind.ShouldBe(JsonValueKind.Null);
+        items[2].GetProperty("target").GetProperty("email").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
     // K3: the rows keep the JSON their handlers wrote, and a stored entry never changes. Each stored shape, as its handler writes it,
     // answers the shape of its operation, with the operation as its discriminator. A role answers AuditRoleResponse (N7k): its id, its
     // name and whether it is built in, as the entry keeps them.
@@ -235,7 +304,7 @@ public sealed class ListAuditEntriesTests(Database database) : IAsyncLifetime
     [InlineData(
         "tenant.owner_invited",
         """{"invitationId":"0199f7a0-0000-7000-8000-000000000002","replacedInvitationId":null}""",
-        """{"operation":"tenant.owner_invited","invitationId":"0199f7a0-0000-7000-8000-000000000002","replacedInvitationId":null}""")]
+        """{"operation":"tenant.owner_invited","invitationId":"0199f7a0-0000-7000-8000-000000000002","replacedInvitationId":null,"email":null}""")]
     [InlineData(
         "tenant.suspended",
         """{"reason":"Unpaid invoices"}""",

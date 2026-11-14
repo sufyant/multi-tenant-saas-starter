@@ -309,10 +309,10 @@
         "exported": "<actor></actor> etkinlik günlüğünü dışa aktardı."
       },
       "invitation": {
-        "revoked": "<actor></actor> bir daveti geri aldı."
+        "revoked": "{addressed, select, yes {<actor></actor>, <invitee>{address}</invitee> adresine gönderilen daveti geri aldı.} other {<actor></actor> bir daveti geri aldı.}}"
       },
       "member": {
-        "invited": "<actor></actor> birini <role></role> rolüyle davet etti.",
+        "invited": "{addressed, select, yes {<actor></actor>, <invitee>{address}</invitee> adresini <role></role> rolüyle davet etti.} other {<actor></actor> birini <role></role> rolüyle davet etti.}}",
         "joined": "<target></target> kuruluşa katıldı.",
         "left": "<actor></actor> kuruluştan ayrıldı.",
         "removed": "<actor></actor>, <target></target> adlı üyeyi (<role></role>) kuruluştan çıkardı.",
@@ -339,7 +339,7 @@
         "created": "{plan, select, none {<actor></actor> bu kuruluşu oluşturdu.} other {<actor></actor> bu kuruluşu <planName></planName> planında oluşturdu.}}",
         "entitlement_override_removed": "<actor></actor> bu kuruluşun <key></key> istisnasını kaldırdı.",
         "entitlement_override_set": "{expires, select, yes {<actor></actor> bu kuruluşun <key></key> değerini {date} tarihine kadar {value} yaptı.} other {<actor></actor> bu kuruluşun <key></key> değerini {value} yaptı.}}",
-        "owner_invited": "<actor></actor> birini Sahip rolüyle davet etti.",
+        "owner_invited": "{addressed, select, yes {<actor></actor>, <invitee>{address}</invitee> adresini Sahip rolüyle davet etti.} other {<actor></actor> birini Sahip rolüyle davet etti.}}",
         "owner_made": "<actor></actor> bir üyeyi Sahip yaptı.",
         "plan_changed": "<actor></actor> bu kuruluşu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.",
         "purge_warned": "Sahiplere <target></target> kuruluşunun {date} tarihinde silineceği bildirildi.",

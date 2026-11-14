@@ -333,6 +333,7 @@ const entry = (
   target: {
     ...target,
     deleted: target.kind === AuditTargetResponseKind.User ? false : null,
+    email: null,
   },
 });
 

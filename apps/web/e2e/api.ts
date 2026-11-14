@@ -987,6 +987,7 @@ const auditEntry = (
     id: "0198f0a2-0000-7000-8000-000000000007",
     name: "Khalid Al-Harbi",
     deleted: false,
+    email: null,
   },
 });
 
@@ -1118,12 +1119,14 @@ const userTarget = (name: string | null, deleted = false) => ({
   id: "0198f0a2-0000-7000-8000-000000000399",
   name,
   deleted,
+  email: null,
 });
 const roleTarget = (name: string) => ({
   kind: AuditTargetResponseKind.Role,
   id: "0198f0a2-0000-7000-8000-000000000398",
   name,
   deleted: null,
+  email: null,
 });
 const frameRole = (role: RoleDetailResponse) => roleOf(role);
 
@@ -1220,6 +1223,7 @@ export const activityFrame: CursorPageOfAuditEntryResponse = {
         id: northwind.id,
         name: northwind.name,
         deleted: null,
+        email: null,
       },
       {
         operation:

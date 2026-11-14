@@ -1,6 +1,7 @@
 using Audit.Api.Tenant.AuditLogs;
 using Audit.Application.AuditLogs;
 using Audit.Application.AuditLogs.GetAuditEntryNames;
+using Audit.Application.AuditLogs.GetAuditInvitationEmails;
 using Audit.Application.AuditLogs.ListPlatformAuditEntries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -48,6 +49,24 @@ public static class PlatformAuditLogEndpoints
         }
 
         var named = await bus.InvokeAsync<Result<CursorPage<AuditEntryView>>>(new GetAuditEntryNamesQuery(entries.Value), cancellationToken);
-        return named.Map(found => found.Map(AuditLogEndpoints.ToResponse));
+        if (!named.IsSuccess)
+        {
+            return named.Error;
+        }
+
+        // The invitations are tenants' rows, which this transaction does not see (R11): one query in each tenant on the page that has an
+        // invitation entry, and none for a page without one (W3).
+        var emails = new Dictionary<Guid, string>();
+        foreach (var (tenant, invitations) in AuditInvitationEmails.ByTenant(named.Value.Items))
+        {
+            var found = await bus.InvokeForTenantAsync<IReadOnlyDictionary<Guid, string>>(
+                tenant.ToString(), new GetAuditInvitationEmailsQuery(invitations), cancellationToken);
+            foreach (var (invitation, email) in found)
+            {
+                emails[invitation] = email;
+            }
+        }
+
+        return AuditInvitationEmails.With(named.Value, emails).Map(AuditLogEndpoints.ToResponse);
     }
 }

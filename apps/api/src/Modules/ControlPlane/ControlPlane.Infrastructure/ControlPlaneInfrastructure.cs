@@ -53,6 +53,7 @@ public static class ControlPlaneInfrastructure
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
         services.AddScoped<IUserDirectory, UserDirectory>();
+        services.AddScoped<IInvitationDirectory, InvitationDirectory>();
         services.AddScoped<IMemberDirectory, MemberDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddScoped<IAuditRetentionDirectory, AuditRetentionDirectory>();

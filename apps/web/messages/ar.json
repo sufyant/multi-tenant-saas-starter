@@ -309,10 +309,10 @@
         "exported": "صدّر <actor></actor> سجل النشاط."
       },
       "invitation": {
-        "revoked": "<actor></actor> ألغى دعوة."
+        "revoked": "{addressed, select, yes {<actor></actor> ألغى الدعوة المرسلة إلى <invitee>{address}</invitee>.} other {<actor></actor> ألغى دعوة.}}"
       },
       "member": {
-        "invited": "<actor></actor> دعا شخصًا بدور <role></role>.",
+        "invited": "{addressed, select, yes {<actor></actor> دعا <invitee>{address}</invitee> بدور <role></role>.} other {<actor></actor> دعا شخصًا بدور <role></role>.}}",
         "joined": "<target></target> انضم إلى المؤسسة.",
         "left": "<actor></actor> غادر المؤسسة.",
         "removed": "<actor></actor> أزال <target></target> (<role></role>) من المؤسسة.",
@@ -339,7 +339,7 @@
         "created": "{plan, select, none {<actor></actor> أنشأ هذه المؤسسة.} other {أنشأت <actor></actor> هذه المؤسسة على <planName></planName>.}}",
         "entitlement_override_removed": "أزالت <actor></actor> استثناء هذه المؤسسة على <key></key>.",
         "entitlement_override_set": "{expires, select, yes {جعلت <actor></actor> <key></key> لهذه المؤسسة {value} حتى {date}.} other {جعلت <actor></actor> <key></key> لهذه المؤسسة {value}.}}",
-        "owner_invited": "<actor></actor> دعا شخصًا بدور مالك.",
+        "owner_invited": "{addressed, select, yes {<actor></actor> دعا <invitee>{address}</invitee> بدور مالك.} other {<actor></actor> دعا شخصًا بدور مالك.}}",
         "owner_made": "<actor></actor> جعل عضوًا مالكًا.",
         "plan_changed": "نقلت <actor></actor> هذه المؤسسة من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
         "purge_warned": "أُبلغ المالكون بأن <target></target> ستُحذف في {date}.",

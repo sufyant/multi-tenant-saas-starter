@@ -381,7 +381,7 @@
         "reactivated": "أعاد <actor></actor> تفعيل <target></target>.",
         "closed": "أغلق <actor></actor> <target></target>.",
         "reopened": "أعاد <actor></actor> فتح <target></target>.",
-        "owner_invited": "دعا <actor></actor> مالكًا جديدًا إلى <target></target>.",
+        "owner_invited": "{addressed, select, yes {دعا <actor></actor> <invitee>{address}</invitee> ليكون مالكًا في <target></target>.} other {دعا <actor></actor> شخصًا ليكون مالكًا في <target></target>.}}",
         "owner_made": "{owner, select, named {جعل <actor></actor> <member></member> مالكًا في <target></target>.} deletedUser {جعل <actor></actor> <member>مستخدمًا محذوفًا</member> مالكًا في <target></target>.} other {جعل <actor></actor> <member>عضوًا</member> مالكًا في <target></target>.}}",
         "purge_warned": "أُبلغ مالكو <target></target> بأنها ستُحذف في {date}.",
         "purged": "حُذفت <target></target>.",

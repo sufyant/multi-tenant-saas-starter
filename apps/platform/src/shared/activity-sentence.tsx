@@ -12,6 +12,7 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantOwnerInvitedDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
@@ -181,6 +182,11 @@ function detailValues(
       return { reason: details.reason };
     case TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned:
       return { date: date(details.purgesAt) };
+    case TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited:
+      // The API reads the address now from the invitation (K3); once a user's deletion erased it (A8), the sentence says "someone".
+      return details.email
+        ? { addressed: "yes", address: details.email }
+        : { addressed: "no", address: "" };
     case TenantOwnerMadeDetailsResponseOperation.TenantOwnerMade: {
       // The new Owner has the actor's shape (the API's step r13). A deleted user has no page, and the sentence of each language
       // names them, as it names a member whose name is null.
@@ -202,7 +208,7 @@ function detailValues(
 
 /**
  * One entry of the platform's log as a sentence (the platform's Activity boards): who acted, what they did and to what, from the message
- * of the operation. It names people by their name, never an email (K3). An entry the platform wrote itself has no person. A target
+ * of the operation. It names people by their name, never an email; an invitation by its address, which the API reads now (K3). An entry the platform wrote itself has no person. A target
  * organisation or user links to its page; a deleted user does not. An operation the platform does not know says so, with its name.
  */
 export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
@@ -222,6 +228,8 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
   const key = `activity.operations.${entry.operation}` as "activity.restarted";
   const values: Rich = {
     onPlan: "none",
+    addressed: "no",
+    address: "",
     ...detailValues(entry.details, {
       change: (values) => t.rich("activity.change", { ...values, ...isolated }),
       separator: t("activity.changeSeparator"),
@@ -234,6 +242,11 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
     target: () => linked(hrefOf(target), targetName),
     link: (chunks) => linked(hrefOf(target), chunks),
     name: (chunks) => <bdi>{chunks}</bdi>,
+    invitee: (chunks) => (
+      <bdi dir="ltr" className="font-medium">
+        {chunks}
+      </bdi>
+    ),
     code: (chunks) => (
       <bdi dir="ltr" className="font-mono text-mono">
         {chunks}

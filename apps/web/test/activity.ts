@@ -50,6 +50,7 @@ export const roleTarget = (name = billingLead.name): AuditTargetResponse => ({
   id: billingLead.id,
   name,
   deleted: null,
+  email: null,
 });
 
 /** An entry of the tenant log: Ayşe acted on Khalid. */
@@ -71,6 +72,7 @@ export const entry = (
     id: "0198f0a2-0000-7000-8000-000000000007",
     name: "Khalid Al-Harbi",
     deleted: false,
+    email: null,
   },
   ...overrides,
 });
@@ -110,6 +112,7 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation: TenantOwnerInvitedDetailsResponseOperation.TenantOwnerInvited,
       invitationId: "0198f0a2-0000-7000-8000-0000000000a1",
       replacedInvitationId: null,
+      email: null,
     },
     [AuditOperation.TenantPurgeWarned]: {
       operation: TenantPurgeWarnedDetailsResponseOperation.TenantPurgeWarned,

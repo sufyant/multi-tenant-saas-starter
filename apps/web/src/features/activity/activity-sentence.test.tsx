@@ -1,6 +1,7 @@
 import {
   type AuditActorResponse,
   AuditActorResponseKind,
+  type AuditDetailsResponse,
   AuditOperation,
   type AuditTargetResponse,
   AuditTargetResponseKind,
@@ -63,6 +64,7 @@ const northwindTarget: AuditTargetResponse = {
   id: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
   name: "Northwind Traders",
   deleted: null,
+  email: null,
 };
 
 /** The platform warned the Owners of Northwind's purge. */
@@ -97,6 +99,15 @@ const roleUpdated = (
       permissionsRemoved,
     },
   });
+
+/** An invitation target, with the address the API read now. */
+const invitationTo = (email: string): AuditTargetResponse => ({
+  kind: AuditTargetResponseKind.Invitation,
+  id: "0198f0a2-0000-7000-8000-0000000000a1",
+  name: null,
+  deleted: null,
+  email,
+});
 
 const shown = (text: string) =>
   screen.getByText((_, element) => element?.textContent === text, {
@@ -138,6 +149,7 @@ describe("ActivitySentence", () => {
             id: "0198f0a2-0000-7000-8000-0000000000a1",
             name: null,
             deleted: null,
+            email: null,
           },
         })}
       />,
@@ -145,6 +157,78 @@ describe("ActivitySentence", () => {
 
     expect(shown("Ayşe Yılmaz invited someone as Member.")).toBeInTheDocument();
   });
+
+  // K3: the entry keeps the invitation's id; the API reads the address now from the invitation, and a sentence names it.
+  it("ActivitySentence_MemberInvitedWithItsAddress_NamesTheAddress", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.MemberInvited,
+          details: detailsOf[AuditOperation.MemberInvited],
+          target: invitationTo("sufyan@example.com"),
+        })}
+      />,
+    );
+
+    expect(
+      shown("Ayşe Yılmaz invited sufyan@example.com as Member."),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivitySentence_InvitationRevokedWithItsAddress_NamesTheAddress", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.InvitationRevoked,
+          target: invitationTo("sufyan@example.com"),
+        })}
+      />,
+    );
+
+    expect(
+      shown("Ayşe Yılmaz revoked the invitation to sufyan@example.com."),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivitySentence_OwnerInvitedWithItsAddress_NamesTheAddress", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantOwnerInvited,
+          details: {
+            ...detailsOf[AuditOperation.TenantOwnerInvited],
+            email: "sufyan@example.com",
+          } as AuditDetailsResponse,
+        })}
+      />,
+    );
+
+    expect(
+      shown("Ayşe Yılmaz invited sufyan@example.com as Owner."),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["tr", "Ayşe Yılmaz, sufyan@example.com adresini Üye rolüyle davet etti."],
+    ["ar", "Ayşe Yılmaz دعا sufyan@example.com بدور عضو."],
+  ] as const)(
+    "SentenceText_MemberInvitedWithItsAddressIn_%s_NamesTheAddress",
+    (language, text) => {
+      const logged = entry({
+        operation: AuditOperation.MemberInvited,
+        details: detailsOf[AuditOperation.MemberInvited],
+        target: invitationTo("sufyan@example.com"),
+      });
+
+      expect(
+        sentenceText(
+          logged,
+          createTranslator({ locale: language, messages: messages[language] }),
+          "Europe/Dublin",
+        ),
+      ).toBe(text);
+    },
+  );
 
   it("ActivitySentence_InvitationRevoked_SaysAnInvitation", () => {
     renderWithProviders(
@@ -225,6 +309,7 @@ describe("ActivitySentence", () => {
             id: "0198f0a2-0000-7000-8000-000000000009",
             name: null,
             deleted: true,
+            email: null,
           },
         })}
       />,

@@ -10055,7 +10055,8 @@
           "kind",
           "id",
           "name",
-          "deleted"
+          "deleted",
+          "email"
         ],
         "type": "object",
         "properties": {
@@ -10077,9 +10078,15 @@
               "null",
               "boolean"
             ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an\ninvitation, which has no name. `deleted` is set for a user only."
+        "description": "What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an\ninvitation, which has no name. `deleted` is set for a user only. `email` is an invitation's address now, read from the\ninvitation; null for any other target, for an invitation whose address a user's deletion erased (K3, A8), and in the tenant's log\nfor a caller without `tenant.invitations.read`."
       },
       "AuditTargetResponseKind": {
         "enum": [
@@ -12868,6 +12875,7 @@
         "required": [
           "invitationId",
           "replacedInvitationId",
+          "email",
           "operation"
         ],
         "properties": {
@@ -12890,9 +12898,15 @@
               "string"
             ],
             "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any."
+        "description": "The details of `tenant.owner_invited`: the invitation's id, the pending invitation it replaced, if any, and the invitation's address\nnow, read from the invitation; null when a user's deletion erased it (K3, A8), and in the tenant's log for a caller without\n`tenant.invitations.read`."
       },
       "TenantOwnerMadeDetailsResponse": {
         "required": [
