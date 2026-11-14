@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { Banner } from "./banner";
 
 describe("Banner", () => {
@@ -23,5 +24,24 @@ describe("Banner", () => {
     );
 
     expect(screen.getByText("Atlas Logistics موقوفة.")).toBeInTheDocument();
+  });
+
+  it("Banner_Dismissible_CallsOnCloseFromItsCloseButton", async () => {
+    const onClose = vi.fn();
+    render(
+      <Banner title="Terms of use updated" onClose={onClose} closeLabel="Close">
+        The new terms apply from 1 Dec 2026.
+      </Banner>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("Banner_NotDismissible_HasNoCloseButton", () => {
+    render(<Banner title="Atlas Logistics is suspended." />);
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });

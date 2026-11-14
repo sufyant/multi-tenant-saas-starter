@@ -480,6 +480,7 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 
 - The gate after sign-in (1.09 to 1.12, 1.14), the invitation's checkbox (1.15), the Home notice (4.03), and the "Terms" link in the footer before sign-in (`packages/ui` `auth-footer`, which waits for it today).
 - It waits for 38-design and 38-backend.
+- As built: every signed-in page passes `GetMyTerms` first; `acceptance` puts the gate in its place, and the page shows while the answer loads or when it fails, so the page's own reads do not wait for it. Accept sends the link the person read; a changed version (409 `terms_version.changed`) says so, reads the terms again and empties the box. Home shows the notice with Read the terms and a close button (`Banner` gained `onClose`). A new person ticks the box on the invitation's name form, which sends `termsVersionId`; a known person meets the gate after joining. The footer's "Terms" reads `GetTermsInForce` through the BFF, which forwards an anonymous operation without a session (F6). Figma 1.11 is now the accepting state (the gate shows only once the answer says `acceptance`, so it never loads empty), and 1.15 is the name form with the box, as the invitation reaches it after Clerk's ticket (F44).
 
 Not this step: 1.27 (Create an account · accept the terms) is 40d's. It uses 38-backend's accept endpoint.
 

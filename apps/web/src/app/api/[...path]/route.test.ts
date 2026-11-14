@@ -155,6 +155,37 @@ describe("BFF", () => {
     expect(requests).toEqual([]);
   });
 
+  it("GetTermsInForce_WithoutASession_CallsTheApiWithoutAToken", async () => {
+    getToken.mockResolvedValue(null);
+    server.use(
+      http.get(`${api}/v1/public/terms`, () =>
+        HttpResponse.json({
+          id: tenantId,
+          effectiveDate: "2026-12-01",
+          url: "https://starter.example/terms",
+        }),
+      ),
+    );
+
+    const answer = await GET(new Request(`${web}/api/v1/public/terms`));
+
+    expect(answer.status).toBe(200);
+    expect(requests[0]?.headers.has("Authorization")).toBe(false);
+  });
+
+  it("GetTermsInForce_WithASession_SendsNoToken", async () => {
+    server.use(
+      http.get(`${api}/v1/public/terms`, () =>
+        HttpResponse.json(null, { status: 204 }),
+      ),
+    );
+
+    const answer = await GET(new Request(`${web}/api/v1/public/terms`));
+
+    expect(answer.status).toBe(204);
+    expect(requests[0]?.headers.has("Authorization")).toBe(false);
+  });
+
   it("CreateTenant_ReplayedAnswer_PassesTheDeclaredHeaderOnly", async () => {
     server.use(
       http.post(`${api}/v1/platform/tenants`, () =>
