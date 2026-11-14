@@ -1,3 +1,4 @@
+using Notifications.UnitTests.Fixtures;
 using ControlPlane.Contracts.Users;
 using Notifications.Application.Email;
 using Notifications.Application.Users;
@@ -23,12 +24,22 @@ public sealed class SendVerificationCodeEmailHandlerTests
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
+    // The kill switch emails.send is off: the email is not sent, and its message throws, so Wolverine schedules it again until the switch
+    // is on (the policy is InvitationEmailRetries; docs/flows/feature-flags.md, section 8).
+    [Fact]
+    public async Task SendVerificationCodeEmail_TheKillSwitchOff_SendsNothingAndWaits()
+    {
+        await Should.ThrowAsync<EmailsPausedException>(() => SendVerificationCodeEmailHandler.HandleAsync(Code(VerificationEmailKind.EmailChange, Language.En), _channel, Switches.Off, Cancellation));
+
+        _channel.Sent.ShouldBeEmpty();
+    }
+
     [Theory]
     [InlineData(VerificationEmailKind.EmailChange, "Your code to change your email address")]
     [InlineData(VerificationEmailKind.AccountDeletion, "Your code to delete your account")]
     public async Task SendVerificationCodeEmail_EachKind_SendsTheDigitsToTheAddressUnderTheCodesKey(VerificationEmailKind kind, string subject)
     {
-        await SendVerificationCodeEmailHandler.HandleAsync(Code(kind, Language.En), _channel, Cancellation);
+        await SendVerificationCodeEmailHandler.HandleAsync(Code(kind, Language.En), _channel, Switches.On, Cancellation);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@new.example", subject, $"verification-code/{CodeId}"));
@@ -41,10 +52,10 @@ public sealed class SendVerificationCodeEmailHandlerTests
     [MemberData(nameof(Languages))]
     public async Task SendAccountEmails_EveryLanguage_FillEveryPlaceholder(Language language)
     {
-        await SendVerificationCodeEmailHandler.HandleAsync(Code(VerificationEmailKind.EmailChange, language), _channel, Cancellation);
-        await SendVerificationCodeEmailHandler.HandleAsync(Code(VerificationEmailKind.AccountDeletion, language), _channel, Cancellation);
-        await SendEmailChangeNoticeEmailHandler.HandleAsync(Notice(language), _channel, Cancellation);
-        await SendUserDeletionConfirmationEmailHandler.HandleAsync(new UserDeletionConfirmationReadyEvent(UserId, "ada@example.com", language), _channel, Cancellation);
+        await SendVerificationCodeEmailHandler.HandleAsync(Code(VerificationEmailKind.EmailChange, language), _channel, Switches.On, Cancellation);
+        await SendVerificationCodeEmailHandler.HandleAsync(Code(VerificationEmailKind.AccountDeletion, language), _channel, Switches.On, Cancellation);
+        await SendEmailChangeNoticeEmailHandler.HandleAsync(Notice(language), _channel, Switches.On, Cancellation);
+        await SendUserDeletionConfirmationEmailHandler.HandleAsync(new UserDeletionConfirmationReadyEvent(UserId, "ada@example.com", language), _channel, Switches.On, Cancellation);
 
         _channel.Sent.Count.ShouldBe(4);
         _channel.Sent.ShouldAllBe(email => email.Html.StartsWith("<!DOCTYPE html") && !$"{email.Subject}{email.Html}{email.Text}".Contains("{{"));
@@ -54,7 +65,7 @@ public sealed class SendVerificationCodeEmailHandlerTests
     [Fact]
     public async Task SendEmailChangeNoticeEmail_AChange_TellsTheOldAddressTheMaskedNewOne()
     {
-        await SendEmailChangeNoticeEmailHandler.HandleAsync(Notice(Language.En), _channel, Cancellation);
+        await SendEmailChangeNoticeEmailHandler.HandleAsync(Notice(Language.En), _channel, Switches.On, Cancellation);
 
         var email = _channel.Sent.ShouldHaveSingleItem();
         (email.To, email.Subject, email.IdempotencyKey).ShouldBe(("ada@example.com", "Your email address was changed", $"email-changed/{UserId}/{CodeId}"));

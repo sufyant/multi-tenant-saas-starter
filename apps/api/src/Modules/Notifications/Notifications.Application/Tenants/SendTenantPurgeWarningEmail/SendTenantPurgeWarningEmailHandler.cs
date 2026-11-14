@@ -9,7 +9,7 @@ namespace Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
 // the call to the email service. Once its retries are spent the event goes to the dead letter queue: the purge still comes at its moment.
 public static class SendTenantPurgeWarningEmailHandler
 {
-    public static Task HandleAsync(TenantPurgeWarningReadyEvent ready, IEmailChannel channel, CancellationToken cancellationToken)
+    public static Task HandleAsync(TenantPurgeWarningReadyEvent ready, IEmailChannel channel, EmailSwitch emails, CancellationToken cancellationToken)
     {
         var (purgesOn, purgesAt) = EmailLanguage.Of(ready.Language).Dates.Write(ready.PurgesAt, ready.TimeZone);
 
@@ -24,6 +24,6 @@ public static class SendTenantPurgeWarningEmailHandler
                 EmailValue.Text("purgesAt", purgesAt),
                 EmailValue.Contact("supportUrl", EmailTemplate.Brand.SupportUrl),
             ]);
-        return channel.SendAsync(email, cancellationToken);
+        return emails.SendAsync(channel, email, cancellationToken);
     }
 }

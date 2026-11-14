@@ -9,10 +9,10 @@ namespace Notifications.Application.Users.SendVerificationCodeEmail;
 // code's, so a copy of the event sends one email; a new code is a new email.
 public static class SendVerificationCodeEmailHandler
 {
-    public static Task HandleAsync(VerificationCodeReadyEvent ready, IEmailChannel channel, CancellationToken cancellationToken)
+    public static Task HandleAsync(VerificationCodeReadyEvent ready, IEmailChannel channel, EmailSwitch emails, CancellationToken cancellationToken)
     {
         var email = EmailTemplate.Of(ready.Kind == VerificationEmailKind.EmailChange ? "email-change-code" : "deletion-code", ready.Language)
             .Write(ready.Email, $"verification-code/{ready.CodeId}", [EmailValue.Text("verificationCode", ready.Code)]);
-        return channel.SendAsync(email, cancellationToken);
+        return emails.SendAsync(channel, email, cancellationToken);
     }
 }

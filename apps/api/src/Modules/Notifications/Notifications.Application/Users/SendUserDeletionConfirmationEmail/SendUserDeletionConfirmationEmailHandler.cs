@@ -8,9 +8,9 @@ namespace Notifications.Application.Users.SendUserDeletionConfirmationEmail;
 // sends one email.
 public static class SendUserDeletionConfirmationEmailHandler
 {
-    public static Task HandleAsync(UserDeletionConfirmationReadyEvent ready, IEmailChannel channel, CancellationToken cancellationToken)
+    public static Task HandleAsync(UserDeletionConfirmationReadyEvent ready, IEmailChannel channel, EmailSwitch emails, CancellationToken cancellationToken)
     {
         var email = EmailTemplate.Of("account-deleted", ready.Language).Write(ready.Email, $"account-deleted/{ready.UserId}", []);
-        return channel.SendAsync(email, cancellationToken);
+        return emails.SendAsync(channel, email, cancellationToken);
     }
 }

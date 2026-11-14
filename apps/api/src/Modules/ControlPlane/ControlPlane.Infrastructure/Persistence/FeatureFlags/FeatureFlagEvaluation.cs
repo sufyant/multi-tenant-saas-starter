@@ -21,6 +21,14 @@ internal sealed partial class FeatureFlagEvaluation(ControlPlaneDbContext contro
         return (await EvaluateAsync([definition], tenantId, cancellationToken))[flag];
     }
 
+    // No organisation has the empty id, so the read lists none and rule 3 alone decides; its entry is the cache's for that id.
+    public async Task<bool> IsOnForEveryoneElseAsync(string flag, CancellationToken cancellationToken)
+    {
+        var definition = code.Catalog.Find(flag) ?? throw new ArgumentException($"The code defines no feature flag {flag}.", nameof(flag));
+        var rows = await RowsAsync(Guid.Empty, cancellationToken);
+        return rows.TryGetValue(flag, out var row) ? row.EveryoneElse : definition.DefaultValue;
+    }
+
     public async Task<IReadOnlyDictionary<string, bool>> ListAsync(Guid tenantId, CancellationToken cancellationToken) =>
         await EvaluateAsync(code.Catalog.Flags, tenantId, cancellationToken);
 
@@ -29,18 +37,7 @@ internal sealed partial class FeatureFlagEvaluation(ControlPlaneDbContext contro
 
     private async Task<Dictionary<string, bool>> EvaluateAsync(IReadOnlyList<FeatureFlagDefinition> definitions, Guid tenantId, CancellationToken cancellationToken)
     {
-        Dictionary<string, FeatureFlagRuleRow> rows;
-        try
-        {
-            rows = (await cache.ReadAsync(CachedReads.TenantFeatureFlags, tenantId, token => ReadAsync(tenantId, token), cancellationToken)).Flags
-                .ToDictionary(row => row.Key, StringComparer.Ordinal);
-        }
-        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
-        {
-            LogReadFailed(logger, exception);
-            rows = [];
-        }
-
+        var rows = await RowsAsync(tenantId, cancellationToken);
         return definitions.ToDictionary(
             definition => definition.Key,
             definition => rows.TryGetValue(definition.Key, out var row)
@@ -51,6 +48,21 @@ internal sealed partial class FeatureFlagEvaluation(ControlPlaneDbContext contro
 
     // W1's fourth exception: a handler of any module asks, and Wolverine locates the evaluation from the message's scope, so the read
     // opens a short read-only transaction of its own when the DbContext has none. It declares nobody: the flags belong to no tenant (R6).
+    // The organisation's rows by key, or none when they cannot be read, so every flag answers its default.
+    private async Task<Dictionary<string, FeatureFlagRuleRow>> RowsAsync(Guid tenantId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return (await cache.ReadAsync(CachedReads.TenantFeatureFlags, tenantId, token => ReadAsync(tenantId, token), cancellationToken)).Flags
+                .ToDictionary(row => row.Key, StringComparer.Ordinal);
+        }
+        catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            LogReadFailed(logger, exception);
+            return [];
+        }
+    }
+
     private async Task<TenantFeatureFlagRows> ReadAsync(Guid tenantId, CancellationToken cancellationToken)
     {
         await using var transaction = controlPlane.Database.CurrentTransaction is null ? await controlPlane.Database.BeginTransactionAsync(cancellationToken) : null;

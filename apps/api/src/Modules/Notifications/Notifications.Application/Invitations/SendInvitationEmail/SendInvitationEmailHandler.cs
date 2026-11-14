@@ -14,14 +14,14 @@ namespace Notifications.Application.Invitations.SendInvitationEmail;
 public static class SendInvitationEmailHandler
 {
     public static async Task HandleAsync(
-        InvitationReadyEvent ready, IPendingInvitationCheck invitations, IEmailChannel channel, CancellationToken cancellationToken)
+        InvitationReadyEvent ready, IPendingInvitationCheck invitations, IEmailChannel channel, EmailSwitch emails, CancellationToken cancellationToken)
     {
         if (!await invitations.IsPendingAsync(ready.TenantId, ready.InvitationId, cancellationToken))
         {
             return;
         }
 
-        await channel.SendAsync(Write(ready), cancellationToken);
+        await emails.SendAsync(channel, Write(ready), cancellationToken);
     }
 
     /// <summary>The email of the event, in its language. The idempotency key is the invitation's, so an event that arrives twice sends one email.</summary>

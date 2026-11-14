@@ -10,6 +10,12 @@ public interface IFeatureFlags
     /// <summary>Whether the flag that the code defines under this key is on for the organisation.</summary>
     Task<bool> IsOnAsync(string flag, Guid tenantId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Whether the flag is on for work that belongs to no organisation, such as an email to a person: rule 3, everyone else, decides, as
+    /// no organisation is listed or in the percentage.
+    /// </summary>
+    Task<bool> IsOnForEveryoneElseAsync(string flag, CancellationToken cancellationToken);
+
     /// <summary>Every flag that the code defines, with whether it is on for the organisation.</summary>
     Task<IReadOnlyDictionary<string, bool>> ListAsync(Guid tenantId, CancellationToken cancellationToken);
 }

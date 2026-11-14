@@ -5,4 +5,5 @@ namespace ControlPlane.Contracts.FeatureFlags;
 /// <summary>The keys of the feature flags that the code defines, which a module asks IFeatureFlags about (docs/flows/feature-flags.md).</summary>
 public static class FeatureFlagKeys
 {
+    public const string EmailsSend = "emails.send";
 }

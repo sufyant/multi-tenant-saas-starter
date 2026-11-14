@@ -9,4 +9,6 @@ namespace ControlPlane.Domain.FeatureFlags;
 /// </summary>
 internal static class FeatureFlagKeys
 {
+    /// <summary>The kill switch of the notification emails: off stops them in an incident (the maintainer's decision of 2026-11-14).</summary>
+    public const string EmailsSend = "emails.send";
 }

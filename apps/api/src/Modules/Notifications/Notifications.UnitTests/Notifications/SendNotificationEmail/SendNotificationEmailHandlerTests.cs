@@ -1,3 +1,4 @@
+using Notifications.UnitTests.Fixtures;
 using ControlPlane.Contracts.Users;
 using Microsoft.Extensions.Options;
 using Notifications.Application.Email;
@@ -43,7 +44,7 @@ public sealed class SendNotificationEmailHandlerTests
 
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(notificationId, NotificationCatalog.MemberRemoved, Removal("Acme"), "ada@example.com", Language.En, People: People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -62,7 +63,7 @@ public sealed class SendNotificationEmailHandlerTests
 
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantSuspended, values, "ada@example.com", Language.Tr, People: People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -78,7 +79,7 @@ public sealed class SendNotificationEmailHandlerTests
 
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.UserDataExportReady, values, "ada@example.com", Language.En),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -93,7 +94,7 @@ public sealed class SendNotificationEmailHandlerTests
     {
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.MemberRemoved, Removal("<b>Acme</b>"), "ada@example.com", Language.En, People: People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -109,7 +110,7 @@ public sealed class SendNotificationEmailHandlerTests
     {
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), type, StatusChange("Acme"), "ada@example.com", language, People: People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -129,7 +130,7 @@ public sealed class SendNotificationEmailHandlerTests
     {
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantPurged, StatusChange("Acme"), "ada@example.com", language, People: People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -144,7 +145,7 @@ public sealed class SendNotificationEmailHandlerTests
 
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantPlanChanged, values, "ada@example.com", Language.En),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -170,7 +171,7 @@ public sealed class SendNotificationEmailHandlerTests
 
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.MemberRoleChanged, values, "ada@example.com", language, People: People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -191,7 +192,7 @@ public sealed class SendNotificationEmailHandlerTests
 
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.TenantClosed, values, "ada@example.com", Language.En, "Pacific/Auckland", People),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 
@@ -204,7 +205,7 @@ public sealed class SendNotificationEmailHandlerTests
     {
         await SendNotificationEmailHandler.HandleAsync(
             new SendNotificationEmailCommand(Guid.CreateVersion7(), NotificationCatalog.MemberRemoved, Removal("Acme"), "ada@example.com", Language.En),
-            _channel,
+            _channel, Switches.On,
             Links,
             TestContext.Current.CancellationToken);
 

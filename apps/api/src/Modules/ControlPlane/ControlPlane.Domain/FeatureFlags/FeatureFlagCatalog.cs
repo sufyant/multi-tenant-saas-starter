@@ -16,8 +16,13 @@ internal sealed partial class FeatureFlagCatalog
         Retired = retired;
     }
 
-    /// <summary>The template's flags. A product adds its own here, with its key in <see cref="FeatureFlagKeys"/>.</summary>
-    public static FeatureFlagCatalog Template { get; } = new([], []);
+    /// <summary>
+    /// The template's flags: one real kill switch, which shows the pattern working (the maintainer's decision of 2026-11-14). A product adds
+    /// its own here, with its key in <see cref="FeatureFlagKeys"/>.
+    /// </summary>
+    public static FeatureFlagCatalog Template { get; } = new(
+        [new FeatureFlagDefinition(FeatureFlagKeys.EmailsSend, FeatureFlagType.KillSwitch, "Sends the notification emails. Turn it off to stop them in an incident.")],
+        []);
 
     public IReadOnlyList<FeatureFlagDefinition> Flags { get; }
 

@@ -33,6 +33,7 @@ using Audit.Application.Users.RecordUserMembershipRemoved;
 using Audit.Application.Users.RecordUserPreferencesChanged;
 using Audit.Application.Users.RecordUserRenamed;
 using Audit.Application.Users.RecordUserSuspended;
+using Audit.Application.FeatureFlags.RecordFeatureFlagAddedToCode;
 using Audit.Application.FeatureFlags.RecordFeatureFlagEveryoneElseSet;
 using ControlPlane.Application.FeatureFlags.CheckFeatureFlagCleanup;
 using ControlPlane.Application.FeatureFlags.SyncFeatureFlags;
@@ -304,7 +305,8 @@ public sealed class HostRoleTests(Database database)
             await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.notifications WHERE type = 'feature_flags.ready_to_remove'", name) == 1);
 
         runs.In("web").ShouldBeEmpty();
-        runs.WithoutNotificationsIn("worker").Select(run => run.Handler).ShouldBe([typeof(SyncFeatureFlagsHandler), typeof(CheckFeatureFlagCleanupHandler)], ignoreOrder: true);
+        runs.WithoutNotificationsIn("worker").Select(run => run.Handler).ShouldBe(
+            [typeof(SyncFeatureFlagsHandler), typeof(RecordFeatureFlagAddedToCodeHandler), typeof(CheckFeatureFlagCleanupHandler)], ignoreOrder: true);
     }
 
     // G5: a rule's change is made in the web host, and its audit entry is written in the worker.

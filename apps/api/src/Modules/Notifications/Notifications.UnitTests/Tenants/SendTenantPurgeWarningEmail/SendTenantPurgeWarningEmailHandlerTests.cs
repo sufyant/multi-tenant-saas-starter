@@ -1,3 +1,4 @@
+using Notifications.UnitTests.Fixtures;
 using ControlPlane.Contracts.Tenants;
 using Notifications.Application.Email;
 using Notifications.Application.Tenants.SendTenantPurgeWarningEmail;
@@ -166,7 +167,7 @@ public sealed class SendTenantPurgeWarningEmailHandlerTests
     private static TenantPurgeWarningReadyEvent Ready(Language language) =>
         new(Guid.CreateVersion7(), PurgesAt - TimeSpan.FromDays(7), TenantId, UserId, "ada@acme.test", "Acme Ltd", language, PurgesAt, null);
 
-    private Task SendAsync(TenantPurgeWarningReadyEvent ready) => SendTenantPurgeWarningEmailHandler.HandleAsync(ready, _channel, Cancellation);
+    private Task SendAsync(TenantPurgeWarningReadyEvent ready) => SendTenantPurgeWarningEmailHandler.HandleAsync(ready, _channel, Switches.On, Cancellation);
 
     private sealed class RecordingEmailChannel : IEmailChannel
     {

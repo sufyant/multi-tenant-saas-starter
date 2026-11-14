@@ -61,6 +61,33 @@ public sealed class FeatureFlagEvaluationTests(Database database)
         (await ListAsync(services, Guid.CreateVersion7()))[definition.Key].ShouldBeTrue();
     }
 
+    // Work of no organisation, such as an email, reads rule 3 alone: a listed organisation turns nothing on for it.
+    [Fact]
+    public async Task IsOnForEveryoneElse_AKillSwitchTurnedOffWithAListedOrganisation_IsOff()
+    {
+        var definition = new FeatureFlagDefinition(Key(), FeatureFlagType.KillSwitch, "Stops.");
+        var catalog = new FeatureFlagCatalog([definition], []);
+        await using var services = Services(catalog);
+        await SyncAsync(services, catalog);
+        var listed = await TestData.AddTenantAsync(services);
+        await ListAsync(services, definition.Key, listed.Id);
+        var admin = await AdminAsync(services);
+        await InTenant.RunAsync(services, null, async scope =>
+            (await scope.GetRequiredService<IFeatureFlagRepository>().FindFlagForUpdateAsync(definition.Key, Cancellation))!
+                .SetEveryoneElse(false, admin, DateTimeOffset.UtcNow));
+
+        (await InTenant.ReadAsync(services, null, scope => scope.GetRequiredService<IFeatureFlags>().IsOnForEveryoneElseAsync(definition.Key, Cancellation))).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task IsOnForEveryoneElse_AKillSwitchNotStoredYet_IsOn()
+    {
+        var definition = new FeatureFlagDefinition(Key(), FeatureFlagType.KillSwitch, "Stops.");
+        await using var services = Services(new FeatureFlagCatalog([definition], []));
+
+        (await InTenant.ReadAsync(services, null, scope => scope.GetRequiredService<IFeatureFlags>().IsOnForEveryoneElseAsync(definition.Key, Cancellation))).ShouldBeTrue();
+    }
+
     [Fact]
     public async Task IsOn_AFlagTheCodeDoesNotDefine_IsAMistake()
     {

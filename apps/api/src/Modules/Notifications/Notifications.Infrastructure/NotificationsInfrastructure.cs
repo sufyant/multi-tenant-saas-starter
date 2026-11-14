@@ -74,6 +74,11 @@ public static class NotificationsInfrastructure
         // from the message's scope. It reaches no DbContext.
         services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IEmailChannel>());
 
+        // The kill switch of every email (docs/flows/feature-flags.md, section 8). It asks ControlPlane's IFeatureFlags, which reads in a
+        // transaction of its own (W1), so Wolverine takes it from the message's scope and the email handler keeps no DbContext.
+        services.AddScoped<EmailSwitch>();
+        services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<EmailSwitch>());
+
         // The button of a notification email leads to the web app or the platform app, so both are needed to send one (U2).
         services.AddOptions<NotificationLinkOptions>()
             .BindConfiguration(NotificationLinkOptions.Section)

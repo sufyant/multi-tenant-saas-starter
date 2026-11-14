@@ -23,6 +23,8 @@ namespace Internal.Generated.WolverineHandlers
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = context;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var emailSwitch = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Notifications.Application.Email.EmailSwitch>(serviceScope.ServiceProvider);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var emailChannel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Notifications.Application.Email.IEmailChannel>(serviceScope.ServiceProvider);
             // The actual message body
             var sendNotificationEmailCommand = (Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailCommand)context.Envelope.Message;
@@ -31,7 +33,7 @@ namespace Internal.Generated.WolverineHandlers
             Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler");
             
             // The actual message execution
-            await Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler.HandleAsync(sendNotificationEmailCommand, emailChannel, _optionsOfNotificationLinkOptions, cancellation).ConfigureAwait(false);
+            await Notifications.Application.Notifications.SendNotificationEmail.SendNotificationEmailHandler.HandleAsync(sendNotificationEmailCommand, emailChannel, emailSwitch, _optionsOfNotificationLinkOptions, cancellation).ConfigureAwait(false);
         }
     }
 

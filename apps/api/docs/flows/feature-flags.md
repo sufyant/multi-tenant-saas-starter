@@ -1,13 +1,13 @@
 # Feature flags
 
-The code defines each feature flag. The worker stores a new flag, and archives a removed one, at its start. A system admin changes a flag's three rules from the platform. Any module asks whether a flag is on for an organisation, and the web reads its organisation's flags. Once a week the system admins hear which flags are ready to leave the code. Each environment's platform manages only its own flags, in its own database. The step is 39 of `docs/roadmap.md`, section 7. The rules are in `ARCHITECTURE.md` (G1 to G6, C1, C5, K3, K6p, R6, U1, U3, U5, U9). This file says what happens, step by step.
+The code defines each feature flag. The worker stores a new flag, and archives a removed one, at its start. A system admin changes a flag's three rules from the platform. Any module asks whether a flag is on for an organisation, and the web reads its organisation's flags. Once a week the system admins hear which flags are ready to leave the code. Each environment's platform manages only its own flags, in its own database. The step is 39 of `docs/roadmap.md`, section 7. The rules are in `ARCHITECTURE.md` (G1 to G7, C1, C5, K3, K6p, R6, U1, U3, U5, U9). This file says what happens, step by step.
 
 ## 1. A flag in the code
 
 - A flag is a key, a type and a description in `FeatureFlagCatalog.Template` (`ControlPlane.Domain/FeatureFlags/`), with its key in `FeatureFlagKeys` (G1). The type is `release` or `kill_switch`. The default value follows from the type: a release flag is off, a kill switch is on.
 - `pnpm generate` writes the keys into `ControlPlane.Contracts/FeatureFlags/FeatureFlagKeys.g.cs`, for any module, and into `packages/api-client/src/feature-flags.gen.ts`, for the web (D1).
 - A removed flag's key moves to the catalog's retired keys and stays there. `FeatureFlagCatalogTests` refuses two flags with one key, a retired key that a flag takes, and a key that is not lowercase and dotted.
-- The template defines no flag. A product adds its own.
+- The template defines one flag, the kill switch `emails.send` (section 8). A product adds its own.
 
 ## 2. The sync at the worker's start
 
@@ -66,3 +66,11 @@ Each change sets a state, so it takes no idempotency key, and a value the flag h
 | `FeatureFlagAddedToCodeEvent`, `FeatureFlagRemovedFromCodeEvent` | the sync | Audit's `RecordFeatureFlagAddedToCodeHandler`, `RecordFeatureFlagRemovedFromCodeHandler` |
 | `FeatureFlagTenantListedEvent`, `FeatureFlagTenantUnlistedEvent`, `FeatureFlagPercentageSetEvent`, `FeatureFlagEveryoneElseSetEvent` | the platform's changes | Audit's `RecordFeatureFlag...Handler` |
 | `FeatureFlagCleanupDueEvent` | the cleanup check | Notifications' `NotifyFeatureFlagsReadyToRemoveHandler`, `NotifyFeatureFlagsUnusedHandler` |
+
+## 8. The kill switch of the emails
+
+1. `emails.send` is a kill switch, so it starts on for everyone else. The template ships it (`docs/decisions.md`, section 2).
+2. Every email handler of Notifications sends through `EmailSwitch`, which asks `IFeatureFlags.IsOnForEveryoneElseAsync("emails.send")`. An email belongs to no organisation, so rule 3 decides: listing an organisation or a percentage changes nothing for the emails (G7).
+3. A system admin turns it off for everyone (`SetFeatureFlagEveryoneElse`, `on: false`). From then on, each email's handler throws `EmailsPausedException` before it calls the email service.
+4. Wolverine schedules the message again every minute, for as long as the switch is off. The message waits in the durable store; nothing goes to the dead letter queue.
+5. The system admin turns it on again. Within a minute, each waiting email goes, once: its idempotency key keeps a copy from sending twice.
