@@ -530,6 +530,7 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 - The dark and Arabic forms of 12.05, as the earlier steps drew one of each.
 - A note with the Turkish and Arabic texts of the step's frames (platform 12.01 to 12.23, 3.07, 4.09's Feature flags card).
 - It waits for nothing.
+- As built: the phone's 12.19 counts All 6 without the removed flag, and 12.20 to 12.23 have no environment picker; 12.22 and 12.23 use the desktop's rules card, with "Turn off for everyone" and "Turn on for everyone". Rule 3 of a release flag has its button on 12.05 to 12.10 and 12.18. New frames: 12.24 and 12.25 (rule 3 on and off), 12.26 to 12.28 (the kill switch's confirmation, its off state and "Turn on for everyone"), 12.29 to 12.31 (a flag page loading, couldn't load, and Page not found), 12.32 (12.05 in dark), 12.33 (12.05 in Arabic), 7.10 (the Activity log sentences) and "Note · 39 copy" in section 12. Every confirmation names the environment ("in Production"), 12.06, 12.08 and 12.09 included. A confirmation's text is the same for every flag, with the count of organisations it affects; no flag carries its own warning text. 12.18 says the flag is off for every organisation, without naming other environments. Done.
 
 39-backend, the flags, their rules and their history:
 
@@ -680,7 +681,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 39, in the parts of section 7. 39-start is done; 39-design and 39-backend run now, and 39-frontend waits for both. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
+3. Step 39, in the parts of section 7. 39-start and 39-design are done; 39-backend runs now, and 39-frontend waits for both. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
