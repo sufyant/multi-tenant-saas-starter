@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { expectShownReason } from "../../../test/dialog";
 import { Dialog } from "./dialog";
 
 describe("Dialog", () => {
@@ -97,6 +98,44 @@ describe("Dialog", () => {
     expect(
       await screen.findByRole("button", { name: "Continue" }),
     ).toBeDisabled();
+  });
+
+  it("Dialog_ActionDisabledWithAReason_DescribesTheActionWithIt", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        title="Add system admin"
+        actionLabel="Continue"
+        cancelLabel="Cancel"
+        actionDisabled
+        actionReasonId="reason"
+      >
+        <p id="reason">Type the person’s full email address.</p>
+      </Dialog>,
+    );
+
+    expectShownReason(
+      await screen.findByRole("button", { name: "Continue" }),
+      "Type the person’s full email address.",
+    );
+  });
+
+  it("Dialog_ActionEnabledWithAReason_HasNoDescription", async () => {
+    render(
+      <Dialog
+        defaultOpen
+        title="Add system admin"
+        actionLabel="Continue"
+        cancelLabel="Cancel"
+        actionReasonId="reason"
+      >
+        <p id="reason">Type the person’s full email address.</p>
+      </Dialog>,
+    );
+
+    const action = await screen.findByRole("button", { name: "Continue" });
+    expect(action).toBeEnabled();
+    expect(action).not.toHaveAttribute("aria-describedby");
   });
 
   it("Dialog_Back_GoesBackAndStaysOpen", async () => {

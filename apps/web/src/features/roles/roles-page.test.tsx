@@ -587,6 +587,52 @@ describe("RolesPage", () => {
     ]);
   });
 
+  it("RolesPage_CustomRolesOffWithNoCustomRole_SaysThePlanHasNoCustomRoles", async () => {
+    // The Free plan: the feature off, its limit 0, no custom role. The feature is the cause, so nothing asks to delete one (37d).
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith(
+          { "roles.custom": false, "roles.custom.max": 0 },
+          { "roles.custom.max": 0 },
+          "Free",
+        ),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    const reason = "Your organisation’s plan doesn’t include custom roles.";
+    const create = await screen.findByRole("button", { name: "New role" });
+    await waitFor(() => expect(create).toBeDisabled());
+    expect(create).toHaveAccessibleDescription(reason);
+    expect(screen.getByText(reason)).toBeVisible();
+    expect(screen.queryByText(/Delete one/)).not.toBeInTheDocument();
+  });
+
+  it("RolesPage_ALimitOfZero_SaysThePlanAllowsNoCustomRoles", async () => {
+    // The feature on and its limit 0: nothing can be deleted to make room, so the reason has no "Delete one".
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "roles.custom.max": 0 }, { "roles.custom.max": 0 }),
+      ),
+    );
+
+    renderInTenant(<RolesPage />, { url });
+
+    const reason = "Your organisation’s plan allows no custom roles.";
+    const create = await screen.findByRole("button", { name: "New role" });
+    await waitFor(() => expect(create).toBeDisabled());
+    expect(create).toHaveAccessibleDescription(reason);
+    expect(screen.getByText(reason)).toBeVisible();
+    expect(screen.queryByText(/Delete one/)).not.toBeInTheDocument();
+  });
+
   it("RolesPage_CustomRolesOffAndRoleInUse_KeepsDeleteEnabled", async () => {
     server.use(
       ...tenantAnswers(

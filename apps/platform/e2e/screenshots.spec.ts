@@ -1357,6 +1357,20 @@ const shellShots: {
     },
   },
   {
+    // No frame draws Change plan before another plan is chosen: the hint under New plan is the reason of the disabled action (F52).
+    file: "4.15-change-plan-current-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    mock: (page) => mockFrameOrganisations(page),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Change plan" }).click();
+      await page
+        .getByRole("alertdialog")
+        .getByText("This is the current plan. Choose another.")
+        .waitFor();
+    },
+  },
+  {
     file: "4.16-add-override-en-light-desktop",
     size: "desktop",
     path: `${northwindPath}?tab=plan`,

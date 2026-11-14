@@ -744,6 +744,56 @@ export function nativeChoiceControls(
   return findings;
 }
 
+const isCallOf = (node: ts.Node, name: string): node is ts.CallExpression =>
+  ts.isCallExpression(node) &&
+  ts.isIdentifier(node.expression) &&
+  node.expression.text === name;
+
+/**
+ * Rule F63: a navigation after a change goes through `useFreshRouter`, so it carries a fresh session token and keeps the toast. A
+ * file that calls `useMutation` and pushes or replaces through a bare `useRouter()` is a finding, at the router's line. A refresh
+ * is no navigation, and a file without a mutation navigates after no change of its own.
+ */
+export function navigationsAfterAChange(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  const findings: Finding[] = [];
+  for (const path of filesUnder(root)) {
+    if (!isCode(path) || isTest(path) || ignored(root, path, options)) continue;
+    const file = sourceFile(path);
+    let mutates = false;
+    const routers = new Map<string, ts.Node>();
+    const navigating = new Set<string>();
+    const visit = (node: ts.Node) => {
+      if (isCallOf(node, "useMutation")) mutates = true;
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.initializer &&
+        isCallOf(node.initializer, "useRouter")
+      )
+        routers.set(node.name.text, node);
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) &&
+        ["push", "replace"].includes(node.expression.name.text)
+      )
+        navigating.add(node.expression.expression.text);
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+    if (!mutates) continue;
+    for (const [name, node] of routers)
+      if (navigating.has(name))
+        findings.push(
+          `${relative(root, path)}:${lineOf(file, node)}: ${name} navigates in a file with a mutation; wrap it, useFreshRouter(useRouter()) (F63)`,
+        );
+  }
+  return findings;
+}
+
 // A rule row of docs/frontend/ARCHITECTURE.md starts with its id in the first cell: `| F53 |`.
 const ruleRowId = /^\|\s*(F\d+[a-z]?)\s*\|/;
 

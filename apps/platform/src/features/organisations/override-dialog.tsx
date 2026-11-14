@@ -20,6 +20,7 @@ import { calendarDay, startOfDay } from "@repo/ui/lib/format-date-time";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
@@ -112,6 +113,7 @@ export function OverrideDialog({
   // A limit whose feature is off for this organisation cannot be overridden: its value and the action are disabled (4.51).
   const current = rowOf(key);
   const waits = current ? waitsInOrganisation(plan, current) : false;
+  const reasonId = useId();
 
   const save = useMutation({
     mutationFn: (values: Overriding) => {
@@ -243,6 +245,7 @@ export function OverrideDialog({
       cancelLabel={common("cancel")}
       pending={save.isPending}
       actionDisabled={waits}
+      actionReasonId={reasonId}
       onConfirm={() => void submit()}
     >
       <form
@@ -301,6 +304,7 @@ export function OverrideDialog({
               }
               disabled={waits}
               note={waits ? text.requiresFeature(key) : undefined}
+              noteId={reasonId}
             />
           </div>
           {retention && (

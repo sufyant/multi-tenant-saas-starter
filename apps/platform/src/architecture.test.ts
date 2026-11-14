@@ -10,6 +10,7 @@ import {
   enumValues,
   messageKeySets,
   nativeChoiceControls,
+  navigationsAfterAChange,
   numericLayerClasses,
   physicalDirectionClasses,
   primaryTextClasses,
@@ -106,6 +107,10 @@ describe("architecture of apps/platform", () => {
 
   it("F52_AppsPlatform_UsesNoNativeCheckboxOrRadio", () => {
     expect(nativeChoiceControls(src)).toEqual([]);
+  });
+
+  it("F63_AppsPlatformFeatures_NavigateAfterAChangeWithAFreshToken", () => {
+    expect(navigationsAfterAChange(join(src, "features"))).toEqual([]);
   });
 
   it("F29_AppsPlatform_DeclaresNoSecondCopyOfAContractHelper", () => {

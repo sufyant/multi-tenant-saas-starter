@@ -549,6 +549,7 @@
     "changeTitle": "<bdi>{name}</bdi> kuruluşunun planını değiştir",
     "newPlan": "Yeni plan",
     "current": "Mevcut",
+    "currentChosen": "Bu, mevcut plan. Başka bir plan seçin.",
     "planSearch": "Planlarda ara",
     "planEmpty": "Plan bulunamadı",
     "changed": "<bdi>{name}</bdi>, <bdi>{plan}</bdi> planına geçti",

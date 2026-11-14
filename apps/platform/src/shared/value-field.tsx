@@ -24,6 +24,7 @@ export function ValueField({
   unit,
   disabled = false,
   note,
+  noteId: givenNoteId,
 }: {
   isFeature: boolean;
   /** The accessible name of the switch and of the number. */
@@ -38,12 +39,15 @@ export function ValueField({
   disabled?: boolean;
   /** Why the value cannot change, under it in the muted colour. */
   note?: string;
+  /** The note's id, so a dialog's disabled action can name the note as its reason (F52). */
+  noteId?: string;
 }) {
   const t = useTranslations();
   const text = useEntitlementText();
   const unlimitedId = useId();
   const errorId = useId();
-  const noteId = useId();
+  const ownNoteId = useId();
+  const noteId = givenNoteId ?? ownNoteId;
   const described = error ? errorId : note ? noteId : undefined;
   const unset = showUnset && isFeature && draft.enabled === null;
   return (

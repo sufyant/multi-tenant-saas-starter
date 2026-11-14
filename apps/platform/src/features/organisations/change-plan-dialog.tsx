@@ -16,7 +16,7 @@ import { showToast } from "@repo/ui/components/toast";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   entitlementAreas,
   isFeatureKey,
@@ -50,6 +50,8 @@ export function ChangePlanDialog({
   const queryClient = useQueryClient();
   const plans = useQuery(getListPlansQueryOptions(plansQuery));
   const [chosen, setChosen] = useState(plan.plan.id);
+  const reasonId = useId();
+  const current = chosen === plan.plan.id;
   const chosenName =
     plans.data?.items.find((item) => item.id === chosen)?.name ?? "";
   const preview = useQuery({
@@ -130,7 +132,8 @@ export function ChangePlanDialog({
           : t("changePlan")
       }
       cancelLabel={common("cancel")}
-      actionDisabled={chosen === plan.plan.id}
+      actionDisabled={current}
+      actionReasonId={reasonId}
       pending={change.isPending}
       onConfirm={() => change.isPending || change.mutate()}
     >
@@ -197,6 +200,7 @@ export function ChangePlanDialog({
                   : undefined,
           }))}
           onValueChange={setChosen}
+          hint={current && <span id={reasonId}>{t("currentChosen")}</span>}
           searchPlaceholder={t("planSearch")}
           emptyLabel={t("planEmpty")}
         />

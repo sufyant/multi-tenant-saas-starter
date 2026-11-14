@@ -16,6 +16,7 @@ import {
   generatedFileNames,
   messageKeySets,
   nativeChoiceControls,
+  navigationsAfterAChange,
   numericLayerClasses,
   physicalDirectionClasses,
   primaryTextClasses,
@@ -360,6 +361,58 @@ describe("architecture rules", () => {
     });
 
     expect(nativeChoiceControls(root)).toEqual([]);
+  });
+
+  it("NavigationsAfterAChange_NextRouterPushInAFileWithAMutation_IsAFinding", () => {
+    const root = folder({
+      "a.tsx": [
+        'import { useRouter } from "next/navigation";',
+        "export function A() {",
+        "  const router = useRouter();",
+        '  const save = useMutation({ onSuccess: () => router.push("/list") });',
+        "}",
+      ].join("\n"),
+      "b.tsx": [
+        "export function B() {",
+        "  const go = useRouter();",
+        '  const save = useMutation({ onSuccess: () => go.replace("/") });',
+        "}",
+      ].join("\n"),
+    });
+
+    expect(navigationsAfterAChange(root)).toEqual([
+      "a.tsx:3: router navigates in a file with a mutation; wrap it, useFreshRouter(useRouter()) (F63)",
+      "b.tsx:2: go navigates in a file with a mutation; wrap it, useFreshRouter(useRouter()) (F63)",
+    ]);
+  });
+
+  it("NavigationsAfterAChange_FreshRouterRefreshOrNoMutation_AreNoFinding", () => {
+    const root = folder({
+      "fresh.tsx": [
+        "export function A() {",
+        "  const router = useFreshRouter(useRouter());",
+        '  const save = useMutation({ onSuccess: () => router.push("/list") });',
+        "}",
+      ].join("\n"),
+      "refresh.tsx": [
+        "export function B() {",
+        "  const router = useRouter();",
+        "  const save = useMutation({ onSuccess: () => router.refresh() });",
+        "}",
+      ].join("\n"),
+      "link.tsx": [
+        "export function C() {",
+        "  const router = useRouter();",
+        '  return <button onClick={() => router.push("/a")} />;',
+        "}",
+      ].join("\n"),
+      "a.test.tsx": [
+        "const router = useRouter();",
+        'useMutation({ onSuccess: () => router.push("/") });',
+      ].join("\n"),
+    });
+
+    expect(navigationsAfterAChange(root)).toEqual([]);
   });
 
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsKindsAndReservedSlugs", () => {

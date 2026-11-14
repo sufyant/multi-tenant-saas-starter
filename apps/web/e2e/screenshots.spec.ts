@@ -1948,6 +1948,14 @@ shellShots.push(
     team: northwindTeam(),
   },
   {
+    // No frame draws Custom roles on with a limit of 0. The nearest is 9.06: the plan's reason, with nothing to delete.
+    file: "9.06-roles-limit-zero-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    plan: planWith({ "roles.custom.max": 0 }, { "roles.custom.max": 0 }),
+    team: { ...northwindTeam(), customRoles: [] },
+  },
+  {
     file: "9.07-roles-over-the-limit-en-light-desktop",
     size: "desktop",
     path: roles,

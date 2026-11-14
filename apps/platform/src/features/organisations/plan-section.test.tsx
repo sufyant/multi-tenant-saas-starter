@@ -5,6 +5,7 @@ import {
   LimitKey,
   TenantResponseStatus,
 } from "@repo/api-client";
+import { expectShownReason } from "@repo/ui/test/dialog";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -634,6 +635,22 @@ describe("PlanSection", () => {
     expect(previews[0]?.body).toEqual({ planId: free.id });
   });
 
+  it("ChangePlan_CurrentPlanChosen_SaysToChooseAnother", async () => {
+    await renderSection();
+
+    await userEvent.click(screen.getByRole("button", { name: "Change plan" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Change the plan of Burren Supply",
+      }),
+    );
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Change plan" }),
+      "This is the current plan. Choose another.",
+    );
+  });
+
   it("ChangePlan_Confirmed_PutsThePlanAndReadsAgain", async () => {
     const calls: Call[] = [];
     const reads = { count: 0 };
@@ -984,6 +1001,29 @@ describe("PlanSection", () => {
     );
     await userEvent.click(await screen.findByRole("option", { name: "Seats" }));
     expect(dialog.getByRole("button", { name: "Add override" })).toBeEnabled();
+  });
+
+  it("AddOverride_DependentLimitWithItsFeatureOff_DescribesTheActionWithTheNote", async () => {
+    await renderSection(
+      active,
+      featureOffPlan({
+        [LimitKey.RolesCustomMax]: { override: null, effective: max(20) },
+      }),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Add override" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await userEvent.click(
+      dialog.getByRole("combobox", { name: "Feature or limit" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "Custom roles limit" }),
+    );
+
+    expectShownReason(
+      dialog.getByRole("button", { name: "Add override" }),
+      "Turn on Custom roles first.",
+    );
   });
 
   // 37d (4.52): the removal stays allowed, and says when the plan's value applies.

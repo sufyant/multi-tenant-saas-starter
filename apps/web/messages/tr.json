@@ -550,6 +550,7 @@
     "rolesCustomOff": "Kuruluşunuzun planı özel rolleri içermiyor.",
     "rolesLimit": "Kuruluşunuzun planı {limit} özel role izin veriyor.",
     "rolesLimitAction": "Yenisini oluşturmak için birini silin.",
+    "rolesNone": "Kuruluşunuzun planı özel role izin vermiyor.",
     "rolesCount": "{count} / {limit} özel rol",
     "rolesOver": "{count} özel rolünüz var; planınız {limit} özel role izin veriyor.",
     "rolesOverText": "Yenilerini oluşturmak için rol silin. Her rol ve üyeleri çalışmaya devam eder.",
