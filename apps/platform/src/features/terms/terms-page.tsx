@@ -74,7 +74,7 @@ export function TermsPage() {
     {
       key: "url",
       header: t("terms.link"),
-      width: "w-62",
+      width: "w-66.5",
       render: (version) => (
         <bdi dir="ltr" className="block truncate">
           {linkText(version.url)}
@@ -84,7 +84,7 @@ export function TermsPage() {
     {
       key: "asks",
       header: t("terms.acceptance"),
-      width: "w-62",
+      width: "w-94",
       render: (version) => acceptance(version, activeUserCount),
     },
   ];
