@@ -337,4 +337,29 @@ describe("TermsGate", () => {
       expect(screen.queryByText("Not saved")).not.toBeInTheDocument(),
     );
   });
+  it("TermsGate_ARefusalThenGetMyTermsFails_ShowsThePage", async () => {
+    // The page's read is refused, and every read of the terms after it fails: the page shows, as after any failed read, and a refusal of
+    // its read again does not read the terms in a loop.
+    const mine = { refused: 0 };
+    server.use(
+      http.get("*/v1/me/terms", () =>
+        mine.refused > 0 ? HttpResponse.error() : HttpResponse.json(nothing),
+      ),
+      http.get("*/v1/me/tenants", () => {
+        mine.refused += 1;
+        return termsRefusal();
+      }),
+    );
+
+    renderWithProviders(
+      <TermsGate>
+        <PageThatReads />
+      </TermsGate>,
+    );
+
+    expect(await screen.findByText("Read failed")).toBeInTheDocument();
+    await new Promise((settled) => setTimeout(settled, 200));
+    expect(screen.getByText("Read failed")).toBeInTheDocument();
+    expect(mine.refused).toBeLessThanOrEqual(2);
+  });
 });

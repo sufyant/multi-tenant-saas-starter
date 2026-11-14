@@ -9,7 +9,7 @@ import {
 } from "@repo/api-client";
 import { dismissToasts } from "@repo/ui/components/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { TermsAcceptance } from "./terms-acceptance";
 
 /**
@@ -25,11 +25,21 @@ export function TermsGate({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const terms = useQuery(getGetMyTermsQueryOptions());
   const [refusedAt, setRefusedAt] = useState<number>();
+  const lastRefusal = useRef<number>(undefined);
   useEffect(() => {
     const refused = (error: unknown) => {
       if (!isTermsRefusal(error)) return;
+      // When GetMyTerms failed after the last refusal, the terms cannot be read now: the page shows the refusal as any error, and
+      // GetMyTerms' next read, such as on focus, asks again. So a page whose reads keep being refused never loops.
+      const terms = queryClient.getQueryState(getGetMyTermsQueryKey());
+      if (
+        lastRefusal.current !== undefined &&
+        (terms?.errorUpdatedAt ?? 0) >= lastRefusal.current
+      )
+        return;
       dismissToasts();
-      setRefusedAt(Date.now());
+      lastRefusal.current = Date.now();
+      setRefusedAt(lastRefusal.current);
       void queryClient.invalidateQueries({
         queryKey: getGetMyTermsQueryKey(),
       });
@@ -51,8 +61,11 @@ export function TermsGate({ children }: { children: ReactNode }) {
   const version = terms.data?.version;
   if (terms.data?.action === MyTermsResponseAction.Acceptance && version)
     return <TermsAcceptance key={version.id} version={version} />;
-  // After a refusal, the page waits for GetMyTerms' next answer, so it never shows the refused read's error.
-  if (refusedAt !== undefined && terms.dataUpdatedAt < refusedAt) return null;
+  // After a refusal, the page waits for GetMyTerms' next answer, so it never shows the refused read's error. A failed answer shows the
+  // page, as a failed first read does.
+  const answeredSince = (at: number) =>
+    terms.dataUpdatedAt >= at || terms.errorUpdatedAt >= at;
+  if (refusedAt !== undefined && !answeredSince(refusedAt)) return null;
   return children;
 }
 
