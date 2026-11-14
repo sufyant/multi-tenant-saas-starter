@@ -5,16 +5,21 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useInfiniteQuery,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
   DefinedUseQueryResult,
+  InfiniteData,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseInfiniteQueryOptions,
+  UseInfiniteQueryResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -310,12 +315,88 @@ export const listTermsVersionPeople = async (versionId: string,
 
 
 
+export const getListTermsVersionPeopleInfiniteQueryKey = (versionId: string,
+    params?: ListTermsVersionPeopleParams,) => {
+    return [
+    'infinite', "listTermsVersionPeople", ...(versionId ? [versionId] : []), ...(params ? [params] : [])
+    ] as const;
+    }
+
 export const getListTermsVersionPeopleQueryKey = (versionId: string,
     params?: ListTermsVersionPeopleParams,) => {
     return [
     "listTermsVersionPeople", ...(versionId ? [versionId] : []), ...(params ? [params] : [])
     ] as const;
     }
+
+
+export const getListTermsVersionPeopleInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof listTermsVersionPeople>>, ListTermsVersionPeopleParams['cursor']>, TError = ErrorType<ProblemDetails>>(versionId: string,
+    params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTermsVersionPeopleInfiniteQueryKey(versionId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTermsVersionPeople>>, QueryKey, ListTermsVersionPeopleParams['cursor']> = ({ signal, pageParam }) => listTermsVersionPeople(versionId,{...params, 'cursor': pageParam ?? params?.['cursor']}, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: versionId !== null && versionId !== undefined, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListTermsVersionPeopleInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof listTermsVersionPeople>>>
+export type ListTermsVersionPeopleInfiniteQueryError = ErrorType<ProblemDetails>
+
+
+export function useListTermsVersionPeopleInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listTermsVersionPeople>>, ListTermsVersionPeopleParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ versionId: string,
+    params: undefined |  ListTermsVersionPeopleParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTermsVersionPeople>>,
+          TError,
+          Awaited<ReturnType<typeof listTermsVersionPeople>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTermsVersionPeopleInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listTermsVersionPeople>>, ListTermsVersionPeopleParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ versionId: string,
+    params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTermsVersionPeople>>,
+          TError,
+          Awaited<ReturnType<typeof listTermsVersionPeople>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTermsVersionPeopleInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listTermsVersionPeople>>, ListTermsVersionPeopleParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ versionId: string,
+    params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useListTermsVersionPeopleInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listTermsVersionPeople>>, ListTermsVersionPeopleParams['cursor']>, TError = ErrorType<ProblemDetails>>(
+ versionId: string,
+    params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListTermsVersionPeopleInfiniteQueryOptions(versionId,params,options)
+
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 
 
 export const getListTermsVersionPeopleQueryOptions = <TData = Awaited<ReturnType<typeof listTermsVersionPeople>>, TError = ErrorType<ProblemDetails>>(versionId: string,

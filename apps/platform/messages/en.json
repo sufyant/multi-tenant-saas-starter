@@ -18,7 +18,8 @@
     "myAccount": "My account",
     "systemAdmins": "System admins",
     "settingsMyAccount": "Settings · My account",
-    "settingsPlatform": "Settings · Platform"
+    "settingsPlatform": "Settings · Platform",
+    "termsOfUse": "Terms of use"
   },
   "profile": {
     "title": "Profile",
@@ -404,6 +405,11 @@
       "plan": {
         "created": "<actor></actor> created the plan <target></target>.",
         "updated": "{change, select, renamed {<actor></actor> renamed the plan <name>{oldName}</name> to <target></target>.} default {<actor></actor> made <target></target> the default plan, in place of <previous></previous>.} defaultAndChanges {<actor></actor> made <target></target> the default plan, in place of <previous></previous>, and changed <changes></changes>.} one {<actor></actor> changed the plan <target></target>: <changes></changes>.} other {<actor></actor> changed several values of the plan <target></target>: <changes></changes>.}}"
+      },
+      "terms_version": {
+        "created": "{kind, select, both {<actor></actor> added the <link>Terms of use from {date}</link>, which people must accept. Everyone gets an email.} mustAccept {<actor></actor> added the <link>Terms of use from {date}</link>, which people must accept.} email {<actor></actor> added the <link>Terms of use from {date}</link>, with an email to everyone.} other {<actor></actor> added the <link>Terms of use from {date}</link>, without a notice.}}",
+        "updated": "{change, select, emailed {<actor></actor> sent an email about the <link>Terms of use from {date}</link> to everyone.} other {<actor></actor> changed the <link>Terms of use from {date}</link>: {changes}.}}",
+        "cancelled": "<actor></actor> cancelled the <link>Terms of use from {date}</link>. {count, plural, one {The # acceptance is kept in its record.} other {The # acceptances are kept in its record.}}"
       }
     },
     "change": "{key} from <bdi>{old}</bdi> to <bdi>{new}</bdi>",
@@ -412,7 +418,13 @@
     "description": "Changes to organisations, users, plans and system admins.",
     "period": "Entries are kept for {days}.",
     "loadingOlder": "Loading older activity…",
-    "loadedOlder": "{count, plural, one {# more entry loaded.} other {# more entries loaded.}}"
+    "loadedOlder": "{count, plural, one {# more entry loaded.} other {# more entries loaded.}}",
+    "termsChanges": {
+      "date": "the date (before: {old})",
+      "link": "the link",
+      "summary": "the summary",
+      "requirement": "whether it requires acceptance"
+    }
   },
   "entitlements": {
     "areas": {
@@ -581,5 +593,78 @@
     "withCount": "{view} · {count}",
     "search": "Search",
     "empty": "Nothing found"
+  },
+  "terms": {
+    "title": "Terms of use",
+    "text": "The terms people agree to. A version that requires acceptance asks everyone to accept it before they continue.",
+    "add": "Add version",
+    "scheduledExists": "A version is already scheduled for {date}. Edit or cancel it first.",
+    "appliesFrom": "Applies from",
+    "link": "Link",
+    "acceptance": "Acceptance",
+    "state": {
+      "scheduled": "Scheduled",
+      "in_force": "Current",
+      "replaced": "Replaced",
+      "cancelled": "Cancelled"
+    },
+    "inForce": "In force",
+    "acceptedOf": "{accepted} of {total} accepted",
+    "everyoneAccepted": "Everyone accepted",
+    "noticeOnly": "Notice only",
+    "noNotice": "No notice",
+    "loading": "Loading the terms of use",
+    "error": "Couldn’t load the terms of use",
+    "newTitle": "New version",
+    "newText": "A new version applies from its date. Until then, people keep the current terms.",
+    "appliesFromHint": "The first day the new terms apply.",
+    "linkHint": "Where the full terms live.",
+    "summary": "Summary",
+    "summaryHint": "Optional. A few lines about what changed.",
+    "summaryPlaceholder": "A few lines about what changed",
+    "requiresAcceptance": "Requires acceptance",
+    "requiresAcceptanceHint": "Everyone accepts it before they continue.",
+    "sendEmail": "Send an email",
+    "sendEmailHint": "Everyone gets an email. Without acceptance, they also see a notice on Home. Turn it off for a small change.",
+    "emailWentOut": "The email went out on {date}. It can’t be sent again.",
+    "locked": "{count, plural, one {# person accepted this version.} other {# people accepted this version.}} To change this, cancel it and add a new version.",
+    "dateInvalid": "Pick today or a later date.",
+    "linkInvalid": "Enter a full link that starts with https://.",
+    "summaryTooLong": "Use up to {max} characters.",
+    "added": "Terms of use from {date} added",
+    "addedText": "People are asked to accept them from today.",
+    "notSaved": "Version not saved",
+    "saved": "Version from {date} saved",
+    "versionTitle": "Terms of use from {date}",
+    "stateRequiresAcceptance": "{state} · requires acceptance",
+    "inForceText": "This version is in force. It never changes: it is the record of what people accepted. To change the terms, add a new version.",
+    "edit": "Edit version",
+    "cancel": "Cancel version",
+    "yes": "Yes",
+    "no": "No",
+    "email": "Email",
+    "sentOn": "Sent on {date}",
+    "off": "Off",
+    "accepted": "Accepted",
+    "notYet": "Not yet",
+    "name": "Name",
+    "loadingPeople": "Loading people",
+    "peopleError": "Couldn’t load the people",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more people…",
+    "loadedPeople": "{count, plural, one {# more person loaded.} other {# more people loaded.}}",
+    "moreError": "Couldn’t load more people",
+    "editTitle": "Edit version",
+    "editText": "You can change this version until it takes effect on {date}. From then on it never changes.",
+    "save": "Save changes",
+    "cancelTitle": "Cancel the version from {date}?",
+    "cancelText": "It will not take effect.{current, select, none {} other { The version from {current} stays in force.}}{count, plural, =0 {} one { The # acceptance of this version is kept in its record.} other { The # acceptances of this version are kept in its record.}}",
+    "keep": "Keep version",
+    "notCancelled": "Version not cancelled",
+    "cancelled": "Version from {date} cancelled",
+    "cancelledText": "The {current} version stays in force.",
+    "effectiveDate": "Effective date",
+    "acceptsAtSignIn": "People accept it the next time they sign in.",
+    "opensNewTab": "(opens in a new tab)"
   }
 }

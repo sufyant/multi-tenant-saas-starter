@@ -4,6 +4,7 @@ import {
   type AuditEntryResponse,
   AuditOperation,
   type AuditTargetResponse,
+  type AuditTermsVersionResponse,
   AuditTargetResponseKind,
   FeatureKey,
   LimitKey,
@@ -19,6 +20,9 @@ import {
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
+  TermsVersionCancelledDetailsResponseOperation,
+  TermsVersionCreatedDetailsResponseOperation,
+  TermsVersionUpdatedDetailsResponseOperation,
 } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
@@ -84,6 +88,9 @@ const platformOperations = [
   AuditOperation.TenantPlanChanged,
   AuditOperation.TenantEntitlementOverrideSet,
   AuditOperation.TenantEntitlementOverrideRemoved,
+  AuditOperation.TermsVersionCreated,
+  AuditOperation.TermsVersionUpdated,
+  AuditOperation.TermsVersionCancelled,
 ];
 
 /** The sentence of the operation in a message file, found by its path: `activity.operations.tenant.created`. */
@@ -995,6 +1002,152 @@ describe("ActivitySentence of the plans", () => {
     expect(
       await findSentence(
         "Ciara Byrne removed Burren Supply’s override on Activity log (730 days, until 31 Jan 2027).",
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
+/** The terms version of 7.09: the one from 1 Dec 2026. */
+const termsTarget: AuditTargetResponse = {
+  kind: AuditTargetResponseKind.TermsVersion,
+  id: "0198f0a2-0000-7000-8000-0000000000a1",
+  name: null,
+  deleted: false,
+  email: null,
+};
+const termsValues: AuditTermsVersionResponse = {
+  effectiveDate: "2026-12-01",
+  url: "https://starter.example/terms/2026-12",
+  summary: null,
+  requiresAcceptance: true,
+  sendsEmail: true,
+};
+const termsCreated = (
+  requiresAcceptance: boolean,
+  sendsEmail: boolean,
+): AuditDetailsResponse => ({
+  operation: TermsVersionCreatedDetailsResponseOperation.TermsVersionCreated,
+  ...termsValues,
+  requiresAcceptance,
+  sendsEmail,
+});
+const termsUpdated = (
+  changes: Partial<AuditTermsVersionResponse>,
+  before: Partial<AuditTermsVersionResponse> = {},
+): AuditDetailsResponse => ({
+  operation: TermsVersionUpdatedDetailsResponseOperation.TermsVersionUpdated,
+  old: { ...termsValues, ...before },
+  new: { ...termsValues, ...changes },
+});
+
+describe("ActivitySentence of the terms of use", () => {
+  // 7.09: the two switches give four sentences.
+  it.each([
+    [
+      true,
+      true,
+      "Ciara Byrne added the Terms of use from 1 Dec 2026, which people must accept. Everyone gets an email.",
+    ],
+    [
+      true,
+      false,
+      "Ciara Byrne added the Terms of use from 1 Dec 2026, which people must accept.",
+    ],
+    [
+      false,
+      true,
+      "Ciara Byrne added the Terms of use from 1 Dec 2026, with an email to everyone.",
+    ],
+    [
+      false,
+      false,
+      "Ciara Byrne added the Terms of use from 1 Dec 2026, without a notice.",
+    ],
+  ])(
+    "ActivitySentence_TermsVersionCreatedWithAcceptance%sAndEmail%s_SaysItsSentence",
+    async (requiresAcceptance, sendsEmail, text) => {
+      renderEntry(
+        entry({
+          operation: AuditOperation.TermsVersionCreated,
+          target: termsTarget,
+          details: termsCreated(requiresAcceptance, sendsEmail),
+        }),
+      );
+
+      expect(await findSentence(text)).toBeInTheDocument();
+    },
+  );
+
+  it("ActivitySentence_TermsVersion_LinksToItsPage", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TermsVersionCreated,
+        target: termsTarget,
+        details: termsCreated(true, true),
+      }),
+    );
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Terms of use from 1 Dec 2026",
+      }),
+    ).toHaveAttribute("href", `/settings/terms/${termsTarget.id}`);
+  });
+
+  it("ActivitySentence_TermsVersionUpdated_NamesEachChangeWithTheOldDate", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TermsVersionUpdated,
+        target: termsTarget,
+        details: termsUpdated(
+          { effectiveDate: "2026-12-15", summary: "Clearer rules" },
+          {},
+        ),
+      }),
+    );
+
+    expect(
+      await findSentence(
+        "Ciara Byrne changed the Terms of use from 15 Dec 2026: the date (before: 1 Dec 2026) and the summary.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivitySentence_TermsVersionEmailTurnedOn_SaysTheEmailWent", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TermsVersionUpdated,
+        target: termsTarget,
+        details: termsUpdated({}, { sendsEmail: false }),
+      }),
+    );
+
+    expect(
+      await findSentence(
+        "Ciara Byrne sent an email about the Terms of use from 1 Dec 2026 to everyone.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("ActivitySentence_TermsVersionCancelled_SaysTheAcceptancesStay", async () => {
+    renderEntry(
+      entry({
+        operation: AuditOperation.TermsVersionCancelled,
+        target: termsTarget,
+        details: {
+          operation:
+            TermsVersionCancelledDetailsResponseOperation.TermsVersionCancelled,
+          effectiveDate: "2026-12-15",
+          url: termsValues.url,
+          requiresAcceptance: true,
+          acceptanceCount: 18,
+        },
+      }),
+    );
+
+    expect(
+      await findSentence(
+        "Ciara Byrne cancelled the Terms of use from 15 Dec 2026. The 18 acceptances are kept in its record.",
       ),
     ).toBeInTheDocument();
   });

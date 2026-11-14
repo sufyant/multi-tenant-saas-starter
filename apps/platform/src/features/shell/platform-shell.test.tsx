@@ -263,6 +263,7 @@ describe("PlatformShell", () => {
       "Profile",
       "Account and security",
       "System admins",
+      "Terms of use",
     ]);
   });
 

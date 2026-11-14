@@ -24,6 +24,7 @@ import {
   ActivityIcon,
   BuildingIcon,
   CreditCardIcon,
+  FileTextIcon,
   LockIcon,
   SettingsIcon,
   ShieldCheckIcon,
@@ -44,6 +45,7 @@ import { PlatformBell } from "@/shared/notification-bell";
 import { NotificationStream } from "@/shared/notification-stream";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
+import { termsPage } from "@/shared/terms";
 
 /** The tenant of an organisation's page, `/organisations/<id>`, or null on any other page. */
 const tenantIdOf = (pathname: string) =>
@@ -175,13 +177,19 @@ export function PlatformShell({
       href: "/settings/account",
     },
   ];
-  // Terms of use and Feature flags join in steps 38 and 39.
+  // Feature flags joins in step 39.
   const platform: NavItem[] = [
     {
       id: "system-admins",
       label: t("shell.systemAdmins"),
       icon: ShieldCheckIcon,
       href: "/settings/system-admins",
+    },
+    {
+      id: "terms",
+      label: t("shell.termsOfUse"),
+      icon: FileTextIcon,
+      href: termsPage,
     },
   ];
   const inSettings = pathname.startsWith("/settings");
