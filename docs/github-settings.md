@@ -116,7 +116,7 @@ The file `.github/rulesets/main.json` holds the ruleset. It uses the format that
 | Required status checks | `CI` from GitHub Actions (`integration_id` 15368) | `CI` is the last job of `.github/workflows/ci.yml`, which only verifies. It fails when a job in its `needs` list did not pass. A new job is added to `needs` in the workflow, not here. `delivery.yml` calls the same workflow on a push to `main`. | GitHub Docs: "Available rules for rulesets". Humble and Farley, *Continuous Delivery*, chapter 3 |
 | Require branches to be up to date (`strict_required_status_checks_policy`) | `true` | CI tests the code that will be on `main` after the merge, not an old base. | GitHub Docs: "Available rules for rulesets" |
 
-With `strict_required_status_checks_policy`, a branch that falls behind `main` waits. Auto-merge does not update it. Update the branch (button or rebase), and auto-merge continues after the checks pass again. Source: GitHub Docs: "Automatically merging a pull request".
+With `strict_required_status_checks_policy`, a branch that falls behind `main` waits. Auto-merge does not update it. Update the branch with a rebase, and auto-merge continues after the checks pass again. On the pull request, open the menu of the "Update branch" button, choose "Update with rebase", then click "Rebase branch". Or rebase on `origin/main` and push with `--force-with-lease`. Do not click the button itself: its default, "Update with merge commit", merges `main` into the branch, which `AGENTS.md` forbids ("Pull requests"). That default merged `main` into #224, #235, #260 and #265. Sources: GitHub Docs: "Automatically merging a pull request"; GitHub Docs: "Keeping your pull request in sync with the base branch".
 
 ### 3.5 Ruleset for release tags
 
