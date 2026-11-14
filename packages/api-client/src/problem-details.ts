@@ -55,7 +55,10 @@ export function actionFor(
     return { kind: "account-suspended" };
   if (status === 403 && problem.code === ErrorCode.UserDeleted)
     return { kind: "account-deleted" };
-  if (status === 403 && problem.code === ErrorCode.TermsVersionAcceptanceRequired)
+  if (
+    status === 403 &&
+    problem.code === ErrorCode.TermsVersionAcceptanceRequired
+  )
     return { kind: "terms-acceptance" };
   if (status === 403 && problem.code === ErrorCode.TenantSuspended)
     return { kind: "tenant-blocked", status: MyTenantResponseStatus.Suspended };
