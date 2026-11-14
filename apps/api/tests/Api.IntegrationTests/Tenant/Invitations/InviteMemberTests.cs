@@ -575,15 +575,18 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         _api.Email.Sent.Where(message => message.To == email).ShouldHaveSingleItem();
     }
 
-    // O4: an event that arrives twice sends one email, because the email's idempotency key is the invitation's.
+    // O4: an event that arrives twice sends one email, because the email's idempotency key is the invitation's. The email goes only
+    // while its invitation is pending, so the event names a pending invitation.
     [Fact]
     public async Task SendMemberInvitationEmail_MemberInvitationReadyArrivesTwice_SendsOneEmail()
     {
+        var tenant = await _testData.AddTenantAsync();
+        var invitationId = await _testData.AddInvitationAsync(tenant.Id, expiresAt: _time.GetUtcNow().AddDays(7));
         var invited = new InvitationReadyEvent(
             Guid.CreateVersion7(),
             _time.GetUtcNow(),
-            Guid.NewGuid(),
-            Guid.CreateVersion7(),
+            tenant.Id,
+            invitationId,
             NewEmail(),
             "Acme Ltd",
             new Uri($"{ApiFactory.AcceptUrl}?code=x"),

@@ -715,6 +715,8 @@ Before step 1, set the shared variables in the Railway dashboard, Shared Variabl
 
 A message that fails all its retries goes to the dead letter queue: the table `wolverine.wolverine_dead_letters` in the environment's database (W11 in `apps/api/docs/ARCHITECTURE.md`). Wolverine keeps it for `Host:Messaging:DeadLetters:Retention`, 14 days by default. Then a worker deletes it (W13). The API has no endpoint for dead letters.
 
+Each move to the dead letter queue is an error in Better Stack, in the Errors application `api` (`apps/api/docs/ARCHITECTURE.md`, section 7, "Error tracking", rules 4 and 9). The error's fingerprint is the message type and the cause: the exception's type and its message without ids, addresses and numbers. So the first dead letter of a new cause is a new error, and "New error occurs" alerts once (section 16, step 6). A dead letter of the same cause joins that error and does not alert again. After the fix of the cause, mark the error "Resolved" in Better Stack. If the same cause comes back, Better Stack re-opens the error, and "Error is automatically re-opened" alerts again. An error that stays open alerts never again for its cause. Source: Better Stack docs, Errors, "Exception grouping" (a fingerprint array overrides the calculated grouping).
+
 Retry a dead letter only after its cause is fixed. Examples: the email service was down for longer than the retries, or a setting was wrong and is now correct. A message whose cause is still there fails its retries again and comes back to the table.
 
 An invitation email does not need this step. The inviter can invite the same address again: the new invitation replaces the old one and sends a new email (K2 in `apps/api/docs/api-catalog.md`).

@@ -308,6 +308,7 @@ const northwindLog: AuditEntryResponse[] = [
       id: frameNorthwind.id,
       name: frameNorthwind.name,
       deleted: null,
+      email: null,
     },
     details: {
       operation:
@@ -335,6 +336,7 @@ const northwindLog: AuditEntryResponse[] = [
       id: frameNorthwind.id,
       name: frameNorthwind.name,
       deleted: null,
+      email: null,
     },
     details: {
       operation: TenantCreatedDetailsResponseOperation.TenantCreated,

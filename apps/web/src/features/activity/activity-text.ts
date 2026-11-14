@@ -10,6 +10,7 @@ import {
   actorName,
   changeOf,
   detailValues,
+  inviteeValues,
   keyLabels,
   namedPermissions,
   type PlanWords,
@@ -62,6 +63,7 @@ export function sentenceText(
     actor: () => actorName(entry.actor, t),
     target: () => targetName(entry.target, t),
     name: (chunks: string) => chunks,
+    invitee: (chunks: string) => chunks,
   };
   const details = entry.details;
   // A rename of a role has a sentence of its own, before the sentence of its permissions when both changed.
@@ -84,6 +86,7 @@ export function sentenceText(
     sentences.push(
       t.markup(`activity.operations.${entry.operation}`, {
         ...detailValues<string>(details, role, permissions, date, words),
+        ...inviteeValues(entry),
         ...people,
         actorKind: entry.actor.kind,
       }),

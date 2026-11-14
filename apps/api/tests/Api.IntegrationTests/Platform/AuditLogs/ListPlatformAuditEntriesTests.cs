@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Api.IntegrationTests.Tenant.AuditLogs;
+using Audit.Application.AuditLogs.GetAuditInvitationEmails;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Tenancy;
+using Wolverine;
 
 namespace Api.IntegrationTests.Platform.AuditLogs;
 
@@ -244,6 +247,53 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
         one.ShouldBeGreaterThan(0);
     }
 
+    // The platform's transaction declares no tenant (R11), so row level security hides the invitations. The read sends one query for each
+    // tenant that has an invitation entry on the page, in that tenant's transaction, and none for a page without one.
+    [Fact]
+    public async Task ListPlatformAuditEntries_OwnerInvitationsOfTwoTenants_ShowsBothAddressesWithOneQueryForEachTenant()
+    {
+        using var commands = new SqlCommands();
+        var admin = await _testData.AddSystemAdminAsync();
+        var first = await _testData.AddTenantAsync();
+        var second = await _testData.AddTenantAsync();
+        var firstAddress = $"{Guid.NewGuid():N}@example.com";
+        var secondAddress = $"{Guid.NewGuid():N}@example.com";
+        var firstInvitation = await _testData.AddInvitationAsync(first.Id, email: firstAddress);
+        var secondInvitation = await _testData.AddInvitationAsync(second.Id, email: secondAddress);
+        var page = () => _api.CreateClient(admin, secondFactor: true);
+        Func<HttpClient, Task<HttpResponseMessage>> newestTwo = client => client.GetAsync("/v1/platform/audit-log?limit=2", Cancellation);
+
+        await AddEntryAsync(_start);
+        await AddEntryAsync(_start.AddTicks(10));
+        var none = await commands.CountAsync(page, newestTwo);
+        await AddOwnerInvitedAsync(_start.AddTicks(20), first.Id, firstInvitation);
+        await AddOwnerInvitedAsync(_start.AddTicks(30), first.Id, firstInvitation);
+        var oneTenant = await commands.CountAsync(page, newestTwo);
+        await AddOwnerInvitedAsync(_start.AddTicks(40), second.Id, secondInvitation);
+        await AddOwnerInvitedAsync(_start.AddTicks(50), first.Id, firstInvitation);
+        var twoTenants = await commands.CountAsync(page, newestTwo);
+        var items = (await page().GetFromJsonAsync<JsonElement>("/v1/platform/audit-log?limit=2", Cancellation)).GetProperty("items");
+
+        items.EnumerateArray().Select(item => item.GetProperty("details").GetProperty("email").GetString()).ShouldBe([firstAddress, secondAddress]);
+        (oneTenant - none).ShouldBeGreaterThan(0);
+        (twoTenants - none).ShouldBe(2 * (oneTenant - none));
+    }
+
+    // Each query declares its tenant, so row level security still hides an invitation of a tenant the query does not name (R1).
+    [Fact]
+    public async Task GetAuditInvitationEmails_AnInvitationOfAnotherTenant_StaysHidden()
+    {
+        var named = await _testData.AddTenantAsync();
+        var other = await _testData.AddTenantAsync();
+        var hidden = await _testData.AddInvitationAsync(other.Id, email: $"{Guid.NewGuid():N}@example.com");
+        await using var scope = _api.Services.CreateAsyncScope();
+
+        var found = await scope.ServiceProvider.GetRequiredService<IMessageBus>()
+            .InvokeForTenantAsync<IReadOnlyDictionary<Guid, string>>(named.Id.ToString(), new GetAuditInvitationEmailsQuery([hidden]), Cancellation);
+
+        found.ShouldBeEmpty();
+    }
+
     [Fact]
     public async Task ListPlatformAuditEntries_ATenantFilterThatIsNoId_IsABadRequest()
     {
@@ -282,6 +332,11 @@ public sealed class ListPlatformAuditEntriesTests(Database database) : IAsyncLif
             "tenant.owner_made",
             "Northwind Traders",
             $$"""{"userId":"{{newOwner}}","oldRole":"member","oldRoleId":"{{Guid.CreateVersion7()}}","oldRoleBuiltIn":true}""");
+
+    private Task<Guid> AddOwnerInvitedAsync(DateTimeOffset occurredAt, Guid tenant, Guid invitation) =>
+        _audit.AddPlatformEntryAsync(
+            occurredAt, "Platform", null, "Tenant", tenant, "tenant.owner_invited", "Northwind Traders",
+            $$"""{"invitationId":"{{invitation}}","replacedInvitationId":null}""");
 
     private Task<Guid> AddEntryAsync(DateTimeOffset occurredAt) =>
         _audit.AddPlatformEntryAsync(occurredAt, "User", Guid.CreateVersion7(), "User", Guid.CreateVersion7());

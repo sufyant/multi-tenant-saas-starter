@@ -3,6 +3,7 @@ using ControlPlane.Application.Invitations.AcceptInvitation;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Application.Users.RenameUser;
+using ControlPlane.Contracts.Invitations;
 using JasperFx;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,10 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
 {
     // The tag Wolverine's EF Core integration puts on a chain whose transaction it owns (EFCorePersistenceFrameProvider, internal).
     private const string EfCoreTransaction = "uses_efcore_transaction";
+
+    // W1's ports that read in a transaction of their own. Each personal data exporter does too, behind IEnumerable, which the reach
+    // below does not follow.
+    private static readonly Type[] OwnTransaction = [typeof(IPendingInvitationCheck)];
 
     private ApiFactory _api = null!;
 
@@ -56,9 +61,11 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
         serviceLocated.ShouldBeEmpty();
     }
 
-    // What Wolverine passes to the handler: its parameters, and for a handler that is not static, the handler itself.
+    // What Wolverine passes to the handler: its parameters, and for a handler that is not static, the handler itself. A port that
+    // opens a short transaction of its own, one of W1's exceptions, is left out: its handler holds no transaction during an external call.
     private static IEnumerable<Type> ServicesOf(HandlerChain chain) =>
-        chain.Handlers.SelectMany(call => call.Method.GetParameters().Select(parameter => parameter.ParameterType).Append(call.HandlerType));
+        chain.Handlers.SelectMany(call => call.Method.GetParameters().Select(parameter => parameter.ParameterType).Append(call.HandlerType))
+            .Where(service => !OwnTransaction.Contains(service));
 
     private static string Describe(HandlerChain chain) =>
         $"{chain.MessageType.Name} -> {string.Join(", ", chain.Handlers.Select(call => call.HandlerType.Name))}";

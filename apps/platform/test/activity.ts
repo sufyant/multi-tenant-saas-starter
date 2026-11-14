@@ -44,6 +44,7 @@ export const tenantTarget = (
   id: organisation.id,
   name: organisation.name,
   deleted: null,
+  email: null,
 });
 
 /** John Byrne, a user the system admin acts on. */
@@ -52,6 +53,7 @@ export const john: AuditTargetResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000d1",
   name: "John Byrne",
   deleted: false,
+  email: null,
 };
 
 /** Mehmet Kaya, a user who becomes a system admin and an Owner. */
@@ -60,6 +62,7 @@ export const mehmet: AuditTargetResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000d2",
   name: "Mehmet Kaya",
   deleted: false,
+  email: null,
 };
 
 /** A user who was deleted: the target keeps the id, not the names. */
@@ -68,6 +71,7 @@ export const deletedUser: AuditTargetResponse = {
   id: "0198f0a2-0000-7000-8000-0000000000d3",
   name: null,
   deleted: true,
+  email: null,
 };
 
 /** An entry of the platform log: Ciara suspended John. */

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Contracts.Invitations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using SharedKernel;
 using Tenancy;
+using Wolverine;
+using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform.Invitations;
 
@@ -98,6 +101,38 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         (await MembersOfAsync(tenant)).ShouldBe(0);
         _api.Identity.Withdrawn.Count.ShouldBe(1);
         await _summaries.ShouldMatchTheRowsAsync(tenant);
+    }
+
+    // On staging an Owner invitation was replaced while its email waited in its retries; the retry then sent the old link, which
+    // answers 404. The email of an invitation that is no longer pending never goes out, however late its event is handled again.
+    [Fact]
+    public async Task InviteOwner_TheReplacedInvitationsEmailIsTriedAgain_SendsOnlyTheNewInvitationsEmail()
+    {
+        var admin = await SystemAdminAsync();
+        var first = PlatformTenants.Email();
+        var ready = await ReadyRefusedAsync(admin, first);
+        var second = PlatformTenants.Email();
+        await _api.WaitingForMessagesAsync(() => admin.InviteOwnerAsync(ready.TenantId, second));
+        _api.Email.Refuses = null;
+
+        await _api.TrackMessagesAsync(() => PublishAsync(ready));
+
+        _api.Email.Sent.Select(email => email.To).ShouldBe([second]);
+    }
+
+    // A pending invitation's email still goes out on a try after a failure, once.
+    [Fact]
+    public async Task InviteOwner_ThePendingInvitationsEmailIsTriedAgain_SendsItOnce()
+    {
+        var admin = await SystemAdminAsync();
+        var owner = PlatformTenants.Email();
+        var ready = await ReadyRefusedAsync(admin, owner);
+        _api.Email.Refuses = null;
+
+        await _api.TrackMessagesAsync(() => PublishAsync(ready));
+        await _api.TrackMessagesAsync(() => PublishAsync(ready));
+
+        _api.Email.Sent.ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{ready.InvitationId}");
     }
 
     [Fact]
@@ -328,6 +363,21 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    // A new tenant whose first Owner's email the email service refuses until its retries are spent, and the event of that email.
+    private async Task<InvitationReadyEvent> ReadyRefusedAsync(HttpClient admin, string owner)
+    {
+        _api.Email.Refuses = owner;
+        var messages = await _api.TrackMessagesAsync(() =>
+            admin.CreateTenantAsync(new { name = "Acme Ltd", slug = $"tenant-{Guid.NewGuid():N}"[..20], ownerEmail = owner }));
+        return messages.Sent.SingleMessage<InvitationReadyEvent>();
+    }
+
+    private async Task PublishAsync(InvitationReadyEvent ready)
+    {
+        await using var scope = _api.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<IMessageBus>().PublishAsync(ready);
+    }
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 

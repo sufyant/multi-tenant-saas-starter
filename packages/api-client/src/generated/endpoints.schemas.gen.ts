@@ -307,13 +307,17 @@ export const TenantOwnerInvitedDetailsResponseOperation = {
 } as const;
 
 /**
- * The details of `tenant.owner_invited`: the invitation's id, and the pending invitation it replaced, if any.
+ * The details of `tenant.owner_invited`: the invitation's id, the pending invitation it replaced, if any, and the invitation's address
+ * now, read from the invitation; null when a user's deletion erased it (K3, A8), and in the tenant's log for a caller without
+ * `tenant.invitations.read`.
  */
 export interface TenantOwnerInvitedDetailsResponse {
   operation: TenantOwnerInvitedDetailsResponseOperation;
   invitationId: string;
   /** @nullable */
   replacedInvitationId: string | null;
+  /** @nullable */
+  email: string | null;
 }
 
 export type TenantOwnerMadeDetailsResponseOperation = typeof TenantOwnerMadeDetailsResponseOperation[keyof typeof TenantOwnerMadeDetailsResponseOperation];
@@ -465,7 +469,9 @@ export const AuditTargetResponseKind = {
 
 /**
  * What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an
- * invitation, which has no name. `deleted` is set for a user only.
+ * invitation, which has no name. `deleted` is set for a user only. `email` is an invitation's address now, read from the
+ * invitation; null for any other target, for an invitation whose address a user's deletion erased (K3, A8), and in the tenant's log
+ * for a caller without `tenant.invitations.read`.
  */
 export interface AuditTargetResponse {
   kind: AuditTargetResponseKind;
@@ -474,6 +480,8 @@ export interface AuditTargetResponse {
   name: string | null;
   /** @nullable */
   deleted: boolean | null;
+  /** @nullable */
+  email: string | null;
 }
 
 /**

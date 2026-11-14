@@ -229,8 +229,9 @@ export const ListAuditEntriesResponse = zod.object({
   TenantOwnerInvited: 'tenant.owner_invited',
 }),
   "invitationId": zod.uuid(),
-  "replacedInvitationId": zod.uuid().nullable()
-}).describe('The details of `tenant.owner_invited`: the invitation\'s id, and the pending invitation it replaced, if any.'),zod.object({
+  "replacedInvitationId": zod.uuid().nullable(),
+  "email": zod.string().nullable()
+}).describe('The details of `tenant.owner_invited`: the invitation\'s id, the pending invitation it replaced, if any, and the invitation\'s address\nnow, read from the invitation; null when a user\'s deletion erased it (K3, A8), and in the tenant\'s log for a caller without\n`tenant.invitations.read`.'),zod.object({
   "operation": zod.enum({
   TenantOwnerMade: 'tenant.owner_made',
 }),
@@ -290,8 +291,9 @@ export const ListAuditEntriesResponse = zod.object({
 }).describe('The kind of target of an audit entry.'),
   "id": zod.uuid(),
   "name": zod.string().nullable(),
-  "deleted": zod.boolean().nullable()
-}).describe('What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an\ninvitation, which has no name. `deleted` is set for a user only.')
+  "deleted": zod.boolean().nullable(),
+  "email": zod.string().nullable()
+}).describe('What the action was done to: a tenant or a role with its name at that moment, a user with their real name now or null, or an\ninvitation, which has no name. `deleted` is set for a user only. `email` is an invitation\'s address now, read from the\ninvitation; null for any other target, for an invitation whose address a user\'s deletion erased (K3, A8), and in the tenant\'s log\nfor a caller without `tenant.invitations.read`.')
 }).describe('One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry\nkeeps: the shape of its operation, or null for an operation without details. Names are resolved when the log is read; a name is only\na person\'s real name. It holds no email address.')),
   "nextCursor": zod.string().nullable()
 })
