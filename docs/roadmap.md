@@ -1,6 +1,6 @@
 # Roadmap
 
-This document is the plan of the template's steps. Linear no longer tracks them. Each step has its scope, its decided points and its status: `done`, `in progress` or `todo`. A step's pull request marks its own row in section 1 and its own section. A decided point is closed: reopen it only when the maintainer asks.
+This document is the plan of the template's steps. Linear no longer tracks them. Each step has its scope, its decided points and its status: `done`, `in progress` or `todo`. A step's pull request marks its own row in section 1 and its own section. A decided point is closed: reopen it only when the maintainer asks. Section 17 holds the order of the work, the open work, and which threads may run at the same time. `docs/decisions.md` holds the decisions that belong to no step.
 
 ## 1. Status
 
@@ -546,7 +546,7 @@ Status: todo.
 
 Status: todo.
 
-- The production environment.
+- The production environment. Today there is none: only staging runs. `delivery.yml` has a production job behind the maintainer's approval, but `DEPLOY_PRODUCTION` is unset, so the job is skipped, and nothing has been deployed to production (`docs/deployment.md`, section 4).
 - It waits for 37c: the audit retention is done before production (the maintainer's decision of 2026-11-11).
 - The first release.
 - Rollback and a restore drill.
@@ -565,3 +565,24 @@ Status: todo.
 - Prepaid credits.
 - Seats included in a base fee.
 - A native review of the Turkish and Arabic texts.
+
+## 17. Order of the work
+
+The work comes in this order. A thread that finishes an item updates this section in its pull request.
+
+1. #280, the fixes of four staging findings, merges first. Its maintainer's tasks are in its description.
+2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Nov 2026. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access"). Two ways: make the package before about 24 Nov 2026, or keep the seat one more month while steps 38 to 40 still need frames. The maintainer has not decided.
+3. Support access's shape (`docs/decisions.md`, section 2), then step 38. Step 38 starts with a `38-start` thread, which follows the skill `starting-roadmap-steps`.
+4. Small findings that no pull request fixes yet:
+   - Members with a limit of 0 (`members.max` = 0) still says "Remove a member or cancel an invitation to invite someone." (`apps/web/src/shared/use-plan-reason.ts`). #279 fixed only Roles.
+   - A dialog that disables its action without `actionReasonId` gives no reason, and no architecture test checks it (F52).
+   - F63's architecture test judges by file, so it does not see a child dialog's callback that navigates.
+   - The Figma follow-ups of `docs/design/followups.md`.
+5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
+6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
+
+Which threads may run at the same time:
+
+- A design thread and a backend thread of the same part run together. The frontend thread of that part waits for both.
+- Two design threads never edit the Figma file at the same time.
+- Two threads that change `docs/roadmap.md` or the same `ARCHITECTURE.md` conflict at the second rebase. That is expected: the second thread rebases on `origin/main` and resolves it.

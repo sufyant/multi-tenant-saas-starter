@@ -84,10 +84,18 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## The plan
 
 - The plan is `docs/roadmap.md`. A step's pull request updates its own row.
+- The order of the work and the open work are in `docs/roadmap.md`, section 17.
+
+## Decisions
+
+- Decisions live in their own places; `docs/decisions.md`, section 1, names them and holds every other decision and every rejected option. Read it before you ask the maintainer a decision or reopen one.
+- Every decision taken in a thread goes into its place in the same pull request.
 
 ## Pull requests
 
 - Bring a branch up to date with a rebase on `origin/main`, and push it with `--force-with-lease`. Never merge `main` into a branch.
+- GitHub's default "Update branch" button merges `main` into the branch. Use its "Update with rebase" instead.
+- A red job that your change does not touch usually means `main` is red, or a race. Read `main`'s last Delivery run first. E2E runs only on a pull request, never on a push to `main`.
 - When the maintainer must act, the body has a heading "Maintainer's tasks" that lists each task: an apply, an upload, a setting, a decision.
 
 ## Repository settings
