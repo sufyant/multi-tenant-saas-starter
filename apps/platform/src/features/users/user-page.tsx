@@ -9,6 +9,7 @@ import {
   type UserMembershipResponse,
   UserMembershipResponseTenantStatus,
   UserResponseStatus,
+  type UserTermsVersionResponse,
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
@@ -27,6 +28,7 @@ import { DetailList } from "@/shared/detail-list";
 import { nameOf, userNameOf } from "@/shared/name-of";
 import { NotFoundPage } from "@/shared/not-found-page";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { useDay } from "@/shared/terms";
 import { useDates } from "@/shared/use-dates";
 import { MakeOwnerDialog } from "./make-owner-dialog";
 import { isOwnerMembership } from "./owner-membership";
@@ -82,6 +84,7 @@ function Loading() {
 function Detail({ user }: { user: UserDetailResponse }) {
   const t = useTranslations();
   const { timeZone } = useDates();
+  const termsText = useTermsText();
   const actions = useUserActions();
   const locale = t("locale.format");
   const name = userNameOf(user, t("users.deletedUser"));
@@ -113,6 +116,23 @@ function Detail({ user }: { user: UserDetailResponse }) {
         />
       ),
     },
+    // A row is hidden when there is no such version (5.05).
+    ...(user.terms.inForce
+      ? [
+          {
+            term: t("users.termsInForceTerm"),
+            value: termsText(user.terms.inForce),
+          },
+        ]
+      : []),
+    ...(user.terms.scheduled
+      ? [
+          {
+            term: t("users.termsScheduledTerm"),
+            value: termsText(user.terms.scheduled),
+          },
+        ]
+      : []),
     { term: t("users.organisationsTerm"), value: user.membershipCount },
   ];
 
@@ -146,6 +166,26 @@ function Detail({ user }: { user: UserDetailResponse }) {
       {actions.dialog}
     </section>
   );
+}
+
+/**
+ * Whether the user accepted a terms version (5.05): its day and the day they accepted it, or not yet. A version that requires no
+ * acceptance says so, as nobody accepts it. The version's day is a calendar day of UTC; the acceptance is a moment, in the system
+ * admin's time zone (F18).
+ */
+function useTermsText() {
+  const t = useTranslations("users");
+  const day = useDay();
+  const { date } = useDates();
+  return (version: UserTermsVersionResponse) =>
+    !version.requiresAcceptance
+      ? t("termsNoAcceptanceNeeded", { date: day(version.effectiveDate) })
+      : version.acceptedAt
+        ? t("termsAccepted", {
+            date: day(version.effectiveDate),
+            acceptedDate: date(version.acceptedAt),
+          })
+        : t("termsNotYetAccepted", { date: day(version.effectiveDate) });
 }
 
 /**

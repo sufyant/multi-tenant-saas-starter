@@ -7,7 +7,7 @@ import {
   getListTenantsMockHandler,
   getListTenantsResponseMock,
 } from "@repo/api-client/msw";
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -107,7 +107,7 @@ describe("PlatformShell", () => {
     );
     expect(rail.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
-      "/settings/profile",
+      "/settings/system-admins",
     );
     expect(rail.getByRole("link", { name: "Users" })).toHaveAttribute(
       "href",
@@ -141,7 +141,13 @@ describe("PlatformShell", () => {
     );
     expect(
       rail.getAllByRole("link").map((link) => link.getAttribute("href")),
-    ).toEqual(["/", "/users", "/plans", "/activity", "/settings/profile"]);
+    ).toEqual([
+      "/",
+      "/users",
+      "/plans",
+      "/activity",
+      "/settings/system-admins",
+    ]);
   });
 
   it("PlatformShell_ActivityPage_MarksActivityLogCurrent", async () => {
@@ -261,11 +267,82 @@ describe("PlatformShell", () => {
     );
     expect(menu.getAllByRole("link").map((link) => link.textContent)).toEqual([
       "Back to the platform",
-      "Profile",
-      "Account and security",
       "System admins",
       "Terms of use",
     ]);
+  });
+
+  // My account is no part of Settings (the decision of 2026-11-14): Profile shows in the main menu's shell, which marks no row (8.01).
+  it("PlatformShell_ProfilePage_ShowsTheMainMenuWithNoRowCurrentAndPlatformInTheBreadcrumb", async () => {
+    navigation.pathname = "/settings/profile";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const rail = within(
+      await screen.findByRole("navigation", { name: "Main menu" }),
+    );
+    expect(
+      rail
+        .getAllByRole("link")
+        .filter((link) => link.getAttribute("aria-current") === "page"),
+    ).toEqual([]);
+    expect(
+      screen.queryByRole("navigation", { name: "Settings menu" }),
+    ).not.toBeInTheDocument();
+    const crumbs = within(
+      screen.getByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(crumbs.getByText("Platform")).toBeInTheDocument();
+    expect(crumbs.getByText("Profile")).toBeInTheDocument();
+  });
+
+  it("PlatformShell_AccountAndSecurityPage_SaysPlatformThenAccountAndSecurity", async () => {
+    navigation.pathname = "/settings/account";
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+
+    const crumbs = within(
+      await screen.findByRole("navigation", { name: "Breadcrumb" }),
+    );
+    expect(crumbs.getByText("Platform")).toBeInTheDocument();
+    expect(crumbs.getByText("Account and security")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Settings menu" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // The command menu's groups (2.02): Go to, My account and Settings.
+  it("PlatformShell_CommandMenu_GroupsGoToMyAccountAndSettings", async () => {
+    server.use(
+      getGetMeMockHandler(
+        getGetMeResponseMock({ isSystemAdmin: true, language: "en" }),
+      ),
+    );
+
+    renderWithProviders(<PlatformShell>Content</PlatformShell>);
+    await screen.findByRole("navigation", { name: "Main menu" });
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+
+    const dialog = within(
+      await screen.findByRole("dialog", { name: "Command menu" }),
+    );
+    expect(dialog.getByText("Go to")).toBeInTheDocument();
+    expect(dialog.getByText("My account")).toBeInTheDocument();
+    expect(dialog.getByText("Settings")).toBeInTheDocument();
+    expect(
+      dialog.getByRole("option", { name: "System admins" }),
+    ).toBeInTheDocument();
+    expect(dialog.getByRole("option", { name: "Profile" })).toBeInTheDocument();
   });
 
   // The platform's own item of the account menu (2.03): the web app of WEB_APP_URL, which the server layout gives the shell.

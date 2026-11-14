@@ -17,8 +17,6 @@
     "backToPlatform": "Platforma dön",
     "myAccount": "Hesabım",
     "systemAdmins": "Sistem yöneticileri",
-    "settingsMyAccount": "Ayarlar · Hesabım",
-    "settingsPlatform": "Ayarlar · Platform",
     "termsOfUse": "Kullanım koşulları"
   },
   "profile": {
@@ -302,6 +300,11 @@
     "emailTerm": "E-posta",
     "statusTerm": "Durum",
     "signedUpTerm": "Kaydolma",
+    "termsInForceTerm": "Geçerli kullanım koşulları",
+    "termsScheduledTerm": "Planlanan kullanım koşulları",
+    "termsAccepted": "{date} tarihinden itibaren · {acceptedDate} tarihinde kabul edildi",
+    "termsNotYetAccepted": "{date} tarihinden itibaren · henüz kabul edilmedi",
+    "termsNoAcceptanceNeeded": "{date} tarihinden itibaren · kabul gerekmiyor",
     "copyEmail": "E-postayı kopyala",
     "suspendedOn": "{date} tarihinde askıya alındı",
     "suspendedOnBy": "{date} tarihinde {name} tarafından askıya alındı",
