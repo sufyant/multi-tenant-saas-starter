@@ -84,6 +84,16 @@ internal sealed class ApiFactory(
         }
     }
 
+    // The feature flags' job runs at the start of a host in the roles worker and all too (G2, G6), so a test that counts the messages a
+    // host handles removes it as well.
+    public static void RemoveFeatureFlagJob(IServiceCollection services)
+    {
+        foreach (var job in services.Where(service => service.ImplementationType?.Name == "FeatureFlagJob").ToList())
+        {
+            services.Remove(job);
+        }
+    }
+
     // Clients of the host's real ports. The test server has no port, so the host runs on Kestrel instead.
     public HttpClient PublicClient() => ClientOn(Ports.Public);
 

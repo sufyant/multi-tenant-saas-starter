@@ -187,6 +187,14 @@
       "title": "Your data file is ready",
       "body": "Download it from Account and security until {expiresAt}. You need to be signed in to download it.",
       "footer": "You received this because you asked for a copy of your data."
+    },
+    "feature_flags.ready_to_remove": {
+      "title": "{count} ready to be removed from code",
+      "body": "These release flags have been on for everyone for 30 days. Remove them from the code."
+    },
+    "feature_flags.unused": {
+      "title": "{count} off for everyone for 30 days",
+      "body": "No organisation uses these flags. Remove them from the code."
     }
   },
   "notificationWords": {
@@ -211,7 +219,8 @@
       "your_access": "Your access",
       "organisation_plan": "Organisation plan",
       "organisations": "Organisations",
-      "your_account": "Your account"
+      "your_account": "Your account",
+      "feature_flags": "Feature flags"
     },
     "days": {
       "one": "# day",
@@ -220,6 +229,10 @@
     "nextStep": {
       "accept_at_sign_in": "You accept them the next time you sign in.",
       "nothing_to_do": "You do not need to do anything."
+    },
+    "featureFlags": {
+      "one": "# feature flag",
+      "other": "# feature flags"
     }
   }
 }

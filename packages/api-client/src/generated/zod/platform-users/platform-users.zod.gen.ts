@@ -106,8 +106,22 @@ export const GetUserResponse = zod.object({
 }).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.'),
   "joinedAt": zod.iso.datetime({"offset":true}),
   "lastOwner": zod.boolean()
-}).describe('A tenant the user is a member of: its id, name, slug and status, the user\'s role there, when they joined, and whether they are\nits last Owner. The suspend dialog warns with `lastOwner`, and the delete refusal names those tenants.'))
-}).describe('One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin\'s name and the reason\n(null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who\ngranted them system admin (null for a user who is none, for a root\'s first entry, which the platform grants, and for a grant before\nit was kept), and every membership by the tenant\'s name.')
+}).describe('A tenant the user is a member of: its id, name, slug and status, the user\'s role there, when they joined, and whether they are\nits last Owner. The suspend dialog warns with `lastOwner`, and the delete refusal names those tenants.')),
+  "terms": zod.object({
+  "inForce": zod.union([zod.null(),zod.object({
+  "versionId": zod.uuid(),
+  "effectiveDate": zod.iso.date(),
+  "requiresAcceptance": zod.boolean(),
+  "acceptedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A terms version for the user\'s page: its id and day, whether it requires acceptance, and when the user accepted it, null for not yet.')]),
+  "scheduled": zod.union([zod.null(),zod.object({
+  "versionId": zod.uuid(),
+  "effectiveDate": zod.iso.date(),
+  "requiresAcceptance": zod.boolean(),
+  "acceptedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('A terms version for the user\'s page: its id and day, whether it requires acceptance, and when the user accepted it, null for not yet.')])
+}).describe('Whether the user accepted the terms: the version in force, null before the first version takes effect, and the scheduled version, null\nwhen none is scheduled or it requires no acceptance.')
+}).describe('One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin\'s name and the reason\n(null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who\ngranted them system admin (null for a user who is none, for a root\'s first entry, which the platform grants, and for a grant before\nit was kept), every membership by the tenant\'s name, and whether the user accepted the terms.')
 
 export const RenameUserParams = zod.object({
   "userId": zod.uuid()

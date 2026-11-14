@@ -34,4 +34,10 @@ public enum NotificationValueKind
     /// A number of days, stored as digits, written with its noun in the form of the number's CLDR plural category in the language.
     /// </summary>
     Days,
+
+    /// <summary>
+    /// A number of feature flags, stored as digits, written with its noun in the form of the number's CLDR plural category in the language,
+    /// as <see cref="Days"/> is.
+    /// </summary>
+    FeatureFlags,
 }

@@ -74,6 +74,12 @@
       "not_found": "Verilerinizin bir dışa aktarımı yok.",
       "not_ready": "Dosya indirmeye hazır değil."
     },
+    "feature_flag": {
+      "change_invalid": "Önizlemek için tam olarak bir değişiklik seçin.",
+      "not_found": "Bu özellik bayrağı bulunamadı.",
+      "percentage_invalid": "0 ile 100 arasında bir tam sayı girin.",
+      "removed_from_code": "Bu bayrak koddan kaldırıldı, bu yüzden kuralları artık değişmez."
+    },
     "idempotency": {
       "key_in_progress": "Bu istek hâlâ sürüyor. Biraz bekleyin, sonra sonucu kontrol edin.",
       "key_invalid": "İstek gönderilemedi. Sayfayı yenileyip yeniden deneyin.",

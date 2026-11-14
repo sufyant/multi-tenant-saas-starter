@@ -319,6 +319,15 @@
       "activity_log": {
         "exported": "صدّر <actor></actor> سجل النشاط."
       },
+      "feature_flag": {
+        "added_to_code": "أضاف نشرٌ علامة ميزة.",
+        "everyone_else_off": "أوقف <actor></actor> علامة ميزة لبقية الجميع.",
+        "everyone_else_on": "فعّل <actor></actor> علامة ميزة لبقية الجميع.",
+        "percentage_set": "غيّر <actor></actor> نسبة علامة ميزة.",
+        "removed_from_code": "أزال نشرٌ علامة ميزة من الشيفرة.",
+        "tenant_listed": "أضاف <actor></actor> مؤسسة إلى علامة ميزة.",
+        "tenant_unlisted": "أزال <actor></actor> مؤسسة من علامة ميزة."
+      },
       "invitation": {
         "revoked": "{addressed, select, yes {<actor></actor> ألغى الدعوة المرسلة إلى <invitee>{address}</invitee>.} other {<actor></actor> ألغى دعوة.}}"
       },

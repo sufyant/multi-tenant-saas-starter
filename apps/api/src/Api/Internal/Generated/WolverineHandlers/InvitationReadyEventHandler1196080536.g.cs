@@ -20,6 +20,8 @@ namespace Internal.Generated.WolverineHandlers
             await using var serviceScope = _serviceScopeFactory.CreateAsyncScope();
             Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Wolverine.Runtime.ScopedMessageContextHolder>(serviceScope.ServiceProvider).Context = context;
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
+            var emailSwitch = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Notifications.Application.Email.EmailSwitch>(serviceScope.ServiceProvider);
+            // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var emailChannel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Notifications.Application.Email.IEmailChannel>(serviceScope.ServiceProvider);
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var pendingInvitationCheck = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<ControlPlane.Contracts.Invitations.IPendingInvitationCheck>(serviceScope.ServiceProvider);
@@ -30,7 +32,7 @@ namespace Internal.Generated.WolverineHandlers
             Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler");
             
             // The actual message execution
-            await Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler.HandleAsync(invitationReadyEvent, pendingInvitationCheck, emailChannel, cancellation).ConfigureAwait(false);
+            await Notifications.Application.Invitations.SendInvitationEmail.SendInvitationEmailHandler.HandleAsync(invitationReadyEvent, pendingInvitationCheck, emailChannel, emailSwitch, cancellation).ConfigureAwait(false);
         }
     }
 

@@ -166,6 +166,8 @@ public sealed class NotificationCatalogTests
             "tenant.purged_for_owners your_access",
             "user.data_export_ready your_account",
             "terms_version.created your_account",
+            "feature_flags.ready_to_remove feature_flags",
+            "feature_flags.unused feature_flags",
         ]);
     }
 
@@ -230,6 +232,8 @@ public sealed class NotificationCatalogTests
             "tenant.purged_for_owners Web Email",
             "user.data_export_ready Web Email",
             "terms_version.created Email",
+            "feature_flags.ready_to_remove Web",
+            "feature_flags.unused Web",
         ]);
     }
 

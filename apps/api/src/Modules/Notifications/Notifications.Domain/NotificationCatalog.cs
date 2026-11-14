@@ -50,6 +50,12 @@ public static class NotificationCatalog
 
     public const string TermsVersionCreated = "terms_version.created";
 
+    /// <summary>The release flags on for everyone for 30 days, which the weekly cleanup tells the system admins of (3.07).</summary>
+    public const string FeatureFlagsReadyToRemove = "feature_flags.ready_to_remove";
+
+    /// <summary>The flags off for every organisation for 30 days, which the weekly cleanup tells the system admins of (3.07).</summary>
+    public const string FeatureFlagsUnused = "feature_flags.unused";
+
     /// <summary>The words of <c>nextStep</c> of <see cref="TermsVersionCreated"/>: the person accepts at their next sign-in, or does nothing.</summary>
     public const string AcceptAtSignIn = "accept_at_sign_in";
 
@@ -66,6 +72,8 @@ public static class NotificationCatalog
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
         [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
+        [FeatureFlagsReadyToRemove] = FlagsApart,
+        [FeatureFlagsUnused] = FlagsApart,
         [TenantSuspendedForOwners] = OwnersApart,
         [TenantReactivatedForOwners] = OwnersApart,
         [TenantClosedForOwners] = OwnersApart,
@@ -195,6 +203,12 @@ public static class NotificationCatalog
                 new("nextStep", NotificationValueKind.Word, Words: [AcceptAtSignIn, NothingToDo]),
                 new("summary", NotificationValueKind.Text, Optional: true),
             ]),
+
+        // The weekly cleanup of the feature flags tells every system admin, in the platform's bell only, as the platform tells them of an
+        // organisation's new Owner: the product fixes its channel, and no access changes, so no email goes (U5, G6). It leads to the
+        // platform's Feature flags.
+        FeatureFlagCleanup(FeatureFlagsReadyToRemove),
+        FeatureFlagCleanup(FeatureFlagsUnused),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
     // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
@@ -208,6 +222,11 @@ public static class NotificationCatalog
     private const string Organisations = "organisations";
 
     private const string YourAccount = "your_account";
+
+    private const string FeatureFlags = "feature_flags";
+
+    // The weekly cleanup of the flags is the worker's, not a command, so it writes no audit entry and has no operation to take its name from.
+    private const string FlagsApart = "The worker's weekly cleanup finds the flags; no command does, so no audit operation records it.";
 
     // The status types of the Owners share the event of the platform's type, which tells the system admins with other texts.
     private const string OwnersApart = "The same event tells the system admins in the platform's bell; the organisation's Owners hear of it with texts of their own.";
@@ -234,6 +253,14 @@ public static class NotificationCatalog
         YourAccess,
         WebAndEmail(),
         [Tenant(), .. more]);
+
+    private static NotificationKind FeatureFlagCleanup(string type) => new(
+        type,
+        NotificationBell.Platform,
+        NotificationLinkKind.PlatformFeatureFlags,
+        FeatureFlags,
+        WebOnly(),
+        [new("count", NotificationValueKind.FeatureFlags)]);
 
     private static NotificationValue Tenant() => new(NotificationKind.TenantValue, NotificationValueKind.Text);
 

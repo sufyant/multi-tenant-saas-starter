@@ -129,6 +129,84 @@ export interface MemberRoleChangedDetailsResponse {
   newRole: AuditRoleResponse;
 }
 
+export type FeatureFlagAddedToCodeDetailsResponseOperation = typeof FeatureFlagAddedToCodeDetailsResponseOperation[keyof typeof FeatureFlagAddedToCodeDetailsResponseOperation];
+
+
+export const FeatureFlagAddedToCodeDetailsResponseOperation = {
+  FeatureFlagAddedToCode: 'feature_flag.added_to_code',
+} as const;
+
+/**
+ * The commit of the deploy that stored the flag, or null when it named none, and the flag's default value.
+ */
+export interface FeatureFlagAddedToCodeDetailsResponse {
+  operation: FeatureFlagAddedToCodeDetailsResponseOperation;
+  /** @nullable */
+  revision: string | null;
+  defaultValue: boolean;
+}
+
+export type FeatureFlagPercentageSetDetailsResponseOperation = typeof FeatureFlagPercentageSetDetailsResponseOperation[keyof typeof FeatureFlagPercentageSetDetailsResponseOperation];
+
+
+export const FeatureFlagPercentageSetDetailsResponseOperation = {
+  FeatureFlagPercentageSet: 'feature_flag.percentage_set',
+} as const;
+
+export interface FeatureFlagPercentageSetDetailsResponse {
+  operation: FeatureFlagPercentageSetDetailsResponseOperation;
+  from: number;
+  to: number;
+}
+
+export type FeatureFlagRemovedFromCodeDetailsResponseOperation = typeof FeatureFlagRemovedFromCodeDetailsResponseOperation[keyof typeof FeatureFlagRemovedFromCodeDetailsResponseOperation];
+
+
+export const FeatureFlagRemovedFromCodeDetailsResponseOperation = {
+  FeatureFlagRemovedFromCode: 'feature_flag.removed_from_code',
+} as const;
+
+/**
+ * The commit of the deploy that archived the flag, or null when it named none.
+ */
+export interface FeatureFlagRemovedFromCodeDetailsResponse {
+  operation: FeatureFlagRemovedFromCodeDetailsResponseOperation;
+  /** @nullable */
+  revision: string | null;
+}
+
+export type FeatureFlagTenantListedDetailsResponseOperation = typeof FeatureFlagTenantListedDetailsResponseOperation[keyof typeof FeatureFlagTenantListedDetailsResponseOperation];
+
+
+export const FeatureFlagTenantListedDetailsResponseOperation = {
+  FeatureFlagTenantListed: 'feature_flag.tenant_listed',
+} as const;
+
+/**
+ * The organisation, with its name of that moment.
+ */
+export interface FeatureFlagTenantListedDetailsResponse {
+  operation: FeatureFlagTenantListedDetailsResponseOperation;
+  tenantId: string;
+  tenantName: string;
+}
+
+export type FeatureFlagTenantUnlistedDetailsResponseOperation = typeof FeatureFlagTenantUnlistedDetailsResponseOperation[keyof typeof FeatureFlagTenantUnlistedDetailsResponseOperation];
+
+
+export const FeatureFlagTenantUnlistedDetailsResponseOperation = {
+  FeatureFlagTenantUnlisted: 'feature_flag.tenant_unlisted',
+} as const;
+
+/**
+ * The organisation, with its name of that moment.
+ */
+export interface FeatureFlagTenantUnlistedDetailsResponse {
+  operation: FeatureFlagTenantUnlistedDetailsResponseOperation;
+  tenantId: string;
+  tenantName: string;
+}
+
 export type PlanCreatedDetailsResponseOperation = typeof PlanCreatedDetailsResponseOperation[keyof typeof PlanCreatedDetailsResponseOperation];
 
 
@@ -202,6 +280,8 @@ export type Permission = typeof Permission[keyof typeof Permission];
 
 export const Permission = {
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',
@@ -477,7 +557,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -487,6 +567,13 @@ export type AuditOperation = typeof AuditOperation[keyof typeof AuditOperation];
 
 export const AuditOperation = {
   ActivityLogExported: 'activity_log.exported',
+  FeatureFlagAddedToCode: 'feature_flag.added_to_code',
+  FeatureFlagEveryoneElseOff: 'feature_flag.everyone_else_off',
+  FeatureFlagEveryoneElseOn: 'feature_flag.everyone_else_on',
+  FeatureFlagPercentageSet: 'feature_flag.percentage_set',
+  FeatureFlagRemovedFromCode: 'feature_flag.removed_from_code',
+  FeatureFlagTenantListed: 'feature_flag.tenant_listed',
+  FeatureFlagTenantUnlisted: 'feature_flag.tenant_unlisted',
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
@@ -542,6 +629,7 @@ export const AuditTargetResponseKind = {
   Role: 'role',
   Plan: 'plan',
   TermsVersion: 'terms_version',
+  FeatureFlag: 'feature_flag',
 } as const;
 
 /**
@@ -735,6 +823,8 @@ export type NotificationType = typeof NotificationType[keyof typeof Notification
 
 
 export const NotificationType = {
+  FeatureFlagsReadyToRemove: 'feature_flags.ready_to_remove',
+  FeatureFlagsUnused: 'feature_flags.unused',
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
@@ -770,6 +860,7 @@ export const NotificationLinkResponseKind = {
   TenantActivityLog: 'tenant_activity_log',
   PlatformTenant: 'platform_tenant',
   AccountSecurity: 'account_security',
+  PlatformFeatureFlags: 'platform_feature_flags',
 } as const;
 
 /**
@@ -955,6 +1046,10 @@ export const ErrorCode = {
   DataExportInProgress: 'data_export.in_progress',
   DataExportNotFound: 'data_export.not_found',
   DataExportNotReady: 'data_export.not_ready',
+  FeatureFlagChangeInvalid: 'feature_flag.change_invalid',
+  FeatureFlagNotFound: 'feature_flag.not_found',
+  FeatureFlagPercentageInvalid: 'feature_flag.percentage_invalid',
+  FeatureFlagRemovedFromCode: 'feature_flag.removed_from_code',
   IdempotencyKeyInProgress: 'idempotency.key_in_progress',
   IdempotencyKeyInvalid: 'idempotency.key_invalid',
   IdempotencyKeyReused: 'idempotency.key_reused',
@@ -1060,6 +1155,150 @@ export interface ExcessResponse {
 }
 
 /**
+ * How many organisations the change would turn on or off, of those that are neither purging nor purged. It never blocks the change.
+ */
+export interface FeatureFlagChangePreviewResponse {
+  affectedCount: number;
+}
+
+/**
+ * What one line of a flag's history tells.
+ */
+export type FeatureFlagChangeResponseKind = typeof FeatureFlagChangeResponseKind[keyof typeof FeatureFlagChangeResponseKind];
+
+
+export const FeatureFlagChangeResponseKind = {
+  AddedToCode: 'added_to_code',
+  RemovedFromCode: 'removed_from_code',
+  Listed: 'listed',
+  Unlisted: 'unlisted',
+  PercentageChanged: 'percentage_changed',
+  EveryoneElseChanged: 'everyone_else_changed',
+} as const;
+
+/**
+ * The organisation that a line of a flag's history names, with its name now.
+ */
+export interface FeatureFlagChangeTenantResponse {
+  id: string;
+  name: string;
+}
+
+/**
+ * One line of a flag's history. `from` and `to` hold a percentage's digits, or `on` and `off` for everyone else;
+ * `tenant` the organisation listed or removed, with its name now; `revision` the commit of the deploy that added or removed the
+ * flag. `actor` is the system admin, with their name now, and none for a deploy.
+ */
+export interface FeatureFlagChangeResponse {
+  kind: FeatureFlagChangeResponseKind;
+  /** @nullable */
+  from: string | null;
+  /** @nullable */
+  to: string | null;
+  tenant: null | FeatureFlagChangeTenantResponse;
+  /** @nullable */
+  revision: string | null;
+  at: string;
+  actor: null | UserNameResponse;
+}
+
+/**
+ * The counts of the list's four tabs.
+ */
+export interface FeatureFlagCountsResponse {
+  all: number;
+  readyToRemove: number;
+  unused: number;
+  removedFromCode: number;
+}
+
+/**
+ * What a flag is for: a release flag, or a kill switch.
+ */
+export type FeatureFlagResponseType = typeof FeatureFlagResponseType[keyof typeof FeatureFlagResponseType];
+
+
+export const FeatureFlagResponseType = {
+  Release: 'release',
+  KillSwitch: 'kill_switch',
+} as const;
+
+/**
+ * A flag's removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.
+ */
+export type FeatureFlagResponseCleanup = typeof FeatureFlagResponseCleanup[keyof typeof FeatureFlagResponseCleanup];
+
+
+export const FeatureFlagResponseCleanup = {
+  InUse: 'in_use',
+  ReadyToRemove: 'ready_to_remove',
+  Unused: 'unused',
+} as const;
+
+/**
+ * A flag's latest change: when, and the system admin who made it, with their name now; none when a deploy made it.
+ */
+export interface FeatureFlagLastChangeResponse {
+  at: string;
+  actor: null | UserNameResponse;
+}
+
+/**
+ * A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,
+ * and rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code
+ * removed has `removedAt` and the cleanup `in_use`.
+ */
+export interface FeatureFlagResponse {
+  key: string;
+  type: FeatureFlagResponseType;
+  listedCount: number;
+  percentage: number;
+  everyoneElse: boolean;
+  cleanup: FeatureFlagResponseCleanup;
+  /** @nullable */
+  cleanupSince: string | null;
+  /** @nullable */
+  removedAt: string | null;
+  lastChange: FeatureFlagLastChangeResponse;
+}
+
+/**
+ * An organisation that the flag's first rule lists, with its name now, and when a system admin listed it.
+ */
+export interface FeatureFlagTenantResponse {
+  tenantId: string;
+  name: string;
+  listedAt: string;
+}
+
+/**
+ * One flag's page: the flag as the list shows it, what the code says of it (its description and its default value, which applies when the
+ * rules cannot be read), the day and the commit that added it and that removed it from the code, the organisations rule 1 lists, and its
+ * history, newest first.
+ */
+export interface FeatureFlagDetailResponse {
+  flag: FeatureFlagResponse;
+  description: string;
+  defaultValue: boolean;
+  addedAt: string;
+  /** @nullable */
+  addedRevision: string | null;
+  /** @nullable */
+  removedRevision: string | null;
+  listed: FeatureFlagTenantResponse[];
+  history: FeatureFlagChangeResponse[];
+}
+
+/**
+ * Every flag of this environment, by key, and the counts of the list's tabs: All counts the flags the code defines; a flag the code removed
+ * counts only in its own tab (12.01 to 12.04).
+ */
+export interface FeatureFlagsResponse {
+  flags: FeatureFlagResponse[];
+  counts: FeatureFlagCountsResponse;
+}
+
+/**
  * A feature key of the entitlement list: on or off.
  */
 export type FeatureKey = typeof FeatureKey[keyof typeof FeatureKey];
@@ -1083,6 +1322,21 @@ export const FieldErrorCode = {
   SlugInvalid: 'slug_invalid',
   SlugReserved: 'slug_reserved',
 } as const;
+
+/**
+ * Exactly one change of the flag's rules: an organisation to list, a listed organisation to remove, a whole percentage, or everyone
+ * else on or off. Any other number of changes answers 400 `feature_flag.change_invalid`.
+ */
+export interface GetFeatureFlagChangePreviewRequest {
+  /** @nullable */
+  tenantToAdd: string | null;
+  /** @nullable */
+  tenantToRemove: string | null;
+  /** @nullable */
+  percentage: number | null;
+  /** @nullable */
+  everyoneElse: boolean | null;
+}
 
 /**
  * The invitation code from the invitation link.
@@ -1345,6 +1599,15 @@ export interface MeResponse {
   language: Language;
   /** @nullable */
   timeZone: string | null;
+}
+
+export type MyFeatureFlagsResponseFlags = {[key: string]: boolean};
+
+/**
+ * Every flag the code defines, by its key, with whether it is on for the organisation.
+ */
+export interface MyFeatureFlagsResponse {
+  flags: MyFeatureFlagsResponseFlags;
 }
 
 export type MyTenantDetailResponseEntitlements = {[key: string]: boolean | number | null};
@@ -1642,6 +1905,20 @@ export interface SetEntitlementOverrideRequest {
 }
 
 /**
+ * Whether the flag is on for everyone else, its third rule.
+ */
+export interface SetFeatureFlagEveryoneElseRequest {
+  on: boolean;
+}
+
+/**
+ * The percentage of the flag's second rule: a whole percentage of the organisations; none turns the rule off.
+ */
+export interface SetFeatureFlagPercentageRequest {
+  percentage: number;
+}
+
+/**
  * Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member
  * never sees it. It holds no personal data, such as a person's name or email address: the platform's audit log keeps it after the
  * tenant's purge (A8).
@@ -1734,6 +2011,28 @@ export interface TenantEntitlementResponse {
   override: null | EntitlementOverrideResponse;
   effective: EntitlementValueResponse;
   count: number;
+}
+
+/**
+ * The first rule that turns a flag on for an organisation: it is listed, it is in the percentage, or the flag is on for everyone else.
+ */
+export type TenantFeatureFlagResponseReason = typeof TenantFeatureFlagResponseReason[keyof typeof TenantFeatureFlagResponseReason];
+
+
+export const TenantFeatureFlagResponseReason = {
+  Listed: 'listed',
+  Percentage: 'percentage',
+  Everyone: 'everyone',
+} as const;
+
+/**
+ * A flag that is on for the organisation, with its type, the first rule that turns it on, and the percentage of rule 2 (4.09).
+ */
+export interface TenantFeatureFlagResponse {
+  key: string;
+  type: FeatureFlagResponseType;
+  reason: TenantFeatureFlagResponseReason;
+  percentage: number;
 }
 
 /**
@@ -1975,10 +2274,30 @@ export interface UserMembershipResponse {
 }
 
 /**
+ * A terms version for the user's page: its id and day, whether it requires acceptance, and when the user accepted it, null for not yet.
+ */
+export interface UserTermsVersionResponse {
+  versionId: string;
+  effectiveDate: string;
+  requiresAcceptance: boolean;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+/**
+ * Whether the user accepted the terms: the version in force, null before the first version takes effect, and the scheduled version, null
+ * when none is scheduled or it requires no acceptance.
+ */
+export interface UserTermsResponse {
+  inForce: null | UserTermsVersionResponse;
+  scheduled: null | UserTermsVersionResponse;
+}
+
+/**
  * One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason
  * (null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who
  * granted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before
- * it was kept), and every membership by the tenant's name.
+ * it was kept), every membership by the tenant's name, and whether the user accepted the terms.
  */
 export interface UserDetailResponse {
   id: string;
@@ -2000,6 +2319,7 @@ export interface UserDetailResponse {
   suspensionReason: string | null;
   systemAdminGrantedBy: null | UserNameResponse;
   memberships: UserMembershipResponse[];
+  terms: UserTermsResponse;
 }
 
 /**

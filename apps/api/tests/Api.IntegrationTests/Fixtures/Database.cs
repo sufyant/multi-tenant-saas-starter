@@ -99,9 +99,10 @@ public sealed class Database : IAsyncLifetime
             return;
         }
 
-        // The notifications' retention deletes by the host's clock too (U8), and so does the audit retention (K14, K15).
+        // The notifications' retention deletes by the host's clock too (U8), and so does the audit retention (K14, K15). The feature
+        // flags' job tells every system admin of the database of a flag that a test made old (docs/flows/feature-flags.md).
         foreach (var cleanup in services.Where(service => service.ImplementationType == typeof(IdempotencyCleanup)
-            || service.ImplementationType?.Name is "NotificationRetention" or "AuditRetentionJob").ToList())
+            || service.ImplementationType?.Name is "NotificationRetention" or "AuditRetentionJob" or "FeatureFlagJob").ToList())
         {
             services.Remove(cleanup);
         }

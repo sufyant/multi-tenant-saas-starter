@@ -6,7 +6,7 @@ namespace ControlPlane.Api.Platform.Users;
 /// One user for the user detail screen: as in the list, with when a system admin suspended them, that system admin's name and the reason
 /// (null when the user is not suspended, and the reason null for a suspension before it was asked), the name of the system admin who
 /// granted them system admin (null for a user who is none, for a root's first entry, which the platform grants, and for a grant before
-/// it was kept), and every membership by the tenant's name.
+/// it was kept), every membership by the tenant's name, and whether the user accepted the terms.
 /// </summary>
 public sealed record UserDetailResponse(
     Guid Id,
@@ -22,4 +22,5 @@ public sealed record UserDetailResponse(
     UserNameResponse? SuspendedBy,
     string? SuspensionReason,
     UserNameResponse? SystemAdminGrantedBy,
-    IReadOnlyList<UserMembershipResponse> Memberships);
+    IReadOnlyList<UserMembershipResponse> Memberships,
+    UserTermsResponse Terms);

@@ -8,12 +8,12 @@ namespace Notifications.Application.Users.SendEmailChangeNoticeEmail;
 // takes the invitation email's retries. The key is the code that proved the new address, so a copy sends one email.
 public static class SendEmailChangeNoticeEmailHandler
 {
-    public static Task HandleAsync(EmailChangeNoticeReadyEvent ready, IEmailChannel channel, CancellationToken cancellationToken)
+    public static Task HandleAsync(EmailChangeNoticeReadyEvent ready, IEmailChannel channel, EmailSwitch emails, CancellationToken cancellationToken)
     {
         var email = EmailTemplate.Of("email-changed", ready.Language).Write(
             ready.OldEmail,
             $"email-changed/{ready.UserId}/{ready.CodeId}",
             [EmailValue.Text("newEmail", MaskedEmail.Of(ready.NewEmail)), EmailValue.Contact("supportUrl", EmailTemplate.Brand.SupportUrl)]);
-        return channel.SendAsync(email, cancellationToken);
+        return emails.SendAsync(channel, email, cancellationToken);
     }
 }

@@ -2,6 +2,7 @@ using ControlPlane.Api.Me.DataExports;
 using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Me.TermsVersions;
+using ControlPlane.Api.Platform.FeatureFlags;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.TermsVersions;
 using ControlPlane.Api.Platform.Users;
@@ -72,6 +73,41 @@ internal static class ResponseStatus
         "Accepted" => InvitationResponseState.Accepted,
         "Cancelled" => InvitationResponseState.Cancelled,
         _ => throw Unknown(state),
+    };
+
+    public static FeatureFlagResponseType OfFeatureFlagType(string type) => type switch
+    {
+        "Release" => FeatureFlagResponseType.Release,
+        "KillSwitch" => FeatureFlagResponseType.KillSwitch,
+        _ => throw Unknown(type),
+    };
+
+    // A flag without a cleanup is in use.
+    public static FeatureFlagResponseCleanup OfFeatureFlagCleanup(string? cleanup) => cleanup switch
+    {
+        null => FeatureFlagResponseCleanup.InUse,
+        "ReadyToRemove" => FeatureFlagResponseCleanup.ReadyToRemove,
+        "Unused" => FeatureFlagResponseCleanup.Unused,
+        _ => throw Unknown(cleanup),
+    };
+
+    public static FeatureFlagChangeResponseKind OfFeatureFlagChange(string kind) => kind switch
+    {
+        "AddedToCode" => FeatureFlagChangeResponseKind.AddedToCode,
+        "RemovedFromCode" => FeatureFlagChangeResponseKind.RemovedFromCode,
+        "Listed" => FeatureFlagChangeResponseKind.Listed,
+        "Unlisted" => FeatureFlagChangeResponseKind.Unlisted,
+        "PercentageChanged" => FeatureFlagChangeResponseKind.PercentageChanged,
+        "EveryoneElseChanged" => FeatureFlagChangeResponseKind.EveryoneElseChanged,
+        _ => throw Unknown(kind),
+    };
+
+    public static TenantFeatureFlagResponseReason OfFeatureFlagReason(string reason) => reason switch
+    {
+        "Listed" => TenantFeatureFlagResponseReason.Listed,
+        "Percentage" => TenantFeatureFlagResponseReason.Percentage,
+        "Everyone" => TenantFeatureFlagResponseReason.Everyone,
+        _ => throw Unknown(reason),
     };
 
     public static TermsVersionResponseState OfTermsVersion(string state) => state switch

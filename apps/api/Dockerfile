@@ -43,9 +43,11 @@ EXPOSE 8080
 EXPOSE 8081
 
 # The commit the image is built from. CI passes it, so the image it promotes to production keeps it. Each error event
-# names it as its release (Host:ErrorTracking:Release). Without it, the SDK names the release from the assembly's version.
+# names it as its release (Host:ErrorTracking:Release). Without it, the SDK names the release from the assembly's version. The
+# feature flags' sync writes it beside a flag it adds or archives (ControlPlane:FeatureFlags:Revision).
 ARG SOURCE_REVISION=""
 ENV Host__ErrorTracking__Release=$SOURCE_REVISION
+ENV ControlPlane__FeatureFlags__Revision=$SOURCE_REVISION
 
 # No HEALTHCHECK: the image has no shell and no curl. The platform checks /health/live and /health/ready over HTTP.
 ENTRYPOINT ["dotnet", "Api.dll"]

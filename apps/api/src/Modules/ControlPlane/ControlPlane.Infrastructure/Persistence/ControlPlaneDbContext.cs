@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ControlPlane.Application.Tenants.TenantPurge;
+using ControlPlane.Domain.FeatureFlags;
 using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
@@ -8,6 +9,7 @@ using ControlPlane.Domain.TermsVersions;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Domain.Users;
 using ControlPlane.Domain.VerificationCodes;
+using ControlPlane.Infrastructure.Persistence.FeatureFlags;
 using ControlPlane.Infrastructure.Persistence.StoredFiles;
 using ControlPlane.Infrastructure.Persistence.Invitations;
 using ControlPlane.Infrastructure.Persistence.Members;
@@ -30,7 +32,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// <summary>
 /// The <c>control_plane</c> schema: the control plane's data above tenants (tenants, their summaries and their entitlement overrides, users,
 /// system admins, plans and their values, the default plan, the terms versions, and the users' acceptances of them and dismissals of their
-/// notices), the users' stored files and verification codes, which belong to a user and are
+/// notices, and the feature flags with their listed organisations and their history), the users' stored files and verification codes, which belong to a user and are
 /// under row level security of their own (R11), and the roles,
 /// their permissions, memberships, invitations and tenant purge sagas, which belong to a tenant and are under row level security.
 /// </summary>
@@ -86,6 +88,12 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     internal DbSet<TermsAcceptance> TermsAcceptances => Set<TermsAcceptance>();
 
     internal DbSet<TermsNoticeDismissal> TermsNoticeDismissals => Set<TermsNoticeDismissal>();
+
+    internal DbSet<FeatureFlag> FeatureFlags => Set<FeatureFlag>();
+
+    internal DbSet<FeatureFlagTenant> FeatureFlagTenants => Set<FeatureFlagTenant>();
+
+    internal DbSet<FeatureFlagChange> FeatureFlagChanges => Set<FeatureFlagChange>();
 
     /// <summary>
     /// The tenant of the message the handler serves (W2). Tenant-owned rows are reached only inside a tenant, so a read of them fails
@@ -184,6 +192,9 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new TermsVersionConfiguration());
         modelBuilder.ApplyConfiguration(new TermsAcceptanceConfiguration());
         modelBuilder.ApplyConfiguration(new TermsNoticeDismissalConfiguration());
+        modelBuilder.ApplyConfiguration(new FeatureFlagConfiguration());
+        modelBuilder.ApplyConfiguration(new FeatureFlagTenantConfiguration());
+        modelBuilder.ApplyConfiguration(new FeatureFlagChangeConfiguration());
     }
 
     // Only a change inside a transaction is owed: the transaction is what commits it (W1). Entries() detects the changes first.

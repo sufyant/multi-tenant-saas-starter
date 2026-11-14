@@ -33,6 +33,10 @@ using Audit.Application.Users.RecordUserMembershipRemoved;
 using Audit.Application.Users.RecordUserPreferencesChanged;
 using Audit.Application.Users.RecordUserRenamed;
 using Audit.Application.Users.RecordUserSuspended;
+using Audit.Application.FeatureFlags.RecordFeatureFlagAddedToCode;
+using Audit.Application.FeatureFlags.RecordFeatureFlagEveryoneElseSet;
+using ControlPlane.Application.FeatureFlags.CheckFeatureFlagCleanup;
+using ControlPlane.Application.FeatureFlags.SyncFeatureFlags;
 using ControlPlane.Application.Invitations.InviteMember;
 using ControlPlane.Application.Invitations.InviteOwner;
 using ControlPlane.Application.Invitations.OpenSignUp;
@@ -281,6 +285,48 @@ public sealed class HostRoleTests(Database database)
 
         runs.In("web").ShouldBeEmpty();
         runs.In("worker").Select(run => run.Handler).ShouldBe([typeof(ApplyAuditRetentionHandler), typeof(ApplyTenantAuditRetentionHandler), typeof(DeleteExpiredEntriesHandler), typeof(DeleteExpiredPlatformEntriesHandler)], ignoreOrder: true);
+    }
+
+    // G2, G6: a worker syncs the flags and looks at their cleanup at its start, and a web host never does; the weekly bell of the
+    // system admins is written in the worker.
+    [Fact]
+    public async Task SyncAndCheckFeatureFlags_OnAWebAndAWorkerHost_RunInTheWorkerAtItsStartAndTellTheSystemAdmins()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await AddSystemAdminAsync(name);
+        await OwnFlags.AddFlagAsync(database, name, "roles.bulk_edit", everyoneElse: true, daysAgo: 40);
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, featureFlagJob: true);
+        await using var worker = Host(name, "worker", runs, featureFlagJob: true);
+        _ = web.Services;
+        _ = worker.Services;
+
+        await Waiting.UntilAsync(async () =>
+            await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.notifications WHERE type = 'feature_flags.ready_to_remove'", name) == 1
+            && runs.In("worker").Any(run => run.Handler == typeof(RecordFeatureFlagAddedToCodeHandler)));
+
+        runs.In("web").ShouldBeEmpty();
+        runs.WithoutNotificationsIn("worker").Select(run => run.Handler).ShouldBe(
+            [typeof(SyncFeatureFlagsHandler), typeof(RecordFeatureFlagAddedToCodeHandler), typeof(CheckFeatureFlagCleanupHandler)], ignoreOrder: true);
+    }
+
+    // G5: a rule's change is made in the web host, and its audit entry is written in the worker.
+    [Fact]
+    public async Task SetFeatureFlagEveryoneElse_OnAWebAndAWorkerHost_WritesOnePlatformEntryInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        await OwnFlags.AddFlagAsync(database, name, "emails.send", type: "KillSwitch", everyoneElse: true);
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        (await admin.SetFeatureFlagEveryoneElseAsync("emails.send", false)).EnsureSuccessStatusCode();
+
+        await Waiting.UntilAsync(() => runs.In("worker").Any(run => run.Handler == typeof(RecordFeatureFlagEveryoneElseSetHandler)));
+        runs.In("worker").Select(run => run.Handler).ShouldBe([typeof(RecordFeatureFlagEveryoneElseSetHandler)]);
+        (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM audit.platform_entries WHERE operation = 'feature_flag.everyone_else_off'", name)).ShouldBe(1);
     }
 
     // K14: a plan change that shortens the period is announced from the web host, and the worker's Audit handler starts the hold.
@@ -1054,12 +1100,18 @@ public sealed class HostRoleTests(Database database)
         HandlerRuns runs,
         HostPorts? ports = null,
         IReadOnlyDictionary<string, string?>? settings = null,
-        bool auditRetention = false) => new(
+        bool auditRetention = false,
+        bool featureFlagJob = false) => new(
         database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
         settings: new Dictionary<string, string?>(settings ?? new Dictionary<string, string?>()) { ["Host:Role"] = role },
         configureServices: services =>
         {
             HandlerRunsOfHost.Register(role, runs)(services);
+            if (!featureFlagJob)
+            {
+                ApiFactory.RemoveFeatureFlagJob(services);
+            }
+
             if (!auditRetention)
             {
                 ApiFactory.RemoveAuditRetention(services);
@@ -1076,6 +1128,7 @@ public sealed class HostRoleTests(Database database)
         {
             HandlerRunsOfHost.Register(role, runs)(services);
             ApiFactory.RemoveAuditRetention(services);
+            ApiFactory.RemoveFeatureFlagJob(services);
             services.AddDbContextWithWolverineIntegration<ProbeDbContext>(
                 (provider, options) => options.UseModuleDatabase(provider, ProbeDbContext.Schema),
                 TenancyServiceCollectionExtensions.MessageSchema);

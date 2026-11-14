@@ -16,6 +16,7 @@ public static class SendNotificationEmailHandler
     public static Task HandleAsync(
         SendNotificationEmailCommand send,
         IEmailChannel channel,
+        EmailSwitch emails,
         IOptions<NotificationLinkOptions> links,
         CancellationToken cancellationToken)
     {
@@ -36,7 +37,7 @@ public static class SendNotificationEmailHandler
             send.Email,
             $"notification/{send.NotificationId}",
             values);
-        return channel.SendAsync(email, cancellationToken);
+        return emails.SendAsync(channel, email, cancellationToken);
     }
 
     // The platform's notifications lead to the platform app, the others to the web app. Account and security opens there without an

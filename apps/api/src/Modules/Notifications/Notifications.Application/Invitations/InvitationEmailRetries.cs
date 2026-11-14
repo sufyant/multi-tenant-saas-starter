@@ -1,3 +1,4 @@
+using Notifications.Application.Email;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.Users;
@@ -36,6 +37,8 @@ internal sealed class InvitationEmailRetries(IOptions<InvitationEmailOptions> se
         var (inline, scheduled) = GrowingRetries.Of(settings.Value.Delays);
         foreach (var chain in chains.Where(chain => Emails.Contains(chain.MessageType)))
         {
+            // While emails.send is off, an email waits and asks again, for as long as it takes (EmailSwitch). This rule comes first.
+            chain.OnException<EmailsPausedException>().ScheduleRetryIndefinitely(EmailSwitch.Pause);
             var retries = chain.OnAnyException();
             var next = inline.Count > 0 ? retries.RetryWithCooldown([.. inline]).Then : retries;
             if (scheduled.Count > 0)

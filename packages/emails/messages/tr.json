@@ -187,6 +187,14 @@
       "title": "Veri dosyanız hazır",
       "body": "{expiresAt} tarihine kadar Hesap ve güvenlik sayfasından indirebilirsiniz. İndirmek için oturum açmış olmanız gerekir.",
       "footer": "Bu e-postayı, verilerinizin bir kopyasını istediğiniz için aldınız."
+    },
+    "feature_flags.ready_to_remove": {
+      "title": "{count} koddan kaldırılmaya hazır",
+      "body": "Bu sürüm bayrakları 30 gündür herkes için açık. Onları koddan kaldırın."
+    },
+    "feature_flags.unused": {
+      "title": "{count} 30 gündür herkes için kapalı",
+      "body": "Bu bayrakları hiçbir kuruluş kullanmıyor. Onları koddan kaldırın."
     }
   },
   "notificationWords": {
@@ -211,7 +219,8 @@
       "your_access": "Erişiminiz",
       "organisation_plan": "Kuruluş planı",
       "organisations": "Kuruluşlar",
-      "your_account": "Hesabınız"
+      "your_account": "Hesabınız",
+      "feature_flags": "Özellik bayrakları"
     },
     "days": {
       "one": "# gün",
@@ -220,6 +229,10 @@
     "nextStep": {
       "accept_at_sign_in": "Bir sonraki oturum açışınızda koşulları kabul edeceksiniz.",
       "nothing_to_do": "Sizin bir şey yapmanız gerekmiyor."
+    },
+    "featureFlags": {
+      "one": "# özellik bayrağı",
+      "other": "# özellik bayrağı"
     }
   }
 }

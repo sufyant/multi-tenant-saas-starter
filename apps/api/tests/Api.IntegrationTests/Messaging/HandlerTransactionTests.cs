@@ -3,8 +3,10 @@ using ControlPlane.Application.Invitations.AcceptInvitation;
 using ControlPlane.Application.Invitations.RecordSignUp;
 using ControlPlane.Application.Users.DeleteUser;
 using ControlPlane.Application.Users.RenameUser;
+using ControlPlane.Contracts.FeatureFlags;
 using ControlPlane.Contracts.Invitations;
 using JasperFx;
+using Notifications.Application.Email;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Tenancy;
@@ -22,7 +24,7 @@ public sealed class HandlerTransactionTests(Database database) : IAsyncLifetime
 
     // W1's ports that read in a transaction of their own. Each personal data exporter does too, behind IEnumerable, which the reach
     // below does not follow.
-    private static readonly Type[] OwnTransaction = [typeof(IPendingInvitationCheck)];
+    private static readonly Type[] OwnTransaction = [typeof(IPendingInvitationCheck), typeof(IFeatureFlags), typeof(EmailSwitch)];
 
     private ApiFactory _api = null!;
 

@@ -11,4 +11,5 @@ public sealed record UserDetailView(
     UserNameView? SuspendedBy,
     string? SuspensionReason,
     UserNameView? SystemAdminGrantedBy,
-    IReadOnlyList<UserMembershipView> Memberships);
+    IReadOnlyList<UserMembershipView> Memberships,
+    TermsVersions.UserTermsView? Terms = null);

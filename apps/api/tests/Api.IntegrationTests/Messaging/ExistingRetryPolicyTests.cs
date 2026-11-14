@@ -1,3 +1,4 @@
+using Notifications.Application.Email;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
 using Wolverine.Runtime;
@@ -19,10 +20,29 @@ public sealed class ExistingRetryPolicyTests(Database database)
         var chain = api.Services.GetRequiredService<HandlerGraph>().Chains.Single(chain => chain.MessageType.Name == message);
         _ = api.Services.GetRequiredService<HandlerGraph>().HandlerFor(chain.MessageType);
 
-        var rule = chain.Failures.First();
+        var rule = chain.Failures.First(failure => !failure.Match.Description.Contains(nameof(EmailsPausedException), StringComparison.Ordinal));
 
         rule.Count().ShouldBe(3);
         rule.First().Describe().ShouldContain(firstAction);
+    }
+
+    // G7: while the kill switch emails.send is off, every email waits: its first rule schedules it again, with no end.
+    [Theory]
+    [InlineData("InvitationReadyEvent")]
+    [InlineData("TenantPurgeWarningReadyEvent")]
+    [InlineData("VerificationCodeReadyEvent")]
+    [InlineData("EmailChangeNoticeReadyEvent")]
+    [InlineData("UserDeletionConfirmationReadyEvent")]
+    [InlineData("SendNotificationEmailCommand")]
+    public async Task ReadRetryRules_AnEmailWhileTheKillSwitchIsOff_SchedulesItAgainWithNoEnd(string message)
+    {
+        await using var api = new ApiFactory(database.ApplicationConnectionString);
+        var chain = api.Services.GetRequiredService<HandlerGraph>().Chains.Single(chain => chain.MessageType.Name == message);
+        _ = api.Services.GetRequiredService<HandlerGraph>().HandlerFor(chain.MessageType);
+
+        var rule = chain.Failures.First();
+
+        (rule.Match.Description.Contains(nameof(EmailsPausedException), StringComparison.Ordinal), rule.First().Describe()).ShouldBe((true, "Schedule Retry in 60 seconds"));
     }
 
     // W6, S8: of two replies the tenant purge handles at once, the second fails on the saga's version, and is tried again three times,

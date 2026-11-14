@@ -29,6 +29,26 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     // A last Owner, an Owner with a co-Owner, an Admin of a suspended tenant and a Member of a closed one, by the tenant's name.
+    // The maintainer's decision of 2026-11-14: the user's page says whether the person accepted the terms in force, and the scheduled terms
+    // that require acceptance.
+    [Fact]
+    public async Task GetUser_ATenantUserWhoAcceptedTheTermsInForce_AnswersWhenAndTheScheduledVersionNotYet()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        var (externalId, person) = await own.AddTenantUserAsync(tenantId);
+        var inForce = await own.Admin.AddTermsVersionAsync(TermsRequests.Today);
+        (await person.AcceptTermsVersionAsync(inForce)).EnsureSuccessStatusCode();
+        var scheduled = await own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10));
+        var userId = await own.Data.UserIdOfAsync(externalId);
+
+        var terms = (await own.Admin.GetFromJsonAsync<JsonElement>($"/v1/platform/users/{userId}", TestContext.Current.CancellationToken)).GetProperty("terms");
+
+        (terms.GetProperty("inForce").GetProperty("versionId").GetGuid(), terms.GetProperty("inForce").GetProperty("acceptedAt").ValueKind,
+            terms.GetProperty("scheduled").GetProperty("versionId").GetGuid(), terms.GetProperty("scheduled").GetProperty("acceptedAt").ValueKind)
+            .ShouldBe((inForce, JsonValueKind.String, scheduled, JsonValueKind.Null));
+    }
+
     [Fact]
     public async Task GetUser_AMemberOfSeveralTenants_ReturnsTheUserAndEachMembershipByTenantName()
     {
@@ -52,7 +72,7 @@ public sealed class GetUserTests(Database database) : IAsyncLifetime
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var found = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "suspensionReason", "systemAdminGrantedBy", "memberships"],
+            ["id", "email", "name", "status", "isSystemAdmin", "isRootSystemAdmin", "systemAdminGrantedAt", "membershipCount", "createdAt", "suspendedAt", "suspendedBy", "suspensionReason", "systemAdminGrantedBy", "memberships", "terms"],
             ignoreOrder: true);
         (found.GetProperty("id").GetGuid(), found.GetProperty("email").GetString(), found.GetProperty("name").GetString())
             .ShouldBe((id, email, "Ada Lovelace"));

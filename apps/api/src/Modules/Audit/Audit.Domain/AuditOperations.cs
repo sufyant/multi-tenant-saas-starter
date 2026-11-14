@@ -9,6 +9,25 @@ public static class AuditOperations
     /// <summary>A member exported the Activity log to a file. The screen's name of the log is the operation's.</summary>
     public const string ActivityLogExported = "activity_log.exported";
 
+    /// <summary>The first deploy whose code defines a feature flag stored it; the platform acted.</summary>
+    public const string FeatureFlagAddedToCode = "feature_flag.added_to_code";
+
+    /// <summary>A system admin turned a feature flag off for everyone else, its third rule.</summary>
+    public const string FeatureFlagEveryoneElseOff = "feature_flag.everyone_else_off";
+
+    /// <summary>A system admin turned a feature flag on for everyone else, its third rule.</summary>
+    public const string FeatureFlagEveryoneElseOn = "feature_flag.everyone_else_on";
+
+    public const string FeatureFlagPercentageSet = "feature_flag.percentage_set";
+
+    /// <summary>The first deploy whose code retires a feature flag archived it; the platform acted.</summary>
+    public const string FeatureFlagRemovedFromCode = "feature_flag.removed_from_code";
+
+    /// <summary>A system admin listed an organisation in a feature flag's first rule.</summary>
+    public const string FeatureFlagTenantListed = "feature_flag.tenant_listed";
+
+    public const string FeatureFlagTenantUnlisted = "feature_flag.tenant_unlisted";
+
     public const string InvitationRevoked = "invitation.revoked";
 
     public const string MemberInvited = "member.invited";

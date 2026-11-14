@@ -129,6 +129,18 @@ public sealed class TermsVersionQueries(ControlPlaneDbContext controlPlane) : IT
             version is null ? null : new MyTermsVersionView(version.Id, version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance));
     }
 
+    async Task<UserTermsView> ITermsVersionQueries.FindUserTermsAsync(Guid userId, DateOnly today, CancellationToken cancellationToken)
+    {
+        var versions = await controlPlane.TermsVersions.AsNoTracking().ToListAsync(cancellationToken);
+        var timeline = TermsTimeline.Of(versions.Select(DayOf), today);
+        var accepted = await controlPlane.TermsAcceptances.Where(a => a.UserId == userId).ToDictionaryAsync(a => a.VersionId, a => a.AcceptedAt, cancellationToken);
+        var scheduled = versions.SingleOrDefault(v => v.Id == timeline.ScheduledId && v.RequiresAcceptance);
+        return new UserTermsView(Of(versions.SingleOrDefault(v => v.Id == timeline.CurrentId)), Of(scheduled));
+
+        UserTermsVersionView? Of(TermsVersion? version) =>
+            version is null ? null : new(version.Id, version.EffectiveDate, version.RequiresAcceptance, accepted.TryGetValue(version.Id, out var at) ? at : null);
+    }
+
     async Task<TermsInForceView?> ITermsVersionQueries.FindVersionInForceAsync(DateOnly today, CancellationToken cancellationToken)
     {
         var versions = await controlPlane.TermsVersions.AsNoTracking().ToListAsync(cancellationToken);

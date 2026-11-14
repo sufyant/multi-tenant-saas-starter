@@ -319,6 +319,15 @@
       "activity_log": {
         "exported": "<actor></actor> exported the activity log."
       },
+      "feature_flag": {
+        "added_to_code": "A deploy added a feature flag.",
+        "everyone_else_off": "<actor></actor> turned a feature flag off for everyone else.",
+        "everyone_else_on": "<actor></actor> turned a feature flag on for everyone else.",
+        "percentage_set": "<actor></actor> changed the percentage of a feature flag.",
+        "removed_from_code": "A deploy removed a feature flag from the code.",
+        "tenant_listed": "<actor></actor> listed an organisation in a feature flag.",
+        "tenant_unlisted": "<actor></actor> removed an organisation from a feature flag."
+      },
       "invitation": {
         "revoked": "{addressed, select, yes {<actor></actor> revoked the invitation to <invitee>{address}</invitee>.} other {<actor></actor> revoked an invitation.}}"
       },

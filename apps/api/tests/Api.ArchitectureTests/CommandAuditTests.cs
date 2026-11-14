@@ -25,11 +25,13 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // Audit handles itself and which writes no entry (K14), a code for a new address changes no data of the user, whose change records
     // user.email_changed, and the code of a deletion is a step of the deletion, which records user.deleted (section 6, "Verification
     // codes"). A person's acceptance of a terms version is its own record, the user, the version and the moment, which the platform lists
-    // (GDPR, Article 7(1)), and a dismissal of a notice is the person's own view, as a read state is (step 38).
+    // (GDPR, Article 7(1)), and a dismissal of a notice is the person's own view, as a read state is (step 38). The worker's look at the
+    // feature flags' cleanup changes no data; its weekly event only tells the system admins (docs/flows/feature-flags.md).
     private static readonly string[] CommandsWithoutAudit =
     [
         "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
         "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand", "AcceptTermsVersionCommand", "DismissTermsNoticeCommand",
+        "CheckFeatureFlagCleanupCommand",
     ];
 
     private readonly ComposedApplication _application = new("worker");

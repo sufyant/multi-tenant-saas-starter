@@ -1,3 +1,4 @@
+using ControlPlane.Domain.FeatureFlags;
 using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
@@ -28,6 +29,12 @@ internal static class CacheTags
     /// <summary>The system admin list, whose grant or revocation changes the door of one user (A4).</summary>
     public const string SystemAdmins = "system-admins";
 
+    /// <summary>
+    /// Every feature flag and its listed organisations. One tag for the whole table: a change is rare, and every organisation's flags then
+    /// read the database once.
+    /// </summary>
+    public const string FeatureFlags = "feature-flags";
+
     // A row of the users table never changes its identity provider's id. A tenant row's tenant column is its tenant (R1).
     public static readonly IReadOnlyList<CacheTagSource> Table =
     [
@@ -40,5 +47,7 @@ internal static class CacheTags
         new(typeof(Domain.Plans.Plan), Plan, nameof(Domain.Plans.Plan.Id)),
         new(typeof(PlanEntitlement), Plan, nameof(PlanEntitlement.PlanId)),
         new(typeof(SystemAdmin), SystemAdmins, null),
+        new(typeof(FeatureFlag), FeatureFlags, null),
+        new(typeof(FeatureFlagTenant), FeatureFlags, null),
     ];
 }

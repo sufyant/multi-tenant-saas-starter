@@ -21,6 +21,8 @@ export const ListMyNotificationsResponse = zod.object({
   "items": zod.array(zod.object({
   "id": zod.uuid().describe('The notification\'s id, which opening it names.'),
   "type": zod.enum({
+  FeatureFlagsReadyToRemove: 'feature_flags.ready_to_remove',
+  FeatureFlagsUnused: 'feature_flags.unused',
   MemberJoined: 'member.joined',
   MemberRemoved: 'member.removed',
   MemberRoleChanged: 'member.role_changed',
@@ -55,6 +57,7 @@ export const ListMyNotificationsResponse = zod.object({
   TenantActivityLog: 'tenant_activity_log',
   PlatformTenant: 'platform_tenant',
   AccountSecurity: 'account_security',
+  PlatformFeatureFlags: 'platform_feature_flags',
 }).describe('Where a notification leads, which the web turns into a URL.'),
   "tenantId": zod.uuid().nullable()
 }).describe('Where it leads.'),
