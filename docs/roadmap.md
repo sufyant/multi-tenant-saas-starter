@@ -583,7 +583,7 @@ The model:
 - A new permission, `tenant.billing.manage`. The Owner holds it by default.
 - A fourth built-in role, Billing manager, with `tenant.profile.read`, `tenant.members.read` and `tenant.billing.manage`. It is free: it takes no seat and no fee per person. Product modules never add permissions to it.
 - Members' "No free seat" offers "Request a plan change", to the support contact, since step 37a. This changes with the plan: an organisation that pays by card can change its plan (8.39, 8.40), a Contract organisation keeps the button (8.43, 8.45).
-- When Billing comes, the maintainer decides whether the Plan row stays on General (F56, 7.01).
+- The Plan row stays on General (F56, 7.01): a Member, who cannot open Billing, still sees the plan's name there, and so does a product without billing. The maintainer's decision of 2026-11-14.
 
 40b, Stripe:
 
@@ -615,10 +615,6 @@ The model:
 - A person creates at most 3 organisations.
 - Sign-up needs a captcha and a verified email.
 
-Open (40-start, 2026-11-14), asked one at a time; each answer goes here with its date:
-
-- Does the Plan row stay on General (F56, 7.01)? The built page has it; the frame 7.01 does not.
-
 Decided by the frames, and 40-start's choices (2026-11-14):
 
 - One currency for each deployment, set in the product's configuration; the default is EUR. Every plan and price is in it. Why: a Stripe Price and a subscription have one currency (Stripe, "Supported currencies"; The Twelve-Factor App, "III. Config"). The maintainer's decision of 2026-11-14.
@@ -637,7 +633,7 @@ The parts of 40, in their order. Each part is one pull request or more; the pull
 
 40-design, before the frontend parts, one thread at a time:
 
-- The answers of the open points above: 7.01 with or without the Plan row. The frames keep "AI requests" as sample data; a caption says so.
+- 7.01 gets the Plan row back, as the built page shows it. The frames keep "AI requests" as sample data; a caption says so.
 - 14.09 (General as a Billing manager) says "Your role: Member"; it says "Billing manager".
 - 1.27 gets its own title (`docs/design/followups.md`). Platform 11.17 highlights only Terms of use.
 - The Activity log sentences of billing, in the web's log (section 12) and the platform's (section 7, as 7.10): a plan change, a cancellation and its undo, a payment failed, the move to the default plan, a trial given or extended, Contract on or off, a price change, the spending cap.
@@ -645,7 +641,7 @@ The parts of 40, in their order. Each part is one pull request or more; the pull
 - The dark and Arabic forms of Usage (11.01), as the earlier steps drew one of each.
 - Remove the platform's 13.01 to 13.05.
 - A note with the Turkish and Arabic texts of the step's frames.
-- It waits for the answers above; it runs beside the backend parts.
+- It waits for nothing; it runs beside the backend parts.
 
 40a-backend, prices and the Billing manager:
 
@@ -756,7 +752,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Step 40, in the parts of section 8. 40-start is done; four points wait for the maintainer (section 8, "Open"). Then steps 41 to 47, in the order of section 1.
+5. Step 40, in the parts of section 8. 40-start is done. 40a-backend waits for the API's terms gate. Then steps 41 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:
