@@ -151,6 +151,9 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.tenant_purge_sagas: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenant_summaries: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenants: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.terms_acceptances: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.terms_notice_dismissals: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.terms_versions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.users: DELETE, INSERT, SELECT, UPDATE
             table control_plane.verification_codes: DELETE, INSERT, SELECT, UPDATE
             table notifications.__ef_migrations_history: SELECT
@@ -429,6 +432,12 @@ public sealed class MigratedSchemaTests(Database database)
             fk_tenants_users_closed_by: RESTRICT
             fk_tenants_users_created_by: RESTRICT
             fk_tenants_users_suspended_by: RESTRICT
+            fk_terms_acceptances_terms_versions_version_id: RESTRICT
+            fk_terms_acceptances_users_user_id: RESTRICT
+            fk_terms_notice_dismissals_terms_versions_version_id: RESTRICT
+            fk_terms_notice_dismissals_users_user_id: RESTRICT
+            fk_terms_versions_users_cancelled_by: RESTRICT
+            fk_terms_versions_users_created_by: RESTRICT
             fk_users_users_suspended_by: RESTRICT
             fk_verification_codes_users_user_id: RESTRICT
             """);

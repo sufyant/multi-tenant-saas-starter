@@ -647,6 +647,38 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.memberships WHERE tenant_id = '{tenantId}'")).ShouldBe(2);
     }
 
+    // Step 38: an invitee who has no account yet ticks the terms (1.15) and accepts the version in force in the same transaction. The
+    // terms belong to no tenant, so the test runs on a database of its own.
+    [Fact]
+    public async Task AcceptInvitation_TheVersionInForce_RecordsItsAcceptanceForTheNewUser()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var versionId = await own.Admin.AddTermsVersionAsync(TermsRequests.Today);
+        var (invitee, code) = await InviteWithTermsAsync(own);
+
+        var accepted = await AcceptWithTermsAsync(own, invitee, code, versionId);
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await own.ScalarAsync<long>(
+            $"SELECT count(*) FROM control_plane.terms_acceptances JOIN control_plane.users ON users.id = user_id WHERE external_id = '{invitee}' AND version_id = '{versionId}'"))
+            .ShouldBe(1);
+        TermsRequests.AskOf(await own.Api.CreateClient(invitee).MyTermsAsync()).ShouldBe("nothing");
+    }
+
+    // Step 38: the checkbox covers the version in force only; a scheduled one is the gate's, after sign-in.
+    [Fact]
+    public async Task AcceptInvitation_AScheduledVersion_IsAConflictAndAddsNothing()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var versionId = await own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10));
+        var (invitee, code) = await InviteWithTermsAsync(own);
+
+        var accepted = await AcceptWithTermsAsync(own, invitee, code, versionId);
+
+        (accepted.StatusCode, await TermsRequests.CodeOfAsync(accepted)).ShouldBe((HttpStatusCode.Conflict, "terms_version.changed"));
+        (await own.ScalarAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
+    }
+
     // An invitation code is `<tenantId>.<secret>`.
     private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];
 
@@ -662,6 +694,19 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
 
     private static async Task<Guid> IdOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
+    private static async Task<(string Invitee, string Code)> InviteWithTermsAsync(OwnTerms own)
+    {
+        var invitee = $"user_{Guid.NewGuid():N}";
+        var email = TestEmails.Of($"{Guid.NewGuid():N}@example.com");
+        own.Api.Identity.AddAccount(invitee, email);
+        var slug = $"tenant-{Guid.NewGuid():N}"[..20];
+        (await own.Api.WaitingForMessagesAsync(() => own.Admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = email, language = "en" }))).EnsureSuccessStatusCode();
+        return (invitee, own.Api.Email.CodeSentTo(email));
+    }
+
+    private static Task<HttpResponseMessage> AcceptWithTermsAsync(OwnTerms own, string invitee, string code, Guid termsVersionId) =>
+        own.Api.CreateClient(invitee).PostAsJsonAsync("/v1/me/invitations/accept", new { code, name = "Ada Lovelace", termsVersionId }, Cancellation);
 
     // Creating a tenant invites its first owner, here someone who already has an account, so the link carries our invitation
     // code.

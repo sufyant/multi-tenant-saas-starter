@@ -13,8 +13,9 @@ export const acceptInvitationBodyNameMax = 100;
 
 export const AcceptInvitationBody = zod.object({
   "code": zod.string(),
-  "name": zod.string().max(acceptInvitationBodyNameMax).nullish()
-}).describe('The invitation code from the invitation link, and the name of a person who is not a user yet, within the API\'s limit. The API\ntrims the name before it counts its length. A known user sends none.')
+  "name": zod.string().max(acceptInvitationBodyNameMax).nullish(),
+  "termsVersionId": zod.uuid().nullish()
+}).describe('The invitation code from the invitation link, and the name of a person who is not a user yet, within the API\'s limit. The API\ntrims the name before it counts its length. A known user sends none. `termsVersionId` is the id of the terms version in force that\nthe person accepts with the invitation, or null; another version answers 409 `terms_version.changed`, and an id no version has 404\n`terms_version.not_found`.')
 
 export const AcceptInvitationResponse = zod.object({
   "id": zod.uuid(),

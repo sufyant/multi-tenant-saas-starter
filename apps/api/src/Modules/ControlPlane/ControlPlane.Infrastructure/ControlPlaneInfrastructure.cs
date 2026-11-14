@@ -5,6 +5,7 @@ using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Plans;
 using ControlPlane.Application.Roles;
 using ControlPlane.Application.SystemAdmins;
+using ControlPlane.Application.TermsVersions;
 using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantPurge;
@@ -14,6 +15,7 @@ using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
+using ControlPlane.Contracts.TermsVersions;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
@@ -25,6 +27,7 @@ using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
+using ControlPlane.Infrastructure.Persistence.TermsVersions;
 using ControlPlane.Infrastructure.Persistence.Users;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -57,6 +60,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IMemberDirectory, MemberDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddScoped<IAuditRetentionDirectory, AuditRetentionDirectory>();
+        services.AddScoped<ITermsVersionDirectory, TermsVersionDirectory>();
 
         // docs/flows/system-admins.md: the list must name at least one address, so the platform always has a way in. Each item is an
         // address in the form the validators accept, and the same text as .NET reads it, so no item is left out of the list's one form.
@@ -81,6 +85,8 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IRoleQueries, RoleQueries>();
         services.AddScoped<IPlanQueries, PlanQueries>();
         services.AddScoped<IUserQueries, UserQueries>();
+        services.AddScoped<ITermsVersionRepository, TermsVersionRepository>();
+        services.AddScoped<ITermsVersionQueries, TermsVersionQueries>();
         services.AddScoped<IStoredFileRepository, StoredFileRepository>();
 
         services.AddScoped<IDataExportQueries, DataExportQueries>();

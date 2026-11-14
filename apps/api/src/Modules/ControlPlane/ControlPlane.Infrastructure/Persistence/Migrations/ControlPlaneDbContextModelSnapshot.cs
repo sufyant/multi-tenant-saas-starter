@@ -716,6 +716,126 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsAcceptance", b =>
+                {
+                    b.Property<Guid>("VersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("version_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.HasKey("VersionId", "UserId")
+                        .HasName("pk_terms_acceptances");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_terms_acceptances_user_id");
+
+                    b.HasIndex("VersionId", "AcceptedAt", "UserId")
+                        .HasDatabaseName("ix_terms_acceptances_version_id_accepted_at_user_id");
+
+                    b.ToTable("terms_acceptances", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsNoticeDismissal", b =>
+                {
+                    b.Property<Guid>("VersionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("version_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dismissed_at");
+
+                    b.HasKey("VersionId", "UserId")
+                        .HasName("pk_terms_notice_dismissals");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_terms_notice_dismissals_user_id");
+
+                    b.ToTable("terms_notice_dismissals", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateOnly>("EffectiveDate")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_date");
+
+                    b.Property<DateTimeOffset?>("EmailSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_sent_at");
+
+                    b.Property<bool>("RequiresAcceptance")
+                        .HasColumnType("boolean")
+                        .HasColumnName("requires_acceptance");
+
+                    b.Property<bool>("SendsEmail")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sends_email");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("summary");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_terms_versions");
+
+                    b.HasIndex("CancelledBy")
+                        .HasDatabaseName("ix_terms_versions_cancelled_by");
+
+                    b.HasIndex("CreatedBy")
+                        .HasDatabaseName("ix_terms_versions_created_by");
+
+                    b.HasIndex("EffectiveDate", "CreatedAt")
+                        .HasDatabaseName("ix_terms_versions_effective_date_created_at");
+
+                    b.ToTable("terms_versions", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_terms_versions_cancellation", "(cancelled_at IS NULL) = (cancelled_by IS NULL)");
+
+                            t.HasCheckConstraint("ck_terms_versions_email_sent", "sends_email = (email_sent_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_terms_versions_url_https", "url LIKE 'https://%'");
+                        });
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1056,6 +1176,56 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_tenant_summaries_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsAcceptance", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_acceptances_users_user_id");
+
+                    b.HasOne("ControlPlane.Domain.TermsVersions.TermsVersion", null)
+                        .WithMany()
+                        .HasForeignKey("VersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_acceptances_terms_versions_version_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsNoticeDismissal", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_notice_dismissals_users_user_id");
+
+                    b.HasOne("ControlPlane.Domain.TermsVersions.TermsVersion", null)
+                        .WithMany()
+                        .HasForeignKey("VersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_notice_dismissals_terms_versions_version_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsVersion", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CancelledBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_terms_versions_users_cancelled_by");
+
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_terms_versions_users_created_by");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>

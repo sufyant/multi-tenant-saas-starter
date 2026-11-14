@@ -18,9 +18,10 @@ public sealed class ListContractTests : IAsyncLifetime
 
     private static readonly string[] CursorParameters = ["cursor", "limit"];
 
-    // K5: the audit logs and the bells (U7) read newest first by a cursor.
+    // K5: the audit logs and the bells (U7) read newest first by a cursor, and so do a terms version's people, whose frames page with Load
+    // more (step 38).
     private static readonly string[] CursorLists =
-        ["ListAuditEntries", "ListPlatformAuditEntries", "ListNotifications", "ListMyNotifications", "ListPlatformNotifications"];
+        ["ListAuditEntries", "ListPlatformAuditEntries", "ListNotifications", "ListMyNotifications", "ListPlatformNotifications", "ListTermsVersionPeople"];
 
     // Step r13: the System admins "Add" dialog finds a person by the whole address. An email filter is plain equality on the address in
     // its one form, never a search; q searches.
@@ -149,6 +150,7 @@ public sealed class ListContractTests : IAsyncLifetime
                 "ListNotifications: cursor, limit, unread",
                 "ListMyNotifications: cursor, limit, unread",
                 "ListPlatformNotifications: cursor, limit, unread",
+                "ListTermsVersionPeople: cursor, limit, status",
             ],
             ignoreOrder: true);
     }

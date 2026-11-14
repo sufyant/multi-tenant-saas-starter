@@ -1,9 +1,11 @@
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.TermsVersions;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.TermsVersions;
 using ControlPlane.Domain.Users;
 using FluentValidation;
 using FluentValidation.Results;
@@ -20,6 +22,7 @@ public static class AcceptInvitationHandler
         AcceptInvitationCommand command,
         ITenantRepository tenants,
         IUserRepository users,
+        ITermsVersionRepository terms,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -83,6 +86,16 @@ public static class AcceptInvitationHandler
             return (Errors.UserEmailTaken, []);
         }
 
+        // The terms the person ticked are the version in force, which never changes; another version, or none in force, is refused before
+        // any change (W7), and the person reads the terms again. The version is locked against an edit (K6a).
+        var termsVersion = command.TermsVersionId is { } termsVersionId
+            ? await TermsAcceptances.FindAcceptableAsync(terms, termsVersionId, url: null, inForceOnly: true, TermsVersion.DayOf(now), cancellationToken)
+            : null;
+        if (termsVersion is { IsSuccess: false })
+        {
+            return (termsVersion.Error, []);
+        }
+
         var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitedEmail, command.Name!, invitation.Language, now);
         var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
@@ -95,6 +108,7 @@ public static class AcceptInvitationHandler
             users.Add(user);
         }
 
+
         var membership = accepted.Value;
         var roles = await tenants.FindRolesAsync(cancellationToken);
         var role = roles.Of(membership.RoleId);
@@ -105,6 +119,14 @@ public static class AcceptInvitationHandler
             && (await tenants.FindOwnerAddressesAsync(cancellationToken)).Count == 0;
         var invitedBy = await tenants.FindMembershipAsync(invitation.InvitedBy, cancellationToken) is null ? (Guid?)null : invitation.InvitedBy;
         await tenants.AddMembershipAsync(tenant, membership.UserId, membership.RoleId, membership.JoinedAt, cancellationToken);
+
+        // GDPR, Article 7(1): the acceptance is the record of the text the person agreed to. The new user's row is saved first, for the
+        // acceptance's key. A known user who accepted it already, by the gate at the same moment too, keeps their first acceptance (I1).
+        if (termsVersion is { Value: { } accepting })
+        {
+            await terms.SaveChangesAsync(cancellationToken);
+            await terms.AcceptAsync(new TermsAcceptance(accepting.Id, user.Id, now), cancellationToken);
+        }
         return (
             MyTenantView.Of(tenant, role),
             [new MemberJoinedEvent(Guid.CreateVersion7(now), now, tenant.Id, user.Id, tenant.Name, invitedBy, firstOwner, role.Name, role.BuiltIn is not null)]);

@@ -25,6 +25,12 @@ public enum NotificationValueKind
     Date,
 
     /// <summary>
+    /// A calendar day, stored in ISO 8601 (<c>2026-12-01</c>), written as a date in the reader's language and in no time zone: the day is the
+    /// same for every reader, as a terms version's day is.
+    /// </summary>
+    Day,
+
+    /// <summary>
     /// A number of days, stored as digits, written with its noun in the form of the number's CLDR plural category in the language.
     /// </summary>
     Days,

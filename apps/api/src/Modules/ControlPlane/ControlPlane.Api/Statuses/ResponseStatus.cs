@@ -1,7 +1,9 @@
 using ControlPlane.Api.Me.DataExports;
 using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
+using ControlPlane.Api.Me.TermsVersions;
 using ControlPlane.Api.Platform.Tenants;
+using ControlPlane.Api.Platform.TermsVersions;
 using ControlPlane.Api.Platform.Users;
 using ControlPlane.Api.Tenant.Invitations;
 
@@ -70,6 +72,23 @@ internal static class ResponseStatus
         "Accepted" => InvitationResponseState.Accepted,
         "Cancelled" => InvitationResponseState.Cancelled,
         _ => throw Unknown(state),
+    };
+
+    public static TermsVersionResponseState OfTermsVersion(string state) => state switch
+    {
+        "Scheduled" => TermsVersionResponseState.Scheduled,
+        "Current" => TermsVersionResponseState.Current,
+        "Replaced" => TermsVersionResponseState.Replaced,
+        "Cancelled" => TermsVersionResponseState.Cancelled,
+        _ => throw Unknown(state),
+    };
+
+    public static MyTermsResponseAction OfMyTerms(string action) => action switch
+    {
+        "None" => MyTermsResponseAction.None,
+        "Accept" => MyTermsResponseAction.Accept,
+        "Notice" => MyTermsResponseAction.Notice,
+        _ => throw Unknown(action),
     };
 
     public static InviterNameResponseKind OfInviter(string kind) => kind switch

@@ -15,4 +15,7 @@ internal sealed record AuditTarget(AuditTargetKind Kind, Guid Id, string? Name)
 
     /// <summary>A plan, with its name of that moment: a plan belongs to no tenant and is not a person.</summary>
     public static AuditTarget Plan(Guid planId, string name) => new(AuditTargetKind.Plan, planId, name);
+
+    /// <summary>A terms version, by its id only: it has no name, and the details hold its values.</summary>
+    public static AuditTarget TermsVersion(Guid versionId) => new(AuditTargetKind.TermsVersion, versionId, null);
 }

@@ -11,6 +11,7 @@ using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
 using Audit.Application.Members;
 using Audit.Application.Plans;
+using Audit.Application.TermsVersions;
 using Audit.Application.Tenants;
 using Audit.Application.Roles;
 using Microsoft.AspNetCore.Authorization;
@@ -81,8 +82,15 @@ public static class AuditLogEndpoints
         TenantPurgeWarnedDetails warned => new TenantPurgeWarnedDetailsResponse(warned.PurgesAt),
         TenantRenamedDetails renamed => new TenantRenamedDetailsResponse(renamed.OldName, renamed.NewName),
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
+        TermsVersionCreatedDetails created => new TermsVersionCreatedDetailsResponse(created.EffectiveDate, created.Url, created.Summary, created.RequiresAcceptance, created.SendsEmail),
+        TermsVersionUpdatedDetails updated => new TermsVersionUpdatedDetailsResponse(TermsVersionOf(updated.Old), TermsVersionOf(updated.New)),
+        TermsVersionCancelledDetails cancelled => new TermsVersionCancelledDetailsResponse(
+            cancelled.EffectiveDate, cancelled.Url, cancelled.RequiresAcceptance, cancelled.AcceptanceCount),
         var details => throw new ArgumentOutOfRangeException(nameof(entry), details.GetType().Name, "The response has no details of this type."),
     };
+
+    private static AuditTermsVersionResponse TermsVersionOf(AuditTermsVersion version) =>
+        new(version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance, version.SendsEmail);
 
     // An entry keeps the plan as it was at that moment (K3).
     private static AuditPlanResponse PlanOf(AuditPlan plan) => new(plan.Id, plan.Name);

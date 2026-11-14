@@ -2919,6 +2919,849 @@
         }
       }
     },
+    "/v1/platform/terms": {
+      "get": {
+        "tags": [
+          "Platform/TermsVersions"
+        ],
+        "operationId": "GetTermsOfUse",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsOfUseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/terms/versions/{versionId}": {
+      "get": {
+        "tags": [
+          "Platform/TermsVersions"
+        ],
+        "operationId": "GetTermsVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsVersionDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Platform/TermsVersions"
+        ],
+        "operationId": "UpdateTermsVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTermsVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsVersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/terms/versions/{versionId}/people": {
+      "get": {
+        "tags": [
+          "Platform/TermsVersions"
+        ],
+        "operationId": "ListTermsVersionPeople",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TermsPersonResponseStatus"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageOfTermsPersonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/terms/versions": {
+      "post": {
+        "tags": [
+          "Platform/TermsVersions"
+        ],
+        "operationId": "CreateTermsVersion",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTermsVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
+              "Location": {
+                "description": "The address of the new resource, where a GET reads it.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsVersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/terms/versions/{versionId}/cancel": {
+      "post": {
+        "tags": [
+          "Platform/TermsVersions"
+        ],
+        "operationId": "CancelTermsVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsVersionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/users": {
       "get": {
         "tags": [
@@ -9144,6 +9987,365 @@
         }
       }
     },
+    "/v1/me/terms": {
+      "get": {
+        "tags": [
+          "Me/TermsVersions"
+        ],
+        "operationId": "GetMyTerms",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTermsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/terms/versions/{versionId}/accept": {
+      "post": {
+        "tags": [
+          "Me/TermsVersions"
+        ],
+        "operationId": "AcceptTermsVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptTermsVersionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTermsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/terms/versions/{versionId}/dismiss": {
+      "post": {
+        "tags": [
+          "Me/TermsVersions"
+        ],
+        "operationId": "DismissTermsNotice",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTermsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/notifications": {
       "get": {
         "tags": [
@@ -9664,6 +10866,59 @@
           }
         }
       }
+    },
+    "/v1/public/terms": {
+      "get": {
+        "tags": [
+          "Public/TermsVersions"
+        ],
+        "operationId": "GetTermsInForce",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsInForceResponse"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [ ]
+      }
     }
   },
   "components": {
@@ -9683,9 +10938,28 @@
               "null",
               "string"
             ]
+          },
+          "termsVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         },
-        "description": "The invitation code from the invitation link, and the name of a person who is not a user yet, within the API's limit. The API\ntrims the name before it counts its length. A known user sends none."
+        "description": "The invitation code from the invitation link, and the name of a person who is not a user yet, within the API's limit. The API\ntrims the name before it counts its length. A known user sends none. `termsVersionId` is the id of the terms version in force that\nthe person accepts with the invitation, or null; another version answers 409 `terms_version.changed`, and an id no version has 404\n`terms_version.not_found`."
+      },
+      "AcceptTermsVersionRequest": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        },
+        "description": "The link of the version the person read. A version whose link changed since, or that is no longer in force or scheduled, answers 409\n`terms_version.changed`: the person reads it again."
       },
       "AuditActorResponse": {
         "required": [
@@ -9789,6 +11063,15 @@
           },
           {
             "$ref": "#/components/schemas/TenantSuspendedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TermsVersionCancelledDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TermsVersionCreatedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TermsVersionUpdatedDetailsResponse"
           }
         ],
         "description": "The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows\n`details` by it. It is the entry's own operation.",
@@ -9811,7 +11094,10 @@
             "tenant.plan_changed": "#/components/schemas/TenantPlanChangedDetailsResponse",
             "tenant.purge_warned": "#/components/schemas/TenantPurgeWarnedDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
-            "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse"
+            "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse",
+            "terms_version.cancelled": "#/components/schemas/TermsVersionCancelledDetailsResponse",
+            "terms_version.created": "#/components/schemas/TermsVersionCreatedDetailsResponse",
+            "terms_version.updated": "#/components/schemas/TermsVersionUpdatedDetailsResponse"
           }
         }
       },
@@ -9913,6 +11199,9 @@
           "tenant.renamed",
           "tenant.reopened",
           "tenant.suspended",
+          "terms_version.cancelled",
+          "terms_version.created",
+          "terms_version.updated",
           "user.data_export_downloaded",
           "user.data_export_requested",
           "user.deleted",
@@ -9955,6 +11244,9 @@
           "TenantRenamed",
           "TenantReopened",
           "TenantSuspended",
+          "TermsVersionCancelled",
+          "TermsVersionCreated",
+          "TermsVersionUpdated",
           "UserDataExportDownloaded",
           "UserDataExportRequested",
           "UserDeleted",
@@ -10094,7 +11386,8 @@
           "user",
           "invitation",
           "role",
-          "plan"
+          "plan",
+          "terms_version"
         ],
         "type": "string",
         "description": "The kind of target of an audit entry.",
@@ -10103,8 +11396,41 @@
           "User",
           "Invitation",
           "Role",
-          "Plan"
+          "Plan",
+          "TermsVersion"
         ]
+      },
+      "AuditTermsVersionResponse": {
+        "required": [
+          "effectiveDate",
+          "url",
+          "summary",
+          "requiresAcceptance",
+          "sendsEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean"
+          }
+        },
+        "description": "A terms version's values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users."
       },
       "ChangeEmailRequest": {
         "required": [
@@ -10263,6 +11589,40 @@
         },
         "description": "A new tenant, the email address of its first owner, who is invited once the tenant is ready, and the language of the owner's\ninvitation email: without one, the system admin's own. The plan the tenant goes on: without one, the default plan. The API trims the\nname before it counts its length."
       },
+      "CreateTermsVersionRequest": {
+        "required": [
+          "effectiveDate",
+          "url",
+          "summary",
+          "requiresAcceptance"
+        ],
+        "type": "object",
+        "properties": {
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "maxLength": 2048,
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 500,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "description": "A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional\nsummary of what changed; whether a person must accept it; and whether its creation emails every user who may accept, true when left out.\nA version that emails nobody, a small change, gives no notice on Home either. The API trims the link and the summary before it counts\ntheir lengths."
+      },
       "CursorPageOfAuditEntryResponse": {
         "required": [
           "items",
@@ -10295,6 +11655,27 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/NotificationResponse"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CursorPageOfTermsPersonResponse": {
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermsPersonResponse"
             }
           },
           "nextCursor": {
@@ -10567,6 +11948,14 @@
           "tenant.slug_reserved",
           "tenant.slug_taken",
           "tenant.suspended",
+          "terms_version.changed",
+          "terms_version.effective_date_past",
+          "terms_version.email_sent",
+          "terms_version.locked",
+          "terms_version.not_found",
+          "terms_version.not_scheduled",
+          "terms_version.scheduled_exists",
+          "terms_version.url_invalid",
           "user.deleted",
           "user.email_taken",
           "user.email_unchanged",
@@ -10659,6 +12048,14 @@
           "TenantSlugReserved",
           "TenantSlugTaken",
           "TenantSuspended",
+          "TermsVersionChanged",
+          "TermsVersionEffectiveDatePast",
+          "TermsVersionEmailSent",
+          "TermsVersionLocked",
+          "TermsVersionNotFound",
+          "TermsVersionNotScheduled",
+          "TermsVersionScheduledExists",
+          "TermsVersionUrlInvalid",
           "UserDeleted",
           "UserEmailTaken",
           "UserEmailUnchanged",
@@ -11437,6 +12834,76 @@
           "Purging"
         ]
       },
+      "MyTermsResponse": {
+        "required": [
+          "action",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/MyTermsResponseAction"
+          },
+          "version": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MyTermsVersionResponse"
+              }
+            ]
+          }
+        },
+        "description": "What the signed-in person must do about the terms, and the version it is about; null when they must do nothing."
+      },
+      "MyTermsResponseAction": {
+        "enum": [
+          "nothing",
+          "acceptance",
+          "notice"
+        ],
+        "type": "string",
+        "description": "What the signed-in person must do about the terms: nothing; give their acceptance of the version, which the gate after sign-in asks;\nor read the notice of a version that requires no acceptance, which Home shows until the person closes it. The values are words no other\ncode of the screens uses as a literal (F3).",
+        "x-enumNames": [
+          "Nothing",
+          "Acceptance",
+          "Notice"
+        ]
+      },
+      "MyTermsVersionResponse": {
+        "required": [
+          "id",
+          "effectiveDate",
+          "url",
+          "summary",
+          "requiresAcceptance"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          }
+        },
+        "description": "A terms version as the person reads it: its day, from 00:00 UTC, its link, its summary or null, and whether it requires acceptance."
+      },
       "NotificationLinkResponse": {
         "required": [
           "kind",
@@ -11572,6 +13039,7 @@
           "tenant.reopened_for_owners",
           "tenant.suspended",
           "tenant.suspended_for_owners",
+          "terms_version.created",
           "user.data_export_ready"
         ],
         "type": "string",
@@ -11594,6 +13062,7 @@
           "TenantReopenedForOwners",
           "TenantSuspended",
           "TenantSuspendedForOwners",
+          "TermsVersionCreated",
           "UserDataExportReady"
         ]
       },
@@ -11649,6 +13118,10 @@
           "platform.tenants.reopen",
           "platform.tenants.suspend",
           "platform.tenants.update",
+          "platform.terms.cancel",
+          "platform.terms.create",
+          "platform.terms.read",
+          "platform.terms.update",
           "platform.users.delete",
           "platform.users.reactivate",
           "platform.users.read",
@@ -11688,6 +13161,10 @@
           "PlatformTenantsReopen",
           "PlatformTenantsSuspend",
           "PlatformTenantsUpdate",
+          "PlatformTermsCancel",
+          "PlatformTermsCreate",
+          "PlatformTermsRead",
+          "PlatformTermsUpdate",
           "PlatformUsersDelete",
           "PlatformUsersReactivate",
           "PlatformUsersRead",
@@ -13220,6 +14697,301 @@
         },
         "description": "The details of `tenant.suspended`: the system admin's reason. Only the platform's log holds it."
       },
+      "TermsInForceResponse": {
+        "required": [
+          "id",
+          "effectiveDate",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "description": "The terms version in force: its id, the day it took effect, from 00:00 UTC, and the link to its text."
+      },
+      "TermsOfUseResponse": {
+        "required": [
+          "versions",
+          "activeUserCount"
+        ],
+        "type": "object",
+        "properties": {
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermsVersionResponse"
+            }
+          },
+          "activeUserCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Every terms version, the latest day first, and how many users may accept: tenant users, neither suspended nor deleted. At most one\nversion is scheduled; while one is, a new version is refused (409 `terms_version.scheduled_exists`)."
+      },
+      "TermsPersonResponse": {
+        "required": [
+          "userId",
+          "name",
+          "email",
+          "status",
+          "acceptedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TermsPersonResponseStatus"
+          },
+          "acceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A user who may accept a version: their id, their name and address now, either null when the user has none, whether they accepted it,\nand when; null for one who did not."
+      },
+      "TermsPersonResponseStatus": {
+        "enum": [
+          "accepted",
+          "not_yet"
+        ],
+        "type": "string",
+        "description": "Whether a user who may accept accepted the version, or not yet, as the frames name the two tabs.",
+        "x-enumNames": [
+          "Accepted",
+          "NotYet"
+        ]
+      },
+      "TermsVersionCancelledDetailsResponse": {
+        "required": [
+          "effectiveDate",
+          "url",
+          "requiresAcceptance",
+          "acceptanceCount",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "terms_version.cancelled"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TermsVersionCancelled"
+            ]
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string"
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "acceptanceCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TermsVersionCreatedDetailsResponse": {
+        "required": [
+          "effectiveDate",
+          "url",
+          "summary",
+          "requiresAcceptance",
+          "sendsEmail",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "terms_version.created"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TermsVersionCreated"
+            ]
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TermsVersionDetailResponse": {
+        "required": [
+          "version",
+          "activeUserCount"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "$ref": "#/components/schemas/TermsVersionResponse"
+          },
+          "activeUserCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "One terms version, and how many users may accept it: tenant users, neither suspended nor deleted."
+      },
+      "TermsVersionResponse": {
+        "required": [
+          "id",
+          "effectiveDate",
+          "url",
+          "summary",
+          "requiresAcceptance",
+          "state",
+          "acceptedCount",
+          "locked",
+          "sendsEmail",
+          "emailSentAt",
+          "createdAt",
+          "cancelledAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "state": {
+            "$ref": "#/components/schemas/TermsVersionResponseState"
+          },
+          "acceptedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean"
+          },
+          "emailSentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelledAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null."
+      },
+      "TermsVersionResponseState": {
+        "enum": [
+          "scheduled",
+          "in_force",
+          "replaced",
+          "cancelled"
+        ],
+        "type": "string",
+        "description": "Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then in force until a\nlater version takes effect, then replaced; or cancelled before its day. The values are words no other code of the screens uses as a\nliteral (F3).",
+        "x-enumNames": [
+          "Scheduled",
+          "InForce",
+          "Replaced",
+          "Cancelled"
+        ]
+      },
+      "TermsVersionUpdatedDetailsResponse": {
+        "required": [
+          "old",
+          "new",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "terms_version.updated"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TermsVersionUpdated"
+            ]
+          },
+          "old": {
+            "$ref": "#/components/schemas/AuditTermsVersionResponse"
+          },
+          "new": {
+            "$ref": "#/components/schemas/AuditTermsVersionResponse"
+          }
+        }
+      },
       "UnreadNotificationCountResponse": {
         "required": [
           "unread"
@@ -13276,6 +15048,40 @@
           }
         },
         "description": "The name the custom role takes, and exactly the permissions it holds afterwards, from the tenant pool."
+      },
+      "UpdateTermsVersionRequest": {
+        "required": [
+          "effectiveDate",
+          "url",
+          "summary",
+          "requiresAcceptance",
+          "sendsEmail"
+        ],
+        "type": "object",
+        "properties": {
+          "effectiveDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "url": {
+            "maxLength": 2048,
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 500,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean"
+          }
+        },
+        "description": "The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and\n`requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`. `sendsEmail` is required: off\nmay turn on, and the email then goes to every user who may accept; once on, it stays on, and off answers 409\n`terms_version.email_sent`."
       },
       "UserDetailResponse": {
         "required": [
@@ -13621,6 +15427,9 @@
       "name": "Me/Tenants"
     },
     {
+      "name": "Me/TermsVersions"
+    },
+    {
       "name": "Me/Users"
     },
     {
@@ -13645,7 +15454,13 @@
       "name": "Platform/Tenants"
     },
     {
+      "name": "Platform/TermsVersions"
+    },
+    {
       "name": "Platform/Users"
+    },
+    {
+      "name": "Public/TermsVersions"
     },
     {
       "name": "Tenant/AuditLogs"

@@ -55,7 +55,7 @@ try
         var v1 = app.MapV1();
         var (platform, tenant) = (v1.MapPlatform(), v1.MapTenant());
         var me = v1.MapMe();
-        ControlPlaneModule.MapEndpoints(platform, me, tenant);
+        ControlPlaneModule.MapEndpoints(platform, me, tenant, v1.MapPublic());
         NotificationsModule.MapEndpoints(platform, me, tenant);
         AuditModule.MapEndpoints(platform, tenant);
         app.MapApiDocuments();

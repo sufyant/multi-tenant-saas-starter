@@ -31,6 +31,10 @@ internal static class RouteGroups
     // their own data (A5). A suspended user is refused on every one of them (A9).
     public static RouteGroupBuilder MapMe(this RouteGroupBuilder v1) => v1.MapGroup("/me").WithMetadata(new MeEndpoint()).RequireSignedIn();
 
+    // Anyone, signed in or not (A5): the few reads a page shows before sign-in, such as the terms version in force. They read nothing of a
+    // person or a tenant. The rate limit counts a caller without a user by their address (API4).
+    public static RouteGroupBuilder MapPublic(this RouteGroupBuilder v1) => v1.MapGroup("/public").WithMetadata(new PublicRouteEndpoint()).AllowAnonymous();
+
     // Tenant routes are /v1/tenants/{tenantId}/... (T1); a value that is not a GUID matches no route. Every endpoint in the group
     // runs only for a verified member (T7).
     public static RouteGroupBuilder MapTenant(this RouteGroupBuilder v1) =>
@@ -42,5 +46,7 @@ internal static class RouteGroups
 internal sealed class PlatformEndpoint;
 
 internal sealed class MeEndpoint;
+
+internal sealed class PublicRouteEndpoint;
 
 internal sealed class TenantScopedEndpoint;

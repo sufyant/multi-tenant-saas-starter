@@ -115,6 +115,22 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantSuspended = ErrorCode.Declare("tenant.suspended");
 
+    public static readonly ErrorCode TermsVersionChanged = ErrorCode.Declare("terms_version.changed");
+
+    public static readonly ErrorCode TermsVersionEmailSent = ErrorCode.Declare("terms_version.email_sent");
+
+    public static readonly ErrorCode TermsVersionEffectiveDatePast = ErrorCode.Declare("terms_version.effective_date_past");
+
+    public static readonly ErrorCode TermsVersionLocked = ErrorCode.Declare("terms_version.locked");
+
+    public static readonly ErrorCode TermsVersionNotFound = ErrorCode.Declare("terms_version.not_found");
+
+    public static readonly ErrorCode TermsVersionNotScheduled = ErrorCode.Declare("terms_version.not_scheduled");
+
+    public static readonly ErrorCode TermsVersionScheduledExists = ErrorCode.Declare("terms_version.scheduled_exists");
+
+    public static readonly ErrorCode TermsVersionUrlInvalid = ErrorCode.Declare("terms_version.url_invalid");
+
     public static readonly ErrorCode UserDeleted = ErrorCode.Declare("user.deleted");
 
     public static readonly ErrorCode UserEmailTaken = ErrorCode.Declare("user.email_taken");

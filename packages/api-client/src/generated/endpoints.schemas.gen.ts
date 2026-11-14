@@ -6,7 +6,9 @@
  */
 /**
  * The invitation code from the invitation link, and the name of a person who is not a user yet, within the API's limit. The API
- * trims the name before it counts its length. A known user sends none.
+ * trims the name before it counts its length. A known user sends none. `termsVersionId` is the id of the terms version in force that
+ * the person accepts with the invitation, or null; another version answers 409 `terms_version.changed`, and an id no version has 404
+ * `terms_version.not_found`.
  */
 export interface AcceptInvitationRequest {
   code: string;
@@ -15,6 +17,16 @@ export interface AcceptInvitationRequest {
      * @nullable
      */
   name?: string | null;
+  /** @nullable */
+  termsVersionId?: string | null;
+}
+
+/**
+ * The link of the version the person read. A version whose link changed since, or that is no longer in force or scheduled, answers 409
+ * `terms_version.changed`: the person reads it again.
+ */
+export interface AcceptTermsVersionRequest {
+  url: string;
 }
 
 /**
@@ -206,6 +218,10 @@ export const Permission = {
   PlatformTenantsReopen: 'platform.tenants.reopen',
   PlatformTenantsSuspend: 'platform.tenants.suspend',
   PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformTermsCancel: 'platform.terms.cancel',
+  PlatformTermsCreate: 'platform.terms.create',
+  PlatformTermsRead: 'platform.terms.read',
+  PlatformTermsUpdate: 'platform.terms.update',
   PlatformUsersDelete: 'platform.users.delete',
   PlatformUsersReactivate: 'platform.users.reactivate',
   PlatformUsersRead: 'platform.users.read',
@@ -400,11 +416,68 @@ export interface TenantSuspendedDetailsResponse {
   reason: string;
 }
 
+export type TermsVersionCancelledDetailsResponseOperation = typeof TermsVersionCancelledDetailsResponseOperation[keyof typeof TermsVersionCancelledDetailsResponseOperation];
+
+
+export const TermsVersionCancelledDetailsResponseOperation = {
+  TermsVersionCancelled: 'terms_version.cancelled',
+} as const;
+
+export interface TermsVersionCancelledDetailsResponse {
+  operation: TermsVersionCancelledDetailsResponseOperation;
+  effectiveDate: string;
+  url: string;
+  requiresAcceptance: boolean;
+  acceptanceCount: number;
+}
+
+export type TermsVersionCreatedDetailsResponseOperation = typeof TermsVersionCreatedDetailsResponseOperation[keyof typeof TermsVersionCreatedDetailsResponseOperation];
+
+
+export const TermsVersionCreatedDetailsResponseOperation = {
+  TermsVersionCreated: 'terms_version.created',
+} as const;
+
+export interface TermsVersionCreatedDetailsResponse {
+  operation: TermsVersionCreatedDetailsResponseOperation;
+  effectiveDate: string;
+  url: string;
+  /** @nullable */
+  summary: string | null;
+  requiresAcceptance: boolean;
+  sendsEmail: boolean;
+}
+
+export type TermsVersionUpdatedDetailsResponseOperation = typeof TermsVersionUpdatedDetailsResponseOperation[keyof typeof TermsVersionUpdatedDetailsResponseOperation];
+
+
+export const TermsVersionUpdatedDetailsResponseOperation = {
+  TermsVersionUpdated: 'terms_version.updated',
+} as const;
+
+/**
+ * A terms version's values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users.
+ */
+export interface AuditTermsVersionResponse {
+  effectiveDate: string;
+  url: string;
+  /** @nullable */
+  summary: string | null;
+  requiresAcceptance: boolean;
+  sendsEmail: boolean;
+}
+
+export interface TermsVersionUpdatedDetailsResponse {
+  operation: TermsVersionUpdatedDetailsResponseOperation;
+  old: AuditTermsVersionResponse;
+  new: AuditTermsVersionResponse;
+}
+
 /**
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -441,6 +514,9 @@ export const AuditOperation = {
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
+  TermsVersionCancelled: 'terms_version.cancelled',
+  TermsVersionCreated: 'terms_version.created',
+  TermsVersionUpdated: 'terms_version.updated',
   UserDataExportDownloaded: 'user.data_export_downloaded',
   UserDataExportRequested: 'user.data_export_requested',
   UserDeleted: 'user.deleted',
@@ -465,6 +541,7 @@ export const AuditTargetResponseKind = {
   Invitation: 'invitation',
   Role: 'role',
   Plan: 'plan',
+  TermsVersion: 'terms_version',
 } as const;
 
 /**
@@ -626,6 +703,25 @@ export interface CreateTenantRequest {
   planId?: string | null;
 }
 
+/**
+ * A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional
+ * summary of what changed; whether a person must accept it; and whether its creation emails every user who may accept, true when left out.
+ * A version that emails nobody, a small change, gives no notice on Home either. The API trims the link and the summary before it counts
+ * their lengths.
+ */
+export interface CreateTermsVersionRequest {
+  effectiveDate: string;
+  /** @maxLength 2048 */
+  url: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  summary: string | null;
+  requiresAcceptance: boolean;
+  sendsEmail?: boolean;
+}
+
 export interface CursorPageOfAuditEntryResponse {
   items: AuditEntryResponse[];
   /** @nullable */
@@ -656,6 +752,7 @@ export const NotificationType = {
   TenantReopenedForOwners: 'tenant.reopened_for_owners',
   TenantSuspended: 'tenant.suspended',
   TenantSuspendedForOwners: 'tenant.suspended_for_owners',
+  TermsVersionCreated: 'terms_version.created',
   UserDataExportReady: 'user.data_export_ready',
 } as const;
 
@@ -723,6 +820,38 @@ export interface NotificationResponse {
 
 export interface CursorPageOfNotificationResponse {
   items: NotificationResponse[];
+  /** @nullable */
+  nextCursor: string | null;
+}
+
+/**
+ * Whether a user who may accept accepted the version, or not yet, as the frames name the two tabs.
+ */
+export type TermsPersonResponseStatus = typeof TermsPersonResponseStatus[keyof typeof TermsPersonResponseStatus];
+
+
+export const TermsPersonResponseStatus = {
+  Accepted: 'accepted',
+  NotYet: 'not_yet',
+} as const;
+
+/**
+ * A user who may accept a version: their id, their name and address now, either null when the user has none, whether they accepted it,
+ * and when; null for one who did not.
+ */
+export interface TermsPersonResponse {
+  userId: string;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  email: string | null;
+  status: TermsPersonResponseStatus;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+export interface CursorPageOfTermsPersonResponse {
+  items: TermsPersonResponse[];
   /** @nullable */
   nextCursor: string | null;
 }
@@ -897,6 +1026,14 @@ export const ErrorCode = {
   TenantSlugReserved: 'tenant.slug_reserved',
   TenantSlugTaken: 'tenant.slug_taken',
   TenantSuspended: 'tenant.suspended',
+  TermsVersionChanged: 'terms_version.changed',
+  TermsVersionEffectiveDatePast: 'terms_version.effective_date_past',
+  TermsVersionEmailSent: 'terms_version.email_sent',
+  TermsVersionLocked: 'terms_version.locked',
+  TermsVersionNotFound: 'terms_version.not_found',
+  TermsVersionNotScheduled: 'terms_version.not_scheduled',
+  TermsVersionScheduledExists: 'terms_version.scheduled_exists',
+  TermsVersionUrlInvalid: 'terms_version.url_invalid',
   UserDeleted: 'user.deleted',
   UserEmailTaken: 'user.email_taken',
   UserEmailUnchanged: 'user.email_unchanged',
@@ -1233,6 +1370,40 @@ export interface MyTenantDetailResponse {
   planName: string;
   entitlements: MyTenantDetailResponseEntitlements;
   usage: MyTenantDetailResponseUsage;
+}
+
+/**
+ * What the signed-in person must do about the terms: nothing; give their acceptance of the version, which the gate after sign-in asks;
+ * or read the notice of a version that requires no acceptance, which Home shows until the person closes it. The values are words no other
+ * code of the screens uses as a literal (F3).
+ */
+export type MyTermsResponseAction = typeof MyTermsResponseAction[keyof typeof MyTermsResponseAction];
+
+
+export const MyTermsResponseAction = {
+  Nothing: 'nothing',
+  Acceptance: 'acceptance',
+  Notice: 'notice',
+} as const;
+
+/**
+ * A terms version as the person reads it: its day, from 00:00 UTC, its link, its summary or null, and whether it requires acceptance.
+ */
+export interface MyTermsVersionResponse {
+  id: string;
+  effectiveDate: string;
+  url: string;
+  /** @nullable */
+  summary: string | null;
+  requiresAcceptance: boolean;
+}
+
+/**
+ * What the signed-in person must do about the terms, and the version it is about; null when they must do nothing.
+ */
+export interface MyTermsResponse {
+  action: MyTermsResponseAction;
+  version: null | MyTermsVersionResponse;
 }
 
 /**
@@ -1653,6 +1824,70 @@ export interface TenantResponse {
 }
 
 /**
+ * The terms version in force: its id, the day it took effect, from 00:00 UTC, and the link to its text.
+ */
+export interface TermsInForceResponse {
+  id: string;
+  effectiveDate: string;
+  url: string;
+}
+
+/**
+ * Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then in force until a
+ * later version takes effect, then replaced; or cancelled before its day. The values are words no other code of the screens uses as a
+ * literal (F3).
+ */
+export type TermsVersionResponseState = typeof TermsVersionResponseState[keyof typeof TermsVersionResponseState];
+
+
+export const TermsVersionResponseState = {
+  Scheduled: 'scheduled',
+  InForce: 'in_force',
+  Replaced: 'replaced',
+  Cancelled: 'cancelled',
+} as const;
+
+/**
+ * A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the
+ * request, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,
+ * whether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.
+ */
+export interface TermsVersionResponse {
+  id: string;
+  effectiveDate: string;
+  url: string;
+  /** @nullable */
+  summary: string | null;
+  requiresAcceptance: boolean;
+  state: TermsVersionResponseState;
+  acceptedCount: number;
+  locked: boolean;
+  sendsEmail: boolean;
+  /** @nullable */
+  emailSentAt: string | null;
+  createdAt: string;
+  /** @nullable */
+  cancelledAt: string | null;
+}
+
+/**
+ * Every terms version, the latest day first, and how many users may accept: tenant users, neither suspended nor deleted. At most one
+ * version is scheduled; while one is, a new version is refused (409 `terms_version.scheduled_exists`).
+ */
+export interface TermsOfUseResponse {
+  versions: TermsVersionResponse[];
+  activeUserCount: number;
+}
+
+/**
+ * One terms version, and how many users may accept it: tenant users, neither suspended nor deleted.
+ */
+export interface TermsVersionDetailResponse {
+  version: TermsVersionResponse;
+  activeUserCount: number;
+}
+
+/**
  * How many notifications of a bell the reader has not opened.
  */
 export interface UnreadNotificationCountResponse {
@@ -1679,6 +1914,25 @@ export interface UpdateRoleRequest {
   /** @maxLength 100 */
   name: string;
   permissions: Permission[];
+}
+
+/**
+ * The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and
+ * `requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`. `sendsEmail` is required: off
+ * may turn on, and the email then goes to every user who may accept; once on, it stays on, and off answers 409
+ * `terms_version.email_sent`.
+ */
+export interface UpdateTermsVersionRequest {
+  effectiveDate: string;
+  /** @maxLength 2048 */
+  url: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  summary: string | null;
+  requiresAcceptance: boolean;
+  sendsEmail: boolean;
 }
 
 /**
@@ -1899,6 +2153,25 @@ export const GetPlanUpdatePreviewSort = {
   Name: 'name',
   NameDescending: '-name',
 } as const;
+
+export type ListTermsVersionPeopleParams = {
+  status?: TermsPersonResponseStatus;
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type CreateTermsVersionHeaders = {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
+};
 
 export type ListUsersParams = {
   /** @minimum 1 */

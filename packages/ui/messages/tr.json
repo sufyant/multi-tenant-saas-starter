@@ -175,6 +175,16 @@
       "slug_taken": "Bu kısa adı başka bir kuruluş kullanıyor. Başka bir ad seçin.",
       "suspended": "Bu kuruluş askıya alındı."
     },
+    "terms_version": {
+      "changed": "Koşullar siz açtıktan sonra değişti. Yeniden okuyun, sonra kabul edin.",
+      "effective_date_past": "Bugünü veya daha sonraki bir tarihi seçin.",
+      "email_sent": "Bu sürümün e-postası kullanıcılara zaten gitti; bu yüzden açık kalır.",
+      "locked": "Bu sürümü kabul eden biri var; bu yüzden bağlantısı ve kabul gerektirip gerektirmediği değişmez. Sürümü iptal edip yeni bir sürüm ekleyin.",
+      "not_found": "Koşulların bu sürümü bulunamadı.",
+      "not_scheduled": "Yalnızca planlanmış bir sürüm değişebilir. Yürürlükteki bir sürüm hiç değişmez.",
+      "scheduled_exists": "Zaten planlanmış bir sürüm var. Önce onu düzenleyin veya iptal edin.",
+      "url_invalid": "https:// ile başlayan bir bağlantı girin."
+    },
     "user": {
       "deleted": "Bu hesap silindi.",
       "email_taken": "Bu e-posta adresini başka bir hesap kullanıyor.",

@@ -8,7 +8,8 @@ namespace Api.ArchitectureTests;
 // changes (K3).
 public sealed class RepositoryLockTests
 {
-    private static readonly string[] LockSuffixes = ["ForUpdateAsync", "ForNoKeyUpdateAsync"];
+    // A share lock is a row lock too: an acceptance holds a terms version against an edit, but not against another acceptance (step 38).
+    private static readonly string[] LockSuffixes = ["ForUpdateAsync", "ForNoKeyUpdateAsync", "ForShareAsync"];
 
     // K6a: the reads of a root that a repository returns without a row lock of its own, wrapped in a type of its own: the tenant's roles
     // (TenantRoles, A2), which ITenantRepository returns and MemberFacts carries, and the custom role a command changes, which RoleFacts

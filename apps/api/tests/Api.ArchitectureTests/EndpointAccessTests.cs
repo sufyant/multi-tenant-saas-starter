@@ -35,6 +35,7 @@ public sealed class EndpointAccessTests : IAsyncLifetime
         "GET /scalar/scalar.js",
         "GET /scalar/scalar.aspnetcore.js",
         "GET /scalar/favicon.svg",
+        "GET /v1/public/terms",
     ];
 
     // The permission list: an endpoint asks for one of these by name.

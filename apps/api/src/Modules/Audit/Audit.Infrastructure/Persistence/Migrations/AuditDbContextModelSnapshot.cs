@@ -86,7 +86,7 @@ namespace Audit.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_platform_entries_kind", "kind IN ('Command')");
 
-                            t.HasCheckConstraint("ck_platform_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role', 'Plan')");
+                            t.HasCheckConstraint("ck_platform_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role', 'Plan', 'TermsVersion')");
                         });
                 });
 
@@ -159,7 +159,7 @@ namespace Audit.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_entries_kind", "kind IN ('Command')");
 
-                            t.HasCheckConstraint("ck_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role', 'Plan')");
+                            t.HasCheckConstraint("ck_entries_target_kind", "target_kind IN ('Tenant', 'User', 'Invitation', 'Role', 'Plan', 'TermsVersion')");
                         });
                 });
 

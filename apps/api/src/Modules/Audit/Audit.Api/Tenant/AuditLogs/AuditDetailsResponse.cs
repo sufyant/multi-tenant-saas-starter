@@ -25,4 +25,7 @@ namespace Audit.Api.Tenant.AuditLogs;
 [JsonDerivedType(typeof(TenantPurgeWarnedDetailsResponse), AuditDetailsTypes.TenantPurgeWarned)]
 [JsonDerivedType(typeof(TenantRenamedDetailsResponse), AuditDetailsTypes.TenantRenamed)]
 [JsonDerivedType(typeof(TenantSuspendedDetailsResponse), AuditDetailsTypes.TenantSuspended)]
+[JsonDerivedType(typeof(TermsVersionCancelledDetailsResponse), AuditDetailsTypes.TermsVersionCancelled)]
+[JsonDerivedType(typeof(TermsVersionCreatedDetailsResponse), AuditDetailsTypes.TermsVersionCreated)]
+[JsonDerivedType(typeof(TermsVersionUpdatedDetailsResponse), AuditDetailsTypes.TermsVersionUpdated)]
 public abstract record AuditDetailsResponse;

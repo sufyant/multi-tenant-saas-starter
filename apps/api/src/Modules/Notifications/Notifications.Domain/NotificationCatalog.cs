@@ -48,6 +48,13 @@ public static class NotificationCatalog
 
     public const string TenantSuspendedForOwners = "tenant.suspended_for_owners";
 
+    public const string TermsVersionCreated = "terms_version.created";
+
+    /// <summary>The words of <c>nextStep</c> of <see cref="TermsVersionCreated"/>: the person accepts at their next sign-in, or does nothing.</summary>
+    public const string AcceptAtSignIn = "accept_at_sign_in";
+
+    public const string NothingToDo = "nothing_to_do";
+
     /// <summary>
     /// The second exception of U9: the export's completion is the worker's, not a command, so it writes no audit entry and has no operation
     /// to take its name from.
@@ -172,6 +179,22 @@ public static class NotificationCatalog
             YourAccount,
             WebAndEmail(),
             [new("expiresAt", NotificationValueKind.Date)]),
+
+        // A new terms version that emails the users tells every user who may accept, by email only: Home shows its notice, or the gate
+        // asks for the acceptance, from the terms read, not from the bell (docs/flows/terms-of-use.md). The terms of the person's account
+        // change, so the email goes (U5). nextStep says whether the person accepts at their next sign-in.
+        new(
+            TermsVersionCreated,
+            NotificationBell.Personal,
+            NotificationLinkKind.Start,
+            YourAccount,
+            EmailOnly(),
+            [
+                new("effectiveDate", NotificationValueKind.Day),
+                new("url", NotificationValueKind.Text),
+                new("nextStep", NotificationValueKind.Word, Words: [AcceptAtSignIn, NothingToDo]),
+                new("summary", NotificationValueKind.Text, Optional: true),
+            ]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
     // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
@@ -225,4 +248,6 @@ public static class NotificationCatalog
     private static NotificationChannel[] WebOnly() => [NotificationChannel.Web];
 
     private static NotificationChannel[] WebAndEmail() => [NotificationChannel.Web, NotificationChannel.Email];
+
+    private static NotificationChannel[] EmailOnly() => [NotificationChannel.Email];
 }

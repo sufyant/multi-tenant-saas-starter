@@ -47,6 +47,9 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     // The enums the host adds to fields that are strings in C# (N11i, N11j): the permissions and the audit operations.
     private const string NotificationTypeSchema = "#/components/schemas/NotificationType";
 
+    // A5: the operations of /v1 that anyone may call without signing in. A new one is added here on purpose, as in EndpointAccessTests.
+    private static readonly string[] PublicOperations = ["get /v1/public/terms"];
+
     private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema, NotificationTypeSchema];
 
     private static readonly string[] Limits = ["minimum", "maximum", "maxLength"];
@@ -437,14 +440,15 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         codes.Where(code => !AreaAndReason().IsMatch(code)).ShouldBeEmpty();
     }
 
-    // K5: every /v1 route can answer 401 and 429, so every operation declares both.
+    // K5: every /v1 route can answer 401 and 429, so every operation declares both; a public one never asks for a token, so it declares
+    // 429 only.
     [Fact]
     public void BuildOpenApiDocument_EveryOperation_DeclaresUnauthorizedAndTooManyRequests()
     {
         string[] statuses = ["401", "429"];
 
         var missing = Operations()
-            .SelectMany(operation => statuses
+            .SelectMany(operation => StatusesEveryOperationDeclares(operation.Method, operation.Path, statuses)
                 .Where(status => !operation.Value.GetProperty("responses").TryGetProperty(status, out _))
                 .Select(status => $"{operation.Method} {operation.Path} {status}"));
 
@@ -492,10 +496,11 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         unions.ShouldBeEmpty();
     }
 
-    // Every /v1 route needs a bearer token (A5), so the document declares the scheme once and requires it for every operation. The
-    // anonymous routes, the document and the API reference, are outside /v1 and so outside the document.
+    // Every /v1 route but a public one needs a bearer token (A5), so the document declares the scheme once and requires it for every
+    // operation. A public route of /v1 sets it aside with an empty requirement, and only it does. The other anonymous routes, the document
+    // and the API reference, are outside /v1 and so outside the document.
     [Fact]
-    public void BuildOpenApiDocument_EveryOperation_RequiresTheBearerScheme()
+    public void BuildOpenApiDocument_EveryOperation_RequiresTheBearerSchemeButThePublicOnes()
     {
         var anonymous = DocumentedEndpoints()
             .Where(endpoint => endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null)
@@ -505,8 +510,10 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
 
         SecuritySchemeOf("bearer").ShouldBe("http bearer");
         SecurityRequirementsOf(_document).ShouldBe("bearer");
-        anonymous.ShouldBeEmpty();
-        overriding.ShouldBeEmpty();
+        anonymous.ShouldBe(PublicOperations);
+        overriding.ShouldBe(PublicOperations);
+        Operations().Where(operation => PublicOperations.Contains($"{operation.Method} {operation.Path}"))
+            .Select(operation => operation.Value.GetProperty("security").GetArrayLength()).ShouldBe([0]);
     }
 
     // An operation can answer statuses it does not list, such as 405, 408, 413, 415 or 500. Each is Problem Details too (K5).
@@ -548,7 +555,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         var located = created.Where(operation => ResponseHeadersOf(operation.Value.GetProperty("responses").GetProperty("201")).Contains("Location"));
         var unexplained = created.Except(located).Where(operation => !DescriptionOf(operation.Value).Contains("Location", StringComparison.Ordinal));
 
-        located.Select(operation => OperationIdOf(operation.Value)).ShouldBe(["CreateTenant", "CreatePlan"], ignoreOrder: true);
+        located.Select(operation => OperationIdOf(operation.Value)).ShouldBe(["CreateTenant", "CreatePlan", "CreateTermsVersion"], ignoreOrder: true);
         unexplained.Select(operation => OperationIdOf(operation.Value)).ShouldBeEmpty();
     }
 
@@ -777,6 +784,10 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     }
 
     // A Domain type is internal to its module, so its constants are read by reflection.
+    // A public operation never asks for a token, so it never answers 401.
+    private static IEnumerable<string> StatusesEveryOperationDeclares(string method, string path, string[] statuses) =>
+        statuses.Where(status => status != "401" || !PublicOperations.Contains($"{method} {path}"));
+
     private static IEnumerable<int> DomainMaxLengths() =>
         Solution.Modules
             .SelectMany(module => Solution.Load($"{module}.Domain").GetTypes())
