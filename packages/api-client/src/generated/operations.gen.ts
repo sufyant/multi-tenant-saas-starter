@@ -10,7 +10,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "AcceptTermsVersion",
@@ -20,7 +21,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "CancelTermsVersion",
@@ -30,7 +32,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ChangeEmail",
@@ -40,7 +43,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ChangeMemberRole",
@@ -50,7 +54,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ChangePreferences",
@@ -60,7 +65,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ChangeTenantPlan",
@@ -70,7 +76,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "CloseTenant",
@@ -80,7 +87,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ConfirmAccountDeletion",
@@ -90,7 +98,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "CreatePlan",
@@ -104,7 +113,8 @@ export const operations = [
       "Idempotent-Replayed",
       "Location",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "CreateRole",
@@ -117,7 +127,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "CreateTenant",
@@ -131,7 +142,8 @@ export const operations = [
       "Idempotent-Replayed",
       "Location",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "CreateTermsVersion",
@@ -145,7 +157,8 @@ export const operations = [
       "Idempotent-Replayed",
       "Location",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "DeleteRole",
@@ -155,7 +168,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "DeleteUser",
@@ -165,7 +179,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "DismissTermsNotice",
@@ -175,7 +190,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "DownloadDataExport",
@@ -185,7 +201,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ExportAuditLog",
@@ -195,7 +212,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ExportMembers",
@@ -205,7 +223,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetAuditRetention",
@@ -215,7 +234,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetInvitationPreview",
@@ -225,7 +245,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetMe",
@@ -235,7 +256,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetMyDataExport",
@@ -245,7 +267,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetMyTenant",
@@ -255,7 +278,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetMyTerms",
@@ -265,7 +289,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetMyUnreadNotificationCount",
@@ -275,7 +300,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetPlan",
@@ -285,7 +311,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetPlanUpdatePreview",
@@ -295,7 +322,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetPlatformAuditRetention",
@@ -305,7 +333,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetPlatformUnreadNotificationCount",
@@ -315,7 +344,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetTenant",
@@ -325,7 +355,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetTenantPlan",
@@ -335,7 +366,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetTenantPlanChangePreview",
@@ -345,7 +377,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetTermsInForce",
@@ -355,7 +388,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": true
   },
   {
     "operationId": "GetTermsOfUse",
@@ -365,7 +399,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetTermsVersion",
@@ -375,7 +410,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetUnreadNotificationCount",
@@ -385,7 +421,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GetUser",
@@ -395,7 +432,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "GrantSystemAdmin",
@@ -408,7 +446,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "InviteMember",
@@ -421,7 +460,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "InviteOwner",
@@ -434,7 +474,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "LeaveTenant",
@@ -444,7 +485,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListAuditEntries",
@@ -454,7 +496,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListInvitations",
@@ -464,7 +507,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListMembers",
@@ -474,7 +518,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListMyNotifications",
@@ -484,7 +529,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListMyTenants",
@@ -494,7 +540,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListNotifications",
@@ -504,7 +551,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListPlans",
@@ -514,7 +562,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListPlatformAuditEntries",
@@ -524,7 +573,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListPlatformNotifications",
@@ -534,7 +584,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListRoles",
@@ -544,7 +595,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListTenants",
@@ -554,7 +606,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListTermsVersionPeople",
@@ -564,7 +617,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ListUsers",
@@ -574,7 +628,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "MakeOwner",
@@ -584,7 +639,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "MarkAllMyNotificationsRead",
@@ -594,7 +650,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "MarkAllNotificationsRead",
@@ -604,7 +661,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "MarkAllPlatformNotificationsRead",
@@ -614,7 +672,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "MarkNotificationRead",
@@ -624,7 +683,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ReactivateTenant",
@@ -634,7 +694,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ReactivateUser",
@@ -644,7 +705,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RemoveEntitlementOverride",
@@ -654,7 +716,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RemoveMember",
@@ -664,7 +727,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RenameMe",
@@ -674,7 +738,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RenameTenant",
@@ -684,7 +749,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RenameUser",
@@ -694,7 +760,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "ReopenTenant",
@@ -704,7 +771,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RequestAccountDeletion",
@@ -717,7 +785,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RequestDataExport",
@@ -730,7 +799,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RequestEmailChange",
@@ -743,7 +813,8 @@ export const operations = [
     "responseHeaders": [
       "Idempotent-Replayed",
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RevokeInvitation",
@@ -753,7 +824,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "RevokeSystemAdmin",
@@ -763,7 +835,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "SetEntitlementOverride",
@@ -773,7 +846,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "StreamNotifications",
@@ -783,7 +857,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "SuspendTenant",
@@ -793,7 +868,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "SuspendUser",
@@ -803,7 +879,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "UpdatePlan",
@@ -813,7 +890,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "UpdateRole",
@@ -823,7 +901,8 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   },
   {
     "operationId": "UpdateTermsVersion",
@@ -833,6 +912,7 @@ export const operations = [
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
-    ]
+    ],
+    "anonymous": false
   }
 ] as const;

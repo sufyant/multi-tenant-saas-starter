@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "../../lib/utils";
+import { Button } from "../button";
 import {
   CircleCheckIcon,
   CircleXIcon,
@@ -7,6 +8,7 @@ import {
   InfoIcon,
   type LucideIcon,
   TriangleAlertIcon,
+  XIcon,
 } from "../icon";
 
 export type BannerTone = "warning" | "destructive" | "info" | "success";
@@ -35,6 +37,10 @@ export type BannerProps = {
   action?: ReactNode;
   /** The consequence, and the reason when there is one. */
   children?: ReactNode;
+  /** A dismissible banner (the Banner's "Dismissible"): a ghost × at the very end, named by `closeLabel`. */
+  onClose?: () => void;
+  /** The close button's accessible name, such as "Close". */
+  closeLabel?: string;
 };
 
 /** A persistent strip that states the condition of the whole page (the design's Banner): the tone's icon, the title over the text. */
@@ -43,6 +49,8 @@ export function Banner({
   tone = "info",
   action,
   children,
+  onClose,
+  closeLabel,
 }: BannerProps) {
   return (
     <div
@@ -60,6 +68,15 @@ export function Banner({
         {children && <p>{children}</p>}
       </div>
       {action}
+      {onClose && (
+        <Button
+          variant="ghost"
+          icon={<Icon icon={XIcon} size={16} />}
+          aria-label={closeLabel}
+          onClick={onClose}
+          className="shrink-0 text-foreground"
+        />
+      )}
     </div>
   );
 }

@@ -78,6 +78,17 @@
     "secondFactorTitle": "İki adımlı doğrulama",
     "secondFactorText": "Doğrulama uygulamanızı açın ve bu hesabın 6 haneli kodunu girin."
   },
+  "terms": {
+    "title": "Kullanım koşulları güncellendi",
+    "text": "Yeni Kullanım koşulları {date} tarihinden itibaren geçerli. Okuyun, ardından {product} kullanmaya devam etmek için kabul edin.",
+    "read": "Koşulları okuyun ↗",
+    "summary": "Özet",
+    "agree": "Kullanım koşullarını okudum ve kabul ediyorum",
+    "accept": "Kabul et",
+    "saveFailedTitle": "Kabulünüz kaydedilemedi",
+    "saveFailedText": "Bağlantınızı kontrol edip yeniden deneyin.",
+    "noticeText": "Yeni koşullar {date} tarihinden itibaren geçerli. Size bir e-posta da gönderdik."
+  },
   "invitations": {
     "settingUp": "Hesabınız hazırlanıyor",
     "inviterSubject": {

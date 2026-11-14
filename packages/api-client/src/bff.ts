@@ -49,11 +49,14 @@ export function createBff({
       return problem(404, ErrorCode.RouteNotFound);
     }
     const path = raw.slice(prefix.length);
-    const token = await getToken();
-    if (!token) return problem(401, ErrorCode.AuthUnauthenticated);
-
     const operation = findOperation(request.method, path);
-    const headers = new Headers({ Authorization: `Bearer ${token}` });
+    // An anonymous operation (the API's A5) goes without a session and without a token: it reads nothing of a person.
+    const token = operation?.anonymous ? null : await getToken();
+    if (!token && !operation?.anonymous)
+      return problem(401, ErrorCode.AuthUnauthenticated);
+
+    const headers = new Headers();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
     for (const name of [
       "Content-Type",
       "Accept",

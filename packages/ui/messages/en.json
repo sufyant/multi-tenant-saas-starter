@@ -445,6 +445,7 @@
     },
     "authFooter": {
       "label": "Language and legal",
+      "terms": "Terms",
       "privacy": "Privacy"
     },
     "supportBody": "Version: {version}"
