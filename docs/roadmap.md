@@ -450,6 +450,7 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 - A note with the Turkish and Arabic texts of the step's frames (web 1.09 to 1.15, 4.03; platform 11.01 to 11.15).
 - The dark and Arabic forms of 1.09 and 11.01, as the earlier steps drew one of each.
 - It waits for nothing.
+- As built: the notice email 13.37 (light), 13.38 (dark) and 13.39 (Arabic), without the summary, which is one language only; 7.09 with the four sentences (added with acceptance, added with a notice, changed, cancelled); 1.55 (1.09 in dark), 1.56 (the phone's gate, 1.14, in Arabic), 11.16 (11.01 in dark) and 11.17 (11.01 in Arabic); and a note, "Note · 38 copy", in the platform's section 11. 11.10 now draws the locked state that this section decides: Link and Requires acceptance disabled, each with its reason. Done.
 
 38-backend, the versions and the acceptances:
 
@@ -615,7 +616,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 38, in the parts of section 6. 38-start is done. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
+3. Step 38, in the parts of section 6. 38-start and 38-design are done. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
