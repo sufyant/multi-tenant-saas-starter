@@ -169,6 +169,19 @@ public sealed class NotificationTextTests
         NotificationText.Render(NotificationCatalog.TenantEntitlementOverrideRemoved, values, People, language, null).Body.ShouldBe(body);
     }
 
+    // 3.07: the weekly count of the flags takes its noun in the plural form of the number's CLDR category, as a number of days does.
+    [Theory]
+    [InlineData(Language.En, "1", "1 feature flag ready to be removed from code")]
+    [InlineData(Language.En, "2", "2 feature flags ready to be removed from code")]
+    [InlineData(Language.Tr, "2", "2 özellik bayrağı koddan kaldırılmaya hazır")]
+    [InlineData(Language.Ar, "1", "علامة ميزات واحدة جاهزة للإزالة من الشيفرة")]
+    [InlineData(Language.Ar, "2", "علامتا ميزات جاهزة للإزالة من الشيفرة")]
+    [InlineData(Language.Ar, "3", "3 علامات ميزات جاهزة للإزالة من الشيفرة")]
+    [InlineData(Language.Ar, "11", "11 علامة ميزات جاهزة للإزالة من الشيفرة")]
+    public void Render_FlagsReadyToRemove_WritesTheCountWithItsPluralForm(Language language, string count, string title) =>
+        NotificationText.Render(NotificationCatalog.FeatureFlagsReadyToRemove, new Dictionary<string, string> { ["count"] = count }, People, language, null)
+            .Title.ShouldBe(title);
+
     // K14: a plan change that shortens the Activity log period says which entries go and on which date, in the words of 12.10.
     [Theory]
     [InlineData(Language.En, "The platform moved your organisation from Free to Pro. Its features and limits follow the new plan. The Activity log now keeps entries for 90 days. Entries older than 90 days go on 1 Dec 2026. To keep a copy of the older ones, export them before then.")]
@@ -291,6 +304,7 @@ public sealed class NotificationTextTests
                 NotificationValueKind.Date => [(value.Name, "2026-11-29T12:00:00.0000000+00:00")],
                 NotificationValueKind.Day => [(value.Name, "2026-12-01")],
                 NotificationValueKind.Days => [(value.Name, "30")],
+                NotificationValueKind.FeatureFlags => [(value.Name, "2")],
                 _ => [(value.Name, value.Name == "tenantName" ? "Acme" : "Pro")],
             })
             .ToDictionary(pair => pair.Item1, pair => pair.Item2);

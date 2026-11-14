@@ -37,6 +37,31 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // A flag's first rule forgets the purged tenant, and keeps every other listed tenant (docs/flows/feature-flags.md).
+    [Fact]
+    public async Task PurgeTenant_ListedInAFeatureFlag_TakesItOffTheRuleAndKeepsTheOthers()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var kept = await ClosedTenantWithDataAsync("Kept Ltd");
+        var admin = await _testData.UserIdOfAsync(await _testData.AddUserAsync());
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            WITH flag AS (
+              INSERT INTO control_plane.feature_flags (id, key, type, default_value, description, added_at, listed_count, percentage, everyone_else, state_since, last_changed_at)
+              VALUES (gen_random_uuid(), 'roles.bulk_edit', 'Release', false, 'A test flag.', now(), 2, 0, false, now(), now()) RETURNING id
+            )
+            INSERT INTO control_plane.feature_flag_tenants (flag_id, tenant_id, listed_by, listed_at)
+            SELECT id, listed, '{admin}', now() FROM flag, unnest(ARRAY['{tenant.Id}'::uuid, '{kept.Id}'::uuid]) AS listed
+            """,
+            _databaseName);
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await database.ScalarAsSuperuserAsync<string>(
+            "SELECT listed_count || ' ' || (SELECT string_agg(tenant_id::text, ',') FROM control_plane.feature_flag_tenants) FROM control_plane.feature_flags", _databaseName))
+            .ShouldBe($"1 {kept.Id}");
+    }
+
     [Fact]
     public async Task PurgeTenant_AClosedTenantAtItsClosure_DeletesEveryModulesDataAndKeepsTheTombstoneAndThePlatformsLog()
     {

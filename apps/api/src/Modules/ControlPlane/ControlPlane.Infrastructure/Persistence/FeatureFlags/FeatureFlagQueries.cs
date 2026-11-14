@@ -23,18 +23,17 @@ public sealed class FeatureFlagQueries(ControlPlaneDbContext controlPlane) : IFe
             return null;
         }
 
-        var listed = await controlPlane.FeatureFlagTenants
-            .Where(row => row.FlagId == flag.Id)
-            .Join(controlPlane.Tenants, row => row.TenantId, tenant => tenant.Id, (row, tenant) => new FeatureFlagTenantView(tenant.Id, tenant.Name, row.ListedAt))
-            .OrderBy(row => row.Name)
-            .ToListAsync(cancellationToken);
+        var rows = await controlPlane.FeatureFlagTenants.AsNoTracking().Where(row => row.FlagId == flag.Id).ToListAsync(cancellationToken);
         var changes = await controlPlane.FeatureFlagChanges.AsNoTracking()
             .Where(change => change.FlagId == flag.Id)
             .OrderByDescending(change => change.At)
             .ThenByDescending(change => change.Id)
             .ToListAsync(cancellationToken);
-        var tenantIds = changes.Where(change => change.TenantId is not null).Select(change => change.TenantId!.Value).Distinct().ToList();
-        var tenantNames = await controlPlane.Tenants.Where(tenant => tenantIds.Contains(tenant.Id)).ToDictionaryAsync(tenant => tenant.Id, tenant => tenant.Name, cancellationToken);
+        var tenantIds = rows.Select(row => row.TenantId).Concat(changes.Where(change => change.TenantId is not null).Select(change => change.TenantId!.Value)).Distinct().ToList();
+        var tenantNames = await controlPlane.Tenants.AsNoTracking()
+            .Where(tenant => tenantIds.Contains(tenant.Id))
+            .ToDictionaryAsync(tenant => tenant.Id, tenant => tenant.Name, cancellationToken);
+        var listed = rows.Select(row => new FeatureFlagTenantView(row.TenantId, tenantNames[row.TenantId], row.ListedAt)).OrderBy(row => row.Name, StringComparer.CurrentCulture).ToList();
         var names = await NamesOfAsync([flag.LastChangedBy, .. changes.Select(change => change.ActorId)], cancellationToken);
         return new FeatureFlagDetailView(
             ItemOf(flag, now, names),
