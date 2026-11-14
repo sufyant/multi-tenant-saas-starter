@@ -50,6 +50,9 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
   TenantSuspended: 'tenant.suspended',
+  TermsVersionCancelled: 'terms_version.cancelled',
+  TermsVersionCreated: 'terms_version.created',
+  TermsVersionUpdated: 'terms_version.updated',
   UserDataExportDownloaded: 'user.data_export_downloaded',
   UserDataExportRequested: 'user.data_export_requested',
   UserDeleted: 'user.deleted',
@@ -157,6 +160,10 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   PlatformTenantsReopen: 'platform.tenants.reopen',
   PlatformTenantsSuspend: 'platform.tenants.suspend',
   PlatformTenantsUpdate: 'platform.tenants.update',
+  PlatformTermsCancel: 'platform.terms.cancel',
+  PlatformTermsCreate: 'platform.terms.create',
+  PlatformTermsRead: 'platform.terms.read',
+  PlatformTermsUpdate: 'platform.terms.update',
   PlatformUsersDelete: 'platform.users.delete',
   PlatformUsersReactivate: 'platform.users.reactivate',
   PlatformUsersRead: 'platform.users.read',
@@ -268,7 +275,39 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantSuspended: 'tenant.suspended',
 }),
   "reason": zod.string()
-}).describe('The details of `tenant.suspended`: the system admin\'s reason. Only the platform\'s log holds it.')]).describe('The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows\n`details` by it. It is the entry\'s own operation.')]),
+}).describe('The details of `tenant.suspended`: the system admin\'s reason. Only the platform\'s log holds it.'),zod.object({
+  "operation": zod.enum({
+  TermsVersionCancelled: 'terms_version.cancelled',
+}),
+  "effectiveDate": zod.iso.date(),
+  "url": zod.string(),
+  "requiresAcceptance": zod.boolean(),
+  "acceptanceCount": zod.int()
+}),zod.object({
+  "operation": zod.enum({
+  TermsVersionCreated: 'terms_version.created',
+}),
+  "effectiveDate": zod.iso.date(),
+  "url": zod.string(),
+  "summary": zod.string().nullable(),
+  "requiresAcceptance": zod.boolean()
+}),zod.object({
+  "operation": zod.enum({
+  TermsVersionUpdated: 'terms_version.updated',
+}),
+  "old": zod.object({
+  "effectiveDate": zod.iso.date(),
+  "url": zod.string(),
+  "summary": zod.string().nullable(),
+  "requiresAcceptance": zod.boolean()
+}).describe('A terms version\'s values as an entry keeps them: its day, its link, its summary or null, and whether it requires acceptance.'),
+  "new": zod.object({
+  "effectiveDate": zod.iso.date(),
+  "url": zod.string(),
+  "summary": zod.string().nullable(),
+  "requiresAcceptance": zod.boolean()
+}).describe('A terms version\'s values as an entry keeps them: its day, its link, its summary or null, and whether it requires acceptance.')
+})]).describe('The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows\n`details` by it. It is the entry\'s own operation.')]),
   "actor": zod.object({
   "kind": zod.enum({
   User: 'user',
@@ -285,6 +324,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   Invitation: 'invitation',
   Role: 'role',
   Plan: 'plan',
+  TermsVersion: 'terms_version',
 }).describe('The kind of target of an audit entry.'),
   "id": zod.uuid(),
   "name": zod.string().nullable(),

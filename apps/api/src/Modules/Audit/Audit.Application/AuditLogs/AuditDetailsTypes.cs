@@ -4,6 +4,7 @@ using Audit.Application.Members;
 using Audit.Application.Plans;
 using Audit.Application.Roles;
 using Audit.Application.Tenants;
+using Audit.Application.TermsVersions;
 using Audit.Domain;
 
 namespace Audit.Application.AuditLogs;
@@ -50,6 +51,12 @@ public static class AuditDetailsTypes
 
     public const string TenantSuspended = AuditOperations.TenantSuspended;
 
+    public const string TermsVersionCancelled = AuditOperations.TermsVersionCancelled;
+
+    public const string TermsVersionCreated = AuditOperations.TermsVersionCreated;
+
+    public const string TermsVersionUpdated = AuditOperations.TermsVersionUpdated;
+
     /// <summary>Every operation, with the type of its details, or null for an operation without details.</summary>
     public static IReadOnlyDictionary<string, Type?> OfOperation { get; } = new Dictionary<string, Type?>(StringComparer.Ordinal)
     {
@@ -81,6 +88,9 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantRenamed] = typeof(TenantRenamedDetails),
         [AuditOperations.TenantReopened] = null,
         [AuditOperations.TenantSuspended] = typeof(TenantSuspendedDetails),
+        [AuditOperations.TermsVersionCancelled] = typeof(TermsVersionCancelledDetails),
+        [AuditOperations.TermsVersionCreated] = typeof(TermsVersionCreatedDetails),
+        [AuditOperations.TermsVersionUpdated] = typeof(TermsVersionUpdatedDetails),
         [AuditOperations.UserDataExportDownloaded] = null,
         [AuditOperations.UserDataExportRequested] = null,
         [AuditOperations.UserDeleted] = null,

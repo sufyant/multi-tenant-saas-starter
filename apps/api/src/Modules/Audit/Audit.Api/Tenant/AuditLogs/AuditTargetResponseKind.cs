@@ -20,4 +20,7 @@ public enum AuditTargetResponseKind
 
     [JsonStringEnumMemberName("plan")]
     Plan,
+
+    [JsonStringEnumMemberName("terms_version")]
+    TermsVersion,
 }

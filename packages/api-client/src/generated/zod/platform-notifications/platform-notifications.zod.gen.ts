@@ -38,6 +38,7 @@ export const ListPlatformNotificationsResponse = zod.object({
   TenantReopenedForOwners: 'tenant.reopened_for_owners',
   TenantSuspended: 'tenant.suspended',
   TenantSuspendedForOwners: 'tenant.suspended_for_owners',
+  TermsVersionCreated: 'terms_version.created',
   UserDataExportReady: 'user.data_export_ready',
 }).describe('The type of a notification, area.event.'),
   "title": zod.string().describe('The title, in the reader\'s language.'),

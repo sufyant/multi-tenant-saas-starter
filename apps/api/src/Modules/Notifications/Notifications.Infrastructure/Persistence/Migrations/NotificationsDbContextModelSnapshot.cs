@@ -18,7 +18,7 @@ namespace Notifications.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("notifications")
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -84,7 +84,7 @@ namespace Notifications.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_notifications_tenant", "(bell <> 'Tenant' OR tenant_id IS NOT NULL) AND (bell <> 'Personal' OR (tenant_id IS NOT NULL) = (type IN ('tenant.reactivated_for_owners', 'tenant.reopened_for_owners')))");
 
-                            t.HasCheckConstraint("ck_notifications_type", "type IN ('member.joined', 'member.removed', 'member.role_changed', 'tenant.closed', 'tenant.closed_for_owners', 'tenant.entitlement_override_removed', 'tenant.entitlement_override_set', 'tenant.owner_joined', 'tenant.plan_changed', 'tenant.purged', 'tenant.purged_for_owners', 'tenant.reactivated', 'tenant.reactivated_for_owners', 'tenant.reopened', 'tenant.reopened_for_owners', 'tenant.suspended', 'tenant.suspended_for_owners', 'user.data_export_ready')");
+                            t.HasCheckConstraint("ck_notifications_type", "type IN ('member.joined', 'member.removed', 'member.role_changed', 'tenant.closed', 'tenant.closed_for_owners', 'tenant.entitlement_override_removed', 'tenant.entitlement_override_set', 'tenant.owner_joined', 'tenant.plan_changed', 'tenant.purged', 'tenant.purged_for_owners', 'tenant.reactivated', 'tenant.reactivated_for_owners', 'tenant.reopened', 'tenant.reopened_for_owners', 'tenant.suspended', 'tenant.suspended_for_owners', 'terms_version.created', 'user.data_export_ready')");
 
                             t.HasCheckConstraint("ck_notifications_values", "jsonb_typeof(\"values\") = 'object'");
                         });

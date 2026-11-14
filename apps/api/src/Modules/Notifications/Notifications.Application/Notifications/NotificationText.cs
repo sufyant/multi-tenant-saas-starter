@@ -159,6 +159,8 @@ public sealed partial record NotificationText(string Title, string Body)
                 ? stored
                 : WordOf(texts, language, EntitlementWords, stored),
             NotificationValueKind.Date => EmailLanguage.Of(language).Dates.Write(DateTimeOffset.Parse(stored, CultureInfo.InvariantCulture), timeZone).Day,
+            NotificationValueKind.Day => EmailLanguage.Of(language).Dates.Write(
+                new DateTimeOffset(DateOnly.ParseExact(stored, "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeOnly.MinValue, TimeSpan.Zero), null).Day,
             NotificationValueKind.Days => WordOf(texts, language, DaysWords, PluralCategoryOf(language, int.Parse(stored, NumberStyles.None, CultureInfo.InvariantCulture)))
                 .Replace("#", stored, StringComparison.Ordinal),
             _ => stored,

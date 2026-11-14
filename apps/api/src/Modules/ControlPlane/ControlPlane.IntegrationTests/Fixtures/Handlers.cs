@@ -8,6 +8,7 @@ using ControlPlane.Application.Invitations.WithdrawSignUp;
 using ControlPlane.Application.Plans;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.CreateTenant;
+using ControlPlane.Application.TermsVersions;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using Microsoft.Extensions.DependencyInjection;
@@ -87,6 +88,7 @@ internal static class Handlers
             new AcceptInvitationCommand(userId, SecretOf(code), verifiedEmails, name),
             scope.GetRequiredService<ITenantRepository>(),
             scope.GetRequiredService<IUserRepository>(),
+            scope.GetRequiredService<ITermsVersionRepository>(),
             scope.GetRequiredService<TimeProvider>(),
             Cancellation));
         return accepted;

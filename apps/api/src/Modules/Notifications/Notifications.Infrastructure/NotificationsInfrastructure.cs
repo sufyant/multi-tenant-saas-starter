@@ -93,6 +93,11 @@ public static class NotificationsInfrastructure
             .Validate(retention => retention.IsValid, $"{NotificationRetentionOptions.Section}:Days must be at least 1.")
             .ValidateOnStart();
 
+        services.AddOptions<NotificationPaceOptions>()
+            .BindConfiguration(NotificationPaceOptions.Section)
+            .Validate(settings => settings.IsValid, $"{NotificationPaceOptions.Section}:DeliveriesPerSecond must be at least 1.")
+            .ValidateOnStart();
+
         services.AddOptions<InvitationEmailOptions>()
             .BindConfiguration(InvitationEmailOptions.Section)
             .Validate(settings => settings.IsValid, $"{InvitationEmailRetryDelaysKey} must be positive pauses that grow.")

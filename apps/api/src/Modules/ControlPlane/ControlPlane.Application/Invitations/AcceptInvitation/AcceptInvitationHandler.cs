@@ -1,9 +1,11 @@
 using ControlPlane.Application.Tenants;
+using ControlPlane.Application.TermsVersions;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Domain;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.TermsVersions;
 using ControlPlane.Domain.Users;
 using FluentValidation;
 using FluentValidation.Results;
@@ -20,6 +22,7 @@ public static class AcceptInvitationHandler
         AcceptInvitationCommand command,
         ITenantRepository tenants,
         IUserRepository users,
+        ITermsVersionRepository terms,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -83,6 +86,16 @@ public static class AcceptInvitationHandler
             return (Errors.UserEmailTaken, []);
         }
 
+        // The terms the person ticked are the version in force, which never changes; another version, or none in force, is refused before
+        // any change (W7), and the person reads the terms again. The version is locked against an edit (K6a).
+        var termsVersion = command.TermsVersionId is { } termsVersionId
+            ? await TermsAcceptances.FindAcceptableAsync(terms, termsVersionId, url: null, inForceOnly: true, TermsVersion.DayOf(now), cancellationToken)
+            : null;
+        if (termsVersion is { IsSuccess: false })
+        {
+            return (termsVersion.Error, []);
+        }
+
         var user = existing ?? User.Join(Guid.CreateVersion7(now), command.ActorId, invitedEmail, command.Name!, invitation.Language, now);
         var accepted = tenant.Accept(invitation, facts, verifiedEmails, user.Id, now);
         if (!accepted.IsSuccess)
@@ -93,6 +106,13 @@ public static class AcceptInvitationHandler
         if (existing is null)
         {
             users.Add(user);
+        }
+
+        // GDPR, Article 7(1): the acceptance is the record of the text the person agreed to. A known user who accepted it already keeps
+        // their first acceptance.
+        if (termsVersion is { Value: { } accepting } && (existing is null || !await terms.HasAcceptedAsync(accepting.Id, user.Id, cancellationToken)))
+        {
+            terms.Add(new TermsAcceptance(accepting.Id, user.Id, now));
         }
 
         var membership = accepted.Value;

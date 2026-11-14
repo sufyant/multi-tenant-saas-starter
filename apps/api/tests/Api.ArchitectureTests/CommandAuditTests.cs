@@ -24,11 +24,12 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // the worker's retention of the notifications is no endpoint's (U8), and neither is the worker's start of the audit retention, which
     // Audit handles itself and which writes no entry (K14), a code for a new address changes no data of the user, whose change records
     // user.email_changed, and the code of a deletion is a step of the deletion, which records user.deleted (section 6, "Verification
-    // codes").
+    // codes"). A person's acceptance of a terms version is its own record, the user, the version and the moment, which the platform lists
+    // (GDPR, Article 7(1)), and a dismissal of a notice is the person's own view, as a read state is (step 38).
     private static readonly string[] CommandsWithoutAudit =
     [
         "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
-        "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand",
+        "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand", "AcceptTermsVersionCommand", "DismissTermsNoticeCommand",
     ];
 
     private readonly ComposedApplication _application = new("worker");

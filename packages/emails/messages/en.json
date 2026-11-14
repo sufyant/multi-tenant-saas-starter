@@ -173,6 +173,16 @@
       "body": "The platform deleted {tenantName} and all its data. You can no longer open it.",
       "footer": "You received this because you are an Owner of this organisation and its status changed."
     },
+    "terms_version.created": {
+      "title": "Our terms of use change on {effectiveDate}",
+      "body": "The new terms apply from {effectiveDate}. What changed: {summary} Read the terms: {url}",
+      "without": {
+        "summary": {
+          "body": "The new terms apply from {effectiveDate}. Read the terms: {url}"
+        }
+      },
+      "footer": "You received this because the terms of use of your account change."
+    },
     "user.data_export_ready": {
       "title": "Your data file is ready",
       "body": "Download it from Account and security until {expiresAt}. You need to be signed in to download it.",

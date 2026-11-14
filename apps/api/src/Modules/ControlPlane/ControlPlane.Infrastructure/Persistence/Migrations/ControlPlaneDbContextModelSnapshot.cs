@@ -716,7 +716,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Terms.TermsAcceptance", b =>
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsAcceptance", b =>
                 {
                     b.Property<Guid>("VersionId")
                         .HasColumnType("uuid")
@@ -742,7 +742,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("terms_acceptances", "control_plane");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Terms.TermsNoticeDismissal", b =>
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsNoticeDismissal", b =>
                 {
                     b.Property<Guid>("VersionId")
                         .HasColumnType("uuid")
@@ -765,7 +765,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("terms_notice_dismissals", "control_plane");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Terms.TermsVersion", b =>
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsVersion", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -1168,7 +1168,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_tenant_summaries_tenants_tenant_id");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Terms.TermsAcceptance", b =>
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsAcceptance", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithMany()
@@ -1177,7 +1177,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_terms_acceptances_users_user_id");
 
-                    b.HasOne("ControlPlane.Domain.Terms.TermsVersion", null)
+                    b.HasOne("ControlPlane.Domain.TermsVersions.TermsVersion", null)
                         .WithMany()
                         .HasForeignKey("VersionId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1185,7 +1185,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_terms_acceptances_terms_versions_version_id");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Terms.TermsNoticeDismissal", b =>
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsNoticeDismissal", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithMany()
@@ -1194,7 +1194,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_terms_notice_dismissals_users_user_id");
 
-                    b.HasOne("ControlPlane.Domain.Terms.TermsVersion", null)
+                    b.HasOne("ControlPlane.Domain.TermsVersions.TermsVersion", null)
                         .WithMany()
                         .HasForeignKey("VersionId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1202,7 +1202,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_terms_notice_dismissals_terms_versions_version_id");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Terms.TermsVersion", b =>
+            modelBuilder.Entity("ControlPlane.Domain.TermsVersions.TermsVersion", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Users.User", null)
                         .WithMany()

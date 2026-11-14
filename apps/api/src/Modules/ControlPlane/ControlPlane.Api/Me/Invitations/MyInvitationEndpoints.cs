@@ -53,7 +53,7 @@ public static class MyInvitationEndpoints
         var (code, verifiedEmails) = read.Value;
         var accepted = await bus.InvokeForTenantAsync<Result<MyTenantView>>(
             code.TenantId.ToString(),
-            new AcceptInvitationCommand(user.Id(), code.Secret, verifiedEmails, request.Name),
+            new AcceptInvitationCommand(user.Id(), code.Secret, verifiedEmails, request.Name, request.TermsVersionId),
             cancellationToken);
         return accepted.Map(MyTenantEndpoints.ToResponse);
     }

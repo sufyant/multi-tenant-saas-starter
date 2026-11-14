@@ -13,6 +13,26 @@ export const operations = [
     ]
   },
   {
+    "operationId": "AcceptTermsVersion",
+    "method": "POST",
+    "path": "/v1/me/terms/versions/{versionId}/accept",
+    "tag": "Me/TermsVersions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "CancelTermsVersion",
+    "method": "POST",
+    "path": "/v1/platform/terms/versions/{versionId}/cancel",
+    "tag": "Platform/TermsVersions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "ChangeEmail",
     "method": "POST",
     "path": "/v1/me/email-change/confirm",
@@ -114,6 +134,20 @@ export const operations = [
     ]
   },
   {
+    "operationId": "CreateTermsVersion",
+    "method": "POST",
+    "path": "/v1/platform/terms/versions",
+    "tag": "Platform/TermsVersions",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Location",
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "DeleteRole",
     "method": "DELETE",
     "path": "/v1/tenants/{tenantId}/roles/{roleId}",
@@ -128,6 +162,16 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/platform/users/{userId}",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "DismissTermsNotice",
+    "method": "POST",
+    "path": "/v1/me/terms/versions/{versionId}/dismiss",
+    "tag": "Me/TermsVersions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -214,6 +258,16 @@ export const operations = [
     ]
   },
   {
+    "operationId": "GetMyTerms",
+    "method": "GET",
+    "path": "/v1/me/terms",
+    "tag": "Me/TermsVersions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
     "operationId": "GetMyUnreadNotificationCount",
     "method": "GET",
     "path": "/v1/me/notifications/unread-count",
@@ -288,6 +342,36 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/plan/preview",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetTermsInForce",
+    "method": "GET",
+    "path": "/v1/public/terms",
+    "tag": "Public/TermsVersions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetTermsOfUse",
+    "method": "GET",
+    "path": "/v1/platform/terms",
+    "tag": "Platform/TermsVersions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "GetTermsVersion",
+    "method": "GET",
+    "path": "/v1/platform/terms/versions/{versionId}",
+    "tag": "Platform/TermsVersions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -467,6 +551,16 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/tenants",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "ListTermsVersionPeople",
+    "method": "GET",
+    "path": "/v1/platform/terms/versions/{versionId}/people",
+    "tag": "Platform/TermsVersions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -726,6 +820,16 @@ export const operations = [
     "method": "PATCH",
     "path": "/v1/tenants/{tenantId}/roles/{roleId}",
     "tag": "Tenant/Roles",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ]
+  },
+  {
+    "operationId": "UpdateTermsVersion",
+    "method": "PATCH",
+    "path": "/v1/platform/terms/versions/{versionId}",
+    "tag": "Platform/TermsVersions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

@@ -165,6 +165,7 @@ public sealed class NotificationCatalogTests
             "tenant.reopened_for_owners your_access",
             "tenant.purged_for_owners your_access",
             "user.data_export_ready your_account",
+            "terms_version.created your_account",
         ]);
     }
 
@@ -228,6 +229,7 @@ public sealed class NotificationCatalogTests
             "tenant.reopened_for_owners Web Email",
             "tenant.purged_for_owners Web Email",
             "user.data_export_ready Web Email",
+            "terms_version.created Email",
         ]);
     }
 

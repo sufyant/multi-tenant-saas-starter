@@ -97,6 +97,16 @@
         "body": "The platform deleted {{tenantName}} and all its data. You can no longer open it.",
         "footer": "You received this because you are an Owner of this organisation and its status changed."
       },
+      "terms_version.created": {
+        "title": "Our terms of use change on {{effectiveDate}}",
+        "body": "The new terms apply from {{effectiveDate}}. What changed: {{summary}} Read the terms: {{url}}",
+        "footer": "You received this because the terms of use of your account change.",
+        "without": {
+          "summary": {
+            "body": "The new terms apply from {{effectiveDate}}. Read the terms: {{url}}"
+          }
+        }
+      },
       "user.data_export_ready": {
         "title": "Your data file is ready",
         "body": "Download it from Account and security until {{expiresAt}}. You need to be signed in to download it.",
@@ -231,6 +241,16 @@
         "body": "Platform, {{tenantName}} kuruluşunu ve tüm verilerini sildi. Artık bu kuruluşu açamazsınız.",
         "footer": "Bu e-postayı, bu kuruluşun Sahibi olduğunuz ve kuruluşun durumu değiştiği için aldınız."
       },
+      "terms_version.created": {
+        "title": "Kullanım koşullarımız {{effectiveDate}} tarihinde değişiyor",
+        "body": "Yeni koşullar {{effectiveDate}} tarihinden itibaren geçerli. Değişenler: {{summary}} Koşulları okuyun: {{url}}",
+        "footer": "Bu e-postayı, hesabınızın kullanım koşulları değiştiği için aldınız.",
+        "without": {
+          "summary": {
+            "body": "Yeni koşullar {{effectiveDate}} tarihinden itibaren geçerli. Koşulları okuyun: {{url}}"
+          }
+        }
+      },
       "user.data_export_ready": {
         "title": "Veri dosyanız hazır",
         "body": "{{expiresAt}} tarihine kadar Hesap ve güvenlik sayfasından indirebilirsiniz. İndirmek için oturum açmış olmanız gerekir.",
@@ -364,6 +384,16 @@
         "title": "حُذفت {{tenantName}}",
         "body": "حذفت المنصة {{tenantName}} وجميع بياناتها. لم يعد بإمكانك فتحها.",
         "footer": "وصلتك هذه الرسالة لأنك مالك هذه المؤسسة وتغيّرت حالتها."
+      },
+      "terms_version.created": {
+        "title": "تتغيّر شروط الاستخدام في {{effectiveDate}}",
+        "body": "تسري الشروط الجديدة اعتبارًا من {{effectiveDate}}. ما الذي تغيّر: {{summary}} اقرأ الشروط: {{url}}",
+        "footer": "وصلتك هذه الرسالة لأن شروط استخدام حسابك تتغيّر.",
+        "without": {
+          "summary": {
+            "body": "تسري الشروط الجديدة اعتبارًا من {{effectiveDate}}. اقرأ الشروط: {{url}}"
+          }
+        }
       },
       "user.data_export_ready": {
         "title": "ملف بياناتك جاهز",

@@ -12,6 +12,7 @@ using ControlPlane.Contracts;
 using ControlPlane.Contracts.Plans;
 using FluentValidation;
 using FluentValidation.Validators;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
@@ -153,6 +154,7 @@ internal static partial class OpenApiContract
                     .AddOperationTransformer(DescribeQueryRules)
                     .AddOperationTransformer(DescribeIdempotency)
                     .AddOperationTransformer(DescribeResponseHeaders)
+                    .AddOperationTransformer(AllowAnonymousCaller)
                     .AddSchemaTransformer(DescribeEnumValues)
                     .AddSchemaTransformer(DescribeRequestRules)
                     .AddDocumentTransformer(ListTags)
@@ -516,9 +518,21 @@ internal static partial class OpenApiContract
         }
     }
 
-    // A5: every /v1 route is signed-in only or requires a permission, so it needs a bearer token from the identity provider. The anonymous
-    // routes, the document and the API reference, are outside /v1 and so outside the document (OpenApiContractTests), so no operation
-    // sets the requirement aside.
+    // A5: a public route of /v1, such as the terms version in force, needs no token, so its operation sets the document's requirement
+    // aside with an empty one (OpenAPI 3.1, "Security Requirement Object"). Every other operation keeps it.
+    private static Task AllowAnonymousCaller(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    {
+        if (context.Description.ActionDescriptor.EndpointMetadata.OfType<IAllowAnonymous>().Any())
+        {
+            operation.Security = [];
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // A5: every /v1 route but a public one is signed-in only or requires a permission, so it needs a bearer token from the identity
+    // provider. The other anonymous routes, the document and the API reference, are outside /v1 and so outside the document
+    // (OpenApiContractTests).
     private static Task RequireBearerToken(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         document.Components ??= new OpenApiComponents();

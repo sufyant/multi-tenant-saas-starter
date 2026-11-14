@@ -48,6 +48,8 @@ public static class NotificationCatalog
 
     public const string TenantSuspendedForOwners = "tenant.suspended_for_owners";
 
+    public const string TermsVersionCreated = "terms_version.created";
+
     /// <summary>
     /// The second exception of U9: the export's completion is the worker's, not a command, so it writes no audit entry and has no operation
     /// to take its name from.
@@ -172,6 +174,17 @@ public static class NotificationCatalog
             YourAccount,
             WebAndEmail(),
             [new("expiresAt", NotificationValueKind.Date)]),
+
+        // A new terms version that requires no acceptance tells every user who may accept, by email only: Home shows its notice, which the
+        // terms read gives, not the bell (docs/flows/terms-of-use.md). The terms of the person's account change, so the email goes (U5). A
+        // version that requires acceptance tells nobody here: the gate after sign-in asks for it.
+        new(
+            TermsVersionCreated,
+            NotificationBell.Personal,
+            NotificationLinkKind.Start,
+            YourAccount,
+            EmailOnly(),
+            [new("effectiveDate", NotificationValueKind.Day), new("url", NotificationValueKind.Text), new("summary", NotificationValueKind.Text, Optional: true)]),
     }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
     // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
@@ -225,4 +238,6 @@ public static class NotificationCatalog
     private static NotificationChannel[] WebOnly() => [NotificationChannel.Web];
 
     private static NotificationChannel[] WebAndEmail() => [NotificationChannel.Web, NotificationChannel.Email];
+
+    private static NotificationChannel[] EmailOnly() => [NotificationChannel.Email];
 }

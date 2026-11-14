@@ -65,6 +65,12 @@ public static class AuditOperations
 
     public const string TenantSuspended = "tenant.suspended";
 
+    public const string TermsVersionCancelled = "terms_version.cancelled";
+
+    public const string TermsVersionCreated = "terms_version.created";
+
+    public const string TermsVersionUpdated = "terms_version.updated";
+
     public const string UserDataExportDownloaded = "user.data_export_downloaded";
 
     public const string UserDataExportRequested = "user.data_export_requested";
