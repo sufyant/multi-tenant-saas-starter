@@ -74,7 +74,7 @@ The web is not the only client: the mobile app of step 45, or a script with a se
 | `RequestDataExport`, `GetMyDataExport`, `DownloadDataExport` | The rights of access and to data portability (GDPR, Articles 15 and 20). |
 | `AcceptInvitation`, `GetInvitationPreview` | Accept invitation keeps its own path (section 5, frame 1.15); the preview is the same screen. Decided on 2026-11-14. |
 | `StreamNotifications` | The live stream carries signals only, never a notification's content; the bells it names stay gated. The web and the platform share it. Decided on 2026-11-14. |
-| `MarkNotificationRead` | It changes only the person's own read state (K3), and the platform's bell calls it. |
+| `MarkNotificationRead` | It changes only the person's own read state (K3), and the platform's bell calls it. Decided on 2026-11-14. |
 
 4. No gate: the platform's endpoints (section 3), and the public route (section 7). Signing out and two-step verification are the identity provider's, so the API has no endpoint for them.
 5. The cost. The gate reads the versions and the person's acceptances in one query: about 0.35 ms on a local PostgreSQL with 12 versions and 240,000 acceptances. It reads through the cache (`user-terms`, C1), so a request whose entry is in the cache reads no database, as the user's state and the membership do. The entry stores the versions' rows and which of them the person accepted, never a state: the day decides each version's state at each read, so a version's day comes with no write. It stays right this way (C5 to C8):
