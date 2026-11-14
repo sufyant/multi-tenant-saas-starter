@@ -65,6 +65,18 @@ describe("actionFor", () => {
     });
   });
 
+  it("ActionFor_403TermsAcceptanceRequired_GoesToTheTermsGate", () => {
+    expect(
+      actionFor(
+        403,
+        problem({
+          code: "terms_version.acceptance_required",
+          termsVersionId: "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f",
+        }),
+      ),
+    ).toEqual({ kind: "terms-acceptance" });
+  });
+
   it("ActionFor_409UserDeleted_ShowsTheMessageOfTheCode", () => {
     expect(actionFor(409, problem({ code: "user.deleted" }))).toEqual({
       kind: "message",

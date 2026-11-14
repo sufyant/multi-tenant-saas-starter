@@ -1,5 +1,7 @@
 import {
   ErrorCode,
+  getListMyTenantsQueryOptions,
+  listMyTenants,
   type MyTermsResponse,
   MyTermsResponseAction,
   type MyTermsVersionResponse,
@@ -8,6 +10,8 @@ import {
   getAcceptTermsVersionMockHandler,
   getGetMyTermsMockHandler,
 } from "@repo/api-client/msw";
+import { showToast, Toaster } from "@repo/ui/components/toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -61,6 +65,37 @@ const renderGate = (locale: "en" | "ar" = "en") =>
     </TermsGate>,
     locale,
   );
+
+// The API's refusal of a person who must accept a version (the API's terms flow, section 5).
+const termsRefusal = () =>
+  HttpResponse.json(
+    {
+      status: 403,
+      title: "Forbidden",
+      code: ErrorCode.TermsVersionAcceptanceRequired,
+      termsVersionId: december.id,
+      traceId: "00-trace-02",
+    },
+    { status: 403 },
+  );
+
+// A page that reads a list, and a command that toasts its failure, as the pages do.
+function PageThatReads() {
+  const tenants = useQuery(getListMyTenantsQueryOptions());
+  return <h1>{tenants.isError ? "Read failed" : "Home"}</h1>;
+}
+
+function PageThatCommands() {
+  const save = useMutation({
+    mutationFn: () => listMyTenants(),
+    onError: () => showToast({ tone: "destructive", title: "Not saved" }),
+  });
+  return (
+    <button type="button" onClick={() => save.mutate()}>
+      Save
+    </button>
+  );
+}
 
 describe("TermsGate", () => {
   it("TermsGate_Nothing_ShowsThePage", async () => {
@@ -249,5 +284,57 @@ describe("TermsGate", () => {
       await screen.findByRole("heading", { name: "تم تحديث شروط الاستخدام" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/1 ديسمبر 2026/)).toBeInTheDocument();
+  });
+  it("TermsGate_APageReadRefusedForTheTerms_ShowsTheGate", async () => {
+    // The person had nothing to accept when the page opened; a version that asks came later, and the page's read meets it first.
+    const mine = { now: nothing };
+    server.use(
+      getGetMyTermsMockHandler(() => mine.now),
+      http.get("*/v1/me/tenants", () => {
+        mine.now = asks();
+        return termsRefusal();
+      }),
+    );
+
+    renderWithProviders(
+      <TermsGate>
+        <PageThatReads />
+      </TermsGate>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Terms of use updated" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Read failed")).not.toBeInTheDocument();
+  });
+
+  it("TermsGate_ACommandRefusedForTheTerms_ShowsTheGateAndNoToast", async () => {
+    const mine = { now: nothing };
+    server.use(
+      getGetMyTermsMockHandler(() => mine.now),
+      http.get("*/v1/me/tenants", () => {
+        mine.now = asks();
+        return termsRefusal();
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <TermsGate>
+          <PageThatCommands />
+        </TermsGate>
+        <Toaster dir="ltr" closeLabel="Close" regionLabel="Notifications" />
+      </>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Terms of use updated" }),
+    ).toBeInTheDocument();
+    // The toast goes with the page: sonner removes a dismissed toast after its exit.
+    await vi.waitFor(() =>
+      expect(screen.queryByText("Not saved")).not.toBeInTheDocument(),
+    );
   });
 });
