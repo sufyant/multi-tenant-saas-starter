@@ -9,9 +9,15 @@ import {
   type CursorPageOfAuditEntryResponse,
   type EntitlementValueResponse,
   ErrorCode,
+  FeatureFlagAddedToCodeDetailsResponseOperation,
+  FeatureFlagPercentageSetDetailsResponseOperation,
+  FeatureFlagRemovedFromCodeDetailsResponseOperation,
+  FeatureFlagTenantListedDetailsResponseOperation,
+  FeatureFlagTenantUnlistedDetailsResponseOperation,
   FeatureKey,
   Language,
   LimitKey,
+  NotificationLinkResponseKind,
   NotificationType,
   type PlanResponse,
   TenantCreatedDetailsResponseOperation,
@@ -34,6 +40,13 @@ import {
   users,
 } from "./api";
 import { createUser, deleteUser } from "./clerk-users";
+import {
+  emailsOff,
+  flagsFail,
+  flagsWait,
+  frameDetails,
+  mockFrameFlags,
+} from "./flag-frames";
 import {
   frameAdmins,
   frameUsers,
@@ -220,6 +233,27 @@ const bellList = {
       readAt: ago(2 * 24 * 60),
       unread: false,
     },
+  ],
+};
+/** The weekly summary of the flags (3.07), unread above the bell's other items. */
+const flagsBell = {
+  unread: 3,
+  items: [
+    {
+      ...shannonSuspended,
+      id: "0198f0a2-0000-7000-8000-0000000000b9",
+      type: NotificationType.FeatureFlagsReadyToRemove,
+      title: "2 feature flags are ready to be removed from code",
+      area: "Feature flags",
+      actorName: null,
+      tenantName: null,
+      link: {
+        kind: NotificationLinkResponseKind.PlatformFeatureFlags,
+        tenantId: null,
+      },
+      createdAt: ago(60),
+    },
+    ...bellList.items.map((item) => ({ ...item, unread: true, readAt: null })),
   ],
 };
 /** The Name field of the Profile form. */
@@ -690,6 +724,82 @@ const termsLog: AuditEntryResponse[] = [
   }),
 ];
 
+/** A flag as the target of an entry: its key is its name (7.10). */
+const flagTarget = (key: string) => ({
+  kind: AuditTargetResponseKind.FeatureFlag,
+  id: "0198f0a2-0000-7000-8000-0000000000a9",
+  name: key,
+  deleted: null,
+  email: null,
+});
+const deploy = {
+  kind: AuditActorResponseKind.Platform,
+  userId: null,
+  displayName: null,
+  deleted: null,
+};
+/** The seven sentences of 7.10. */
+const flagsLog: AuditEntryResponse[] = [
+  logEntry(1, 0, AuditOperation.FeatureFlagEveryoneElseOn, {
+    target: flagTarget("emails.send"),
+  }),
+  logEntry(2, 0, AuditOperation.FeatureFlagPercentageSet, {
+    target: flagTarget("roles.bulk_edit"),
+    details: {
+      operation:
+        FeatureFlagPercentageSetDetailsResponseOperation.FeatureFlagPercentageSet,
+      from: 10,
+      to: 50,
+    },
+  }),
+  logEntry(3, 0, AuditOperation.FeatureFlagEveryoneElseOff, {
+    target: flagTarget("emails.send"),
+  }),
+  logEntry(4, 1, AuditOperation.FeatureFlagTenantUnlisted, {
+    actor: { ...deniz, displayName: "Hannah Weber" },
+    target: flagTarget("members.new_table"),
+    details: {
+      operation:
+        FeatureFlagTenantUnlistedDetailsResponseOperation.FeatureFlagTenantUnlisted,
+      tenantId: organisations.northwind.id,
+      tenantName: "Blue Harbour",
+    },
+  }),
+  logEntry(5, 2, AuditOperation.FeatureFlagTenantListed, {
+    target: flagTarget("roles.bulk_edit"),
+    details: {
+      operation:
+        FeatureFlagTenantListedDetailsResponseOperation.FeatureFlagTenantListed,
+      tenantId: organisations.northwind.id,
+      tenantName: "Northwind Traders",
+    },
+  }),
+  logEntry(6, 3, AuditOperation.FeatureFlagRemovedFromCode, {
+    actor: deploy,
+    target: flagTarget("invitations.csv_import"),
+    details: {
+      operation:
+        FeatureFlagRemovedFromCodeDetailsResponseOperation.FeatureFlagRemovedFromCode,
+      revision: "7c41d09",
+    },
+  }),
+  logEntry(7, 4, AuditOperation.FeatureFlagAddedToCode, {
+    actor: deploy,
+    target: flagTarget("roles.bulk_edit"),
+    details: {
+      operation:
+        FeatureFlagAddedToCodeDetailsResponseOperation.FeatureFlagAddedToCode,
+      revision: "3f9e21c",
+      defaultValue: false,
+    },
+  }),
+];
+/** A flag's page of the frames. */
+const frameDetailOf = (key: string) => {
+  const found = frameDetails[key];
+  if (!found) throw new Error(`No frame flag ${key}.`);
+  return found;
+};
 const logAnswers =
   (
     first: AuditEntryResponse[],
@@ -2160,6 +2270,266 @@ const shellShots: {
     path: `/settings/terms/${frameTerms.scheduled.id}`,
     mock: mockFrameTerms(),
     ready: (page) => page.getByText("Effective date").waitFor(),
+  },
+  // Settings › Feature flags (12.01 to 12.33), with the flags the frames draw (`flag-frames.ts`). 12.17 is 12.01 in Staging,
+  // which the e2e app is not: every shot shows its environment strip.
+  ...(
+    [
+      ["12.01-flags", "/settings/feature-flags"],
+      ["12.02-flags-ready", "/settings/feature-flags?tab=ready_to_remove"],
+      ["12.03-flags-unused", "/settings/feature-flags?tab=unused"],
+      ["12.04-flags-removed", "/settings/feature-flags?tab=removed"],
+      ["12.05-flag", "/settings/feature-flags/roles.bulk_edit"],
+      ["12.10-flag-ready", "/settings/feature-flags/activity.export_v2"],
+      ["12.11-flag-kill-switch", "/settings/feature-flags/emails.send"],
+      ["12.12-flag-removed", "/settings/feature-flags/invitations.csv_import"],
+      ["12.18-flag-unused", "/settings/feature-flags/notifications.digest"],
+    ] as const
+  ).map(([name, path]) => ({
+    file: `${name}-en-light-desktop`,
+    size: "desktop" as const,
+    path,
+    mock: mockFrameFlags(),
+  })),
+  {
+    file: "12.16-flags-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/feature-flags",
+    mock: mockFrameFlags(),
+  },
+  {
+    file: "12.32-flag-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags(),
+  },
+  {
+    file: "12.33-flag-ar-light-desktop",
+    size: "desktop",
+    language: Language.Ar,
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags(),
+  },
+  {
+    file: "12.13-flags-none-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags",
+    mock: mockFrameFlags({
+      flags: {
+        flags: [],
+        counts: { all: 0, readyToRemove: 0, unused: 0, removedFromCode: 0 },
+      },
+    }),
+  },
+  {
+    file: "12.14-flags-loading-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags",
+    mock: flagsWait,
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading the feature flags" }).waitFor(),
+    settled: async () => {},
+  },
+  {
+    file: "12.15-flags-error-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags",
+    mock: flagsFail,
+    ready: (page) =>
+      page.getByText("Couldn’t load the feature flags").waitFor(),
+  },
+  {
+    file: "12.29-flag-loading-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: flagsWait,
+    ready: (page) => page.getByRole("status", { name: "Loading" }).waitFor(),
+    settled: async () => {},
+  },
+  {
+    file: "12.30-flag-error-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: flagsFail,
+    ready: (page) => page.getByText("Couldn’t load this flag").waitFor(),
+  },
+  {
+    file: "12.31-flag-not-found-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/nothing.here",
+    mock: mockFrameFlags(),
+    ready: (page) => page.getByText("Page not found").first().waitFor(),
+  },
+  {
+    file: "12.06-flag-percentage-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Change", exact: true }).click();
+      await page.getByRole("combobox", { name: "Percentage" }).click();
+      await page.getByRole("option", { name: "50%" }).click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await page.getByText(/This change affects about/).waitFor();
+    },
+  },
+  {
+    file: "12.07-flag-changed-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: async (page) => {
+      await mockFrameFlags()(page);
+      await page.route(
+        "**/api/v1/platform/feature-flags/*/percentage",
+        (route) =>
+          route.fulfill({
+            json: {
+              ...frameDetailOf("roles.bulk_edit"),
+              flag: {
+                ...frameDetailOf("roles.bulk_edit").flag,
+                percentage: 50,
+              },
+            },
+          }),
+      );
+    },
+    open: async (page) => {
+      await page.getByRole("button", { name: "Change", exact: true }).click();
+      await page.getByRole("combobox", { name: "Percentage" }).click();
+      await page.getByRole("option", { name: "50%" }).click();
+      await page.getByRole("button", { name: "Change to 50%" }).click();
+      await page
+        .getByText("It is on for 50% of the other organisations.")
+        .waitFor();
+    },
+  },
+  {
+    file: "12.08-flag-add-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags({ previewCount: 1 }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Add organisation" }).click();
+      await page.getByRole("combobox", { name: "Organisation" }).click();
+      await page.getByRole("option").first().click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await page.getByText("This change affects 1 organisation.").waitFor();
+    },
+  },
+  {
+    file: "12.09-flag-remove-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags(),
+    open: (page) =>
+      page.getByRole("button", { name: "Remove Northwind Traders" }).click(),
+  },
+  {
+    file: "12.24-flag-turn-on-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags({ previewCount: 8 }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Turn on for everyone" }).click();
+      await page.getByText(/more organisations get it now/).waitFor();
+    },
+  },
+  {
+    file: "12.25-flag-turn-off-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/activity.export_v2",
+    mock: mockFrameFlags({ previewCount: 8 }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Turn off for everyone" }).click();
+      await page.getByText(/organisations lose it now/).waitFor();
+    },
+  },
+  {
+    file: "12.26-kill-switch-turn-off-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/emails.send",
+    mock: mockFrameFlags({ previewCount: 10 }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Turn off for everyone" }).click();
+      await page.getByText(/until you turn it back on/).waitFor();
+    },
+  },
+  {
+    file: "12.27-kill-switch-off-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/emails.send",
+    mock: mockFrameFlags({ details: { "emails.send": emailsOff } }),
+  },
+  {
+    file: "12.28-kill-switch-turn-on-en-light-desktop",
+    size: "desktop",
+    path: "/settings/feature-flags/emails.send",
+    mock: mockFrameFlags({
+      details: { "emails.send": emailsOff },
+      previewCount: 10,
+    }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Turn on for everyone" }).click();
+      await page.getByText(/get it again/).waitFor();
+    },
+  },
+  {
+    file: "12.19-flags-en-light-phone",
+    size: "phone",
+    path: "/settings/feature-flags",
+    mock: mockFrameFlags(),
+    ready: (page) =>
+      page.getByRole("list", { name: "Feature flags" }).last().waitFor(),
+  },
+  {
+    file: "12.20-flag-en-light-phone",
+    size: "phone",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags(),
+  },
+  {
+    file: "12.21-flag-percentage-en-light-phone",
+    size: "phone",
+    path: "/settings/feature-flags/roles.bulk_edit",
+    mock: mockFrameFlags(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Change", exact: true }).click();
+      await page.getByRole("combobox", { name: "Percentage" }).click();
+      await page.getByRole("option", { name: "25%" }).click();
+      await page.getByRole("listbox").waitFor({ state: "hidden" });
+      await page.getByText(/This change affects about/).waitFor();
+    },
+  },
+  {
+    file: "12.22-kill-switch-turn-off-en-light-phone",
+    size: "phone",
+    path: "/settings/feature-flags/emails.send",
+    mock: mockFrameFlags({ previewCount: 10 }),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Turn off for everyone" }).click();
+      await page.getByText(/until you turn it back on/).waitFor();
+    },
+  },
+  {
+    file: "12.23-kill-switch-off-en-light-phone",
+    size: "phone",
+    path: "/settings/feature-flags/emails.send",
+    mock: mockFrameFlags({ details: { "emails.send": emailsOff } }),
+  },
+  {
+    file: "7.10-activity-flags-en-light-desktop",
+    size: "desktop",
+    path: "/activity",
+    mock: logAnswers(flagsLog),
+  },
+  {
+    file: "3.07-notifications-flags-en-light-desktop",
+    size: "desktop",
+    mock: (page) => mockNotifications(page, flagsBell),
+    open: (page) =>
+      page.getByRole("button", { name: /^Notifications/ }).click(),
   },
   {
     file: "7.09-activity-terms-en-light-desktop",

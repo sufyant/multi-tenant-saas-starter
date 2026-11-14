@@ -148,7 +148,8 @@ function Detail({ detail }: { detail: FeatureFlagDetailResponse }) {
   })();
 
   const details: { term: string; value: ReactNode }[] = [
-    { term: t("description"), value: detail.description },
+    // The description comes from the code, in its own language and direction (39-design's copy note).
+    { term: t("description"), value: <bdi>{detail.description}</bdi> },
     {
       term: t("type"),
       value: killSwitch ? t("typeKillSwitch") : t("typeRelease"),
@@ -181,7 +182,7 @@ function Detail({ detail }: { detail: FeatureFlagDetailResponse }) {
         </span>
       </div>
       <p className="text-body text-muted-foreground tablet:hidden">
-        {detail.description}
+        <bdi>{detail.description}</bdi>
       </p>
       {banner}
       <dl className="flex flex-col rounded-lg border border-border bg-card max-tablet:hidden">
