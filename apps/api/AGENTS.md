@@ -23,6 +23,7 @@ This is the API of a multi-tenant SaaS starter template: a .NET modular monolith
   - `plans-and-entitlements.md`: a system admin manages the plans, a tenant's plan and its overrides; a tenant endpoint checks its feature and a tenant's method its limit.
   - `personal-data-export.md`: a person asks for a copy of their data, the worker prepares it, and they download it for 7 days.
   - `notifications.md`: an event reaches its recipients in the bell, live, and by email, on the channels that the catalog fixes for its type; the bells, their read state and the retention.
+  - `terms-of-use.md`: a system admin manages the versions of the terms of use, a tenant user accepts one or reads its notice after sign-in, and anyone reads the version in force before sign-in.
 - Other documents: `docs/api-catalog.md` (every endpoint: who may call it, its audit entry, its notification), `docs/local-run.md` (run it locally), `docs/configuration.md` (every setting), `docs/setup.md` (provider notes), `docs/licenses.md` (every package and its license).
 
 ## Commands

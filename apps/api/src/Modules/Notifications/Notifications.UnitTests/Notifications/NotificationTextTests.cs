@@ -67,6 +67,29 @@ public sealed class NotificationTextTests
         NotificationText.Render(NotificationCatalog.MemberRoleChanged, values, People, language, null).Body.ShouldBe(body);
     }
 
+    // A day is the same for every reader: a terms version takes effect on 1 December wherever the reader is, so no time zone moves it.
+    [Theory]
+    [InlineData("America/Los_Angeles")]
+    [InlineData("Pacific/Kiritimati")]
+    public void Render_ATermsVersionOfADay_WritesTheDayInNoTimeZone(string timeZone) =>
+        NotificationText.Render(
+                NotificationCatalog.TermsVersionCreated,
+                new Dictionary<string, string> { ["effectiveDate"] = "2026-12-01", ["url"] = "https://brand.example/terms" },
+                People,
+                Language.En,
+                timeZone)
+            .Title.ShouldBe("Our terms of use change on 1 Dec 2026");
+
+    [Fact]
+    public void Render_ATermsVersionWithoutASummary_ReadsWithoutIt() =>
+        NotificationText.Render(
+                NotificationCatalog.TermsVersionCreated,
+                new Dictionary<string, string> { ["effectiveDate"] = "2026-12-01", ["url"] = "https://brand.example/terms" },
+                People,
+                Language.En,
+                timeZone: null)
+            .Body.ShouldBe("The new terms apply from 1 Dec 2026. Read the terms: https://brand.example/terms");
+
     [Fact]
     public void Render_ACustomRole_WritesItAsTheOwnerTyped()
     {
@@ -266,6 +289,7 @@ public sealed class NotificationTextTests
                 NotificationValueKind.EntitlementKey => [(value.Name, "members.max")],
                 NotificationValueKind.Entitlement => [(value.Name, "50")],
                 NotificationValueKind.Date => [(value.Name, "2026-11-29T12:00:00.0000000+00:00")],
+                NotificationValueKind.Day => [(value.Name, "2026-12-01")],
                 NotificationValueKind.Days => [(value.Name, "30")],
                 _ => [(value.Name, value.Name == "tenantName" ? "Acme" : "Pro")],
             })

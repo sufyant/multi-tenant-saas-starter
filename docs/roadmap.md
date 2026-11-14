@@ -461,6 +461,13 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 - A public endpoint, anonymous and cached: the version in force, its link and its date. No version in force answers 204, and the "Terms" link stays hidden.
 - The notice email to the active users when a version with `sendsEmail` is added, or when the switch turns on later, through Notifications, in three languages. The edit endpoint refuses to turn the switch off after the email went out, with 409.
 - It waits for nothing.
+- Done (`apps/api/docs/flows/terms-of-use.md`). The points it settled, which the frontend parts read:
+  - A version's day takes effect at 00:00 UTC; "today or later" is the UTC day. A version of today is in force at once.
+  - The gate asks for the version in force first, then the scheduled one. A notice goes only to a user who existed before the version, and stops when the person closes it or accepted the version.
+  - The acceptance takes the link the person read, so a link that changed answers 409 `terms_version.changed`. An acceptance and a dismissal write no audit entry: the acceptance is its own record (`ARCHITECTURE.md`, K3).
+  - The versions' list is one read, `GetTermsOfUse`, without the list contract: the versions are few. A version's people page by a cursor, `status=accepted` or `status=not_yet`.
+  - The public route `/v1/public` is new (A5, N5). `GetTermsInForce` answers 204 before the first version, and sends `Cache-Control: public, max-age=300`.
+  - The notice email goes by email only, at `Notifications:Pace:DeliveriesPerSecond` (5) deliveries a second, under Resend's 10 requests a second (U3). The texts in Turkish and Arabic are the thread's; 38-design's copy note may change them.
 
 38-frontend-platform, Settings › Terms of use:
 
@@ -617,7 +624,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 38, in the parts of section 6. 38-start and 38-design are done. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
+3. Step 38, in the parts of section 6. 38-start, 38-design and 38-backend are done; the two frontend parts can start. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
