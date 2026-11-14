@@ -617,12 +617,12 @@ The model:
 
 Open (40-start, 2026-11-14), asked one at a time; each answer goes here with its date:
 
-- Which meter does the template ship? The frames count "AI requests", which the template does not have.
 - One currency for each deployment, or more? The frames show euros.
 - Does the Plan row stay on General (F56, 7.01)? The built page has it; the frame 7.01 does not.
 
 Decided by the frames, and 40-start's choices (2026-11-14):
 
+- The template ships no meter. The meters' code, the Usage page and the report to Stripe are built, and the tests define a meter of their own. A plan with no meter shows no Usage. "AI requests" in the frames is sample data. A product adds its first meter later (step 41). Why: the template has nothing that a customer would pay for by use; a meter is the product's. The maintainer's decision of 2026-11-14 ("there is no meter now, but one will come later").
 - Billing is a switch of the product's configuration, off by default. A product turns it on with its Stripe keys. While it is off, the app works as before step 40: a system admin sets each organisation's plan, "No free seat" offers "Request a plan change" (8.42, 8.44, 9.18), and Billing and Usage do not show. Why: a product without Stripe still runs, locally and in CI too (The Twelve-Factor App, "III. Config"; the same pattern as sign-up in 40d). The maintainer's decision of 2026-11-14.
 - A trial lives in our app. It has no Stripe subscription and no card; the first payment opens Stripe Checkout and ends the trial (10.08: "No card needed until you pay. Paying ends the trial."; 1.28).
 - The plan's prices are kept in our app and written to Stripe as Products and Prices. A Stripe Price never changes, so a price change makes a new Price (Stripe, "Change prices"). Usage goes to Stripe as meter events of Billing Meters (Stripe, "Usage-based billing").
@@ -637,7 +637,7 @@ The parts of 40, in their order. Each part is one pull request or more; the pull
 
 40-design, before the frontend parts, one thread at a time:
 
-- The answers of the open points above: the meter's name in every Billing, Usage and bar frame; 7.01 with or without the Plan row.
+- The answers of the open points above: 7.01 with or without the Plan row. The frames keep "AI requests" as sample data; a caption says so.
 - 14.09 (General as a Billing manager) says "Your role: Member"; it says "Billing manager".
 - 1.27 gets its own title (`docs/design/followups.md`). Platform 11.17 highlights only Terms of use.
 - The Activity log sentences of billing, in the web's log (section 12) and the platform's (section 7, as 7.10): a plan change, a cancellation and its undo, a payment failed, the move to the default plan, a trial given or extended, Contract on or off, a price change, the spending cap.
