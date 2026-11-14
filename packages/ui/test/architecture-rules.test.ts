@@ -9,6 +9,7 @@ import {
   dateFormattingOutsideFormatter,
   declarationsOf,
   defaultBreakpointClasses,
+  dialogActionReasons,
   differingFiles,
   duplicateRuleIds,
   enumLiterals,
@@ -413,6 +414,111 @@ describe("architecture rules", () => {
     });
 
     expect(navigationsAfterAChange(root)).toEqual([]);
+  });
+
+  it("NavigationsAfterAChange_ACallbackToAChildWithAMutation_IsAFinding", () => {
+    const root = folder({
+      "features/roles/roles-page.tsx": [
+        'import { DeleteDialog } from "./delete-dialog";',
+        'import { RenameDialog } from "@/features/roles/rename-dialog";',
+        "export function RolesPage() {",
+        "  const router = useRouter();",
+        '  const back = () => router.replace("/roles");',
+        "  return (",
+        "    <>",
+        '      <DeleteDialog onDeleted={() => router.push("/roles")} />',
+        "      <RenameDialog onRenamed={back} />",
+        "    </>",
+        "  );",
+        "}",
+      ].join("\n"),
+      "features/roles/delete-dialog.tsx": [
+        "export function DeleteDialog({ onDeleted }) {",
+        "  const remove = useMutation({ onSuccess: onDeleted });",
+        "}",
+      ].join("\n"),
+      "features/roles/rename-dialog.tsx": [
+        "export function RenameDialog({ onRenamed }) {",
+        "  const rename = useMutation({ onSuccess: onRenamed });",
+        "}",
+      ].join("\n"),
+    });
+
+    expect(
+      navigationsAfterAChange(join(root, "features"), { alias: root }),
+    ).toEqual([
+      "roles/roles-page.tsx:8: router navigates in a callback of DeleteDialog, whose file has a mutation; wrap it, useFreshRouter(useRouter()) (F63)",
+      "roles/roles-page.tsx:9: router navigates in a callback of RenameDialog, whose file has a mutation; wrap it, useFreshRouter(useRouter()) (F63)",
+    ]);
+  });
+
+  it("NavigationsAfterAChange_ACallbackToAChildWithoutAMutationOrAFreshRouter_IsNoFinding", () => {
+    const root = folder({
+      "page.tsx": [
+        'import { Table } from "./table";',
+        'import { DeleteDialog } from "./delete-dialog";',
+        'import { Menu } from "@repo/ui/components/menu";',
+        "export function Page() {",
+        "  const router = useRouter();",
+        "  const fresh = useFreshRouter(useRouter());",
+        "  return (",
+        "    <>",
+        '      <Table onOpen={() => router.push("/a")} />',
+        '      <DeleteDialog onDeleted={() => fresh.push("/")} />',
+        "      <Menu onNavigate={(href) => router.push(href)} />",
+        "    </>",
+        "  );",
+        "}",
+      ].join("\n"),
+      "table.tsx": "export function Table({ onOpen }) { return null; }",
+      "delete-dialog.tsx": [
+        "export function DeleteDialog({ onDeleted }) {",
+        "  const remove = useMutation({ onSuccess: onDeleted });",
+        "}",
+      ].join("\n"),
+    });
+
+    expect(navigationsAfterAChange(root)).toEqual([]);
+  });
+
+  it("DialogActionReasons_ADisabledActionWithoutAReason_IsAFinding", () => {
+    const root = folder({
+      "a.tsx": [
+        "export const A = () => (",
+        "  <Dialog open actionDisabled={!ready} onConfirm={save} />",
+        ");",
+      ].join("\n"),
+      "b.tsx": [
+        "export const B = () => (",
+        "  <Dialog",
+        "    open",
+        "    actionDisabled",
+        "  >",
+        "    <p />",
+        "  </Dialog>",
+        ");",
+      ].join("\n"),
+    });
+
+    expect(dialogActionReasons(root)).toEqual([
+      "a.tsx:2: Dialog disables its action without actionReasonId; point it at the reason the dialog shows (F52)",
+      "b.tsx:2: Dialog disables its action without actionReasonId; point it at the reason the dialog shows (F52)",
+    ]);
+  });
+
+  it("DialogActionReasons_AReasonOrNoDisabledAction_IsNoFinding", () => {
+    const root = folder({
+      "a.tsx": [
+        "export const A = () => (",
+        '  <Dialog open actionDisabled={!ready} actionReasonId="why" />',
+        ");",
+      ].join("\n"),
+      "b.tsx": "export const B = () => <Dialog open onConfirm={save} />;",
+      "c.tsx": "export const C = () => <Dialog open actionDisabled={false} />;",
+      "d.test.tsx": "export const D = () => <Dialog open actionDisabled />;",
+    });
+
+    expect(dialogActionReasons(root)).toEqual([]);
   });
 
   it("ContractEnumValues_GeneratedFile_ReadsEveryEnumButSortsKindsAndReservedSlugs", () => {
