@@ -170,6 +170,7 @@ export const userDetailOf = (
   values: Partial<UserDetailResponse> = {},
 ): UserDetailResponse => ({
   ...value,
+  terms: { inForce: null, scheduled: null },
   suspendedAt: null,
   suspendedBy: null,
   suspensionReason: null,

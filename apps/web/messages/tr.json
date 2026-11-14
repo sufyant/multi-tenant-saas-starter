@@ -319,6 +319,15 @@
       "activity_log": {
         "exported": "<actor></actor> etkinlik günlüğünü dışa aktardı."
       },
+      "feature_flag": {
+        "added_to_code": "Bir dağıtım bir özellik bayrağı ekledi.",
+        "everyone_else_off": "<actor></actor> bir özellik bayrağını diğer herkes için kapattı.",
+        "everyone_else_on": "<actor></actor> bir özellik bayrağını diğer herkes için açtı.",
+        "percentage_set": "<actor></actor> bir özellik bayrağının yüzdesini değiştirdi.",
+        "removed_from_code": "Bir dağıtım bir özellik bayrağını koddan kaldırdı.",
+        "tenant_listed": "<actor></actor> bir özellik bayrağına bir kuruluş ekledi.",
+        "tenant_unlisted": "<actor></actor> bir özellik bayrağından bir kuruluşu çıkardı."
+      },
       "invitation": {
         "revoked": "{addressed, select, yes {<actor></actor>, <invitee>{address}</invitee> adresine gönderilen daveti geri aldı.} other {<actor></actor> bir daveti geri aldı.}}"
       },

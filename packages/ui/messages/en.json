@@ -74,6 +74,12 @@
       "not_found": "You have no export of your data.",
       "not_ready": "The file is not ready to download."
     },
+    "feature_flag": {
+      "change_invalid": "Choose exactly one change to preview.",
+      "not_found": "This feature flag was not found.",
+      "percentage_invalid": "Enter a whole number from 0 to 100.",
+      "removed_from_code": "This flag was removed from the code, so its rules no longer change."
+    },
     "idempotency": {
       "key_in_progress": "This request is still running. Wait a moment, then check the result.",
       "key_invalid": "The request could not be sent. Reload the page and try again.",

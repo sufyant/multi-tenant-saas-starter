@@ -82,10 +82,10 @@ internal static class ResponseStatus
         _ => throw Unknown(type),
     };
 
-    // A flag without a cleanup reads none.
+    // A flag without a cleanup is in use.
     public static FeatureFlagResponseCleanup OfFeatureFlagCleanup(string? cleanup) => cleanup switch
     {
-        null => FeatureFlagResponseCleanup.None,
+        null => FeatureFlagResponseCleanup.InUse,
         "ReadyToRemove" => FeatureFlagResponseCleanup.ReadyToRemove,
         "Unused" => FeatureFlagResponseCleanup.Unused,
         _ => throw Unknown(cleanup),

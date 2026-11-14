@@ -108,6 +108,7 @@ const detail = (
   fields: Partial<UserDetailResponse> = {},
 ): UserDetailResponse => ({
   ...user,
+  terms: { inForce: null, scheduled: null },
   suspendedAt: null,
   suspendedBy: null,
   suspensionReason: null,

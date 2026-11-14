@@ -18,7 +18,7 @@ public sealed class GetFeatureFlagsTests(Database database)
         var flags = await FlagRequests.JsonAsync(await own.Admin.FeatureFlagsAsync());
 
         flags.GetProperty("flags").EnumerateArray().Select(flag => $"{flag.GetProperty("key").GetString()} {flag.GetProperty("type").GetString()} {flag.GetProperty("cleanup").GetString()}")
-            .ShouldBe(["emails.send kill_switch none", "exports.old release none", "reports.beta release unused", "roles.bulk_edit release ready_to_remove", "search.fuzzy release none"]);
+            .ShouldBe(["emails.send kill_switch in_use", "exports.old release in_use", "reports.beta release unused", "roles.bulk_edit release ready_to_remove", "search.fuzzy release in_use"]);
         flags.GetProperty("counts").ToString().ShouldBe("""{"all":4,"readyToRemove":1,"unused":1,"removedFromCode":1}""");
     }
 

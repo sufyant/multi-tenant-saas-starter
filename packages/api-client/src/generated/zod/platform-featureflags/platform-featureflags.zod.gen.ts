@@ -18,10 +18,10 @@ export const GetFeatureFlagsResponse = zod.object({
   "percentage": zod.int(),
   "everyoneElse": zod.boolean(),
   "cleanup": zod.enum({
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
-}).describe('A flag\'s removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
+}).describe('A flag\'s removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
   "cleanupSince": zod.iso.datetime({"offset":true}).nullable(),
   "removedAt": zod.iso.datetime({"offset":true}).nullable(),
   "lastChange": zod.object({
@@ -31,7 +31,7 @@ export const GetFeatureFlagsResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')])
 }).describe('A flag\'s latest change: when, and the system admin who made it, with their name now; none when a deploy made it.')
-}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`.')),
+}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `in_use`.')),
   "counts": zod.object({
   "all": zod.int(),
   "readyToRemove": zod.int(),
@@ -55,10 +55,10 @@ export const GetFeatureFlagResponse = zod.object({
   "percentage": zod.int(),
   "everyoneElse": zod.boolean(),
   "cleanup": zod.enum({
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
-}).describe('A flag\'s removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
+}).describe('A flag\'s removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
   "cleanupSince": zod.iso.datetime({"offset":true}).nullable(),
   "removedAt": zod.iso.datetime({"offset":true}).nullable(),
   "lastChange": zod.object({
@@ -68,7 +68,7 @@ export const GetFeatureFlagResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')])
 }).describe('A flag\'s latest change: when, and the system admin who made it, with their name now; none when a deploy made it.')
-}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`.'),
+}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `in_use`.'),
   "description": zod.string(),
   "defaultValue": zod.boolean(),
   "addedAt": zod.iso.datetime({"offset":true}),
@@ -119,10 +119,10 @@ export const AddFeatureFlagTenantResponse = zod.object({
   "percentage": zod.int(),
   "everyoneElse": zod.boolean(),
   "cleanup": zod.enum({
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
-}).describe('A flag\'s removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
+}).describe('A flag\'s removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
   "cleanupSince": zod.iso.datetime({"offset":true}).nullable(),
   "removedAt": zod.iso.datetime({"offset":true}).nullable(),
   "lastChange": zod.object({
@@ -132,7 +132,7 @@ export const AddFeatureFlagTenantResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')])
 }).describe('A flag\'s latest change: when, and the system admin who made it, with their name now; none when a deploy made it.')
-}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`.'),
+}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `in_use`.'),
   "description": zod.string(),
   "defaultValue": zod.boolean(),
   "addedAt": zod.iso.datetime({"offset":true}),
@@ -183,10 +183,10 @@ export const RemoveFeatureFlagTenantResponse = zod.object({
   "percentage": zod.int(),
   "everyoneElse": zod.boolean(),
   "cleanup": zod.enum({
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
-}).describe('A flag\'s removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
+}).describe('A flag\'s removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
   "cleanupSince": zod.iso.datetime({"offset":true}).nullable(),
   "removedAt": zod.iso.datetime({"offset":true}).nullable(),
   "lastChange": zod.object({
@@ -196,7 +196,7 @@ export const RemoveFeatureFlagTenantResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')])
 }).describe('A flag\'s latest change: when, and the system admin who made it, with their name now; none when a deploy made it.')
-}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`.'),
+}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `in_use`.'),
   "description": zod.string(),
   "defaultValue": zod.boolean(),
   "addedAt": zod.iso.datetime({"offset":true}),
@@ -250,10 +250,10 @@ export const SetFeatureFlagPercentageResponse = zod.object({
   "percentage": zod.int(),
   "everyoneElse": zod.boolean(),
   "cleanup": zod.enum({
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
-}).describe('A flag\'s removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
+}).describe('A flag\'s removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
   "cleanupSince": zod.iso.datetime({"offset":true}).nullable(),
   "removedAt": zod.iso.datetime({"offset":true}).nullable(),
   "lastChange": zod.object({
@@ -263,7 +263,7 @@ export const SetFeatureFlagPercentageResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')])
 }).describe('A flag\'s latest change: when, and the system admin who made it, with their name now; none when a deploy made it.')
-}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`.'),
+}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `in_use`.'),
   "description": zod.string(),
   "defaultValue": zod.boolean(),
   "addedAt": zod.iso.datetime({"offset":true}),
@@ -317,10 +317,10 @@ export const SetFeatureFlagEveryoneElseResponse = zod.object({
   "percentage": zod.int(),
   "everyoneElse": zod.boolean(),
   "cleanup": zod.enum({
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
-}).describe('A flag\'s removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
+}).describe('A flag\'s removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.'),
   "cleanupSince": zod.iso.datetime({"offset":true}).nullable(),
   "removedAt": zod.iso.datetime({"offset":true}).nullable(),
   "lastChange": zod.object({
@@ -330,7 +330,7 @@ export const SetFeatureFlagEveryoneElseResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')])
 }).describe('A flag\'s latest change: when, and the system admin who made it, with their name now; none when a deploy made it.')
-}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`.'),
+}).describe('A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `in_use`.'),
   "description": zod.string(),
   "defaultValue": zod.boolean(),
   "addedAt": zod.iso.datetime({"offset":true}),

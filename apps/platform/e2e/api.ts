@@ -299,6 +299,7 @@ const membership = (
 /** Ayşe's page: the Owner of Northwind, so Make Owner is off there, and a Member of Atlas, where it is on. */
 export const ayseDetail: UserDetailResponse = {
   ...users.ayse,
+  terms: { inForce: null, scheduled: null },
   suspendedAt: null,
   suspendedBy: null,
   suspensionReason: null,

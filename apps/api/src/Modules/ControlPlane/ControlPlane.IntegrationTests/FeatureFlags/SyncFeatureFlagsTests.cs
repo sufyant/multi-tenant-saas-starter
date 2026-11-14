@@ -24,8 +24,8 @@ public sealed class SyncFeatureFlagsTests(Database database)
 
         var flag = await FlagAsync(key);
         (flag.AddedRevision, flag.EveryoneElse, flag.DefaultValue).ShouldBe(("7c41d09", false, false));
-        messages.OfType<FeatureFlagAddedToCodeEvent>().Single().ShouldBe(new FeatureFlagAddedToCodeEvent(
-            messages.OfType<FeatureFlagAddedToCodeEvent>().Single().EventId, flag.AddedAt, flag.Id, key, "7c41d09", false));
+        var added = messages.OfType<FeatureFlagAddedToCodeEvent>().Single();
+        (added.FlagId, added.Key, added.Revision, added.DefaultValue).ShouldBe((flag.Id, key, "7c41d09", false));
         (await HistoryAsync(flag.Id)).ShouldBe([(FeatureFlagChangeKind.AddedToCode, "7c41d09")]);
     }
 

@@ -1224,13 +1224,13 @@ export const FeatureFlagResponseType = {
 } as const;
 
 /**
- * A flag's removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.
+ * A flag's removal from the code: in use, no cleanup yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.
  */
 export type FeatureFlagResponseCleanup = typeof FeatureFlagResponseCleanup[keyof typeof FeatureFlagResponseCleanup];
 
 
 export const FeatureFlagResponseCleanup = {
-  None: 'none',
+  InUse: 'in_use',
   ReadyToRemove: 'ready_to_remove',
   Unused: 'unused',
 } as const;
@@ -1246,7 +1246,7 @@ export interface FeatureFlagLastChangeResponse {
 /**
  * A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,
  * and rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code
- * removed has `removedAt` and the cleanup `none`.
+ * removed has `removedAt` and the cleanup `in_use`.
  */
 export interface FeatureFlagResponse {
   key: string;
