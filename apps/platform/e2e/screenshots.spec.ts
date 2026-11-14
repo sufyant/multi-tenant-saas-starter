@@ -625,6 +625,9 @@ const frameLog: AuditEntryResponse[] = [
 ];
 
 /** The log answers its first page with these entries and a next cursor; the next page answers as the shot says. */
+/** A day the form accepts in every run: 1 Dec of next year. The mocked answer still adds the frames' 1 Dec 2026 (11.04). */
+const nextYearsDay = `${new Date().getUTCFullYear() + 1}-12-01`;
+
 /** The four kinds of sentence of a terms version (7.09), by Deniz Kaya. */
 const termsTarget = {
   kind: AuditTargetResponseKind.TermsVersion,
@@ -2010,7 +2013,7 @@ const shellShots: {
     path: "/settings/terms/new",
     mock: mockFrameAdd,
     open: async (page) => {
-      await page.getByLabel("Applies from").fill("2026-12-01");
+      await page.getByLabel("Applies from").fill(nextYearsDay);
       await page
         .getByRole("textbox", { name: "Link" })
         .fill("https://starter.example/terms/2026-12");
@@ -2039,7 +2042,7 @@ const shellShots: {
     path: "/settings/terms/new",
     mock: mockFrameAdd,
     open: async (page) => {
-      await page.getByLabel("Applies from").fill("2026-12-01");
+      await page.getByLabel("Applies from").fill(nextYearsDay);
       await page
         .getByRole("textbox", { name: "Link" })
         .fill("https://starter.example/terms/2026-12");

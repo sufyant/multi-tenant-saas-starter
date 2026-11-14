@@ -482,6 +482,7 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
   - A version's people show for a version that requires acceptance only, in two tabs in the URL (`?people=not_yet`); the phone's version page has its values and actions only (11.15).
   - The Activity log's "changed" sentence names the date, the link, the summary and the acceptance; an edit that only turns the email on says "sent an email" (7.09).
   - `ListTermsVersionPeople` is an infinite query of the generated client, by its cursor (F9).
+  - A version's page and the forms name the section and the record in the breadcrumb, "Terms of use › 1 Dec 2026" and "Terms of use › New version" (F59), and the phone's top bar names the day; 11.02, 11.03, 11.05, 11.06 and 11.10 to 11.12 and 11.15 now draw it.
 
 38-frontend-web, the gate, the notice and the link:
 

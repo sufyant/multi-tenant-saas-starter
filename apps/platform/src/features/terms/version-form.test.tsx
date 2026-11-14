@@ -143,6 +143,37 @@ describe("NewVersionPage", () => {
     expect(calls).toEqual([]);
   });
 
+  // F48: a retry of the same values sends the same key; another value is another intent, with a new key.
+  it("NewVersion_RetryThenEdit_KeepsTheKeyThenTakesANewOne", async () => {
+    const calls: Call[] = [];
+    let answers = 0;
+    server.use(
+      createAnswer(calls, () => {
+        answers += 1;
+        return answers === 3
+          ? HttpResponse.json(scheduled)
+          : problem(500, ErrorCode.ServerError);
+      }),
+    );
+    renderWithProviders(<NewVersionPage />);
+    await fill();
+    const add = screen.getByRole("button", { name: "Add version" });
+
+    await userEvent.click(add);
+    await screen.findByText("Version not saved");
+    await userEvent.click(add);
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Summary" }),
+      "Clearer rules",
+    );
+    await userEvent.click(add);
+
+    await expectVisibleToast("Terms of use from 1 Dec 2026 added");
+    expect(calls).toHaveLength(3);
+    expect(calls[1]?.key).toBe(calls[0]?.key);
+    expect(calls[2]?.key).not.toBe(calls[1]?.key);
+  });
+
   it("NewVersion_AnotherVersionScheduledMeanwhile_SaysSo", async () => {
     server.use(
       createAnswer([], () =>

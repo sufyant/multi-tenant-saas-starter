@@ -7,7 +7,7 @@ import {
   type TermsVersionResponse,
   TermsVersionResponseState,
 } from "@repo/api-client";
-import { formatDate } from "@repo/ui/lib/format-date-time";
+import { calendarDay, formatDate } from "@repo/ui/lib/format-date-time";
 import type { QueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
@@ -30,7 +30,7 @@ export const editTermsVersionPage = (id: string) =>
 export const linkText = (url: string) => url.replace(/^https?:\/\//, "");
 
 /** Today in UTC, as `2026-11-14`: a version's day starts at 00:00 UTC, so the API counts "today or later" in UTC. */
-export const todayUtc = () => new Date().toISOString().slice(0, 10);
+export const todayUtc = () => calendarDay(new Date(), { timeZone: "UTC" });
 
 /**
  * A version's day in the language's format: `1 Dec 2026`. The day is a calendar day of UTC (the API's `effectiveDate`), so it is

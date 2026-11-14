@@ -6,6 +6,7 @@ import {
   getGetMeQueryOptions,
   getGetPlanQueryOptions,
   getGetTenantQueryOptions,
+  getGetTermsVersionQueryOptions,
   getGetUserQueryOptions,
   getListTenantsQueryOptions,
   ProblemDetailsError,
@@ -45,7 +46,7 @@ import { PlatformBell } from "@/shared/notification-bell";
 import { NotificationStream } from "@/shared/notification-stream";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
-import { termsPage } from "@/shared/terms";
+import { termsPage, useDay } from "@/shared/terms";
 
 /** The tenant of an organisation's page, `/organisations/<id>`, or null on any other page. */
 const tenantIdOf = (pathname: string) =>
@@ -54,6 +55,10 @@ const tenantIdOf = (pathname: string) =>
 /** The user of a user's page, `/users/<id>`, or of a system admin's, `/settings/system-admins/<id>`, or null on any other page. */
 const userIdOf = (pathname: string) =>
   /^\/(?:users|settings\/system-admins)\/([^/]+)/.exec(pathname)?.[1] ?? null;
+
+/** The version of a terms version's page, `/settings/terms/<id>` or its edit, or null on any other page; New version is `new`. */
+const termsVersionIdOf = (pathname: string) =>
+  /^\/settings\/terms\/([^/]+)/.exec(pathname)?.[1] ?? null;
 
 /** The plan of a plan's page, `/plans/<id>`, or null on any other page; New plan is `new`. */
 const planIdOf = (pathname: string) =>
@@ -127,6 +132,19 @@ export function PlatformShell({
       },
     }),
   );
+  // A terms version's page and its edit read the same GetTermsVersion, so its day in the breadcrumb comes from the cache.
+  const termsVersionId = termsVersionIdOf(pathname);
+  const termsVersion = useQuery(
+    getGetTermsVersionQueryOptions(termsVersionId ?? "", {
+      query: {
+        enabled:
+          termsVersionId !== null &&
+          termsVersionId !== "new" &&
+          me.data?.isSystemAdmin === true,
+      },
+    }),
+  );
+  const day = useDay();
   const unread = useQuery({
     ...platformBell().count,
     enabled: me.data?.isSystemAdmin === true,
@@ -222,7 +240,12 @@ export function PlatformShell({
           ? planId === "new"
             ? t("plans.createTitle")
             : plan.data?.name
-          : undefined;
+          : current === "terms" && termsVersionId
+            ? termsVersionId === "new"
+              ? t("terms.newTitle")
+              : termsVersion.data &&
+                day(termsVersion.data.version.effectiveDate)
+            : undefined;
   // A page of one record starts at its section (5.05, 6.04, 10.15): "Plans › Team". A section's page starts at the platform.
   const crumbs = detail
     ? [{ label: pageName, href: item?.href }, { label: detail }]
