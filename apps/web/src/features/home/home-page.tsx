@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { organisationPages } from "@/shared/organisation-pages";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { TermsNotice } from "./terms-notice";
 
 /** Home's cards, in the design's order, each with its text under `home` and its title; General is "Settings". */
 const cards = [
@@ -18,7 +19,7 @@ const cards = [
 
 /**
  * An organisation's Home (the Home screens): "Welcome" with the person's whole name (the API's A7), the organisation's name, and a card for each
- * page the person can open (F5). The product's own work comes after it in the menu (`productSections`).
+ * page the person can open (F5), under the terms notice when there is one. The product's own work comes after it in the menu (`productSections`).
  */
 export function HomePage() {
   const t = useTranslations();
@@ -29,6 +30,7 @@ export function HomePage() {
   const organisation = () => <bdi>{detail.name}</bdi>;
   return (
     <div className="flex flex-col gap-4">
+      <TermsNotice />
       <div className="flex flex-col gap-0.5">
         <h1 className="text-page-title">
           {name

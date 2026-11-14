@@ -445,6 +445,7 @@
     },
     "authFooter": {
       "label": "اللغة والمعلومات القانونية",
+      "terms": "الشروط",
       "privacy": "الخصوصية"
     },
     "supportBody": "الإصدار: {version}"

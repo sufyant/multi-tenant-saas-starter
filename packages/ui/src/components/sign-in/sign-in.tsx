@@ -39,6 +39,8 @@ export type SignInProps = {
   onLanguageChange: (language: Language) => Promise<void>;
   /** The brand's privacy policy, which the footer links as "Privacy". */
   privacyUrl: string;
+  /** The link of the terms version in force, which the footer shows as "Terms"; undefined hides it. */
+  termsUrl?: string;
   /** The app's error tracking: a Clerk error code without a message, once per code (F41, F55). */
   onUnexpectedError?: (error: Error) => void;
   /** The page after sign-in, a path of this app, in place of the address's `redirect_url`: the invitation's page (F44). */
@@ -70,6 +72,7 @@ export function SignIn({
   platformLabel,
   onLanguageChange,
   privacyUrl,
+  termsUrl,
   onUnexpectedError,
   redirectTo,
 }: SignInProps) {
@@ -179,6 +182,7 @@ export function SignIn({
         <AuthFooter
           onLanguageChange={onLanguageChange}
           privacyUrl={privacyUrl}
+          termsUrl={termsUrl}
         />
       }
     >

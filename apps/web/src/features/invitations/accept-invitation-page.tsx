@@ -7,6 +7,7 @@ import {
   ErrorCode,
   getGetMeQueryKey,
   getGetMeQueryOptions,
+  getGetTermsInForceQueryKey,
   getInvitationPreview,
   getListMyTenantsQueryKey,
   InvitationResponseState,
@@ -29,11 +30,12 @@ import { useEffect, useRef, useState } from "react";
 import { reportError } from "@/error-tracking/report-error";
 import { setLocale } from "@/i18n/set-locale";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { termsInForceQueryOptions, useTermsUrl } from "@/shared/terms-link";
 import { InvitationEnded } from "./invitation-ended";
 import { InvitationFrame } from "./invitation-frame";
 import { JoinCard } from "./join-card";
 import { SystemAdminCannotJoin, TenantSuspended } from "./join-refused";
-import { type Names, NewPersonForm } from "./new-person-form";
+import { type NewPerson, NewPersonForm } from "./new-person-form";
 import { WrongEmail } from "./wrong-email";
 
 const codeOf = (error: Error | null) =>
@@ -91,6 +93,7 @@ export function AcceptInvitationPage({
   const { signUp } = useSignUp();
   const [ticketError, setTicketError] = useState<SignInErrorKey>();
   const signingUp = useRef(false);
+  const termsUrl = useTermsUrl();
 
   const signedOut = isLoaded && !isSignedIn;
 
@@ -125,10 +128,19 @@ export function AcceptInvitationPage({
     enabled: Boolean(isSignedIn),
     retry: false,
   });
+  // The version in force that a new person accepts with the invitation (frame 1.15); the footer's "Terms" reads the same answer.
+  const termsInForce = useQuery(termsInForceQueryOptions());
 
   const join = useMutation({
-    mutationFn: (names?: Names) =>
-      acceptInvitation({ code: code ?? "", ...names }),
+    mutationFn: (person?: NewPerson) =>
+      acceptInvitation({ code: code ?? "", ...person }),
+    // The version in force changed while the person read it: they read the new one before they accept it.
+    onError: (error) => {
+      if (codeOf(error) === ErrorCode.TermsVersionChanged)
+        void queryClient.invalidateQueries({
+          queryKey: getGetTermsInForceQueryKey(),
+        });
+    },
     onSuccess: async (tenant: MyTenantResponse) => {
       try {
         sessionStorage.removeItem(storedCode);
@@ -177,6 +189,7 @@ export function AcceptInvitationPage({
         brand={t("meta.title")}
         onLanguageChange={setLocale}
         privacyUrl={brand.privacyUrl}
+        termsUrl={termsUrl}
         redirectTo={page}
         onUnexpectedError={reportError}
       />
@@ -209,7 +222,11 @@ export function AcceptInvitationPage({
   if (preview.error) return <ProblemScreen error={preview.error} />;
   const notAUserYet = codeOf(me.error) === ErrorCode.UserNotFound;
   if (me.error && !notAUserYet) return <ProblemScreen error={me.error} />;
-  if (!preview.data || (!me.data && !notAUserYet))
+  if (
+    !preview.data ||
+    (!me.data && !notAUserYet) ||
+    (notAUserYet && termsInForce.isPending)
+  )
     return <Skeleton label={t("common.loading")} />;
 
   const timeZone = me.data?.timeZone;
@@ -272,7 +289,8 @@ export function AcceptInvitationPage({
         <NewPersonForm
           preview={preview.data}
           email={email}
-          onJoin={(names) => join.mutate(names)}
+          terms={termsInForce.data ?? undefined}
+          onJoin={(person) => join.mutate(person)}
           pending={join.isPending}
           error={message}
           fieldErrors={fieldErrors}

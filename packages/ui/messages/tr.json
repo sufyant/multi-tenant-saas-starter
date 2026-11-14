@@ -445,6 +445,7 @@
     },
     "authFooter": {
       "label": "Dil ve yasal bilgiler",
+      "terms": "Koşullar",
       "privacy": "Gizlilik"
     },
     "supportBody": "Sürüm: {version}"

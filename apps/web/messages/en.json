@@ -78,6 +78,17 @@
     "secondFactorTitle": "Two-step verification",
     "secondFactorText": "Open your authenticator app and enter the 6-digit code for this account."
   },
+  "terms": {
+    "title": "Terms of use updated",
+    "text": "The new Terms of use apply from {date}. Read them, then accept to keep using {product}.",
+    "read": "Read the terms ↗",
+    "summary": "Summary",
+    "agree": "I have read and agree to the Terms of use",
+    "accept": "Accept",
+    "saveFailedTitle": "Couldn’t save your acceptance",
+    "saveFailedText": "Check your connection and try again.",
+    "noticeText": "The new terms apply from {date}. We also sent you an email."
+  },
   "invitations": {
     "settingUp": "Setting up your account",
     "inviterSubject": {

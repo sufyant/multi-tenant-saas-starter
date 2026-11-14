@@ -5,12 +5,17 @@ import ar from "../../../messages/ar.json";
 import en from "../../../messages/en.json";
 import { AuthFooter } from "./auth-footer";
 
-const renderFooter = (locale: "en" | "ar", messages: typeof en) =>
+const renderFooter = (
+  locale: "en" | "ar",
+  messages: typeof en,
+  termsUrl?: string,
+) =>
   render(
     <NextIntlClientProvider locale={locale} messages={messages}>
       <AuthFooter
         onLanguageChange={vi.fn()}
         privacyUrl="https://starter.example/privacy"
+        termsUrl={termsUrl}
       />
     </NextIntlClientProvider>,
   );
@@ -32,5 +37,26 @@ describe("AuthFooter", () => {
     renderFooter("ar", ar);
 
     expect(screen.getByRole("link", { name: "الخصوصية" })).toBeInTheDocument();
+  });
+
+  it("AuthFooter_TermsInForce_LinksTheTermsBeforePrivacy", () => {
+    renderFooter("en", en, "https://starter.example/terms/2026-12");
+    const links = within(
+      screen.getByRole("navigation", { name: "Language and legal" }),
+    ).getAllByRole("link");
+
+    expect(links.map((link) => link.textContent)).toEqual(["Terms", "Privacy"]);
+    expect(links[0]).toHaveAttribute(
+      "href",
+      "https://starter.example/terms/2026-12",
+    );
+  });
+
+  it("AuthFooter_NoTermsInForce_HidesTerms", () => {
+    renderFooter("en", en);
+
+    expect(
+      screen.queryByRole("link", { name: "Terms" }),
+    ).not.toBeInTheDocument();
   });
 });

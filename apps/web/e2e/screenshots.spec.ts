@@ -7,6 +7,7 @@ import {
   InvitationResponseState,
   Language,
   MyTenantResponseStatus,
+  MyTermsResponseAction,
   type Permission,
   type RoleDetailResponse,
 } from "@repo/api-client";
@@ -16,6 +17,7 @@ import { lastOrganisationCookie } from "../src/shared/last-organisation-cookie";
 import {
   roles as builtInRoles,
   customRoles,
+  decemberTerms,
   invitationCode,
   manyMembers,
   me,
@@ -27,6 +29,7 @@ import {
   mockInvitation,
   mockMembers,
   mockMembersExport,
+  mockMyTerms,
   mockNotifications,
   mockRename,
   mockRetention,
@@ -39,6 +42,7 @@ import {
   roleChanged,
   shortenedTo90,
   type Team,
+  termsInForce,
   ufukTeam,
 } from "./api";
 import { mockIdentity } from "./identity";
@@ -62,6 +66,18 @@ test.skip(
 test.afterEach(({ page }) => page.unrouteAll({ behavior: "ignoreErrors" }));
 
 const folder = "test-results/screenshots";
+
+/**
+ * A screen with the Auth footer waits for its "Terms", which comes from a read of its own after the page: Language, Terms and
+ * Privacy. A screen without the footer goes on at once.
+ */
+const footerSettled = async (page: Page) => {
+  const footer = page.getByRole("navigation", {
+    name: /^(Language and legal|Dil ve yasal bilgiler|اللغة والمعلومات القانونية)$/,
+  });
+  if ((await footer.count()) === 0) return;
+  await expect(footer.getByRole("link")).toHaveCount(2);
+};
 // CI runs the production build, which has no /dev/components (F33): its shots run on a development server only.
 const productionBuild = Boolean(process.env.CI);
 
@@ -969,6 +985,15 @@ const shellShots: {
     file: "4.02-home-member-en-light-desktop",
     size: "desktop",
     role: BuiltInRole.Member,
+  },
+  {
+    file: "4.03-home-terms-notice-en-light-desktop",
+    size: "desktop",
+    mock: (page) =>
+      mockMyTerms(page, {
+        action: MyTermsResponseAction.Notice,
+        version: { ...decemberTerms, requiresAcceptance: false },
+      }),
   },
   { file: "2.28-home-en-dark-desktop", size: "desktop", scheme: "dark" },
   {
@@ -2341,6 +2366,23 @@ const omar = {
   inviterName: { ...pendingInvitation.inviterName, name: "Omar Haddad" },
 };
 
+/** The gate after sign-in (1.09 to 1.12, 1.14, 1.55, 1.56): GetMyTerms asks for the frames' new version on every page. */
+const asksForTerms =
+  (version = decemberTerms) =>
+  async (page: Page) => {
+    await mockApi(page);
+    await mockMyTerms(page, {
+      action: MyTermsResponseAction.Acceptance,
+      version,
+    });
+  };
+const agreeToTerms = (page: Page) =>
+  page.getByRole("checkbox", { name: /Terms of use|شروط الاستخدام/ }).click();
+const acceptTerms = async (page: Page) => {
+  await agreeToTerms(page);
+  await page.getByRole("button", { name: "Accept" }).click();
+};
+
 const entryShots: {
   file: string;
   size: keyof typeof frames;
@@ -2356,6 +2398,71 @@ const entryShots: {
     size: "desktop",
     path: acceptPage,
     mock: (page) => mockInvitation(page, omar),
+  },
+  {
+    file: "1.09-terms-of-use-updated-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}`,
+    mock: asksForTerms(),
+  },
+  {
+    file: "1.10-terms-of-use-updated-no-summary-accepted-box-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}`,
+    mock: asksForTerms({ ...decemberTerms, summary: null }),
+    open: agreeToTerms,
+  },
+  {
+    file: "1.11-terms-of-use-updated-accepting-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}`,
+    // The acceptance never answers, so the gate stays in its accepting state.
+    mock: async (page) => {
+      await asksForTerms()(page);
+      await page.route("**/api/v1/me/terms/versions/*/accept", () => {});
+    },
+    open: acceptTerms,
+  },
+  {
+    file: "1.12-terms-of-use-updated-error-en-light-desktop",
+    size: "desktop",
+    path: `/${northwind.slug}`,
+    mock: async (page) => {
+      await asksForTerms()(page);
+      await page.route("**/api/v1/me/terms/versions/*/accept", (route) =>
+        route.abort(),
+      );
+    },
+    open: async (page) => {
+      await acceptTerms(page);
+      await page.getByText("Couldn’t save your acceptance").waitFor();
+    },
+  },
+  {
+    file: "1.14-phone-terms-of-use-updated-en-light-phone",
+    size: "phone",
+    path: `/${northwind.slug}`,
+    mock: asksForTerms(),
+  },
+  {
+    file: "1.55-terms-of-use-updated-en-dark-desktop",
+    size: "desktop",
+    scheme: "dark",
+    path: `/${northwind.slug}`,
+    mock: asksForTerms(),
+  },
+  {
+    file: "1.56-phone-terms-of-use-updated-ar-light-phone",
+    size: "phone",
+    language: Language.Ar,
+    path: `/${northwind.slug}`,
+    mock: asksForTerms(),
+  },
+  {
+    file: "1.15-accept-invitation-terms-en-light-desktop",
+    size: "desktop",
+    path: acceptPage,
+    mock: (page) => mockInvitation(page, omar, { knownUser: false }),
   },
   {
     file: "1.16-invitation-expired-en-light-desktop",
@@ -2589,6 +2696,7 @@ for (const shot of entryShots.map(entryDefaults))
     await page.goto(shot.path);
     await page.getByRole("heading", { level: 1 }).waitFor();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+    await footerSettled(page);
     await shot.open?.(page);
     await page.mouse.move(0, 0);
     await page.evaluate(
@@ -2844,10 +2952,15 @@ test.describe("signed out", () => {
           url: baseURL,
         },
       ]);
+      // The version in force, for the footer's "Terms" (F6: the BFF reads it without a session).
+      await page.route("**/api/v1/public/terms", (route) =>
+        route.fulfill({ json: termsInForce }),
+      );
       await shot.mock?.(page);
 
       await page.goto(shot.path ?? "/sign-in");
       await page.getByRole("heading", { level: 1 }).waitFor();
+      await footerSettled(page);
       await shot.open?.(page);
       // No pointer over a control: a click leaves its hover behind.
       await page.mouse.move(0, 0);
