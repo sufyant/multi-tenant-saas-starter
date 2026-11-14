@@ -13,8 +13,8 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 37b | The platform's pages | done |
 | 37c | Audit retention | done |
 | 37d | Dependent limits | done |
-| 38 | Terms of use | in progress |
-| 39 | Feature flags | todo |
+| 38 | Terms of use | done |
+| 39 | Feature flags | in progress |
 | 40 | Billing | todo |
 | 41 | Extension points | todo |
 | 42 | Observability | todo |
@@ -421,7 +421,7 @@ The parts of 37d, in their order. 37d-design and 37d-backend run at the same tim
 
 ## 6. Step 38: Terms of use
 
-Status: in progress.
+Status: done.
 
 - The platform manages the versions. A version has an effective date, a link, an optional summary, whether it requires acceptance, and whether it sends an email.
 - An effective date is never in the past.
@@ -494,7 +494,7 @@ Not this step: 1.27 (Create an account · accept the terms) is 40d's. It uses 38
 
 ## 7. Step 39: Feature flags
 
-Status: todo.
+Status: in progress.
 
 - We build them in-house.
 - The code defines each flag with its type and a default. The types are release and kill switch.
@@ -504,6 +504,51 @@ Status: todo.
 - Cleanup: a release flag that is on for everyone for 30 days is "Ready to remove". Any flag that is off everywhere for 30 days is "Unused".
 - A weekly notification tells the system admins.
 - A removed flag is archived. Its name is never used again.
+- Each environment's platform manages only its own flags, in its own database. No screen picks an environment; a confirmation names the environment of the environment strip ("Turn off emails.send in Production?"). Why: one environment never writes another's database (The Twelve-Factor App, "III. Config" and "X. Dev/prod parity"; Fowler and Hodgson, "Feature Toggles", "Toggle Configuration").
+
+Decided by the frames (39-start, 2026-11-14):
+
+- The platform's Settings has Feature flags (12.01), with four tabs: All, Ready to remove, Unused and Removed from code. All counts the flags that the code defines; a flag removed from code shows only in its own tab (12.01 says "All 6" beside "Removed from code 1"). The columns are Flag with its type, State, Cleanup and Last change.
+- A flag's page (12.05) shows its description, type, default value and the day and commit that added it, then "Who it is on for" with its three rules in order, and its History. Each rule changes on its own: Add organisation and Remove on rule 1 (12.08, 12.09), Change on rule 2 (12.06), and rule 3 turns on or off for everyone. Each change asks first and says how many organisations it affects.
+- The percentage counts organisations, not people, so everyone in one organisation sees the same screens. An organisation that is in stays in as the percentage grows (12.05, 12.06).
+- A kill switch has the same three rules; its default value is on. Turning it off for everyone is a red action that asks first (12.11, 12.22).
+- "Added" and "Removed from code" carry the day and the commit (`SOURCE_REVISION`) of the deploy that first saw or last missed the flag. A flag removed from code is read-only, with a banner (12.12).
+- The weekly summary is a bell notification of the system admins, "2 feature flags are ready to be removed from code" (3.07). It sends no email.
+- An organisation's page lists the flags that are on for it, with the reason: Listed, a percentage, or on for everyone (4.09).
+- The web app has no flag screen. A flag changes what a screen of the product shows; the web reads the flags of its organisation.
+
+The parts of 39, in their order. 39-design and 39-backend run at the same time; 39-frontend waits for both. The pull request of 39-start holds the table of every frame with its part, and the table of every value with its field.
+
+39-design, the frames the step still lacks:
+
+- The phone's flag frames (12.20 to 12.23) lose the environment picker, as each environment's platform manages its own flags.
+- The phone's kill switch (12.22, 12.23) uses the desktop's action, "Turn off for everyone", in place of a toggle; the phone's list (12.19) counts All as the desktop does, without the removed flag.
+- Rule 3 of a release flag: its action on the desktop (12.05 has none), and its confirmation, "Turn roles.bulk_edit on for everyone?", which names the organisations it affects.
+- A kill switch: the desktop's confirmation of "Turn off for everyone", its off state (12.23's desktop form) and "Turn on for everyone".
+- A flag's page: loading, couldn't load and a flag that does not exist (Page not found, as 2.22).
+- The Activity log sentences of the platform's log for each change: an organisation listed or removed, the percentage changed, everyone else on or off, a flag added to or removed from code (platform section 7, as 7.09).
+- The dark and Arabic forms of 12.05, as the earlier steps drew one of each.
+- A note with the Turkish and Arabic texts of the step's frames (platform 12.01 to 12.23, 3.07, 4.09's Feature flags card).
+- It waits for nothing.
+
+39-backend, the flags, their rules and their history:
+
+- A flag is defined in code: its key, type (`release` or `kill_switch`), default value and description. A test refuses two flags with one key, and a key of an archived flag.
+- On start the API compares the code's flags with the stored ones: a new key is stored with the day and the commit; a key that the code no longer has is archived with the day and the commit, and its name stays taken.
+- The rules of each flag in ControlPlane: the listed organisations, a percentage from 0 to 100, and everyone else on or off. The percentage hashes the flag's key and the organisation's id into a bucket from 0 to 99, so it is stable and grows without moving an organisation out (Fowler and Hodgson, "Feature Toggles", "Percentage rollouts"; the frames' sentence of 12.05).
+- One evaluation: `IFeatureFlags.IsOnAsync(flag, tenantId)`, from a cache that a change refreshes. A failed read answers the flag's default value (12.05: "It applies when the check fails").
+- Platform endpoints, `platform.flags.read` and `platform.flags.update`, in the pattern of the other platform permissions: the list with each flag's state, cleanup and last change, and the tabs' counts (12.01 to 12.04); one flag with its rules and its history (12.05, 12.10 to 12.12, 12.18); list or remove an organisation, set the percentage, turn everyone else on or off, each with the count of organisations it affects before the change (12.06, 12.08, 12.09). A change of an archived flag answers 409. Every change writes the platform's Activity log.
+- Cleanup, derived from the history: a release flag that is on for everyone for 30 days is `ready_to_remove`; any flag that is off for every organisation for 30 days is `unused`.
+- The flags that are on for one organisation, with the reason (4.09), in the organisation's platform read.
+- A tenant endpoint that answers the flags of the person's organisation, for the web.
+- A weekly worker that writes the system admins' bell notification when a flag is ready to remove or unused (3.07), from a worker hosted service, as the audit retention runs (`apps/api/docs/ARCHITECTURE.md`, K14).
+- It waits for nothing.
+
+39-frontend, Settings › Feature flags in the platform, and the web's flags:
+
+- 12.01 to 12.23, 39-design's frames, the bell's sentence (3.07), the organisation's flags (4.09), the Settings menu's Feature flags row (every Settings frame draws it), the command menu's "Feature flags" (2.02) and the Activity log sentences of 39-design.
+- In the web, one hook that reads the organisation's flags, so a product's screen asks `useFeatureFlag("roles.bulk_edit")`. No screen of the template uses it yet; a test does.
+- It waits for 39-design and 39-backend.
 
 ## 8. Step 40: Billing
 
@@ -635,7 +680,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 
 1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Step 38, in the parts of section 6. 38-start, 38-design, 38-backend and 38-frontend-platform are done; 38-frontend-web is the part left. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
+3. Step 39, in the parts of section 7. 39-start is done; 39-design and 39-backend run now, and 39-frontend waits for both. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
