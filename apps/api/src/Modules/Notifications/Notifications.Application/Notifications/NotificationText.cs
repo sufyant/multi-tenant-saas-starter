@@ -35,6 +35,9 @@ public sealed partial record NotificationText(string Title, string Body)
     /// <summary>The form of a number of days for each CLDR plural category, under <c>notificationWords</c>; <c>#</c> stands for the number.</summary>
     public const string DaysWords = "days";
 
+    /// <summary>The form of a number of feature flags for each CLDR plural category, under <c>notificationWords</c>; <c>#</c> stands for the number.</summary>
+    public const string FeatureFlagWords = "featureFlags";
+
     private static readonly Dictionary<Language, Texts> ByLanguage = Read();
 
     /// <summary>The types the texts of the language have, for the architecture test of the catalog (U1).</summary>
@@ -162,6 +165,8 @@ public sealed partial record NotificationText(string Title, string Body)
             NotificationValueKind.Day => EmailLanguage.Of(language).Dates.Write(
                 new DateTimeOffset(DateOnly.ParseExact(stored, "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeOnly.MinValue, TimeSpan.Zero), null).Day,
             NotificationValueKind.Days => WordOf(texts, language, DaysWords, PluralCategoryOf(language, int.Parse(stored, NumberStyles.None, CultureInfo.InvariantCulture)))
+                .Replace("#", stored, StringComparison.Ordinal),
+            NotificationValueKind.FeatureFlags => WordOf(texts, language, FeatureFlagWords, PluralCategoryOf(language, int.Parse(stored, NumberStyles.None, CultureInfo.InvariantCulture)))
                 .Replace("#", stored, StringComparison.Ordinal),
             _ => stored,
         };

@@ -37,6 +37,10 @@ public static class Permissions
 
     public const string PlatformPlansUpdate = "platform.plans.update";
 
+    public const string PlatformFlagsRead = "platform.flags.read";
+
+    public const string PlatformFlagsUpdate = "platform.flags.update";
+
     public const string PlatformTermsRead = "platform.terms.read";
 
     public const string PlatformTermsCreate = "platform.terms.create";

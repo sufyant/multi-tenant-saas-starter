@@ -26,4 +26,7 @@ public enum NotificationLinkKind
 
     /// <summary>The person's Account and security, without a tenant.</summary>
     AccountSecurity,
+
+    /// <summary>The platform's Settings › Feature flags, without a tenant.</summary>
+    PlatformFeatureFlags,
 }

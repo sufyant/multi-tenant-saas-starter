@@ -25,6 +25,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "AddFeatureFlagTenant",
+    "method": "PUT",
+    "path": "/v1/platform/feature-flags/{key}/tenants/{tenantId}",
+    "tag": "Platform/FeatureFlags",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "CancelTermsVersion",
     "method": "POST",
     "path": "/v1/platform/terms/versions/{versionId}/cancel",
@@ -238,6 +249,39 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "GetFeatureFlag",
+    "method": "GET",
+    "path": "/v1/platform/feature-flags/{key}",
+    "tag": "Platform/FeatureFlags",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GetFeatureFlagChangePreview",
+    "method": "POST",
+    "path": "/v1/platform/feature-flags/{key}/preview",
+    "tag": "Platform/FeatureFlags",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GetFeatureFlags",
+    "method": "GET",
+    "path": "/v1/platform/feature-flags",
+    "tag": "Platform/FeatureFlags",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "GetInvitationPreview",
     "method": "POST",
     "path": "/v1/me/invitations/preview",
@@ -275,6 +319,17 @@ export const operations = [
     "method": "GET",
     "path": "/v1/tenants/{tenantId}",
     "tag": "Tenant/Tenants",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GetMyTenantFeatureFlags",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/feature-flags",
+    "tag": "Tenant/FeatureFlags",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -352,6 +407,17 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/tenants/{tenantId}",
     "tag": "Platform/Tenants",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GetTenantFeatureFlags",
+    "method": "GET",
+    "path": "/v1/platform/tenants/{tenantId}/feature-flags",
+    "tag": "Platform/FeatureFlags",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -720,6 +786,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "RemoveFeatureFlagTenant",
+    "method": "DELETE",
+    "path": "/v1/platform/feature-flags/{key}/tenants/{tenantId}",
+    "tag": "Platform/FeatureFlags",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "RemoveMember",
     "method": "DELETE",
     "path": "/v1/tenants/{tenantId}/members/{userId}",
@@ -843,6 +920,28 @@ export const operations = [
     "method": "PUT",
     "path": "/v1/platform/tenants/{tenantId}/entitlement-overrides/{key}",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "SetFeatureFlagEveryoneElse",
+    "method": "PUT",
+    "path": "/v1/platform/feature-flags/{key}/everyone-else",
+    "tag": "Platform/FeatureFlags",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "SetFeatureFlagPercentage",
+    "method": "PUT",
+    "path": "/v1/platform/feature-flags/{key}/percentage",
+    "tag": "Platform/FeatureFlags",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

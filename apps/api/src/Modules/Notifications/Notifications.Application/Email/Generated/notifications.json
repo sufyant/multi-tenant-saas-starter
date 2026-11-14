@@ -111,6 +111,14 @@
         "title": "Your data file is ready",
         "body": "Download it from Account and security until {{expiresAt}}. You need to be signed in to download it.",
         "footer": "You received this because you asked for a copy of your data."
+      },
+      "feature_flags.ready_to_remove": {
+        "title": "{{count}} ready to be removed from code",
+        "body": "These release flags have been on for everyone for 30 days. Remove them from the code."
+      },
+      "feature_flags.unused": {
+        "title": "{{count}} off for everyone for 30 days",
+        "body": "No organisation uses these flags. Remove them from the code."
       }
     },
     "words": {
@@ -135,7 +143,8 @@
         "your_access": "Your access",
         "organisation_plan": "Organisation plan",
         "organisations": "Organisations",
-        "your_account": "Your account"
+        "your_account": "Your account",
+        "feature_flags": "Feature flags"
       },
       "days": {
         "one": "# day",
@@ -144,6 +153,10 @@
       "nextStep": {
         "accept_at_sign_in": "You accept them the next time you sign in.",
         "nothing_to_do": "You do not need to do anything."
+      },
+      "featureFlags": {
+        "one": "# feature flag",
+        "other": "# feature flags"
       }
     }
   },
@@ -259,6 +272,14 @@
         "title": "Veri dosyanız hazır",
         "body": "{{expiresAt}} tarihine kadar Hesap ve güvenlik sayfasından indirebilirsiniz. İndirmek için oturum açmış olmanız gerekir.",
         "footer": "Bu e-postayı, verilerinizin bir kopyasını istediğiniz için aldınız."
+      },
+      "feature_flags.ready_to_remove": {
+        "title": "{{count}} koddan kaldırılmaya hazır",
+        "body": "Bu sürüm bayrakları 30 gündür herkes için açık. Onları koddan kaldırın."
+      },
+      "feature_flags.unused": {
+        "title": "{{count}} 30 gündür herkes için kapalı",
+        "body": "Bu bayrakları hiçbir kuruluş kullanmıyor. Onları koddan kaldırın."
       }
     },
     "words": {
@@ -283,7 +304,8 @@
         "your_access": "Erişiminiz",
         "organisation_plan": "Kuruluş planı",
         "organisations": "Kuruluşlar",
-        "your_account": "Hesabınız"
+        "your_account": "Hesabınız",
+        "feature_flags": "Özellik bayrakları"
       },
       "days": {
         "one": "# gün",
@@ -292,6 +314,10 @@
       "nextStep": {
         "accept_at_sign_in": "Bir sonraki oturum açışınızda koşulları kabul edeceksiniz.",
         "nothing_to_do": "Sizin bir şey yapmanız gerekmiyor."
+      },
+      "featureFlags": {
+        "one": "# özellik bayrağı",
+        "other": "# özellik bayrağı"
       }
     }
   },
@@ -407,6 +433,14 @@
         "title": "ملف بياناتك جاهز",
         "body": "نزّله من صفحة الحساب والأمان حتى {{expiresAt}}. يجب أن تكون مسجّل الدخول لتنزيله.",
         "footer": "وصلتك هذه الرسالة لأنك طلبت نسخة من بياناتك."
+      },
+      "feature_flags.ready_to_remove": {
+        "title": "{{count}} جاهزة للإزالة من الشيفرة",
+        "body": "هذه العلامات مفعّلة للجميع منذ 30 يومًا. أزِلها من الشيفرة."
+      },
+      "feature_flags.unused": {
+        "title": "{{count}} معطّلة للجميع منذ 30 يومًا",
+        "body": "لا تستخدم أي مؤسسة هذه العلامات. أزِلها من الشيفرة."
       }
     },
     "words": {
@@ -431,7 +465,8 @@
         "your_access": "وصولك",
         "organisation_plan": "خطة المؤسسة",
         "organisations": "المؤسسات",
-        "your_account": "حسابك"
+        "your_account": "حسابك",
+        "feature_flags": "علامات الميزات"
       },
       "days": {
         "zero": "# يوم",
@@ -444,6 +479,14 @@
       "nextStep": {
         "accept_at_sign_in": "ستوافق عليها عند تسجيل دخولك التالي.",
         "nothing_to_do": "لا تحتاج إلى فعل أي شيء."
+      },
+      "featureFlags": {
+        "zero": "# علامة ميزات",
+        "one": "علامة ميزات واحدة",
+        "two": "علامتا ميزات",
+        "few": "# علامات ميزات",
+        "many": "# علامة ميزات",
+        "other": "# علامة ميزات"
       }
     }
   }

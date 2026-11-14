@@ -26,6 +26,13 @@ export const ListAuditEntriesResponse = zod.object({
   "occurredAt": zod.iso.datetime({"offset":true}),
   "operation": zod.enum({
   ActivityLogExported: 'activity_log.exported',
+  FeatureFlagAddedToCode: 'feature_flag.added_to_code',
+  FeatureFlagEveryoneElseOff: 'feature_flag.everyone_else_off',
+  FeatureFlagEveryoneElseOn: 'feature_flag.everyone_else_on',
+  FeatureFlagPercentageSet: 'feature_flag.percentage_set',
+  FeatureFlagRemovedFromCode: 'feature_flag.removed_from_code',
+  FeatureFlagTenantListed: 'feature_flag.tenant_listed',
+  FeatureFlagTenantUnlisted: 'feature_flag.tenant_unlisted',
   InvitationRevoked: 'invitation.revoked',
   MemberInvited: 'member.invited',
   MemberJoined: 'member.joined',
@@ -111,6 +118,35 @@ export const ListAuditEntriesResponse = zod.object({
 }).describe('A role in the details of an audit entry, as the entry keeps it from that moment: its id, its name and whether it is built in. The\nrole may be gone or renamed since, so the entry is its own record of it (K3), and Audit answers it in a shape of its own (the\nmaintainer\'s decision in step r4b).')
 }).describe('The details of `member.role_changed`: the member\'s old and new role.'),zod.object({
   "operation": zod.enum({
+  FeatureFlagAddedToCode: 'feature_flag.added_to_code',
+}),
+  "revision": zod.string().nullable(),
+  "defaultValue": zod.boolean()
+}).describe('The commit of the deploy that stored the flag, or null when it named none, and the flag\'s default value.'),zod.object({
+  "operation": zod.enum({
+  FeatureFlagPercentageSet: 'feature_flag.percentage_set',
+}),
+  "from": zod.int(),
+  "to": zod.int()
+}),zod.object({
+  "operation": zod.enum({
+  FeatureFlagRemovedFromCode: 'feature_flag.removed_from_code',
+}),
+  "revision": zod.string().nullable()
+}).describe('The commit of the deploy that archived the flag, or null when it named none.'),zod.object({
+  "operation": zod.enum({
+  FeatureFlagTenantListed: 'feature_flag.tenant_listed',
+}),
+  "tenantId": zod.uuid(),
+  "tenantName": zod.string()
+}).describe('The organisation, with its name of that moment.'),zod.object({
+  "operation": zod.enum({
+  FeatureFlagTenantUnlisted: 'feature_flag.tenant_unlisted',
+}),
+  "tenantId": zod.uuid(),
+  "tenantName": zod.string()
+}).describe('The organisation, with its name of that moment.'),zod.object({
+  "operation": zod.enum({
   PlanCreated: 'plan.created',
 }),
   "isDefault": zod.boolean(),
@@ -147,6 +183,8 @@ export const ListAuditEntriesResponse = zod.object({
 }),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',
@@ -331,6 +369,7 @@ export const ListAuditEntriesResponse = zod.object({
   Role: 'role',
   Plan: 'plan',
   TermsVersion: 'terms_version',
+  FeatureFlag: 'feature_flag',
 }).describe('The kind of target of an audit entry.'),
   "id": zod.uuid(),
   "name": zod.string().nullable(),

@@ -13,6 +13,14 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode DataExportNotReady = ErrorCode.Declare("data_export.not_ready");
 
+    public static readonly ErrorCode FeatureFlagChangeInvalid = ErrorCode.Declare("feature_flag.change_invalid");
+
+    public static readonly ErrorCode FeatureFlagNotFound = ErrorCode.Declare("feature_flag.not_found");
+
+    public static readonly ErrorCode FeatureFlagPercentageInvalid = ErrorCode.Declare("feature_flag.percentage_invalid");
+
+    public static readonly ErrorCode FeatureFlagRemovedFromCode = ErrorCode.Declare("feature_flag.removed_from_code");
+
     public static readonly ErrorCode InvitationCodeRequired = ErrorCode.Declare("invitation.code_required");
 
     public static readonly ErrorCode InvitationDailyLimitReached = ErrorCode.Declare("invitation.daily_limit_reached");

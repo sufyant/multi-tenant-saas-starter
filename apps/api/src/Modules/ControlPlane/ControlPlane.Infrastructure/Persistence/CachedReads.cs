@@ -1,3 +1,4 @@
+using ControlPlane.Infrastructure.Persistence.FeatureFlags;
 using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
@@ -9,7 +10,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// <summary>
 /// Every read of the module that the shared cache holds, in one place, so a reviewer sees them all (C1): the reads of the access
 /// check that the host makes on every request (A9, T7, A4), and the two reads of a tenant's entitlements that its feature check makes
-/// (docs/flows/plans-and-entitlements.md). Each stores only rows (C4).
+/// (docs/flows/plans-and-entitlements.md), and an organisation's feature flags (docs/flows/feature-flags.md). Each stores only rows (C4).
 /// </summary>
 internal static class CachedReads
 {
@@ -35,4 +36,11 @@ internal static class CachedReads
     /// <summary>A plan's values, which every tenant on the plan reads; a plan edit removes it alone.</summary>
     public static readonly RowCachedRead<PlanEntitlementRows> PlanEntitlements =
         new("plan-entitlements", CacheTags.Plan, AccessLifetime, planId => [CacheTag.Of(CacheTags.Plan, planId)]);
+
+    /// <summary>
+    /// An organisation's rows of every feature flag, which the one evaluation reads (docs/flows/feature-flags.md). Any change of a flag
+    /// or a listing removes every organisation's entry: such changes are rare.
+    /// </summary>
+    public static readonly RowCachedRead<TenantFeatureFlagRows> TenantFeatureFlags =
+        new("tenant-feature-flags", CacheLabel.Tenant, AccessLifetime, _ => [CacheTags.FeatureFlags]);
 }

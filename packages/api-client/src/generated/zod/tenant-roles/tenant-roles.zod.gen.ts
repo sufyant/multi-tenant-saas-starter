@@ -35,6 +35,8 @@ export const ListRolesResponse = zod.object({
   "builtIn": zod.boolean(),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',
@@ -107,6 +109,8 @@ export const CreateRoleBody = zod.object({
   "name": zod.string().max(createRoleBodyNameMax),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',
@@ -154,6 +158,8 @@ export const CreateRoleResponse = zod.object({
   "builtIn": zod.boolean(),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',
@@ -210,6 +216,8 @@ export const UpdateRoleBody = zod.object({
   "name": zod.string().max(updateRoleBodyNameMax),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',
@@ -257,6 +265,8 @@ export const UpdateRoleResponse = zod.object({
   "builtIn": zod.boolean(),
   "permissions": zod.array(zod.enum({
   PlatformAuditRead: 'platform.audit.read',
+  PlatformFlagsRead: 'platform.flags.read',
+  PlatformFlagsUpdate: 'platform.flags.update',
   PlatformPlansCreate: 'platform.plans.create',
   PlatformPlansRead: 'platform.plans.read',
   PlatformPlansUpdate: 'platform.plans.update',

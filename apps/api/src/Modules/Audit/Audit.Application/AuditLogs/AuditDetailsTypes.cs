@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Audit.Application.Invitations;
+using Audit.Application.FeatureFlags;
 using Audit.Application.Members;
 using Audit.Application.Plans;
 using Audit.Application.Roles;
@@ -24,6 +25,16 @@ public static class AuditDetailsTypes
     public const string MemberRemoved = AuditOperations.MemberRemoved;
 
     public const string MemberRoleChanged = AuditOperations.MemberRoleChanged;
+
+    public const string FeatureFlagAddedToCode = AuditOperations.FeatureFlagAddedToCode;
+
+    public const string FeatureFlagPercentageSet = AuditOperations.FeatureFlagPercentageSet;
+
+    public const string FeatureFlagRemovedFromCode = AuditOperations.FeatureFlagRemovedFromCode;
+
+    public const string FeatureFlagTenantListed = AuditOperations.FeatureFlagTenantListed;
+
+    public const string FeatureFlagTenantUnlisted = AuditOperations.FeatureFlagTenantUnlisted;
 
     public const string PlanCreated = AuditOperations.PlanCreated;
 
@@ -61,6 +72,13 @@ public static class AuditDetailsTypes
     public static IReadOnlyDictionary<string, Type?> OfOperation { get; } = new Dictionary<string, Type?>(StringComparer.Ordinal)
     {
         [AuditOperations.ActivityLogExported] = null,
+        [AuditOperations.FeatureFlagAddedToCode] = typeof(FeatureFlagAddedToCodeDetails),
+        [AuditOperations.FeatureFlagEveryoneElseOff] = null,
+        [AuditOperations.FeatureFlagEveryoneElseOn] = null,
+        [AuditOperations.FeatureFlagPercentageSet] = typeof(FeatureFlagPercentageSetDetails),
+        [AuditOperations.FeatureFlagRemovedFromCode] = typeof(FeatureFlagRemovedFromCodeDetails),
+        [AuditOperations.FeatureFlagTenantListed] = typeof(FeatureFlagTenantListedDetails),
+        [AuditOperations.FeatureFlagTenantUnlisted] = typeof(FeatureFlagTenantUnlistedDetails),
         [AuditOperations.InvitationRevoked] = null,
         [AuditOperations.MemberInvited] = typeof(MemberInvitedDetails),
         [AuditOperations.MemberJoined] = null,

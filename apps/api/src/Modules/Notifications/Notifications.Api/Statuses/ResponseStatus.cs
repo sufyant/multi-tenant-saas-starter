@@ -14,6 +14,7 @@ internal static class ResponseStatus
         "TenantActivityLog" => NotificationLinkResponseKind.TenantActivityLog,
         "PlatformTenant" => NotificationLinkResponseKind.PlatformTenant,
         "AccountSecurity" => NotificationLinkResponseKind.AccountSecurity,
+        "PlatformFeatureFlags" => NotificationLinkResponseKind.PlatformFeatureFlags,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "The response has no value for this kind of Notifications."),
     };
 }

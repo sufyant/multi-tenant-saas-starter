@@ -268,6 +268,7 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.TenantRoles.ExecuteDeleteAsync(cancellationToken);
         await controlPlane.TenantSummaries.Where(summary => summary.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
         await controlPlane.EntitlementOverrides.Where(entry => entry.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        await ForgetInFeatureFlagsAsync(purged, cancellationToken);
         await controlPlane.SaveChangesAsync(cancellationToken);
 
         return await controlPlane.Users
@@ -279,6 +280,22 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
+
+    // The flags whose first rule lists the tenant forget it, each locked after the tenant, in the order of the flags' ids, so two purges
+    // that share a flag take it in one order (K6c). A command that changes a listing takes the tenant's row first too (K6a).
+    private async Task ForgetInFeatureFlagsAsync(Tenant purged, CancellationToken cancellationToken)
+    {
+        var now = purged.PurgedAt ?? throw new InvalidOperationException("A purged tenant has the moment of its purge.");
+        var flagIds = await controlPlane.FeatureFlagTenants.Where(listed => listed.TenantId == purged.Id).Select(listed => listed.FlagId).Order().ToListAsync(cancellationToken);
+        foreach (var flagId in flagIds)
+        {
+            await controlPlane.Database.ExecuteSqlAsync($"SELECT id FROM control_plane.feature_flags WHERE id = {flagId} FOR UPDATE", cancellationToken);
+            (await controlPlane.FeatureFlags.SingleAsync(flag => flag.Id == flagId, cancellationToken)).ForgetTenant(now);
+        }
+
+        await controlPlane.FeatureFlagTenants.Where(listed => listed.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        controlPlane.RemoveCacheTagsAfterCommit(CacheTags.FeatureFlags);
+    }
 
     // The members whose role holds the Owners' permission (A1, K1). Row level security keeps the count to the active tenant. It joins no
     // user, so a deleted user's Owner membership counts too.

@@ -23,6 +23,7 @@ internal static class ResponseStatus
         "Role" => AuditTargetResponseKind.Role,
         "Plan" => AuditTargetResponseKind.Plan,
         "TermsVersion" => AuditTargetResponseKind.TermsVersion,
+        "FeatureFlag" => AuditTargetResponseKind.FeatureFlag,
         _ => throw Unknown(kind),
     };
 

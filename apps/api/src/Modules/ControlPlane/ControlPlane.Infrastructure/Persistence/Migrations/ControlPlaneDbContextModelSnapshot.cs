@@ -65,6 +65,195 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.FeatureFlags.FeatureFlag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AddedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("added_at");
+
+                    b.Property<string>("AddedRevision")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("added_revision");
+
+                    b.Property<bool>("DefaultValue")
+                        .HasColumnType("boolean")
+                        .HasColumnName("default_value");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("EveryoneElse")
+                        .HasColumnType("boolean")
+                        .HasColumnName("everyone_else");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
+
+                    b.Property<DateTimeOffset>("LastChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_changed_at");
+
+                    b.Property<Guid?>("LastChangedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("last_changed_by");
+
+                    b.Property<int>("ListedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("listed_count");
+
+                    b.Property<int>("Percentage")
+                        .HasColumnType("integer")
+                        .HasColumnName("percentage");
+
+                    b.Property<DateTimeOffset?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("removed_at");
+
+                    b.Property<string>("RemovedRevision")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("removed_revision");
+
+                    b.Property<DateTimeOffset>("StateSince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("state_since");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feature_flags");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_feature_flags_key");
+
+                    b.HasIndex("LastChangedBy")
+                        .HasDatabaseName("ix_feature_flags_last_changed_by");
+
+                    b.ToTable("feature_flags", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_feature_flags_default_value", "default_value = (type = 'KillSwitch')");
+
+                            t.HasCheckConstraint("ck_feature_flags_listed_count", "listed_count >= 0");
+
+                            t.HasCheckConstraint("ck_feature_flags_percentage", "percentage BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("ck_feature_flags_removal", "removed_at IS NOT NULL OR removed_revision IS NULL");
+
+                            t.HasCheckConstraint("ck_feature_flags_type", "type IN ('Release', 'KillSwitch')");
+                        });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.FeatureFlags.FeatureFlagChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("at");
+
+                    b.Property<Guid>("FlagId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("flag_id");
+
+                    b.Property<string>("From")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("from");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Revision")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("revision");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("To")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("to");
+
+                    b.HasKey("Id")
+                        .HasName("pk_feature_flag_changes");
+
+                    b.HasIndex("ActorId")
+                        .HasDatabaseName("ix_feature_flag_changes_actor_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_feature_flag_changes_tenant_id");
+
+                    b.HasIndex("FlagId", "At")
+                        .HasDatabaseName("ix_feature_flag_changes_flag_id_at");
+
+                    b.ToTable("feature_flag_changes", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_feature_flag_changes_actor", "(kind IN ('AddedToCode', 'RemovedFromCode')) = (actor_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_feature_flag_changes_kind", "kind IN ('AddedToCode', 'RemovedFromCode', 'Listed', 'Unlisted', 'PercentageChanged', 'EveryoneElseChanged')");
+
+                            t.HasCheckConstraint("ck_feature_flag_changes_tenant", "(kind IN ('Listed', 'Unlisted')) = (tenant_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.FeatureFlags.FeatureFlagTenant", b =>
+                {
+                    b.Property<Guid>("FlagId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("flag_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTimeOffset>("ListedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("listed_at");
+
+                    b.Property<Guid>("ListedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listed_by");
+
+                    b.HasKey("FlagId", "TenantId")
+                        .HasName("pk_feature_flag_tenants");
+
+                    b.HasIndex("ListedBy")
+                        .HasDatabaseName("ix_feature_flag_tenants_listed_by");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_feature_flag_tenants_tenant_id");
+
+                    b.ToTable("feature_flag_tenants", "control_plane");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.Property<bool>("Id")
@@ -999,6 +1188,61 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_verification_codes_purpose", "purpose IN ('EmailChange', 'AccountDeletion')");
                         });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.FeatureFlags.FeatureFlag", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("LastChangedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_feature_flags_users_last_changed_by");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.FeatureFlags.FeatureFlagChange", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_feature_flag_changes_users_actor_id");
+
+                    b.HasOne("ControlPlane.Domain.FeatureFlags.FeatureFlag", null)
+                        .WithMany()
+                        .HasForeignKey("FlagId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_feature_flag_changes_feature_flags_flag_id");
+
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_feature_flag_changes_tenants_tenant_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.FeatureFlags.FeatureFlagTenant", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.FeatureFlags.FeatureFlag", null)
+                        .WithMany()
+                        .HasForeignKey("FlagId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_feature_flag_tenants_feature_flags_flag_id");
+
+                    b.HasOne("ControlPlane.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ListedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_feature_flag_tenants_users_listed_by");
+
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_feature_flag_tenants_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>

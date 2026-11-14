@@ -23,4 +23,7 @@ public enum AuditTargetResponseKind
 
     [JsonStringEnumMemberName("terms_version")]
     TermsVersion,
+
+    [JsonStringEnumMemberName("feature_flag")]
+    FeatureFlag,
 }

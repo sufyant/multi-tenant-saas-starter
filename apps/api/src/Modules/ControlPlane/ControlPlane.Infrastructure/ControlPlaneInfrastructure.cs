@@ -1,5 +1,6 @@
 using System.Net.Mail;
 using ControlPlane.Application.DataExports;
+using ControlPlane.Application.FeatureFlags;
 using ControlPlane.Application.Identity;
 using ControlPlane.Application.Invitations;
 using ControlPlane.Application.Plans;
@@ -10,6 +11,7 @@ using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
+using ControlPlane.Contracts.FeatureFlags;
 using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Plans;
@@ -19,8 +21,10 @@ using ControlPlane.Contracts.TermsVersions;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
+using ControlPlane.Infrastructure.FeatureFlags;
 using ControlPlane.Infrastructure.Persistence;
 using ControlPlane.Infrastructure.Persistence.DataExports;
+using ControlPlane.Infrastructure.Persistence.FeatureFlags;
 using ControlPlane.Infrastructure.Persistence.Invitations;
 using ControlPlane.Infrastructure.Persistence.Members;
 using ControlPlane.Infrastructure.Persistence.Plans;
@@ -88,6 +92,16 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<ITermsVersionRepository, TermsVersionRepository>();
         services.AddScoped<ITermsVersionQueries, TermsVersionQueries>();
         services.AddScoped<IStoredFileRepository, StoredFileRepository>();
+        services.AddScoped<IFeatureFlagRepository, FeatureFlagRepository>();
+        services.AddScoped<IFeatureFlagQueries, FeatureFlagQueries>();
+
+        // The one evaluation of a flag (docs/flows/feature-flags.md). A handler of any module may ask it, so Wolverine takes it from the
+        // message's scope and builds no ControlPlane DbContext into another module's handler (W1). The catalog is the code's.
+        services.AddScoped<IFeatureFlags, FeatureFlagEvaluation>();
+        services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IFeatureFlags>());
+        services.AddSingleton(FeatureFlagCode.Template);
+        services.AddOptions<FeatureFlagOptions>().BindConfiguration(FeatureFlagOptions.Section).ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<FeatureFlagOptions>>().Value);
 
         services.AddScoped<IDataExportQueries, DataExportQueries>();
 
@@ -149,6 +163,10 @@ public static class ControlPlaneInfrastructure
 
         return services;
     }
+
+    // The sync and the weekly cleanup of the feature flags, which the host adds where the background work runs (W5).
+    public static IServiceCollection AddFeatureFlagJob(this IServiceCollection services) =>
+        services.AddHostedService<FeatureFlagJob>();
 
     // An address that FluentValidation's EmailAddress accepts (EmailAddress.TryCreate), which .NET reads as the same text, so no
     // display name or comment hides in it.

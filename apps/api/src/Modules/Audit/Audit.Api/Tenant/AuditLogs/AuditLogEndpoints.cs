@@ -9,6 +9,7 @@ using Audit.Application.AuditLogs.GetAuditRetention;
 using Audit.Application.AuditLogs.GetAuditRetentionPeriod;
 using Audit.Application.AuditLogs.ListAuditEntries;
 using Audit.Application.Invitations;
+using Audit.Application.FeatureFlags;
 using Audit.Application.Members;
 using Audit.Application.Plans;
 using Audit.Application.TermsVersions;
@@ -82,6 +83,11 @@ public static class AuditLogEndpoints
         TenantPurgeWarnedDetails warned => new TenantPurgeWarnedDetailsResponse(warned.PurgesAt),
         TenantRenamedDetails renamed => new TenantRenamedDetailsResponse(renamed.OldName, renamed.NewName),
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
+        FeatureFlagAddedToCodeDetails added => new FeatureFlagAddedToCodeDetailsResponse(added.Revision, added.DefaultValue),
+        FeatureFlagRemovedFromCodeDetails removed => new FeatureFlagRemovedFromCodeDetailsResponse(removed.Revision),
+        FeatureFlagPercentageSetDetails percentage => new FeatureFlagPercentageSetDetailsResponse(percentage.From, percentage.To),
+        FeatureFlagTenantListedDetails listed => new FeatureFlagTenantListedDetailsResponse(listed.TenantId, listed.TenantName),
+        FeatureFlagTenantUnlistedDetails unlisted => new FeatureFlagTenantUnlistedDetailsResponse(unlisted.TenantId, unlisted.TenantName),
         TermsVersionCreatedDetails created => new TermsVersionCreatedDetailsResponse(created.EffectiveDate, created.Url, created.Summary, created.RequiresAcceptance, created.SendsEmail),
         TermsVersionUpdatedDetails updated => new TermsVersionUpdatedDetailsResponse(TermsVersionOf(updated.Old), TermsVersionOf(updated.New)),
         TermsVersionCancelledDetails cancelled => new TermsVersionCancelledDetailsResponse(

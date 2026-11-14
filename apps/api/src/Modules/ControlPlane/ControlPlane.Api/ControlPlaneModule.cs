@@ -4,6 +4,7 @@ using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Me.TermsVersions;
 using ControlPlane.Api.Me.Users;
+using ControlPlane.Api.Platform.FeatureFlags;
 using ControlPlane.Api.Platform.Invitations;
 using ControlPlane.Api.Platform.Members;
 using ControlPlane.Api.Platform.Plans;
@@ -12,6 +13,7 @@ using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.TermsVersions;
 using ControlPlane.Api.Public.TermsVersions;
 using ControlPlane.Api.Platform.Users;
+using ControlPlane.Api.Tenant.FeatureFlags;
 using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Api.Tenant.Tenants;
@@ -42,6 +44,7 @@ public static class ControlPlaneModule
         PlatformMemberEndpoints.Map(platform);
         PlanEndpoints.Map(platform);
         TermsVersionEndpoints.Map(platform);
+        FeatureFlagEndpoints.Map(platform);
         UserEndpoints.Map(platform);
         SystemAdminEndpoints.Map(platform);
         MyProfileEndpoints.Map(me);
@@ -53,6 +56,7 @@ public static class ControlPlaneModule
         MemberEndpoints.Map(tenant);
         InvitationEndpoints.Map(tenant);
         RoleEndpoints.Map(tenant);
+        TenantFeatureFlagEndpoints.Map(tenant);
         PublicTermsVersionEndpoints.Map(publicRoutes);
     }
 }

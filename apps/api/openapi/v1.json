@@ -3762,6 +3762,998 @@
         }
       }
     },
+    "/v1/platform/feature-flags": {
+      "get": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "GetFeatureFlags",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/feature-flags/{key}": {
+      "get": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "GetFeatureFlag",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/feature-flags/{key}/tenants/{tenantId}": {
+      "put": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "AddFeatureFlagTenant",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "RemoveFeatureFlagTenant",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/feature-flags/{key}/percentage": {
+      "put": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "SetFeatureFlagPercentage",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFeatureFlagPercentageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/feature-flags/{key}/everyone-else": {
+      "put": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "SetFeatureFlagEveryoneElse",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFeatureFlagEveryoneElseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/feature-flags/{key}/preview": {
+      "post": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "GetFeatureFlagChangePreview",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetFeatureFlagChangePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureFlagChangePreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/feature-flags": {
+      "get": {
+        "tags": [
+          "Platform/FeatureFlags"
+        ],
+        "operationId": "GetTenantFeatureFlags",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TenantFeatureFlagResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/users": {
       "get": {
         "tags": [
@@ -7325,6 +8317,126 @@
         "responses": {
           "204": {
             "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/feature-flags": {
+      "get": {
+        "tags": [
+          "Tenant/FeatureFlags"
+        ],
+        "operationId": "GetMyTenantFeatureFlags",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyFeatureFlagsResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -11026,6 +12138,21 @@
             "$ref": "#/components/schemas/MemberRoleChangedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/FeatureFlagAddedToCodeDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/FeatureFlagPercentageSetDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/FeatureFlagRemovedFromCodeDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/FeatureFlagTenantListedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/FeatureFlagTenantUnlistedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/PlanCreatedDetailsResponse"
           },
           {
@@ -11082,6 +12209,11 @@
             "member.left": "#/components/schemas/MemberLeftDetailsResponse",
             "member.removed": "#/components/schemas/MemberRemovedDetailsResponse",
             "member.role_changed": "#/components/schemas/MemberRoleChangedDetailsResponse",
+            "feature_flag.added_to_code": "#/components/schemas/FeatureFlagAddedToCodeDetailsResponse",
+            "feature_flag.percentage_set": "#/components/schemas/FeatureFlagPercentageSetDetailsResponse",
+            "feature_flag.removed_from_code": "#/components/schemas/FeatureFlagRemovedFromCodeDetailsResponse",
+            "feature_flag.tenant_listed": "#/components/schemas/FeatureFlagTenantListedDetailsResponse",
+            "feature_flag.tenant_unlisted": "#/components/schemas/FeatureFlagTenantUnlistedDetailsResponse",
             "plan.created": "#/components/schemas/PlanCreatedDetailsResponse",
             "plan.updated": "#/components/schemas/PlanUpdatedDetailsResponse",
             "role.created": "#/components/schemas/RoleCreatedDetailsResponse",
@@ -11172,6 +12304,13 @@
       "AuditOperation": {
         "enum": [
           "activity_log.exported",
+          "feature_flag.added_to_code",
+          "feature_flag.everyone_else_off",
+          "feature_flag.everyone_else_on",
+          "feature_flag.percentage_set",
+          "feature_flag.removed_from_code",
+          "feature_flag.tenant_listed",
+          "feature_flag.tenant_unlisted",
           "invitation.revoked",
           "member.invited",
           "member.joined",
@@ -11217,6 +12356,13 @@
         "description": "The operation of an audit entry, area.action.",
         "x-enumNames": [
           "ActivityLogExported",
+          "FeatureFlagAddedToCode",
+          "FeatureFlagEveryoneElseOff",
+          "FeatureFlagEveryoneElseOn",
+          "FeatureFlagPercentageSet",
+          "FeatureFlagRemovedFromCode",
+          "FeatureFlagTenantListed",
+          "FeatureFlagTenantUnlisted",
           "InvitationRevoked",
           "MemberInvited",
           "MemberJoined",
@@ -11387,7 +12533,8 @@
           "invitation",
           "role",
           "plan",
-          "terms_version"
+          "terms_version",
+          "feature_flag"
         ],
         "type": "string",
         "description": "The kind of target of an audit entry.",
@@ -11397,7 +12544,8 @@
           "Invitation",
           "Role",
           "Plan",
-          "TermsVersion"
+          "TermsVersion",
+          "FeatureFlag"
         ]
       },
       "AuditTermsVersionResponse": {
@@ -11877,6 +13025,10 @@
           "data_export.in_progress",
           "data_export.not_found",
           "data_export.not_ready",
+          "feature_flag.change_invalid",
+          "feature_flag.not_found",
+          "feature_flag.percentage_invalid",
+          "feature_flag.removed_from_code",
           "idempotency.key_in_progress",
           "idempotency.key_invalid",
           "idempotency.key_reused",
@@ -11977,6 +13129,10 @@
           "DataExportInProgress",
           "DataExportNotFound",
           "DataExportNotReady",
+          "FeatureFlagChangeInvalid",
+          "FeatureFlagNotFound",
+          "FeatureFlagPercentageInvalid",
+          "FeatureFlagRemovedFromCode",
           "IdempotencyKeyInProgress",
           "IdempotencyKeyInvalid",
           "IdempotencyKeyReused",
@@ -12096,6 +13252,472 @@
         },
         "description": "One key a change would put a tenant over: what the tenant has that the key counts (`count`), the new effective value, and how far\nover it goes (`amount`): the count less a limit, or the whole count for a feature that turns off while the tenant uses it."
       },
+      "FeatureFlagAddedToCodeDetailsResponse": {
+        "required": [
+          "revision",
+          "defaultValue",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "feature_flag.added_to_code"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "FeatureFlagAddedToCode"
+            ]
+          },
+          "revision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "defaultValue": {
+            "type": "boolean"
+          }
+        },
+        "description": "The commit of the deploy that stored the flag, or null when it named none, and the flag's default value."
+      },
+      "FeatureFlagChangePreviewResponse": {
+        "required": [
+          "affectedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "affectedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How many organisations the change would turn on or off, of those that are neither purging nor purged. It never blocks the change."
+      },
+      "FeatureFlagChangeResponse": {
+        "required": [
+          "kind",
+          "from",
+          "to",
+          "tenant",
+          "revision",
+          "at",
+          "actor"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/FeatureFlagChangeResponseKind"
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "to": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "tenant": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FeatureFlagChangeTenantResponse"
+              }
+            ]
+          },
+          "revision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          }
+        },
+        "description": "One line of a flag's history. `from` and `to` hold a percentage's digits, or `on` and `off` for everyone else;\n`tenant` the organisation listed or removed, with its name now; `revision` the commit of the deploy that added or removed the\nflag. `actor` is the system admin, with their name now, and none for a deploy."
+      },
+      "FeatureFlagChangeResponseKind": {
+        "enum": [
+          "added_to_code",
+          "removed_from_code",
+          "listed",
+          "unlisted",
+          "percentage_changed",
+          "everyone_else_changed"
+        ],
+        "type": "string",
+        "description": "What one line of a flag's history tells.",
+        "x-enumNames": [
+          "AddedToCode",
+          "RemovedFromCode",
+          "Listed",
+          "Unlisted",
+          "PercentageChanged",
+          "EveryoneElseChanged"
+        ]
+      },
+      "FeatureFlagChangeTenantResponse": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "description": "The organisation that a line of a flag's history names, with its name now."
+      },
+      "FeatureFlagCountsResponse": {
+        "required": [
+          "all",
+          "readyToRemove",
+          "unused",
+          "removedFromCode"
+        ],
+        "type": "object",
+        "properties": {
+          "all": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "readyToRemove": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unused": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "removedFromCode": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The counts of the list's four tabs."
+      },
+      "FeatureFlagDetailResponse": {
+        "required": [
+          "flag",
+          "description",
+          "defaultValue",
+          "addedAt",
+          "addedRevision",
+          "removedRevision",
+          "listed",
+          "history"
+        ],
+        "type": "object",
+        "properties": {
+          "flag": {
+            "$ref": "#/components/schemas/FeatureFlagResponse"
+          },
+          "description": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "boolean"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "addedRevision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "removedRevision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "listed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureFlagTenantResponse"
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureFlagChangeResponse"
+            }
+          }
+        },
+        "description": "One flag's page: the flag as the list shows it, what the code says of it (its description and its default value, which applies when the\nrules cannot be read), the day and the commit that added it and that removed it from the code, the organisations rule 1 lists, and its\nhistory, newest first."
+      },
+      "FeatureFlagLastChangeResponse": {
+        "required": [
+          "at",
+          "actor"
+        ],
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserNameResponse"
+              }
+            ]
+          }
+        },
+        "description": "A flag's latest change: when, and the system admin who made it, with their name now; none when a deploy made it."
+      },
+      "FeatureFlagPercentageSetDetailsResponse": {
+        "required": [
+          "from",
+          "to",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "feature_flag.percentage_set"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "FeatureFlagPercentageSet"
+            ]
+          },
+          "from": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "to": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FeatureFlagRemovedFromCodeDetailsResponse": {
+        "required": [
+          "revision",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "feature_flag.removed_from_code"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "FeatureFlagRemovedFromCode"
+            ]
+          },
+          "revision": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The commit of the deploy that archived the flag, or null when it named none."
+      },
+      "FeatureFlagResponse": {
+        "required": [
+          "key",
+          "type",
+          "listedCount",
+          "percentage",
+          "everyoneElse",
+          "cleanup",
+          "cleanupSince",
+          "removedAt",
+          "lastChange"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FeatureFlagResponseType"
+          },
+          "listedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "percentage": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "everyoneElse": {
+            "type": "boolean"
+          },
+          "cleanup": {
+            "$ref": "#/components/schemas/FeatureFlagResponseCleanup"
+          },
+          "cleanupSince": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "removedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastChange": {
+            "$ref": "#/components/schemas/FeatureFlagLastChangeResponse"
+          }
+        },
+        "description": "A flag as the list shows it: its key and type, its three rules in short (how many organisations rule 1 lists, the percentage of rule 2,\nand rule 3), its cleanup with the moment it counts from, the moment the code removed it, and its latest change. A flag the code\nremoved has `removedAt` and the cleanup `none`."
+      },
+      "FeatureFlagResponseCleanup": {
+        "enum": [
+          "none",
+          "ready_to_remove",
+          "unused"
+        ],
+        "type": "string",
+        "description": "A flag's removal from the code: none yet, ready to remove, a release flag on for everyone for 30 days, or unused, off for every organisation for 30 days.",
+        "x-enumNames": [
+          "None",
+          "ReadyToRemove",
+          "Unused"
+        ]
+      },
+      "FeatureFlagResponseType": {
+        "enum": [
+          "release",
+          "kill_switch"
+        ],
+        "type": "string",
+        "description": "What a flag is for: a release flag, or a kill switch.",
+        "x-enumNames": [
+          "Release",
+          "KillSwitch"
+        ]
+      },
+      "FeatureFlagsResponse": {
+        "required": [
+          "flags",
+          "counts"
+        ],
+        "type": "object",
+        "properties": {
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureFlagResponse"
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/FeatureFlagCountsResponse"
+          }
+        },
+        "description": "Every flag of this environment, by key, and the counts of the list's tabs: All counts the flags the code defines; a flag the code removed\ncounts only in its own tab (12.01 to 12.04)."
+      },
+      "FeatureFlagTenantListedDetailsResponse": {
+        "required": [
+          "tenantId",
+          "tenantName",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "feature_flag.tenant_listed"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "FeatureFlagTenantListed"
+            ]
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantName": {
+            "type": "string"
+          }
+        },
+        "description": "The organisation, with its name of that moment."
+      },
+      "FeatureFlagTenantResponse": {
+        "required": [
+          "tenantId",
+          "name",
+          "listedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "listedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "An organisation that the flag's first rule lists, with its name now, and when a system admin listed it."
+      },
+      "FeatureFlagTenantUnlistedDetailsResponse": {
+        "required": [
+          "tenantId",
+          "tenantName",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "feature_flag.tenant_unlisted"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "FeatureFlagTenantUnlisted"
+            ]
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantName": {
+            "type": "string"
+          }
+        },
+        "description": "The organisation, with its name of that moment."
+      },
       "FeatureKey": {
         "enum": [
           "roles.custom"
@@ -12125,6 +13747,45 @@
           "SlugInvalid",
           "SlugReserved"
         ]
+      },
+      "GetFeatureFlagChangePreviewRequest": {
+        "required": [
+          "tenantToAdd",
+          "tenantToRemove",
+          "percentage",
+          "everyoneElse"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantToAdd": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "tenantToRemove": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "percentage": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "everyoneElse": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "description": "Exactly one change of the flag's rules: an organisation to list, a listed organisation to remove, a whole percentage, or everyone\nelse on or off. Any other number of changes answers 400 `feature_flag.change_invalid`."
       },
       "GetInvitationPreviewRequest": {
         "required": [
@@ -12724,6 +14385,21 @@
         },
         "description": "The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
+      "MyFeatureFlagsResponse": {
+        "required": [
+          "flags"
+        ],
+        "type": "object",
+        "properties": {
+          "flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        },
+        "description": "Every flag the code defines, by its key, with whether it is on for the organisation."
+      },
       "MyTenantDetailResponse": {
         "required": [
           "id",
@@ -12932,7 +14608,8 @@
           "tenant_settings",
           "tenant_activity_log",
           "platform_tenant",
-          "account_security"
+          "account_security",
+          "platform_feature_flags"
         ],
         "type": "string",
         "description": "Where a notification leads, which the web turns into a URL.",
@@ -12943,7 +14620,8 @@
           "TenantSettings",
           "TenantActivityLog",
           "PlatformTenant",
-          "AccountSecurity"
+          "AccountSecurity",
+          "PlatformFeatureFlags"
         ]
       },
       "NotificationResponse": {
@@ -13022,6 +14700,8 @@
       },
       "NotificationType": {
         "enum": [
+          "feature_flags.ready_to_remove",
+          "feature_flags.unused",
           "member.joined",
           "member.removed",
           "member.role_changed",
@@ -13045,6 +14725,8 @@
         "type": "string",
         "description": "The type of a notification, area.event.",
         "x-enumNames": [
+          "FeatureFlagsReadyToRemove",
+          "FeatureFlagsUnused",
           "MemberJoined",
           "MemberRemoved",
           "MemberRoleChanged",
@@ -13102,6 +14784,8 @@
       "Permission": {
         "enum": [
           "platform.audit.read",
+          "platform.flags.read",
+          "platform.flags.update",
           "platform.plans.create",
           "platform.plans.read",
           "platform.plans.update",
@@ -13145,6 +14829,8 @@
         "description": "A name of the permission list. Every endpoint checks its own permission.",
         "x-enumNames": [
           "PlatformAuditRead",
+          "PlatformFlagsRead",
+          "PlatformFlagsUpdate",
           "PlatformPlansCreate",
           "PlatformPlansRead",
           "PlatformPlansUpdate",
@@ -13849,6 +15535,31 @@
         },
         "description": "The tenant's value of the key in the route, over its plan's value; its expiry, after now, or null for one that never expires; and the\nsystem admin's reason, required. The API trims the reason before it counts its length."
       },
+      "SetFeatureFlagEveryoneElseRequest": {
+        "required": [
+          "on"
+        ],
+        "type": "object",
+        "properties": {
+          "on": {
+            "type": "boolean"
+          }
+        },
+        "description": "Whether the flag is on for everyone else, its third rule."
+      },
+      "SetFeatureFlagPercentageRequest": {
+        "required": [
+          "percentage"
+        ],
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The percentage of the flag's second rule: a whole percentage of the organisations; none turns the rule off."
+      },
       "SuspendTenantRequest": {
         "required": [
           "reason"
@@ -14222,6 +15933,45 @@
           }
         },
         "description": "A tenant that a plan edit would put over: its id, name and slug, how far over its furthest key it goes, each such key, and the keys\nthat an override of the tenant still holds, which the edit does not touch."
+      },
+      "TenantFeatureFlagResponse": {
+        "required": [
+          "key",
+          "type",
+          "reason",
+          "percentage"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FeatureFlagResponseType"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/TenantFeatureFlagResponseReason"
+          },
+          "percentage": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "A flag that is on for the organisation, with its type, the first rule that turns it on, and the percentage of rule 2 (4.09)."
+      },
+      "TenantFeatureFlagResponseReason": {
+        "enum": [
+          "listed",
+          "percentage",
+          "everyone"
+        ],
+        "type": "string",
+        "description": "The first rule that turns a flag on for an organisation: it is listed, it is in the percentage, or the flag is on for everyone else.",
+        "x-enumNames": [
+          "Listed",
+          "Percentage",
+          "Everyone"
+        ]
       },
       "TenantListItemResponse": {
         "required": [
@@ -15436,6 +17186,9 @@
       "name": "Platform/AuditLogs"
     },
     {
+      "name": "Platform/FeatureFlags"
+    },
+    {
       "name": "Platform/Invitations"
     },
     {
@@ -15464,6 +17217,9 @@
     },
     {
       "name": "Tenant/AuditLogs"
+    },
+    {
+      "name": "Tenant/FeatureFlags"
     },
     {
       "name": "Tenant/Invitations"

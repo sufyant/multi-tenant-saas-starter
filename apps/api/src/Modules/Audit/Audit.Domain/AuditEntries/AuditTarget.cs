@@ -18,4 +18,7 @@ internal sealed record AuditTarget(AuditTargetKind Kind, Guid Id, string? Name)
 
     /// <summary>A terms version, by its id only: it has no name, and the details hold its values.</summary>
     public static AuditTarget TermsVersion(Guid versionId) => new(AuditTargetKind.TermsVersion, versionId, null);
+
+    /// <summary>A feature flag, with its key: a key names one flag for good, and is not a person.</summary>
+    public static AuditTarget FeatureFlag(Guid flagId, string key) => new(AuditTargetKind.FeatureFlag, flagId, key);
 }
