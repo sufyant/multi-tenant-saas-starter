@@ -28,6 +28,7 @@ public static class MyNotificationEndpoints
         me.MapPost("/notifications/read", MarkAllMyNotificationsRead);
         me.MapPost("/notifications/{notificationId:guid}/read", MarkNotificationRead);
         me.MapGet("/notifications/stream", StreamNotifications)
+            .WithMetadata(new TermsGateExempt())
             .Produces(StatusCodes.Status200OK, contentType: "text/event-stream")
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)

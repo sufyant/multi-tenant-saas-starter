@@ -590,6 +590,12 @@ internal static partial class OpenApiContract
             Type = JsonSchemaType.String | JsonSchemaType.Null,
             Description = "The entitlement key the error is about: the feature that is off, or the limit that is reached.",
         };
+        problem.Properties[Problems.TermsVersionIdMember] = new OpenApiSchema
+        {
+            Type = JsonSchemaType.String | JsonSchemaType.Null,
+            Format = "uuid",
+            Description = "The terms version the error is about: the version the person must accept before they go on.",
+        };
         // A member's entitlements are a map of each key to its effective value: a feature's state, a limit's number, or null for an
         // unlimited limit (docs/flows/plans-and-entitlements.md). The value has no C# type of one kind, so the document states its kinds.
         if (document.Components.Schemas.TryGetValue("MyTenantDetailResponse", out var myTenant)

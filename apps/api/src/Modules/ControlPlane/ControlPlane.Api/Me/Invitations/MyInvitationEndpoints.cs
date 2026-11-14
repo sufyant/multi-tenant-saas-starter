@@ -29,8 +29,8 @@ public static class MyInvitationEndpoints
     // The preview costs a call to the identity provider for a guessed code too, so it shares the stricter limit of accepting.
     public static void Map(RouteGroupBuilder me)
     {
-        me.MapPost("/invitations/accept", AcceptInvitation).RequireRateLimiting(AcceptRateLimit);
-        me.MapPost("/invitations/preview", GetInvitationPreview).RequireRateLimiting(AcceptRateLimit);
+        me.MapPost("/invitations/accept", AcceptInvitation).WithMetadata(new TermsGateExempt()).RequireRateLimiting(AcceptRateLimit);
+        me.MapPost("/invitations/preview", GetInvitationPreview).WithMetadata(new TermsGateExempt()).RequireRateLimiting(AcceptRateLimit);
     }
 
     // Accepting starts outside any tenant. The invitation code names the tenant, which is declared before the invitation is looked up

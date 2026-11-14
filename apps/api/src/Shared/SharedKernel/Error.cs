@@ -15,6 +15,9 @@ public sealed record Error(ErrorCode Code, string Description, ErrorType Type)
     /// <summary>The entitlement key the error is about, such as the feature that is off or the limit that is reached.</summary>
     public string? Entitlement { get; init; }
 
+    /// <summary>The terms version the error is about, such as the version a person must accept before they go on.</summary>
+    public Guid? TermsVersionId { get; init; }
+
     public static Error Validation(ErrorCode code, string description) => new(code, description, ErrorType.Validation);
 
     public static Error NotFound(ErrorCode code, string description) => new(code, description, ErrorType.NotFound);

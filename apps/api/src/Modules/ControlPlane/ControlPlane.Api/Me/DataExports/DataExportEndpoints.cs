@@ -22,12 +22,12 @@ public static class DataExportEndpoints
 
     public static void Map(RouteGroupBuilder me)
     {
-        me.MapPost("/data-exports", RequestDataExport)
+        me.MapPost("/data-exports", RequestDataExport).WithMetadata(new TermsGateExempt())
             .WithMetadata(new IdempotencyKeyRequired())
             .WithDescription(NoLocation)
             .Produces<DataExportResponse>(StatusCodes.Status201Created);
-        me.MapGet("/data-exports/latest", GetMyDataExport);
-        me.MapPost("/data-exports/{exportId:guid}/download", DownloadDataExport);
+        me.MapGet("/data-exports/latest", GetMyDataExport).WithMetadata(new TermsGateExempt());
+        me.MapPost("/data-exports/{exportId:guid}/download", DownloadDataExport).WithMetadata(new TermsGateExempt());
     }
 
     // The request starts a process, so it takes an idempotency key (I1): a replay answers the same export, and a second request while one is

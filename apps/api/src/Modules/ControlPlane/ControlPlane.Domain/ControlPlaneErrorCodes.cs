@@ -123,6 +123,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantSuspended = ErrorCode.Declare("tenant.suspended");
 
+    public static readonly ErrorCode TermsVersionAcceptanceRequired = ErrorCode.Declare("terms_version.acceptance_required");
+
     public static readonly ErrorCode TermsVersionChanged = ErrorCode.Declare("terms_version.changed");
 
     public static readonly ErrorCode TermsVersionEmailSent = ErrorCode.Declare("terms_version.email_sent");

@@ -4,6 +4,7 @@ using Api.Authentication;
 using Api.Routing;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
+using ControlPlane.Contracts.TermsVersions;
 using ControlPlane.Contracts.Users;
 using Microsoft.AspNetCore.Http.Features;
 using Serilog;
@@ -17,7 +18,9 @@ namespace Api.Authorization;
 // ControlPlane first says whether the user may act at all: a suspended user is refused (A9). On a tenant route the tenant then comes
 // from the id in the path and the user's membership, with the permissions of the member's role, or ControlPlane's reason to refuse:
 // tenant.suspended to a member, tenant.not_found to anyone else (T3); on a platform route ControlPlane answers with the user's platform permissions, given whether the session verified a second
-// factor (A6), and, on a route that requires reverification, whether the second factor is fresh enough. It rejects nothing:
+// factor (A6), and, on a route that requires reverification, whether the second factor is fresh enough. Last, on a me or a tenant route
+// that is not exempt, ControlPlane says whether the person must accept a terms version first (A11), after the membership, so a caller
+// who is no member still learns nothing of the tenant (T3). It rejects nothing:
 // authorization turns away the callers it finds no access for, before the endpoint runs and so before any idempotency key is claimed.
 internal sealed class TenantResolutionMiddleware(RequestDelegate next)
 {
@@ -28,6 +31,7 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
         ITenantDirectory directory,
         ISystemAdminDirectory systemAdmins,
         IUserDirectory users,
+        ITermsGate terms,
         RequestAccess access,
         IMessageBus bus,
         IDiagnosticContext diagnostics)
@@ -65,6 +69,14 @@ internal sealed class TenantResolutionMiddleware(RequestDelegate next)
             access.Membership = found.IsSuccess ? found.Value : null;
             access.Refusal = found.IsSuccess ? null : found.Error;
             tenantId = access.Membership?.TenantId;
+        }
+
+        if ((tenantScoped || metadata.GetMetadata<MeEndpoint>() is not null)
+            && access.Refusal is null
+            && metadata.GetMetadata<TermsGateExempt>() is null)
+        {
+            var passed = await terms.CheckAsync(userId, context.RequestAborted);
+            access.Refusal = passed.IsSuccess ? null : passed.Error;
         }
 
         if (tenantId is not { } resolved)
