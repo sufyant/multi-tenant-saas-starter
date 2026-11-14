@@ -617,13 +617,13 @@ The model:
 
 Open (40-start, 2026-11-14), asked one at a time; each answer goes here with its date:
 
-- Is billing a switch of the product's configuration, off by default, or always on? 8.42, 8.44 and 9.18 draw a product "without billing".
 - Which meter does the template ship? The frames count "AI requests", which the template does not have.
 - One currency for each deployment, or more? The frames show euros.
 - Does the Plan row stay on General (F56, 7.01)? The built page has it; the frame 7.01 does not.
 
 Decided by the frames, and 40-start's choices (2026-11-14):
 
+- Billing is a switch of the product's configuration, off by default. A product turns it on with its Stripe keys. While it is off, the app works as before step 40: a system admin sets each organisation's plan, "No free seat" offers "Request a plan change" (8.42, 8.44, 9.18), and Billing and Usage do not show. Why: a product without Stripe still runs, locally and in CI too (The Twelve-Factor App, "III. Config"; the same pattern as sign-up in 40d). The maintainer's decision of 2026-11-14.
 - A trial lives in our app. It has no Stripe subscription and no card; the first payment opens Stripe Checkout and ends the trial (10.08: "No card needed until you pay. Paying ends the trial."; 1.28).
 - The plan's prices are kept in our app and written to Stripe as Products and Prices. A Stripe Price never changes, so a price change makes a new Price (Stripe, "Change prices"). Usage goes to Stripe as meter events of Billing Meters (Stripe, "Usage-based billing").
 - Stripe's settings are code, as Clerk's are: the customer portal's settings and the webhook endpoint live in `.stripe/`. Agents may run `pnpm stripe:plan`; only the maintainer runs `pnpm stripe:apply` (`AGENTS.md`, "Repository settings").
