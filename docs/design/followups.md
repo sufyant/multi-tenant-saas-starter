@@ -6,7 +6,5 @@ This document lists the changes that the Figma file still needs, so that its fra
 
 - The Activity frames still say "invited someone". After #280 they show the invitee's address, for a viewer who holds `tenant.invitations.read`; any other viewer reads "someone" (`docs/decisions.md`, section 2).
 - 37c-design (#265) did not compare Tabs, EmptyState and the Combobox filter with the code.
-- Frame 1.27 (Create an account · accept the terms) has the same title as 1.09, "Terms of use updated". 1.27 is 40d's frame; 40d fixes its title.
-- Platform 11.17 (Terms of use in Arabic) highlights two rows of the Settings menu: Terms of use and Sign-up. Only Terms of use is the current page.
 - Platform 12.15 and 12.30 (couldn't load) show the user-plus icon in the empty state. An error state needs the error icon of the other "couldn't load" frames.
 - Frame 9.06 (a limit of 0) and frame 4.15 (the current plan chosen) do not draw the states that #279 built. #279's description lists the new texts.

@@ -642,6 +642,7 @@ The parts of 40, in their order. Each part is one pull request or more; the pull
 - Remove the platform's 13.01 to 13.05.
 - A note with the Turkish and Arabic texts of the step's frames.
 - It waits for nothing; it runs beside the backend parts.
+- As built: 7.01 to 7.05 and 14.09 end with the row "Plan" (the plan's name, "Team"), and 14.09 says "Your role: Billing manager". 1.27's title is "Accept the Terms of use", with "Read the Terms of use, then accept them to create your account." Platform 11.17 already highlighted only Terms of use (39-design removed Sign-up from the Settings menu). New frames: web 12.12 and platform 7.11 (the billing sentences of the Activity log), 11.10 (Usage in dark) and 11.11 (Usage in Arabic, with the Sidebar's new variant Page=Usage, Layout=Settings RTL). 10.02, 10.03 and 10.09 end with "Free keeps the Activity log for 90 days: after a move to Free, entries older than 90 days stay 30 days, then go."; 10.06's box adds "Activity log: Free keeps entries for 90 days. Older entries stay until 31 Dec, then go. Export them before then to keep a copy." The frames give Free 90 days only as sample data, to draw the sentence; the seeded plans keep 365 days (40a). The sentence shows only when the new plan keeps the Activity log for fewer days. A note in section 11 says that "AI requests" is sample data and that Usage shows only when the plan has a meter. The platform's section 13 (Sign-up, 13.01 to 13.05) is gone; Emails keeps its number 14, because `packages/emails` names its frames 14.01 to 14.05. "Note · 40 copy" holds the Turkish and Arabic texts: in the web's section 10 (228 rows) and the platform's section 7 (92 rows). Done.
 
 40a-backend, prices and the Billing manager:
 
@@ -752,7 +753,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Step 40, in the parts of section 8. 40-start is done. 40a-backend waits for the API's terms gate. Then steps 41 to 47, in the order of section 1.
+5. Step 40, in the parts of section 8. 40-start and 40-design are done. 40a-backend waits for the API's terms gate. Then steps 41 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:
