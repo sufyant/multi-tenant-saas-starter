@@ -529,6 +529,8 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 - The Activity log sentences of the platform's log for each change: an organisation listed or removed, the percentage changed, everyone else on or off, a flag added to or removed from code (platform section 7, as 7.09).
 - The dark and Arabic forms of 12.05, as the earlier steps drew one of each.
 - A note with the Turkish and Arabic texts of the step's frames (platform 12.01 to 12.23, 3.07, 4.09's Feature flags card).
+- Decided on 2026-11-14, drawn with the Settings frames: the platform's Settings holds only the platform's settings, System admins, Terms of use and Feature flags, and it opens its first row. The "My account" group (Profile, Account and security) leaves Settings, so every Settings frame loses it; the account menu at the foot of the sidebar opens them, as in the web app. The platform's Profile and Account and security show in the platform's shell. The command menu's sections (2.02) follow. The main menu stays Organisations, Users, Plans and Activity log. Why: Settings means the same in both apps (F59: the web's Settings holds only the organisation's pages, and the personal pages open from the account menu).
+- Decided on 2026-11-14 too: a user's page (Users › a person) says whether the person has accepted the terms: the version in force and the day accepted, or "Not yet"; and the same for a scheduled version that requires acceptance. Why: "Did this person accept?" is answered on that person's page.
 - It waits for nothing.
 - As built: the phone's 12.19 counts All 6 without the removed flag, and 12.20 to 12.23 have no environment picker; 12.22 and 12.23 use the desktop's rules card, with "Turn off for everyone" and "Turn on for everyone". Rule 3 of a release flag has its button on 12.05 to 12.10 and 12.18. New frames: 12.24 and 12.25 (rule 3 on and off), 12.26 to 12.28 (the kill switch's confirmation, its off state and "Turn on for everyone"), 12.29 to 12.31 (a flag page loading, couldn't load, and Page not found), 12.32 (12.05 in dark), 12.33 (12.05 in Arabic), 7.10 (the Activity log sentences) and "Note · 39 copy" in section 12. Every confirmation names the environment ("in Production"), 12.06, 12.08 and 12.09 included. A confirmation's text is the same for every flag, with the count of organisations it affects; no flag carries its own warning text. 12.18 says the flag is off for every organisation, without naming other environments. Done.
 
@@ -543,11 +545,13 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 - The flags that are on for one organisation, with the reason (4.09), in the organisation's platform read.
 - A tenant endpoint that answers the flags of the person's organisation, for the web.
 - A weekly worker that writes the system admins' bell notification when a flag is ready to remove or unused (3.07), from a worker hosted service, as the audit retention runs (`apps/api/docs/ARCHITECTURE.md`, K14).
+- The user's terms acceptance in the platform's `GetUser` (`UserDetailResponse`), for the user's page of 39-design: the version in force with the day the person accepted it or null, and the same for a scheduled version that requires acceptance, or null when there is none. `UserDetailResponse` has no such field today.
 - It waits for nothing.
 
 39-frontend, Settings › Feature flags in the platform, and the web's flags:
 
 - 12.01 to 12.23, 39-design's frames, the bell's sentence (3.07), the organisation's flags (4.09), the Settings menu's Feature flags row (every Settings frame draws it), the command menu's "Feature flags" (2.02) and the Activity log sentences of 39-design.
+- The decisions of 2026-11-14 in 39-design: the platform's Settings with System admins, Terms of use and Feature flags only, opening its first row; Profile and Account and security from the account menu, in the platform's shell; the command menu's sections (2.02); the user's terms acceptance on the user's page. F59 and `apps/platform/AGENTS.md` change with it.
 - In the web, one hook that reads the organisation's flags, so a product's screen asks `useFeatureFlag("roles.bulk_edit")`. No screen of the template uses it yet; a test does.
 - It waits for 39-design and 39-backend.
 
