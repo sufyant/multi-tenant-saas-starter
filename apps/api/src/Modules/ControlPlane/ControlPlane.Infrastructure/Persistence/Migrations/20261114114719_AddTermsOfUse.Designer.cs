@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ControlPlane.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ControlPlaneDbContext))]
-    [Migration("20261114103231_AddTermsOfUse")]
+    [Migration("20261114114719_AddTermsOfUse")]
     partial class AddTermsOfUse
     {
         /// <inheritdoc />
@@ -794,9 +794,17 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("effective_date");
 
+                    b.Property<DateTimeOffset?>("EmailSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_sent_at");
+
                     b.Property<bool>("RequiresAcceptance")
                         .HasColumnType("boolean")
                         .HasColumnName("requires_acceptance");
+
+                    b.Property<bool>("SendsEmail")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sends_email");
 
                     b.Property<string>("Summary")
                         .HasMaxLength(500)
@@ -824,6 +832,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("terms_versions", "control_plane", t =>
                         {
                             t.HasCheckConstraint("ck_terms_versions_cancellation", "(cancelled_at IS NULL) = (cancelled_by IS NULL)");
+
+                            t.HasCheckConstraint("ck_terms_versions_email_sent", "sends_email = (email_sent_at IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_terms_versions_url_https", "url LIKE 'https://%'");
                         });

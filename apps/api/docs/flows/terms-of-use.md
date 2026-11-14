@@ -4,7 +4,7 @@ A system admin manages the versions of the terms of use from the platform. A ten
 
 ## 1. A version and its state
 
-- A version has a day, `effectiveDate`, the link to its text, `url`, an optional summary of what changed, and `requiresAcceptance`. It takes effect at 00:00 UTC of its day. The day is today or later in UTC, never in the past (400 `terms_version.effective_date_past`). The link is an absolute `https` URL (400 `terms_version.url_invalid`).
+- A version has a day, `effectiveDate`, the link to its text, `url`, an optional summary of what changed, `requiresAcceptance`, and `sendsEmail`, true when left out. A small change, such as a typo, sends no email and gives no notice: the link only opens the new text (decided with the maintainer on 2026-11-14). It takes effect at 00:00 UTC of its day. The day is today or later in UTC, never in the past (400 `terms_version.effective_date_past`). The link is an absolute `https` URL (400 `terms_version.url_invalid`).
 - The days decide each version's state, on the day of each read, and nothing stores it (`TermsTimeline`). A cancelled version is `cancelled`. Of the others, one whose day has not come is `scheduled`. The latest whose day has come is `current`, the version in force. An older one is `replaced`. Two versions of one day are ordered by their creation: the later one is in force.
 - Example: versions of 1 January and 1 June, and one of 1 December, on 14 November. 1 June is `current`, 1 January `replaced`, 1 December `scheduled`. On 1 December, 1 December becomes `current` and 1 June `replaced`, with no write.
 - One version may be scheduled at a time. A creation while another is scheduled answers 409 `terms_version.scheduled_exists`. Every creation takes one lock of its transaction first (`pg_advisory_xact_lock`), so two system admins never both create a scheduled version (K6).
@@ -29,7 +29,7 @@ A system admin manages the versions of the terms of use from the platform. A ten
 
 1. The version in force requires acceptance and the person did not accept it: `acceptance` of that version.
 2. The scheduled version requires acceptance and the person did not accept it: `acceptance` of that version. A version that requires acceptance asks from the moment it is created, before its day; the gate says the day it applies from.
-3. The scheduled version, then the version in force, requires no acceptance, the person neither accepted nor dismissed it, and the person became a user before the version was created: `notice` of that version. A person who became a user later knew no earlier terms, so the notice tells them nothing.
+3. The scheduled version, then the version in force, requires no acceptance, the version sends its email, the person neither accepted nor dismissed it, and the person became a user before the version was created: `notice` of that version. A version that sends no email gives no notice. A person who became a user later knew no earlier terms, so the notice tells them nothing.
 4. Else `nothing`. The values are words that no other code of the screens uses as a literal (F3). A signed-in person who is not a user yet must do nothing: they accept the version in force with their invitation (section 5).
 
 `AcceptTermsVersion` takes the link the person read. It accepts the version in force or the scheduled one only, with that link; else 409 `terms_version.changed`, and the person reads the terms again. It locks the version row against an edit, but not against another acceptance (`FOR SHARE`, K6): an edit that changes the link waits, and then finds the acceptance and refuses the link. A second acceptance keeps the first moment (I1). It answers what the person must do next: after the version in force, the scheduled one may ask in turn.
@@ -44,12 +44,12 @@ An invitee who has no account yet ticks the terms on Accept invitation (1.15). `
 
 ## 6. The notice email
 
-1. `TermsVersionCreatedEvent` reaches Notifications. A version that requires acceptance tells nobody: the gate asks for it.
-2. A version that requires no acceptance tells every user who may accept, but the system admin who created it (U3), with the type `terms_version.created`. It goes by email only: Home shows the notice from `GetMyTerms`, not from the bell (U5).
+1. `TermsVersionCreatedEvent` reaches Notifications. A version with `sendsEmail` tells every user who may accept, but the system admin who created it (U3), with the type `terms_version.created`. It goes by email only: Home shows the notice, or the gate asks, from `GetMyTerms`, not from the bell (U5). Its value `nextStep` says whether the person accepts at their next sign-in (`accept_at_sign_in`, the frames 13.40 to 13.42) or does nothing (`nothing_to_do`, 13.37 to 13.39).
+2. The email goes once. `emailSentAt` keeps the moment: the creation, when `sendsEmail` is on, or the edit of the scheduled version that turns it on (`TermsVersionUpdatedEvent`, which the same handler hears). Once it went, `sendsEmail` stays on: off answers 409 `terms_version.email_sent`.
 3. The fan-out reaches every user at once, so it gives a pace: `Notifications:Pace:DeliveriesPerSecond` (5) deliveries each second. Each later delivery is a message scheduled a second after the ones before it. Example: 1000 users take 200 seconds. Resend allows 10 requests a second to the whole team by default, so half of it stays for the invitations and the codes of the same seconds (Resend, "Rate limit"). Wolverine releases scheduled messages at each poll of its store, 5 s by default, so the deliveries of a few seconds may still go together. An email that Resend refuses for its rate limit (429) takes the growing retries of `Notifications:InvitationEmails:RetryDelays`, so it goes later and does not reach the dead letter queue at once (U3).
 4. The email's texts are in `packages/emails/messages/*.json`: the day, written in the reader's language and in no time zone, the link, and the summary, or a text without it.
 
-An edit or a cancellation sends no email.
+Another edit, or a cancellation, sends no email.
 
 ## 7. Before sign-in
 

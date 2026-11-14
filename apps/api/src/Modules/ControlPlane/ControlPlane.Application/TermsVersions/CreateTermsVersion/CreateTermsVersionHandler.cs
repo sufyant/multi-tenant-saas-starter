@@ -25,7 +25,7 @@ public static class CreateTermsVersionHandler
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         var created = TermsVersion.Create(
-            Guid.CreateVersion7(now), command.EffectiveDate, command.Url, command.Summary, command.RequiresAcceptance, actor, timeline.ScheduledId is not null, now);
+            Guid.CreateVersion7(now), command.EffectiveDate, command.Url, command.Summary, command.RequiresAcceptance, command.SendsEmail, actor, timeline.ScheduledId is not null, now);
         if (!created.IsSuccess)
         {
             return (created.Error, []);
@@ -37,6 +37,6 @@ public static class CreateTermsVersionHandler
         var view = await queries.FindVersionAsync(version.Id, today, cancellationToken)
             ?? throw new InvalidOperationException("The version was added in this transaction.");
         return (view.Version, [new TermsVersionCreatedEvent(
-            Guid.CreateVersion7(now), now, version.Id, actor, version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance)]);
+            Guid.CreateVersion7(now), now, version.Id, actor, version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance, version.SendsEmail)]);
     }
 }

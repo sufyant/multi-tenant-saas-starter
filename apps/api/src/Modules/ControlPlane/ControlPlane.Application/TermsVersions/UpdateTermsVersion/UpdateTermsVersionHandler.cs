@@ -25,7 +25,7 @@ public static class UpdateTermsVersionHandler
 
         var now = time.GetUtcNow();
         var accepted = await terms.CountAcceptancesAsync(version.Id, cancellationToken) > 0;
-        var edited = version.Edit(command.EffectiveDate, command.Url, command.Summary, command.RequiresAcceptance, accepted, now);
+        var edited = version.Edit(command.EffectiveDate, command.Url, command.Summary, command.RequiresAcceptance, command.SendsEmail, accepted, now);
         if (!edited.IsSuccess)
         {
             return (edited.Error, []);
@@ -47,5 +47,5 @@ public static class UpdateTermsVersionHandler
     }
 
     private static TermsVersionRecord RecordOf(TermsVersionValues values) =>
-        new(values.EffectiveDate, values.Url, values.Summary, values.RequiresAcceptance);
+        new(values.EffectiveDate, values.Url, values.Summary, values.RequiresAcceptance, values.SendsEmail);
 }

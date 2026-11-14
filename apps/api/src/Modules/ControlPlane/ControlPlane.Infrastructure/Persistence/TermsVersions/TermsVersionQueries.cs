@@ -48,6 +48,8 @@ public sealed class TermsVersionQueries(ControlPlaneDbContext controlPlane) : IT
                     timeline.StateOf(version.Id).ToString(),
                     accepted.GetValueOrDefault(version.Id),
                     locked.Contains(version.Id),
+                    version.SendsEmail,
+                    version.EmailSentAt,
                     version.CreatedAt,
                     version.CancelledAt))],
             activeUsers);
@@ -137,5 +139,5 @@ public sealed class TermsVersionQueries(ControlPlaneDbContext controlPlane) : IT
     private static TermsVersionDay DayOf(TermsVersion version) => new(version.Id, version.EffectiveDate, version.CreatedAt, version.CancelledAt is not null);
 
     private static TermsGateVersion? GateOf(IReadOnlyList<TermsVersion> versions, Guid? id) =>
-        versions.SingleOrDefault(version => version.Id == id) is { } found ? new TermsGateVersion(found.Id, found.RequiresAcceptance, found.CreatedAt) : null;
+        versions.SingleOrDefault(version => version.Id == id) is { } found ? new TermsGateVersion(found.Id, found.RequiresAcceptance, found.SendsEmail, found.CreatedAt) : null;
 }

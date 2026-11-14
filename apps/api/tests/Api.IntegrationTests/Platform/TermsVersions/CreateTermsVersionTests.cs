@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace Api.IntegrationTests.Platform.TermsVersions;
 
 // POST /v1/platform/terms/versions: a system admin creates a terms version, a day of today or later, with an https link. One version may be
-// scheduled at a time. A version that requires no acceptance tells every user who may accept by email.
+// scheduled at a time. A version that emails the users tells every user who may accept; a small change emails nobody.
 public sealed class CreateTermsVersionTests(Database database)
 {
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -92,7 +92,7 @@ public sealed class CreateTermsVersionTests(Database database)
         (await own.ScalarAsync<string>($"SELECT concat_ws('|', operation, actor_kind, actor_id, target_kind, coalesce(target_name, '-')) FROM audit.platform_entries WHERE target_id = '{versionId}'"))
             .ShouldBe($"terms_version.created|User|{adminId}|TermsVersion|-");
         (await own.ScalarAsync<string>($"SELECT details::text FROM audit.platform_entries WHERE target_id = '{versionId}'"))
-            .ShouldBe($$"""{"url": "{{TermsRequests.Link}}", "summary": "New", "effectiveDate": "{{TermsRequests.Today.AddDays(10):yyyy-MM-dd}}", "requiresAcceptance": true}""");
+            .ShouldBe($$"""{"url": "{{TermsRequests.Link}}", "summary": "New", "sendsEmail": true, "effectiveDate": "{{TermsRequests.Today.AddDays(10):yyyy-MM-dd}}", "requiresAcceptance": true}""");
     }
 
     // A version that requires no acceptance tells every user who may accept: a tenant user who is active. A suspended user, a person who
@@ -115,14 +115,28 @@ public sealed class CreateTermsVersionTests(Database database)
         own.Api.Email.Sent.Single().Subject.ShouldStartWith("Our terms of use change on");
     }
 
+    // A version that requires acceptance tells the person before their next sign-in, where the gate asks.
     [Fact]
-    public async Task CreateTermsVersion_RequiringAcceptance_EmailsNobody()
+    public async Task CreateTermsVersion_RequiringAcceptance_EmailsThatThePersonAcceptsAtSignIn()
     {
         await using var own = await OwnTerms.CreateAsync(database);
         var (tenantId, _) = await own.Data.AddTenantAsync();
         await own.AddTenantUserAsync(tenantId);
 
         await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10)));
+
+        own.Api.Email.Sent.Single().Text.ShouldContain("You accept them the next time you sign in.");
+    }
+
+    // A small change, such as a typo, emails nobody (the maintainer's decision of 2026-11-14).
+    [Fact]
+    public async Task CreateTermsVersion_WithoutEmail_EmailsNobody()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        await own.AddTenantUserAsync(tenantId);
+
+        await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10), requiresAcceptance: false, sendsEmail: false));
 
         own.Api.Email.Sent.ShouldBeEmpty();
     }

@@ -445,6 +445,7 @@ export interface TermsVersionCreatedDetailsResponse {
   /** @nullable */
   summary: string | null;
   requiresAcceptance: boolean;
+  sendsEmail: boolean;
 }
 
 export type TermsVersionUpdatedDetailsResponseOperation = typeof TermsVersionUpdatedDetailsResponseOperation[keyof typeof TermsVersionUpdatedDetailsResponseOperation];
@@ -455,7 +456,7 @@ export const TermsVersionUpdatedDetailsResponseOperation = {
 } as const;
 
 /**
- * A terms version's values as an entry keeps them: its day, its link, its summary or null, and whether it requires acceptance.
+ * A terms version's values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users.
  */
 export interface AuditTermsVersionResponse {
   effectiveDate: string;
@@ -463,6 +464,7 @@ export interface AuditTermsVersionResponse {
   /** @nullable */
   summary: string | null;
   requiresAcceptance: boolean;
+  sendsEmail: boolean;
 }
 
 export interface TermsVersionUpdatedDetailsResponse {
@@ -703,7 +705,9 @@ export interface CreateTenantRequest {
 
 /**
  * A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional
- * summary of what changed; and whether a person must accept it. The API trims the link and the summary before it counts their lengths.
+ * summary of what changed; whether a person must accept it; and whether its creation emails every user who may accept, true when left out.
+ * A version that emails nobody, a small change, gives no notice on Home either. The API trims the link and the summary before it counts
+ * their lengths.
  */
 export interface CreateTermsVersionRequest {
   effectiveDate: string;
@@ -715,6 +719,7 @@ export interface CreateTermsVersionRequest {
      */
   summary: string | null;
   requiresAcceptance: boolean;
+  sendsEmail?: boolean;
 }
 
 export interface CursorPageOfAuditEntryResponse {
@@ -1023,6 +1028,7 @@ export const ErrorCode = {
   TenantSuspended: 'tenant.suspended',
   TermsVersionChanged: 'terms_version.changed',
   TermsVersionEffectiveDatePast: 'terms_version.effective_date_past',
+  TermsVersionEmailSent: 'terms_version.email_sent',
   TermsVersionLocked: 'terms_version.locked',
   TermsVersionNotFound: 'terms_version.not_found',
   TermsVersionNotScheduled: 'terms_version.not_scheduled',
@@ -1842,8 +1848,8 @@ export const TermsVersionResponseState = {
 
 /**
  * A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the
- * request, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when
- * it was created, and when it was cancelled, or null.
+ * request, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,
+ * whether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.
  */
 export interface TermsVersionResponse {
   id: string;
@@ -1855,6 +1861,9 @@ export interface TermsVersionResponse {
   state: TermsVersionResponseState;
   acceptedCount: number;
   locked: boolean;
+  sendsEmail: boolean;
+  /** @nullable */
+  emailSentAt: string | null;
   createdAt: string;
   /** @nullable */
   cancelledAt: string | null;
@@ -1908,7 +1917,9 @@ export interface UpdateRoleRequest {
 
 /**
  * The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and
- * `requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`.
+ * `requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`. `sendsEmail` is required: off
+ * may turn on, and the email then goes to every user who may accept; once on, it stays on, and off answers 409
+ * `terms_version.email_sent`.
  */
 export interface UpdateTermsVersionRequest {
   effectiveDate: string;
@@ -1920,6 +1931,7 @@ export interface UpdateTermsVersionRequest {
      */
   summary: string | null;
   requiresAcceptance: boolean;
+  sendsEmail: boolean;
 }
 
 /**

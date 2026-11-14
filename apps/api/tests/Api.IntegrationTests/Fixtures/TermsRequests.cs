@@ -19,11 +19,12 @@ internal static class TermsRequests
         DateOnly effectiveDate,
         string url = Link,
         string? summary = null,
-        bool requiresAcceptance = true)
+        bool requiresAcceptance = true,
+        bool sendsEmail = true)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/platform/terms/versions")
         {
-            Content = JsonContent.Create(new { effectiveDate, url, summary, requiresAcceptance }),
+            Content = JsonContent.Create(new { effectiveDate, url, summary, requiresAcceptance, sendsEmail }),
         };
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         return await client.SendAsync(request, TestContext.Current.CancellationToken);
@@ -35,9 +36,10 @@ internal static class TermsRequests
         DateOnly effectiveDate,
         string url = Link,
         string? summary = null,
-        bool requiresAcceptance = true)
+        bool requiresAcceptance = true,
+        bool sendsEmail = true)
     {
-        var created = await client.CreateTermsVersionAsync(effectiveDate, url, summary, requiresAcceptance);
+        var created = await client.CreateTermsVersionAsync(effectiveDate, url, summary, requiresAcceptance, sendsEmail);
         created.EnsureSuccessStatusCode();
         return (await created.Content.ReadFromJsonAsync<JsonElement>(TestContext.Current.CancellationToken)).GetProperty("id").GetGuid();
     }
@@ -48,8 +50,10 @@ internal static class TermsRequests
         DateOnly effectiveDate,
         string url = Link,
         string? summary = null,
-        bool requiresAcceptance = true) =>
-        client.PatchAsJsonAsync($"/v1/platform/terms/versions/{versionId}", new { effectiveDate, url, summary, requiresAcceptance }, TestContext.Current.CancellationToken);
+        bool requiresAcceptance = true,
+        bool sendsEmail = true) =>
+        client.PatchAsJsonAsync(
+            $"/v1/platform/terms/versions/{versionId}", new { effectiveDate, url, summary, requiresAcceptance, sendsEmail }, TestContext.Current.CancellationToken);
 
     public static Task<HttpResponseMessage> CancelTermsVersionAsync(this HttpClient client, Guid versionId) =>
         client.PostAsync($"/v1/platform/terms/versions/{versionId}/cancel", null, TestContext.Current.CancellationToken);

@@ -45,6 +45,18 @@ public sealed class GetMyTermsTests(Database database)
         TermsRequests.AskOf(await person.MyTermsAsync()).ShouldBe("nothing");
     }
 
+    // A small change emails nobody, and gives no notice either.
+    [Fact]
+    public async Task GetMyTerms_AVersionWithoutEmail_MustDoNothing()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        var (_, person) = await own.AddTenantUserAsync(tenantId);
+        await own.Admin.AddTermsVersionAsync(TermsRequests.Today, requiresAcceptance: false, sendsEmail: false);
+
+        TermsRequests.AskOf(await person.MyTermsAsync()).ShouldBe("nothing");
+    }
+
     // A notice tells of a change: a person who became a user after the version knew no earlier terms.
     [Fact]
     public async Task GetMyTerms_AUserNewerThanTheNoticeOnlyVersion_MustDoNothing()

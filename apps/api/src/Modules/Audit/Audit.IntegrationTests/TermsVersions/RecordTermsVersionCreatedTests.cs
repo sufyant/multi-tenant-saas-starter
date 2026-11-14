@@ -26,6 +26,6 @@ public sealed class RecordTermsVersionCreatedTests(Database database)
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, created.EventId)).ShouldBe($"terms_version.created|User|{created.CreatedBy}|TermsVersion|{created.VersionId}|-");
         (await Logs.DetailsAsync(database.Services, Logs.Platform, null, created.EventId)).ShouldBe(
-            """{"url": "https://brand.example/terms", "summary": "New", "effectiveDate": "2026-12-01", "requiresAcceptance": false}""");
+            """{"url": "https://brand.example/terms", "summary": "New", "sendsEmail": true, "effectiveDate": "2026-12-01", "requiresAcceptance": false}""");
     }
 }

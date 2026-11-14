@@ -175,10 +175,10 @@
     },
     "terms_version.created": {
       "title": "Kullanım koşullarımız {effectiveDate} tarihinde değişiyor",
-      "body": "Yeni koşullar {effectiveDate} tarihinden itibaren geçerli. Değişenler: {summary} Koşulları okuyun: {url}",
+      "body": "Yeni koşullar {effectiveDate} tarihinden itibaren geçerli. {nextStep} Değişenler: {summary} Koşulları okuyun: {url}",
       "without": {
         "summary": {
-          "body": "Yeni koşullar {effectiveDate} tarihinden itibaren geçerli. Koşulları okuyun: {url}"
+          "body": "Yeni koşullar {effectiveDate} tarihinden itibaren geçerli. {nextStep} Koşulları okuyun: {url}"
         }
       },
       "footer": "Bu e-postayı, hesabınızın kullanım koşulları değiştiği için aldınız."
@@ -216,6 +216,10 @@
     "days": {
       "one": "# gün",
       "other": "# gün"
+    },
+    "nextStep": {
+      "accept_at_sign_in": "Bir sonraki oturum açışınızda koşulları kabul edeceksiniz.",
+      "nothing_to_do": "Sizin bir şey yapmanız gerekmiyor."
     }
   }
 }

@@ -11405,7 +11405,8 @@
           "effectiveDate",
           "url",
           "summary",
-          "requiresAcceptance"
+          "requiresAcceptance",
+          "sendsEmail"
         ],
         "type": "object",
         "properties": {
@@ -11424,9 +11425,12 @@
           },
           "requiresAcceptance": {
             "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean"
           }
         },
-        "description": "A terms version's values as an entry keeps them: its day, its link, its summary or null, and whether it requires acceptance."
+        "description": "A terms version's values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users."
       },
       "ChangeEmailRequest": {
         "required": [
@@ -11611,9 +11615,13 @@
           },
           "requiresAcceptance": {
             "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean",
+            "default": true
           }
         },
-        "description": "A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional\nsummary of what changed; and whether a person must accept it. The API trims the link and the summary before it counts their lengths."
+        "description": "A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional\nsummary of what changed; whether a person must accept it; and whether its creation emails every user who may accept, true when left out.\nA version that emails nobody, a small change, gives no notice on Home either. The API trims the link and the summary before it counts\ntheir lengths."
       },
       "CursorPageOfAuditEntryResponse": {
         "required": [
@@ -11942,6 +11950,7 @@
           "tenant.suspended",
           "terms_version.changed",
           "terms_version.effective_date_past",
+          "terms_version.email_sent",
           "terms_version.locked",
           "terms_version.not_found",
           "terms_version.not_scheduled",
@@ -12041,6 +12050,7 @@
           "TenantSuspended",
           "TermsVersionChanged",
           "TermsVersionEffectiveDatePast",
+          "TermsVersionEmailSent",
           "TermsVersionLocked",
           "TermsVersionNotFound",
           "TermsVersionNotScheduled",
@@ -14820,6 +14830,7 @@
           "url",
           "summary",
           "requiresAcceptance",
+          "sendsEmail",
           "operation"
         ],
         "properties": {
@@ -14846,6 +14857,9 @@
             ]
           },
           "requiresAcceptance": {
+            "type": "boolean"
+          },
+          "sendsEmail": {
             "type": "boolean"
           }
         }
@@ -14877,6 +14891,8 @@
           "state",
           "acceptedCount",
           "locked",
+          "sendsEmail",
+          "emailSentAt",
           "createdAt",
           "cancelledAt"
         ],
@@ -14912,6 +14928,16 @@
           "locked": {
             "type": "boolean"
           },
+          "sendsEmail": {
+            "type": "boolean"
+          },
+          "emailSentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -14924,7 +14950,7 @@
             "format": "date-time"
           }
         },
-        "description": "A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when\nit was created, and when it was cancelled, or null."
+        "description": "A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null."
       },
       "TermsVersionResponseState": {
         "enum": [
@@ -15028,7 +15054,8 @@
           "effectiveDate",
           "url",
           "summary",
-          "requiresAcceptance"
+          "requiresAcceptance",
+          "sendsEmail"
         ],
         "type": "object",
         "properties": {
@@ -15049,9 +15076,12 @@
           },
           "requiresAcceptance": {
             "type": "boolean"
+          },
+          "sendsEmail": {
+            "type": "boolean"
           }
         },
-        "description": "The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and\n`requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`."
+        "description": "The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and\n`requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`. `sendsEmail` is required: off\nmay turn on, and the email then goes to every user who may accept; once on, it stays on, and off answers 409\n`terms_version.email_sent`."
       },
       "UserDetailResponse": {
         "required": [

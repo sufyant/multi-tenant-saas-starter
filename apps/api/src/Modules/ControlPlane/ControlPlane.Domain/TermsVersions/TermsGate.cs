@@ -4,7 +4,8 @@ namespace ControlPlane.Domain.TermsVersions;
 /// The gate after sign-in. A version that requires acceptance asks for it from the moment it is created, before its day: the version in
 /// force first, because it applies now, then the scheduled one. Without such a request, a version that requires no acceptance gives a
 /// notice until the person dismisses it or accepted it: the scheduled one first, as it is the newer, then the one in force. A notice tells a
-/// person of a change, so a person who became a user after the version was created gets none: they never knew the earlier terms.
+/// person of a change, so a person who became a user after the version was created gets none: they never knew the earlier terms. A small
+/// change, which emails nobody, gives no notice either.
 /// </summary>
 internal static class TermsGate
 {
@@ -25,7 +26,7 @@ internal static class TermsGate
 
         foreach (var version in new[] { scheduled, current })
         {
-            if (version is { RequiresAcceptance: false }
+            if (version is { RequiresAcceptance: false, SendsEmail: true }
                 && !accepted.Contains(version.Id)
                 && !dismissed.Contains(version.Id)
                 && userCreatedAt < version.CreatedAt)

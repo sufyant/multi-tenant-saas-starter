@@ -178,6 +178,7 @@
     "terms_version": {
       "changed": "The terms changed since you opened them. Read them again, then accept.",
       "effective_date_past": "Choose today or a later date.",
+      "email_sent": "The email of this version went to the users already, so it stays on.",
       "locked": "Someone accepted this version, so its link and whether it requires acceptance stay. Cancel it and add a new version instead.",
       "not_found": "This version of the terms was not found.",
       "not_scheduled": "Only a scheduled version can change. A version in force never changes.",

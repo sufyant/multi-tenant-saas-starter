@@ -13,7 +13,7 @@ public static class RecordTermsVersionCreatedHandler
     public static Task HandleAsync(TermsVersionCreatedEvent created, IAuditLog log, CancellationToken cancellationToken)
     {
         var details = JsonSerializer.Serialize(
-            new TermsVersionCreatedDetails(created.EffectiveDate, created.Url, created.Summary, created.RequiresAcceptance), JsonSerializerOptions.Web);
+            new TermsVersionCreatedDetails(created.EffectiveDate, created.Url, created.Summary, created.RequiresAcceptance, created.SendsEmail), JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(
                 created.EventId, created.OccurredAt, AuditActor.User(created.CreatedBy), AuditOperations.TermsVersionCreated, AuditTarget.TermsVersion(created.VersionId), details),

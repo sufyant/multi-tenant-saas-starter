@@ -21,11 +21,11 @@ public sealed class RecordTermsVersionUpdatedTests(Database database)
     public async Task RecordTermsVersionUpdated_AnEdit_WritesTheOldAndTheNewValues()
     {
         var updated = new TermsVersionUpdatedEvent(
-            Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), new(FirstOfDecember, Link, null, true), new(FirstOfDecember.AddDays(7), Link, "Later", true));
+            Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), new(FirstOfDecember, Link, null, true, false), new(FirstOfDecember.AddDays(7), Link, "Later", true, true));
 
         await InTenant.RunAsync(database.Services, null, scope => RecordTermsVersionUpdatedHandler.HandleAsync(updated, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DetailsAsync(database.Services, Logs.Platform, null, updated.EventId)).ShouldBe(
-            """{"new": {"url": "https://brand.example/terms", "summary": "Later", "effectiveDate": "2026-12-08", "requiresAcceptance": true}, "old": {"url": "https://brand.example/terms", "summary": null, "effectiveDate": "2026-12-01", "requiresAcceptance": true}}""");
+            """{"new": {"url": "https://brand.example/terms", "summary": "Later", "sendsEmail": true, "effectiveDate": "2026-12-08", "requiresAcceptance": true}, "old": {"url": "https://brand.example/terms", "summary": null, "sendsEmail": false, "effectiveDate": "2026-12-01", "requiresAcceptance": true}}""");
     }
 }

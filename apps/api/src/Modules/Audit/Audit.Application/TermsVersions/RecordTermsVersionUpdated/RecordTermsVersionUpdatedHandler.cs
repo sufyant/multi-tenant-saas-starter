@@ -19,5 +19,5 @@ public static class RecordTermsVersionUpdatedHandler
             cancellationToken);
     }
 
-    private static AuditTermsVersion Of(TermsVersionRecord version) => new(version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance);
+    private static AuditTermsVersion Of(TermsVersionRecord version) => new(version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance, version.SendsEmail);
 }

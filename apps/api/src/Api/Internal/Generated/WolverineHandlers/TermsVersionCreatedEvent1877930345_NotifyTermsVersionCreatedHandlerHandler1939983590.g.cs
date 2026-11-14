@@ -7,16 +7,16 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: NotifyTermsVersionCreatedHandlerHandler1939983590
+    // START: TermsVersionCreatedEvent1877930345_NotifyTermsVersionCreatedHandlerHandler1939983590
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class NotifyTermsVersionCreatedHandlerHandler1939983590 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class TermsVersionCreatedEvent1877930345_NotifyTermsVersionCreatedHandlerHandler1939983590 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly Microsoft.Extensions.Options.IOptions<Notifications.Application.Notifications.NotificationPaceOptions> _optionsOfNotificationPaceOptions;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public NotifyTermsVersionCreatedHandlerHandler1939983590(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, Microsoft.Extensions.Options.IOptions<Notifications.Application.Notifications.NotificationPaceOptions> optionsOfNotificationPaceOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public TermsVersionCreatedEvent1877930345_NotifyTermsVersionCreatedHandlerHandler1939983590(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, Microsoft.Extensions.Options.IOptions<Notifications.Application.Notifications.NotificationPaceOptions> optionsOfNotificationPaceOptions, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _optionsOfNotificationPaceOptions = optionsOfNotificationPaceOptions;
@@ -71,7 +71,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: NotifyTermsVersionCreatedHandlerHandler1939983590
+    // END: TermsVersionCreatedEvent1877930345_NotifyTermsVersionCreatedHandlerHandler1939983590
     
     
 }

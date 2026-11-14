@@ -293,7 +293,8 @@ export const ListAuditEntriesResponse = zod.object({
   "effectiveDate": zod.iso.date(),
   "url": zod.string(),
   "summary": zod.string().nullable(),
-  "requiresAcceptance": zod.boolean()
+  "requiresAcceptance": zod.boolean(),
+  "sendsEmail": zod.boolean()
 }),zod.object({
   "operation": zod.enum({
   TermsVersionUpdated: 'terms_version.updated',
@@ -302,14 +303,16 @@ export const ListAuditEntriesResponse = zod.object({
   "effectiveDate": zod.iso.date(),
   "url": zod.string(),
   "summary": zod.string().nullable(),
-  "requiresAcceptance": zod.boolean()
-}).describe('A terms version\'s values as an entry keeps them: its day, its link, its summary or null, and whether it requires acceptance.'),
+  "requiresAcceptance": zod.boolean(),
+  "sendsEmail": zod.boolean()
+}).describe('A terms version\'s values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users.'),
   "new": zod.object({
   "effectiveDate": zod.iso.date(),
   "url": zod.string(),
   "summary": zod.string().nullable(),
-  "requiresAcceptance": zod.boolean()
-}).describe('A terms version\'s values as an entry keeps them: its day, its link, its summary or null, and whether it requires acceptance.')
+  "requiresAcceptance": zod.boolean(),
+  "sendsEmail": zod.boolean()
+}).describe('A terms version\'s values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users.')
 })]).describe('The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows\n`details` by it. It is the entry\'s own operation.')]),
   "actor": zod.object({
   "kind": zod.enum({

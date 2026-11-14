@@ -23,13 +23,15 @@ internal sealed class TermsVersion
     public static readonly Error NotScheduled = Error.Conflict(
         ControlPlaneErrorCodes.TermsVersionNotScheduled, "Only a scheduled version changes: a version in force, replaced or cancelled never does.");
 
-    private TermsVersion(Guid id, DateOnly effectiveDate, string url, string? summary, bool requiresAcceptance, Guid createdBy, DateTimeOffset createdAt)
+    private TermsVersion(Guid id, DateOnly effectiveDate, string url, string? summary, bool requiresAcceptance, bool sendsEmail, Guid createdBy, DateTimeOffset createdAt)
     {
         Id = id;
         EffectiveDate = effectiveDate;
         Url = url;
         Summary = summary;
         RequiresAcceptance = requiresAcceptance;
+        SendsEmail = sendsEmail;
+        EmailSentAt = sendsEmail ? createdAt : null;
         CreatedBy = createdBy;
         CreatedAt = createdAt;
     }
@@ -48,6 +50,16 @@ internal sealed class TermsVersion
     /// <summary>Whether a person must accept the version; otherwise a notice tells them of it.</summary>
     public bool RequiresAcceptance { get; private set; }
 
+    /// <summary>
+    /// Whether the version emails every user who may accept, and a version that requires no acceptance shows its notice on Home. A small
+    /// change, such as a typo, does neither: the link only opens the new text (the maintainer's decision of 2026-11-14). The email goes
+    /// once: at the creation when it is on, or at the edit that turns it on while the version is scheduled. Once it went, it stays on.
+    /// </summary>
+    public bool SendsEmail { get; private set; }
+
+    /// <summary>When the version's email went to the users: its creation, or the edit that turned it on; none while it sends none.</summary>
+    public DateTimeOffset? EmailSentAt { get; private set; }
+
     /// <summary>The user id of the system admin who created the version.</summary>
     public Guid CreatedBy { get; private init; }
 
@@ -60,7 +72,7 @@ internal sealed class TermsVersion
     public Guid? CancelledBy { get; private set; }
 
     /// <summary>The values a system admin gives the version.</summary>
-    public TermsVersionValues Values => new(EffectiveDate, Url, Summary, RequiresAcceptance);
+    public TermsVersionValues Values => new(EffectiveDate, Url, Summary, RequiresAcceptance, SendsEmail);
 
     /// <summary>The day in UTC of a moment, the day a version's effective date is compared with.</summary>
     public static DateOnly DayOf(DateTimeOffset moment) => DateOnly.FromDateTime(moment.UtcDateTime);
@@ -75,6 +87,7 @@ internal sealed class TermsVersion
         string url,
         string? summary,
         bool requiresAcceptance,
+        bool sendsEmail,
         Guid createdBy,
         bool anotherScheduled,
         DateTimeOffset now)
@@ -90,7 +103,7 @@ internal sealed class TermsVersion
             return Error.Conflict(ControlPlaneErrorCodes.TermsVersionScheduledExists, "Another version is scheduled. Edit or cancel it first.");
         }
 
-        return new TermsVersion(id, effectiveDate, url.Trim(), Normalize(summary), requiresAcceptance, createdBy, now);
+        return new TermsVersion(id, effectiveDate, url.Trim(), Normalize(summary), requiresAcceptance, sendsEmail, createdBy, now);
     }
 
     /// <summary>Whether the version waits for its day on this day: it was not cancelled, and its day has not come.</summary>
@@ -98,9 +111,17 @@ internal sealed class TermsVersion
 
     /// <summary>
     /// Gives the scheduled version these values, under the rules of <see cref="Create"/>. A version someone accepted keeps its link and
-    /// whether it requires acceptance. Returns the values before; the values it has change nothing (I1). Every rejection comes first.
+    /// whether it requires acceptance. A version whose email went keeps it on; one without may turn it on, and the email then goes. Returns
+    /// the values before; the values it has change nothing (I1). Every rejection comes first.
     /// </summary>
-    public Result<TermsVersionValues> Edit(DateOnly effectiveDate, string url, string? summary, bool requiresAcceptance, bool accepted, DateTimeOffset now)
+    public Result<TermsVersionValues> Edit(
+        DateOnly effectiveDate,
+        string url,
+        string? summary,
+        bool requiresAcceptance,
+        bool sendsEmail,
+        bool accepted,
+        DateTimeOffset now)
     {
         if (!IsScheduledOn(DayOf(now)))
         {
@@ -121,11 +142,18 @@ internal sealed class TermsVersion
                 "Someone accepted this version, so its link and whether it requires acceptance stay. Cancel it and create a new version instead.");
         }
 
+        if (EmailSentAt is not null && !sendsEmail)
+        {
+            return Error.Conflict(ControlPlaneErrorCodes.TermsVersionEmailSent, "The email of this version went to the users already, so it stays on.");
+        }
+
         var before = Values;
         EffectiveDate = effectiveDate;
         Url = trimmed;
         Summary = Normalize(summary);
         RequiresAcceptance = requiresAcceptance;
+        SendsEmail = sendsEmail;
+        EmailSentAt ??= sendsEmail ? now : null;
         return before;
     }
 

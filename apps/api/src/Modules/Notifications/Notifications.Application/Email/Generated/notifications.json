@@ -99,11 +99,11 @@
       },
       "terms_version.created": {
         "title": "Our terms of use change on {{effectiveDate}}",
-        "body": "The new terms apply from {{effectiveDate}}. What changed: {{summary}} Read the terms: {{url}}",
+        "body": "The new terms apply from {{effectiveDate}}. {{nextStep}} What changed: {{summary}} Read the terms: {{url}}",
         "footer": "You received this because the terms of use of your account change.",
         "without": {
           "summary": {
-            "body": "The new terms apply from {{effectiveDate}}. Read the terms: {{url}}"
+            "body": "The new terms apply from {{effectiveDate}}. {{nextStep}} Read the terms: {{url}}"
           }
         }
       },
@@ -140,6 +140,10 @@
       "days": {
         "one": "# day",
         "other": "# days"
+      },
+      "nextStep": {
+        "accept_at_sign_in": "You accept them the next time you sign in.",
+        "nothing_to_do": "You do not need to do anything."
       }
     }
   },
@@ -243,11 +247,11 @@
       },
       "terms_version.created": {
         "title": "Kullanım koşullarımız {{effectiveDate}} tarihinde değişiyor",
-        "body": "Yeni koşullar {{effectiveDate}} tarihinden itibaren geçerli. Değişenler: {{summary}} Koşulları okuyun: {{url}}",
+        "body": "Yeni koşullar {{effectiveDate}} tarihinden itibaren geçerli. {{nextStep}} Değişenler: {{summary}} Koşulları okuyun: {{url}}",
         "footer": "Bu e-postayı, hesabınızın kullanım koşulları değiştiği için aldınız.",
         "without": {
           "summary": {
-            "body": "Yeni koşullar {{effectiveDate}} tarihinden itibaren geçerli. Koşulları okuyun: {{url}}"
+            "body": "Yeni koşullar {{effectiveDate}} tarihinden itibaren geçerli. {{nextStep}} Koşulları okuyun: {{url}}"
           }
         }
       },
@@ -284,6 +288,10 @@
       "days": {
         "one": "# gün",
         "other": "# gün"
+      },
+      "nextStep": {
+        "accept_at_sign_in": "Bir sonraki oturum açışınızda koşulları kabul edeceksiniz.",
+        "nothing_to_do": "Sizin bir şey yapmanız gerekmiyor."
       }
     }
   },
@@ -387,11 +395,11 @@
       },
       "terms_version.created": {
         "title": "تتغيّر شروط الاستخدام في {{effectiveDate}}",
-        "body": "تسري الشروط الجديدة اعتبارًا من {{effectiveDate}}. ما الذي تغيّر: {{summary}} اقرأ الشروط: {{url}}",
+        "body": "تسري الشروط الجديدة اعتبارًا من {{effectiveDate}}. {{nextStep}} ما الذي تغيّر: {{summary}} اقرأ الشروط: {{url}}",
         "footer": "وصلتك هذه الرسالة لأن شروط استخدام حسابك تتغيّر.",
         "without": {
           "summary": {
-            "body": "تسري الشروط الجديدة اعتبارًا من {{effectiveDate}}. اقرأ الشروط: {{url}}"
+            "body": "تسري الشروط الجديدة اعتبارًا من {{effectiveDate}}. {{nextStep}} اقرأ الشروط: {{url}}"
           }
         }
       },
@@ -432,6 +440,10 @@
         "few": "# أيام",
         "many": "# يومًا",
         "other": "# يوم"
+      },
+      "nextStep": {
+        "accept_at_sign_in": "ستوافق عليها عند تسجيل دخولك التالي.",
+        "nothing_to_do": "لا تحتاج إلى فعل أي شيء."
       }
     }
   }

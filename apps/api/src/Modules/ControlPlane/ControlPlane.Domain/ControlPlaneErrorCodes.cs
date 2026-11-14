@@ -117,6 +117,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TermsVersionChanged = ErrorCode.Declare("terms_version.changed");
 
+    public static readonly ErrorCode TermsVersionEmailSent = ErrorCode.Declare("terms_version.email_sent");
+
     public static readonly ErrorCode TermsVersionEffectiveDatePast = ErrorCode.Declare("terms_version.effective_date_past");
 
     public static readonly ErrorCode TermsVersionLocked = ErrorCode.Declare("terms_version.locked");

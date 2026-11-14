@@ -21,6 +21,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
                     summary = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     requires_acceptance = table.Column<bool>(type: "boolean", nullable: false),
+                    sends_email = table.Column<bool>(type: "boolean", nullable: false),
+                    email_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     created_by = table.Column<Guid>(type: "uuid", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     cancelled_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -30,6 +32,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("pk_terms_versions", x => x.id);
                     table.CheckConstraint("ck_terms_versions_cancellation", "(cancelled_at IS NULL) = (cancelled_by IS NULL)");
+                    table.CheckConstraint("ck_terms_versions_email_sent", "sends_email = (email_sent_at IS NOT NULL)");
                     table.CheckConstraint("ck_terms_versions_url_https", "url LIKE 'https://%'");
                     table.ForeignKey(
                         name: "fk_terms_versions_users_cancelled_by",

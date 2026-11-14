@@ -22,9 +22,11 @@ export const GetTermsOfUseResponse = zod.object({
 }).describe('Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in\nforce, until a later version takes effect, then replaced; or cancelled before its day.'),
   "acceptedCount": zod.int(),
   "locked": zod.boolean(),
+  "sendsEmail": zod.boolean(),
+  "emailSentAt": zod.iso.datetime({"offset":true}).nullable(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "cancelledAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when\nit was created, and when it was cancelled, or null.')),
+}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.')),
   "activeUserCount": zod.int()
 }).describe('Every terms version, the latest day first, and how many users may accept: tenant users, neither suspended nor deleted. At most one\nversion is scheduled; while one is, a new version is refused (409 `terms_version.scheduled_exists`).')
 
@@ -47,9 +49,11 @@ export const GetTermsVersionResponse = zod.object({
 }).describe('Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in\nforce, until a later version takes effect, then replaced; or cancelled before its day.'),
   "acceptedCount": zod.int(),
   "locked": zod.boolean(),
+  "sendsEmail": zod.boolean(),
+  "emailSentAt": zod.iso.datetime({"offset":true}).nullable(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "cancelledAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when\nit was created, and when it was cancelled, or null.'),
+}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.'),
   "activeUserCount": zod.int()
 }).describe('One terms version, and how many users may accept it: tenant users, neither suspended nor deleted.')
 
@@ -67,8 +71,9 @@ export const UpdateTermsVersionBody = zod.object({
   "effectiveDate": zod.iso.date(),
   "url": zod.string().max(updateTermsVersionBodyUrlMax),
   "summary": zod.string().max(updateTermsVersionBodySummaryMax).nullable(),
-  "requiresAcceptance": zod.boolean()
-}).describe('The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and\n`requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`.')
+  "requiresAcceptance": zod.boolean(),
+  "sendsEmail": zod.boolean()
+}).describe('The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and\n`requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`. `sendsEmail` is required: off\nmay turn on, and the email then goes to every user who may accept; once on, it stays on, and off answers 409\n`terms_version.email_sent`.')
 
 export const UpdateTermsVersionResponse = zod.object({
   "id": zod.uuid(),
@@ -84,9 +89,11 @@ export const UpdateTermsVersionResponse = zod.object({
 }).describe('Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in\nforce, until a later version takes effect, then replaced; or cancelled before its day.'),
   "acceptedCount": zod.int(),
   "locked": zod.boolean(),
+  "sendsEmail": zod.boolean(),
+  "emailSentAt": zod.iso.datetime({"offset":true}).nullable(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "cancelledAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when\nit was created, and when it was cancelled, or null.')
+}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.')
 
 export const ListTermsVersionPeopleParams = zod.object({
   "versionId": zod.uuid()
@@ -133,14 +140,15 @@ export const createTermsVersionBodyUrlMax = 2048;
 
 export const createTermsVersionBodySummaryMax = 500;
 
-
+export const createTermsVersionBodySendsEmailDefault = true;
 
 export const CreateTermsVersionBody = zod.object({
   "effectiveDate": zod.iso.date(),
   "url": zod.string().max(createTermsVersionBodyUrlMax),
   "summary": zod.string().max(createTermsVersionBodySummaryMax).nullable(),
-  "requiresAcceptance": zod.boolean()
-}).describe('A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional\nsummary of what changed; and whether a person must accept it. The API trims the link and the summary before it counts their lengths.')
+  "requiresAcceptance": zod.boolean(),
+  "sendsEmail": zod.boolean().default(createTermsVersionBodySendsEmailDefault)
+}).describe('A new terms version: the day it takes effect, today or later, from 00:00 UTC; the link to its text, an absolute https URL; an optional\nsummary of what changed; whether a person must accept it; and whether its creation emails every user who may accept, true when left out.\nA version that emails nobody, a small change, gives no notice on Home either. The API trims the link and the summary before it counts\ntheir lengths.')
 
 export const CreateTermsVersionResponse = zod.object({
   "id": zod.uuid(),
@@ -156,9 +164,11 @@ export const CreateTermsVersionResponse = zod.object({
 }).describe('Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in\nforce, until a later version takes effect, then replaced; or cancelled before its day.'),
   "acceptedCount": zod.int(),
   "locked": zod.boolean(),
+  "sendsEmail": zod.boolean(),
+  "emailSentAt": zod.iso.datetime({"offset":true}).nullable(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "cancelledAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when\nit was created, and when it was cancelled, or null.')
+}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.')
 
 export const CancelTermsVersionParams = zod.object({
   "versionId": zod.uuid()
@@ -178,7 +188,9 @@ export const CancelTermsVersionResponse = zod.object({
 }).describe('Where a terms version stands on the day of the request, which the days decide: scheduled until its day comes, then current, the one in\nforce, until a later version takes effect, then replaced; or cancelled before its day.'),
   "acceptedCount": zod.int(),
   "locked": zod.boolean(),
+  "sendsEmail": zod.boolean(),
+  "emailSentAt": zod.iso.datetime({"offset":true}).nullable(),
   "createdAt": zod.iso.datetime({"offset":true}),
   "cancelledAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`, when\nit was created, and when it was cancelled, or null.')
+}).describe('A terms version: its day, from 00:00 UTC, its link, its summary or null, whether it requires acceptance, its state on the day of the\nrequest, how many users who may accept accepted it, whether anyone accepted it, which locks its link and `requiresAcceptance`,\nwhether it sends its email to every user who may accept, when the email went, or null, when it was created, and when it was cancelled, or null.')
 

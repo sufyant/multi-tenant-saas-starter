@@ -175,10 +175,10 @@
     },
     "terms_version.created": {
       "title": "Our terms of use change on {effectiveDate}",
-      "body": "The new terms apply from {effectiveDate}. What changed: {summary} Read the terms: {url}",
+      "body": "The new terms apply from {effectiveDate}. {nextStep} What changed: {summary} Read the terms: {url}",
       "without": {
         "summary": {
-          "body": "The new terms apply from {effectiveDate}. Read the terms: {url}"
+          "body": "The new terms apply from {effectiveDate}. {nextStep} Read the terms: {url}"
         }
       },
       "footer": "You received this because the terms of use of your account change."
@@ -216,6 +216,10 @@
     "days": {
       "one": "# day",
       "other": "# days"
+    },
+    "nextStep": {
+      "accept_at_sign_in": "You accept them the next time you sign in.",
+      "nothing_to_do": "You do not need to do anything."
     }
   }
 }

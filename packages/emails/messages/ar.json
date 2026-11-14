@@ -175,10 +175,10 @@
     },
     "terms_version.created": {
       "title": "تتغيّر شروط الاستخدام في {effectiveDate}",
-      "body": "تسري الشروط الجديدة اعتبارًا من {effectiveDate}. ما الذي تغيّر: {summary} اقرأ الشروط: {url}",
+      "body": "تسري الشروط الجديدة اعتبارًا من {effectiveDate}. {nextStep} ما الذي تغيّر: {summary} اقرأ الشروط: {url}",
       "without": {
         "summary": {
-          "body": "تسري الشروط الجديدة اعتبارًا من {effectiveDate}. اقرأ الشروط: {url}"
+          "body": "تسري الشروط الجديدة اعتبارًا من {effectiveDate}. {nextStep} اقرأ الشروط: {url}"
         }
       },
       "footer": "وصلتك هذه الرسالة لأن شروط استخدام حسابك تتغيّر."
@@ -220,6 +220,10 @@
       "few": "# أيام",
       "many": "# يومًا",
       "other": "# يوم"
+    },
+    "nextStep": {
+      "accept_at_sign_in": "ستوافق عليها عند تسجيل دخولك التالي.",
+      "nothing_to_do": "لا تحتاج إلى فعل أي شيء."
     }
   }
 }

@@ -60,6 +60,24 @@ public sealed class UpdateTermsVersionTests(Database database)
         (version.GetProperty("summary").GetString(), version.GetProperty("locked").GetBoolean(), version.GetProperty("acceptedCount").GetInt32()).ShouldBe(("Later", true, 1));
     }
 
+    // The email goes once: an edit that turns it on sends it, and once it went, it stays on.
+    [Fact]
+    public async Task UpdateTermsVersion_TheEmailTurnedOn_EmailsTheUsersOnce()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        await own.AddTenantUserAsync(tenantId);
+        var versionId = await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10), sendsEmail: false));
+
+        var turnedOn = await own.Api.WaitingForMessagesAsync(() => own.Admin.UpdateTermsVersionAsync(versionId, TermsRequests.Today.AddDays(10)));
+        var again = await own.Api.WaitingForMessagesAsync(() => own.Admin.UpdateTermsVersionAsync(versionId, TermsRequests.Today.AddDays(11)));
+        var turnedOff = await own.Admin.UpdateTermsVersionAsync(versionId, TermsRequests.Today.AddDays(11), sendsEmail: false);
+
+        (turnedOn.StatusCode, again.StatusCode).ShouldBe((HttpStatusCode.OK, HttpStatusCode.OK));
+        own.Api.Email.Sent.Count.ShouldBe(1);
+        (turnedOff.StatusCode, await TermsRequests.CodeOfAsync(turnedOff)).ShouldBe((HttpStatusCode.Conflict, "terms_version.email_sent"));
+    }
+
     // A version in force never changes.
     [Fact]
     public async Task UpdateTermsVersion_AVersionInForce_IsNotScheduled()

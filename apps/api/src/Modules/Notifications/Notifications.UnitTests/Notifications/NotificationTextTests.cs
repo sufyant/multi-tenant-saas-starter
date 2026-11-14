@@ -74,7 +74,7 @@ public sealed class NotificationTextTests
     public void Render_ATermsVersionOfADay_WritesTheDayInNoTimeZone(string timeZone) =>
         NotificationText.Render(
                 NotificationCatalog.TermsVersionCreated,
-                new Dictionary<string, string> { ["effectiveDate"] = "2026-12-01", ["url"] = "https://brand.example/terms" },
+                new Dictionary<string, string> { ["effectiveDate"] = "2026-12-01", ["url"] = "https://brand.example/terms", ["nextStep"] = NotificationCatalog.NothingToDo },
                 People,
                 Language.En,
                 timeZone)
@@ -84,11 +84,11 @@ public sealed class NotificationTextTests
     public void Render_ATermsVersionWithoutASummary_ReadsWithoutIt() =>
         NotificationText.Render(
                 NotificationCatalog.TermsVersionCreated,
-                new Dictionary<string, string> { ["effectiveDate"] = "2026-12-01", ["url"] = "https://brand.example/terms" },
+                new Dictionary<string, string> { ["effectiveDate"] = "2026-12-01", ["url"] = "https://brand.example/terms", ["nextStep"] = NotificationCatalog.NothingToDo },
                 People,
                 Language.En,
                 timeZone: null)
-            .Body.ShouldBe("The new terms apply from 1 Dec 2026. Read the terms: https://brand.example/terms");
+            .Body.ShouldBe("The new terms apply from 1 Dec 2026. You do not need to do anything. Read the terms: https://brand.example/terms");
 
     [Fact]
     public void Render_ACustomRole_WritesItAsTheOwnerTyped()

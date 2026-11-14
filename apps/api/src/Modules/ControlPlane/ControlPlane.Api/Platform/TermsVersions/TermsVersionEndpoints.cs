@@ -94,7 +94,7 @@ public static class TermsVersionEndpoints
         CancellationToken cancellationToken)
     {
         var created = await idempotency.ExecuteAsync<TermsVersionView>(
-            new CreateTermsVersionCommand(user.Id(), request.EffectiveDate, request.Url, request.Summary, request.RequiresAcceptance),
+            new CreateTermsVersionCommand(user.Id(), request.EffectiveDate, request.Url, request.Summary, request.RequiresAcceptance, request.SendsEmail),
             Guid.CreateVersion7(time.GetUtcNow()).ToString(),
             cancellationToken);
         return created.Map(ToResponse);
@@ -108,7 +108,7 @@ public static class TermsVersionEndpoints
         IMessageBus bus,
         CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<TermsVersionView>>(
-            new UpdateTermsVersionCommand(user.Id(), versionId, request.EffectiveDate, request.Url, request.Summary, request.RequiresAcceptance),
+            new UpdateTermsVersionCommand(user.Id(), versionId, request.EffectiveDate, request.Url, request.Summary, request.RequiresAcceptance, request.SendsEmail),
             cancellationToken)).Map(ToResponse);
 
     // A cancellation sets a state, so it takes no idempotency key (I1): a cancelled version answers as it is.
@@ -128,6 +128,8 @@ public static class TermsVersionEndpoints
         ResponseStatus.OfTermsVersion(version.State),
         version.AcceptedCount,
         version.Locked,
+        version.SendsEmail,
+        version.EmailSentAt,
         version.CreatedAt,
         version.CancelledAt);
 }

@@ -23,5 +23,8 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         // R15: a cancellation names its system admin, and a link is an https URL; the version checks the whole URL itself.
         version.ToTable(table => table.HasCheckConstraint("ck_terms_versions_cancellation", "(cancelled_at IS NULL) = (cancelled_by IS NULL)"));
         version.ToTable(table => table.HasCheckConstraint("ck_terms_versions_url_https", "url LIKE 'https://%'"));
+
+        // R15: a version that sends its email has the moment it went, and only such a version has one.
+        version.ToTable(table => table.HasCheckConstraint("ck_terms_versions_email_sent", "sends_email = (email_sent_at IS NOT NULL)"));
     }
 }

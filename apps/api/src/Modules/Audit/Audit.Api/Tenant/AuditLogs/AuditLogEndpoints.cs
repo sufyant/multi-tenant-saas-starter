@@ -82,7 +82,7 @@ public static class AuditLogEndpoints
         TenantPurgeWarnedDetails warned => new TenantPurgeWarnedDetailsResponse(warned.PurgesAt),
         TenantRenamedDetails renamed => new TenantRenamedDetailsResponse(renamed.OldName, renamed.NewName),
         TenantSuspendedDetails suspended => new TenantSuspendedDetailsResponse(suspended.Reason),
-        TermsVersionCreatedDetails created => new TermsVersionCreatedDetailsResponse(created.EffectiveDate, created.Url, created.Summary, created.RequiresAcceptance),
+        TermsVersionCreatedDetails created => new TermsVersionCreatedDetailsResponse(created.EffectiveDate, created.Url, created.Summary, created.RequiresAcceptance, created.SendsEmail),
         TermsVersionUpdatedDetails updated => new TermsVersionUpdatedDetailsResponse(TermsVersionOf(updated.Old), TermsVersionOf(updated.New)),
         TermsVersionCancelledDetails cancelled => new TermsVersionCancelledDetailsResponse(
             cancelled.EffectiveDate, cancelled.Url, cancelled.RequiresAcceptance, cancelled.AcceptanceCount),
@@ -90,7 +90,7 @@ public static class AuditLogEndpoints
     };
 
     private static AuditTermsVersionResponse TermsVersionOf(AuditTermsVersion version) =>
-        new(version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance);
+        new(version.EffectiveDate, version.Url, version.Summary, version.RequiresAcceptance, version.SendsEmail);
 
     // An entry keeps the plan as it was at that moment (K3).
     private static AuditPlanResponse PlanOf(AuditPlan plan) => new(plan.Id, plan.Name);

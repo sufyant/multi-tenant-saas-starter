@@ -468,6 +468,7 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
   - The acceptance takes the link the person read, so a link that changed answers 409 `terms_version.changed`. An acceptance and a dismissal write no audit entry: the acceptance is its own record (`ARCHITECTURE.md`, K3).
   - The versions' list is one read, `GetTermsOfUse`, without the list contract: the versions are few. A version's people page by a cursor, `status=accepted` or `status=not_yet`.
   - The public route `/v1/public` is new (A5, N5). `GetTermsInForce` answers 204 before the first version, and sends `Cache-Control: public, max-age=300`.
+  - Each version has `sendsEmail`, true when left out (decided with the maintainer on 2026-11-14): with acceptance, the email says the person accepts at next sign-in (13.40 to 13.42); without, it is the notice email (13.37 to 13.39) and Home's notice (4.03); without email, nothing is sent or shown. `emailSentAt` keeps the moment it went; then off answers 409 `terms_version.email_sent`. A version saved without email may turn it on while scheduled, and the email goes then.
   - The notice email goes by email only, at `Notifications:Pace:DeliveriesPerSecond` (5) deliveries a second, under Resend's 10 requests a second (U3). The texts in Turkish and Arabic are the thread's; 38-design's copy note may change them.
 
 38-frontend-platform, Settings › Terms of use:
