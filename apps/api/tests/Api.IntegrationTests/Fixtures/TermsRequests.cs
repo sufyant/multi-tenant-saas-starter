@@ -108,10 +108,10 @@ internal sealed class OwnTerms : IAsyncDisposable
 
     public string AdminId { get; }
 
-    public static async Task<OwnTerms> CreateAsync(Database database)
+    public static async Task<OwnTerms> CreateAsync(Database database, IReadOnlyDictionary<string, string?>? settings = null)
     {
         var name = await database.CreateMigratedDatabaseAsync();
-        var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name), configureServices: ApiFactory.RemoveAuditRetention);
+        var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name), configureServices: ApiFactory.RemoveAuditRetention, settings: settings);
         var data = new TestData(database, name);
         var adminId = await data.AddSystemAdminAsync();
         return new OwnTerms(database, name, api, data, api.CreateClient(adminId, secondFactor: true), adminId);
