@@ -285,7 +285,9 @@ public sealed class SendInvitationEmailHandlerTests
         [Language.Ar] = ("قبول الدعوة", "وصلتك هذه الرسالة لأن أحدًا دعا هذا العنوان. إذا لم تكن تتوقعها، فيمكنك تجاهلها."),
     }[language];
 
-    private Task SendAsync(InvitationReadyEvent ready) => SendInvitationEmailHandler.HandleAsync(ready, _channel, Cancellation);
+    // The email the handler sends. Whether the invitation is still pending is ControlPlane's to answer, from our own database: the
+    // integration tests check it on PostgreSQL (section 9, rule 4), so this tests only the email.
+    private async Task SendAsync(InvitationReadyEvent ready) => await _channel.SendAsync(SendInvitationEmailHandler.Write(ready), Cancellation);
 
     private sealed class RecordingEmailChannel : IEmailChannel
     {

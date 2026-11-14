@@ -2,9 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ControlPlane.Application.Invitations.OpenSignUp;
+using ControlPlane.Contracts.Invitations;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
+using Wolverine;
 using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Tenant.Invitations;
@@ -49,6 +52,28 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(invitation))
             .ShouldBe($"{tenant.Id}:invitation.revoked|User|{await _testData.UserIdOfAsync(revoker)}|Invitation|{invitation}|-");
         await _summaries.ShouldMatchTheRowsAsync(tenant.Id);
+    }
+
+    // A revoked invitation's email never goes out, also when its event is handled again after the revocation, as a retry is.
+    [Fact]
+    public async Task RevokeInvitation_ItsEmailIsTriedAgain_SendsNoEmail()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var invited = PlatformTenants.Email();
+        _api.Email.Refuses = invited;
+        var messages = await _api.TrackMessagesAsync(() => _api.CreateClient(owner).InviteMemberAsync(tenant.Id, invited));
+        var ready = messages.Sent.SingleMessage<InvitationReadyEvent>();
+        await _api.WaitingForMessagesAsync(() => RevokeAsync(owner, tenant.Id, ready.InvitationId));
+        _api.Email.Refuses = null;
+
+        await _api.TrackMessagesAsync(async () =>
+        {
+            await using var scope = _api.Services.CreateAsyncScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().PublishAsync(ready);
+        });
+
+        _api.Email.Sent.ShouldBeEmpty();
     }
 
     // An expired invitation is still pending until someone revokes it.

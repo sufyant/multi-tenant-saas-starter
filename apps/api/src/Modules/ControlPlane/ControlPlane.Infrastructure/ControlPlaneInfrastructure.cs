@@ -9,6 +9,7 @@ using ControlPlane.Application.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Users;
+using ControlPlane.Contracts.Invitations;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.SystemAdmins;
@@ -87,6 +88,11 @@ public static class ControlPlaneInfrastructure
         // message's scope, so Wolverine's generated code builds none of them on a DbContext of the handler, which has no transaction.
         services.AddScoped<IPersonalDataExporter, UserDataExporter>();
         services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IEnumerable<IPersonalDataExporter>>());
+
+        // The invitation email asks before each try whether its invitation is still pending (W1). Wolverine takes the check from the
+        // message's scope, so its generated code builds no DbContext for the email handler, which has no transaction.
+        services.AddScoped<IPendingInvitationCheck, PendingInvitationCheck>();
+        services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IPendingInvitationCheck>());
 
 
         services.AddOptions<InvitationOptions>()
