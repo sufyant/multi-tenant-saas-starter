@@ -1,6 +1,7 @@
 using ControlPlane.Application.TermsVersions;
 using ControlPlane.Domain.TermsVersions;
 using Microsoft.EntityFrameworkCore;
+using Tenancy.Caching;
 
 namespace ControlPlane.Infrastructure.Persistence.TermsVersions;
 
@@ -36,8 +37,10 @@ public sealed class TermsVersionRepository(ControlPlaneDbContext controlPlane) :
     async Task<int> ITermsVersionRepository.CountAcceptancesAsync(Guid versionId, CancellationToken cancellationToken) =>
         await controlPlane.TermsAcceptances.CountAsync(acceptance => acceptance.VersionId == versionId, cancellationToken);
 
-    // Two requests of one person may race; the key keeps one row, and the first moment stays.
-    async Task ITermsVersionRepository.AcceptAsync(TermsAcceptance acceptance, CancellationToken cancellationToken) =>
+    // Two requests of one person may race; the key keeps one row, and the first moment stays. The statement passes the change tracker, so
+    // it removes the user's tag itself, which their terms gate's entry names (C7).
+    async Task ITermsVersionRepository.AcceptAsync(TermsAcceptance acceptance, CancellationToken cancellationToken)
+    {
         await controlPlane.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO control_plane.terms_acceptances (version_id, user_id, accepted_at)
@@ -45,6 +48,9 @@ public sealed class TermsVersionRepository(ControlPlaneDbContext controlPlane) :
             ON CONFLICT (version_id, user_id) DO NOTHING
             """,
             cancellationToken);
+        var externalId = await controlPlane.Users.Where(user => user.Id == acceptance.UserId).Select(user => user.ExternalId).SingleAsync(cancellationToken);
+        controlPlane.RemoveCacheTagsAfterCommit(CacheTag.Of(CacheTags.User, externalId));
+    }
 
     async Task ITermsVersionRepository.DismissAsync(TermsNoticeDismissal dismissal, CancellationToken cancellationToken) =>
         await controlPlane.Database.ExecuteSqlAsync(

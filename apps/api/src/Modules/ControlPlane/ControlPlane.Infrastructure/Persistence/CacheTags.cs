@@ -3,6 +3,7 @@ using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.Tenants;
+using ControlPlane.Domain.TermsVersions;
 using ControlPlane.Domain.Users;
 using Tenancy.Caching;
 
@@ -35,6 +36,12 @@ internal static class CacheTags
     /// </summary>
     public const string FeatureFlags = "feature-flags";
 
+    /// <summary>
+    /// Every terms version. One tag for the whole table: a version is created, edited or cancelled rarely, and every user's gate then reads
+    /// the database once. An acceptance removes only its user's tag (<c>TermsVersionRepository.AcceptAsync</c>, C7).
+    /// </summary>
+    public const string TermsVersions = "terms-versions";
+
     // A row of the users table never changes its identity provider's id. A tenant row's tenant column is its tenant (R1).
     public static readonly IReadOnlyList<CacheTagSource> Table =
     [
@@ -49,5 +56,6 @@ internal static class CacheTags
         new(typeof(SystemAdmin), SystemAdmins, null),
         new(typeof(FeatureFlag), FeatureFlags, null),
         new(typeof(FeatureFlagTenant), FeatureFlags, null),
+        new(typeof(TermsVersion), TermsVersions, null),
     ];
 }

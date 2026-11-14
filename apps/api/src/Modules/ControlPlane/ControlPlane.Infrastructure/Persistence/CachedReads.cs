@@ -2,6 +2,7 @@ using ControlPlane.Infrastructure.Persistence.FeatureFlags;
 using ControlPlane.Infrastructure.Persistence.Plans;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.Tenants;
+using ControlPlane.Infrastructure.Persistence.TermsVersions;
 using ControlPlane.Infrastructure.Persistence.Users;
 using Tenancy.Caching;
 
@@ -10,7 +11,8 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// <summary>
 /// Every read of the module that the shared cache holds, in one place, so a reviewer sees them all (C1): the reads of the access
 /// check that the host makes on every request (A9, T7, A4), and the two reads of a tenant's entitlements that its feature check makes
-/// (docs/flows/plans-and-entitlements.md), and an organisation's feature flags (docs/flows/feature-flags.md). Each stores only rows (C4).
+/// (docs/flows/plans-and-entitlements.md), an organisation's feature flags (docs/flows/feature-flags.md), and the terms gate of every me
+/// and tenant route (docs/flows/terms-of-use.md, section 5). Each stores only rows (C4).
 /// </summary>
 internal static class CachedReads
 {
@@ -43,4 +45,12 @@ internal static class CachedReads
     /// </summary>
     public static readonly RowCachedRead<TenantFeatureFlagRows> TenantFeatureFlags =
         new("tenant-feature-flags", CacheLabel.Tenant, AccessLifetime, _ => [CacheTags.FeatureFlags]);
+
+    /// <summary>
+    /// The terms versions and which of them the user accepted, for the terms gate on every me and tenant route (A11). The day decides each
+    /// version's state at each read, so nothing is stored that changes at midnight. A version's creation, edit or cancellation removes every
+    /// user's entry; the user's own acceptance, and their becoming a user, remove theirs.
+    /// </summary>
+    public static readonly UserCachedRead<TermsGateRows> UserTerms =
+        new("user-terms", AccessLifetime, externalUserId => [CacheTag.Of(CacheTags.User, externalUserId), CacheTags.TermsVersions]);
 }

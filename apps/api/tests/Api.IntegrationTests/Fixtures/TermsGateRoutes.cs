@@ -34,6 +34,7 @@ internal static partial class TermsGateRoutes
         "GET /v1/me/terms",
         "POST /v1/me/terms/versions/{versionId:guid}/accept",
         "POST /v1/me/terms/versions/{versionId:guid}/dismiss",
+        "POST /v1/me/notifications/{notificationId:guid}/read",
         "GET /v1/me/notifications/stream",
     ];
 
