@@ -3,7 +3,15 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { flagsAnswer, flagsList } from "../../../test/feature-flags";
 import { meAnswer, problem } from "../../../test/organisations";
 import { renderWithProviders } from "../../../test/render";
@@ -12,6 +20,7 @@ import { FlagsPage } from "./flags-page";
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
+  vi.useRealTimers();
   server.resetHandlers();
   window.history.replaceState(null, "", "/");
 });
@@ -121,5 +130,21 @@ describe("FlagsPage", () => {
       await screen.findByText("Couldn’t load the feature flags"),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+  // The phone's card says how long an unused flag has been off (12.19).
+  it("FlagsPage_PhoneCardOfAnUnusedFlag_SaysHowManyDaysItIsOff", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T10:00:00Z"));
+    server.use(meAnswer(), flagsAnswer());
+
+    renderWithProviders(<FlagsPage />);
+
+    const cards = within(
+      (
+        await screen.findAllByRole("list", { name: "Feature flags" })
+      )[0] as HTMLElement,
+    );
+    expect(cards.getByText("Off for everyone for 34 days")).toBeInTheDocument();
+    vi.useRealTimers();
   });
 });

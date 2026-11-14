@@ -91,6 +91,13 @@ export const refreshFlag = (
   ]);
 };
 
+/** After a refusal that says a flag changed meanwhile: the flag's page and the list read again (F47). */
+export const refreshAfterRefusal = (queryClient: QueryClient, key: string) =>
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: getGetFeatureFlagQueryKey(key) }),
+    queryClient.invalidateQueries({ queryKey: getGetFeatureFlagsQueryKey() }),
+  ]);
+
 /** A system admin of a change, by their name now: "Deleted user" once deleted (A8), "Unnamed user" without a name. */
 export function useActorName() {
   const t = useTranslations();

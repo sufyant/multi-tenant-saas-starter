@@ -2,6 +2,7 @@
 
 import {
   addFeatureFlagTenant,
+  ErrorCode,
   type FeatureFlagDetailResponse,
   FeatureFlagResponseType,
   type FeatureFlagTenantResponse,
@@ -23,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
 import {
+  refreshAfterRefusal,
   refreshFlag,
   useEnvironmentName,
   usePercentText,
@@ -57,11 +59,23 @@ function usePreview(
 }
 
 /** The command of one change, which answers the flag's page; its cache and the lists follow (F47). */
-function useRuleCommand(run: () => Promise<FeatureFlagDetailResponse>) {
+function useRuleCommand(
+  flagKey: string,
+  run: () => Promise<FeatureFlagDetailResponse>,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: run,
     onSuccess: (next) => refreshFlag(queryClient, next),
+    // A refusal that says the flag changed meanwhile (a deploy removed it from code) reads the page and the list again (F47).
+    onError: (error) => {
+      const code = problemOf(error)?.code;
+      if (
+        code === ErrorCode.FeatureFlagRemovedFromCode ||
+        code === ErrorCode.FeatureFlagNotFound
+      )
+        void refreshAfterRefusal(queryClient, flagKey);
+    },
   });
 }
 
@@ -136,13 +150,14 @@ function PercentageDialog({
       ? null
       : { ...noChange, percentage: chosen },
   );
-  const command = useRuleCommand(() =>
+  const command = useRuleCommand(key, () =>
     setFeatureFlagPercentage(key, { percentage: chosen ?? percentage }),
   );
   const value = chosen ?? percentage;
   return (
     <Dialog
       open
+      size="wide"
       onOpenChange={(open) => !open && onClose()}
       title={t("percentageTitle", { environment })}
       description={t.rich("percentageText", {
@@ -223,10 +238,13 @@ function AddDialog({
     chosen ? { ...noChange, tenantToAdd: chosen } : null,
   );
   const [missing, setMissing] = useState(false);
-  const command = useRuleCommand(() => addFeatureFlagTenant(key, chosen ?? ""));
+  const command = useRuleCommand(key, () =>
+    addFeatureFlagTenant(key, chosen ?? ""),
+  );
   return (
     <Dialog
       open
+      size="wide"
       onOpenChange={(open) => !open && onClose()}
       title={t("addTitle", { environment })}
       description={t.rich("addText", { flag: key, ...isolated })}
@@ -282,12 +300,13 @@ function RemoveDialog({
   const percent = usePercentText();
   const { key, percentage } = detail.flag;
   const organisation = tenant.name;
-  const command = useRuleCommand(() =>
+  const command = useRuleCommand(key, () =>
     removeFeatureFlagTenant(key, tenant.tenantId),
   );
   return (
     <Dialog
       open
+      size="wide"
       tone="destructive"
       onOpenChange={(open) => !open && onClose()}
       title={t.rich("unlistTitle", { organisation, environment, ...isolated })}
@@ -335,7 +354,9 @@ function EveryoneElseDialog({
   const { key, percentage } = detail.flag;
   const killSwitch = detail.flag.type === FeatureFlagResponseType.KillSwitch;
   const preview = usePreview(key, { ...noChange, everyoneElse: on });
-  const command = useRuleCommand(() => setFeatureFlagEveryoneElse(key, { on }));
+  const command = useRuleCommand(key, () =>
+    setFeatureFlagEveryoneElse(key, { on }),
+  );
   const flag = key;
   const count = preview.data?.affectedCount;
   const text = (() => {
@@ -356,6 +377,7 @@ function EveryoneElseDialog({
   return (
     <Dialog
       open
+      size="wide"
       tone={!on && killSwitch ? "destructive" : "default"}
       onOpenChange={(open) => !open && onClose()}
       title={title}

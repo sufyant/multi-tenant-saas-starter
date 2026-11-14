@@ -83,7 +83,7 @@ const change = (
   ...values,
 });
 
-export const northwindId = "0198f0a2-7b3c-7c1d-9a4e-2f6b8c0d1e2f";
+export const northwindId = "0198f0a2-0000-7000-8000-000000000001";
 
 /** roles.bulk_edit's page (12.05), with its three lines of history. */
 export const bulkEditDetail: FeatureFlagDetailResponse = {

@@ -3,16 +3,32 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   bulkEditDetail,
   csvImportDetail,
   emailsOffDetail,
+  emailsSend,
   flagAnswer,
   northwindId,
   previewAnswer,
 } from "../../../test/feature-flags";
-import { meAnswer, problem } from "../../../test/organisations";
+import {
+  atlas,
+  listAnswer,
+  meAnswer,
+  northwind,
+  pageOf,
+  problem,
+} from "../../../test/organisations";
 import { renderWithProviders, sentence } from "../../../test/render";
 import { FlagPage } from "./flag-page";
 
@@ -240,5 +256,113 @@ describe("FlagPage", () => {
     await userEvent.click(dialog.getByRole("button", { name: "Remove" }));
 
     expect(removed).toEqual([northwindId]);
+  });
+  it("FlagPage_AddOrganisation_OffersOnlyTheUnlistedAndSendsTheChoice", async () => {
+    const added: string[] = [];
+    server.use(
+      meAnswer(),
+      flagAnswer(bulkEditDetail),
+      listAnswer(pageOf([northwind, atlas])),
+      previewAnswer(1),
+      http.put(
+        "*/v1/platform/feature-flags/:key/tenants/:tenantId",
+        ({ params }) => {
+          added.push(String(params.tenantId));
+          return HttpResponse.json(bulkEditDetail);
+        },
+      ),
+    );
+    renderWithProviders(<FlagPage flagKey="roles.bulk_edit" />);
+    await userEvent.click(
+      (await rules()).getByRole("button", { name: "Add organisation" }),
+    );
+    const dialog = within(await screen.findByRole("alertdialog"));
+
+    await userEvent.click(
+      dialog.getByRole("button", { name: "Add organisation" }),
+    );
+    expect(await dialog.findByText("Choose an organisation.")).toBeVisible();
+    await userEvent.click(
+      dialog.getByRole("combobox", { name: "Organisation" }),
+    );
+    expect(
+      (await screen.findAllByRole("option")).map(
+        (option) => option.textContent,
+      ),
+    ).toEqual(["Atlas Logistics"]);
+    await userEvent.click(
+      screen.getByRole("option", { name: "Atlas Logistics" }),
+    );
+    expect(
+      await dialog.findByText("This change affects 1 organisation."),
+    ).toBeVisible();
+    await userEvent.click(
+      dialog.getByRole("button", { name: "Add organisation" }),
+    );
+
+    expect(added).toEqual([atlas.id]);
+  });
+
+  it("FlagPage_ChangeRefusedAsRemovedFromCode_SaysWhyAndReadsTheFlagAgain", async () => {
+    const reads = { count: 0 };
+    server.use(
+      meAnswer(),
+      http.get("*/v1/platform/feature-flags/:key", () => {
+        reads.count += 1;
+        return HttpResponse.json(bulkEditDetail);
+      }),
+      previewAnswer(8),
+      http.put("*/v1/platform/feature-flags/:key/everyone-else", () =>
+        problem(409, ErrorCode.FeatureFlagRemovedFromCode),
+      ),
+    );
+    renderWithProviders(<FlagPage flagKey="roles.bulk_edit" />);
+    await userEvent.click(
+      (await rules()).getByRole("button", { name: "Turn on for everyone" }),
+    );
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await dialog.findByText(/8 more organisations get it now/);
+
+    await userEvent.click(
+      dialog.getByRole("button", { name: "Turn on for everyone" }),
+    );
+
+    expect(
+      await dialog.findByText(sentence("roles.bulk_edit did not change")),
+    ).toBeVisible();
+    expect(
+      dialog.getByText(
+        /This flag was removed from the code, so its rules no longer change\./,
+      ),
+    ).toBeVisible();
+    await vi.waitFor(() => expect(reads.count).toBe(2));
+  });
+
+  it("FlagPage_KillSwitchTurnOff_AsksInRedWithTheCount", async () => {
+    server.use(
+      meAnswer(),
+      flagAnswer({ ...emailsOffDetail, flag: emailsSend, history: [] }),
+      previewAnswer(10),
+    );
+    renderWithProviders(<FlagPage flagKey="emails.send" />);
+
+    await userEvent.click(
+      (await rules()).getByRole("button", { name: "Turn off for everyone" }),
+    );
+
+    const dialog = within(await screen.findByRole("alertdialog"));
+    expect(
+      dialog.getByText(
+        sentence("Turn emails.send off for everyone in Production?"),
+      ),
+    ).toBeVisible();
+    expect(
+      await dialog.findByText(
+        "10 organisations lose it until you turn it back on.",
+      ),
+    ).toBeVisible();
+    expect(
+      dialog.getByRole("button", { name: "Turn off for everyone" }).className,
+    ).toMatch(/bg-destructive/);
   });
 });
