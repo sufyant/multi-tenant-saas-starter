@@ -30,7 +30,8 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 Status: done, but the handoff package is todo.
 
 - One Figma file holds the design of the web app and the platform app, on desktop and phone, in light and dark, in English and Arabic. Its key is `3Ev111okX8xCBwR9B3hyBM`.
-- The handoff package goes into `docs/design/` before the Figma seat ends, about 29 Nov 2026.
+- The Figma seat stays one more month, while steps 38 to 40 still need frames: it ends about 29 Dec 2026, not 29 Nov (the maintainer's decision of 2026-11-14).
+- The handoff package goes into `docs/design/` before the Figma seat ends, by about 24 Dec 2026.
 - The handoff package holds the tokens, the patterns, the components, the sample data, and a spec and an image for each screen.
 
 ## 3. Step 35: Cleanup, the shell and the menu
@@ -570,13 +571,10 @@ Status: todo.
 
 The work comes in this order. A thread that finishes an item updates this section in its pull request.
 
-1. #280, the fixes of four staging findings, merges first. Its maintainer's tasks are in its description.
-2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Nov 2026. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access"). Two ways: make the package before about 24 Nov 2026, or keep the seat one more month while steps 38 to 40 still need frames. The maintainer has not decided.
+1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description) and #281 (the coordinator's knowledge in the repository).
+2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
 3. Support access's shape (`docs/decisions.md`, section 2), then step 38. Step 38 starts with a `38-start` thread, which follows the skill `starting-roadmap-steps`.
 4. Small findings that no pull request fixes yet:
-   - Members with a limit of 0 (`members.max` = 0) still says "Remove a member or cancel an invitation to invite someone." (`apps/web/src/shared/use-plan-reason.ts`). #279 fixed only Roles.
-   - A dialog that disables its action without `actionReasonId` gives no reason, and no architecture test checks it (F52).
-   - F63's architecture test judges by file, so it does not see a child dialog's callback that navigates.
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
