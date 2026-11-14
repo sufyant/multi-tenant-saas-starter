@@ -548,12 +548,13 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 - A weekly worker that writes the system admins' bell notification when a flag is ready to remove or unused (3.07), from a worker hosted service, as the audit retention runs (`apps/api/docs/ARCHITECTURE.md`, K14).
 - The user's terms acceptance in the platform's `GetUser` (`UserDetailResponse`), for the user's page of 39-design: the version in force with the day the person accepted it or null, and the same for a scheduled version that requires acceptance, or null when there is none. `UserDetailResponse` has no such field today.
 - It waits for nothing.
+- As built (#291): the rules are G1 to G7 and K6p of `apps/api/docs/ARCHITECTURE.md`, the flow is `apps/api/docs/flows/feature-flags.md`. A flag leaves the code only through the catalog's retired keys, so a rollback never archives a newer flag. The template ships one flag, the kill switch `emails.send`: while it is off, every email waits in the durable store and goes once it is on (the maintainer's decisions of 2026-11-14, `docs/decisions.md`, section 2). An email belongs to no organisation, so rule 3 alone decides it. The weekly bell is two types, `feature_flags.ready_to_remove` and `feature_flags.unused`. `cleanup` is `none`, `ready_to_remove` or `unused`. The flags on for one organisation are `GET /v1/platform/tenants/{tenantId}/feature-flags`. `GetUser` answers `terms`: the version in force and a scheduled version that requires acceptance, each with `acceptedAt` or null (the maintainer's decision of 2026-11-14).
 
 39-frontend, Settings › Feature flags in the platform, and the web's flags:
 
 - 12.01 to 12.23, 39-design's frames, the bell's sentence (3.07), the organisation's flags (4.09), the Settings menu's Feature flags row (every Settings frame draws it), the command menu's "Feature flags" (2.02) and the Activity log sentences of 39-design.
 - The decisions of 2026-11-14 in 39-design: the platform's Settings with System admins, Terms of use and Feature flags only, opening its first row; Profile and Account and security from the account menu, in the platform's shell; the command menu's sections (2.02); the user's terms acceptance on the user's page. F59 and `apps/platform/AGENTS.md` change with it.
-- In the web, one hook that reads the organisation's flags, so a product's screen asks `useFeatureFlag("roles.bulk_edit")`. No screen of the template uses it yet; a test does.
+- In the web, one hook that reads the organisation's flags, so a product's screen asks `useFeatureFlag("roles.bulk_edit")`. No screen of the template uses it yet; a test does. The keys are `FeatureFlagKeys` of `@repo/api-client`; the template's one flag is `emails.send`.
 - It waits for 39-design and 39-backend.
 
 ## 8. Step 40: Billing
