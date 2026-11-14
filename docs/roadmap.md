@@ -13,7 +13,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 37b | The platform's pages | done |
 | 37c | Audit retention | done |
 | 37d | Dependent limits | done |
-| 38 | Terms of use | todo |
+| 38 | Terms of use | in progress |
 | 39 | Feature flags | todo |
 | 40 | Billing | todo |
 | 41 | Extension points | todo |
@@ -421,7 +421,7 @@ The parts of 37d, in their order. 37d-design and 37d-backend run at the same tim
 
 ## 6. Step 38: Terms of use
 
-Status: todo.
+Status: in progress.
 
 - The platform manages the versions. A version has an effective date, a link, an optional summary, and whether it requires acceptance.
 - An effective date is never in the past.
@@ -429,6 +429,47 @@ Status: todo.
 - A version in force never changes.
 - A person accepts the version after sign-in.
 - A public endpoint gives the version in force. The "Terms" link before sign-in opens its link.
+- The template stores the versions and their links only. The text of the terms lives outside the repository, with the brand's site (step 44). Support access's shape (`docs/decisions.md`, section 2, 2026-11-14) is settled before a product writes that text, not before this step's code.
+
+Decided by the frames (38-start, 2026-11-14):
+
+- A version that requires acceptance asks for it from the moment it is scheduled, before its effective date: the gate after sign-in (1.09 to 1.12, 1.14) says the date it applies from, and has Accept and Sign out only. 11.01 and 11.05 count acceptances of a scheduled version.
+- A version that requires no acceptance gives a notice on Home (4.03) with Read the terms and a close button, and an email (the field's help in 11.02).
+- An invitee who has no account yet accepts the version in force on Accept invitation (1.15).
+- Cancelling a scheduled version keeps its acceptances in its record (11.11, 11.13).
+- Only one version may be scheduled: Add version is disabled with its reason while one is (11.01, 11.14; F52).
+- Who accepts: the tenant users. A system admin never joins an organisation (1.48), so the platform has no gate. "18 of 67 accepted" counts the active users: not suspended, not deleted.
+
+The parts of 38, in their order. 38-design and 38-backend run at the same time; the two frontend parts wait for both. The pull request of 38-start holds the table of every frame with its part, and the table of every value with its field.
+
+38-design, the frames the step still lacks:
+
+- The notice email of a version that requires no acceptance (web section 13), in light, dark and Arabic, with its footer.
+- The Activity log sentences of the platform's log for a version added, edited and cancelled (platform section 7).
+- A note with the Turkish and Arabic texts of the step's frames (web 1.09 to 1.15, 4.03; platform 11.01 to 11.15).
+- The dark and Arabic forms of 1.09 and 11.01, as the earlier steps drew one of each.
+- It waits for nothing.
+
+38-backend, the versions and the acceptances:
+
+- A terms version and its acceptances in ControlPlane: the version's effective date, link, summary, `requiresAcceptance`, and its state (scheduled, current, replaced, cancelled), which the date derives; an acceptance is the user, the version and the moment.
+- Platform endpoints, `platform.terms.read`, `platform.terms.create`, `platform.terms.update` and `platform.terms.cancel`, in the pattern of the other platform permissions: list the versions with their acceptance count (11.01, 11.09); one version with its people, Accepted and Not yet, with a cursor (11.05, 11.06, 11.12, 11.15); add (11.02 to 11.04); edit and cancel the scheduled version (11.10, 11.11, 11.13). Every change writes the platform's Activity log.
+- Tenant user endpoints: what the signed-in person must do (nothing, accept a version, or see a notice), accept a version (1.09 to 1.12), close a notice (4.03). Accept invitation records the acceptance of the version in force (1.15).
+- A public endpoint, anonymous and cached: the version in force, its link and its date. No version in force answers 204, and the "Terms" link stays hidden.
+- The notice email to the active users when a version that requires no acceptance is added, through Notifications, in three languages.
+- It waits for nothing.
+
+38-frontend-platform, Settings › Terms of use:
+
+- 11.01 to 11.15 and the command menu's "Terms of use" (2 · Shell). The Activity log sentences of 38-design.
+- It waits for 38-design and 38-backend.
+
+38-frontend-web, the gate, the notice and the link:
+
+- The gate after sign-in (1.09 to 1.12, 1.14), the invitation's checkbox (1.15), the Home notice (4.03), and the "Terms" link in the footer before sign-in (`packages/ui` `auth-footer`, which waits for it today).
+- It waits for 38-design and 38-backend.
+
+Not this step: 1.27 (Create an account · accept the terms) is 40d's. It uses 38-backend's accept endpoint.
 
 ## 7. Step 39: Feature flags
 
@@ -557,7 +598,7 @@ Status: todo.
 
 Status: todo.
 
-- Support access.
+- Support access. Its shape is decided (`docs/decisions.md`, section 2, 2026-11-14).
 - The status page.
 - Enterprise SSO.
 - Public API keys.
@@ -571,9 +612,9 @@ Status: todo.
 
 The work comes in this order. A thread that finishes an item updates this section in its pull request.
 
-1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description) and #281 (the coordinator's knowledge in the repository).
+1. Merged: #277 (the e2e routes removed before the context closes), #279 (three frontend fixes), #280 (the fixes of four staging findings; its maintainer's tasks are in its description), #281 (the coordinator's knowledge in the repository) and #282 (a members' limit of 0, and two checks of the frontend's rules).
 2. Step 34's handoff package (`docs/design/`), before the Figma seat ends, about 29 Dec 2026: make it by about 24 Dec 2026. The maintainer kept the seat one more month on 2026-11-14 (section 2), while steps 38 to 40 still need frames. Without the seat, Figma's MCP server gives a few calls a month in place of 200 a day, so a thread can no longer read the design (Figma documentation, "MCP server rate limits and access").
-3. Support access's shape (`docs/decisions.md`, section 2), then step 38. Step 38 starts with a `38-start` thread, which follows the skill `starting-roadmap-steps`.
+3. Step 38, in the parts of section 6. 38-start is done. Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text, not before step 38's code.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
 5. Steps 39 to 47, in the order of section 1. Step 40a brings the Billing manager role and the custom roles limit dialog (9.14).
