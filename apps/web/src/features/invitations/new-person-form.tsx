@@ -10,16 +10,20 @@ import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { useTranslations } from "next-intl";
-import { useId, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useId } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { InvitationHeading } from "./join-card";
 
 // The generated schema of AcceptInvitation (F11). A person who is not a user yet must give their name: 1 to 100 characters,
-// trimmed, as the API counts it (A7). The generated schema has it optional, because a known user sends none.
+// trimmed, as the API counts it (A7). The generated schema has it optional, because a known user sends none. `termsVersionId` is
+// the version in force the person accepts, or null before the first version; `agreed` is the box, which only enables Accept.
 const names = schemas.AcceptInvitationBody.pick({ name: true }).extend({
   name: z.string().trim().min(1).max(schemas.acceptInvitationBodyNameMax),
 });
+const newPerson = schemas.AcceptInvitationBody.pick({ termsVersionId: true })
+  .extend(names.shape)
+  .extend({ agreed: z.boolean() });
 
 export type Names = z.infer<typeof names>;
 
@@ -53,11 +57,17 @@ export function NewPersonForm({
 }) {
   const t = useTranslations();
   const agreeId = useId();
-  const [agreed, setAgreed] = useState(false);
-  const form = useForm<Names>({
-    resolver: zodResolver(names),
-    defaultValues: { name: "" },
+  const form = useForm<z.infer<typeof newPerson>>({
+    resolver: zodResolver(newPerson),
+    defaultValues: { name: "", termsVersionId: null, agreed: false },
   });
+  // A version that changed while the person read it (409 terms_version.changed) is read again: they tick the new one.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new link of the same version empties the box too.
+  useEffect(() => {
+    form.setValue("termsVersionId", terms?.id ?? null);
+    form.resetField("agreed");
+  }, [form, terms?.id, terms?.url]);
+  const agreed = form.watch("agreed");
   const message = (field: keyof Names) => {
     const key = form.formState.errors[field]?.message ?? fieldErrors?.[field];
     return key && t(key as "validation.required");
@@ -70,8 +80,8 @@ export function NewPersonForm({
       </p>
       <form
         noValidate
-        onSubmit={form.handleSubmit((values) =>
-          onJoin({ ...values, termsVersionId: terms?.id ?? null }),
+        onSubmit={form.handleSubmit(({ name, termsVersionId }) =>
+          onJoin({ name, termsVersionId: termsVersionId ?? null }),
         )}
         className="flex flex-col gap-3"
       >
@@ -92,11 +102,17 @@ export function NewPersonForm({
               {t("terms.read")}
             </Button>
             <div className="flex items-start justify-center gap-2 text-body">
-              <Checkbox
-                id={agreeId}
-                checked={agreed}
-                onCheckedChange={setAgreed}
-                className="mt-0.5"
+              <Controller
+                control={form.control}
+                name="agreed"
+                render={({ field }) => (
+                  <Checkbox
+                    id={agreeId}
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                )}
               />
               <label htmlFor={agreeId}>{t("terms.agree")}</label>
             </div>

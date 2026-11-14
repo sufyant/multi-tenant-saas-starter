@@ -15,8 +15,8 @@ import { useTermsDay } from "@/shared/terms-day";
 
 /**
  * Home's notice of a version that requires no acceptance and sent its email (frame 4.03): the day it applies from, Read the terms,
- * and a close button, which closes it for good (DismissTermsNotice). It closes at once; a failed close shows it again at the next
- * read. It has no summary: the email has none either, and the link leads to the full terms.
+ * and a close button, which closes it for good (DismissTermsNotice). It closes with the API's answer (F47); a failed close leaves it
+ * where it is, for another try. It has no summary: the email has none either, and the link leads to the full terms.
  */
 export function TermsNotice() {
   const t = useTranslations();
@@ -25,15 +25,8 @@ export function TermsNotice() {
   const terms = useQuery(getGetMyTermsQueryOptions());
   const dismiss = useMutation({
     mutationFn: (versionId: string) => dismissTermsNotice(versionId),
-    onMutate: () =>
-      queryClient.setQueryData<MyTermsResponse>(getGetMyTermsQueryKey(), {
-        action: MyTermsResponseAction.Nothing,
-        version: null,
-      }),
     onSuccess: (next: MyTermsResponse) =>
       queryClient.setQueryData(getGetMyTermsQueryKey(), next),
-    onError: () =>
-      queryClient.invalidateQueries({ queryKey: getGetMyTermsQueryKey() }),
   });
   const version = terms.data?.version;
   if (terms.data?.action !== MyTermsResponseAction.Notice || !version)

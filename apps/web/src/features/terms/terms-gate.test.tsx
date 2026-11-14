@@ -194,14 +194,13 @@ describe("TermsGate", () => {
 
   it("TermsGate_VersionChanged_SaysSoAndAsksForTheNewLink", async () => {
     const changed = { ...december, url: "https://starter.example/terms/v2" };
-    const answer = vi
-      .fn<() => MyTermsResponse>()
-      .mockReturnValueOnce(asks())
-      .mockReturnValue(asks(changed));
+    // The version's link changes when the person accepts: the API refuses the old link, and the next read gives the new one.
+    const mine = { now: asks() };
     server.use(
-      getGetMyTermsMockHandler(() => answer()),
-      http.post("*/v1/me/terms/versions/:versionId/accept", () =>
-        HttpResponse.json(
+      getGetMyTermsMockHandler(() => mine.now),
+      http.post("*/v1/me/terms/versions/:versionId/accept", () => {
+        mine.now = asks(changed);
+        return HttpResponse.json(
           {
             status: 409,
             title: "Conflict",
@@ -209,8 +208,8 @@ describe("TermsGate", () => {
             traceId: "00-trace-01",
           },
           { status: 409 },
-        ),
-      ),
+        );
+      }),
     );
     const user = userEvent.setup();
     renderGate();
