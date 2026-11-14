@@ -427,6 +427,7 @@ Status: in progress.
 - An effective date is never in the past.
 - One scheduled version at a time. A system admin can edit or cancel it before it takes effect.
 - A version in force never changes.
+- Once someone has accepted a scheduled version, its link and "requires acceptance" lock; its effective date and summary stay editable. To change the link, a system admin cancels the version and adds a new one; the cancelled version keeps its acceptances (the maintainer's decision of 2026-11-14). The edit endpoint refuses a locked field with 409, and 11.10 disables the two fields with their reason (F52). Why: an acceptance must prove which text the person agreed to (GDPR, Article 7(1)).
 - A person accepts the version after sign-in.
 - A public endpoint gives the version in force. The "Terms" link before sign-in opens its link.
 - The template stores the versions and their links only. The text of the terms lives outside the repository, with the brand's site (step 44). Support access's shape (`docs/decisions.md`, section 2, 2026-11-14) is settled before a product writes that text, not before this step's code.
