@@ -222,6 +222,10 @@ export function AcceptInvitationPage({
   if (preview.error) return <ProblemScreen error={preview.error} />;
   const notAUserYet = codeOf(me.error) === ErrorCode.UserNotFound;
   if (me.error && !notAUserYet) return <ProblemScreen error={me.error} />;
+  // Without the version in force a new person could join without the terms (the API's terms flow, section 5): the page says the
+  // read failed instead of hiding the box. A known user meets the gate after joining, so the read does not hold them.
+  if (notAUserYet && termsInForce.error)
+    return <ProblemScreen error={termsInForce.error} />;
   if (
     !preview.data ||
     (!me.data && !notAUserYet) ||

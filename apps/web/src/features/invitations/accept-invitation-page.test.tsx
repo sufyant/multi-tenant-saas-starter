@@ -280,17 +280,16 @@ describe("AcceptInvitationPage", () => {
   it("AcceptInvitationPage_TermsInForceChanged_SaysSoAndShowsTheNewLink", async () => {
     setUp();
     const newer = { ...termsInForce, url: "https://starter.example/terms/v2" };
-    const answer = vi
-      .fn<() => typeof termsInForce>()
-      .mockReturnValueOnce(termsInForce)
-      .mockReturnValue(newer);
+    // The version in force changes when the person accepts: the API refuses the old link, and the next read gives the new one.
+    const inForce = { now: termsInForce };
     server.use(
       notAUser,
       getGetInvitationPreviewMockHandler(pending),
-      getGetTermsInForceMockHandler(() => answer()),
-      http.post("*/v1/me/invitations/accept", () =>
-        problem(409, ErrorCode.TermsVersionChanged),
-      ),
+      getGetTermsInForceMockHandler(() => inForce.now),
+      http.post("*/v1/me/invitations/accept", () => {
+        inForce.now = newer;
+        return problem(409, ErrorCode.TermsVersionChanged);
+      }),
     );
     const user = userEvent.setup();
     renderWithProviders(<AcceptInvitationPage code={code} />);
@@ -314,6 +313,31 @@ describe("AcceptInvitationPage", () => {
         screen.getByRole("button", { name: "Read the terms ↗" }),
       ).toHaveAttribute("href", newer.url),
     );
+    await vi.waitFor(() =>
+      expect(screen.getByRole("checkbox")).not.toBeChecked(),
+    );
+    expect(
+      screen.getByRole("button", { name: "Accept and continue" }),
+    ).toBeDisabled();
+  });
+
+  it("AcceptInvitationPage_NewPersonTermsInForceFails_ShowsTheProblemAndNoForm", async () => {
+    setUp();
+    server.use(
+      notAUser,
+      getGetInvitationPreviewMockHandler(pending),
+      http.get("*/v1/public/terms", () => problem(500, ErrorCode.ServerError)),
+    );
+    renderWithProviders(<AcceptInvitationPage code={code} />);
+
+    expect(
+      await screen.findByText(
+        "Something went wrong on our side. Your data is safe. Try again in a moment.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", { name: "Name" }),
+    ).not.toBeInTheDocument();
   });
 
   it("AcceptInvitationPage_NewPersonWithoutAName_SaysFillItInAndSendsNothing", async () => {

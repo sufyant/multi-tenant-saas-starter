@@ -72,23 +72,28 @@ describe("TermsNotice", () => {
 
     await user.click(await screen.findByRole("button", { name: "Close" }));
 
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    await vi.waitFor(() => expect(dismissed).toHaveBeenCalledWith(december.id));
+    await vi.waitFor(() =>
+      expect(screen.queryByRole("status")).not.toBeInTheDocument(),
+    );
+    expect(dismissed).toHaveBeenCalledWith(december.id);
   });
 
-  it("TermsNotice_CloseFails_ShowsTheNoticeAgain", async () => {
+  it("TermsNotice_CloseFails_KeepsTheNotice", async () => {
+    const failed = vi.fn();
     server.use(
       getGetMyTermsMockHandler(notice),
-      http.post("*/v1/me/terms/versions/:versionId/dismiss", () =>
-        HttpResponse.error(),
-      ),
+      http.post("*/v1/me/terms/versions/:versionId/dismiss", () => {
+        failed();
+        return HttpResponse.error();
+      }),
     );
     const user = userEvent.setup();
     renderWithProviders(<TermsNotice />);
 
     await user.click(await screen.findByRole("button", { name: "Close" }));
 
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    await vi.waitFor(() => expect(failed).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("TermsNotice_Nothing_ShowsNothing", async () => {
