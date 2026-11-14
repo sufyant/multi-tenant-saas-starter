@@ -492,6 +492,13 @@ The parts of 38, in their order. 38-design and 38-backend run at the same time; 
 
 Not this step: 1.27 (Create an account · accept the terms) is 40d's. It uses 38-backend's accept endpoint.
 
+38-terms-gate-api, three gaps of the review of steps 38 and 39 (the maintainer's piece of 2026-11-14). One pull request. It runs before 40a-backend, so two threads do not change the API at the same time:
+
+- The API enforces the terms gate (A11; `apps/api/docs/flows/terms-of-use.md`, section 8). A person whom `GetMyTerms` asks to accept a version gets 403 `terms_version.acceptance_required` with `termsVersionId` on every `me` and tenant endpoint but the exempt ones: the terms, the person's own account and data, Accept invitation's path, the live stream and `MarkNotificationRead`. The check runs in `TenantResolutionMiddleware` and reads through the cache (`user-terms`). In the web, such a refusal of any read or command shows the gate, never a toast (F64). The platform calls no endpoint that refuses so.
+- Integration tests of the terms email's fan-out: who gets it, the edit that turns it on, no second email on a retry or a second delivery, the pace, and the "accept at your next sign-in" text. The test of a second delivery found a fault: the email-only type wrote no notification, so a copy of its event asked the email service again. The dispatcher now records each email-only delivery (`notifications.email_deliveries`, U4).
+- A test of the week of the flag cleanup, with a fake clock: the worker asks every day, and only the first ask of a week tells the system admins; a worker that starts again in the same week tells nobody twice.
+- Status: in review.
+
 ## 7. Step 39: Feature flags
 
 Status: done.
@@ -753,7 +760,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Step 40, in the parts of section 8. 40-start and 40-design are done. 40a-backend waits for the API's terms gate. Then steps 41 to 47, in the order of section 1.
+5. Step 40, in the parts of section 8. 40-start and 40-design are done. 40a-backend waits for the API's terms gate, 38-terms-gate-api in section 6. Then steps 41 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:

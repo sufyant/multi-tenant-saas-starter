@@ -182,6 +182,7 @@
       "suspended": "This organisation is suspended."
     },
     "terms_version": {
+      "acceptance_required": "Accept the new terms of use to go on.",
       "changed": "The terms changed since you opened them. Read them again, then accept.",
       "effective_date_past": "Choose today or a later date.",
       "email_sent": "The email of this version went to the users already, so it stays on.",

@@ -66,7 +66,7 @@ const renderGate = (locale: "en" | "ar" = "en") =>
     locale,
   );
 
-// The API's refusal of a person who must accept a version (the API's terms flow, section 5).
+// The API's refusal of a person who must accept a version (the API's terms flow, section 8).
 const termsRefusal = () =>
   HttpResponse.json(
     {

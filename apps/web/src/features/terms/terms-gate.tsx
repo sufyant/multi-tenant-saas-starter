@@ -17,7 +17,7 @@ import { TermsAcceptance } from "./terms-acceptance";
  * fails, the page shows: the API's next read asks again, and the page's own reads start at once instead of after it. `acceptance`
  * puts the gate in place of the page until the person accepts; `notice` and `nothing` show the page, and Home shows the notice.
  *
- * The API refuses every other call of a person who must accept (403 `terms_version.acceptance_required`, section 5). Such a refusal
+ * The API refuses every other call of a person who must accept (403 `terms_version.acceptance_required`, section 8). Such a refusal
  * of any read or command leads here, never to an error: the page goes, with its toasts, and GetMyTerms reads again, so the gate
  * shows the version to accept.
  */

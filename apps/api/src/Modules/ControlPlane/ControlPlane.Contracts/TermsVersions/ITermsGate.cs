@@ -3,7 +3,7 @@ using SharedKernel;
 namespace ControlPlane.Contracts.TermsVersions;
 
 /// <summary>
-/// The terms gate as the host asks it on every me and tenant request (docs/flows/terms-of-use.md, section 5): whether the signed-in person
+/// The terms gate as the host asks it on every me and tenant request (docs/flows/terms-of-use.md, section 8): whether the signed-in person
 /// may go on, by the rule of GetMyTerms, so the API and the screens never disagree.
 /// </summary>
 public interface ITermsGate

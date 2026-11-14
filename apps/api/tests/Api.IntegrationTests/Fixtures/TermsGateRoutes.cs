@@ -9,14 +9,14 @@ using SharedKernel;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// The terms gate (docs/flows/terms-of-use.md, section 5): every me and tenant endpoint of the composed application, called as a person who
+// The terms gate (docs/flows/terms-of-use.md, section 8): every me and tenant endpoint of the composed application, called as a person who
 // must accept a version, and the exempt list of the flow. The gate refuses before the endpoint runs, so a call needs no valid body: any
 // answer but the gate's refusal shows that the gate let it pass.
 internal static partial class TermsGateRoutes
 {
     public const string RefusalCode = "terms_version.acceptance_required";
 
-    // The flow's exempt list, section 5: the terms, the person's own account and their data, and Accept invitation's own path.
+    // The flow's exempt list, section 8: the terms, the person's own account and their data, and Accept invitation's own path.
     public static readonly string[] Exempt =
     [
         "GET /v1/me/",

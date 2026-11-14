@@ -40,7 +40,7 @@ export function fieldErrorsOf(
 /**
  * What to do with an error answer. A pure function, so a test covers each branch without React. A 401 goes to sign-in; a 403
  * `user.suspended` goes to the suspended screen and a 403 `user.deleted` to the deleted one; a 403
- * `terms_version.acceptance_required` goes to the terms gate (the API's terms flow, section 5); a 403 `tenant.suspended` or `tenant.closed` goes to the organisation's blocked
+ * `terms_version.acceptance_required` goes to the terms gate (the API's terms flow, section 8); a 403 `tenant.suspended` or `tenant.closed` goes to the organisation's blocked
  * page; field errors go to the form; any other code shows its message `errors.<code>`.
  * A body that is not Problem Details shows the message of `server.error`.
  */

@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Api.IntegrationTests.Authorization;
 
-// The terms gate in the API (docs/flows/terms-of-use.md, section 5): when GetMyTerms would answer `acceptance`, a tenant user's call is
+// The terms gate in the API (docs/flows/terms-of-use.md, section 8): when GetMyTerms would answer `acceptance`, a tenant user's call is
 // refused with 403 and the version to accept, on every me and tenant endpoint but the exempt ones. The versions belong to no tenant, so
 // each test runs on a database of its own (OwnTerms).
 public sealed class TermsGateTests(Database database)

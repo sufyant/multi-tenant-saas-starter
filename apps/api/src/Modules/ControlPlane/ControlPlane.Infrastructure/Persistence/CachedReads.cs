@@ -12,7 +12,7 @@ namespace ControlPlane.Infrastructure.Persistence;
 /// Every read of the module that the shared cache holds, in one place, so a reviewer sees them all (C1): the reads of the access
 /// check that the host makes on every request (A9, T7, A4), and the two reads of a tenant's entitlements that its feature check makes
 /// (docs/flows/plans-and-entitlements.md), an organisation's feature flags (docs/flows/feature-flags.md), and the terms gate of every me
-/// and tenant route (docs/flows/terms-of-use.md, section 5). Each stores only rows (C4).
+/// and tenant route (docs/flows/terms-of-use.md, section 8). Each stores only rows (C4).
 /// </summary>
 internal static class CachedReads
 {
