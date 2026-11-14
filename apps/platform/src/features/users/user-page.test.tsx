@@ -96,6 +96,82 @@ describe("UserPage", () => {
     expect(screen.queryByText(/Suspended on/)).toBeNull();
   });
 
+  // Whether the person accepted the terms (5.05): the version in force and a scheduled version that requires acceptance.
+  it("UserPage_TermsAcceptedAndScheduledNotYet_SaysBoth", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(
+        userDetailOf(ayse, {
+          terms: {
+            inForce: {
+              versionId: "0190a000-0000-7000-8000-000000000101",
+              effectiveDate: "2026-03-01",
+              requiresAcceptance: true,
+              acceptedAt: "2026-03-03T10:00:00Z",
+            },
+            scheduled: {
+              versionId: "0190a000-0000-7000-8000-000000000102",
+              effectiveDate: "2026-12-01",
+              requiresAcceptance: true,
+              acceptedAt: null,
+            },
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<UserPage userId={ayse.id} />);
+
+    expect(await term("Terms of use in force")).toHaveTextContent(
+      "From 1 Mar 2026 · accepted on 3 Mar 2026",
+    );
+    expect(await term("Scheduled terms of use")).toHaveTextContent(
+      "From 1 Dec 2026 · not yet accepted",
+    );
+  });
+
+  it("UserPage_TermsInForceWithoutAcceptance_SaysNoAcceptanceNeeded", async () => {
+    server.use(
+      meAnswer(),
+      userAnswer(
+        userDetailOf(ayse, {
+          terms: {
+            inForce: {
+              versionId: "0190a000-0000-7000-8000-000000000103",
+              effectiveDate: "2026-11-01",
+              requiresAcceptance: false,
+              acceptedAt: null,
+            },
+            scheduled: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<UserPage userId={ayse.id} />);
+
+    expect(await term("Terms of use in force")).toHaveTextContent(
+      "From 1 Nov 2026 · no acceptance needed",
+    );
+    expect(
+      screen.queryByText("Scheduled terms of use", { selector: "dt" }),
+    ).toBeNull();
+  });
+
+  it("UserPage_NoTermsVersion_HidesBothTermsRows", async () => {
+    server.use(meAnswer(), userAnswer(userDetailOf(ayse)));
+
+    renderWithProviders(<UserPage userId={ayse.id} />);
+
+    await term("Signed up");
+    expect(
+      screen.queryByText("Terms of use in force", { selector: "dt" }),
+    ).toBeNull();
+    expect(
+      screen.queryByText("Scheduled terms of use", { selector: "dt" }),
+    ).toBeNull();
+  });
+
   it("UserPage_Active_OffersRenameSuspendDelete", async () => {
     server.use(meAnswer(), userAnswer(userDetailOf(ayse)));
 

@@ -17,8 +17,6 @@
     "backToPlatform": "Back to the platform",
     "myAccount": "My account",
     "systemAdmins": "System admins",
-    "settingsMyAccount": "Settings · My account",
-    "settingsPlatform": "Settings · Platform",
     "termsOfUse": "Terms of use"
   },
   "profile": {
@@ -302,6 +300,11 @@
     "emailTerm": "Email",
     "statusTerm": "Status",
     "signedUpTerm": "Signed up",
+    "termsInForceTerm": "Terms of use in force",
+    "termsScheduledTerm": "Scheduled terms of use",
+    "termsAccepted": "From {date} · accepted on {acceptedDate}",
+    "termsNotYetAccepted": "From {date} · not yet accepted",
+    "termsNoAcceptanceNeeded": "From {date} · no acceptance needed",
     "copyEmail": "Copy the email",
     "suspendedOn": "Suspended on {date}",
     "suspendedOnBy": "Suspended on {date} by {name}",

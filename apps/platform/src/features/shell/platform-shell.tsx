@@ -71,7 +71,7 @@ const notAUserYet = (error: Error | null) =>
 /**
  * The platform's shell (the platform's Shell screens): the product and "Platform" at the top, with no switcher, search, the
  * platform's bell, Organisations, Users, Plans and Activity log, Settings and the account menu; inside Settings the settings menu
- * with My account and Platform. A signed-in user who is no system admin sees "You don't have access"; the API refuses them anyway.
+ * with the platform's settings only. Profile and Account and security open from the account menu, in the main menu's shell (F59). A signed-in user who is no system admin sees "You don't have access"; the API refuses them anyway.
  *
  * A root system admin has no grant until their first request to the platform door with a verified second factor: the door
  * writes their grant then, and their user too when they are no user yet (`SystemAdminDirectory`,
@@ -195,7 +195,7 @@ export function PlatformShell({
       href: "/settings/account",
     },
   ];
-  // Feature flags joins in step 39.
+  // Settings holds only the platform's settings, and opens its first row (F59).
   const platform: NavItem[] = [
     {
       id: "system-admins",
@@ -210,17 +210,22 @@ export function PlatformShell({
       href: termsPage,
     },
   ];
-  const inSettings = pathname.startsWith("/settings");
+  // Profile and Account and security sit under `/settings` (decision 69) but belong to the account menu, not to Settings (F59).
+  const inSettings =
+    pathname.startsWith("/settings") &&
+    !myAccount.some((entry) => pathname.startsWith(entry.href));
   const first = pathname.split("/")[1] ?? "";
   const current = notFound
     ? ""
     : inSettings
       ? (pathname.split("/")[2] ?? "")
-      : first === ""
-        ? "organisations"
-        : first === "organisations"
+      : first === "settings"
+        ? (pathname.split("/")[2] ?? "")
+        : first === ""
           ? "organisations"
-          : first;
+          : first === "organisations"
+            ? "organisations"
+            : first;
   const item = [...main, ...myAccount, ...platform].find(
     (entry) => entry.id === current,
   );
@@ -257,10 +262,10 @@ export function PlatformShell({
     { id: "go-to", label: t("appShell.goTo"), items: main },
     {
       id: "my-account",
-      label: t("shell.settingsMyAccount"),
+      label: t("shell.myAccount"),
       items: myAccount,
     },
-    { id: "platform", label: t("shell.settingsPlatform"), items: platform },
+    { id: "settings", label: t("shell.settings"), items: platform },
   ];
 
   return (
@@ -293,18 +298,13 @@ export function PlatformShell({
           id: "settings",
           label: t("shell.settings"),
           icon: SettingsIcon,
-          href: "/settings/profile",
+          href: "/settings/system-admins",
         }}
         settingsMenu={
           inSettings
             ? {
                 back: { label: t("shell.backToPlatform"), href: "/" },
                 groups: [
-                  {
-                    id: "my-account",
-                    label: t("shell.myAccount"),
-                    items: myAccount,
-                  },
                   {
                     id: "platform",
                     label: t("shell.platform"),

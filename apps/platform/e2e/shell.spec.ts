@@ -188,18 +188,21 @@ test("Shell_CommandK_OpensTheCommandMenuWithItsGroups", async ({ page }) => {
 
   const dialog = page.getByRole("dialog", { name: "Command menu" });
   await expect(dialog.getByText("Go to", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("Settings · Platform")).toBeVisible();
+  await expect(dialog.getByText("My account", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Settings", { exact: true })).toBeVisible();
   await expectAccessible(page);
 });
 
-test("Shell_SettingsMenu_ShowsBackMyAccountAndPlatform", async ({ page }) => {
+test("Shell_SettingsMenu_ShowsBackAndThePlatformsSettingsOnly", async ({
+  page,
+}) => {
   await open(page, { path: "/settings/system-admins" });
 
   const menu = page.getByRole("navigation", { name: "Settings menu" });
   await expect(
     menu.getByRole("link", { name: "Back to the platform" }),
   ).toBeVisible();
-  await expect(menu.getByRole("link", { name: "Profile" })).toBeVisible();
+  await expect(menu.getByRole("link", { name: "Profile" })).toHaveCount(0);
   await expect(
     menu.getByRole("link", { name: "System admins" }),
   ).toHaveAttribute("aria-current", "page");

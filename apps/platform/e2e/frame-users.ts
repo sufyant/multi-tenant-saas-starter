@@ -118,8 +118,23 @@ const detail = (
 });
 
 const details = [
-  // 5.05: the only Owner of Northwind Traders, so Suspend warns (5.10) and Delete stops (5.14).
+  // 5.05: the only Owner of Northwind Traders, so Suspend warns (5.10) and Delete stops (5.14). She accepted the version in force
+  // and not yet the scheduled one.
   detail(frameUsers.ayse, {
+    terms: {
+      inForce: {
+        versionId: "0190a000-0000-7000-8000-000000000501",
+        effectiveDate: "2026-03-01",
+        requiresAcceptance: true,
+        acceptedAt: "2026-03-03T09:00:00Z",
+      },
+      scheduled: {
+        versionId: "0190a000-0000-7000-8000-000000000502",
+        effectiveDate: "2026-12-01",
+        requiresAcceptance: true,
+        acceptedAt: null,
+      },
+    },
     memberships: [
       membership(1, "Northwind Traders", BuiltInRole.Owner, {
         lastOwner: true,

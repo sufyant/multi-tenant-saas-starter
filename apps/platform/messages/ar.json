@@ -17,8 +17,6 @@
     "backToPlatform": "العودة إلى المنصة",
     "myAccount": "حسابي",
     "systemAdmins": "مسؤولو النظام",
-    "settingsMyAccount": "الإعدادات · حسابي",
-    "settingsPlatform": "الإعدادات · المنصة",
     "termsOfUse": "شروط الاستخدام"
   },
   "profile": {
@@ -302,6 +300,11 @@
     "emailTerm": "البريد الإلكتروني",
     "statusTerm": "الحالة",
     "signedUpTerm": "تاريخ التسجيل",
+    "termsInForceTerm": "شروط الاستخدام السارية",
+    "termsScheduledTerm": "شروط الاستخدام المجدولة",
+    "termsAccepted": "اعتبارًا من {date} · قُبلت في {acceptedDate}",
+    "termsNotYetAccepted": "اعتبارًا من {date} · لم تُقبل بعد",
+    "termsNoAcceptanceNeeded": "اعتبارًا من {date} · لا يلزم القبول",
     "copyEmail": "نسخ البريد الإلكتروني",
     "suspendedOn": "أُوقف في {date}",
     "suspendedOnBy": "أوقفه {name} في {date}",

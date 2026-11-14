@@ -556,6 +556,8 @@ The parts of 39, in their order. 39-design and 39-backend run at the same time; 
 - The decisions of 2026-11-14 in 39-design: the platform's Settings with System admins, Terms of use and Feature flags only, opening its first row; Profile and Account and security from the account menu, in the platform's shell; the command menu's sections (2.02); the user's terms acceptance on the user's page. F59 and `apps/platform/AGENTS.md` change with it.
 - In the web, one hook that reads the organisation's flags, so a product's screen asks `useFeatureFlag("roles.bulk_edit")`. No screen of the template uses it yet; a test does. The keys are `FeatureFlagKeys` of `@repo/api-client`; the template's one flag is `emails.send`.
 - It waits for 39-design and 39-backend.
+- It runs in two pull requests: 39-frontend-1, the decisions of 2026-11-14 and the web's hook; then 39-frontend-2, Settings › Feature flags with its rows, 4.09 and the bell.
+- As built in 39-frontend-1: the platform's Settings holds System admins and Terms of use, and the main menu's Settings opens System admins; Feature flags joins it with its page in 39-frontend-2. Profile and Account and security keep `/settings/profile` and `/settings/account` and show in the main menu's shell, with no row current (F59). The command menu groups Go to, My account and Settings; Actions stays a deviation of `docs/frontend/ARCHITECTURE.md`. The user's page shows the two terms rows; a version in force that requires no acceptance says "From {date} · no acceptance needed", as nobody accepts it (the coordinator's choice of 2026-11-14 inside the maintainer's decision; added to "Note · 39 copy"). The web's `useFeatureFlag` is F65. Done.
 
 ## 8. Step 40: Billing
 

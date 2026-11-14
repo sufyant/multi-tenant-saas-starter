@@ -4,7 +4,8 @@ import { Language, type RenameMeRequest } from "@repo/api-client";
 import { mockApi, mockRename } from "./api";
 import { expectAccessible } from "./axe";
 
-test("Profile_English_ShowsThePlatformsSettingsMenu", async ({ page }) => {
+// Profile opens from the account menu and shows in the main menu's shell, not in Settings (8.01).
+test("Profile_English_ShowsTheMainMenu", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await mockApi(page, Language.En);
 
@@ -14,8 +15,11 @@ test("Profile_English_ShowsThePlatformsSettingsMenu", async ({ page }) => {
     page.getByRole("heading", { level: 1, name: "Profile" }),
   ).toBeVisible();
   await expect(
+    page.getByRole("navigation", { name: "Main menu" }),
+  ).toContainText("Organisations");
+  await expect(
     page.getByRole("navigation", { name: "Settings menu" }),
-  ).toContainText("Back to the platform");
+  ).toHaveCount(0);
   await expectAccessible(page);
 });
 

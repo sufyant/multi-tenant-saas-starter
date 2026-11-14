@@ -817,6 +817,18 @@ const shellShots: {
     open: (page) =>
       page.getByRole("button", { name: "Sam Kelly", exact: true }).click(),
   },
+  // The phone's account menu over the drawer (2.27): Profile and Account and security open from it, not from Settings.
+  {
+    file: "2.27-account-menu-en-light-phone",
+    size: "phone",
+    open: async (page) => {
+      await page.getByRole("button", { name: "Open menu" }).click();
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Sam Kelly", exact: true })
+        .click();
+    },
+  },
   {
     file: "3.01-notifications-en-light-desktop",
     size: "desktop",
