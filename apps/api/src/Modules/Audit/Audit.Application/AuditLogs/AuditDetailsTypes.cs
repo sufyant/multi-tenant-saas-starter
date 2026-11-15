@@ -56,6 +56,14 @@ public static class AuditDetailsTypes
 
     public const string TenantPlanChanged = AuditOperations.TenantPlanChanged;
 
+    public const string TenantPlanCancelled = AuditOperations.TenantPlanCancelled;
+
+    public const string TenantPlanCancellationUndone = AuditOperations.TenantPlanCancellationUndone;
+
+    public const string TenantPlanChangeScheduled = AuditOperations.TenantPlanChangeScheduled;
+
+    public const string TenantPlanChangeUndone = AuditOperations.TenantPlanChangeUndone;
+
     public const string TenantPurgeWarned = AuditOperations.TenantPurgeWarned;
 
     public const string TenantRenamed = AuditOperations.TenantRenamed;
@@ -100,6 +108,10 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantOwnerInvited] = typeof(TenantOwnerInvitedDetails),
         [AuditOperations.TenantOwnerMade] = typeof(TenantOwnerMadeDetails),
         [AuditOperations.TenantPlanChanged] = typeof(TenantPlanChangedDetails),
+        [AuditOperations.TenantPlanCancelled] = typeof(TenantPlanCancelledDetails),
+        [AuditOperations.TenantPlanCancellationUndone] = typeof(TenantPlanCancellationUndoneDetails),
+        [AuditOperations.TenantPlanChangeScheduled] = typeof(TenantPlanChangeScheduledDetails),
+        [AuditOperations.TenantPlanChangeUndone] = typeof(TenantPlanChangeUndoneDetails),
         [AuditOperations.TenantPurgeWarned] = typeof(TenantPurgeWarnedDetails),
         [AuditOperations.TenantPurged] = null,
         [AuditOperations.TenantReactivated] = null,

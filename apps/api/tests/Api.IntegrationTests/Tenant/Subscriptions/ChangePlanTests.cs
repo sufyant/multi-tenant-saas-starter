@@ -97,6 +97,35 @@ public sealed class ChangePlanTests(Database database) : IAsyncLifetime
         (await _tenants.SubscriptionOfAsync(tenantId)).ShouldBe($"{_tenants.Team}|Yearly|f|{_tenants.Business}|Monthly");
     }
 
+    // 12.12: the member's cancellation goes to both logs, by them, with the plan it moves to and the day it moves (B9).
+    [Fact]
+    public async Task ChangePlan_ToTheDefaultPlan_RecordsTheCancellationByTheMember()
+    {
+        var (tenantId, manager) = await _tenants.PayingAsync(_tenants.Team);
+        var changer = await _testData.UserIdOfAsync(manager);
+        var free = await _tenants.DefaultPlanAsync();
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, free));
+
+        (await _audit.TenantLogAsync(tenantId))!.Split(", ").ShouldContain($"{tenantId}:tenant.plan_cancelled|User|{changer}|Tenant|{tenantId}|Acme Ltd");
+        (await _audit.PlatformLogAsync(tenantId))!.Split(", ").ShouldContain($"tenant.plan_cancelled|User|{changer}|Tenant|{tenantId}|Acme Ltd");
+        var details = JsonDocument.Parse((await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT details::text FROM audit.entries WHERE target_id = '{tenantId}' AND operation = 'tenant.plan_cancelled'"))!).RootElement;
+        (details.GetProperty("plan").GetProperty("id").GetGuid(), details.GetProperty("newPlan").GetProperty("id").GetGuid(), details.GetProperty("movesAt").GetDateTimeOffset())
+            .ShouldBe((_tenants.Team, free, PayingTenants.PeriodEnd));
+    }
+
+    [Fact]
+    public async Task ChangePlan_ToACheaperPlan_RecordsTheScheduledMoveByTheMember()
+    {
+        var (tenantId, manager) = await _tenants.PayingAsync(_tenants.Business);
+        var changer = await _testData.UserIdOfAsync(manager);
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, _tenants.Team));
+
+        (await _audit.TenantLogAsync(tenantId))!.Split(", ").ShouldContain($"{tenantId}:tenant.plan_change_scheduled|User|{changer}|Tenant|{tenantId}|Acme Ltd");
+    }
+
     // B8, B9: the member's cancellation is no closure's, so a reopen never takes it back.
     [Fact]
     public async Task ChangePlan_ToTheDefaultPlan_CancelsAtThePeriodsEndAsTheMembersWish()

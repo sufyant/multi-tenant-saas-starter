@@ -21,7 +21,11 @@ import {
   TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
+  TenantPlanCancellationUndoneDetailsResponseOperation,
+  TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
+  TenantPlanChangeScheduledDetailsResponseOperation,
+  TenantPlanChangeUndoneDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -91,6 +95,10 @@ const platformOperations = [
   AuditOperation.PlanCreated,
   AuditOperation.PlanUpdated,
   AuditOperation.TenantPlanChanged,
+  AuditOperation.TenantPlanCancelled,
+  AuditOperation.TenantPlanCancellationUndone,
+  AuditOperation.TenantPlanChangeScheduled,
+  AuditOperation.TenantPlanChangeUndone,
   AuditOperation.TenantEntitlementOverrideSet,
   AuditOperation.TenantEntitlementOverrideRemoved,
   AuditOperation.TermsVersionCreated,
@@ -904,6 +912,102 @@ const planCases: PlanCase[] = [
       en: "Ciara Byrne moved Shannon Studio from Free to Pro.",
       tr: "Ciara Byrne, Shannon Studio kuruluşunu Free planından Pro planına geçirdi.",
       ar: "نقل Ciara Byrne Shannon Studio من Free إلى Pro.",
+    },
+  ],
+  [
+    "TenantPlanCancelled",
+    AuditOperation.TenantPlanCancelled,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled,
+      plan: { id: pro.id, name: "Pro" },
+      newPlan: { id: free.id, name: "Free" },
+      movesAt: "2026-11-30T12:00:00Z",
+    },
+    {
+      en: "Ciara Byrne cancelled the plan of Shannon Studio. It moves to Free on 30 Nov 2026.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunun planını iptal etti. 30 Kas 2026 tarihinde Free planına geçer.",
+      ar: "ألغى Ciara Byrne خطة Shannon Studio. تنتقل إلى Free في 30 نوفمبر 2026.",
+    },
+  ],
+  [
+    "TenantPlanCancellationUndone",
+    AuditOperation.TenantPlanCancellationUndone,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantPlanCancellationUndoneDetailsResponseOperation.TenantPlanCancellationUndone,
+      plan: { id: pro.id, name: "Pro" },
+    },
+    {
+      en: "Ciara Byrne undid the cancellation of Shannon Studio. It stays on Pro.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunun iptalini geri aldı. Pro planında kalır.",
+      ar: "تراجع Ciara Byrne عن إلغاء Shannon Studio. تبقى على Pro.",
+    },
+  ],
+  [
+    "TenantPlanChangeScheduled",
+    AuditOperation.TenantPlanChangeScheduled,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantPlanChangeScheduledDetailsResponseOperation.TenantPlanChangeScheduled,
+      oldPlan: { id: pro.id, name: "Pro" },
+      newPlan: { id: free.id, name: "Free" },
+      appliesAt: "2026-11-30T12:00:00Z",
+    },
+    {
+      en: "Ciara Byrne changed the plan of Shannon Studio from Pro to Free. It applies on 30 Nov 2026.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunun planını Pro planından Free planına değiştirdi. 30 Kas 2026 tarihinde geçerli olur.",
+      ar: "غيّر Ciara Byrne خطة Shannon Studio من Pro إلى Free. تسري في 30 نوفمبر 2026.",
+    },
+  ],
+  [
+    "TenantPlanChangeScheduledToMonthly",
+    AuditOperation.TenantPlanChangeScheduled,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantPlanChangeScheduledDetailsResponseOperation.TenantPlanChangeScheduled,
+      oldPlan: { id: pro.id, name: "Pro" },
+      newPlan: { id: pro.id, name: "Pro" },
+      appliesAt: "2026-11-30T12:00:00Z",
+    },
+    {
+      en: "Ciara Byrne moved Shannon Studio to monthly billing on Pro. It applies on 30 Nov 2026.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunu Pro planında aylık faturalamaya geçirdi. 30 Kas 2026 tarihinde geçerli olur.",
+      ar: "نقل Ciara Byrne Shannon Studio إلى الفوترة الشهرية على Pro. تسري في 30 نوفمبر 2026.",
+    },
+  ],
+  [
+    "TenantPlanChangeUndone",
+    AuditOperation.TenantPlanChangeUndone,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone,
+      plan: { id: pro.id, name: "Pro" },
+    },
+    {
+      en: "Ciara Byrne undid the scheduled change of Shannon Studio. It stays on Pro.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunun planlanan değişikliğini geri aldı. Pro planında kalır.",
+      ar: "تراجع Ciara Byrne عن التغيير المجدول لـShannon Studio. تبقى على Pro.",
     },
   ],
   [

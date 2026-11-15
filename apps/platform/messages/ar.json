@@ -392,6 +392,10 @@
         "purge_warned": "أُبلغ مالكو <target></target> بأنها ستُحذف في {date}.",
         "purged": "حُذفت <target></target>.",
         "plan_changed": "نقل <actor></actor> <target></target> من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
+        "plan_cancelled": "ألغى <actor></actor> خطة <target></target>. تنتقل إلى <newPlan></newPlan> في {date}.",
+        "plan_cancellation_undone": "تراجع <actor></actor> عن إلغاء <target></target>. تبقى على <plan></plan>.",
+        "plan_change_scheduled": "{interval, select, yes {نقل <actor></actor> <target></target> إلى الفوترة الشهرية على <plan></plan>. تسري في {date}.} other {غيّر <actor></actor> خطة <target></target> من <oldPlan></oldPlan> إلى <newPlan></newPlan>. تسري في {date}.}}",
+        "plan_change_undone": "تراجع <actor></actor> عن التغيير المجدول لـ<target></target>. تبقى على <plan></plan>.",
         "entitlement_override_set": "جعل <actor></actor> {key} لـ<target></target> {value} {expiry, select, none {بلا انتهاء} other {حتى {date}}} (قبل ذلك: {previous}).{hasReason, select, yes { السبب: <name>{reason}</name>.} ended { السبب: <name>{reason}</name>} other {}}",
         "entitlement_override_removed": "أزال <actor></actor> استثناء <target></target> على {key} ({value}، {expiry, select, none {بلا انتهاء} other {حتى {date}}})."
       },

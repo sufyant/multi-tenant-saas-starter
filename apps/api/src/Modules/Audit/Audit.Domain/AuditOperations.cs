@@ -74,6 +74,18 @@ public static class AuditOperations
 
     public const string TenantPlanChanged = "tenant.plan_changed";
 
+    /// <summary>A member cancelled the tenant's subscription: it moves to the default plan at the end of the paid period (B9).</summary>
+    public const string TenantPlanCancelled = "tenant.plan_cancelled";
+
+    /// <summary>A member undid the tenant's cancellation: it stays on its plan.</summary>
+    public const string TenantPlanCancellationUndone = "tenant.plan_cancellation_undone";
+
+    /// <summary>A member scheduled a move to another plan or interval at the end of the paid period (B9).</summary>
+    public const string TenantPlanChangeScheduled = "tenant.plan_change_scheduled";
+
+    /// <summary>A member undid the move they scheduled: the tenant stays on its plan.</summary>
+    public const string TenantPlanChangeUndone = "tenant.plan_change_undone";
+
     public const string TenantPurgeWarned = "tenant.purge_warned";
 
     public const string TenantPurged = "tenant.purged";

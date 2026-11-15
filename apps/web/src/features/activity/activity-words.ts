@@ -17,7 +17,11 @@ import {
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
+  TenantPlanCancellationUndoneDetailsResponseOperation,
+  TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
+  TenantPlanChangeScheduledDetailsResponseOperation,
+  TenantPlanChangeUndoneDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
 } from "@repo/api-client";
@@ -92,6 +96,23 @@ export function detailValues<N>(
         oldPlan: words.plan(details.oldPlan.name),
         newPlan: words.plan(details.newPlan.name),
       };
+    case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
+      return {
+        newPlan: words.plan(details.newPlan.name),
+        date: date(details.movesAt),
+      };
+    case TenantPlanChangeScheduledDetailsResponseOperation.TenantPlanChangeScheduled:
+      // The same plan twice is the move from yearly to monthly (B9).
+      return {
+        interval: details.oldPlan.id === details.newPlan.id ? "yes" : "no",
+        plan: words.plan(details.newPlan.name),
+        oldPlan: words.plan(details.oldPlan.name),
+        newPlan: words.plan(details.newPlan.name),
+        date: date(details.appliesAt),
+      };
+    case TenantPlanCancellationUndoneDetailsResponseOperation.TenantPlanCancellationUndone:
+    case TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone:
+      return { plan: words.plan(details.plan.name) };
     case TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet:
       return {
         key: words.key(details.key),

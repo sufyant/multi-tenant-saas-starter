@@ -19,7 +19,11 @@ import {
   TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
+  TenantPlanCancellationUndoneDetailsResponseOperation,
+  TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
+  TenantPlanChangeScheduledDetailsResponseOperation,
+  TenantPlanChangeUndoneDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -129,6 +133,23 @@ function detailValues(
         oldPlan: planLink(details.oldPlan),
         newPlan: planLink(details.newPlan),
       };
+    case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
+      return {
+        newPlan: planLink(details.newPlan),
+        date: date(details.movesAt),
+      };
+    case TenantPlanChangeScheduledDetailsResponseOperation.TenantPlanChangeScheduled:
+      // The same plan twice is the move from yearly to monthly (B9).
+      return {
+        interval: details.oldPlan.id === details.newPlan.id ? "yes" : "no",
+        plan: planLink(details.newPlan),
+        oldPlan: planLink(details.oldPlan),
+        newPlan: planLink(details.newPlan),
+        date: date(details.appliesAt),
+      };
+    case TenantPlanCancellationUndoneDetailsResponseOperation.TenantPlanCancellationUndone:
+    case TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone:
+      return { plan: planLink(details.plan) };
     case TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet:
       return {
         key: text.name(details.key),

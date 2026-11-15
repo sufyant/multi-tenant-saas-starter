@@ -11,6 +11,7 @@ import {
   RoleUpdatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantPlanChangeScheduledDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
 } from "@repo/api-client";
 import { screen } from "@testing-library/react";
@@ -866,6 +867,73 @@ describe("ActivitySentence", () => {
           })}
         />,
         language,
+      );
+
+      expect(shown(text)).toBeInTheDocument();
+    },
+  );
+
+  it("ActivitySentence_AScheduledMoveToMonthlyOnTheSamePlan_SaysMonthlyBilling", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantPlanChangeScheduled,
+          target: northwindTarget,
+          details: {
+            operation:
+              TenantPlanChangeScheduledDetailsResponseOperation.TenantPlanChangeScheduled,
+            oldPlan: {
+              id: "0198f0a2-0000-7000-8000-0000000000b3",
+              name: "Team",
+            },
+            newPlan: {
+              id: "0198f0a2-0000-7000-8000-0000000000b3",
+              name: "Team",
+            },
+            appliesAt: "2026-12-01T00:00:00Z",
+          },
+        })}
+        timeZone="Europe/Dublin"
+      />,
+    );
+
+    expect(
+      shown(
+        "Ayşe Yılmaz moved Team to monthly billing. It applies on 1 Dec 2026.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // 12.12: a member's cancellation, its undo and a scheduled move (B9). The detail of 1 Dec at midnight in UTC is 1 Dec in Dublin.
+  it.each([
+    [
+      AuditOperation.TenantPlanCancelled,
+      "Ayşe Yılmaz cancelled the plan. Northwind Traders moves to Free on 1 Dec 2026.",
+    ],
+    [
+      AuditOperation.TenantPlanCancellationUndone,
+      "Ayşe Yılmaz undid the cancellation. Northwind Traders stays on Pro.",
+    ],
+    [
+      AuditOperation.TenantPlanChangeScheduled,
+      "Ayşe Yılmaz changed the plan from Pro to Team. It applies on 1 Dec 2026.",
+    ],
+    [
+      AuditOperation.TenantPlanChangeUndone,
+      "Ayşe Yılmaz undid the scheduled change. Northwind Traders stays on Pro.",
+    ],
+  ] as const)(
+    "ActivitySentence_%s_WritesTheBoardsSentence",
+    (operation, text) => {
+      renderWithProviders(
+        <ActivitySentence
+          entry={entry({
+            operation,
+            target: northwindTarget,
+            details: detailsOf[operation],
+          })}
+          timeZone="Europe/Dublin"
+        />,
       );
 
       expect(shown(text)).toBeInTheDocument();

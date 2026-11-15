@@ -13,6 +13,10 @@ public sealed class UndoScheduledChangeTests(Database database) : IAsyncLifetime
 
     private PayingTenants _tenants = null!;
 
+    private readonly AuditEntries _audit = new(database);
+
+    private readonly TestData _testData = new(database);
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     public async ValueTask InitializeAsync()
@@ -48,6 +52,32 @@ public sealed class UndoScheduledChangeTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).UndoScheduledChangeAsync(tenantId));
 
         (await _tenants.SubscriptionOfAsync(tenantId)).ShouldBe($"{_tenants.Business}|Monthly|f||");
+    }
+
+    // 12.12: each undo goes to both logs, by the member who undid it (B9).
+    [Fact]
+    public async Task UndoScheduledChange_AfterACancellation_RecordsTheUndoByTheMember()
+    {
+        var (tenantId, manager) = await _tenants.PayingAsync(_tenants.Team);
+        var member = await _testData.UserIdOfAsync(manager);
+        var free = await _tenants.DefaultPlanAsync();
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, free));
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).UndoScheduledChangeAsync(tenantId));
+
+        (await _audit.PlatformLogAsync(tenantId))!.Split(", ").ShouldContain($"tenant.plan_cancellation_undone|User|{member}|Tenant|{tenantId}|Acme Ltd");
+    }
+
+    [Fact]
+    public async Task UndoScheduledChange_AfterAScheduledMove_RecordsTheUndoByTheMember()
+    {
+        var (tenantId, manager) = await _tenants.PayingAsync(_tenants.Business);
+        var member = await _testData.UserIdOfAsync(manager);
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, _tenants.Team));
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).UndoScheduledChangeAsync(tenantId));
+
+        (await _audit.TenantLogAsync(tenantId))!.Split(", ").ShouldContain($"{tenantId}:tenant.plan_change_undone|User|{member}|Tenant|{tenantId}|Acme Ltd");
     }
 
     [Fact]

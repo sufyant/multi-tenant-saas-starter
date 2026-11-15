@@ -19,7 +19,11 @@ import {
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
+  TenantPlanCancellationUndoneDetailsResponseOperation,
+  TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
+  TenantPlanChangeScheduledDetailsResponseOperation,
+  TenantPlanChangeUndoneDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -132,6 +136,30 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation: TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
       oldPlan: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
       newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantPlanCancelled]: {
+      operation:
+        TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled,
+      plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+      newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
+      movesAt: "2026-12-01T00:00:00Z",
+    },
+    [AuditOperation.TenantPlanCancellationUndone]: {
+      operation:
+        TenantPlanCancellationUndoneDetailsResponseOperation.TenantPlanCancellationUndone,
+      plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantPlanChangeScheduled]: {
+      operation:
+        TenantPlanChangeScheduledDetailsResponseOperation.TenantPlanChangeScheduled,
+      oldPlan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+      newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b3", name: "Team" },
+      appliesAt: "2026-12-01T00:00:00Z",
+    },
+    [AuditOperation.TenantPlanChangeUndone]: {
+      operation:
+        TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone,
+      plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
     },
     [AuditOperation.TenantEntitlementOverrideSet]: {
       operation:

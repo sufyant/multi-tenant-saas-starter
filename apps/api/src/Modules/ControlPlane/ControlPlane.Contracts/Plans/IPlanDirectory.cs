@@ -9,4 +9,7 @@ public interface IPlanDirectory
 {
     /// <summary>The plan with this id, or none.</summary>
     Task<PlanRecord?> FindPlanAsync(Guid planId, CancellationToken cancellationToken);
+
+    /// <summary>The default plan, which a cancellation moves the tenant to (B9), or none while no plan has the mark.</summary>
+    Task<PlanRecord?> FindDefaultPlanAsync(CancellationToken cancellationToken);
 }

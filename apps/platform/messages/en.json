@@ -392,6 +392,10 @@
         "purge_warned": "The Owners of <target></target> were warned that it will be deleted on {date}.",
         "purged": "<target></target> was deleted.",
         "plan_changed": "<actor></actor> moved <target></target> from <oldPlan></oldPlan> to <newPlan></newPlan>.",
+        "plan_cancelled": "<actor></actor> cancelled the plan of <target></target>. It moves to <newPlan></newPlan> on {date}.",
+        "plan_cancellation_undone": "<actor></actor> undid the cancellation of <target></target>. It stays on <plan></plan>.",
+        "plan_change_scheduled": "{interval, select, yes {<actor></actor> moved <target></target> to monthly billing on <plan></plan>. It applies on {date}.} other {<actor></actor> changed the plan of <target></target> from <oldPlan></oldPlan> to <newPlan></newPlan>. It applies on {date}.}}",
+        "plan_change_undone": "<actor></actor> undid the scheduled change of <target></target>. It stays on <plan></plan>.",
         "entitlement_override_set": "<actor></actor> set <target></target>’s {key} to {value}{expiry, select, none {, no expiry} other { until {date}}} (before: {previous}).{hasReason, select, yes { Reason: <name>{reason}</name>.} ended { Reason: <name>{reason}</name>} other {}}",
         "entitlement_override_removed": "<actor></actor> removed <target></target>’s override on {key} ({value}, {expiry, select, none {no expiry} other {until {date}}})."
       },
