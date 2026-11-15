@@ -71,7 +71,8 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         _api.Billing.Reads.Count(read => read == $"sub_{tenant.Id:N}").ShouldBe(2);
     }
 
-    // B6: a new event of the subscription that changed nothing, or changed it while it stays on the plan, records no second change.
+    // B6: a new event of the subscription that changed nothing, or changed it while it stays on the plan, records no second change. The
+    // end at the period's end is a cancellation of its own (B9).
     [Fact]
     public async Task ReceiveWebhook_AnotherEventOfTheSamePlan_RecordsTheChangeOnce()
     {
@@ -83,7 +84,7 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenant.Id:N}"));
 
         (await SubscriptionOfAsync(tenant.Id)).ShouldBe($"cus_{tenant.Id:N}|sub_{tenant.Id:N}|{_planId}|Monthly|Active|t");
-        (await _audit.TenantLogAsync(tenant.Id))!.Split(", ").Length.ShouldBe(1);
+        (await _audit.TenantLogAsync(tenant.Id))!.Split(", ").Count(entry => entry.Contains("tenant.plan_changed|", StringComparison.Ordinal)).ShouldBe(1);
     }
 
     // B7: a second subscription while the first has not ended came from a page that a race left payable: it ends at Stripe at once, and the
