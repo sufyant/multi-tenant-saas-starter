@@ -18,18 +18,30 @@ import type {
 } from 'msw';
 
 import {
+  PlanChangeResponseMove,
   SubscriptionResponseInterval,
   SubscriptionResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
   BillingResponse,
+  PlanChangePreviewRequest,
+  PlanChangePreviewResponse,
+  PlanChangeRequest,
+  PlanChangeResponse,
+  ScheduledChangeResponse,
   SubscriptionResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getGetBillingResponseSubscriptionResponseMock = (overrideResponse: Partial<SubscriptionResponse> = {}): SubscriptionResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval)), status: faker.helpers.arrayElement(Object.values(SubscriptionResponseStatus)), currentPeriodEnd: faker.date.past().toISOString().slice(0, 19) + 'Z', cancelAtPeriodEnd: faker.datatype.boolean()}, ...overrideResponse});
+export const getGetBillingResponseScheduledChangeResponseMock = (overrideResponse: Partial<ScheduledChangeResponse> = {}): ScheduledChangeResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval))}, ...overrideResponse});
+
+export const getGetBillingResponseSubscriptionResponseMock = (overrideResponse: Partial<SubscriptionResponse> = {}): SubscriptionResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval)), status: faker.helpers.arrayElement(Object.values(SubscriptionResponseStatus)), currentPeriodEnd: faker.date.past().toISOString().slice(0, 19) + 'Z', cancelAtPeriodEnd: faker.datatype.boolean(), scheduledChange: faker.helpers.arrayElement([null,{...getGetBillingResponseScheduledChangeResponseMock()},])}, ...overrideResponse});
 
 export const getGetBillingResponseMock = (overrideResponse: Partial<Extract<BillingResponse, object>> = {}): BillingResponse => ({subscription: faker.helpers.arrayElement([null,{...getGetBillingResponseSubscriptionResponseMock()},]), ...overrideResponse})
+
+export const getPreviewPlanChangeResponseMock = (overrideResponse: Partial<Extract<PlanChangePreviewResponse, object>> = {}): PlanChangePreviewResponse => ({move: faker.helpers.arrayElement(Object.values(PlanChangeResponseMove)), at: faker.date.past().toISOString().slice(0, 19) + 'Z', currency: faker.string.alpha({length: {min: 10, max: 20}}), amount: faker.number.int(), amountToday: faker.helpers.arrayElement([faker.number.int(), null]), proratedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getChangePlanResponseMock = (overrideResponse: Partial<Extract<PlanChangeResponse, object>> = {}): PlanChangeResponse => ({move: faker.helpers.arrayElement(Object.values(PlanChangeResponseMove)), at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 
 export const getGetBillingMockHandler = (overrideResponse?: BillingResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<BillingResponse> | BillingResponse), options?: RequestHandlerOptions) => {
@@ -43,6 +55,43 @@ export const getGetBillingMockHandler = (overrideResponse?: BillingResponse | ((
       })
   }, options)
 }
+
+export const getPreviewPlanChangeMockHandler = (overrideResponse?: PlanChangePreviewResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, PlanChangePreviewRequest>>[0]) => Promise<PlanChangePreviewResponse> | PlanChangePreviewResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, PlanChangePreviewRequest>('*/v1/tenants/:tenantId/billing/plan-change/preview', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, PlanChangePreviewRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPreviewPlanChangeResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getChangePlanMockHandler = (overrideResponse?: PlanChangeResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, PlanChangeRequest>>[0]) => Promise<PlanChangeResponse> | PlanChangeResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, PlanChangeRequest>('*/v1/tenants/:tenantId/billing/plan-change', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, PlanChangeRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getChangePlanResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUndoScheduledChangeMockHandler = (overrideResponse?: void | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.delete<{ tenantId: string }>('*/v1/tenants/:tenantId/billing/scheduled-change', async (info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
 export const getTenantSubscriptionsMock = () => [
-  getGetBillingMockHandler()
+  getGetBillingMockHandler(),
+  getPreviewPlanChangeMockHandler(),
+  getChangePlanMockHandler(),
+  getUndoScheduledChangeMockHandler()
 ]

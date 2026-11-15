@@ -17,6 +17,9 @@ public interface IPlanQueries
     /// <summary>The plan with this id, or none.</summary>
     internal Task<PlanView?> FindPlanAsync(Guid planId, CancellationToken cancellationToken);
 
+    /// <summary>Every plan, the cheapest monthly price first, then by name.</summary>
+    internal Task<IReadOnlyList<PlanView>> GetPlanChoicesAsync(CancellationToken cancellationToken);
+
     /// <summary>
     /// The tenants on the plan, but a purged tenant, that these values would put over a limit, or whose feature in use they would turn
     /// off, under each tenant's overrides at this moment: a page of them, those that go furthest over first. The search matches the

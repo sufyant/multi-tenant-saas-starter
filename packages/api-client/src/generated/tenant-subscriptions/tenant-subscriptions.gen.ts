@@ -21,6 +21,10 @@ import type {
 
 import type {
   BillingResponse,
+  PlanChangePreviewRequest,
+  PlanChangePreviewResponse,
+  PlanChangeRequest,
+  PlanChangeResponse,
   ProblemDetails
 } from '../endpoints.schemas.gen';
 
@@ -137,6 +141,99 @@ export function useGetBilling<TData = Awaited<ReturnType<typeof getBilling>>, TE
 
 
 
+
+
+
+export const getPreviewPlanChangeUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/billing/plan-change/preview`
+}
+
+export const previewPlanChange = async (tenantId: string,
+    planChangePreviewRequest: PlanChangePreviewRequest, options?: Parameters<typeof apiFetch>[1]): Promise<PlanChangePreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<PlanChangePreviewResponse>(getPreviewPlanChangeUrl(tenantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(planChangePreviewRequest)
+  }
+);}
+
+
+
+export const getChangePlanUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/billing/plan-change`
+}
+
+export const changePlan = async (tenantId: string,
+    planChangeRequest: PlanChangeRequest, options?: Parameters<typeof apiFetch>[1]): Promise<PlanChangeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<PlanChangeResponse>(getChangePlanUrl(tenantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(planChangeRequest)
+  }
+);}
+
+
+
+export const getUndoScheduledChangeUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/tenants/${tenantId}/billing/scheduled-change`
+}
+
+export const undoScheduledChange = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<void> => {
+
+  return apiFetch<void>(getUndoScheduledChangeUrl(tenantId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
 
 
 

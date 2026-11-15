@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Billing.Application.Provider;
@@ -18,6 +19,19 @@ public sealed class StripeBillingProviderTests
     private static readonly IBillingProvider Provider = new StripeBillingProvider(
         new StripeClient("sk_test_unused"),
         Options.Create(new StripeOptions { SecretKey = "sk_test_unused", WebhookSecret = Secret }));
+
+    private static readonly Guid Team = Guid.Parse("0198a0d2-0000-7000-8000-000000000001");
+
+    private static readonly Guid Business = Guid.Parse("0198a0d2-0000-7000-8000-000000000002");
+
+    private static readonly PlanChangeOrder ToBusiness = new("sub_1", Business, "Business", "EUR", false, 9900, 800, 10);
+
+    private static readonly Func<StripeRequests, IBillingProvider> ProviderOf = stripe =>
+        new StripeBillingProvider(
+            new StripeClient("sk_test_unused", httpClient: new SystemNetHttpClient(new HttpClient(stripe), maxNetworkRetries: 0)),
+            Options.Create(new StripeOptions { SecretKey = "sk_test_unused", WebhookSecret = "whsec_unused" }));
+
+    private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
     public void ReadEvent_ACompletedCheckoutSignedByStripe_NamesItsSubscription()
@@ -92,6 +106,75 @@ public sealed class StripeBillingProviderTests
         read.ShouldBeNull();
     }
 
+    // B9: the plan changes against Stripe's API, answered in the process: a declined card changes nothing, a paid move drops a scheduled
+    // move only after the payment, a move at the period's end writes the schedule's two phases, and the read names the next phase's move.
+
+    [Fact]
+    public async Task ChangePlanNow_ADeclinedCard_AnswersFalseAndKeepsTheSchedule()
+    {
+        var stripe = Subscribed().Answer("POST", "/v1/subscriptions/sub_1", """{"error": {"type": "card_error", "code": "card_declined", "message": "declined"}}""", HttpStatusCode.PaymentRequired);
+
+        var paid = await ProviderOf(stripe).ChangePlanNowAsync(ToBusiness, DateTimeOffset.UnixEpoch, Cancellation);
+
+        paid.ShouldBeFalse();
+        stripe.Sent.ShouldNotContain(request => request.Path.Contains("/release", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ChangePlanNow_APaidMove_ChargesNowThenReleasesTheSchedule()
+    {
+        var stripe = Subscribed()
+            .Answer("POST", "/v1/subscriptions/sub_1", SubscriptionJson(scheduleId: "sub_sched_1"))
+            .Answer("POST", "/v1/subscription_schedules/sub_sched_1/release", """{"id": "sub_sched_1", "object": "subscription_schedule"}""");
+
+        var paid = await ProviderOf(stripe).ChangePlanNowAsync(ToBusiness, DateTimeOffset.FromUnixTimeSeconds(1_800_000_000), Cancellation);
+
+        paid.ShouldBeTrue();
+        var posts = stripe.Sent.Where(request => request.Method == "POST").Select(request => request.Path).ToList();
+        posts.ShouldBe(["/v1/subscriptions/sub_1", "/v1/subscription_schedules/sub_sched_1/release"]);
+        var update = stripe.Sent.Single(request => request.Method == "POST" && request.Path == "/v1/subscriptions/sub_1").Body;
+        update.ShouldContain("payment_behavior=error_if_incomplete");
+        update.ShouldContain("proration_behavior=always_invoice");
+        update.ShouldContain("proration_date=1800000000");
+        update.Split('&').ShouldContain("items[0][id]=si_1");
+        update.Split('&').ShouldContain("items[0][deleted]=true");
+    }
+
+    [Fact]
+    public async Task SchedulePlanChange_WithoutASchedule_KeepsTodayUntilThePeriodsEndThenOnePeriodOfTheOrder()
+    {
+        var stripe = Subscribed(scheduleId: null)
+            .Answer("POST", "/v1/subscription_schedules/sub_sched_new", """{"id": "sub_sched_new", "object": "subscription_schedule"}""")
+            .Answer("POST", "/v1/subscription_schedules", """{"id": "sub_sched_new", "object": "subscription_schedule", "current_phase": {"start_date": 1790000000, "end_date": 1800000000}}""");
+
+        await ProviderOf(stripe).SchedulePlanChangeAsync(ToBusiness with { PlanId = Team, PlanName = "Team", BaseAmount = 0, PerPersonAmount = 1000 }, Cancellation);
+
+        var update = stripe.Sent.Single(request => request.Path == "/v1/subscription_schedules/sub_sched_new").Body;
+        update.Split('&').ShouldBe(
+            [
+                "end_behavior=release", "phases[0][end_date]=1800000000", "phases[0][items][0][price]=price_team_old", "phases[0][items][0][quantity]=10",
+                "phases[0][start_date]=1790000000", "phases[1][duration][interval]=month", "phases[1][duration][interval_count]=1",
+                "phases[1][items][0][price]=price_found", "phases[1][items][0][quantity]=10", "proration_behavior=none",
+            ],
+            ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task FindSubscription_AScheduledMove_NamesThePlanAndIntervalOfTheNextPhase()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", SubscriptionJson(scheduleId: null, schedule: $$$"""
+            {"id": "sub_sched_1", "object": "subscription_schedule", "status": "active", "phases": [
+              {"start_date": 1790000000, "end_date": 1800000000, "items": [{"price": {"id": "price_b", "object": "price", "product": "plan_{{{Business:N}}}", "recurring": {"interval": "month"} }, "quantity": 10}]},
+              {"start_date": 1800000000, "end_date": 1802592000, "items": [{"price": {"id": "price_t", "object": "price", "product": "plan_{{{Team:N}}}", "recurring": {"interval": "year"} }, "quantity": 10}]}
+            ]}
+            """));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        (found!.PlanId, found.ScheduledPlanId, found.ScheduledYearly).ShouldBe((Business, Team, true));
+        stripe.Sent.Single().Path.ShouldContain("expand[0]=schedule.phases.items.price");
+    }
+
     private static string EventBody(string id, string type, string dataObject) =>
         $$$"""{"id": "{{{id}}}", "object": "event", "type": "{{{type}}}", "api_version": "{{{StripeConfiguration.ApiVersion}}}", "created": 1, "data": {"object": {{{dataObject}}} }}""";
 
@@ -101,4 +184,17 @@ public sealed class StripeBillingProviderTests
         var hash = HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes($"{timestamp}.{body}"));
         return $"t={timestamp},v1={Convert.ToHexStringLower(hash)}";
     }
+
+    private static StripeRequests Subscribed(string? scheduleId = "sub_sched_1") =>
+        new StripeRequests()
+            .Answer("GET", "/v1/subscriptions/sub_1", SubscriptionJson(scheduleId))
+            .Answer("GET", "/v1/prices", """{"object": "list", "data": [{"id": "price_found", "object": "price"}], "has_more": false, "url": "/v1/prices"}""");
+
+    // A monthly subscription of ten people on Business, whose period ends at 1 800 000 000.
+    private static string SubscriptionJson(string? scheduleId, string? schedule = null) => $$$"""
+        {"id": "sub_1", "object": "subscription", "customer": "cus_1", "status": "active", "cancel_at_period_end": false,
+         "schedule": {{{schedule ?? (scheduleId is null ? "null" : $"\"{scheduleId}\"")}}},
+         "items": {"object": "list", "data": [{"id": "si_1", "object": "subscription_item", "quantity": 10, "current_period_end": 1800000000,
+           "price": {"id": "price_team_old", "object": "price", "product": "plan_{{{Business:N}}}", "recurring": {"interval": "month"} } }]} }
+        """;
 }

@@ -753,8 +753,18 @@ export const SubscriptionResponseStatus = {
 } as const;
 
 /**
+ * The plan and the interval that the subscription moves to at the end of its paid period, by a member's wish (B9).
+ */
+export interface ScheduledChangeResponse {
+  planId: string;
+  interval: SubscriptionResponseInterval;
+}
+
+/**
  * The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it
- * has paid for, and whether it ends then.
+ * has paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's
+ * (B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or
+ * null.
  */
 export interface SubscriptionResponse {
   planId: string;
@@ -762,6 +772,7 @@ export interface SubscriptionResponse {
   status: SubscriptionResponseStatus;
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
+  scheduledChange: null | ScheduledChangeResponse;
 }
 
 /**
@@ -1183,10 +1194,16 @@ export const ErrorCode = {
   BillingAlreadySubscribed: 'billing.already_subscribed',
   BillingCheckoutReplaced: 'billing.checkout_replaced',
   BillingNoCustomer: 'billing.no_customer',
+  BillingNoSubscription: 'billing.no_subscription',
+  BillingNothingScheduled: 'billing.nothing_scheduled',
   BillingOff: 'billing.off',
+  BillingPaymentDeclined: 'billing.payment_declined',
   BillingPlanFree: 'billing.plan_free',
   BillingPlanNotFound: 'billing.plan_not_found',
+  BillingPlanUnchanged: 'billing.plan_unchanged',
+  BillingPreviewExpired: 'billing.preview_expired',
   BillingReturnUrlInvalid: 'billing.return_url_invalid',
+  BillingSubscriptionNotActive: 'billing.subscription_not_active',
   BillingTenantClosed: 'billing.tenant_closed',
   BillingWebhookInvalid: 'billing.webhook_invalid',
   DataExportInProgress: 'data_export.in_progress',
@@ -1884,12 +1901,75 @@ export interface OwnerInvitationResponse {
 }
 
 /**
- * A plan as another resource names it: its id and its name.
+ * How often the subscription pays after the move.
  */
-export interface PlanNameResponse {
-  id: string;
-  name: string;
+export type PlanChangeRequestInterval = typeof PlanChangeRequestInterval[keyof typeof PlanChangeRequestInterval];
+
+
+export const PlanChangeRequestInterval = {
+  Monthly: 'monthly',
+  Yearly: 'yearly',
+} as const;
+
+/**
+ * The plan and the interval whose move the member looks at before they confirm it.
+ */
+export interface PlanChangePreviewRequest {
+  planId: string;
+  interval: PlanChangeRequestInterval;
 }
+
+/**
+ * When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to
+ * monthly; `cancel`, the move to the default plan at the period's end.
+ */
+export type PlanChangeResponseMove = typeof PlanChangeResponseMove[keyof typeof PlanChangeResponseMove];
+
+
+export const PlanChangeResponseMove = {
+  Now: 'now',
+  AtPeriodEnd: 'at_period_end',
+  Cancel: 'cancel',
+} as const;
+
+/**
+ * What a move does (10.04, 10.06): when it applies, at `at`; what the new plan costs each interval for the seated members,
+ * `amount`, without tax, in the minor unit of `currency`; and for a move at once, what the rest of the period costs today,
+ * `amountToday`, without tax, for the moment `proratedAt`, which the move names to charge the same amount. Both are null for a
+ * move at the period's end.
+ */
+export interface PlanChangePreviewResponse {
+  move: PlanChangeResponseMove;
+  at: string;
+  currency: string;
+  amount: number;
+  /** @nullable */
+  amountToday: number | null;
+  /** @nullable */
+  proratedAt: string | null;
+}
+
+/**
+ * The plan and the interval to move the tenant's subscription to. The default plan is the cancellation. A move at once may name the moment
+ * of its preview, `proratedAt`, so it charges the amount the preview showed; without it, the move is prorated now.
+ */
+export interface PlanChangeRequest {
+  planId: string;
+  interval: PlanChangeRequestInterval;
+  /** @nullable */
+  proratedAt: string | null;
+}
+
+/**
+ * The move the provider took, and when it applies. The tenant's plan changes when the provider's event of the change arrives: at once
+ * for `now`, at `at` for the others.
+ */
+export interface PlanChangeResponse {
+  move: PlanChangeResponseMove;
+  at: string;
+}
+
+export type PlanChoiceResponseEntitlements = { [key: string]: unknown };
 
 /**
  * A plan's prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the
@@ -1900,6 +1980,37 @@ export interface PlanPricesResponse {
   perPersonMonthly: number;
   baseYearly: number;
   perPersonYearly: number;
+}
+
+/**
+ * A plan that the tenant can move to, as the Change plan page draws it (10.02): its name, whether it is the default plan, which a
+ * cancellation moves to, its values by key as `GET /v1/tenants/{tenantId}` answers them (a feature true or false, a limit a number,
+ * null for an unlimited limit; a key the plan has no value for is closed and missing), its prices in the deployment's one currency, an ISO
+ * 4217 code, and its meters.
+ */
+export interface PlanChoiceResponse {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  entitlements: PlanChoiceResponseEntitlements;
+  currency: string;
+  prices: PlanPricesResponse;
+  meters: MeterSettingResponse[];
+}
+
+/**
+ * Every plan, the cheapest monthly price first.
+ */
+export interface PlanChoicesResponse {
+  plans: PlanChoiceResponse[];
+}
+
+/**
+ * A plan as another resource names it: its id and its name.
+ */
+export interface PlanNameResponse {
+  id: string;
+  name: string;
 }
 
 export type PlanResponseEntitlements = {[key: string]: EntitlementValueResponse};

@@ -20,8 +20,12 @@ public static class SyncSubscriptionHandler
         return
         [
             new RouteSubscriptionCommand(
-                found.CustomerId, found.SubscriptionId, found.PlanId, found.Yearly ? nameof(BillingInterval.Yearly) : nameof(BillingInterval.Monthly),
-                found.Status, found.CurrentPeriodEnd, found.CancelAtPeriodEnd),
+                found.CustomerId, found.SubscriptionId, found.PlanId, IntervalOf(found.Yearly),
+                found.Status, found.CurrentPeriodEnd, found.CancelAtPeriodEnd, found.ScheduledPlanId, IntervalOf(found.ScheduledYearly)),
         ];
     }
+
+    private static string IntervalOf(bool yearly) => yearly ? nameof(BillingInterval.Yearly) : nameof(BillingInterval.Monthly);
+
+    private static string? IntervalOf(bool? yearly) => yearly is { } known ? IntervalOf(known) : null;
 }

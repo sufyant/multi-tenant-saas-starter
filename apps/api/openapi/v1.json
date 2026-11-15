@@ -6583,6 +6583,126 @@
         }
       }
     },
+    "/v1/tenants/{tenantId}/plans": {
+      "get": {
+        "tags": [
+          "Tenant/Plans"
+        ],
+        "operationId": "GetPlanChoices",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanChoicesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tenants/{tenantId}/members": {
       "get": {
         "tags": [
@@ -9564,6 +9684,379 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/billing/plan-change/preview": {
+      "post": {
+        "tags": [
+          "Tenant/Subscriptions"
+        ],
+        "operationId": "PreviewPlanChange",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanChangePreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanChangePreviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/billing/plan-change": {
+      "post": {
+        "tags": [
+          "Tenant/Subscriptions"
+        ],
+        "operationId": "ChangePlan",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/billing/scheduled-change": {
+      "delete": {
+        "tags": [
+          "Tenant/Subscriptions"
+        ],
+        "operationId": "UndoScheduledChange",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "400": {
             "description": "Bad Request",
@@ -13527,10 +14020,16 @@
           "billing.already_subscribed",
           "billing.checkout_replaced",
           "billing.no_customer",
+          "billing.no_subscription",
+          "billing.nothing_scheduled",
           "billing.off",
+          "billing.payment_declined",
           "billing.plan_free",
           "billing.plan_not_found",
+          "billing.plan_unchanged",
+          "billing.preview_expired",
           "billing.return_url_invalid",
+          "billing.subscription_not_active",
           "billing.tenant_closed",
           "billing.webhook_invalid",
           "data_export.in_progress",
@@ -13643,10 +14142,16 @@
           "BillingAlreadySubscribed",
           "BillingCheckoutReplaced",
           "BillingNoCustomer",
+          "BillingNoSubscription",
+          "BillingNothingScheduled",
           "BillingOff",
+          "BillingPaymentDeclined",
           "BillingPlanFree",
           "BillingPlanNotFound",
+          "BillingPlanUnchanged",
+          "BillingPreviewExpired",
           "BillingReturnUrlInvalid",
+          "BillingSubscriptionNotActive",
           "BillingTenantClosed",
           "BillingWebhookInvalid",
           "DataExportInProgress",
@@ -15532,6 +16037,188 @@
           "TenantRolesUpdate"
         ]
       },
+      "PlanChangePreviewRequest": {
+        "required": [
+          "planId",
+          "interval"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/PlanChangeRequestInterval"
+          }
+        },
+        "description": "The plan and the interval whose move the member looks at before they confirm it."
+      },
+      "PlanChangePreviewResponse": {
+        "required": [
+          "move",
+          "at",
+          "currency",
+          "amount",
+          "amountToday",
+          "proratedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "move": {
+            "$ref": "#/components/schemas/PlanChangeResponseMove"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amountToday": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "proratedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "What a move does (10.04, 10.06): when it applies, at `at`; what the new plan costs each interval for the seated members,\n`amount`, without tax, in the minor unit of `currency`; and for a move at once, what the rest of the period costs today,\n`amountToday`, without tax, for the moment `proratedAt`, which the move names to charge the same amount. Both are null for a\nmove at the period's end."
+      },
+      "PlanChangeRequest": {
+        "required": [
+          "planId",
+          "interval",
+          "proratedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/PlanChangeRequestInterval"
+          },
+          "proratedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "The plan and the interval to move the tenant's subscription to. The default plan is the cancellation. A move at once may name the moment\nof its preview, `proratedAt`, so it charges the amount the preview showed; without it, the move is prorated now."
+      },
+      "PlanChangeRequestInterval": {
+        "enum": [
+          "monthly",
+          "yearly"
+        ],
+        "type": "string",
+        "description": "How often the subscription pays after the move.",
+        "x-enumNames": [
+          "Monthly",
+          "Yearly"
+        ]
+      },
+      "PlanChangeResponse": {
+        "required": [
+          "move",
+          "at"
+        ],
+        "type": "object",
+        "properties": {
+          "move": {
+            "$ref": "#/components/schemas/PlanChangeResponseMove"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The move the provider took, and when it applies. The tenant's plan changes when the provider's event of the change arrives: at once\nfor `now`, at `at` for the others."
+      },
+      "PlanChangeResponseMove": {
+        "enum": [
+          "now",
+          "at_period_end",
+          "cancel"
+        ],
+        "type": "string",
+        "description": "When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancel`, the move to the default plan at the period's end.",
+        "x-enumNames": [
+          "Now",
+          "AtPeriodEnd",
+          "Cancel"
+        ]
+      },
+      "PlanChoiceResponse": {
+        "required": [
+          "id",
+          "name",
+          "isDefault",
+          "entitlements",
+          "currency",
+          "prices",
+          "meters"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "entitlements": {
+            "type": "object"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "prices": {
+            "$ref": "#/components/schemas/PlanPricesResponse"
+          },
+          "meters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeterSettingResponse"
+            }
+          }
+        },
+        "description": "A plan that the tenant can move to, as the Change plan page draws it (10.02): its name, whether it is the default plan, which a\ncancellation moves to, its values by key as `GET /v1/tenants/{tenantId}` answers them (a feature true or false, a limit a number,\nnull for an unlimited limit; a key the plan has no value for is closed and missing), its prices in the deployment's one currency, an ISO\n4217 code, and its meters."
+      },
+      "PlanChoicesResponse": {
+        "required": [
+          "plans"
+        ],
+        "type": "object",
+        "properties": {
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanChoiceResponse"
+            }
+          }
+        },
+        "description": "Every plan, the cheapest monthly price first."
+      },
       "PlanCreatedDetailsResponse": {
         "required": [
           "isDefault",
@@ -16320,6 +17007,23 @@
         },
         "description": "The details of `role.updated`: the old and the new name, and the permissions the change added and removed, in ordinal order."
       },
+      "ScheduledChangeResponse": {
+        "required": [
+          "planId",
+          "interval"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/SubscriptionResponseInterval"
+          }
+        },
+        "description": "The plan and the interval that the subscription moves to at the end of its paid period, by a member's wish (B9)."
+      },
       "SetEntitlementOverrideRequest": {
         "required": [
           "value",
@@ -16376,7 +17080,8 @@
           "interval",
           "status",
           "currentPeriodEnd",
-          "cancelAtPeriodEnd"
+          "cancelAtPeriodEnd",
+          "scheduledChange"
         ],
         "type": "object",
         "properties": {
@@ -16396,9 +17101,19 @@
           },
           "cancelAtPeriodEnd": {
             "type": "boolean"
+          },
+          "scheduledChange": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ScheduledChangeResponse"
+              }
+            ]
           }
         },
-        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then."
+        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull."
       },
       "SubscriptionResponseInterval": {
         "enum": [
@@ -18191,6 +18906,9 @@
     },
     {
       "name": "Tenant/Notifications"
+    },
+    {
+      "name": "Tenant/Plans"
     },
     {
       "name": "Tenant/PortalSessions"

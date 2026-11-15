@@ -14,4 +14,6 @@ public sealed record RouteSubscriptionCommand(
     string Interval,
     string Status,
     DateTimeOffset CurrentPeriodEnd,
-    bool CancelAtPeriodEnd);
+    bool CancelAtPeriodEnd,
+    Guid? ScheduledPlanId = null,
+    string? ScheduledInterval = null);

@@ -31,7 +31,22 @@ public interface IBillingProvider
     /// </summary>
     Task ExpireOpenCheckoutsAsync(string customerId, Guid key, CancellationToken cancellationToken);
 
-    /// <summary>Ends the subscription at the end of the period it has paid for, or keeps it (B8).</summary>
+    /// <summary>What the move at once costs today, prorated for the rest of the period, without tax (B9).</summary>
+    Task<PlanChangePreview> PreviewPlanChangeAsync(PlanChangeOrder order, DateTimeOffset proratedAt, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Moves the subscription to the order at once, with proration, and charges the prorated amount now (B9). A scheduled move or end is
+    /// dropped. False when the card was declined: the subscription stays as it was (Stripe, "Pending updates").
+    /// </summary>
+    Task<bool> ChangePlanNowAsync(PlanChangeOrder order, DateTimeOffset proratedAt, CancellationToken cancellationToken);
+
+    /// <summary>Moves the subscription to the order at the end of the period it has paid for, in place of any move or end scheduled before (B9).</summary>
+    Task SchedulePlanChangeAsync(PlanChangeOrder order, CancellationToken cancellationToken);
+
+    /// <summary>Drops the move or the end scheduled at the end of the period, so the subscription goes on as it is (B9).</summary>
+    Task UndoScheduledChangeAsync(string subscriptionId, CancellationToken cancellationToken);
+
+    /// <summary>Ends the subscription at the end of the period it has paid for, or keeps it (B8). A scheduled move is dropped.</summary>
     Task SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken);
 
     /// <summary>Ends the subscription at once, with no refund and no new invoice; one that has ended already changes nothing (B8).</summary>

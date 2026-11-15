@@ -21,5 +21,17 @@ public static class BillingErrorCodes
 
     public static readonly ErrorCode BillingTenantClosed = ErrorCode.Declare("billing.tenant_closed");
 
+    public static readonly ErrorCode BillingNoSubscription = ErrorCode.Declare("billing.no_subscription");
+
+    public static readonly ErrorCode BillingSubscriptionNotActive = ErrorCode.Declare("billing.subscription_not_active");
+
+    public static readonly ErrorCode BillingPlanUnchanged = ErrorCode.Declare("billing.plan_unchanged");
+
+    public static readonly ErrorCode BillingNothingScheduled = ErrorCode.Declare("billing.nothing_scheduled");
+
+    public static readonly ErrorCode BillingPaymentDeclined = ErrorCode.Declare("billing.payment_declined");
+
+    public static readonly ErrorCode BillingPreviewExpired = ErrorCode.Declare("billing.preview_expired");
+
     public static readonly ErrorCode BillingWebhookInvalid = ErrorCode.Declare("billing.webhook_invalid");
 }

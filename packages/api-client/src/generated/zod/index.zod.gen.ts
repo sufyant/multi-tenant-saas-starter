@@ -21,6 +21,7 @@ export * from './tenant-featureflags/tenant-featureflags.zod.gen';
 export * from './tenant-invitations/tenant-invitations.zod.gen';
 export * from './tenant-members/tenant-members.zod.gen';
 export * from './tenant-notifications/tenant-notifications.zod.gen';
+export * from './tenant-plans/tenant-plans.zod.gen';
 export * from './tenant-portalsessions/tenant-portalsessions.zod.gen';
 export * from './tenant-roles/tenant-roles.zod.gen';
 export * from './tenant-subscriptions/tenant-subscriptions.zod.gen';

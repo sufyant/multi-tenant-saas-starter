@@ -29,7 +29,67 @@ export const GetBillingResponse = zod.object({
   Paused: 'paused',
 }).describe('The subscription\'s state at the provider (Stripe, "Subscription statuses"). Only an active one keeps the tenant on its plan.'),
   "currentPeriodEnd": zod.iso.datetime({"offset":true}),
-  "cancelAtPeriodEnd": zod.boolean()
-}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then.')])
+  "cancelAtPeriodEnd": zod.boolean(),
+  "scheduledChange": zod.union([zod.null(),zod.object({
+  "planId": zod.uuid(),
+  "interval": zod.enum({
+  Monthly: 'monthly',
+  Yearly: 'yearly',
+}).describe('How often the subscription pays.')
+}).describe('The plan and the interval that the subscription moves to at the end of its paid period, by a member\'s wish (B9).')])
+}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull.')])
 }).describe('The tenant\'s billing: its subscription, none until it pays by card the first time.')
+
+export const PreviewPlanChangeParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const PreviewPlanChangeBody = zod.object({
+  "planId": zod.uuid(),
+  "interval": zod.enum({
+  Monthly: 'monthly',
+  Yearly: 'yearly',
+}).describe('How often the subscription pays after the move.')
+}).describe('The plan and the interval whose move the member looks at before they confirm it.')
+
+export const PreviewPlanChangeResponse = zod.object({
+  "move": zod.enum({
+  Now: 'now',
+  AtPeriodEnd: 'at_period_end',
+  Cancel: 'cancel',
+}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancel`, the move to the default plan at the period\'s end.'),
+  "at": zod.iso.datetime({"offset":true}),
+  "currency": zod.string(),
+  "amount": zod.int(),
+  "amountToday": zod.int().nullable(),
+  "proratedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('What a move does (10.04, 10.06): when it applies, at `at`; what the new plan costs each interval for the seated members,\n`amount`, without tax, in the minor unit of `currency`; and for a move at once, what the rest of the period costs today,\n`amountToday`, without tax, for the moment `proratedAt`, which the move names to charge the same amount. Both are null for a\nmove at the period\'s end.')
+
+export const ChangePlanParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const ChangePlanBody = zod.object({
+  "planId": zod.uuid(),
+  "interval": zod.enum({
+  Monthly: 'monthly',
+  Yearly: 'yearly',
+}).describe('How often the subscription pays after the move.'),
+  "proratedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('The plan and the interval to move the tenant\'s subscription to. The default plan is the cancellation. A move at once may name the moment\nof its preview, `proratedAt`, so it charges the amount the preview showed; without it, the move is prorated now.')
+
+export const ChangePlanResponse = zod.object({
+  "move": zod.enum({
+  Now: 'now',
+  AtPeriodEnd: 'at_period_end',
+  Cancel: 'cancel',
+}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancel`, the move to the default plan at the period\'s end.'),
+  "at": zod.iso.datetime({"offset":true})
+}).describe('The move the provider took, and when it applies. The tenant\'s plan changes when the provider\'s event of the change arrives: at once\nfor `now`, at `at` for the others.')
+
+export const UndoScheduledChangeParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const UndoScheduledChangeResponse = zod.void()
 

@@ -29,6 +29,18 @@ internal static class BillingRequests
     public static Task<HttpResponseMessage> GetBillingAsync(this HttpClient client, Guid tenantId) =>
         client.GetAsync($"/v1/tenants/{tenantId}/billing", Cancellation);
 
+    public static Task<HttpResponseMessage> PreviewPlanChangeAsync(this HttpClient client, Guid tenantId, Guid planId, string interval = "monthly") =>
+        client.PostAsJsonAsync($"/v1/tenants/{tenantId}/billing/plan-change/preview", new { planId, interval }, Cancellation);
+
+    public static Task<HttpResponseMessage> ChangePlanAsync(this HttpClient client, Guid tenantId, Guid planId, string interval = "monthly", DateTimeOffset? proratedAt = null) =>
+        client.PostAsJsonAsync($"/v1/tenants/{tenantId}/billing/plan-change", new { planId, interval, proratedAt }, Cancellation);
+
+    public static Task<HttpResponseMessage> UndoScheduledChangeAsync(this HttpClient client, Guid tenantId) =>
+        client.DeleteAsync($"/v1/tenants/{tenantId}/billing/scheduled-change", Cancellation);
+
+    public static Task<HttpResponseMessage> GetPlanChoicesAsync(this HttpClient client, Guid tenantId) =>
+        client.GetAsync($"/v1/tenants/{tenantId}/plans", Cancellation);
+
     // A webhook with the fake's body, signed as the fake proves it, or with another signature.
     public static Task<HttpResponseMessage> SendWebhookAsync(this HttpClient client, string eventId, string type, string? subscriptionId, string signature = FakeBillingProvider.Signature)
     {

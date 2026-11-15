@@ -27,6 +27,7 @@ public static class BillingModule
         SubscriptionEndpoints.Map(tenant);
         CheckoutSessionEndpoints.Map(tenant);
         PortalSessionEndpoints.Map(tenant);
+        PlanChangeEndpoints.Map(tenant);
         WebhookEndpoints.Map(publicRoutes);
     }
 }

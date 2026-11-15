@@ -7,6 +7,8 @@ namespace Billing.Application.Subscriptions.ApplySubscription;
 /// it pays for, through ControlPlane (<c>ChangeBilledPlanCommand</c>). The interval and the status travel as their names (N7r).
 /// </summary>
 /// <param name="TenantId">The tenant the subscription names, whose transaction the message travels in (W3).</param>
+/// <param name="ScheduledPlanId">The plan of a move that a member scheduled at the period's end, with its interval (B9); none in a message of
+/// the version before 40b-backend's plan changes.</param>
 /// <param name="PaidBy">The user id of the member who paid for the subscription.</param>
 [MessageName("apply-subscription")]
 public sealed record ApplySubscriptionCommand(
@@ -18,4 +20,6 @@ public sealed record ApplySubscriptionCommand(
     string Interval,
     string Status,
     DateTimeOffset CurrentPeriodEnd,
-    bool CancelAtPeriodEnd);
+    bool CancelAtPeriodEnd,
+    Guid? ScheduledPlanId = null,
+    string? ScheduledInterval = null);

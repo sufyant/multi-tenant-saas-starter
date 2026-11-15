@@ -90,8 +90,8 @@ public sealed class CheckoutOrdersTests
     }
 
     private static CheckoutFacts Facts(long baseMonthly = 0, long perPersonMonthly = 0, long baseYearly = 0, long perPersonYearly = 0, int seated = 1) =>
-        new(Guid.CreateVersion7(), "ada@example.test", Guid.CreateVersion7(), "Team", "EUR", baseMonthly, perPersonMonthly, baseYearly, perPersonYearly, seated);
+        new(Guid.CreateVersion7(), "ada@example.test", Guid.CreateVersion7(), "Team", "EUR", baseMonthly, perPersonMonthly, baseYearly, perPersonYearly, seated, IsDefault: false);
 
     private static SubscriptionView Subscription(string status) =>
-        new("cus_1", "sub_1", Guid.CreateVersion7(), "Monthly", status, DateTimeOffset.UnixEpoch, false);
+        new("cus_1", "sub_1", Guid.CreateVersion7(), "Monthly", status, DateTimeOffset.UnixEpoch, false, null, null);
 }

@@ -2,7 +2,7 @@
 
 This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
 
-A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. The upgrade, the downgrade, the cancellation, the dunning, Contract and the price changes come in its later parts.
+A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. The dunning, the seats' quantity, Contract and the price changes come in its later parts.
 
 ## 1. The first payment
 
@@ -51,10 +51,33 @@ A member who manages billing pays for a plan by card, through Stripe, and the te
 
 ## 3. Reading and the portal
 
-- `GET /v1/tenants/{tenantId}/billing` answers `{ subscription }`: the plan it pays for, the interval, the status, the end of the period it paid for and whether it ends then, or `null` before the first payment. Row level security keeps it to the tenant of the route.
+- `GET /v1/tenants/{tenantId}/billing` answers `{ subscription }`: the plan it pays for, the interval, the status, the end of the period it paid for and whether it ends then, and the move scheduled then (section 5), or `null` before the first payment. Row level security keeps it to the tenant of the route.
 - `POST /v1/tenants/{tenantId}/billing/portal-session` opens Stripe's customer portal for the tenant's customer in our map, to change the card, the address and the VAT ID and to read the invoices. A tenant that never opened a checkout has no customer (409 `billing.no_customer`). The page to come back to follows the rule of Checkout.
 - Each of these needs `tenant.billing.manage`, which the Owner and the Billing manager hold (A2), and needs no feature of the plan (`NotPlanGated`, E5).
 
-Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`.
+## 5. A plan change
 
-Source: Stripe, "Checkout", "Customer portal", "Webhooks", "Subscription statuses" and "Change prices". Richardson, *Microservices Patterns*, Chapter 3.
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `GetPlanChoicesQuery` | `GET /v1/tenants/{tenantId}/plans` | ControlPlane, `GetPlanChoicesHandler` | ControlPlane's DbContext |
+| `GetCheckoutFactsQuery` | `POST .../billing/plan-change`, its preview and `DELETE .../billing/scheduled-change`: once for the target plan, once for the plan the subscription pays for | Billing, `GetCheckoutFactsHandler` | ControlPlane's DbContext, in the tenant of the route |
+| `GetBillingQuery` | the same endpoints | Billing, `GetBillingHandler` | Billing's DbContext, in the tenant of the route |
+| `GetPlanChangePreviewQuery` | the preview, for a move at once | Billing, `GetPlanChangePreviewHandler`, which asks Stripe for the prorated invoice | No |
+| `BeginPlanChangeCommand` | the change and the undo | Billing, `BeginPlanChangeHandler`: locks the tenant's customer, then its subscription (B7); a closed tenant (409 `billing.tenant_closed`), no subscription that has not ended (409 `billing.no_subscription`), one that is not active (409 `billing.subscription_not_active`), an undo with nothing scheduled (409 `billing.nothing_scheduled`); names the member, and for a cancellation or an undo sets `closure_end` to `None` (B8, B9) | Billing's DbContext, in the tenant of the route |
+| `ChangePlanNowCommand` | the change, for a move at once | Billing, `ChangePlanNowHandler`, which moves the subscription with proration, charged at once, then releases a schedule and clears a member's end; false when the card was declined, with nothing changed | No |
+| `SchedulePlanChangeCommand` | the change, for a move at the period's end | Billing, `SchedulePlanChangeHandler`, which writes the subscription's schedule: today's phase until the period's end, then one period of the new plan, then release, which replaces a member's end in the same call | No |
+| `CancelAtPeriodEndCommand` | the change, for the default plan | Billing, `CancelAtPeriodEndHandler`, which releases a schedule and sets `cancel_at_period_end`; not retried in the request | No |
+| `UndoScheduledChangeCommand` | the undo | Billing, `UndoScheduledChangeHandler`, which releases the schedule and clears `cancel_at_period_end` | No |
+| `SyncSubscriptionCommand` | the change and the undo, after Stripe's call | Billing, as for a webhook (section 2) | No |
+
+- The Change plan page reads every plan with its values, its prices and its meters, the cheapest monthly price first, and the default plan marked (10.02). It needs `tenant.billing.manage`.
+- The request names the plan and the interval. The default plan is the cancellation. `PlanMoves` decides the move from both plans' prices for the seated members (B9): a plan that costs more in the same interval, or monthly to yearly, applies at once (`now`); one that costs the same or less, or yearly to monthly, at the end of the paid period (`at_period_end`); the default plan at the end of the paid period too (`cancel`). The plan and interval the subscription pays for, or a cancellation that is asked already, answer 409 `billing.plan_unchanged`. A plan that costs nothing and is not the default answers 422 `billing.plan_free`.
+- The preview answers the move, when it applies, the currency and the new plan's amount for each interval, without tax. For a move at once it also answers what the rest of the period costs today, without tax, and the moment it was prorated at (10.04). The change names that moment, so Stripe charges the amount that the preview showed; a moment older than 30 minutes answers 400 `billing.preview_expired`.
+- A move at once moves the subscription's items to the new plan's Prices (B2) and charges the prorated amount at once. A declined card leaves the subscription as it was and answers 422 `billing.payment_declined`. A scheduled move or a member's cancellation is dropped by a move at once.
+- After Stripe's call, the endpoint asks for the sync of the subscription, so the page need not wait for the webhook; the webhook's sync then finds the same state (I1). The tenant's plan changes as after a checkout (B6), by the member who changed it, in both audit logs. A scheduled move shows in `GET .../billing` as `scheduledChange` `{ planId, interval }`, and a cancellation as `cancelAtPeriodEnd` (10.07). At the period's end, Stripe moves the subscription, and its event brings the new plan. The end of a cancelled subscription, and the move to the default plan, come with the dunning's part.
+- A closure's end replaces a scheduled move, and a reopen brings the move not back (B8, B9).
+- `DELETE .../billing/scheduled-change` undoes a scheduled move or a member's cancellation; with nothing scheduled it answers 409 `billing.nothing_scheduled`.
+
+Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`.
+
+Source: Stripe, "Checkout", "Customer portal", "Webhooks", "Subscription statuses", "Change prices", "Prorations", "Pending updates" and "Subscription schedules". Richardson, *Microservices Patterns*, Chapter 3.

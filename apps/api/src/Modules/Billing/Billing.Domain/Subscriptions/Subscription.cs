@@ -34,6 +34,12 @@ internal sealed class Subscription : ITenantEntity
     /// <summary>Whether the subscription ends at <see cref="CurrentPeriodEnd"/>.</summary>
     public bool CancelAtPeriodEnd { get; private set; }
 
+    /// <summary>The plan the subscription moves to at <see cref="CurrentPeriodEnd"/>, by a member's wish (B9); none when nothing is scheduled.</summary>
+    public Guid? ScheduledPlanId { get; private set; }
+
+    /// <summary>How often the subscription pays after the scheduled move; none when nothing is scheduled.</summary>
+    public BillingInterval? ScheduledInterval { get; private set; }
+
     /// <summary>
     /// What our app asked the provider about the end of the subscription because of the tenant's closure (B8), so a reopen takes back only
     /// that end, never one that a member asked for.
@@ -86,6 +92,12 @@ internal sealed class Subscription : ITenantEntity
     }
 
     /// <summary>
+    /// A member's own end of the subscription at the period's end, or its undo (B9): the closure asked for nothing of it, so a reopen never
+    /// takes it back and a late state never asks the closure's wish again.
+    /// </summary>
+    public void EndByMember() => ClosureEnd = ClosureEnd.None;
+
+    /// <summary>
     /// What to ask the provider again after its state changed, so it ends in what we asked whatever order our calls reached it in (B8):
     /// the end again while the closure asks for it and the state has none; the undo again while the reopen asks for it and the state ends
     /// at the period's end; and the end for a subscription that arrived after the tenant's closure. An undo that the state shows is done.
@@ -126,7 +138,8 @@ internal sealed class Subscription : ITenantEntity
         }
 
         if (state.CustomerId == CustomerId && state.SubscriptionId == SubscriptionId && state.PlanId == PlanId && state.Interval == Interval
-            && state.Status == Status && state.CurrentPeriodEnd == CurrentPeriodEnd && state.CancelAtPeriodEnd == CancelAtPeriodEnd)
+            && state.Status == Status && state.CurrentPeriodEnd == CurrentPeriodEnd && state.CancelAtPeriodEnd == CancelAtPeriodEnd
+            && state.ScheduledPlanId == ScheduledPlanId && state.ScheduledInterval == ScheduledInterval)
         {
             return StateChange.Unchanged;
         }
@@ -139,6 +152,7 @@ internal sealed class Subscription : ITenantEntity
 
         (CustomerId, SubscriptionId, PlanId, Interval, Status, CurrentPeriodEnd, CancelAtPeriodEnd, UpdatedAt) =
             (state.CustomerId, state.SubscriptionId, state.PlanId, state.Interval, state.Status, state.CurrentPeriodEnd, state.CancelAtPeriodEnd, at);
+        (ScheduledPlanId, ScheduledInterval) = (state.ScheduledPlanId, state.ScheduledInterval);
         return StateChange.Changed;
     }
 }

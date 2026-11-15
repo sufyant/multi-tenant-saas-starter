@@ -28,13 +28,15 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // (GDPR, Article 7(1)), and a dismissal of a notice is the person's own view, as a read state is (step 38). The worker's look at the
     // feature flags' cleanup changes no data; its weekly event only tells the system admins (docs/flows/feature-flags.md). A tenant's customer at
     // Stripe, its row in billing's map and its one open checkout are the means of a checkout, not a change of the product's data: the plan
-    // that a payment changes records tenant.plan_changed (B5 to B7).
+    // that a payment changes records tenant.plan_changed (B5 to B7). A member's plan change is a call to Stripe and the lock that names
+    // the member: the state that Stripe then holds changes the plan, which records tenant.plan_changed by that member (B6, B9).
     private static readonly string[] CommandsWithoutAudit =
     [
         "CreateCustomerCommand", "KeepCustomerCommand", "ReserveCheckoutCommand", "RecordCheckoutSessionCommand", "AbandonCheckoutCommand",
         "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
         "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand", "AcceptTermsVersionCommand", "DismissTermsNoticeCommand",
-        "CheckFeatureFlagCleanupCommand",
+        "CheckFeatureFlagCleanupCommand", "BeginPlanChangeCommand", "ChangePlanNowCommand", "SchedulePlanChangeCommand", "CancelAtPeriodEndCommand",
+        "UndoScheduledChangeCommand",
     ];
 
     private readonly ComposedApplication _application = new("worker");
