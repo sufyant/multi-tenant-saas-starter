@@ -3,6 +3,8 @@ using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions.CountSeats;
+using Billing.Application.Subscriptions.EndGrace;
+using Billing.Application.Subscriptions.NamePaymentFailure;
 using Billing.Application.Subscriptions.NameScheduleChange;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Contracts.Subscriptions;
@@ -22,13 +24,19 @@ public static class ApplySubscriptionHandler
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
         ICheckoutRepository checkouts,
+        BillingOptions billing,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
         var state = new SubscriptionState(
             command.CustomerId, command.SubscriptionId, command.PlanId, Enum.Parse<BillingInterval>(command.Interval),
             Enum.Parse<SubscriptionStatus>(command.Status), command.CurrentPeriodEnd, command.CancelAtPeriodEnd,
-            command.ScheduledPlanId, command.ScheduledInterval is { } scheduled ? Enum.Parse<BillingInterval>(scheduled) : null);
+            command.ScheduledPlanId, command.ScheduledInterval is { } scheduled ? Enum.Parse<BillingInterval>(scheduled) : null,
+            command.Payment is { } payment
+                ? new FailedPayment(
+                    payment.InvoiceId, payment.AmountDue, payment.Currency, payment.FailedAt, payment.Attempts, payment.NextAttemptAt, payment.CardBrand,
+                    payment.CardLast4)
+                : null);
         var now = time.GetUtcNow();
         // A purge that deleted the customer since the route leaves nothing to apply (B5).
         if (await customers.FindForUpdateAsync(cancellationToken) is not { } customer)
@@ -59,11 +67,26 @@ public static class ApplySubscriptionHandler
         else
         {
             // B9, 12.12: a member's cancellation, a scheduled move and their undo are entries of the Activity log, by the member who changed
-            // the plan last, once the provider's state shows them. Read before the row takes the state, which it compares with.
+            // the plan last, once the provider's state shows them. Read before the row takes the state, which it compares with, as the
+            // dunning's steps are (B11).
             var scheduleChange = subscription.ScheduleChangeOf(state, customer.ClosedAt is not null);
+            var dunning = subscription.DunningOf(state);
             if (subscription.Sync(state, now) == StateChange.Unchanged)
             {
                 return messages;
+            }
+
+            // B11, 12.12: a payment that failed for the first time on an invoice is an entry of the Activity log; the provider retries it.
+            if (dunning.PaymentFailed && subscription.FailedPayment is { } failed)
+            {
+                messages.Add(new NamePaymentFailureCommand(
+                    Guid.CreateVersion7(now), now, command.TenantId, failed.AmountDue, failed.Currency, failed.FailedAt + billing.RetryWindow));
+            }
+
+            // B11: a subscription that ended leaves its plan for the default plan, by the member who changed it last, or unpaid.
+            if (dunning.End is { } end)
+            {
+                messages.Add(new PlanEndedEvent(Guid.CreateVersion7(now), now, command.TenantId, command.PaidBy, Unpaid: end == PlanEnd.Unpaid));
             }
 
             if (scheduleChange is { } change)
@@ -80,6 +103,12 @@ public static class ApplySubscriptionHandler
         if (subscription.ClosureCorrection(customer.ClosedAt is not null) is { } cancelAtPeriodEnd)
         {
             messages.Add(new SetCancelAtPeriodEndCommand(subscription.SubscriptionId, cancelAtPeriodEnd));
+        }
+
+        // B11: once the provider's retries are over, billing's grace runs, and its end moves the tenant to the default plan.
+        if (subscription.StartGrace(now, billing.Grace) is { } graceEndsAt)
+        {
+            messages.Add(new EndGraceCommand(command.TenantId, graceEndsAt).ScheduledAt(graceEndsAt));
         }
 
         // B7: a subscription that pays ends the tenant's open checkout, whose pages are expired, so nobody pays twice.

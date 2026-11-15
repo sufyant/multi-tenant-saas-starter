@@ -4,6 +4,7 @@ import {
   RoleUpdatedDetailsResponseOperation,
 } from "@repo/api-client";
 import { formatDate } from "@repo/ui/lib/format-date-time";
+import { formatMoney } from "@repo/ui/lib/format-money";
 import type { useTranslations } from "next-intl";
 import { roleNameOf } from "@/shared/roles";
 import {
@@ -58,6 +59,7 @@ export function sentenceText(
       return keyLabel ? t(`plans.keys.${keyLabel}`) : key;
     },
     value: (value, key) => planValue(value, key, t),
+    money: (minor, currency) => formatMoney(minor, currency, locale),
   };
   const people = {
     actor: () => actorName(entry.actor, t),

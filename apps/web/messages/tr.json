@@ -371,6 +371,8 @@
         "plan_change_scheduled": "{interval, select, yes {<actor></actor> <plan></plan> planını aylık faturalamaya geçirdi. {date} tarihinde geçerli olur.} other {<actor></actor> planı <oldPlan></oldPlan> planından <newPlan></newPlan> planına değiştirdi. {date} tarihinde geçerli olur.}}",
         "plan_change_undone": "<actor></actor> planlanan değişikliği geri aldı. <target></target> <plan></plan> planında kalır.",
         "plan_changed": "<actor></actor> bu kuruluşu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.",
+        "moved_to_default_plan": "Bu kuruluş varsayılan plan olan <plan></plan> planına geçti: bir ödeme başarısız oldu ve ek süre bitti.",
+        "payment_failed": "{amount} tutarındaki bir ödeme başarısız oldu. Stripe {date} tarihine kadar yeniden dener.",
         "purge_warned": "Sahiplere <target></target> kuruluşunun {date} tarihinde silineceği bildirildi.",
         "purged": "<actor></actor> bu kuruluşu ve verilerini sildi.",
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",

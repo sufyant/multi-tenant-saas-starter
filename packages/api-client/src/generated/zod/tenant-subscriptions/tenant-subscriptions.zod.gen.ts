@@ -36,8 +36,26 @@ export const GetBillingResponse = zod.object({
   Monthly: 'monthly',
   Yearly: 'yearly',
 }).describe('How often the subscription pays.')
-}).describe('The plan and the interval that the subscription moves to at the end of its paid period, by a member\'s wish (B9).')])
-}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull.')])
+}).describe('The plan and the interval that the subscription moves to at the end of its paid period, by a member\'s wish (B9).')]),
+  "payment": zod.union([zod.null(),zod.object({
+  "state": zod.enum({
+  Retrying: 'retrying',
+  Grace: 'grace',
+  MovedToDefault: 'moved_to_default',
+}).describe('Where a failed payment stands (B11): Stripe retries it, billing\'s grace runs, or the tenant moved to the default plan.'),
+  "failedAt": zod.iso.datetime({"offset":true}),
+  "attempts": zod.int(),
+  "nextAttemptAt": zod.iso.datetime({"offset":true}).nullable(),
+  "graceEndsAt": zod.iso.datetime({"offset":true}).nullable(),
+  "movedAt": zod.iso.datetime({"offset":true}).nullable(),
+  "amountDue": zod.int(),
+  "currency": zod.string(),
+  "card": zod.union([zod.null(),zod.object({
+  "brand": zod.string(),
+  "last4": zod.string()
+}).describe('The card Stripe tried: its brand, as Stripe names it (`visa`, `mastercard`), and its last four digits.')])
+}).describe('A failed payment of the subscription (B11; 10.15 to 10.17): `retrying` while Stripe tries again at `nextAttemptAt`,\n`grace` once its retries are over and the plan stays until `graceEndsAt`, and `moved_to_default` since `movedAt`, until\nthe open invoice is paid. `failedAt` is when the first attempt failed and `attempts` how many failed. `amountDue` is the open\ninvoice\'s amount without tax, in the minor unit of `currency`. `card` is the card Stripe tried, or null.')])
+}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due.')])
 }).describe('The tenant\'s billing: its subscription, none until it pays by card the first time.')
 
 export const PreviewPlanChangeParams = zod.object({

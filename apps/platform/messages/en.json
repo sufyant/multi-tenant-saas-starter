@@ -392,6 +392,8 @@
         "purge_warned": "The Owners of <target></target> were warned that it will be deleted on {date}.",
         "purged": "<target></target> was deleted.",
         "plan_changed": "<actor></actor> moved <target></target> from <oldPlan></oldPlan> to <newPlan></newPlan>.",
+        "moved_to_default_plan": "<target></target> moved to <plan></plan>, the default plan: a payment failed and the grace period ended.",
+        "payment_failed": "A payment of {amount} by <target></target> failed. Stripe tries again until {date}.",
         "plan_cancelled": "<actor></actor> cancelled the plan of <target></target>. It moves to <newPlan></newPlan> on {date}.",
         "plan_cancellation_undone": "<actor></actor> undid the cancellation of <target></target>. It stays on <plan></plan>.",
         "plan_change_scheduled": "{interval, select, yes {<actor></actor> moved <target></target> to monthly billing on <plan></plan>. It applies on {date}.} other {<actor></actor> changed the plan of <target></target> from <oldPlan></oldPlan> to <newPlan></newPlan>. It applies on {date}.}}",

@@ -51,8 +51,10 @@ export const ListAuditEntriesResponse = zod.object({
   TenantCreated: 'tenant.created',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
+  TenantMovedToDefaultPlan: 'tenant.moved_to_default_plan',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPaymentFailed: 'tenant.payment_failed',
   TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',
   TenantPlanCancelled: 'tenant.plan_cancelled',
   TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
@@ -366,6 +368,25 @@ export const ListAuditEntriesResponse = zod.object({
   "name": zod.string()
 }).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
   "movesAt": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantPaymentFailed: 'tenant.payment_failed',
+}),
+  "amountDue": zod.int(),
+  "currency": zod.string(),
+  "retriesUntil": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantMovedToDefaultPlan: 'tenant.moved_to_default_plan',
+}),
+  "oldPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "newPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
 }),zod.object({
   "operation": zod.enum({
   TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',

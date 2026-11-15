@@ -392,6 +392,8 @@
         "purge_warned": "أُبلغ مالكو <target></target> بأنها ستُحذف في {date}.",
         "purged": "حُذفت <target></target>.",
         "plan_changed": "نقل <actor></actor> <target></target> من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
+        "moved_to_default_plan": "انتقلت <target></target> إلى <plan></plan>، الخطة الافتراضية: فشلت دفعة وانتهت فترة السماح.",
+        "payment_failed": "فشلت دفعة بقيمة {amount} من <target></target>. تحاول Stripe مجددًا حتى {date}.",
         "plan_cancelled": "ألغى <actor></actor> خطة <target></target>. تنتقل إلى <newPlan></newPlan> في {date}.",
         "plan_cancellation_undone": "تراجع <actor></actor> عن إلغاء <target></target>. تبقى على <plan></plan>.",
         "plan_change_scheduled": "{interval, select, yes {نقل <actor></actor> <target></target> إلى الفوترة الشهرية على <plan></plan>. تسري في {date}.} other {غيّر <actor></actor> خطة <target></target> من <oldPlan></oldPlan> إلى <newPlan></newPlan>. تسري في {date}.}}",

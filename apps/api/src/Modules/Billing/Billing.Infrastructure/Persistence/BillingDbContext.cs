@@ -51,6 +51,15 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             subscription.Property(s => s.Status).HasConversion<string>().HasMaxLength(20);
             subscription.Property(s => s.ClosureEnd).HasConversion<string>().HasMaxLength(20);
             subscription.Property(s => s.ScheduledInterval).HasConversion<string>().HasMaxLength(20);
+
+            // B11: the open invoice whose payment failed, all its columns empty when nothing is due.
+            subscription.ComplexProperty(s => s.FailedPayment, payment =>
+            {
+                payment.Property(p => p.InvoiceId).HasMaxLength(StripeEvent.IdMaxLength);
+                payment.Property(p => p.Currency).HasMaxLength(3);
+                payment.Property(p => p.CardBrand).HasMaxLength(40);
+                payment.Property(p => p.CardLast4).HasMaxLength(4);
+            });
             subscription.HasIndex(s => s.CustomerId).IsUnique();
             subscription.HasIndex(s => s.SubscriptionId).IsUnique();
         });

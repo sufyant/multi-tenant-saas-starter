@@ -18,12 +18,15 @@ import type {
 } from 'msw';
 
 import {
+  PaymentResponseState,
   PlanChangeResponseMove,
   SubscriptionResponseInterval,
   SubscriptionResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
   BillingResponse,
+  PaymentCardResponse,
+  PaymentResponse,
   PlanChangePreviewRequest,
   PlanChangePreviewResponse,
   PlanChangeRequest,
@@ -35,7 +38,11 @@ import type {
 
 export const getGetBillingResponseScheduledChangeResponseMock = (overrideResponse: Partial<ScheduledChangeResponse> = {}): ScheduledChangeResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval))}, ...overrideResponse});
 
-export const getGetBillingResponseSubscriptionResponseMock = (overrideResponse: Partial<SubscriptionResponse> = {}): SubscriptionResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval)), status: faker.helpers.arrayElement(Object.values(SubscriptionResponseStatus)), currentPeriodEnd: faker.date.past().toISOString().slice(0, 19) + 'Z', cancelAtPeriodEnd: faker.datatype.boolean(), scheduledChange: faker.helpers.arrayElement([null,{...getGetBillingResponseScheduledChangeResponseMock()},])}, ...overrideResponse});
+export const getGetBillingResponsePaymentCardResponseMock = (overrideResponse: Partial<PaymentCardResponse> = {}): PaymentCardResponse => ({...{brand: faker.string.alpha({length: {min: 10, max: 20}}), last4: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse});
+
+export const getGetBillingResponsePaymentResponseMock = (overrideResponse: Partial<PaymentResponse> = {}): PaymentResponse => ({...{state: faker.helpers.arrayElement(Object.values(PaymentResponseState)), failedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', attempts: faker.number.int(), nextAttemptAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), graceEndsAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), movedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), amountDue: faker.number.int(), currency: faker.string.alpha({length: {min: 10, max: 20}}), card: faker.helpers.arrayElement([null,{...getGetBillingResponsePaymentCardResponseMock()},])}, ...overrideResponse});
+
+export const getGetBillingResponseSubscriptionResponseMock = (overrideResponse: Partial<SubscriptionResponse> = {}): SubscriptionResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval)), status: faker.helpers.arrayElement(Object.values(SubscriptionResponseStatus)), currentPeriodEnd: faker.date.past().toISOString().slice(0, 19) + 'Z', cancelAtPeriodEnd: faker.datatype.boolean(), scheduledChange: faker.helpers.arrayElement([null,{...getGetBillingResponseScheduledChangeResponseMock()},]), payment: faker.helpers.arrayElement([null,{...getGetBillingResponsePaymentResponseMock()},])}, ...overrideResponse});
 
 export const getGetBillingResponseMock = (overrideResponse: Partial<Extract<BillingResponse, object>> = {}): BillingResponse => ({subscription: faker.helpers.arrayElement([null,{...getGetBillingResponseSubscriptionResponseMock()},]), ...overrideResponse})
 

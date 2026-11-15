@@ -507,6 +507,33 @@ export interface TenantPlanCancelledDetailsResponse {
   movesAt: string;
 }
 
+export type TenantPaymentFailedDetailsResponseOperation = typeof TenantPaymentFailedDetailsResponseOperation[keyof typeof TenantPaymentFailedDetailsResponseOperation];
+
+
+export const TenantPaymentFailedDetailsResponseOperation = {
+  TenantPaymentFailed: 'tenant.payment_failed',
+} as const;
+
+export interface TenantPaymentFailedDetailsResponse {
+  operation: TenantPaymentFailedDetailsResponseOperation;
+  amountDue: number;
+  currency: string;
+  retriesUntil: string;
+}
+
+export type TenantMovedToDefaultPlanDetailsResponseOperation = typeof TenantMovedToDefaultPlanDetailsResponseOperation[keyof typeof TenantMovedToDefaultPlanDetailsResponseOperation];
+
+
+export const TenantMovedToDefaultPlanDetailsResponseOperation = {
+  TenantMovedToDefaultPlan: 'tenant.moved_to_default_plan',
+} as const;
+
+export interface TenantMovedToDefaultPlanDetailsResponse {
+  operation: TenantMovedToDefaultPlanDetailsResponseOperation;
+  oldPlan: AuditPlanResponse;
+  newPlan: AuditPlanResponse;
+}
+
 export type TenantPlanCancellationUndoneDetailsResponseOperation = typeof TenantPlanCancellationUndoneDetailsResponseOperation[keyof typeof TenantPlanCancellationUndoneDetailsResponseOperation];
 
 
@@ -652,7 +679,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -687,8 +714,10 @@ export const AuditOperation = {
   TenantCreated: 'tenant.created',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
+  TenantMovedToDefaultPlan: 'tenant.moved_to_default_plan',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPaymentFailed: 'tenant.payment_failed',
   TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',
   TenantPlanCancelled: 'tenant.plan_cancelled',
   TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
@@ -817,10 +846,51 @@ export interface ScheduledChangeResponse {
 }
 
 /**
+ * Where a failed payment stands (B11): Stripe retries it, billing's grace runs, or the tenant moved to the default plan.
+ */
+export type PaymentResponseState = typeof PaymentResponseState[keyof typeof PaymentResponseState];
+
+
+export const PaymentResponseState = {
+  Retrying: 'retrying',
+  Grace: 'grace',
+  MovedToDefault: 'moved_to_default',
+} as const;
+
+/**
+ * The card Stripe tried: its brand, as Stripe names it (`visa`, `mastercard`), and its last four digits.
+ */
+export interface PaymentCardResponse {
+  brand: string;
+  last4: string;
+}
+
+/**
+ * A failed payment of the subscription (B11; 10.15 to 10.17): `retrying` while Stripe tries again at `nextAttemptAt`,
+ * `grace` once its retries are over and the plan stays until `graceEndsAt`, and `moved_to_default` since `movedAt`, until
+ * the open invoice is paid. `failedAt` is when the first attempt failed and `attempts` how many failed. `amountDue` is the open
+ * invoice's amount without tax, in the minor unit of `currency`. `card` is the card Stripe tried, or null.
+ */
+export interface PaymentResponse {
+  state: PaymentResponseState;
+  failedAt: string;
+  attempts: number;
+  /** @nullable */
+  nextAttemptAt: string | null;
+  /** @nullable */
+  graceEndsAt: string | null;
+  /** @nullable */
+  movedAt: string | null;
+  amountDue: number;
+  currency: string;
+  card: null | PaymentCardResponse;
+}
+
+/**
  * The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it
  * has paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's
  * (B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or
- * null.
+ * null. `payment` is a failed payment's dunning (B11), or null when nothing is due.
  */
 export interface SubscriptionResponse {
   planId: string;
@@ -829,6 +899,7 @@ export interface SubscriptionResponse {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   scheduledChange: null | ScheduledChangeResponse;
+  payment: null | PaymentResponse;
 }
 
 /**

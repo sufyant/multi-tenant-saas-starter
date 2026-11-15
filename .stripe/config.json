@@ -19,7 +19,9 @@
       "customer.subscription.deleted",
       "customer.subscription.paused",
       "customer.subscription.resumed",
-      "customer.subscription.updated"
+      "customer.subscription.updated",
+      "invoice.paid",
+      "invoice.payment_failed"
     ]
   }
 }

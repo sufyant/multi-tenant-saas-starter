@@ -371,6 +371,8 @@
         "plan_change_scheduled": "{interval, select, yes {<actor></actor> moved <plan></plan> to monthly billing. It applies on {date}.} other {<actor></actor> changed the plan from <oldPlan></oldPlan> to <newPlan></newPlan>. It applies on {date}.}}",
         "plan_change_undone": "<actor></actor> undid the scheduled change. <target></target> stays on <plan></plan>.",
         "plan_changed": "<actor></actor> moved this organisation from <oldPlan></oldPlan> to <newPlan></newPlan>.",
+        "moved_to_default_plan": "This organisation moved to <plan></plan>, the default plan: a payment failed and the grace period ended.",
+        "payment_failed": "A payment of {amount} failed. Stripe tries again until {date}.",
         "purge_warned": "The Owners were told that <target></target> will be deleted on {date}.",
         "purged": "<actor></actor> deleted this organisation and its data.",
         "reactivated": "<actor></actor> reactivated this organisation.",

@@ -46,11 +46,27 @@ internal sealed class Subscription : ITenantEntity
     /// </summary>
     public ClosureEnd ClosureEnd { get; private set; }
 
+    /// <summary>The open invoice whose payment failed (B11); none when nothing is due.</summary>
+    public FailedPayment? FailedPayment { get; private set; }
+
+    /// <summary>When billing's grace ends, after the provider's retries ended (B11); none while nothing is unpaid after them.</summary>
+    public DateTimeOffset? GraceEndsAt { get; private set; }
+
+    /// <summary>When the grace ended and the tenant moved to the default plan (B11); none until then, and again once the subscription pays.</summary>
+    public DateTimeOffset? MovedToDefaultAt { get; private set; }
+
     /// <summary>When billing last wrote the row.</summary>
     public DateTimeOffset UpdatedAt { get; private set; }
 
     /// <summary>Whether the subscription puts the tenant on its plan: only while it is active (Stripe, "Subscription statuses").</summary>
     public bool PaysForItsPlan => Status == SubscriptionStatus.Active;
+
+    /// <summary>Where a failed payment stands (B11; 10.15 to 10.17); none when nothing is due.</summary>
+    public PaymentState? PaymentState =>
+        MovedToDefaultAt is not null ? Subscriptions.PaymentState.MovedToDefault
+        : GraceEndsAt is not null ? Subscriptions.PaymentState.Grace
+        : FailedPayment is not null && Status is SubscriptionStatus.PastDue or SubscriptionStatus.Unpaid ? Subscriptions.PaymentState.Retrying
+        : null;
 
     /// <summary>Whether a subscription in this state has ended, so the tenant may pay again (Stripe, "Subscription statuses").</summary>
     public static bool HasEnded(SubscriptionStatus status) => status is SubscriptionStatus.Canceled or SubscriptionStatus.IncompleteExpired;
@@ -153,6 +169,58 @@ internal sealed class Subscription : ITenantEntity
     }
 
     /// <summary>
+    /// What the provider's new state asks of the dunning (B11), before the row takes it: a payment of this subscription that failed on an
+    /// invoice the row has not seen fail, and the end of this subscription, which moves the tenant to the default plan. The end is a member's
+    /// or a closure's when the subscription ended at its period's end, else it ended unpaid; an end after the grace's move is none, as the
+    /// tenant is there already. Another subscription's state is none of this one's (B5).
+    /// </summary>
+    public Dunning DunningOf(SubscriptionState state)
+    {
+        if (state.SubscriptionId != SubscriptionId)
+        {
+            return new Dunning(PaymentFailed: false, End: null);
+        }
+
+        var failed = state.Status is SubscriptionStatus.PastDue or SubscriptionStatus.Unpaid && state.Payment is { } payment
+            && payment.InvoiceId != FailedPayment?.InvoiceId;
+        PlanEnd? end = state.Status == SubscriptionStatus.Canceled && !HasEnded(Status) && MovedToDefaultAt is null
+            ? CancelAtPeriodEnd ? PlanEnd.Ended : PlanEnd.Unpaid
+            : null;
+        return new Dunning(failed, end);
+    }
+
+    /// <summary>
+    /// Starts billing's grace once the provider's retries of an unpaid invoice are over (B11): the grace's end, which the caller schedules, or
+    /// none when it runs already or nothing is to start. Only a subscription that is past due or unpaid has a grace: a first payment that
+    /// failed at Checkout leaves it incomplete, and the provider ends it.
+    /// </summary>
+    public DateTimeOffset? StartGrace(DateTimeOffset now, TimeSpan grace)
+    {
+        if (GraceEndsAt is not null || FailedPayment is not { NextAttemptAt: null } || Status is not (SubscriptionStatus.PastDue or SubscriptionStatus.Unpaid))
+        {
+            return null;
+        }
+
+        GraceEndsAt = now + grace;
+        return GraceEndsAt;
+    }
+
+    /// <summary>
+    /// Ends the grace that ends at this moment, when it is over and the subscription still does not pay (B11): true once, when the tenant
+    /// moves to the default plan. A grace that a payment ended, or that another grace replaced, ends nothing.
+    /// </summary>
+    public bool EndGrace(DateTimeOffset graceEndsAt, DateTimeOffset now)
+    {
+        if (GraceEndsAt != graceEndsAt || now < graceEndsAt || MovedToDefaultAt is not null || PaysForItsPlan || HasEnded(Status))
+        {
+            return false;
+        }
+
+        MovedToDefaultAt = now;
+        return true;
+    }
+
+    /// <summary>
     /// Takes the provider's state. A state it has already changes nothing (I1). Another subscription of the customer replaces this one
     /// unless the other has ended: a late read of an ended subscription never takes the row back from the one that replaced it, as the
     /// provider sends its events in no order (B5).
@@ -166,15 +234,28 @@ internal sealed class Subscription : ITenantEntity
 
         if (state.CustomerId == CustomerId && state.SubscriptionId == SubscriptionId && state.PlanId == PlanId && state.Interval == Interval
             && state.Status == Status && state.CurrentPeriodEnd == CurrentPeriodEnd && state.CancelAtPeriodEnd == CancelAtPeriodEnd
-            && state.ScheduledPlanId == ScheduledPlanId && state.ScheduledInterval == ScheduledInterval)
+            && state.ScheduledPlanId == ScheduledPlanId && state.ScheduledInterval == ScheduledInterval && state.Payment == FailedPayment)
         {
             return StateChange.Unchanged;
         }
 
-        // Another subscription starts with nothing asked of it (B8).
+        // Another subscription starts with nothing asked of it (B8), and with nothing unpaid (B11).
         if (state.SubscriptionId != SubscriptionId)
         {
             ClosureEnd = ClosureEnd.None;
+            (GraceEndsAt, MovedToDefaultAt) = (null, null);
+        }
+
+        // B11: a paid invoice ends the grace, and a subscription that pays again takes the tenant back from the default plan.
+        FailedPayment = state.Payment;
+        if (state.Payment is null)
+        {
+            GraceEndsAt = null;
+        }
+
+        if (state.Status == SubscriptionStatus.Active && state.Payment is null)
+        {
+            MovedToDefaultAt = null;
         }
 
         (CustomerId, SubscriptionId, PlanId, Interval, Status, CurrentPeriodEnd, CancelAtPeriodEnd, UpdatedAt) =

@@ -56,6 +56,18 @@ internal static class BillingRequests
     public static ProviderSubscription Subscription(Guid tenantId, Guid planId, string status = "Active") =>
         new(FakeBillingProvider.CustomerOf(tenantId), $"sub_{tenantId:N}", planId, Yearly: false, status, new DateTimeOffset(2026, 12, 15, 0, 0, 0, TimeSpan.Zero), CancelAtPeriodEnd: false);
 
+    // B11: the tenant's subscription past due, its open invoice of EUR 100 failed this many times since the moment, and Stripe tries again
+    // then, or no more.
+    public static ProviderSubscription PastDue(Guid tenantId, Guid planId, DateTimeOffset failedAt, int attempts, DateTimeOffset? nextAttemptAt) =>
+        Subscription(tenantId, planId, "PastDue") with
+        {
+            Payment = new ProviderPayment($"in_{tenantId:N}", 10000, "EUR", failedAt, attempts, nextAttemptAt, "visa", "4242"),
+        };
+
+    // Stripe's event of the invoice's failed payment, for the tenant's subscription, and every message it causes.
+    public static Task<HttpResponseMessage> PaymentFailedAsync(this ApiFactory api, Guid tenantId) =>
+        api.WaitingForMessagesAsync(() => api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.payment_failed", $"sub_{tenantId:N}"));
+
     // The member opens a checkout of the plan, which puts the tenant's customer in our map, then Stripe holds the subscription and sends its
     // event, and the test waits for every message it caused. The plan must cost something. The provider is the host's that handles the sync.
     public static async Task<HttpResponseMessage> PayAsync(this ApiFactory api, string member, Guid tenantId, Guid planId, string status = "Active", ApiFactory? worker = null)

@@ -86,6 +86,12 @@ public static class AuditOperations
     /// <summary>A member undid the move they scheduled: the tenant stays on its plan.</summary>
     public const string TenantPlanChangeUndone = "tenant.plan_change_undone";
 
+    /// <summary>A payment of the tenant's subscription failed; the provider retries it (B11).</summary>
+    public const string TenantPaymentFailed = "tenant.payment_failed";
+
+    /// <summary>The tenant moved to the default plan: a payment failed and its grace ended (B11).</summary>
+    public const string TenantMovedToDefaultPlan = "tenant.moved_to_default_plan";
+
     public const string TenantPurgeWarned = "tenant.purge_warned";
 
     public const string TenantPurged = "tenant.purged";

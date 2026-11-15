@@ -13059,6 +13059,12 @@
             "$ref": "#/components/schemas/TenantPlanCancelledDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantPaymentFailedDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantMovedToDefaultPlanDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantPlanCancellationUndoneDetailsResponse"
           },
           {
@@ -13110,6 +13116,8 @@
             "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
             "tenant.plan_changed": "#/components/schemas/TenantPlanChangedDetailsResponse",
             "tenant.plan_cancelled": "#/components/schemas/TenantPlanCancelledDetailsResponse",
+            "tenant.payment_failed": "#/components/schemas/TenantPaymentFailedDetailsResponse",
+            "tenant.moved_to_default_plan": "#/components/schemas/TenantMovedToDefaultPlanDetailsResponse",
             "tenant.plan_cancellation_undone": "#/components/schemas/TenantPlanCancellationUndoneDetailsResponse",
             "tenant.plan_change_scheduled": "#/components/schemas/TenantPlanChangeScheduledDetailsResponse",
             "tenant.plan_change_undone": "#/components/schemas/TenantPlanChangeUndoneDetailsResponse",
@@ -13261,8 +13269,10 @@
           "tenant.created",
           "tenant.entitlement_override_removed",
           "tenant.entitlement_override_set",
+          "tenant.moved_to_default_plan",
           "tenant.owner_invited",
           "tenant.owner_made",
+          "tenant.payment_failed",
           "tenant.plan_cancellation_undone",
           "tenant.plan_cancelled",
           "tenant.plan_change_scheduled",
@@ -13317,8 +13327,10 @@
           "TenantCreated",
           "TenantEntitlementOverrideRemoved",
           "TenantEntitlementOverrideSet",
+          "TenantMovedToDefaultPlan",
           "TenantOwnerInvited",
           "TenantOwnerMade",
+          "TenantPaymentFailed",
           "TenantPlanCancellationUndone",
           "TenantPlanCancelled",
           "TenantPlanChangeScheduled",
@@ -15969,6 +15981,102 @@
         },
         "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment."
       },
+      "PaymentCardResponse": {
+        "required": [
+          "brand",
+          "last4"
+        ],
+        "type": "object",
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "last4": {
+            "type": "string"
+          }
+        },
+        "description": "The card Stripe tried: its brand, as Stripe names it (`visa`, `mastercard`), and its last four digits."
+      },
+      "PaymentResponse": {
+        "required": [
+          "state",
+          "failedAt",
+          "attempts",
+          "nextAttemptAt",
+          "graceEndsAt",
+          "movedAt",
+          "amountDue",
+          "currency",
+          "card"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/PaymentResponseState"
+          },
+          "failedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attempts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextAttemptAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "graceEndsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "movedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "amountDue": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "card": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentCardResponse"
+              }
+            ]
+          }
+        },
+        "description": "A failed payment of the subscription (B11; 10.15 to 10.17): `retrying` while Stripe tries again at `nextAttemptAt`,\n`grace` once its retries are over and the plan stays until `graceEndsAt`, and `moved_to_default` since `movedAt`, until\nthe open invoice is paid. `failedAt` is when the first attempt failed and `attempts` how many failed. `amountDue` is the open\ninvoice's amount without tax, in the minor unit of `currency`. `card` is the card Stripe tried, or null."
+      },
+      "PaymentResponseState": {
+        "enum": [
+          "retrying",
+          "grace",
+          "moved_to_default"
+        ],
+        "type": "string",
+        "description": "Where a failed payment stands (B11): Stripe retries it, billing's grace runs, or the tenant moved to the default plan.",
+        "x-enumNames": [
+          "Retrying",
+          "Grace",
+          "MovedToDefault"
+        ]
+      },
       "Permission": {
         "enum": [
           "platform.audit.read",
@@ -17105,7 +17213,8 @@
           "status",
           "currentPeriodEnd",
           "cancelAtPeriodEnd",
-          "scheduledChange"
+          "scheduledChange",
+          "payment"
         ],
         "type": "object",
         "properties": {
@@ -17135,9 +17244,19 @@
                 "$ref": "#/components/schemas/ScheduledChangeResponse"
               }
             ]
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentResponse"
+              }
+            ]
           }
         },
-        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull."
+        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment's dunning (B11), or null when nothing is due."
       },
       "SubscriptionResponseInterval": {
         "enum": [
@@ -17713,6 +17832,30 @@
         },
         "description": "A page of the tenant list (K5), and how many tenants of the whole list are in each status."
       },
+      "TenantMovedToDefaultPlanDetailsResponse": {
+        "required": [
+          "oldPlan",
+          "newPlan",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.moved_to_default_plan"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantMovedToDefaultPlan"
+            ]
+          },
+          "oldPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "newPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          }
+        }
+      },
       "TenantOwnerInvitedDetailsResponse": {
         "required": [
           "invitationId",
@@ -17813,6 +17956,36 @@
           }
         },
         "description": "An Owner of a tenant: the user's id, name and address."
+      },
+      "TenantPaymentFailedDetailsResponse": {
+        "required": [
+          "amountDue",
+          "currency",
+          "retriesUntil",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.payment_failed"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPaymentFailed"
+            ]
+          },
+          "amountDue": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "retriesUntil": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "TenantPlanCancellationUndoneDetailsResponse": {
         "required": [

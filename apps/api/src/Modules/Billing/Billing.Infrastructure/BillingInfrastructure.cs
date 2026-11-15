@@ -43,6 +43,7 @@ public static class BillingInfrastructure
         services.AddOptions<BillingOptions>()
             .BindConfiguration(BillingOptions.Section)
             .Validate(billing => !billing.Enabled || billing.WebUrl is { IsAbsoluteUri: true }, $"{BillingOptions.Section}:WebUrl must be the web app's absolute root while billing is on.")
+            .Validate(billing => billing.Grace > TimeSpan.Zero && billing.RetryWindow > TimeSpan.Zero, $"{BillingOptions.Section}:Grace and RetryWindow must be longer than zero.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<BillingOptions>>().Value);
         services.AddOptions<StripeOptions>()

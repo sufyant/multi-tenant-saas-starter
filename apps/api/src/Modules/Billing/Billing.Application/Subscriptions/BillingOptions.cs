@@ -18,6 +18,18 @@ public sealed class BillingOptions
     /// </summary>
     public Uri? WebUrl { get; set; }
 
+    /// <summary>
+    /// How long billing's grace runs after the provider's retries of a failed payment are over, before the tenant moves to the default plan
+    /// (B11; step 40: "Then 1 week of grace follows").
+    /// </summary>
+    public TimeSpan Grace { get; set; } = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// How long the provider retries a failed payment, as its own setting holds it (Stripe's Smart Retries, <c>.stripe/README.md</c>): the
+    /// Activity log says until when it tries (B11, 12.12). The provider decides the retries; this only names their end.
+    /// </summary>
+    public TimeSpan RetryWindow { get; set; } = TimeSpan.FromDays(14);
+
     /// <summary>Whether this address is under <see cref="WebUrl"/>: the same scheme, host and port, and a path under its path.</summary>
     public bool Accepts(Uri address) =>
         WebUrl is { } root && address.IsAbsoluteUri && Uri.Compare(address, root, UriComponents.SchemeAndServer, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) == 0

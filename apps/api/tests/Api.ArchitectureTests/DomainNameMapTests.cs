@@ -51,6 +51,8 @@ public sealed class DomainNameMapTests
 
     public static TheoryData<string> BillingIntervals => [.. NamesOf("Billing.Domain", "Billing.Domain.Subscriptions.BillingInterval")];
 
+    public static TheoryData<string> PaymentStates => [.. NamesOf("Billing.Domain", "Billing.Domain.Subscriptions.PaymentState")];
+
     public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditTargetKind")];
 
     [Theory]
@@ -159,6 +161,13 @@ public sealed class DomainNameMapTests
     public void MapABillingInterval_EveryDomainInterval_HasAResponseInterval(string interval)
     {
         BillingMap("OfInterval", interval).ShouldNotBeNull();
+    }
+
+    [Theory]
+    [MemberData(nameof(PaymentStates))]
+    public void MapAPaymentState_EveryDomainState_HasAResponseState(string state)
+    {
+        BillingMap("OfPayment", state).ShouldNotBeNull();
     }
 
     private static object? Map(string method, string name) => ResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);

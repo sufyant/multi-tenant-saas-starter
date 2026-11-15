@@ -54,6 +54,26 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
             .ShouldBe((new DateTimeOffset(2026, 12, 15, 0, 0, 0, TimeSpan.Zero), false));
     }
 
+    // B11, 10.15: while Stripe retries a failed payment, the subscription answers when it failed, how often, the next attempt, the amount
+    // due without tax and the card it tried.
+    [Fact]
+    public async Task GetBilling_AFailedPaymentThatStripeRetries_AnswersRetrying()
+    {
+        var planId = await PricedPlanAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, planId);
+        var failedAt = new DateTimeOffset(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, planId, failedAt, 2, failedAt.AddDays(3)));
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        var answer = await _api.CreateClient(owner).GetBillingAsync(tenant.Id);
+
+        var payment = (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("subscription").GetProperty("payment");
+        payment.GetRawText().ShouldBe(
+            """{"state":"retrying","failedAt":"2026-11-15T09:00:00+00:00","attempts":2,"nextAttemptAt":"2026-11-18T09:00:00+00:00","graceEndsAt":null,"movedAt":null,"amountDue":10000,"currency":"EUR","card":{"brand":"visa","last4":"4242"}}""");
+    }
+
     // Row level security: another tenant's subscription is not this tenant's.
     [Fact]
     public async Task GetBilling_AnotherTenantPays_AnswersNoSubscriptionHere()
