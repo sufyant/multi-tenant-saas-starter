@@ -16,9 +16,9 @@ public static class MyTermsVersionEndpoints
 {
     public static void Map(RouteGroupBuilder me)
     {
-        me.MapGet("/terms", GetMyTerms);
-        me.MapPost("/terms/versions/{versionId:guid}/accept", AcceptTermsVersion);
-        me.MapPost("/terms/versions/{versionId:guid}/dismiss", DismissTermsNotice);
+        me.MapGet("/terms", GetMyTerms).WithMetadata(new TermsGateExempt());
+        me.MapPost("/terms/versions/{versionId:guid}/accept", AcceptTermsVersion).WithMetadata(new TermsGateExempt());
+        me.MapPost("/terms/versions/{versionId:guid}/dismiss", DismissTermsNotice).WithMetadata(new TermsGateExempt());
     }
 
     // A signed-in person who is not a user yet must do nothing: they accept the version in force with their invitation.

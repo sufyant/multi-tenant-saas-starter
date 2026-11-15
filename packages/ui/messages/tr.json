@@ -182,6 +182,7 @@
       "suspended": "Bu kuruluş askıya alındı."
     },
     "terms_version": {
+      "acceptance_required": "Devam etmek için yeni kullanım koşullarını kabul edin.",
       "changed": "Koşullar siz açtıktan sonra değişti. Yeniden okuyun, sonra kabul edin.",
       "effective_date_past": "Bugünü veya daha sonraki bir tarihi seçin.",
       "email_sent": "Bu sürümün e-postası kullanıcılara zaten gitti; bu yüzden açık kalır.",

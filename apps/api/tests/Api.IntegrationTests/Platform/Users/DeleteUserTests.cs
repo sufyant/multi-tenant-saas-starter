@@ -79,6 +79,22 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         (await rows.OfAsync(id, other)).ShouldBe([NotificationRows.Row(other, "tenant.plan_changed", tenant.Id, "Tenant")]);
     }
 
+    // U4: the records of the user's deliveries by email only go with the user, and another user's stay.
+    [Fact]
+    public async Task DeleteUser_WithDeliveriesByEmailOnly_DeletesThemAndKeepsAnotherUsers()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var id = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+        var other = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+        await database.ExecuteAsUserAsync(id, $"INSERT INTO notifications.email_deliveries (id, user_id, delivered_at) VALUES (gen_random_uuid(), '{id}', now())");
+        await database.ExecuteAsUserAsync(other, $"INSERT INTO notifications.email_deliveries (id, user_id, delivered_at) VALUES (gen_random_uuid(), '{other}', now())");
+
+        await _api.WaitingForMessagesAsync(async () => await DeleteAsync(await _testData.AddSystemAdminAsync(), id));
+
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT string_agg(user_id::text, ',') FROM notifications.email_deliveries WHERE user_id IN ('{id}', '{other}')"))
+            .ShouldBe(other.ToString());
+    }
+
     // Only the grant and the revocation of a system admin ask for a fresh second factor (decision A of 2026-10-23): a deletion takes a
     // second factor of any age.
     [Fact]

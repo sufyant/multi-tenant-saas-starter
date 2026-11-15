@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Notifications.Application.Notifications.DeliverNotification;
+using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Platform.TermsVersions;
 
@@ -8,6 +10,10 @@ namespace Api.IntegrationTests.Platform.TermsVersions;
 // scheduled at a time. A version that emails the users tells every user who may accept; a small change emails nobody.
 public sealed class CreateTermsVersionTests(Database database)
 {
+    private const string AcceptAtSignIn = "You accept them the next time you sign in.";
+
+    private const string NothingToDo = "You do not need to do anything.";
+
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -139,5 +145,65 @@ public sealed class CreateTermsVersionTests(Database database)
         await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10), requiresAcceptance: false, sendsEmail: false));
 
         own.Api.Email.Sent.ShouldBeEmpty();
+    }
+
+    // Every active tenant user, once even when they are a member of two tenants. No suspended user, no deleted user, no user without a
+    // membership, and not the system admin who created the version (U3).
+    [Fact]
+    public async Task CreateTermsVersion_UsersOfTwoTenants_EmailsEveryActiveTenantUserOnce()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (first, _) = await own.Data.AddTenantAsync();
+        var (second, _) = await own.Data.AddTenantAsync();
+        var both = TestEmails.Of($"{Guid.NewGuid():N}@example.com");
+        var onlyFirst = TestEmails.Of($"{Guid.NewGuid():N}@example.com");
+        var onlySecond = TestEmails.Of($"{Guid.NewGuid():N}@example.com");
+        var (inBoth, _) = await own.AddTenantUserAsync(first, both);
+        await own.Data.AddMemberAsync(second, inBoth);
+        await own.AddTenantUserAsync(first, onlyFirst);
+        await own.AddTenantUserAsync(second, onlySecond);
+        var (suspended, _) = await own.AddTenantUserAsync(first);
+        await own.Data.SuspendUserAsync(suspended);
+        var (deleted, _) = await own.AddTenantUserAsync(second);
+        await own.Data.DeleteUserAsync(deleted);
+        await own.Data.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
+        await own.Data.AddMemberAsync(first, own.AdminId);
+
+        await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10)));
+
+        own.Api.Email.Sent.Select(email => email.To).ShouldBe([both, onlyFirst, onlySecond], ignoreOrder: true);
+    }
+
+    // "Accept at your next sign-in" only when the version requires acceptance; else the person does nothing.
+    [Fact]
+    public async Task CreateTermsVersion_RequiringNoAcceptance_SaysThereIsNothingToDo()
+    {
+        await using var own = await OwnTerms.CreateAsync(database);
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        await own.AddTenantUserAsync(tenantId);
+
+        await own.Api.WaitingForMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10), requiresAcceptance: false));
+
+        var text = own.Api.Email.Sent.Single().Text;
+        text.ShouldContain(NothingToDo);
+        text.ShouldNotContain(AcceptAtSignIn);
+    }
+
+    // Three users at one delivery a second: the first goes at once, the next a second later, the last two seconds later.
+    [Fact]
+    public async Task CreateTermsVersion_ThreeUsersAtOneDeliveryASecond_SchedulesOneDeliveryEachSecond()
+    {
+        await using var own = await OwnTerms.CreateAsync(database, new Dictionary<string, string?> { ["Notifications:Pace:DeliveriesPerSecond"] = "1" });
+        var (tenantId, _) = await own.Data.AddTenantAsync();
+        await own.AddTenantUserAsync(tenantId);
+        await own.AddTenantUserAsync(tenantId);
+        await own.AddTenantUserAsync(tenantId);
+
+        var session = await own.Api.TrackMessagesAsync(() => own.Admin.AddTermsVersionAsync(TermsRequests.Today.AddDays(10)));
+
+        var later = session.Scheduled.Envelopes().Where(envelope => envelope.Message is DeliverNotificationCommand).Select(envelope => envelope.ScheduledTime!.Value).Order().ToList();
+        var atOnce = session.Sent.MessagesOf<DeliverNotificationCommand>().Count() - later.Count;
+        (atOnce, later.Count).ShouldBe((1, 2));
+        Math.Round((later[1] - later[0]).TotalSeconds).ShouldBe(1);
     }
 }

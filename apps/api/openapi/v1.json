@@ -13100,6 +13100,7 @@
           "tenant.slug_reserved",
           "tenant.slug_taken",
           "tenant.suspended",
+          "terms_version.acceptance_required",
           "terms_version.changed",
           "terms_version.effective_date_past",
           "terms_version.email_sent",
@@ -13204,6 +13205,7 @@
           "TenantSlugReserved",
           "TenantSlugTaken",
           "TenantSuspended",
+          "TermsVersionAcceptanceRequired",
           "TermsVersionChanged",
           "TermsVersionEffectiveDatePast",
           "TermsVersionEmailSent",
@@ -15215,6 +15217,14 @@
               "string"
             ],
             "description": "The entitlement key the error is about: the feature that is off, or the limit that is reached."
+          },
+          "termsVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The terms version the error is about: the version the person must accept before they go on.",
+            "format": "uuid"
           }
         }
       },

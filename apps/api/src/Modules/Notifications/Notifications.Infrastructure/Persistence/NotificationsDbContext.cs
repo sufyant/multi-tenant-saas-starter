@@ -8,7 +8,7 @@ using Wolverine;
 namespace Notifications.Infrastructure.Persistence;
 
 /// <summary>
-/// The <c>notifications</c> schema: each user's notifications (U1 to U8). The table belongs to a user, not to a tenant (R6): row level
+/// The <c>notifications</c> schema: each user's notifications (U1 to U8), and the deliveries of the types that go by email only (O4). The table belongs to a user, not to a tenant (R6): row level
 /// security, forced, shows a transaction only the rows of the user it declares (R4, R11). The tenant purge and the retention delete across
 /// users through two narrow functions (U8).
 /// </summary>
@@ -25,6 +25,8 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     private Guid? _userId;
 
     internal DbSet<Notification> Notifications => Set<Notification>();
+
+    internal DbSet<EmailDelivery> EmailDeliveries => Set<EmailDelivery>();
 
     public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -61,5 +63,6 @@ public sealed class NotificationsDbContext(DbContextOptions<NotificationsDbConte
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfiguration(new NotificationConfiguration());
+        modelBuilder.ApplyConfiguration(new EmailDeliveryConfiguration());
     }
 }

@@ -1121,6 +1121,7 @@ export const ErrorCode = {
   TenantSlugReserved: 'tenant.slug_reserved',
   TenantSlugTaken: 'tenant.slug_taken',
   TenantSuspended: 'tenant.suspended',
+  TermsVersionAcceptanceRequired: 'terms_version.acceptance_required',
   TermsVersionChanged: 'terms_version.changed',
   TermsVersionEffectiveDatePast: 'terms_version.effective_date_past',
   TermsVersionEmailSent: 'terms_version.email_sent',
@@ -1794,6 +1795,11 @@ export interface ProblemDetails {
      * @nullable
      */
   entitlement?: string | null;
+  /**
+     * The terms version the error is about: the version the person must accept before they go on.
+     * @nullable
+     */
+  termsVersionId?: string | null;
 }
 
 /**

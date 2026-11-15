@@ -28,19 +28,19 @@ public static class MyProfileEndpoints
 
     public static void Map(RouteGroupBuilder me)
     {
-        me.MapGet(string.Empty, GetMe);
-        me.MapPatch(string.Empty, RenameMe);
-        me.MapPatch("/preferences", ChangePreferences);
-        me.MapPost("/email-change", RequestEmailChange)
+        me.MapGet(string.Empty, GetMe).WithMetadata(new TermsGateExempt());
+        me.MapPatch(string.Empty, RenameMe).WithMetadata(new TermsGateExempt());
+        me.MapPatch("/preferences", ChangePreferences).WithMetadata(new TermsGateExempt());
+        me.MapPost("/email-change", RequestEmailChange).WithMetadata(new TermsGateExempt())
             .WithMetadata(new IdempotencyKeyRequired())
             .WithDescription(NoLocation)
             .Produces<VerificationCodeResponse>(StatusCodes.Status201Created);
-        me.MapPost("/email-change/confirm", ChangeEmail);
-        me.MapPost("/account-deletion", RequestAccountDeletion)
+        me.MapPost("/email-change/confirm", ChangeEmail).WithMetadata(new TermsGateExempt());
+        me.MapPost("/account-deletion", RequestAccountDeletion).WithMetadata(new TermsGateExempt())
             .WithMetadata(new IdempotencyKeyRequired())
             .WithDescription(NoLocation)
             .Produces<VerificationCodeResponse>(StatusCodes.Status201Created);
-        me.MapPost("/account-deletion/confirm", ConfirmAccountDeletion);
+        me.MapPost("/account-deletion/confirm", ConfirmAccountDeletion).WithMetadata(new TermsGateExempt());
     }
 
 

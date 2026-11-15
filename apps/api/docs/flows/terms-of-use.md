@@ -1,6 +1,6 @@
 # Terms of use
 
-A system admin manages the versions of the terms of use from the platform. A tenant user accepts a version, or reads its notice, after sign-in. Anyone reads the version in force before sign-in. The template keeps each version's link, never its text: the text lives with the brand's site. The step is 38 of `docs/roadmap.md`, section 6. The rules are in `ARCHITECTURE.md` (A5, K3, K6, R6, U3, U5, N5). This file says what happens, step by step.
+A system admin manages the versions of the terms of use from the platform. A tenant user accepts a version, or reads its notice, after sign-in. Anyone reads the version in force before sign-in. The template keeps each version's link, never its text: the text lives with the brand's site. The step is 38 of `docs/roadmap.md`, section 6. The rules are in `ARCHITECTURE.md` (A5, A11, K3, K6, R6, U3, U5, N5). This file says what happens, step by step.
 
 ## 1. A version and its state
 
@@ -49,8 +49,37 @@ An invitee who has no account yet ticks the terms on Accept invitation (1.15). `
 3. The fan-out reaches every user at once, so it gives a pace: `Notifications:Pace:DeliveriesPerSecond` (5) deliveries each second. Each later delivery is a message scheduled a second after the ones before it. Example: 1000 users take 200 seconds. Resend allows 10 requests a second to the whole team by default, so half of it stays for the invitations and the codes of the same seconds (Resend, "Rate limit"). Wolverine releases scheduled messages at each poll of its store, 5 s by default, so the deliveries of a few seconds may still go together. An email that Resend refuses for its rate limit (429) takes the growing retries of `Notifications:InvitationEmails:RetryDelays`, so it goes later and does not reach the dead letter queue at once (U3).
 4. The email's texts are in `packages/emails/messages/*.json`: the day, written in the reader's language and in no time zone, the link, and the summary, or a text without it.
 
+5. A second delivery of the event sends no second email. The type goes by email only, so it writes no notification; the dispatcher records each delivery in `notifications.email_deliveries` instead, under the notification's id, and a copy of the event finds it (O4). The email service's own key is no guard here: Resend keeps a key for 24 hours, and an email may wait longer, such as while `emails.send` is off (`feature-flags.md`). A try that the email service refuses is tried again under the same key.
+
 Another edit, or a cancellation, sends no email.
 
 ## 7. Before sign-in
 
 `GetTermsInForce`, on the public route (`/v1/public/terms`, A5), answers the version in force: its id, its day and its link. Before the first version takes effect it answers 204, and the entry pages hide the "Terms" link. The answer is the same for everyone, so it sends `Cache-Control: public, max-age=300`: a browser or a cache in between may keep it for five minutes. A version in force never changes, so a kept answer is wrong only in the first minutes of a new version's day.
+
+## 8. The gate in the API
+
+The web is not the only client: the mobile app of step 45, or a script with a session token, reaches the API too. So the API enforces the gate of section 4 itself (the maintainer's decision of 2026-11-14).
+
+1. One place enforces it, never a handler (A11). `TenantResolutionMiddleware` asks ControlPlane (`ITermsGate`) on every `me` and tenant endpoint, after the user's state (A9) and after the membership, so a caller who is no member still gets `tenant.not_found` (T3). Authorization then turns the person away, before the endpoint runs and before an `Idempotency-Key` is claimed.
+2. The rule is the gate's of section 4, steps 1 and 2, unchanged (`TermsGate`), so the API and the screens never disagree. When `GetMyTerms` would answer `acceptance`, the call answers 403 `terms_version.acceptance_required`, and `termsVersionId` names the version to accept. A version that requires acceptance refuses from its creation, before its day. A notice refuses nothing, a cancelled version refuses nothing, and a person who is not a user yet is not refused: they accept with their invitation (section 5).
+3. A person who does not accept keeps their own account and their GDPR rights (Articles 15, 17 and 20). These `me` endpoints carry `TermsGateExempt`, and no other endpoint does (`TermsGateTests`):
+
+| Endpoint | Why it is exempt |
+| --- | --- |
+| `GetMyTerms`, `AcceptTermsVersion`, `DismissTermsNotice` | The gate itself: the person reads the version and accepts it. |
+| `GetMe`, `RenameMe`, `ChangePreferences` | The person's own profile and language, which the gate's page uses too. |
+| `RequestEmailChange`, `ChangeEmail` | The person's own account and security. |
+| `RequestAccountDeletion`, `ConfirmAccountDeletion` | The right to erasure (GDPR, Article 17). |
+| `RequestDataExport`, `GetMyDataExport`, `DownloadDataExport` | The rights of access and to data portability (GDPR, Articles 15 and 20). |
+| `AcceptInvitation`, `GetInvitationPreview` | Accept invitation keeps its own path (section 5, frame 1.15); the preview is the same screen. Decided on 2026-11-14. |
+| `StreamNotifications` | The live stream carries signals only, never a notification's content; the bells it names stay gated. The web and the platform share it. Decided on 2026-11-14. |
+| `MarkNotificationRead` | It changes only the person's own read state (K3), and the platform's bell calls it. Decided on 2026-11-14. |
+
+4. No gate: the platform's endpoints (section 3), and the public route (section 7). Signing out and two-step verification are the identity provider's, so the API has no endpoint for them.
+5. The cost. The gate reads the versions and the person's acceptances in one query: about 0.35 ms on a local PostgreSQL with 12 versions and 240,000 acceptances. It reads through the cache (`user-terms`, C1), so a request whose entry is in the cache reads no database, as the user's state and the membership do. The entry stores the versions' rows and which of them the person accepted, never a state: the day decides each version's state at each read, so a version's day comes with no write. It stays right this way (C5 to C8):
+   - A version's creation, edit or cancellation removes every person's entry (`terms-versions`).
+   - The person's acceptance removes their entry (`user:{identity provider id}`): the statement passes the change tracker, so it removes the tag itself (C7).
+   - Becoming a user removes the entry of the person who was not one yet (`user:{identity provider id}`).
+   - An entry lives 10 minutes at most, which bounds a missed removal (C8).
+6. The screens. A 403 `terms_version.acceptance_required` of any read or command in the web leads to the gate, never to an error toast (F64). The platform calls only its own endpoints and exempt `me` endpoints, so it never gets the refusal.

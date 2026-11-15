@@ -65,6 +65,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddScoped<IAuditRetentionDirectory, AuditRetentionDirectory>();
         services.AddScoped<ITermsVersionDirectory, TermsVersionDirectory>();
+        services.AddScoped<ITermsGate, TermsGateCheck>();
 
         // docs/flows/system-admins.md: the list must name at least one address, so the platform always has a way in. Each item is an
         // address in the form the validators accept, and the same text as .NET reads it, so no item is left out of the list's one form.

@@ -68,7 +68,7 @@ internal sealed class OwnFlags : IAsyncDisposable
 
     // The template's kill switch, emails.send, is stored as the sync would store it, and flags runs, before the host starts, so the
     // worker's sync at the start finds the template's flag stored and changes nothing a test reads (G2).
-    public static async Task<OwnFlags> CreateAsync(Database database, Func<string, Task>? flags = null)
+    public static async Task<OwnFlags> CreateAsync(Database database, Func<string, Task>? flags = null, TimeProvider? time = null)
     {
         var name = await database.CreateMigratedDatabaseAsync();
         var data = new TestData(database, name);
@@ -79,7 +79,7 @@ internal sealed class OwnFlags : IAsyncDisposable
             await flags(name);
         }
 
-        var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name), configureServices: ApiFactory.RemoveAuditRetention);
+        var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name), configureServices: ApiFactory.RemoveAuditRetention, time: time);
         return new OwnFlags(database, name, api, data, api.CreateClient(adminId, secondFactor: true));
     }
 
