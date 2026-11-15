@@ -42,6 +42,24 @@ public sealed class PlanQueries(ControlPlaneDbContext controlPlane) : IPlanQueri
         return ListPage.Of(page, list.Paging, total);
     }
 
+    // A deployment has a few plans, so each is read as FindPlanAsync reads one.
+    async Task<IReadOnlyList<PlanView>> IPlanQueries.GetPlanChoicesAsync(CancellationToken cancellationToken)
+    {
+        var ids = await controlPlane.Plans
+            .OrderBy(plan => plan.Prices.BaseMonthly + plan.Prices.PerPersonMonthly)
+            .ThenBy(plan => plan.Name)
+            .ThenBy(plan => plan.Id)
+            .Select(plan => plan.Id)
+            .ToListAsync(cancellationToken);
+        List<PlanView> plans = [];
+        foreach (var id in ids)
+        {
+            plans.Add((await ((IPlanQueries)this).FindPlanAsync(id, cancellationToken))!);
+        }
+
+        return plans;
+    }
+
     async Task<PlanView?> IPlanQueries.FindPlanAsync(Guid planId, CancellationToken cancellationToken)
     {
         var found = await controlPlane.Plans

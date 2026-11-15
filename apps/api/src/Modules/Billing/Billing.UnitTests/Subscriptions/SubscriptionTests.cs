@@ -129,4 +129,31 @@ public sealed class SubscriptionTests
 
         subscription.PaysForItsPlan.ShouldBe(pays);
     }
+
+    // B8, B9: a member's own end is no closure's, so a late state of the reopen's undo never takes the member's cancellation back.
+
+    [Fact]
+    public void EndByMember_AfterAReopenThatStripeHasNotShownYet_AsksNothingAgainForTheMembersEnd()
+    {
+        var subscription = Subscription.Start(Active, At);
+        subscription.EndForClosure();
+        subscription.Sync(Active with { CancelAtPeriodEnd = true }, At.AddMinutes(1));
+        subscription.KeepAfterReopen();
+
+        subscription.EndByMember();
+        subscription.Sync(Active with { CancelAtPeriodEnd = true }, At.AddMinutes(2));
+
+        (subscription.ClosureEnd, subscription.ClosureCorrection(tenantClosed: false)).ShouldBe((ClosureEnd.None, null));
+    }
+
+    [Fact]
+    public void Sync_AScheduledMove_KeepsItsPlanAndInterval()
+    {
+        var subscription = Subscription.Start(Active, At);
+        var team = Guid.CreateVersion7();
+
+        var change = subscription.Sync(Active with { ScheduledPlanId = team, ScheduledInterval = BillingInterval.Monthly }, At.AddMinutes(1));
+
+        (change, subscription.ScheduledPlanId, subscription.ScheduledInterval).ShouldBe((SharedKernel.StateChange.Changed, team, BillingInterval.Monthly));
+    }
 }

@@ -347,6 +347,37 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetCancelAtPeriodEndHandler));
     }
 
+    // B9: a member's upgrade is the web host's call to Stripe; the sync that follows, and the plan change it brings, run in the worker.
+    [Fact]
+    public async Task ChangePlan_OnAWebAndAWorkerHost_SyncsTheSubscriptionInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var team = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(team, 900, 1000, 9000, 10000);
+        var business = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(business, 9900, 800, 99000, 8000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, team)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, team));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, business));
+
+        var answer = await web.CreateClient(owner).ChangePlanAsync(tenant.Id, business);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 1);
+
+        answer.StatusCode.ShouldBe(HttpStatusCode.OK);
+        web.Billing.MovesNow.Select(move => move.Order.PlanId).ShouldBe([business]);
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(SyncSubscriptionHandler));
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(SyncSubscriptionHandler));
+    }
+
     // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row
     // stays only for a tenant with an entry.
     [Fact]

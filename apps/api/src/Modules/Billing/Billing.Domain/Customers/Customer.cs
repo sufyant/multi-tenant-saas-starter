@@ -13,7 +13,10 @@ internal sealed class Customer(string customerId, Guid tenantId, Guid checkoutBy
 
     public Guid TenantId { get; private init; } = tenantId;
 
-    /// <summary>The member who opened the tenant's last checkout, whom a subscription's change names as the one who paid.</summary>
+    /// <summary>
+    /// The member who opened the tenant's last checkout or changed its plan last (B9), whom a subscription's change names as the one who
+    /// paid.
+    /// </summary>
     public Guid CheckoutBy { get; private set; } = checkoutBy;
 
     public DateTimeOffset CreatedAt { get; private init; } = createdAt;
@@ -23,6 +26,9 @@ internal sealed class Customer(string customerId, Guid tenantId, Guid checkoutBy
 
     /// <summary>The moment of the last closure or reopen that billing took, so an older one that arrives later changes nothing.</summary>
     public DateTimeOffset? LifecycleAt { get; private set; }
+
+    /// <summary>Names the member who changes the tenant's plan, so the change that the provider's state then brings names them (B6, B9).</summary>
+    public void NameMember(Guid memberId) => CheckoutBy = memberId;
 
     /// <summary>Takes the tenant's closure of this moment; false for one older than the last closure or reopen billing took (one of the same moment is taken: the clock cannot order them).</summary>
     public bool Close(DateTimeOffset at)

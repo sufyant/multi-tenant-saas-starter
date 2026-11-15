@@ -24,6 +24,7 @@ export * from "./tenant-featureflags/tenant-featureflags.msw.gen";
 export * from "./tenant-invitations/tenant-invitations.msw.gen";
 export * from "./tenant-members/tenant-members.msw.gen";
 export * from "./tenant-notifications/tenant-notifications.msw.gen";
+export * from "./tenant-plans/tenant-plans.msw.gen";
 export * from "./tenant-portalsessions/tenant-portalsessions.msw.gen";
 export * from "./tenant-roles/tenant-roles.msw.gen";
 export * from "./tenant-subscriptions/tenant-subscriptions.msw.gen";

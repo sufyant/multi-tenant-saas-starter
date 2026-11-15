@@ -25,7 +25,8 @@ public static class ApplySubscriptionHandler
     {
         var state = new SubscriptionState(
             command.CustomerId, command.SubscriptionId, command.PlanId, Enum.Parse<BillingInterval>(command.Interval),
-            Enum.Parse<SubscriptionStatus>(command.Status), command.CurrentPeriodEnd, command.CancelAtPeriodEnd);
+            Enum.Parse<SubscriptionStatus>(command.Status), command.CurrentPeriodEnd, command.CancelAtPeriodEnd,
+            command.ScheduledPlanId, command.ScheduledInterval is { } scheduled ? Enum.Parse<BillingInterval>(scheduled) : null);
         var now = time.GetUtcNow();
         // A purge that deleted the customer since the route leaves nothing to apply (B5).
         if (await customers.FindForUpdateAsync(cancellationToken) is not { } customer)

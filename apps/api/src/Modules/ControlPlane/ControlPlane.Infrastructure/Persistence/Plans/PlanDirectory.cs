@@ -16,6 +16,7 @@ public sealed class PlanDirectory(ControlPlaneDbContext controlPlane, BillingOpt
                 plan.Id,
                 plan.Name,
                 billing.Currency,
-                new PlanPricesRecord(plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly)))
+                new PlanPricesRecord(plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly),
+                controlPlane.DefaultPlans.Any(mark => mark.PlanId == plan.Id)))
             .SingleOrDefaultAsync(cancellationToken);
 }

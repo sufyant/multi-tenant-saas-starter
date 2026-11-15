@@ -31,6 +31,9 @@ public static class SubscriptionEndpoints
                 ResponseStatus.OfInterval(subscription.Interval),
                 ResponseStatus.OfSubscription(subscription.Status),
                 subscription.CurrentPeriodEnd,
-                subscription.CancelAtPeriodEnd));
+                subscription.CancelAtPeriodEnd,
+                subscription is { ScheduledPlanId: { } planId, ScheduledInterval: { } interval }
+                    ? new ScheduledChangeResponse(planId, ResponseStatus.OfInterval(interval))
+                    : null));
     }
 }

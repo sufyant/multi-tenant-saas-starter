@@ -69,6 +69,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "ChangePlan",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/billing/plan-change",
+    "tag": "Tenant/Subscriptions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "ChangePreferences",
     "method": "PATCH",
     "path": "/v1/me/preferences",
@@ -374,6 +385,17 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/plans/{planId}",
     "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GetPlanChoices",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/plans",
+    "tag": "Tenant/Plans",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"
@@ -786,6 +808,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "PreviewPlanChange",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/billing/plan-change/preview",
+    "tag": "Tenant/Subscriptions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "ReactivateTenant",
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/reactivate",
@@ -1008,6 +1041,17 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/users/{userId}/suspend",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "UndoScheduledChange",
+    "method": "DELETE",
+    "path": "/v1/tenants/{tenantId}/billing/scheduled-change",
+    "tag": "Tenant/Subscriptions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

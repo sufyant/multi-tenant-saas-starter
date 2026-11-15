@@ -185,6 +185,15 @@ namespace Billing.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("plan_id");
 
+                    b.Property<string>("ScheduledInterval")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("scheduled_interval");
+
+                    b.Property<Guid?>("ScheduledPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scheduled_plan_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -217,6 +226,10 @@ namespace Billing.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_subscriptions_closure_end", "closure_end IN ('None', 'Asked', 'Released')");
 
                             t.HasCheckConstraint("ck_subscriptions_interval", "interval IN ('Monthly', 'Yearly')");
+
+                            t.HasCheckConstraint("ck_subscriptions_scheduled", "(scheduled_plan_id IS NULL) = (scheduled_interval IS NULL)");
+
+                            t.HasCheckConstraint("ck_subscriptions_scheduled_interval", "scheduled_interval IN ('Monthly', 'Yearly')");
 
                             t.HasCheckConstraint("ck_subscriptions_status", "status IN ('Incomplete', 'IncompleteExpired', 'Trialing', 'Active', 'PastDue', 'Canceled', 'Unpaid', 'Paused')");
                         });

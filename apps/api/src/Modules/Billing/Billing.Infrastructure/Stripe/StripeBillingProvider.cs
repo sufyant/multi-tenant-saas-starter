@@ -24,6 +24,8 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     private const string ProductPrefix = "plan_";
 
+    private const string CardError = "card_error";
+
     // The event types whose object names a subscription; any other event is kept and needs no sync.
     private static readonly HashSet<string> SubscriptionEvents =
     [
@@ -48,12 +50,12 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         var lines = new List<SessionLineItemOptions>();
         if (order.BaseAmount > 0)
         {
-            lines.Add(new() { Price = await PriceAsync(order, "base", order.BaseAmount, cancellationToken), Quantity = 1 });
+            lines.Add(new() { Price = await PriceAsync(order.PlanId, order.PlanName, order.Currency, order.Yearly, "base", order.BaseAmount, cancellationToken), Quantity = 1 });
         }
 
         if (order.PerPersonAmount > 0 && order.People > 0)
         {
-            lines.Add(new() { Price = await PriceAsync(order, "per_person", order.PerPersonAmount, cancellationToken), Quantity = order.People });
+            lines.Add(new() { Price = await PriceAsync(order.PlanId, order.PlanName, order.Currency, order.Yearly, "per_person", order.PerPersonAmount, cancellationToken), Quantity = order.People });
         }
 
         Dictionary<string, string> metadata = new()
@@ -97,11 +99,124 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         }
     }
 
-    async Task IBillingProvider.SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken) =>
-        await new SubscriptionService(client).UpdateAsync(
-            subscriptionId,
-            new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelAtPeriodEnd },
+    // Stripe refuses an end set on a subscription that a schedule manages, so a scheduled move is released first: an end replaces it (B9).
+    async Task IBillingProvider.SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        await ReleaseScheduleAsync(await subscriptions.GetAsync(subscriptionId, cancellationToken: cancellationToken), cancellationToken);
+        await subscriptions.UpdateAsync(subscriptionId, new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelAtPeriodEnd }, cancellationToken: cancellationToken);
+    }
+
+    async Task<PlanChangePreview> IBillingProvider.PreviewPlanChangeAsync(PlanChangeOrder order, DateTimeOffset proratedAt, CancellationToken cancellationToken)
+    {
+        var subscription = await new SubscriptionService(client).GetAsync(order.SubscriptionId, cancellationToken: cancellationToken);
+        var lines = await LinesAsync(order, cancellationToken);
+        var invoice = await new InvoiceService(client).CreatePreviewAsync(
+            new InvoiceCreatePreviewOptions
+            {
+                Customer = subscription.CustomerId,
+                Subscription = subscription.Id,
+                SubscriptionDetails = new InvoiceSubscriptionDetailsOptions
+                {
+                    Items =
+                    [
+                        .. subscription.Items.Data.Select(item => new InvoiceSubscriptionDetailsItemOptions { Id = item.Id, Deleted = true }),
+                        .. lines.Select(line => new InvoiceSubscriptionDetailsItemOptions { Price = line.Price, Quantity = line.Quantity }),
+                    ],
+                    ProrationBehavior = "always_invoice",
+                    ProrationDate = proratedAt.UtcDateTime,
+                },
+            },
             cancellationToken: cancellationToken);
+        return new PlanChangePreview(invoice.TotalExcludingTax ?? invoice.Total, proratedAt);
+    }
+
+    // Stripe, "Update a subscription", payment_behavior error_if_incomplete: a declined card answers a card error and Stripe keeps the
+    // subscription as it was, with no open invoice that a retry or the customer could pay later. A move from monthly to yearly starts a new
+    // period today, which Stripe does when the interval changes. Only after the payment does the move drop a scheduled move and a member's
+    // end, so a declined card keeps both.
+    async Task<bool> IBillingProvider.ChangePlanNowAsync(PlanChangeOrder order, DateTimeOffset proratedAt, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        var subscription = await subscriptions.GetAsync(order.SubscriptionId, cancellationToken: cancellationToken);
+        var lines = await LinesAsync(order, cancellationToken);
+        try
+        {
+            await subscriptions.UpdateAsync(
+                subscription.Id,
+                new SubscriptionUpdateOptions
+                {
+                    Items =
+                    [
+                        .. subscription.Items.Data.Select(item => new SubscriptionItemOptions { Id = item.Id, Deleted = true }),
+                        .. lines.Select(line => new SubscriptionItemOptions { Price = line.Price, Quantity = line.Quantity }),
+                    ],
+                    ProrationBehavior = "always_invoice",
+                    ProrationDate = proratedAt.UtcDateTime,
+                    PaymentBehavior = "error_if_incomplete",
+                },
+                cancellationToken: cancellationToken);
+        }
+        catch (StripeException exception) when (exception.StripeError?.Type == CardError)
+        {
+            return false;
+        }
+
+        await ReleaseScheduleAsync(subscription, cancellationToken);
+        if (subscription.CancelAtPeriodEnd)
+        {
+            await subscriptions.UpdateAsync(subscription.Id, new SubscriptionUpdateOptions { CancelAtPeriodEnd = false }, cancellationToken: cancellationToken);
+        }
+
+        return true;
+    }
+
+    // Stripe, "Subscription schedules", "Downgrade at the end of the period": the schedule keeps today's phase until the period's end, then
+    // one period of the order, and releases the subscription, which goes on with the order. A scheduled move before is replaced. A member's
+    // end becomes the schedule's end behavior when Stripe makes the schedule from the subscription, and the update's release replaces it,
+    // in the same call that writes the move, so a failed call leaves the end as it was.
+    async Task IBillingProvider.SchedulePlanChangeAsync(PlanChangeOrder order, CancellationToken cancellationToken)
+    {
+        var subscription = await new SubscriptionService(client).GetAsync(order.SubscriptionId, cancellationToken: cancellationToken);
+        var schedules = new SubscriptionScheduleService(client);
+        var schedule = subscription.ScheduleId is { } scheduleId
+            ? await schedules.GetAsync(scheduleId, cancellationToken: cancellationToken)
+            : await schedules.CreateAsync(new SubscriptionScheduleCreateOptions { FromSubscription = subscription.Id }, cancellationToken: cancellationToken);
+        var lines = await LinesAsync(order, cancellationToken);
+        await schedules.UpdateAsync(
+            schedule.Id,
+            new SubscriptionScheduleUpdateOptions
+            {
+                EndBehavior = "release",
+                ProrationBehavior = "none",
+                Phases =
+                [
+                    new SubscriptionSchedulePhaseOptions
+                    {
+                        StartDate = schedule.CurrentPhase.StartDate,
+                        EndDate = subscription.Items.Data[0].CurrentPeriodEnd,
+                        Items = [.. subscription.Items.Data.Select(item => new SubscriptionSchedulePhaseItemOptions { Price = item.Price.Id, Quantity = item.Quantity })],
+                    },
+                    new SubscriptionSchedulePhaseOptions
+                    {
+                        Items = [.. lines.Select(line => new SubscriptionSchedulePhaseItemOptions { Price = line.Price, Quantity = line.Quantity })],
+                        Duration = new SubscriptionSchedulePhaseDurationOptions { Interval = order.Yearly ? "year" : "month", IntervalCount = 1 },
+                    },
+                ],
+            },
+            cancellationToken: cancellationToken);
+    }
+
+    async Task IBillingProvider.UndoScheduledChangeAsync(string subscriptionId, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        var subscription = await subscriptions.GetAsync(subscriptionId, cancellationToken: cancellationToken);
+        await ReleaseScheduleAsync(subscription, cancellationToken);
+        if (subscription.CancelAtPeriodEnd)
+        {
+            await subscriptions.UpdateAsync(subscriptionId, new SubscriptionUpdateOptions { CancelAtPeriodEnd = false }, cancellationToken: cancellationToken);
+        }
+    }
 
     async Task IBillingProvider.CancelSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
@@ -124,13 +239,19 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     async Task<ProviderSubscription?> IBillingProvider.FindSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
-        var subscription = await new SubscriptionService(client).GetAsync(subscriptionId, cancellationToken: cancellationToken);
+        var subscription = await new SubscriptionService(client).GetAsync(
+            subscriptionId, new SubscriptionGetOptions { Expand = ["schedule.phases.items.price"] }, cancellationToken: cancellationToken);
         var item = subscription.Items.Data[0];
-        if (!item.Price.ProductId.StartsWith(ProductPrefix, StringComparison.Ordinal)
-            || !Guid.TryParseExact(item.Price.ProductId[ProductPrefix.Length..], "N", out var planId))
+        if (PlanOf(item.Price) is not { } planId)
         {
             return null;
         }
+
+        // The phase after the paid period is the move a member scheduled (B9); a schedule that ended or was released schedules nothing.
+        var next = subscription.Schedule is { Status: "active" or "not_started" } schedule
+            ? schedule.Phases.FirstOrDefault(phase => phase.StartDate >= item.CurrentPeriodEnd)?.Items.FirstOrDefault()?.Price
+            : null;
+        var scheduledPlanId = next is null ? null : PlanOf(next);
 
         return new ProviderSubscription(
             subscription.CustomerId,
@@ -139,7 +260,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             item.Price.Recurring.Interval == "year",
             StatusOf(subscription.Status).ToString(),
             item.CurrentPeriodEnd,
-            subscription.CancelAtPeriodEnd);
+            subscription.CancelAtPeriodEnd,
+            scheduledPlanId,
+            scheduledPlanId is null ? null : next!.Recurring.Interval == "year");
     }
 
     ProviderEvent? IBillingProvider.ReadEvent(string body, string? signature)
@@ -169,6 +292,12 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         return new ProviderEvent(read.Id, read.Type, subscriptionId);
     }
 
+    // The plan of a Price is its Product's id, which our app wrote (B2); a Product of no plan of ours names none.
+    private static Guid? PlanOf(Price price) =>
+        price.ProductId.StartsWith(ProductPrefix, StringComparison.Ordinal) && Guid.TryParseExact(price.ProductId[ProductPrefix.Length..], "N", out var planId)
+            ? planId
+            : null;
+
     private static SubscriptionStatus StatusOf(string status) => status switch
     {
         "incomplete" => SubscriptionStatus.Incomplete,
@@ -187,21 +316,21 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     // The plan's Product, with the plan's id as its id, then the Price of this amount, found by its lookup key or created with it. Two
     // checkouts at once may both create it: the lookup key is unique in the account, so the second's create fails and it reads the first's.
-    private async Task<string> PriceAsync(CheckoutOrder order, string part, long amount, CancellationToken cancellationToken)
+    private async Task<string> PriceAsync(Guid planId, string planName, string planCurrency, bool yearly, string part, long amount, CancellationToken cancellationToken)
     {
-        var interval = order.Yearly ? "year" : "month";
-        var currency = order.Currency.ToLowerInvariant();
-        var lookupKey = $"plan_{order.PlanId:N}_{part}_{interval}_{currency}_{amount}";
+        var interval = yearly ? "year" : "month";
+        var currency = planCurrency.ToLowerInvariant();
+        var lookupKey = $"plan_{planId:N}_{part}_{interval}_{currency}_{amount}";
         var prices = new PriceService(client);
         if (await FindPriceAsync(prices, lookupKey, cancellationToken) is { } found)
         {
             return found;
         }
 
-        var productId = $"{ProductPrefix}{order.PlanId:N}";
+        var productId = $"{ProductPrefix}{planId:N}";
         try
         {
-            await new ProductService(client).CreateAsync(new ProductCreateOptions { Id = productId, Name = order.PlanName }, cancellationToken: cancellationToken);
+            await new ProductService(client).CreateAsync(new ProductCreateOptions { Id = productId, Name = planName }, cancellationToken: cancellationToken);
         }
         catch (StripeException exception) when (exception.StripeError?.Code == AlreadyExists)
         {
@@ -218,7 +347,7 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
                     UnitAmount = amount,
                     Recurring = new PriceRecurringOptions { Interval = interval },
                     LookupKey = lookupKey,
-                    Nickname = $"{order.PlanName}, {part.Replace('_', ' ')}, {interval}ly",
+                    Nickname = $"{planName}, {part.Replace('_', ' ')}, {interval}ly",
                 },
                 cancellationToken: cancellationToken);
             return price.Id;
@@ -231,6 +360,31 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             }
 
             throw;
+        }
+    }
+
+    // The order's Prices: the base fee once and the fee per person for each seated member; a price of 0 is left out, as in Checkout (B3).
+    private async Task<List<(string Price, long Quantity)>> LinesAsync(PlanChangeOrder order, CancellationToken cancellationToken)
+    {
+        List<(string Price, long Quantity)> lines = [];
+        if (order.BaseAmount > 0)
+        {
+            lines.Add((await PriceAsync(order.PlanId, order.PlanName, order.Currency, order.Yearly, "base", order.BaseAmount, cancellationToken), 1));
+        }
+
+        if (order.PerPersonAmount > 0 && order.People > 0)
+        {
+            lines.Add((await PriceAsync(order.PlanId, order.PlanName, order.Currency, order.Yearly, "per_person", order.PerPersonAmount, cancellationToken), order.People));
+        }
+
+        return lines;
+    }
+
+    private async Task ReleaseScheduleAsync(global::Stripe.Subscription subscription, CancellationToken cancellationToken)
+    {
+        if (subscription.ScheduleId is { } scheduleId)
+        {
+            await new SubscriptionScheduleService(client).ReleaseAsync(scheduleId, cancellationToken: cancellationToken);
         }
     }
 }

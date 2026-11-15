@@ -16,6 +16,7 @@ using ControlPlane.Api.Platform.Users;
 using ControlPlane.Api.Tenant.FeatureFlags;
 using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Api.Tenant.Members;
+using ControlPlane.Api.Tenant.Plans;
 using ControlPlane.Api.Tenant.Tenants;
 using ControlPlane.Application.Invitations.AcceptInvitation;
 using Microsoft.AspNetCore.Routing;
@@ -53,6 +54,7 @@ public static class ControlPlaneModule
         MyInvitationEndpoints.Map(me);
         MyTermsVersionEndpoints.Map(me);
         TenantProfileEndpoints.Map(tenant);
+        PlanChoiceEndpoints.Map(tenant);
         MemberEndpoints.Map(tenant);
         InvitationEndpoints.Map(tenant);
         RoleEndpoints.Map(tenant);

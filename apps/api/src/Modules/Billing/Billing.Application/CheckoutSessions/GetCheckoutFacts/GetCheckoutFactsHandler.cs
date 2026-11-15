@@ -26,6 +26,6 @@ public static class GetCheckoutFactsHandler
         var seated = await members.CountSeatedMembersAsync(cancellationToken);
         return new CheckoutFacts(
             payer.UserId, payer.Email, plan.Id, plan.Name, plan.Currency,
-            plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly, seated);
+            plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly, seated, plan.IsDefault);
     }
 }

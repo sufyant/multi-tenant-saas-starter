@@ -21,6 +21,7 @@ export * from './tenant-featureflags/tenant-featureflags.gen';
 export * from './tenant-invitations/tenant-invitations.gen';
 export * from './tenant-members/tenant-members.gen';
 export * from './tenant-notifications/tenant-notifications.gen';
+export * from './tenant-plans/tenant-plans.gen';
 export * from './tenant-portalsessions/tenant-portalsessions.gen';
 export * from './tenant-roles/tenant-roles.gen';
 export * from './tenant-subscriptions/tenant-subscriptions.gen';

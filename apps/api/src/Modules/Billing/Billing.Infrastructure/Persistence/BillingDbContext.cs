@@ -40,6 +40,8 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
                 table.HasCheckConstraint("ck_subscriptions_interval", CheckConstraints.OneOf<BillingInterval>("interval"));
                 table.HasCheckConstraint("ck_subscriptions_status", CheckConstraints.OneOf<SubscriptionStatus>("status"));
                 table.HasCheckConstraint("ck_subscriptions_closure_end", CheckConstraints.OneOf<ClosureEnd>("closure_end"));
+                table.HasCheckConstraint("ck_subscriptions_scheduled_interval", CheckConstraints.OneOf<BillingInterval>("scheduled_interval"));
+                table.HasCheckConstraint("ck_subscriptions_scheduled", "(scheduled_plan_id IS NULL) = (scheduled_interval IS NULL)");
             });
             subscription.Property<Guid>("TenantId");
             subscription.HasKey("TenantId");
@@ -48,6 +50,7 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             subscription.Property(s => s.Interval).HasConversion<string>().HasMaxLength(20);
             subscription.Property(s => s.Status).HasConversion<string>().HasMaxLength(20);
             subscription.Property(s => s.ClosureEnd).HasConversion<string>().HasMaxLength(20);
+            subscription.Property(s => s.ScheduledInterval).HasConversion<string>().HasMaxLength(20);
             subscription.HasIndex(s => s.CustomerId).IsUnique();
             subscription.HasIndex(s => s.SubscriptionId).IsUnique();
         });

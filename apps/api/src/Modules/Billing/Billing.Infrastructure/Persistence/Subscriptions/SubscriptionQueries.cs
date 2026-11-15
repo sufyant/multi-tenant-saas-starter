@@ -11,6 +11,7 @@ public sealed class SubscriptionQueries(BillingDbContext billing) : ISubscriptio
     public async Task<SubscriptionView?> FindSubscriptionAsync(CancellationToken cancellationToken) =>
         await billing.Subscriptions
             .AsNoTracking()
-            .Select(s => new SubscriptionView(s.CustomerId, s.SubscriptionId, s.PlanId, s.Interval.ToString(), s.Status.ToString(), s.CurrentPeriodEnd, s.CancelAtPeriodEnd))
+            .Select(s => new SubscriptionView(s.CustomerId, s.SubscriptionId, s.PlanId, s.Interval.ToString(), s.Status.ToString(), s.CurrentPeriodEnd, s.CancelAtPeriodEnd,
+                s.ScheduledPlanId, s.ScheduledInterval == null ? null : s.ScheduledInterval.ToString()))
             .SingleOrDefaultAsync(cancellationToken);
 }

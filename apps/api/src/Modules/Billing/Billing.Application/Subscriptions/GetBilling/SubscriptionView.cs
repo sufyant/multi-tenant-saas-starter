@@ -1,7 +1,7 @@
 namespace Billing.Application.Subscriptions.GetBilling;
 
 /// <summary>
-/// A tenant's subscription as billing last read it from the provider. The interval and the status cross to the API as their names (N7r).
+/// A tenant's subscription as billing last read it from the provider, with the move a member scheduled at the period's end (B9). The interval and the status cross to the API as their names (N7r).
 /// </summary>
 public sealed record SubscriptionView(
     string CustomerId,
@@ -10,4 +10,6 @@ public sealed record SubscriptionView(
     string Interval,
     string Status,
     DateTimeOffset CurrentPeriodEnd,
-    bool CancelAtPeriodEnd);
+    bool CancelAtPeriodEnd,
+    Guid? ScheduledPlanId,
+    string? ScheduledInterval);
