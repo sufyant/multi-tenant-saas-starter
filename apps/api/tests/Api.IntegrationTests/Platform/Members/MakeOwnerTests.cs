@@ -275,6 +275,23 @@ public sealed class MakeOwnerTests(Database database) : IAsyncLifetime
         (await RoleOfAsync(tenant.Id, member)).ShouldBe("Member");
     }
 
+    // Step 40, billing per person: a Billing manager who becomes an Owner takes a seat at Stripe.
+    [Fact]
+    public async Task MakeOwner_ABillingManagerOfATenantThatPays_SetsItsSeatsAtStripe()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        var (tenantId, manager) = await tenants.PayingAsync(tenants.Team);
+        var managerId = await _testData.UserIdOfAsync(manager);
+        var admin = await SystemAdminAsync();
+
+        await _api.WaitingForMessagesAsync(() => admin.MakeOwnerAsync(tenantId, managerId));
+
+        _api.Billing.Seats.ShouldBe([($"sub_{tenantId:N}", 2)]);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

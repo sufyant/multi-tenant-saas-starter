@@ -2,7 +2,7 @@
 
 This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
 
-A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. The dunning, the seats' quantity, Contract and the price changes come in its later parts.
+A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. The dunning, Contract and the price changes come in its later parts.
 
 ## 1. The first payment
 
@@ -81,6 +81,20 @@ A member who manages billing pays for a plan by card, through Stripe, and the te
 - `DELETE .../billing/scheduled-change` undoes a scheduled move or a member's cancellation; with nothing scheduled it answers 409 `billing.nothing_scheduled`.
 - The Activity log (12.12): the sync compares the state that the row takes with the row (`Subscription.ScheduleChangeOf`). The same subscription, still active on the same plan and interval, that now ends at the period's end is a cancellation; one that ends no more, with nothing scheduled, its undo; a new scheduled plan or interval a scheduled move; a schedule gone, with no end, its undo. A move scheduled after a cancellation is a move, and a cancellation after a move is a cancellation. A move at once, the scheduled move when it applies, and a subscription that ends are no such change: the plan change records `tenant.plan_changed`. Nothing is recorded while the tenant is closed or `closure_end` is not `None`, as that end is the closure's or the reopen's, which `tenant.closed` and `tenant.reopened` record. The entry names the member in `checkout_by`, who changed the plan last; a change made in Stripe's dashboard names them too. A tenant that a purge deleted, or a plan that is gone, before the names are read records nothing. A known gap: a cancellation after a scheduled move, and a move after a cancellation, are two or three calls to Stripe in a row; a webhook's sync that reads Stripe between them takes the state in between and records an undo before the real entry.
 
-Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`, `ScheduleChangeTests`.
+## 6. The seats
 
-Source: Stripe, "Checkout", "Customer portal", "Webhooks", "Subscription statuses", "Change prices", "Prorations", "Pending updates" and "Subscription schedules". Richardson, *Microservices Patterns*, Chapter 3.
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `MemberJoinedEvent`, `MemberRemovedEvent`, `MemberLeftEvent`, `MemberRoleChangedEvent`, `OwnerMadeEvent`, `UserMembershipRemovedEvent` | ControlPlane | Billing, `CountSeatsAtMemberChangeHandler`, which reads the tenant's subscription | Billing's DbContext, in the tenant of the event |
+| `CountSeatsCommand` | `CountSeatsAtMemberChangeHandler`, for a subscription that has not ended; `ApplySubscriptionHandler`, for each state of a subscription that has not ended and has a fee per person, with Stripe's count | Billing, `CountSeatsHandler`, through ControlPlane's `IMemberDirectory` | ControlPlane's DbContext, in the tenant |
+| `SetSeatsCommand` | `CountSeatsHandler`, when the count differs from the one it was given | Billing, `SetSeatsHandler`, which calls Stripe; retried after `Billing:Provider:RetryDelays` | No |
+
+- The fee per person counts the members who take a seat: every member whose role is not the Billing manager (A2). A pending invitation is not charged; the join of its person is (B10).
+- Each change of who takes a seat counts the seats again: a person accepts an invitation, an Owner or an Admin removes a member, a member leaves, a member's role changes, the platform makes a member an Owner, and a system admin deletes a user. A tenant that never paid by card has no subscription, and nothing follows.
+- Stripe changes only the quantity of the fee per person, at its own Price (B2). A join on a yearly subscription is invoiced at once. A removal, and any change of a monthly subscription, is prorated on the next invoice. A subscription without a fee per person, one that has ended, or one with this count already changes nothing.
+- A subscription that a schedule manages (section 5) takes the count in each phase from the current one on, so the move at the period's end keeps the count.
+- Two changes at once can reach Stripe in another order. Each state of the subscription that the sync reads brings Stripe's count with it, and the sync counts the seats again and sets a count that differs, so the last count wins (I1).
+
+Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`, `ScheduleChangeTests`, `AcceptInvitationTests`, `RemoveMemberTests`, `LeaveTenantTests`, `ChangeMemberRoleTests`, `MakeOwnerTests`, `DeleteUserTests`.
+
+Source: Stripe, "Checkout", "Customer portal", "Webhooks", "Subscription statuses", "Change prices", "Prorations", "Pending updates", "Subscription schedules" and "Per-seat pricing". Richardson, *Microservices Patterns*, Chapter 3.

@@ -175,6 +175,101 @@ public sealed class StripeBillingProviderTests
         stripe.Sent.Single().Path.ShouldContain("expand[0]=schedule.phases.items.price");
     }
 
+    // Step 40, billing per person: the fee per person follows the seated members. A join on a monthly subscription, and any removal, is
+    // prorated on the next invoice; a join on a yearly subscription is charged at once; the same count sends nothing; a scheduled move
+    // takes the count in both phases; and the read names the count Stripe holds.
+
+    [Fact]
+    public async Task SetSeats_AJoinOnAMonthlySubscription_ProratesItOnTheNextInvoice()
+    {
+        var stripe = Seated("month", 10).Answer("POST", "/v1/subscriptions/sub_1", SeatedJson("month", 11));
+
+        await ProviderOf(stripe).SetSeatsAsync("sub_1", 11, Cancellation);
+
+        stripe.Sent.Single(request => request.Method == "POST").Body.Split('&').ShouldBe(
+            ["items[0][id]=si_seats", "items[0][quantity]=11", "proration_behavior=create_prorations"], ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task SetSeats_AJoinOnAYearlySubscription_ChargesItAtOnce()
+    {
+        var stripe = Seated("year", 10).Answer("POST", "/v1/subscriptions/sub_1", SeatedJson("year", 11));
+
+        await ProviderOf(stripe).SetSeatsAsync("sub_1", 11, Cancellation);
+
+        stripe.Sent.Single(request => request.Method == "POST").Body.Split('&').ShouldContain("proration_behavior=always_invoice");
+    }
+
+    [Fact]
+    public async Task SetSeats_ARemovalOnAYearlySubscription_ProratesItOnTheNextInvoice()
+    {
+        var stripe = Seated("year", 10).Answer("POST", "/v1/subscriptions/sub_1", SeatedJson("year", 9));
+
+        await ProviderOf(stripe).SetSeatsAsync("sub_1", 9, Cancellation);
+
+        stripe.Sent.Single(request => request.Method == "POST").Body.Split('&').ShouldContain("proration_behavior=create_prorations");
+    }
+
+    [Fact]
+    public async Task SetSeats_TheCountStripeHolds_SendsNothing()
+    {
+        var stripe = Seated("month", 10);
+
+        await ProviderOf(stripe).SetSeatsAsync("sub_1", 10, Cancellation);
+
+        stripe.Sent.ShouldNotContain(request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task SetSeats_AScheduledMove_SetsTheCountInBothPhases()
+    {
+        var stripe = new StripeRequests()
+            .Answer("GET", "/v1/subscriptions/sub_1", SeatedJson("month", 10, "\"sub_sched_1\""))
+            .Answer("GET", "/v1/subscription_schedules/sub_sched_1", $$$"""
+                {"id": "sub_sched_1", "object": "subscription_schedule", "status": "active", "current_phase": {"start_date": 1790000000, "end_date": 1800000000}, "phases": [
+                  {"start_date": 1790000000, "end_date": 1800000000, "items": [
+                    {"price": {"id": "price_base", "object": "price", "lookup_key": "plan_b_base_month_eur_9900"}, "quantity": 1},
+                    {"price": {"id": "price_seats", "object": "price", "lookup_key": "plan_b_per_person_month_eur_800"}, "quantity": 10}]},
+                  {"start_date": 1800000000, "end_date": 1802592000, "items": [
+                    {"price": {"id": "price_team", "object": "price", "lookup_key": "plan_t_per_person_month_eur_1000"}, "quantity": 10}]}
+                ]}
+                """)
+            .Answer("POST", "/v1/subscription_schedules/sub_sched_1", """{"id": "sub_sched_1", "object": "subscription_schedule"}""");
+
+        await ProviderOf(stripe).SetSeatsAsync("sub_1", 11, Cancellation);
+
+        stripe.Sent.Single(request => request.Method == "POST").Body.Split('&').ShouldBe(
+            [
+                "phases[0][start_date]=1790000000", "phases[0][end_date]=1800000000",
+                "phases[0][items][0][price]=price_base", "phases[0][items][0][quantity]=1",
+                "phases[0][items][1][price]=price_seats", "phases[0][items][1][quantity]=11",
+                "phases[1][start_date]=1800000000", "phases[1][end_date]=1802592000",
+                "phases[1][items][0][price]=price_team", "phases[1][items][0][quantity]=11",
+                "proration_behavior=create_prorations",
+            ],
+            ignoreOrder: true);
+    }
+
+    [Fact]
+    public async Task FindSubscription_AFeePerPerson_NamesTheCountStripeHolds()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", SeatedJson("month", 10));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        found!.People.ShouldBe(10);
+    }
+
+    [Fact]
+    public async Task FindSubscription_WithoutAFeePerPerson_NamesNoCount()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", SubscriptionJson(scheduleId: null));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        found!.People.ShouldBeNull();
+    }
+
     private static string EventBody(string id, string type, string dataObject) =>
         $$$"""{"id": "{{{id}}}", "object": "event", "type": "{{{type}}}", "api_version": "{{{StripeConfiguration.ApiVersion}}}", "created": 1, "data": {"object": {{{dataObject}}} }}""";
 
@@ -189,6 +284,19 @@ public sealed class StripeBillingProviderTests
         new StripeRequests()
             .Answer("GET", "/v1/subscriptions/sub_1", SubscriptionJson(scheduleId))
             .Answer("GET", "/v1/prices", """{"object": "list", "data": [{"id": "price_found", "object": "price"}], "has_more": false, "url": "/v1/prices"}""");
+
+    private static StripeRequests Seated(string interval, int people) =>
+        new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", SeatedJson(interval, people));
+
+    // A subscription on Business with its base fee and its fee per person for this many people, whose period ends at 1 800 000 000.
+    private static string SeatedJson(string interval, int people, string schedule = "null") => $$$"""
+        {"id": "sub_1", "object": "subscription", "customer": "cus_1", "status": "active", "cancel_at_period_end": false, "schedule": {{{schedule}}},
+         "items": {"object": "list", "data": [
+           {"id": "si_base", "object": "subscription_item", "quantity": 1, "current_period_end": 1800000000,
+            "price": {"id": "price_base", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_base_{{{interval}}}_eur_9900", "recurring": {"interval": "{{{interval}}}"} } },
+           {"id": "si_seats", "object": "subscription_item", "quantity": {{{people}}}, "current_period_end": 1800000000,
+            "price": {"id": "price_seats", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_per_person_{{{interval}}}_eur_800", "recurring": {"interval": "{{{interval}}}"} } }]} }
+        """;
 
     // A monthly subscription of ten people on Business, whose period ends at 1 800 000 000.
     private static string SubscriptionJson(string? scheduleId, string? schedule = null) => $$$"""

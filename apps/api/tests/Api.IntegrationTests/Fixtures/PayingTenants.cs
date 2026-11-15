@@ -10,6 +10,8 @@ internal sealed class PayingTenants(Database database, ApiFactory api)
 
     private readonly TestData _testData = new(database);
 
+    private readonly Dictionary<Guid, string> _owners = [];
+
     public Guid Team { get; private set; }
 
     public Guid Business { get; private set; }
@@ -28,8 +30,12 @@ internal sealed class PayingTenants(Database database, ApiFactory api)
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
         await api.PayAsync(owner, tenant.Id, planId);
+        _owners[tenant.Id] = owner;
         return (tenant.Id, manager);
     }
+
+    // The Owner who paid for the tenant's plan.
+    public string OwnerOf(Guid tenantId) => _owners[tenantId];
 
     public Task<Guid> DefaultPlanAsync() => database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans");
 

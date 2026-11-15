@@ -8,10 +8,13 @@ An Owner or an Admin changes a member's role and removes a member, and a member 
 | --- | --- | --- | --- |
 | `ChangeMemberRoleCommand` | `PATCH /v1/tenants/{tenantId}/members/{userId}` | ControlPlane, `ChangeMemberRoleHandler` | Yes |
 | `MemberRoleChangedEvent` | `ChangeMemberRoleHandler`, only when the role changed | Audit, `RecordMemberRoleChangedHandler` (`member.role_changed`, tenant log) | Yes |
+| `MemberRoleChangedEvent` | `ChangeMemberRoleHandler`, only when the role changed | Billing, `CountSeatsAtMemberChangeHandler`, which counts the seats of a subscription that has not ended again (`flows/billing.md`, section 6; B10) | Yes |
 | `RemoveMemberCommand` | `DELETE /v1/tenants/{tenantId}/members/{userId}` | ControlPlane, `RemoveMemberHandler` | Yes |
 | `MemberRemovedEvent` | `RemoveMemberHandler` | Audit, `RecordMemberRemovedHandler` (`member.removed`, tenant log) | Yes |
+| `MemberRemovedEvent` | `RemoveMemberHandler` | Billing, `CountSeatsAtMemberChangeHandler`, which counts the seats of a subscription that has not ended again (`flows/billing.md`, section 6; B10) | Yes |
 | `LeaveTenantCommand` | `DELETE /v1/tenants/{tenantId}/membership` | ControlPlane, `LeaveTenantHandler` | Yes |
 | `MemberLeftEvent` | `LeaveTenantHandler` | Audit, `RecordMemberLeftHandler` (`member.left`, tenant log) | Yes |
+| `MemberLeftEvent` | `LeaveTenantHandler` | Billing, `CountSeatsAtMemberChangeHandler`, which counts the seats of a subscription that has not ended again (`flows/billing.md`, section 6; B10) | Yes |
 
 - Both commands lock the tenant row (K6). They then read the actor's and the target's memberships and count the Owners, in this order:
   1. The actor is no longer a member, because a change that held the lock before removed them: 404 `tenant.not_found`. The tenant door answers a non-member the same 404 `tenant.not_found` (T3). `InviteMember` and `RevokeInvitation` check the same first (`invitations.md`, section 2, "Member invitation").

@@ -460,6 +460,22 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
+    // Step 40, billing per person: a Billing manager takes no seat (A2), so the role change sets the fee per person at Stripe.
+    [Fact]
+    public async Task ChangeMemberRole_ToBillingManagerInATenantThatPays_SetsItsSeatsAtStripe()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenantId));
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(tenants.OwnerOf(tenantId)).ChangeMemberRoleAsync(tenantId, member, "billing_manager"));
+
+        _api.Billing.Seats.ShouldBe([($"sub_{tenantId:N}", 1)]);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

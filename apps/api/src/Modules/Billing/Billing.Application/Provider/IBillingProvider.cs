@@ -52,6 +52,13 @@ public interface IBillingProvider
     /// <summary>Ends the subscription at once, with no refund and no new invoice; one that has ended already changes nothing (B8).</summary>
     Task CancelSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Sets the subscription's fee per person to this many seated members (step 40, billing per person): a join on a yearly subscription
+    /// is charged at once, and any other change is prorated on the next invoice (Stripe, "Prorations"). A move scheduled at the period's end
+    /// takes the count too. A subscription without a fee per person, one that has ended, or one with this count already changes nothing.
+    /// </summary>
+    Task SetSeatsAsync(string subscriptionId, int people, CancellationToken cancellationToken);
+
     /// <summary>The provider's page where the customer manages its card, address, VAT ID and invoices, which works for a short time.</summary>
     Task<Uri> OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken);
 

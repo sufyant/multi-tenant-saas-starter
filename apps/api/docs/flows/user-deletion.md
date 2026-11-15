@@ -12,6 +12,7 @@ A system admin deletes a user (A8), or the user deletes their own account (secti
 | `GetLastOwnershipQuery` | the same endpoint, once for each tenant the user owns that is active, suspended, closed or purging | ControlPlane, `GetLastOwnershipHandler` | Yes, the tenant's |
 | `RemoveUserMembershipCommand` | the same endpoint, once for each tenant the user is a member of | ControlPlane, `RemoveUserMembershipHandler` | Yes, the tenant's |
 | `UserMembershipRemovedEvent` | `RemoveUserMembershipHandler` | Audit, `RecordUserMembershipRemovedHandler` (`member.removed`, tenant log, by the platform) | Yes |
+| `UserMembershipRemovedEvent` | `RemoveUserMembershipHandler` | Billing, `CountSeatsAtMemberChangeHandler`, which counts the seats of a subscription that has not ended again (`flows/billing.md`, section 6; B10) | Yes |
 | `WithdrawSignUpCommand` | `RemoveUserMembershipHandler` and `EraseFormerMemberHandler`, for each pending invitation they cancelled that has an identity provider invitation | ControlPlane, `WithdrawSignUpHandler` (calls the identity provider) | No |
 | `DeleteUserCommand` | the same endpoint, last | ControlPlane, `DeleteUserHandler` | Yes; it declares the user (R11) |
 | `UserDeletedEvent` | `DeleteUserHandler`, only for the first deletion | Audit, `RecordUserDeletedHandler` (`user.deleted`, platform log); Notifications, `DeleteUserNotificationsHandler` (the user's notifications, U8) | Yes; Notifications' declares the user |

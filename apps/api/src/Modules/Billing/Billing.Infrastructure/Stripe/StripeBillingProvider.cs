@@ -26,6 +26,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     private const string CardError = "card_error";
 
+    // The part of a Price's lookup key that names the fee per person (B2).
+    private const string PerPerson = "_per_person_";
+
     // The event types whose object names a subscription; any other event is kept and needs no sync.
     private static readonly HashSet<string> SubscriptionEvents =
     [
@@ -229,6 +232,57 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         await subscriptions.CancelAsync(subscriptionId, new SubscriptionCancelOptions { InvoiceNow = false, Prorate = false }, cancellationToken: cancellationToken);
     }
 
+    // Step 40, billing per person: only the quantity of the fee per person changes, at its own Price. A join on a yearly subscription is
+    // invoiced at once; a removal, and any change of a monthly one, is prorated on the next invoice (Stripe, "Prorations"). A subscription
+    // that a schedule manages takes the count in the schedule's phases from the current one on, so the move at the period's end keeps it;
+    // Stripe applies the current phase's change to the subscription with the same proration.
+    async Task IBillingProvider.SetSeatsAsync(string subscriptionId, int people, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        var subscription = await subscriptions.GetAsync(subscriptionId, cancellationToken: cancellationToken);
+        if (subscription.Status is "canceled" or "incomplete_expired"
+            || subscription.Items.Data.FirstOrDefault(item => IsPerPerson(item.Price)) is not { } seats || seats.Quantity == people)
+        {
+            return;
+        }
+
+        var proration = seats.Price.Recurring.Interval == "year" && people > seats.Quantity ? "always_invoice" : "create_prorations";
+        if (subscription.ScheduleId is not { } scheduleId)
+        {
+            await subscriptions.UpdateAsync(
+                subscriptionId,
+                new SubscriptionUpdateOptions { Items = [new SubscriptionItemOptions { Id = seats.Id, Quantity = people }], ProrationBehavior = proration },
+                cancellationToken: cancellationToken);
+            return;
+        }
+
+        var schedules = new SubscriptionScheduleService(client);
+        var schedule = await schedules.GetAsync(scheduleId, new SubscriptionScheduleGetOptions { Expand = ["phases.items.price"] }, cancellationToken: cancellationToken);
+        await schedules.UpdateAsync(
+            scheduleId,
+            new SubscriptionScheduleUpdateOptions
+            {
+                ProrationBehavior = proration,
+                Phases =
+                [
+                    .. schedule.Phases.Where(phase => phase.StartDate >= schedule.CurrentPhase.StartDate).Select(phase => new SubscriptionSchedulePhaseOptions
+                    {
+                        StartDate = phase.StartDate,
+                        EndDate = phase.EndDate,
+                        Items =
+                        [
+                            .. phase.Items.Select(item => new SubscriptionSchedulePhaseItemOptions
+                            {
+                                Price = item.Price.Id,
+                                Quantity = IsPerPerson(item.Price) ? people : item.Quantity,
+                            }),
+                        ],
+                    }),
+                ],
+            },
+            cancellationToken: cancellationToken);
+    }
+
     async Task<Uri> IBillingProvider.OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken)
     {
         var session = await new global::Stripe.BillingPortal.SessionService(client).CreateAsync(
@@ -262,7 +316,8 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             item.CurrentPeriodEnd,
             subscription.CancelAtPeriodEnd,
             scheduledPlanId,
-            scheduledPlanId is null ? null : next!.Recurring.Interval == "year");
+            scheduledPlanId is null ? null : next!.Recurring.Interval == "year",
+            subscription.Items.Data.FirstOrDefault(seats => IsPerPerson(seats.Price)) is { } perPerson ? (int)perPerson.Quantity : null);
     }
 
     ProviderEvent? IBillingProvider.ReadEvent(string body, string? signature)
@@ -291,6 +346,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         };
         return new ProviderEvent(read.Id, read.Type, subscriptionId);
     }
+
+    // The fee per person is the Price whose lookup key our app wrote with its part (B2).
+    private static bool IsPerPerson(Price price) => price.LookupKey?.Contains(PerPerson, StringComparison.Ordinal) == true;
 
     // The plan of a Price is its Product's id, which our app wrote (B2); a Product of no plan of ours names none.
     private static Guid? PlanOf(Price price) =>
