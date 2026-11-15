@@ -237,13 +237,24 @@ export interface AuditPlanPricesResponse {
 }
 
 /**
+ * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
+ */
+export type AuditMeterSettingResponseOverage = typeof AuditMeterSettingResponseOverage[keyof typeof AuditMeterSettingResponseOverage];
+
+
+export const AuditMeterSettingResponseOverage = {
+  Stop: 'stop',
+  Charge: 'charge',
+} as const;
+
+/**
  * A plan's setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and
  * the price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).
  */
 export interface AuditMeterSettingResponse {
   key: string;
   quota: number;
-  overage: string;
+  overage: AuditMeterSettingResponseOverage;
   unitPrice: number;
   unitSize: number;
 }
@@ -783,11 +794,10 @@ export interface EntitlementValueRequest {
 export type CreatePlanRequestEntitlements = {[key: string]: EntitlementValueRequest};
 
 /**
- * A plan's prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole
- * number of the minor unit of the deployment's currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes
- * no seat, so it pays no fee per person (step 40).
+ * A plan's prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor
+ * unit of the deployment's currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40).
  */
-export interface PlanPricesBody {
+export interface PlanPricesRequest {
   baseMonthly: number;
   perPersonMonthly: number;
   baseYearly: number;
@@ -797,24 +807,24 @@ export interface PlanPricesBody {
 /**
  * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
  */
-export type MeterOverageBody = typeof MeterOverageBody[keyof typeof MeterOverageBody];
+export type MeterSettingRequestOverage = typeof MeterSettingRequestOverage[keyof typeof MeterSettingRequestOverage];
 
 
-export const MeterOverageBody = {
+export const MeterSettingRequestOverage = {
   Stop: 'stop',
   Charge: 'charge',
 } as const;
 
 /**
- * A plan's setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the
- * quota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key
- * sent twice, a quota or a unit size out of range, or a unit price out of the prices' range answers 400 `plan.meter_invalid` (step
- * 40). The template defines no meter.
+ * A plan's setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of
+ * the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a
+ * unit size out of range, or a unit price out of the prices' range answers 400 `plan.meter_invalid` (step 40). The template defines
+ * no meter.
  */
-export interface MeterSettingBody {
+export interface MeterSettingRequest {
   key: string;
   quota: number;
-  overage: MeterOverageBody;
+  overage: MeterSettingRequestOverage;
   unitPrice: number;
   unitSize: number;
 }
@@ -828,9 +838,9 @@ export interface CreatePlanRequest {
   name: string;
   isDefault: boolean;
   entitlements: CreatePlanRequestEntitlements;
-  prices?: null | PlanPricesBody;
+  prices?: null | PlanPricesRequest;
   /** @nullable */
-  meters?: MeterSettingBody[] | null;
+  meters?: MeterSettingRequest[] | null;
 }
 
 /**
@@ -1676,6 +1686,29 @@ export interface MeResponse {
   timeZone: string | null;
 }
 
+/**
+ * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
+ */
+export type MeterSettingResponseOverage = typeof MeterSettingResponseOverage[keyof typeof MeterSettingResponseOverage];
+
+
+export const MeterSettingResponseOverage = {
+  Stop: 'stop',
+  Charge: 'charge',
+} as const;
+
+/**
+ * A plan's setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,
+ * `unitPrice` minor units for each `unitSize` units (step 40).
+ */
+export interface MeterSettingResponse {
+  key: string;
+  quota: number;
+  overage: MeterSettingResponseOverage;
+  unitPrice: number;
+  unitSize: number;
+}
+
 export type MyFeatureFlagsResponseFlags = {[key: string]: boolean};
 
 /**
@@ -1767,6 +1800,17 @@ export interface PlanNameResponse {
   name: string;
 }
 
+/**
+ * A plan's prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the
+ * deployment's currency. A Billing manager takes no seat, so it pays no fee per person (step 40).
+ */
+export interface PlanPricesResponse {
+  baseMonthly: number;
+  perPersonMonthly: number;
+  baseYearly: number;
+  perPersonYearly: number;
+}
+
 export type PlanResponseEntitlements = {[key: string]: EntitlementValueResponse};
 
 /**
@@ -1781,8 +1825,8 @@ export interface PlanResponse {
   tenantCount: number;
   entitlements: PlanResponseEntitlements;
   currency: string;
-  prices: PlanPricesBody;
-  meters: MeterSettingBody[];
+  prices: PlanPricesResponse;
+  meters: MeterSettingResponse[];
   createdAt: string;
 }
 
@@ -2289,9 +2333,9 @@ export interface UpdatePlanRequest {
   name: string;
   isDefault: boolean;
   entitlements: UpdatePlanRequestEntitlements;
-  prices?: null | PlanPricesBody;
+  prices?: null | PlanPricesRequest;
   /** @nullable */
-  meters?: MeterSettingBody[] | null;
+  meters?: MeterSettingRequest[] | null;
 }
 
 /**

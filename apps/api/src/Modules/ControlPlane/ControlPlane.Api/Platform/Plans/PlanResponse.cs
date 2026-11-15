@@ -12,6 +12,6 @@ public sealed record PlanResponse(
     int TenantCount,
     IReadOnlyDictionary<string, EntitlementValueResponse> Entitlements,
     string Currency,
-    PlanPricesBody Prices,
-    IReadOnlyList<MeterSettingBody> Meters,
+    PlanPricesResponse Prices,
+    IReadOnlyList<MeterSettingResponse> Meters,
     DateTimeOffset CreatedAt);

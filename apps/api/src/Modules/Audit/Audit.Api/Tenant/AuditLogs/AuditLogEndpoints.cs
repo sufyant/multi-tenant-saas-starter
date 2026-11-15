@@ -110,9 +110,8 @@ public static class AuditLogEndpoints
     private static AuditPlanPricesResponse? PricesOf(AuditPlanPrices? prices) =>
         prices is null ? null : new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
 
-    // The overage in the API's lower case, as the plan's own response answers it.
     private static List<AuditMeterSettingResponse>? MetersOf(IReadOnlyList<AuditMeterSetting>? meters) =>
-        meters is null ? null : [.. meters.Select(meter => new AuditMeterSettingResponse(meter.Key, meter.Quota, meter.Overage.ToLowerInvariant(), meter.UnitPrice, meter.UnitSize))];
+        meters is null ? null : [.. meters.Select(meter => new AuditMeterSettingResponse(meter.Key, meter.Quota, ResponseStatus.OfMeterOverage(meter.Overage), meter.UnitPrice, meter.UnitSize))];
 
     private static Dictionary<string, AuditEntitlementValueResponse> ValuesOf(IReadOnlyDictionary<string, AuditEntitlementValue> values) =>
         values.ToDictionary(value => value.Key, value => ValueOf(value.Value), StringComparer.Ordinal);

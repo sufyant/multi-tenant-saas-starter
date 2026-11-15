@@ -140,7 +140,7 @@
       "name_taken": "Another plan has this name.",
       "not_found": "This plan no longer exists.",
       "override_not_found": "This organisation has no override of this key.",
-      "price_invalid": "Enter a price of 0 or more, up to 100,000,000."
+      "price_invalid": "Enter a price of 0 or more."
     },
     "role": {
       "built_in": "A built-in role keeps its name and its permissions, and cannot be deleted.",

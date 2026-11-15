@@ -3,6 +3,7 @@ using ControlPlane.Api.Me.Invitations;
 using ControlPlane.Api.Me.Tenants;
 using ControlPlane.Api.Me.TermsVersions;
 using ControlPlane.Api.Platform.FeatureFlags;
+using ControlPlane.Api.Platform.Plans;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.TermsVersions;
 using ControlPlane.Api.Platform.Users;
@@ -18,6 +19,22 @@ namespace ControlPlane.Api.Statuses;
 /// </summary>
 internal static class ResponseStatus
 {
+    /// <summary>A meter's overage at the quota (step 40), <c>Stop</c> or <c>Charge</c> in ControlPlane.</summary>
+    public static MeterSettingResponseOverage OfMeterOverage(string overage) => overage switch
+    {
+        "Stop" => MeterSettingResponseOverage.Stop,
+        "Charge" => MeterSettingResponseOverage.Charge,
+        _ => throw Unknown(overage),
+    };
+
+    /// <summary>The overage a request names, as ControlPlane keeps it.</summary>
+    public static string MeterOverageOf(MeterSettingRequestOverage overage) => overage switch
+    {
+        MeterSettingRequestOverage.Stop => "Stop",
+        MeterSettingRequestOverage.Charge => "Charge",
+        _ => throw new ArgumentOutOfRangeException(nameof(overage), overage, "Every overage of a request has its name."),
+    };
+
     public static TenantResponseStatus OfTenant(string status) => status switch
     {
         "Active" => TenantResponseStatus.Active,

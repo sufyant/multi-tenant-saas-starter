@@ -42,6 +42,8 @@ public sealed class DomainNameMapTests
 
     public static TheoryData<string> NotificationLinkKinds => [.. NamesOf("Notifications.Domain", "Notifications.Domain.Notifications.NotificationLinkKind")];
 
+    public static TheoryData<string> MeterOverages => [.. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Plans.MeterOverage")];
+
     public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditTargetKind")];
 
     [Theory]
@@ -126,6 +128,15 @@ public sealed class DomainNameMapTests
     [MemberData(nameof(NotificationLinkKinds))]
     public void MapNotificationLinkKind_EveryNameOfNotifications_HasAResponseValue(string kind) =>
         NotificationsResponseStatus.GetMethod("OfLink", [typeof(string)])!.Invoke(null, [kind]).ShouldNotBeNull();
+
+    // Step 40: a plan's response and a plan's audit entry both answer a meter's overage.
+    [Theory]
+    [MemberData(nameof(MeterOverages))]
+    public void MapAMeterOverage_EveryDomainOverage_HasAResponseOverageInThePlanAndTheAudit(string overage)
+    {
+        Map("OfMeterOverage", overage).ShouldNotBeNull();
+        AuditMap("OfMeterOverage", overage).ShouldNotBeNull();
+    }
 
     private static object? Map(string method, string name) => ResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
 

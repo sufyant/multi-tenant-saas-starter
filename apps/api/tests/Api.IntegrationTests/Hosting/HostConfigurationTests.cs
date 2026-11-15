@@ -44,6 +44,8 @@ public sealed class HostConfigurationTests(Database database)
         { "ControlPlane:SystemAdmins:ReverificationWindow", "00:10:01" },
         { "ControlPlane:Invitations:AcceptUrl", "/invitations/accept" },
         { "ControlPlane:Invitations:Lifetime", "23:59:59" },
+        { "ControlPlane:Billing:Currency", "eur" },
+        { "ControlPlane:Billing:Currency", "EURO" },
         { "ControlPlane:Clerk:Timeout", "00:00:00" },
         { "ControlPlane:IdentityProvider:RetryDelays:0", "00:00:00" },
         { "ControlPlane:Tenants:ReopenPeriod", "00:00:00" },

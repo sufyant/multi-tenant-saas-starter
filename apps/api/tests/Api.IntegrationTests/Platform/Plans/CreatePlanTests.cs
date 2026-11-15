@@ -181,6 +181,16 @@ public sealed class CreatePlanTests(Database database) : IAsyncLifetime
         (created.StatusCode, await CodeOfAsync(created)).ShouldBe((HttpStatusCode.BadRequest, "plan.meter_invalid"));
     }
 
+    [Fact]
+    public async Task CreatePlan_AMeterSentTwice_IsInvalid()
+    {
+        var admin = await AdminAsync();
+
+        var created = await admin.CreatePlanAsync($"Plan {Guid.NewGuid():N}", new Dictionary<string, object>(), TeamPrices, [AiRequests, AiRequests]);
+
+        (created.StatusCode, await CodeOfAsync(created)).ShouldBe((HttpStatusCode.BadRequest, "plan.meter_invalid"));
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString();
 

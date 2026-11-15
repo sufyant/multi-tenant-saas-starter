@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Api.Tenant.Invitations;
+using ControlPlane.Api.Statuses;
 using ControlPlane.Application.Plans;
 using ControlPlane.Application.Plans.CreatePlan;
 using ControlPlane.Application.Plans.GetPlan;
@@ -185,15 +186,17 @@ public static class PlanEndpoints
             plan.TenantCount,
             plan.Entitlements.OrderBy(value => value.Key, StringComparer.Ordinal).ToDictionary(value => value.Key, value => ToResponse(value.Value), StringComparer.Ordinal),
             billing.Currency,
-            new PlanPricesBody(plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly),
-            [.. plan.Meters.Select(meter => new MeterSettingBody(meter.Key, meter.Quota, Enum.Parse<MeterOverageBody>(meter.Overage), meter.UnitPrice, meter.UnitSize))],
+            ToResponse(plan.Prices ?? PlanPricesView.Zero),
+            [.. (plan.Meters ?? []).Select(meter => new MeterSettingResponse(meter.Key, meter.Quota, ResponseStatus.OfMeterOverage(meter.Overage), meter.UnitPrice, meter.UnitSize))],
             plan.CreatedAt);
 
-    private static PlanPricesView? ToView(PlanPricesBody? prices) =>
+    private static PlanPricesResponse ToResponse(PlanPricesView prices) => new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
+
+    private static PlanPricesView? ToView(PlanPricesRequest? prices) =>
         prices is null ? null : new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
 
-    private static IReadOnlyList<MeterSettingView>? ToViews(IReadOnlyList<MeterSettingBody>? meters) =>
-        meters is null ? null : [.. meters.Select(meter => new MeterSettingView(meter.Key, meter.Quota, meter.Overage.ToString(), meter.UnitPrice, meter.UnitSize))];
+    private static IReadOnlyList<MeterSettingView>? ToViews(IReadOnlyList<MeterSettingRequest>? meters) =>
+        meters is null ? null : [.. meters.Select(meter => new MeterSettingView(meter.Key, meter.Quota, ResponseStatus.MeterOverageOf(meter.Overage), meter.UnitPrice, meter.UnitSize))];
 
     private static TenantPlanResponse ToResponse(TenantPlanView plan) =>
         new(plan.TenantId, new PlanNameResponse(plan.Plan.Id, plan.Plan.Name), [.. plan.Entitlements.Select(entitlement => new TenantEntitlementResponse(

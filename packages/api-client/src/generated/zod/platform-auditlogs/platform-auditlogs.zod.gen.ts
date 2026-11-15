@@ -161,7 +161,10 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "meters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
-  "overage": zod.string(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
 }).describe('A plan\'s setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).')).nullish()
@@ -202,14 +205,20 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "oldMeters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
-  "overage": zod.string(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
 }).describe('A plan\'s setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).')).nullish(),
   "newMeters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
-  "overage": zod.string(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
 }).describe('A plan\'s setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).')).nullish()

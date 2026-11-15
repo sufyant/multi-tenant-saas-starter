@@ -12319,7 +12319,7 @@
             "format": "int64"
           },
           "overage": {
-            "type": "string"
+            "$ref": "#/components/schemas/AuditMeterSettingResponseOverage"
           },
           "unitPrice": {
             "type": "integer",
@@ -12331,6 +12331,18 @@
           }
         },
         "description": "A plan's setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40)."
+      },
+      "AuditMeterSettingResponseOverage": {
+        "enum": [
+          "stop",
+          "charge"
+        ],
+        "type": "string",
+        "description": "What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.",
+        "x-enumNames": [
+          "Stop",
+          "Charge"
+        ]
       },
       "AuditOperation": {
         "enum": [
@@ -12736,7 +12748,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/PlanPricesBody"
+                "$ref": "#/components/schemas/PlanPricesRequest"
               }
             ]
           },
@@ -12746,7 +12758,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/MeterSettingBody"
+              "$ref": "#/components/schemas/MeterSettingRequest"
             }
           }
         },
@@ -14469,19 +14481,7 @@
         },
         "description": "The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
-      "MeterOverageBody": {
-        "enum": [
-          "stop",
-          "charge"
-        ],
-        "type": "string",
-        "description": "What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.",
-        "x-enumNames": [
-          "Stop",
-          "Charge"
-        ]
-      },
-      "MeterSettingBody": {
+      "MeterSettingRequest": {
         "required": [
           "key",
           "quota",
@@ -14499,7 +14499,7 @@
             "format": "int64"
           },
           "overage": {
-            "$ref": "#/components/schemas/MeterOverageBody"
+            "$ref": "#/components/schemas/MeterSettingRequestOverage"
           },
           "unitPrice": {
             "type": "integer",
@@ -14510,7 +14510,62 @@
             "format": "int64"
           }
         },
-        "description": "A plan's setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter."
+        "description": "A plan's setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter."
+      },
+      "MeterSettingRequestOverage": {
+        "enum": [
+          "stop",
+          "charge"
+        ],
+        "type": "string",
+        "description": "What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.",
+        "x-enumNames": [
+          "Stop",
+          "Charge"
+        ]
+      },
+      "MeterSettingResponse": {
+        "required": [
+          "key",
+          "quota",
+          "overage",
+          "unitPrice",
+          "unitSize"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "quota": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overage": {
+            "$ref": "#/components/schemas/MeterSettingResponseOverage"
+          },
+          "unitPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unitSize": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40)."
+      },
+      "MeterSettingResponseOverage": {
+        "enum": [
+          "stop",
+          "charge"
+        ],
+        "type": "string",
+        "description": "What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.",
+        "x-enumNames": [
+          "Stop",
+          "Charge"
+        ]
       },
       "MyFeatureFlagsResponse": {
         "required": [
@@ -15094,7 +15149,7 @@
         },
         "description": "A plan as another resource names it: its id and its name."
       },
-      "PlanPricesBody": {
+      "PlanPricesRequest": {
         "required": [
           "baseMonthly",
           "perPersonMonthly",
@@ -15120,7 +15175,35 @@
             "format": "int64"
           }
         },
-        "description": "A plan's prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment's currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40)."
+        "description": "A plan's prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor\nunit of the deployment's currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40)."
+      },
+      "PlanPricesResponse": {
+        "required": [
+          "baseMonthly",
+          "perPersonMonthly",
+          "baseYearly",
+          "perPersonYearly"
+        ],
+        "type": "object",
+        "properties": {
+          "baseMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "baseYearly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonYearly": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment's currency. A Billing manager takes no seat, so it pays no fee per person (step 40)."
       },
       "PlanResponse": {
         "required": [
@@ -15160,12 +15243,12 @@
             "type": "string"
           },
           "prices": {
-            "$ref": "#/components/schemas/PlanPricesBody"
+            "$ref": "#/components/schemas/PlanPricesResponse"
           },
           "meters": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/MeterSettingBody"
+              "$ref": "#/components/schemas/MeterSettingResponse"
             }
           },
           "createdAt": {
@@ -17019,7 +17102,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/PlanPricesBody"
+                "$ref": "#/components/schemas/PlanPricesRequest"
               }
             ]
           },
@@ -17029,7 +17112,7 @@
               "array"
             ],
             "items": {
-              "$ref": "#/components/schemas/MeterSettingBody"
+              "$ref": "#/components/schemas/MeterSettingRequest"
             }
           }
         },

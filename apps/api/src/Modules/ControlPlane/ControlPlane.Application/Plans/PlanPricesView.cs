@@ -9,6 +9,9 @@ namespace ControlPlane.Application.Plans;
 /// </summary>
 public sealed record PlanPricesView(long BaseMonthly, long PerPersonMonthly, long BaseYearly, long PerPersonYearly)
 {
+    /// <summary>The prices of a plan that costs nothing.</summary>
+    public static PlanPricesView Zero { get; } = new(0, 0, 0, 0);
+
     internal static PlanPricesView Of(PlanPrices prices) => new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
 
     internal static PlanPricesRecord RecordOf(PlanPrices prices) => new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);

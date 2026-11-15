@@ -64,7 +64,7 @@ export const CreatePlanBody = zod.object({
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40).')]).optional(),
+}).describe('A plan\'s prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor\nunit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40).')]).optional(),
   "meters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
@@ -74,7 +74,7 @@ export const CreatePlanBody = zod.object({
 }).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
-}).describe('A plan\'s setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter.')).nullish()
+}).describe('A plan\'s setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter.')).nullish()
 }).describe('A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is\nclosed. Its prices, 0 when left out, and its meters, none when left out (step 40). The API trims the name before it counts its length.')
 
 export const CreatePlanResponse = zod.object({
@@ -93,7 +93,7 @@ export const CreatePlanResponse = zod.object({
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40).'),
+}).describe('A plan\'s prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment\'s currency. A Billing manager takes no seat, so it pays no fee per person (step 40).'),
   "meters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
@@ -103,7 +103,7 @@ export const CreatePlanResponse = zod.object({
 }).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
-}).describe('A plan\'s setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter.')),
+}).describe('A plan\'s setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40).')),
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 
@@ -127,7 +127,7 @@ export const GetPlanResponse = zod.object({
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40).'),
+}).describe('A plan\'s prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment\'s currency. A Billing manager takes no seat, so it pays no fee per person (step 40).'),
   "meters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
@@ -137,7 +137,7 @@ export const GetPlanResponse = zod.object({
 }).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
-}).describe('A plan\'s setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter.')),
+}).describe('A plan\'s setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40).')),
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 
@@ -162,7 +162,7 @@ export const UpdatePlanBody = zod.object({
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40).')]).optional(),
+}).describe('A plan\'s prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor\nunit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40).')]).optional(),
   "meters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
@@ -172,7 +172,7 @@ export const UpdatePlanBody = zod.object({
 }).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
-}).describe('A plan\'s setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter.')).nullish()
+}).describe('A plan\'s setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter.')).nullish()
 }).describe('A plan\'s name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length.')
 
 export const UpdatePlanResponse = zod.object({
@@ -191,7 +191,7 @@ export const UpdatePlanResponse = zod.object({
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40).'),
+}).describe('A plan\'s prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment\'s currency. A Billing manager takes no seat, so it pays no fee per person (step 40).'),
   "meters": zod.array(zod.object({
   "key": zod.string(),
   "quota": zod.int(),
@@ -201,7 +201,7 @@ export const UpdatePlanResponse = zod.object({
 }).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
-}).describe('A plan\'s setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter.')),
+}).describe('A plan\'s setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40).')),
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 

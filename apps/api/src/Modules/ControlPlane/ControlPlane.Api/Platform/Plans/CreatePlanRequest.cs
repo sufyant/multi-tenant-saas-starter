@@ -8,5 +8,5 @@ public sealed record CreatePlanRequest(
     string Name,
     bool IsDefault,
     IReadOnlyDictionary<string, EntitlementValueRequest> Entitlements,
-    PlanPricesBody? Prices = null,
-    IReadOnlyList<MeterSettingBody>? Meters = null);
+    PlanPricesRequest? Prices = null,
+    IReadOnlyList<MeterSettingRequest>? Meters = null);
