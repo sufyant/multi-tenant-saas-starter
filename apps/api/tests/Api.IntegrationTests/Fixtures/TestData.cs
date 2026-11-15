@@ -9,16 +9,20 @@ namespace Api.IntegrationTests.Fixtures;
 // into the main database unless the test names a database of its own.
 // A tenant is on Pro unless the test names a plan, so a test written before the plans keeps what every tenant had (the migration moved
 // every tenant to Pro). A database taken back before the plans has no plan column: such a test passes withPlans false.
-internal sealed class TestData(Database database, string databaseName = Database.MainDatabase, bool withPlans = true)
+internal sealed class TestData(Database database, string databaseName = Database.MainDatabase, bool withPlans = true, bool withBillingManager = true)
 {
     // The value of a limit without a number, for AddPlanAsync and SetPlanValueAsync.
     public static readonly object Unlimited = new();
 
+    private const string BuiltInRolesBefore = "('owner', 'Owner'), ('admin', 'Admin'), ('member', 'Member')";
+
+    private const string BuiltInRolesWithBillingManager = BuiltInRolesBefore + ", ('billing_manager', 'BillingManager')";
+
     // The invitation code of a link: the tenant id, a dot and the secret (ARCHITECTURE.md, section 6, "Rules without an id").
     public static string InvitationCodeOf(Guid tenantId, string secret) => $"{tenantId}.{secret}";
 
-    // Every tenant has its summary from its creation on, empty until a command writes it (R12), and its own Owner, Admin and Member roles
-    // (A2), written with its tenant declared.
+    // Every tenant has its summary from its creation on, empty until a command writes it (R12), and its own Owner, Admin, Member and
+    // Billing manager roles (A2), written with its tenant declared. A database before step 40's migration has no Billing manager.
     public async Task<(Guid Id, string Slug)> AddTenantAsync(
         string status = "Active",
         string? slug = null,
@@ -35,7 +39,7 @@ internal sealed class TestData(Database database, string databaseName = Database
             tenant.Id,
             $"""
             INSERT INTO control_plane.roles (id, tenant_id, name, built_in)
-            SELECT gen_random_uuid(), '{tenant.Id}', lower(built_in), built_in FROM unnest(ARRAY['Owner', 'Admin', 'Member']) AS built_in
+            SELECT gen_random_uuid(), '{tenant.Id}', name, built_in FROM (VALUES {(withBillingManager ? BuiltInRolesWithBillingManager : BuiltInRolesBefore)}) AS role (name, built_in)
             """,
             database: databaseName);
 
@@ -179,7 +183,13 @@ internal sealed class TestData(Database database, string databaseName = Database
                 owner_count = (SELECT count(*) FROM owners),
                 custom_role_count = (SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenantId}' AND built_in IS NULL),
                 pending_invitation_expiries = COALESCE(
-                    (SELECT array_agg(expires_at ORDER BY expires_at) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'), ARRAY[]::timestamptz[])
+                    (SELECT array_agg(expires_at ORDER BY expires_at) FROM control_plane.invitations WHERE tenant_id = '{tenantId}' AND status = 'Pending'), ARRAY[]::timestamptz[]),
+                free_member_count = (
+                    SELECT count(*) FROM control_plane.memberships JOIN control_plane.roles ON roles.id = memberships.role_id
+                    WHERE memberships.tenant_id = '{tenantId}' AND roles.built_in = 'BillingManager'),
+                free_invitation_expiries = COALESCE(
+                    (SELECT array_agg(expires_at ORDER BY expires_at) FROM control_plane.invitations JOIN control_plane.roles ON roles.id = invitations.role_id
+                    WHERE invitations.tenant_id = '{tenantId}' AND invitations.status = 'Pending' AND roles.built_in = 'BillingManager'), ARRAY[]::timestamptz[])
             WHERE tenant_id = '{tenantId}'
             """,
             databaseName);

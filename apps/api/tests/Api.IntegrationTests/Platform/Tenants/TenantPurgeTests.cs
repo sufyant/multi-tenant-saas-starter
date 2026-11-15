@@ -71,7 +71,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await PurgeAsync(tenant.Id, ClosedAt);
 
         (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, entries 0, notifications 0");
-        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 4, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2");
+        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2");
         (await TombstoneOfAsync(tenant.Id)).ShouldBe($"Gone Ltd|{tenant.Slug}|Purged|-|-|t|2026-08-01");
         (await PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.closed|User, tenant.purged|Platform|-|Tenant|{tenant.Id}|Gone Ltd");
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
@@ -200,7 +200,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await PurgeAsync(tenant.Id, ClosedAt - TimeSpan.FromDays(3));
 
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 4, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2");
         (await SagaOfAsync(tenant.Id)).ShouldBeNull();
     }
 

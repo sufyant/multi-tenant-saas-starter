@@ -103,7 +103,7 @@ describe("RolesPage", () => {
     renderInTenant(<RolesPage />, { url });
 
     expect(await rows()).toEqual([
-      expect.stringMatching(/^OwnerBuilt inNot in use13 permissions/),
+      expect.stringMatching(/^OwnerBuilt inNot in use14 permissions/),
       expect.stringMatching(/^AdminBuilt inNot in use9 permissions/),
       expect.stringMatching(/^MemberBuilt inNot in use2 permissions/),
       expect.stringMatching(/^Billing leadCustomNot in use3 permissions/),

@@ -457,6 +457,9 @@
         "delete": "Rolleri silebilir",
         "read": "Rolleri görebilir",
         "update": "Rolleri düzenleyebilir"
+      },
+      "billing": {
+        "manage": "Faturalamayı yönet"
       }
     }
   },
@@ -525,7 +528,8 @@
       "members": "Üyeler",
       "invitations": "Davetler",
       "roles": "Roller",
-      "activity": "Etkinlik kaydı"
+      "activity": "Etkinlik kaydı",
+      "billing": "Faturalama"
     },
     "customType": "Özel",
     "summary": "{type} · {permissions} · {users}",
@@ -567,6 +571,9 @@
         },
         "audit": {
           "read": "Kimin neyi ne zaman değiştirdiği."
+        },
+        "billing": {
+          "manage": "Sahip ve Fatura yöneticisi rollerinde bu izin vardır."
         }
       }
     }

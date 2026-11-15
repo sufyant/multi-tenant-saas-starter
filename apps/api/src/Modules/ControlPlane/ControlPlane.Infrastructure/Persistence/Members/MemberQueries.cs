@@ -47,7 +47,7 @@ public sealed class MemberQueries(ControlPlaneDbContext controlPlane) : IMemberQ
             ListMembersSort.Name => members.OrderBy(member => member.Name == null).ThenBy(member => member.Name, list.Descending),
             _ => members
                 .OrderBy(
-                    member => member.Role.BuiltIn == BuiltInRole.Owner ? 0 : member.Role.BuiltIn == BuiltInRole.Admin ? 1 : member.Role.BuiltIn == BuiltInRole.Member ? 2 : 3,
+                    member => member.Role.BuiltIn == BuiltInRole.Owner ? 0 : member.Role.BuiltIn == BuiltInRole.Admin ? 1 : member.Role.BuiltIn == BuiltInRole.Member ? 2 : member.Role.BuiltIn == BuiltInRole.BillingManager ? 3 : 4,
                     list.Descending)
                 .ThenBy(member => member.Role.Name, list.Descending),
         };

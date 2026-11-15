@@ -3,7 +3,8 @@
     "roles": {
       "owner": "Owner",
       "admin": "Admin",
-      "member": "Member"
+      "member": "Member",
+      "billing_manager": "Billing manager"
     },
     "dates": {
       "months": [
@@ -30,7 +31,8 @@
     "roles": {
       "owner": "Sahip",
       "admin": "Yönetici",
-      "member": "Üye"
+      "member": "Üye",
+      "billing_manager": "Fatura yöneticisi"
     },
     "dates": {
       "months": [
@@ -57,7 +59,8 @@
     "roles": {
       "owner": "مالك",
       "admin": "مشرف",
-      "member": "عضو"
+      "member": "عضو",
+      "billing_manager": "مدير الفوترة"
     },
     "dates": {
       "months": [

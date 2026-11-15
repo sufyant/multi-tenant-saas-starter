@@ -432,6 +432,34 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    // Step 40: a Billing manager takes no seat, so a role that takes one needs a free seat; the change to Billing manager frees one.
+    [Fact]
+    public async Task ChangeMemberRole_ABillingManagerToMemberWhenTheSeatsAreFull_IsAConflictWithTheKey()
+    {
+        var (tenantId, owner) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 1);
+        var billing = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenantId, role: "BillingManager"));
+
+        var changed = await owner.ChangeMemberRoleAsync(tenantId, billing, "member");
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        var problem = await changed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (problem.GetProperty("code").GetString(), problem.GetProperty("entitlement").GetString()).ShouldBe(("plan.limit_reached", "members.max"));
+        (await RoleOfAsync(tenantId, billing)).ShouldBe("BillingManager");
+    }
+
+    [Fact]
+    public async Task ChangeMemberRole_AMemberToBillingManagerWhenTheSeatsAreFull_ChangesIt()
+    {
+        var (tenantId, owner) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 2);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenantId));
+
+        var changed = await _api.WaitingForMessagesAsync(() => owner.ChangeMemberRoleAsync(tenantId, member, "billing_manager"));
+
+        changed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await RoleOfAsync(tenantId, member)).ShouldBe("BillingManager");
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

@@ -457,6 +457,9 @@
         "delete": "Delete roles",
         "read": "See roles",
         "update": "Edit roles"
+      },
+      "billing": {
+        "manage": "Manage billing"
       }
     }
   },
@@ -525,7 +528,8 @@
       "members": "Members",
       "invitations": "Invitations",
       "roles": "Roles",
-      "activity": "Activity log"
+      "activity": "Activity log",
+      "billing": "Billing"
     },
     "customType": "Custom",
     "summary": "{type} · {permissions} · {users}",
@@ -567,6 +571,9 @@
         },
         "audit": {
           "read": "Who changed what, and when."
+        },
+        "billing": {
+          "manage": "The Owner and Billing manager roles have this."
         }
       }
     }

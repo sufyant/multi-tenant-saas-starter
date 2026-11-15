@@ -90,6 +90,7 @@ describe("RolePage", () => {
         "Edit roles",
         "Delete roles",
         "See the activity log",
+        "Manage billing",
       ].map((label) => [label, true, true]),
     );
   });
@@ -102,7 +103,7 @@ describe("RolePage", () => {
       .filter(([, isChecked]) => isChecked)
       .map(([label]) => label);
     expect(checked).toEqual(["See the organisation’s details", "See members"]);
-    expect(states()).toHaveLength(12);
+    expect(states()).toHaveLength(13);
     expect(
       screen.queryByRole("checkbox", { name: "Manage Owners" }),
     ).not.toBeInTheDocument();

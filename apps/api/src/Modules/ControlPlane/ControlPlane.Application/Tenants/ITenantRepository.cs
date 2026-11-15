@@ -68,6 +68,12 @@ public interface ITenantRepository
     internal Task<MemberFacts> FindMemberFactsAsync(Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// How many seats the active tenant uses at this moment, which <c>members.max</c> counts: its members and its pending invitations that
+    /// have not expired, each of a role that takes a seat (<c>Role.TakesSeat</c>). The caller holds the tenant's lock (K6j).
+    /// </summary>
+    internal Task<int> CountSeatsAsync(DateTimeOffset now, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The locked tenant's effective entitlements at this moment, read from the database, never from the cache: its plan's values and its
     /// overrides. The caller holds the tenant's lock, which a change of the tenant's plan or of an override takes first, so the values stay
     /// true until the transaction ends, and two commands at a limit run one after the other (M1, K6a).

@@ -8,10 +8,11 @@ A system admin decides from the platform what each tenant may use, with no deplo
 | --- | --- | --- | --- | --- |
 | `roles.custom` | feature | the tenant's custom roles, which use it | off | on |
 | `roles.custom.max` | limit | the tenant's custom roles | 0 | 20 |
-| `members.max` | limit | the tenant's members and its pending invitations that have not expired | 5 | unlimited |
+| `members.max` | limit | the tenant's seats: its members and its pending invitations that have not expired, without the Billing manager's | 5 | unlimited |
 | `audit.retention.days` | limit | nothing: the days the tenant's Activity log keeps an entry (K14) | 365 | 365 |
 
 - The migration `AddPlansAndEntitlements` seeds Free and Pro, marks Free default and moves every existing tenant to Pro. Pro holds what every tenant had before: custom roles on, 20 of them, members without a limit. The migration takes nothing away.
+- A Billing manager takes no seat (step 40, frame 10.01). Its members and its pending invitations are not counted, so a Billing manager is invited when the seats are full. Example: 11 members, 1 of them a Billing manager, and 2 pending invitations use 12 seats.
 - A pending invitation counts toward `members.max`. Example: a limit of 10 and 9 members. Without the invitations, 5 invitations could go out and 14 members could join. With them, one invitation can go out.
 - The migration `AddRetentionLimit` (step 37c) gives every plan 365 days of `audit.retention.days`. A plan that a system admin creates later gets the value its editor sends.
 - The Activity log period is a whole number of at least 30 days, `AuditRetention.Floor`, or unlimited. A value under 30 answers 400 `plan.entitlement_invalid` with the key, from `CreatePlan`, `UpdatePlan`, `GetPlanUpdatePreview` and `SetEntitlementOverride`. The CHECK constraints `ck_plan_entitlements_audit_retention_floor` and `ck_entitlement_overrides_audit_retention_floor` refuse it too (E1, R15).
@@ -54,8 +55,9 @@ Every other tenant endpoint carries `NotPlanGated` (`PlanGateTests`). With `role
 The tenant's method takes the effective entitlements, which the handler reads under the tenant's lock from the database, not the cache (E6).
 
 - `CreateRole` refuses a new custom role when the tenant has `roles.custom.max` or more: 409 `plan.limit_reached`, `entitlement` `roles.custom.max`.
-- `InviteMember` refuses a new invitation when the members and the pending invitations that have not expired, less the one the new invitation replaces, are `members.max` or more: 409 `plan.limit_reached`, `entitlement` `members.max`.
-- `InviteOwner`, from the platform, is not limited: a tenant without an Owner always gets one.
+- `InviteMember` refuses a new invitation of a role that takes a seat when the seats, the members and the pending invitations that have not expired, each of a role that takes a seat, less the one the new invitation replaces, are `members.max` or more: 409 `plan.limit_reached`, `entitlement` `members.max`. An invitation of the Billing manager is not limited.
+- `ChangeMemberRole` refuses to give a Billing manager a role that takes a seat when the seats are `members.max` or more, with the same 409. Giving a member the Billing manager role frees a seat, and is not limited.
+- `InviteOwner` and `MakeOwner`, from the platform, are not limited: a tenant always gets an Owner, a Billing manager made an Owner included (`owner-recovery.md`).
 - `AcceptInvitation` is not limited: the invitation counted already, so an acceptance adds nothing to the count and never fails on the limit.
 - Two creations at the edge run one after the other under the tenant's lock, so only one passes (`CreateRole_TwoAtOnceWithOnePlaceLeft_NeverPassTheLimit`).
 

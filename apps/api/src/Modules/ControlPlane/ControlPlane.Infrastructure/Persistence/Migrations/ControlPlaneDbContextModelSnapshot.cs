@@ -390,7 +390,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("roles", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member')");
+                            t.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member', 'BillingManager')");
                         });
                 });
 
@@ -842,6 +842,19 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(0)
                         .HasColumnName("custom_role_count");
 
+                    b.PrimitiveCollection<List<DateTimeOffset>>("FreeInvitationExpiries")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone[]")
+                        .HasColumnName("free_invitation_expiries")
+                        .HasDefaultValueSql("'{}'");
+
+                    b.Property<int>("FreeMemberCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("free_member_count");
+
                     b.Property<int>("MemberCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -889,7 +902,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("tenant_summaries", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0");
+                            t.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0 AND free_member_count >= 0 AND member_count >= free_member_count");
 
                             t.HasCheckConstraint("ck_tenant_summaries_owner_invitation_language", "owner_invitation_language IN ('en', 'tr', 'ar')");
 

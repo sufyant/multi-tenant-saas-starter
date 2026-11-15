@@ -50,7 +50,8 @@
   "roles": {
     "owner": "Sahip",
     "admin": "Yönetici",
-    "member": "Üye"
+    "member": "Üye",
+    "billing_manager": "Fatura yöneticisi"
   },
   "dates": {
     "months": [

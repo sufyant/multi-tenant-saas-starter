@@ -21,6 +21,9 @@ internal sealed class TenantSummaryConfiguration : IEntityTypeConfiguration<Tena
         summary.Property(s => s.OwnerCount).HasDefaultValue(0);
         summary.Property(s => s.CustomRoleCount).HasDefaultValue(0);
         summary.Property(s => s.PendingInvitationExpiries).HasDefaultValueSql("'{}'");
+        summary.Property(s => s.FreeMemberCount).HasDefaultValue(0);
+        summary.Property(s => s.FreeInvitationExpiries).HasDefaultValueSql("'{}'");
+        summary.Ignore(s => s.SeatedMembers);
         summary.Property(s => s.OwnerInvitationEmail).HasMaxLength(EmailAddress.MaxLength);
         summary.Property(s => s.OwnerInvitationStatus).HasConversion<string>().HasMaxLength(20);
         summary.Property(s => s.OwnerInvitationLanguage).HasConversion(ControlPlaneDbContext.LanguageTag).HasMaxLength(ControlPlaneDbContext.LanguageTagMaxLength);
@@ -28,7 +31,8 @@ internal sealed class TenantSummaryConfiguration : IEntityTypeConfiguration<Tena
         // R15: the counts, and the latest Owner invitation only while the tenant has no Owner. Its status, expiry and language are there
         // together (the language since step r12). The address may be gone from a finished invitation (A8), so it is kept apart; a pending
         // invitation always has its address. Its sending is kept only with its status; a status may lack it, from before step 37b.
-        summary.ToTable(table => table.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0"));
+        summary.ToTable(table => table.HasCheckConstraint("ck_tenant_summaries_counts", "member_count >= 0 AND owner_count >= 0 AND member_count >= owner_count AND custom_role_count >= 0 "
+            + "AND free_member_count >= 0 AND member_count >= free_member_count"));
         summary.ToTable(table => table.HasCheckConstraint(
             "ck_tenant_summaries_owner_invitation_status", CheckConstraints.OneOf<InvitationStatus>("owner_invitation_status")));
         summary.ToTable(table => table.HasCheckConstraint(

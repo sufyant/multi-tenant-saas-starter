@@ -40,11 +40,17 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         var summary = await controlPlane.TenantSummaries.SingleAsync(found => found.TenantId == tenantId, cancellationToken);
         var (members, owners, latestOwnerInvitation) = await ReadSummaryAsync(cancellationToken);
         var customRoles = await controlPlane.TenantRoles.CountAsync(role => role.BuiltIn == null, cancellationToken);
-        var pendingExpiries = await controlPlane.TenantInvitations
+        var pending = await controlPlane.TenantInvitations
             .Where(invitation => invitation.Status == InvitationStatus.Pending)
-            .Select(invitation => invitation.ExpiresAt)
+            .Select(invitation => new { invitation.ExpiresAt, Free = controlPlane.TenantRoles.Where(Role.TakingNoSeat).Any(role => role.Id == invitation.RoleId) })
             .ToListAsync(cancellationToken);
-        summary.Summarize(members, owners, latestOwnerInvitation, customRoles, pendingExpiries);
+        var freeMembers = await Memberships.CountAsync(
+            membership => controlPlane.TenantRoles.Where(Role.TakingNoSeat).Any(role => role.Id == membership.RoleId), cancellationToken);
+        var seats = new TenantSeats(
+            freeMembers,
+            [.. pending.Select(invitation => invitation.ExpiresAt)],
+            [.. pending.Where(invitation => invitation.Free).Select(invitation => invitation.ExpiresAt)]);
+        summary.Summarize(members, owners, latestOwnerInvitation, customRoles, seats);
         await controlPlane.SaveChangesAsync(cancellationToken);
         controlPlane.SummaryWritten();
     }
@@ -107,6 +113,17 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             await CountOwnersAsync(cancellationToken),
             await ((ITenantRepository)this).FindRolesAsync(cancellationToken));
 
+    // Row level security keeps the memberships, the invitations and the roles to the active tenant; the query names no tenant.
+    async Task<int> ITenantRepository.CountSeatsAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var free = controlPlane.TenantRoles.Where(Role.TakingNoSeat).Select(role => (Guid?)role.Id);
+        var members = await Memberships.CountAsync(membership => !free.Contains((Guid?)membership.RoleId), cancellationToken);
+        var invitations = await controlPlane.TenantInvitations.CountAsync(
+            invitation => invitation.Status == InvitationStatus.Pending && invitation.ExpiresAt > now && !free.Contains(invitation.RoleId),
+            cancellationToken);
+        return members + invitations;
+    }
+
     // The plans, their values and the overrides belong to no tenant (R6); the tenant row is the one the caller locked.
     async Task<EffectiveEntitlements> ITenantRepository.FindEntitlementsAsync(Tenant tenant, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -137,7 +154,9 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
             await IsMemberEmailAsync(email, cancellationToken),
             await ((ITenantRepository)this).CountInvitationsSinceAsync(since, cancellationToken),
             await ((ITenantRepository)this).FindPendingInvitationsAsync(cancellationToken),
-            await Memberships.CountAsync(cancellationToken));
+            await Memberships.CountAsync(
+                membership => !controlPlane.TenantRoles.Where(Role.TakingNoSeat).Any(role => role.Id == membership.RoleId), cancellationToken),
+            (await controlPlane.TenantRoles.Where(Role.TakingNoSeat).Select(role => role.Id).ToListAsync(cancellationToken)).ToHashSet());
     }
 
     // Row level security keeps the invitations to the active tenant; the query names no tenant.

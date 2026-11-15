@@ -19,11 +19,15 @@ public sealed class MigrationStepTests(Database database)
 
     // A row as text without the columns that a later migration adds or replaces, so a test of an earlier migration compares the columns
     // it knew: step 32's tenant plan and the summary's counts of custom roles and pending invitations, step 36's one name of a user in
-    // place of the first and the last name, and step 37b's who and when of a tenant's events, a user's reason and the Owner invitation's
-    // sending.
+    // place of the first and the last name, step 37b's who and when of a tenant's events, a user's reason and the Owner invitation's
+    // sending, and step 40's seats that take no seat.
     private const string LaterColumnsLeftOut =
         "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries', 'first_name', 'last_name', 'name', "
-        + "'created_by', 'suspended_at', 'suspended_by', 'closed_by', 'purge_started_at', 'suspension_reason', 'owner_invitation_sent_at'])::text";
+        + "'created_by', 'suspended_at', 'suspended_by', 'closed_by', 'purge_started_at', 'suspension_reason', 'owner_invitation_sent_at', "
+        + "'free_member_count', 'free_invitation_expiries'])::text";
+
+    // The rows a later migration adds, left out in the same way: step 40's Billing manager role of each tenant.
+    private const string LaterRowsLeftOut = "NOT (to_jsonb(row) @> '{\"built_in\": \"BillingManager\"}')";
 
     // An application whose database was not migrated stops at once, says to run the migration step, and creates nothing on the way.
     [Fact]
@@ -185,7 +189,7 @@ public sealed class MigrationStepTests(Database database)
     public async Task Migrate_RequireOwnerInvitationLanguage_KeepsTheRowsAndRefusesAStatusWithoutALanguage()
     {
         var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("RequireOwnerInvitationLanguage");
-        var testData = new TestData(database, before, withPlans: false);
+        var testData = new TestData(database, before, withPlans: false, withBillingManager: false);
         await testData.AddTenantAsync();
         var pending = await testData.AddTenantAsync();
         await testData.AddInvitationAsync(pending.Id, role: "Owner", language: "tr");
@@ -212,7 +216,7 @@ public sealed class MigrationStepTests(Database database)
     public async Task Migrate_AddPlansAndEntitlements_PutsEveryTenantOnProAndSummarizesItsRolesAndInvitations()
     {
         var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddPlansAndEntitlements");
-        var testData = new TestData(database, before, withPlans: false);
+        var testData = new TestData(database, before, withPlans: false, withBillingManager: false);
         var active = await testData.AddTenantAsync();
         await testData.AddCustomRoleAsync(active.Id, "Billing", "tenant.profile.read");
         await testData.AddCustomRoleAsync(active.Id, "Support", "tenant.profile.read");
@@ -341,7 +345,7 @@ public sealed class MigrationStepTests(Database database)
     public async Task Migrate_TieWhoAndWhenToTheirEvents_ClearsWhatTheVersionBeforeLeftAndAddsTheChecks()
     {
         var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("TieWhoAndWhenToTheirEvents");
-        var testData = new TestData(database, before);
+        var testData = new TestData(database, before, withBillingManager: false);
         var admin = await testData.UserIdOfAsync(await testData.AddUserAsync());
         var reactivated = await testData.AddTenantAsync(name: "Reactivated");
         var suspended = await testData.AddTenantAsync(status: "Suspended", name: "Suspended", suspensionReason: "Unpaid invoices");
@@ -407,6 +411,33 @@ public sealed class MigrationStepTests(Database database)
             + "ck_tenants_purged_is_a_tombstone, ck_tenants_suspension, ck_users_deleted_keeps_no_personal_data, ck_users_suspension_reason_while_suspended");
     }
 
+    // Step 40: every tenant that has data gets its Billing manager role, as a new tenant's creation writes it; a purged tenant has no
+    // roles and gets none. A custom role with the new role's name keeps its name with " (custom)" after it, so the names stay unique (A3).
+    // The other rows survive.
+    [Fact]
+    public async Task Migrate_AddBillingManager_GivesEveryTenantWithDataItsRoleAndRenamesACustomRoleOfItsName()
+    {
+        var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddBillingManager");
+        var testData = new TestData(database, before, withBillingManager: false);
+        var active = await testData.AddTenantAsync();
+        await testData.AddCustomRoleAsync(active.Id, "Billing_Manager", "tenant.profile.read");
+        var suspended = await testData.AddTenantAsync(status: "Suspended");
+        var purged = await testData.AddTenantRowAsync(status: "Purged");
+        var rowsBefore = await RowsOfAsync(before, "control_plane", "users", "memberships", "role_permissions", "invitations");
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await RowsOfAsync(before, "control_plane", "users", "memberships", "role_permissions", "invitations")).ShouldBe(rowsBefore);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT string_agg(tenant_id || ':' || name, ',' ORDER BY tenant_id) FROM control_plane.roles
+            WHERE built_in = 'BillingManager' OR (built_in IS NULL AND tenant_id = '{active.Id}')
+            """,
+            before)).ShouldBe(string.Join(',', new[] { $"{active.Id}:Billing_Manager (custom)", $"{active.Id}:billing_manager", $"{suspended.Id}:billing_manager" }.Order(StringComparer.Ordinal)));
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{purged.Id}'", before)).ShouldBe(0);
+    }
+
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
     // default mark (R15).
     [Fact]
@@ -454,7 +485,7 @@ public sealed class MigrationStepTests(Database database)
     private Task<string?> RowsOfAsync(string databaseName, string schema, params string[] tables) =>
         database.ScalarAsSuperuserAsync<string>(
             $"SELECT concat_ws(', ', {string.Join(", ", tables.Select(table =>
-                $"'{table} ' || (SELECT count(*) || ' ' || md5(coalesce(string_agg({LaterColumnsLeftOut}, ';' ORDER BY {LaterColumnsLeftOut}), '')) FROM {schema}.{table} AS row)"))})",
+                $"'{table} ' || (SELECT count(*) || ' ' || md5(coalesce(string_agg({LaterColumnsLeftOut}, ';' ORDER BY {LaterColumnsLeftOut}), '')) FROM {schema}.{table} AS row WHERE {LaterRowsLeftOut})"))})",
             databaseName);
 
 

@@ -4,7 +4,13 @@ namespace ControlPlane.Domain.Tenants;
 /// What <see cref="Tenant.Invite"/> needs to know of the tenant's rows, read under the tenant's lock (K6i, K6j): how many Owners it has
 /// (members whose role holds <c>tenant.owners.manage</c>, A1),
 /// whether a member has the invited address, how many invitations it sent in the limit's window, every pending invitation, of which
-/// the new one replaces those its inviter's rule names, and how many members it has, which <c>members.max</c> counts with the pending
-/// invitations that have not expired.
+/// the new one replaces those its inviter's rule names, how many members take a seat, which <c>members.max</c> counts with the pending
+/// invitations that have not expired and take one, and the roles that take no seat (<c>Role.TakesSeat</c>).
 /// </summary>
-internal sealed record InvitationFacts(int Owners, bool AddressIsMember, int SentInWindow, IReadOnlyList<Invitation> Pending, int Members);
+internal sealed record InvitationFacts(
+    int Owners,
+    bool AddressIsMember,
+    int SentInWindow,
+    IReadOnlyList<Invitation> Pending,
+    int SeatedMembers,
+    IReadOnlySet<Guid> FreeRoles);

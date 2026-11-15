@@ -40,6 +40,6 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         // A2: a tenant has one role of each built-in kind; a custom role has none (A3). A built-in role's permissions come from code, so it
         // has no rows of role_permissions.
         role.HasIndex(r => new { r.TenantId, r.BuiltIn }).IsUnique().HasFilter("built_in IS NOT NULL");
-        role.ToTable(table => table.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member')"));
+        role.ToTable(table => table.HasCheckConstraint("ck_roles_built_in", "built_in IN ('Owner', 'Admin', 'Member', 'BillingManager')"));
     }
 }
