@@ -5,6 +5,7 @@ using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions.CountSeats;
 using Billing.Application.Subscriptions.EndGrace;
 using Billing.Application.Subscriptions.NamePaymentFailure;
+using Billing.Application.Subscriptions.RefundSubscription;
 using Billing.Application.Subscriptions.NameScheduleChange;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Contracts.Subscriptions;
@@ -46,12 +47,12 @@ public static class ApplySubscriptionHandler
 
         var subscription = await subscriptions.FindForUpdateAsync(cancellationToken);
 
-        // B7: a second subscription while one has not ended came from a page that a race left payable. It ends at once, and support refunds
-        // its payment; the tenant keeps the first.
+        // B7: a second subscription while one has not ended came from a page that a race left payable. It ends at once, and its payment is
+        // refunded; the tenant keeps the first.
         if (subscription is not null && subscription.SubscriptionId != state.SubscriptionId
             && !Subscription.HasEnded(subscription.Status) && !Subscription.HasEnded(state.Status))
         {
-            return [new CancelSubscriptionCommand(state.SubscriptionId)];
+            return [new RefundSubscriptionCommand(state.SubscriptionId)];
         }
 
         // Step 40, billing per person: each state of a subscription that has not ended brings the provider's count of seats, which is set

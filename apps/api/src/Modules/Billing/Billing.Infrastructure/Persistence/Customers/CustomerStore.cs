@@ -19,8 +19,10 @@ public sealed class CustomerStore(BillingDbContext billing) : ICustomerStore
         return await billing.Customers.Where(customer => customer.TenantId == tenantId).Select(customer => customer.CustomerId).SingleOrDefaultAsync(cancellationToken);
     }
 
-    // Two first checkouts at once: the provider's idempotency key gave both the same customer, and the tenant's key keeps one row. Each names
-    // its member; the last one stays.
+    // Two first checkouts at once: the provider's idempotency key gave both the same customer, and the row is the tenant's one. The insert
+    // gives way on any of the table's keys, the customer's and the tenant's: an insert that names one key only fails with 23505 on the other
+    // when both race (PostgreSQL, "INSERT ... ON CONFLICT", the conflict target). The update that follows waits for the first insert's commit,
+    // so each names its member and the last one stays.
     public async Task<string> KeepAsync(string customerId, Guid checkoutBy, DateTimeOffset at, CancellationToken cancellationToken)
     {
         var tenantId = DeclaredTenant;
@@ -28,9 +30,11 @@ public sealed class CustomerStore(BillingDbContext billing) : ICustomerStore
             $"""
             INSERT INTO billing.customers (customer_id, tenant_id, checkout_by, created_at)
             VALUES ({customerId}, {tenantId}, {checkoutBy}, {at})
-            ON CONFLICT (tenant_id) DO UPDATE SET checkout_by = excluded.checkout_by
+            ON CONFLICT DO NOTHING
             """,
             cancellationToken);
+        await billing.Database.ExecuteSqlAsync(
+            $"UPDATE billing.customers SET checkout_by = {checkoutBy} WHERE tenant_id = {tenantId}", cancellationToken);
         return await billing.Customers.Where(customer => customer.TenantId == tenantId).Select(customer => customer.CustomerId).SingleAsync(cancellationToken);
     }
 

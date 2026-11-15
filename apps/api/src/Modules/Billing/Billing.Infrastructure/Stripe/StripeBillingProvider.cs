@@ -286,6 +286,36 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             cancellationToken: cancellationToken);
     }
 
+    // B7: the second subscription ends at once with no new invoice, then each paid payment of its latest invoice is refunded in full, with
+    // the payment's own idempotency key (Stripe, "Refunds", "Invoice payments").
+    async Task IBillingProvider.EndAndRefundAsync(string subscriptionId, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        var subscription = await subscriptions.GetAsync(subscriptionId, cancellationToken: cancellationToken);
+        if (subscription.Status is not ("canceled" or "incomplete_expired"))
+        {
+            await subscriptions.CancelAsync(subscriptionId, new SubscriptionCancelOptions { InvoiceNow = false, Prorate = false }, cancellationToken: cancellationToken);
+        }
+
+        if (subscription.LatestInvoiceId is not { } invoiceId)
+        {
+            return;
+        }
+
+        var refunds = new RefundService(client);
+        await foreach (var payment in new InvoicePaymentService(client).ListAutoPagingAsync(
+            new InvoicePaymentListOptions { Invoice = invoiceId, Status = "paid" }, cancellationToken: cancellationToken))
+        {
+            if (payment.Payment?.PaymentIntentId is { } paymentIntentId)
+            {
+                await refunds.CreateAsync(
+                    new RefundCreateOptions { PaymentIntent = paymentIntentId, Reason = "duplicate" },
+                    new RequestOptions { IdempotencyKey = $"refund-{paymentIntentId}" },
+                    cancellationToken);
+            }
+        }
+    }
+
     async Task<Uri> IBillingProvider.OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken)
     {
         var session = await new global::Stripe.BillingPortal.SessionService(client).CreateAsync(

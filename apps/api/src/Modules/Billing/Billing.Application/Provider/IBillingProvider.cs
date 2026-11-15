@@ -59,6 +59,13 @@ public interface IBillingProvider
     /// </summary>
     Task SetSeatsAsync(string subscriptionId, int people, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Ends the subscription at once and refunds every payment of its latest invoice in full (B7): a second subscription that a race let
+    /// through paid for nothing. One that has ended already is only refunded; each refund has its payment's idempotency key, so a retry
+    /// refunds nothing twice.
+    /// </summary>
+    Task EndAndRefundAsync(string subscriptionId, CancellationToken cancellationToken);
+
     /// <summary>The provider's page where the customer manages its card, address, VAT ID and invoices, which works for a short time.</summary>
     Task<Uri> OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken);
 

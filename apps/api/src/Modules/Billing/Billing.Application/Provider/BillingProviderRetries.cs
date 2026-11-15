@@ -1,5 +1,6 @@
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Subscriptions.CancelSubscription;
+using Billing.Application.Subscriptions.RefundSubscription;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.SetSeats;
 using Billing.Application.Subscriptions.SyncSubscription;
@@ -15,14 +16,14 @@ using Wolverine;
 namespace Billing.Application.Provider;
 
 // A call of the billing provider from a queued message (the read of a subscription after a webhook, and the expiry of a page, the end of a
-// subscription at the period's end and its end at once, B7 and B8, and the seats of the fee per person) that fails is tried again after each configured pause; then the message goes to the dead
+// subscription at the period's end and its end at once, B7 and B8, the seats of the fee per person, and the refund of a second subscription) that fails is tried again after each configured pause; then the message goes to the dead
 // letter queue. Each message has one handler, so a retry may be scheduled (W5). GrowingRetries splits the pauses, as the identity provider's
 // retries do. A checkout or a portal page is not retried: the person who asked sees the error and asks again.
 internal sealed class BillingProviderRetries(IOptions<BillingProviderOptions> settings) : IWolverineExtension, IHandlerPolicy
 {
     private static readonly Type[] Calls =
         [typeof(SyncSubscriptionCommand), typeof(ExpireCheckoutPagesCommand), typeof(SetCancelAtPeriodEndCommand), typeof(CancelSubscriptionCommand),
-         typeof(SetSeatsCommand)];
+         typeof(SetSeatsCommand), typeof(RefundSubscriptionCommand)];
 
     public void Configure(WolverineOptions options) => options.Policies.Add(this);
 
