@@ -270,6 +270,45 @@ public sealed class StripeBillingProviderTests
         found!.People.ShouldBeNull();
     }
 
+    // B11: an open invoice whose payment Stripe tried and failed names its amount without tax, its attempts, its next attempt and the card.
+    [Fact]
+    public async Task FindSubscription_AnOpenInvoiceWhosePaymentFailed_NamesItsAttemptsAndTheCard()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", WithInvoice("""
+            {"id": "in_1", "object": "invoice", "status": "open", "attempt_count": 2, "next_payment_attempt": 1800259200, "amount_due": 11900,
+             "total_excluding_tax": 10000, "currency": "eur", "created": 1799900000, "effective_at": 1800000000}
+            """));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        found!.Payment.ShouldBe(new ProviderPayment(
+            "in_1", 10000, "EUR", DateTimeOffset.FromUnixTimeSeconds(1_800_000_000), 2, DateTimeOffset.FromUnixTimeSeconds(1_800_259_200), "visa", "4242"));
+        stripe.Sent.Single().Path.ShouldContain("expand[1]=latest_invoice");
+    }
+
+    [Fact]
+    public async Task FindSubscription_APaidInvoice_NamesNoFailedPayment()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", WithInvoice("""
+            {"id": "in_1", "object": "invoice", "status": "paid", "attempt_count": 1, "amount_due": 10000, "currency": "eur", "created": 1799900000}
+            """));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        found!.Payment.ShouldBeNull();
+    }
+
+    // B11: an invoice's failed payment, and its payment, ask for the sync of the invoice's subscription.
+    [Fact]
+    public void ReadEvent_AFailedInvoicePayment_NamesItsSubscription()
+    {
+        var body = EventBody("evt_8", "invoice.payment_failed", """{"id": "in_8", "object": "invoice", "parent": {"type": "subscription_details", "subscription_details": {"subscription": "sub_8"}}}""");
+
+        var read = Provider.ReadEvent(body, SignatureOf(body, Secret, DateTimeOffset.UtcNow));
+
+        read.ShouldBe(new ProviderEvent("evt_8", "invoice.payment_failed", "sub_8"));
+    }
+
     private static string EventBody(string id, string type, string dataObject) =>
         $$$"""{"id": "{{{id}}}", "object": "event", "type": "{{{type}}}", "api_version": "{{{StripeConfiguration.ApiVersion}}}", "created": 1, "data": {"object": {{{dataObject}}} }}""";
 
@@ -296,6 +335,16 @@ public sealed class StripeBillingProviderTests
             "price": {"id": "price_base", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_base_{{{interval}}}_eur_9900", "recurring": {"interval": "{{{interval}}}"} } },
            {"id": "si_seats", "object": "subscription_item", "quantity": {{{people}}}, "current_period_end": 1800000000,
             "price": {"id": "price_seats", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_per_person_{{{interval}}}_eur_800", "recurring": {"interval": "{{{interval}}}"} } }]} }
+        """;
+
+    // A monthly subscription of ten people on Business whose latest invoice is this one, with the customer's default card, a Visa ending
+    // in 4242.
+    private static string WithInvoice(string invoice) => $$$"""
+        {"id": "sub_1", "object": "subscription", "customer": {"id": "cus_1", "object": "customer", "invoice_settings": {"default_payment_method":
+           {"id": "pm_1", "object": "payment_method", "card": {"brand": "visa", "last4": "4242"} } } }, "status": "past_due", "cancel_at_period_end": false,
+         "schedule": null, "latest_invoice": {{{invoice}}},
+         "items": {"object": "list", "data": [{"id": "si_1", "object": "subscription_item", "quantity": 10, "current_period_end": 1800000000,
+           "price": {"id": "price_team_old", "object": "price", "product": "plan_{{{Business:N}}}", "recurring": {"interval": "month"} } }]} }
         """;
 
     // A monthly subscription of ten people on Business, whose period ends at 1 800 000 000.

@@ -18,7 +18,9 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantMovedToDefaultPlanDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
+  TenantPaymentFailedDetailsResponseOperation,
   TenantPlanCancellationUndoneDetailsResponseOperation,
   TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
@@ -136,6 +138,19 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation: TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
       oldPlan: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
       newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantPaymentFailed]: {
+      operation:
+        TenantPaymentFailedDetailsResponseOperation.TenantPaymentFailed,
+      amountDue: 10000,
+      currency: "EUR",
+      retriesUntil: "2026-12-01T00:00:00Z",
+    },
+    [AuditOperation.TenantMovedToDefaultPlan]: {
+      operation:
+        TenantMovedToDefaultPlanDetailsResponseOperation.TenantMovedToDefaultPlan,
+      oldPlan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+      newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
     },
     [AuditOperation.TenantPlanCancelled]: {
       operation:

@@ -1,5 +1,7 @@
 using System.Net;
+using Billing.Application.Subscriptions.EndGrace;
 using Tenancy;
+using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Public;
 
@@ -68,6 +70,86 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenant.Id:N}"));
 
         _api.Billing.Seats.ShouldBeEmpty();
+    }
+
+    // B11, 12.12: a failed payment is an entry of both logs, by nobody, once for each invoice, and the tenant keeps its plan while Stripe
+    // retries it.
+    [Fact]
+    public async Task ReceiveWebhook_AFailedPaymentTwice_RecordsItOnceAndKeepsThePlan()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        var failedAt = new DateTimeOffset(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 1, failedAt.AddDays(3)));
+        await _api.PaymentFailedAsync(tenant.Id);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 2, failedAt.AddDays(6)));
+
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        (await PlanOfAsync(tenant.Id)).ShouldBe(_planId);
+        const string Details = """{"amountDue": 10000, "currency": "EUR", "retriesUntil": "2026-11-29T09:00:00+00:00"}""";
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.payment_failed' AND actor_kind = 'Platform' AND details @> '{Details}'")).ShouldBe(1);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenant.Id}' AND operation = 'tenant.payment_failed'")).ShouldBe(1);
+    }
+
+    // B11: once Stripe's retries are over, billing's grace runs for a week, and its end is scheduled; the tenant keeps its plan until then.
+    [Fact]
+    public async Task ReceiveWebhook_RetriesThatEnded_SchedulesTheGracesEnd()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, DateTimeOffset.UtcNow.AddDays(-14), 4, null));
+        var before = DateTimeOffset.UtcNow;
+
+        var session = await _api.TrackMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.payment_failed", $"sub_{tenant.Id:N}"));
+
+        var scheduled = session.Scheduled.Envelopes().Single(envelope => envelope.Message is EndGraceCommand);
+        var end = ((EndGraceCommand)scheduled.Message!).GraceEndsAt;
+        (scheduled.Message, scheduled.ScheduledTime).ShouldBe((new EndGraceCommand(tenant.Id, end), end));
+        end.ShouldBeInRange(before.AddDays(7), DateTimeOffset.UtcNow.AddDays(7));
+        (await PlanOfAsync(tenant.Id)).ShouldBe(_planId);
+    }
+
+    // B11: a subscription that a member cancelled ends at its period's end, and the tenant moves to the default plan, by that member.
+    [Fact]
+    public async Task ReceiveWebhook_TheEndOfACancelledSubscription_MovesTheTenantToTheDefaultPlan()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var payer = await _testData.UserIdOfAsync(owner);
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, _planId) with { CancelAtPeriodEnd = true });
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenant.Id:N}"));
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, _planId, "Canceled") with { CancelAtPeriodEnd = true });
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.deleted", $"sub_{tenant.Id:N}"));
+
+        (await PlanOfAsync(tenant.Id)).ShouldBe(await DefaultPlanAsync());
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.plan_changed' AND actor_id = '{payer}'")).ShouldBe(2);
+    }
+
+    // B11: an unpaid subscription that Stripe ends moves the tenant to the default plan, by the platform, and tells nobody: billing's own
+    // bells and emails come later (13.18 to 13.21).
+    [Fact]
+    public async Task ReceiveWebhook_AnUnpaidSubscriptionThatStripeEnds_MovesTheTenantToTheDefaultPlanAndTellsNobody()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        var failedAt = DateTimeOffset.UtcNow.AddDays(-14);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 4, null));
+        await _api.PaymentFailedAsync(tenant.Id);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 4, null) with { Status = "Canceled" });
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.deleted", $"sub_{tenant.Id:N}"));
+
+        (await PlanOfAsync(tenant.Id)).ShouldBe(await DefaultPlanAsync());
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.moved_to_default_plan' AND actor_kind = 'Platform'")).ShouldBe(1);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
     }
 
     // The bell's text of a plan change says that the platform acted, so a plan a member paid for tells nobody there (step 40).
@@ -214,6 +296,8 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         answer.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await BillingRequests.CodeOfAsync(answer)).ShouldBe("billing.off");
     }
+
+    private Task<Guid> DefaultPlanAsync() => database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans");
 
     private Task<Guid> PlanOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE id = '{tenantId}'");

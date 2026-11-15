@@ -19,8 +19,10 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantMovedToDefaultPlanDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
+  TenantPaymentFailedDetailsResponseOperation,
   TenantPlanCancellationUndoneDetailsResponseOperation,
   TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
@@ -95,6 +97,8 @@ const platformOperations = [
   AuditOperation.PlanCreated,
   AuditOperation.PlanUpdated,
   AuditOperation.TenantPlanChanged,
+  AuditOperation.TenantPaymentFailed,
+  AuditOperation.TenantMovedToDefaultPlan,
   AuditOperation.TenantPlanCancelled,
   AuditOperation.TenantPlanCancellationUndone,
   AuditOperation.TenantPlanChangeScheduled,
@@ -912,6 +916,45 @@ const planCases: PlanCase[] = [
       en: "Ciara Byrne moved Shannon Studio from Free to Pro.",
       tr: "Ciara Byrne, Shannon Studio kuruluşunu Free planından Pro planına geçirdi.",
       ar: "نقل Ciara Byrne Shannon Studio من Free إلى Pro.",
+    },
+  ],
+  [
+    "TenantPaymentFailed",
+    AuditOperation.TenantPaymentFailed,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantPaymentFailedDetailsResponseOperation.TenantPaymentFailed,
+      amountDue: 10000,
+      currency: "EUR",
+      retriesUntil: "2026-11-30T12:00:00Z",
+    },
+    {
+      en: "A payment of €100 by Shannon Studio failed. Stripe tries again until 30 Nov 2026.",
+      tr: "Shannon Studio kuruluşunun €100 tutarındaki ödemesi başarısız oldu. Stripe 30 Kas 2026 tarihine kadar yeniden dener.",
+      ar: "فشلت دفعة بقيمة \u200F100\u00A0€ من Shannon Studio. تحاول Stripe مجددًا حتى 30 نوفمبر 2026.",
+    },
+  ],
+  [
+    "TenantMovedToDefaultPlan",
+    AuditOperation.TenantMovedToDefaultPlan,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantMovedToDefaultPlanDetailsResponseOperation.TenantMovedToDefaultPlan,
+      oldPlan: { id: pro.id, name: "Pro" },
+      newPlan: { id: free.id, name: "Free" },
+    },
+    {
+      en: "Shannon Studio moved to Free, the default plan: a payment failed and the grace period ended.",
+      tr: "Shannon Studio, varsayılan plan olan Free planına geçti: bir ödeme başarısız oldu ve ek süre bitti.",
+      ar: "انتقلت Shannon Studio إلى Free، الخطة الافتراضية: فشلت دفعة وانتهت فترة السماح.",
     },
   ],
   [

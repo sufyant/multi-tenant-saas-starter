@@ -57,6 +57,7 @@ using ControlPlane.Application.Tenants.CompleteTenantPurge;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
 using ControlPlane.Application.Tenants.RenameTenant;
+using ControlPlane.Application.Tenants.MoveToDefaultPlan;
 using ControlPlane.Application.Tenants.ReopenTenant;
 using ControlPlane.Application.Tenants.StartTenantPurge;
 using ControlPlane.Application.Tenants.SuspendTenant;
@@ -77,6 +78,7 @@ using Billing.Application.Subscriptions.ApplySubscription;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.RouteSubscription;
 using Billing.Application.Subscriptions.NameScheduleChange;
+using Audit.Application.Plans.RecordPaymentFailed;
 using Billing.Application.Members.CountSeatsAtMemberChange;
 using Billing.Application.Subscriptions.SetSeats;
 using Billing.Application.Subscriptions.SyncSubscription;
@@ -438,6 +440,40 @@ public sealed class HostRoleTests(Database database)
         worker.Billing.Seats.ShouldBe([($"sub_{tenant.Id:N}", 1)]);
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetSeatsHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(CountSeatsAtMemberChangeHandler));
+    }
+
+    // B11: Stripe's events of a failed payment and of the unpaid subscription's end arrive at the web host; the failed payment's entry and
+    // the move to the default plan run in the worker, through Audit and ControlPlane, once each.
+    [Fact]
+    public async Task ReceiveWebhook_AFailedPaymentThenItsEndOnAWebAndAWorkerHost_RecordBothInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var team = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(team, 900, 1000, 9000, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, team)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, team));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+        var failedAt = DateTimeOffset.UtcNow.AddDays(-1);
+        worker.Billing.Put(BillingRequests.PastDue(tenant.Id, team, failedAt, 1, failedAt.AddDays(3)));
+
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.payment_failed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.payment_failed") > 0);
+        worker.Billing.Put(BillingRequests.PastDue(tenant.Id, team, failedAt, 4, null) with { Status = "Canceled" });
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.deleted", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.moved_to_default_plan") > 0);
+
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.payment_failed"), await AuditEntriesAsync(name, tenant.Id, "tenant.moved_to_default_plan")).ShouldBe((1L, 1L));
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(MoveToDefaultPlanHandler) || run.Handler == typeof(RecordPaymentFailedHandler));
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(MoveToDefaultPlanHandler));
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(RecordPaymentFailedHandler));
     }
 
     // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row
