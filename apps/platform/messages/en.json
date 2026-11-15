@@ -449,7 +449,7 @@
     "keys": {
       "roles_custom": {
         "name": "Custom roles",
-        "description": "Roles an organisation creates beyond Owner, Admin and Member.",
+        "description": "Roles an organisation creates beyond Owner, Admin, Billing manager and Member.",
         "turnsOff": "{key}: off on {plan}. The {count} custom roles keep working for their members; new ones can’t be created."
       },
       "roles_custom_max": {
@@ -534,7 +534,36 @@
     "savedText": "{count, plural, =0 {} one {The organisation on it gets the new values at once.} other {The # organisations on it get the new values at once.}}",
     "createdText": "Give it to an organisation from that organisation’s Plan tab.",
     "limits": "Limits",
-    "edit": "Edit plan"
+    "edit": "Edit plan",
+    "pricesLine": "{base} base + {perPerson} per person a month, excl. VAT.",
+    "pricesTitle": "Prices",
+    "pricesText": "A base fee and a fee for each billed person, monthly and yearly. Either can be {zero}. Billing managers are free. Excluding VAT; Stripe adds the tax.",
+    "priceLabels": {
+      "baseMonthly": "Base fee, monthly",
+      "baseYearly": "Base fee, yearly",
+      "perPersonMonthly": "Per person, monthly",
+      "perPersonYearly": "Per person, yearly"
+    },
+    "perMonth": "a month.",
+    "perYear": "a year.",
+    "perPersonMonth": "per person a month.",
+    "perPersonYear": "per person a year.",
+    "monthsFree": "{count, plural, one {# month free.} other {# months free.}}",
+    "changed": "Today {current}. Changed.",
+    "preview": "Preview",
+    "previewText": "A team of {people} pays {amount} a month, excl. VAT.",
+    "previewToday": "Today {current}.",
+    "priceInvalid": "Enter a price of 0 or more.",
+    "metersTitle": "Meters",
+    "metersText": "The product defines its meters in code. Each plan sets a quota and what happens at the quota.",
+    "meterThen": "a month, then",
+    "meterCharge": "Charge the extra",
+    "meterStop": "Stop",
+    "meterPer": "per {per}",
+    "meterQuota": "{meter}: quota a month",
+    "meterOverage": "At the quota",
+    "meterUnitPrice": "{meter}: price of the extra",
+    "meters": {}
   },
   "planSection": {
     "title": "Plan",

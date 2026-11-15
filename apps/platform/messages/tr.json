@@ -449,7 +449,7 @@
     "keys": {
       "roles_custom": {
         "name": "Özel roller",
-        "description": "Bir kuruluşun Sahip, Yönetici ve Üye dışında oluşturduğu roller.",
+        "description": "Bir kuruluşun Sahip, Yönetici, Fatura yöneticisi ve Üye dışında oluşturduğu roller.",
         "turnsOff": "{key}: {plan} planında kapalı. {count} özel rol üyeleri için çalışmaya devam eder; yenisi oluşturulamaz."
       },
       "roles_custom_max": {
@@ -534,7 +534,36 @@
     "savedText": "{count, plural, =0 {} one {Bu plandaki kuruluş yeni değerleri hemen alır.} other {Bu plandaki # kuruluş yeni değerleri hemen alır.}}",
     "createdText": "Bir kuruluşa o kuruluşun Plan sekmesinden verin.",
     "limits": "Sınırlar",
-    "edit": "Planı düzenle"
+    "edit": "Planı düzenle",
+    "pricesLine": "{base} temel + kişi başı ayda {perPerson}, KDV hariç.",
+    "pricesTitle": "Fiyatlar",
+    "pricesText": "Aylık ve yıllık bir temel ücret ile faturalanan her kişi için bir ücret. Her ikisi de {zero} olabilir. Fatura yöneticileri ücretsizdir. KDV hariç; vergiyi Stripe ekler.",
+    "priceLabels": {
+      "baseMonthly": "Temel ücret, aylık",
+      "baseYearly": "Temel ücret, yıllık",
+      "perPersonMonthly": "Kişi başı, aylık",
+      "perPersonYearly": "Kişi başı, yıllık"
+    },
+    "perMonth": "ayda.",
+    "perYear": "yılda.",
+    "perPersonMonth": "kişi başı aylık.",
+    "perPersonYear": "kişi başı yıllık.",
+    "monthsFree": "{count} ay ücretsiz.",
+    "changed": "Bugün {current}. Değişti.",
+    "preview": "Önizleme",
+    "previewText": "{people} kişilik bir ekip ayda {amount} öder, KDV hariç.",
+    "previewToday": "Bugün {current}.",
+    "priceInvalid": "0 veya daha fazla bir fiyat girin.",
+    "metersTitle": "Sayaçlar",
+    "metersText": "Ürün sayaçlarını kodda tanımlar. Her plan bir kota ve kotada ne olacağını belirler.",
+    "meterThen": "ayda, sonra",
+    "meterCharge": "Fazlasını ücretlendir",
+    "meterStop": "Durdur",
+    "meterPer": "{per} başına",
+    "meterQuota": "{meter}: aylık kota",
+    "meterOverage": "Kotada",
+    "meterUnitPrice": "{meter}: fazlanın fiyatı",
+    "meters": {}
   },
   "planSection": {
     "title": "Plan",
