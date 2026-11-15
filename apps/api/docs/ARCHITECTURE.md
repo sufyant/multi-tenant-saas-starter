@@ -33,8 +33,9 @@ flowchart TB
     audit -- "reads names and invitation addresses (IUserDirectory, IInvitationDirectory)" --> cpc
     notify -- "reads recipients, and asks whether an invitation is pending (IUserDirectory, IMemberDirectory, IPendingInvitationCheck)" --> cpc
     host -- "asks on each request (ITenantDirectory, IUserDirectory, ISystemAdminDirectory)" --> cpc
-    billing -- "reads plans, seats and payers (IPlanDirectory, IMemberDirectory, IUserDirectory)" --> cpc
+    billing -- "reads plans, seats, payers and tenant names (IPlanDirectory, IMemberDirectory, IUserDirectory, ITenantNames)" --> cpc
     billing -- "publishes PlanPaidEvent (outbox, O1)" --> cp
+    billing -- "publishes a member's period-end changes (outbox, O1)" --> audit
   end
 ```
 
@@ -144,7 +145,7 @@ Each module is five projects. Another module sees only the `Contracts` project.
 
 - Two controls enforce the boundary: project references (compilation) and architecture tests. Source: Ford, Parsons, Kua, Chapter 2.
 - The `Api` project cannot reach the `DbContext`. Source: Evans, Chapter 4.
-- A read across modules is a plain method call. The interface is in `A.Contracts`. Its implementation is an `internal sealed` class inside A. The exception is an implementation that another module's handler takes: it is public and sealed, so that Wolverine builds it on its module's DbContext (W1, W9). Today that is `UserDirectory` and `MemberDirectory`, which Notifications' handlers take (U3), and `PlanDirectory`, which Billing's handlers take with them (B3). Source: Gamma et al., Chapter 4 (Facade). Evans, Chapter 14 (Open Host Service).
+- A read across modules is a plain method call. The interface is in `A.Contracts`. Its implementation is an `internal sealed` class inside A. The exception is an implementation that another module's handler takes: it is public and sealed, so that Wolverine builds it on its module's DbContext (W1, W9). Today that is `UserDirectory` and `MemberDirectory`, which Notifications' handlers take (U3), and `PlanDirectory` and `TenantNames`, which Billing's handlers take with them (B3, B9). Source: Gamma et al., Chapter 4 (Facade). Evans, Chapter 14 (Open Host Service).
 - The shared kernel stays small and carries no business concept. Source: Evans, Chapter 14.
 - A response type that two modules answer would live in its owner's `Contracts`, with its enum, and another module's `Api` project could use those types and nothing else of the project. Today there is none: until step r4b it was `RoleResponse` and `MemberRole`, which Audit's details answered. Since step r4b a role in an audit entry's details is Audit's own `AuditRoleResponse`, the role as the entry keeps it from that moment, whose id may be null (N7k; the maintainer's decision in step r4b), and `RoleResponse` sits in ControlPlane's `Api` project. `ReferenceRuleTests` fails for any type of another module's `Contracts` in an `Api` project, so an endpoint never calls another module's read interface past its own `Application` project. Source: Evans, Chapter 14 (Published Language; each bounded context keeps its own model).
 - `ExactNameEnumConverter` is in `SharedKernel` because `Language` (in `SharedKernel`) uses it, and an enum names its converter in an attribute, so the converter must be in the enum's project or in a project it references. `MemberRole` used it too until step r4b removed the enum. The converter is no business rule: it reads an enum by the exact JSON name of one member, with the same lookup as `ListFilter`. Source: Evans, Chapter 14 (Shared Kernel). Hunt and Thomas, *The Pragmatic Programmer*, Topic 9 (DRY).
