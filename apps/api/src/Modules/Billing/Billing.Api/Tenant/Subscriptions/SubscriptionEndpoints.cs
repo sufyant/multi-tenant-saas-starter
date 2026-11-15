@@ -34,6 +34,12 @@ public static class SubscriptionEndpoints
                 subscription.CancelAtPeriodEnd,
                 subscription is { ScheduledPlanId: { } planId, ScheduledInterval: { } interval }
                     ? new ScheduledChangeResponse(planId, ResponseStatus.OfInterval(interval))
+                    : null,
+                subscription.Payment is { } payment
+                    ? new PaymentResponse(
+                        ResponseStatus.OfPayment(payment.State), payment.FailedAt, payment.Attempts, payment.NextAttemptAt, payment.GraceEndsAt, payment.MovedAt,
+                        payment.AmountDue, payment.Currency,
+                        payment is { CardBrand: { } brand, CardLast4: { } last4 } ? new PaymentCardResponse(brand, last4) : null)
                     : null));
     }
 }

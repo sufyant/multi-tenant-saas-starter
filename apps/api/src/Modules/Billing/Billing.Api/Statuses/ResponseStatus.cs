@@ -12,6 +12,14 @@ internal static class ResponseStatus
         _ => throw Unknown(interval),
     };
 
+    public static PaymentResponseState OfPayment(string state) => state switch
+    {
+        "Retrying" => PaymentResponseState.Retrying,
+        "Grace" => PaymentResponseState.Grace,
+        "MovedToDefault" => PaymentResponseState.MovedToDefault,
+        _ => throw Unknown(state),
+    };
+
     public static SubscriptionResponseStatus OfSubscription(string status) => status switch
     {
         "Incomplete" => SubscriptionResponseStatus.Incomplete,

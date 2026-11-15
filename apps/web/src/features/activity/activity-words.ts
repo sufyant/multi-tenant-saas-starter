@@ -16,7 +16,9 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantMovedToDefaultPlanDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
+  TenantPaymentFailedDetailsResponseOperation,
   TenantPlanCancellationUndoneDetailsResponseOperation,
   TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
@@ -69,11 +71,12 @@ export function inviteeValues(entry: AuditEntryResponse): {
 /** The values of a sentence: a text, or a tag that writes a node (the screen's elements, or the file's text). */
 export type SentenceValues<N> = Record<string, string | ((chunks: N) => N)>;
 
-/** What a sentence of the plan names: a plan, a key and a value, each in the viewer's language. */
+/** What a sentence of the plan names: a plan, a key, a value and an amount of money, each in the viewer's language. */
 export type PlanWords<N> = {
   plan: (name: string) => () => N;
   key: (key: string) => () => N;
   value: (value: AuditEntitlementValueResponse, key: string) => string;
+  money: (minor: number, currency: string) => string;
 };
 
 /**
@@ -95,6 +98,13 @@ export function detailValues<N>(
       return {
         oldPlan: words.plan(details.oldPlan.name),
         newPlan: words.plan(details.newPlan.name),
+      };
+    case TenantMovedToDefaultPlanDetailsResponseOperation.TenantMovedToDefaultPlan:
+      return { plan: words.plan(details.newPlan.name) };
+    case TenantPaymentFailedDetailsResponseOperation.TenantPaymentFailed:
+      return {
+        amount: words.money(details.amountDue, details.currency),
+        date: date(details.retriesUntil),
       };
     case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
       return {

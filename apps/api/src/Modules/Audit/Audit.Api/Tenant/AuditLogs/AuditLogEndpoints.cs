@@ -72,6 +72,8 @@ public static class AuditLogEndpoints
             MetersOf(updated.OldMeters),
             MetersOf(updated.NewMeters)),
         TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(PlanOf(changed.OldPlan), PlanOf(changed.NewPlan)),
+        TenantPaymentFailedDetails failed => new TenantPaymentFailedDetailsResponse(failed.AmountDue, failed.Currency, failed.RetriesUntil),
+        TenantMovedToDefaultPlanDetails moved => new TenantMovedToDefaultPlanDetailsResponse(PlanOf(moved.OldPlan), PlanOf(moved.NewPlan)),
         TenantPlanCancelledDetails cancelled => new TenantPlanCancelledDetailsResponse(PlanOf(cancelled.Plan), PlanOf(cancelled.NewPlan), cancelled.MovesAt),
         TenantPlanCancellationUndoneDetails undone => new TenantPlanCancellationUndoneDetailsResponse(PlanOf(undone.Plan)),
         TenantPlanChangeScheduledDetails scheduled => new TenantPlanChangeScheduledDetailsResponse(PlanOf(scheduled.OldPlan), PlanOf(scheduled.NewPlan), scheduled.AppliesAt),

@@ -17,8 +17,10 @@ import {
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
+  TenantMovedToDefaultPlanDetailsResponseOperation,
   TenantOwnerInvitedDetailsResponseOperation,
   TenantOwnerMadeDetailsResponseOperation,
+  TenantPaymentFailedDetailsResponseOperation,
   TenantPlanCancellationUndoneDetailsResponseOperation,
   TenantPlanCancelledDetailsResponseOperation,
   TenantPlanChangedDetailsResponseOperation,
@@ -31,6 +33,7 @@ import {
   TermsVersionCreatedDetailsResponseOperation,
   TermsVersionUpdatedDetailsResponseOperation,
 } from "@repo/api-client";
+import { formatMoney } from "@repo/ui/lib/format-money";
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
 import {
@@ -93,6 +96,8 @@ type Texts = {
   none: string;
   text: ReturnType<typeof useEntitlementText>;
   date: (at: string) => string;
+  /** An amount in minor units with its currency, in the viewer's language. */
+  money: (minor: number, currency: string) => string;
   /** A terms version's day, a calendar day of UTC. */
   day: (day: string) => string;
   /** The words of a terms version's edit, joined as the language joins a list: "the link, the summary and the date (before: …)". */
@@ -116,6 +121,7 @@ function detailValues(
     none,
     text,
     date,
+    money,
     day,
     termsChanges,
     termsWord,
@@ -132,6 +138,13 @@ function detailValues(
       return {
         oldPlan: planLink(details.oldPlan),
         newPlan: planLink(details.newPlan),
+      };
+    case TenantMovedToDefaultPlanDetailsResponseOperation.TenantMovedToDefaultPlan:
+      return { plan: planLink(details.newPlan) };
+    case TenantPaymentFailedDetailsResponseOperation.TenantPaymentFailed:
+      return {
+        amount: money(details.amountDue, details.currency),
+        date: date(details.retriesUntil),
       };
     case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
       return {
@@ -351,6 +364,8 @@ export function ActivitySentence({ entry }: { entry: AuditEntryResponse }) {
       none: t("entitlements.sentence.none"),
       text,
       date,
+      money: (minor, currency) =>
+        formatMoney(minor, currency, t("locale.format")),
       day,
       termsChanges: (words) =>
         new Intl.ListFormat(t("locale.format"), {

@@ -7,6 +7,7 @@ import {
   RoleUpdatedDetailsResponseOperation,
 } from "@repo/api-client";
 import { formatDate } from "@repo/ui/lib/format-date-time";
+import { formatMoney } from "@repo/ui/lib/format-money";
 import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
 import { useRoleName } from "@/shared/use-role-name";
@@ -78,6 +79,8 @@ export function ActivitySentence({
       return label ? t(`plans.keys.${label}`) : <bdi dir="ltr">{key}</bdi>;
     },
     value: (value, key) => planValue(value, key, t),
+    money: (minor, currency) =>
+      formatMoney(minor, currency, t("locale.format")),
   };
   const people = {
     actor: person(actorName(entry.actor, t)),

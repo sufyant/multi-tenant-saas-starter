@@ -39,6 +39,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         EventTypes.CustomerSubscriptionResumed,
     ];
 
+    // B11: the events of an invoice's payment, which change the subscription's failed payment and its retries.
+    private static readonly HashSet<string> InvoiceEvents = [EventTypes.InvoicePaymentFailed, EventTypes.InvoicePaid];
+
     async Task<string> IBillingProvider.CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken)
     {
         var customer = await new CustomerService(client).CreateAsync(
@@ -294,7 +297,12 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
     async Task<ProviderSubscription?> IBillingProvider.FindSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
         var subscription = await new SubscriptionService(client).GetAsync(
-            subscriptionId, new SubscriptionGetOptions { Expand = ["schedule.phases.items.price"] }, cancellationToken: cancellationToken);
+            subscriptionId,
+            new SubscriptionGetOptions
+            {
+                Expand = ["schedule.phases.items.price", "latest_invoice", "default_payment_method", "customer.invoice_settings.default_payment_method"],
+            },
+            cancellationToken: cancellationToken);
         var item = subscription.Items.Data[0];
         if (PlanOf(item.Price) is not { } planId)
         {
@@ -317,7 +325,8 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             subscription.CancelAtPeriodEnd,
             scheduledPlanId,
             scheduledPlanId is null ? null : next!.Recurring.Interval == "year",
-            subscription.Items.Data.FirstOrDefault(seats => IsPerPerson(seats.Price)) is { } perPerson ? (int)perPerson.Quantity : null);
+            subscription.Items.Data.FirstOrDefault(seats => IsPerPerson(seats.Price)) is { } perPerson ? (int)perPerson.Quantity : null,
+            FailedPaymentOf(subscription));
     }
 
     ProviderEvent? IBillingProvider.ReadEvent(string body, string? signature)
@@ -341,10 +350,32 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         var subscriptionId = read.Data.Object switch
         {
             Session session when read.Type == EventTypes.CheckoutSessionCompleted => session.SubscriptionId,
+            Invoice invoice when InvoiceEvents.Contains(read.Type) => invoice.Parent?.SubscriptionDetails?.SubscriptionId,
             global::Stripe.Subscription subscription when SubscriptionEvents.Contains(read.Type) => subscription.Id,
             _ => null,
         };
         return new ProviderEvent(read.Id, read.Type, subscriptionId);
+    }
+
+    // B11: the latest invoice is open and its payment was tried and failed; Stripe names its next attempt until its retries are over. The
+    // card is the subscription's own, else the customer's default for invoices, which the portal sets.
+    private static ProviderPayment? FailedPaymentOf(global::Stripe.Subscription subscription)
+    {
+        if (subscription.LatestInvoice is not { Status: "open", AttemptCount: > 0 } invoice)
+        {
+            return null;
+        }
+
+        var card = (subscription.DefaultPaymentMethod ?? subscription.Customer?.InvoiceSettings?.DefaultPaymentMethod)?.Card;
+        return new ProviderPayment(
+            invoice.Id,
+            invoice.TotalExcludingTax ?? invoice.AmountDue,
+            invoice.Currency.ToUpperInvariant(),
+            invoice.EffectiveAt ?? invoice.Created,
+            (int)invoice.AttemptCount,
+            invoice.NextPaymentAttempt,
+            card?.Brand,
+            card?.Last4);
     }
 
     // The fee per person is the Price whose lookup key our app wrote with its part (B2).
