@@ -192,7 +192,6 @@ export function useListTenantsInfinite<TData = InfiniteData<Awaited<ReturnType<t
  params?: ListTenantsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTenants>>, TError, TData, QueryKey, ListTenantsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListTenantsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listTenants>>, ListTenantsParams['page']>, TError = ErrorType<ProblemDetails>>(
  params?: ListTenantsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTenants>>, TError, TData, QueryKey, ListTenantsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -256,7 +255,6 @@ export function useListTenants<TData = Awaited<ReturnType<typeof listTenants>>, 
  params?: ListTenantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTenants>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListTenants<TData = Awaited<ReturnType<typeof listTenants>>, TError = ErrorType<ProblemDetails>>(
  params?: ListTenantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTenants>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -350,7 +348,6 @@ export function useGetTenant<TData = Awaited<ReturnType<typeof getTenant>>, TErr
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTenant>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetTenant<TData = Awaited<ReturnType<typeof getTenant>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTenant>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

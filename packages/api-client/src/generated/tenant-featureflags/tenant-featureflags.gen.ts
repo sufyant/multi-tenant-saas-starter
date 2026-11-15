@@ -123,7 +123,6 @@ export function useGetMyTenantFeatureFlags<TData = Awaited<ReturnType<typeof get
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTenantFeatureFlags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetMyTenantFeatureFlags<TData = Awaited<ReturnType<typeof getMyTenantFeatureFlags>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTenantFeatureFlags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

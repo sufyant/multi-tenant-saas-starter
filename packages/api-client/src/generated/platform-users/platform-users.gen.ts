@@ -154,7 +154,6 @@ export function useListUsersInfinite<TData = InfiniteData<Awaited<ReturnType<typ
  params?: ListUsersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData, QueryKey, ListUsersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListUsersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listUsers>>, ListUsersParams['page']>, TError = ErrorType<ProblemDetails>>(
  params?: ListUsersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData, QueryKey, ListUsersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -218,7 +217,6 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<ProblemDetails>>(
  params?: ListUsersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -312,7 +310,6 @@ export function useGetUser<TData = Awaited<ReturnType<typeof getUser>>, TError =
  userId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUser>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetUser<TData = Awaited<ReturnType<typeof getUser>>, TError = ErrorType<ProblemDetails>>(
  userId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUser>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

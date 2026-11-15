@@ -123,7 +123,6 @@ export function useGetBilling<TData = Awaited<ReturnType<typeof getBilling>>, TE
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBilling>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetBilling<TData = Awaited<ReturnType<typeof getBilling>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBilling>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

@@ -154,7 +154,6 @@ export function useListRolesInfinite<TData = InfiniteData<Awaited<ReturnType<typ
     params?: ListRolesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListRolesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listRoles>>, ListRolesParams['page']>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListRolesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData, QueryKey, ListRolesParams['page']>>, request?: SecondParameter<typeof apiFetch>}
@@ -223,7 +222,6 @@ export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TErr
     params?: ListRolesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListRoles<TData = Awaited<ReturnType<typeof listRoles>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListRolesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRoles>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}

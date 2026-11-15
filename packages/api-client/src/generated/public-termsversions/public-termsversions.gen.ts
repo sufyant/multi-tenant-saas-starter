@@ -123,7 +123,6 @@ export function useGetTermsInForce<TData = Awaited<ReturnType<typeof getTermsInF
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTermsInForce>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetTermsInForce<TData = Awaited<ReturnType<typeof getTermsInForce>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTermsInForce>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

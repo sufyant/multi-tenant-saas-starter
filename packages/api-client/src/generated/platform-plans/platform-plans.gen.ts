@@ -153,7 +153,6 @@ export function useListPlansInfinite<TData = InfiniteData<Awaited<ReturnType<typ
  params?: ListPlansParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListPlansInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlans>>, ListPlansParams['page']>, TError = ErrorType<ProblemDetails>>(
  params?: ListPlansParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData, QueryKey, ListPlansParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -217,7 +216,6 @@ export function useListPlans<TData = Awaited<ReturnType<typeof listPlans>>, TErr
  params?: ListPlansParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListPlans<TData = Awaited<ReturnType<typeof listPlans>>, TError = ErrorType<ProblemDetails>>(
  params?: ListPlansParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlans>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -347,7 +345,6 @@ export function useGetPlan<TData = Awaited<ReturnType<typeof getPlan>>, TError =
  planId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetPlan<TData = Awaited<ReturnType<typeof getPlan>>, TError = ErrorType<ProblemDetails>>(
  planId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -522,7 +519,6 @@ export function useGetTenantPlan<TData = Awaited<ReturnType<typeof getTenantPlan
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetTenantPlan<TData = Awaited<ReturnType<typeof getTenantPlan>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTenantPlan>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

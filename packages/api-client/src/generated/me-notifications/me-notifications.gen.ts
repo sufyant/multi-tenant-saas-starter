@@ -143,7 +143,6 @@ export function useListMyNotificationsInfinite<TData = InfiniteData<Awaited<Retu
  params?: ListMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListMyNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMyNotifications>>, ListMyNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
  params?: ListMyNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData, QueryKey, ListMyNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -207,7 +206,6 @@ export function useListMyNotifications<TData = Awaited<ReturnType<typeof listMyN
  params?: ListMyNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListMyNotifications<TData = Awaited<ReturnType<typeof listMyNotifications>>, TError = ErrorType<ProblemDetails>>(
  params?: ListMyNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -301,7 +299,6 @@ export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeo
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetMyUnreadNotificationCount<TData = Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -437,7 +434,6 @@ export function useStreamNotifications<TData = Awaited<ReturnType<typeof streamN
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof streamNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useStreamNotifications<TData = Awaited<ReturnType<typeof streamNotifications>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof streamNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

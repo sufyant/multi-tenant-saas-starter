@@ -143,7 +143,6 @@ export function useListPlatformNotificationsInfinite<TData = InfiniteData<Awaite
  params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListPlatformNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformNotifications>>, ListPlatformNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
  params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData, QueryKey, ListPlatformNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -207,7 +206,6 @@ export function useListPlatformNotifications<TData = Awaited<ReturnType<typeof l
  params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListPlatformNotifications<TData = Awaited<ReturnType<typeof listPlatformNotifications>>, TError = ErrorType<ProblemDetails>>(
  params?: ListPlatformNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -301,7 +299,6 @@ export function useGetPlatformUnreadNotificationCount<TData = Awaited<ReturnType
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetPlatformUnreadNotificationCount<TData = Awaited<ReturnType<typeof getPlatformUnreadNotificationCount>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

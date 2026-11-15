@@ -131,7 +131,6 @@ export function useListMyTenants<TData = Awaited<ReturnType<typeof listMyTenants
  params?: ListMyTenantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyTenants>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListMyTenants<TData = Awaited<ReturnType<typeof listMyTenants>>, TError = ErrorType<ProblemDetails>>(
  params?: ListMyTenantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMyTenants>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

@@ -135,7 +135,6 @@ export function useGetTermsOfUse<TData = Awaited<ReturnType<typeof getTermsOfUse
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTermsOfUse>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetTermsOfUse<TData = Awaited<ReturnType<typeof getTermsOfUse>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTermsOfUse>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -229,7 +228,6 @@ export function useGetTermsVersion<TData = Awaited<ReturnType<typeof getTermsVer
  versionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTermsVersion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetTermsVersion<TData = Awaited<ReturnType<typeof getTermsVersion>>, TError = ErrorType<ProblemDetails>>(
  versionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTermsVersion>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -380,7 +378,6 @@ export function useListTermsVersionPeopleInfinite<TData = InfiniteData<Awaited<R
     params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListTermsVersionPeopleInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listTermsVersionPeople>>, ListTermsVersionPeopleParams['cursor']>, TError = ErrorType<ProblemDetails>>(
  versionId: string,
     params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData, QueryKey, ListTermsVersionPeopleParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
@@ -449,7 +446,6 @@ export function useListTermsVersionPeople<TData = Awaited<ReturnType<typeof list
     params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListTermsVersionPeople<TData = Awaited<ReturnType<typeof listTermsVersionPeople>>, TError = ErrorType<ProblemDetails>>(
  versionId: string,
     params?: ListTermsVersionPeopleParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTermsVersionPeople>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
