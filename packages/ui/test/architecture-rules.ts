@@ -500,6 +500,32 @@ export function dateFormattingOutsideFormatter(
     );
 }
 
+const moneyFormatting = /style:\s*["']currency["']/g;
+
+/** Rule F18: only `format-money.ts` formats an amount of money. */
+export function moneyFormattingOutsideFormatter(
+  root: string,
+  options: Options = {},
+): Finding[] {
+  return filesUnder(root)
+    .filter(
+      (path) =>
+        isCode(path) &&
+        !isTest(path) &&
+        !isGenerated(path) &&
+        basename(path) !== "format-money.ts" &&
+        !ignored(root, path, options),
+    )
+    .flatMap((path) =>
+      linesMatching(
+        root,
+        path,
+        moneyFormatting,
+        (match) => `"${match}" formats money; call format-money.ts`,
+      ),
+    );
+}
+
 /**
  * Rule F3: no value of a contract enum as a string literal. A screen reads `Object.values(Language)` or
  * `Language.En`. A literal that only starts with a value, such as the message key `errors.tenant.not_found`, is allowed, and so

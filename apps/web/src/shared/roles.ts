@@ -20,7 +20,7 @@ export const roleNameOf = (
   return builtIn ? builtInName(builtIn) : role.name;
 };
 
-/** The roles in the order a list shows them: Owner, Admin and Member first, then the custom roles in the order they came. */
+/** The roles in the order a list shows them: Owner, Admin, Billing manager and Member first, then the custom roles in the order they came. */
 export const inListOrder = <T extends Role>(roles: readonly T[]): T[] => {
   const rank = (role: T) => {
     const builtIn = builtInRoleOf(role);

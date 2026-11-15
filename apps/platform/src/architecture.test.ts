@@ -10,6 +10,7 @@ import {
   enumLiterals,
   enumValues,
   messageKeySets,
+  moneyFormattingOutsideFormatter,
   nativeChoiceControls,
   navigationsAfterAChange,
   numericLayerClasses,
@@ -88,6 +89,10 @@ describe("architecture of apps/platform", () => {
 
   it("F18_AppsPlatform_FormatsDatesOnlyInFormatDateTime", () => {
     expect(dateFormattingOutsideFormatter(src)).toEqual([]);
+  });
+
+  it("F18_AppsPlatform_FormatsMoneyOnlyInFormatMoney", () => {
+    expect(moneyFormattingOutsideFormatter(src)).toEqual([]);
   });
 
   it("F51_AppsPlatform_DecidesNothingByARolesName", () => {

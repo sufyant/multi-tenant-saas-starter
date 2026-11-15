@@ -1092,6 +1092,52 @@ describe("PlanEditor", () => {
     expect(await screen.findByText("Page not found")).toBeVisible();
   });
 
+  // A new plan has no currency of its own: it reads the deployment's from the default plan, then prices in it (6.13).
+  it("Create_DefaultPlanRead_ShowsPricesAndSendsThem", async () => {
+    const creates: Call[] = [];
+    server.use(
+      planAnswer(free),
+      plansCommand(
+        "post",
+        "plans",
+        [
+          () =>
+            HttpResponse.json(
+              { ...partner, name: "Starter" },
+              {
+                status: 201,
+                headers: { Location: `/api/v1/platform/plans/${partner.id}` },
+              },
+            ),
+        ],
+        creates,
+      ),
+    );
+    renderWithProviders(<PlanEditor planId={null} />);
+
+    const field = await screen.findByRole("textbox", {
+      name: "Per person, monthly",
+    });
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Name" }),
+      "Starter",
+    );
+    await userEvent.clear(field);
+    await userEvent.type(field, "8");
+    await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
+
+    await expectVisibleToast(sentence("Starter created"));
+    expect(creates[0]?.body).toMatchObject({
+      prices: {
+        baseMonthly: 0,
+        baseYearly: 0,
+        perPersonMonthly: 800,
+        perPersonYearly: 0,
+      },
+      meters: [],
+    });
+  });
+
   it("Create_Empty_StartsUnsetBesideTheActivityLogAndSendsTheValuesSet", async () => {
     const creates: Call[] = [];
     server.use(
