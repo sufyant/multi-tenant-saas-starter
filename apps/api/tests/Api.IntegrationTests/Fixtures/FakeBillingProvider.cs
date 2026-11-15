@@ -38,6 +38,9 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     public ConcurrentQueue<string> Cancelled { get; } = [];
 
+    // Each end at once with a refund of what the subscription paid (B7).
+    public ConcurrentQueue<string> Refunded { get; } = [];
+
     // Each move at once with its proration moment, each move at the period's end, and each undo (B9).
     public ConcurrentQueue<(PlanChangeOrder Order, DateTimeOffset ProratedAt)> MovesNow { get; } = [];
 
@@ -98,6 +101,12 @@ internal sealed class FakeBillingProvider : IBillingProvider
     public Task CancelSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
         Cancelled.Enqueue(subscriptionId);
+        return Task.CompletedTask;
+    }
+
+    public Task EndAndRefundAsync(string subscriptionId, CancellationToken cancellationToken)
+    {
+        Refunded.Enqueue(subscriptionId);
         return Task.CompletedTask;
     }
 

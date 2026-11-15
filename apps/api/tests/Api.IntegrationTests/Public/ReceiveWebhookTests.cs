@@ -200,7 +200,7 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
     // B7: a second subscription while the first has not ended came from a page that a race left payable: it ends at Stripe at once, and the
     // tenant keeps the first.
     [Fact]
-    public async Task ReceiveWebhook_ASecondActiveSubscription_EndsItAtOnceAndKeepsTheFirst()
+    public async Task ReceiveWebhook_ASecondActiveSubscription_EndsItAtOnceRefundsItAndKeepsTheFirst()
     {
         var tenant = await _testData.AddTenantAsync();
         await _api.PayAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), tenant.Id, _planId);
@@ -208,7 +208,8 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_second_{tenant.Id:N}"));
 
-        _api.Billing.Cancelled.ShouldBe([$"sub_second_{tenant.Id:N}"]);
+        _api.Billing.Refunded.ShouldBe([$"sub_second_{tenant.Id:N}"]);
+        _api.Billing.Cancelled.ShouldBeEmpty();
         (await SubscriptionOfAsync(tenant.Id)).ShouldBe($"cus_{tenant.Id:N}|sub_{tenant.Id:N}|{_planId}|Monthly|Active|f");
         (await _audit.TenantLogAsync(tenant.Id))!.Split(", ").Length.ShouldBe(1);
     }
