@@ -34,7 +34,7 @@ public sealed class PreviewPlanChangeTests(Database database) : IAsyncLifetime
         answer.StatusCode.ShouldBe(HttpStatusCode.OK);
         var preview = await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (preview.GetProperty("move").GetString(), preview.GetProperty("currency").GetString(), preview.GetProperty("amount").GetInt64(), preview.GetProperty("amountToday").GetInt64())
-            .ShouldBe(("now", "EUR", 10700L, 5325L));
+            .ShouldBe(("at_once", "EUR", 10700L, 5325L));
         _api.Billing.MovesNow.ShouldBeEmpty();
     }
 

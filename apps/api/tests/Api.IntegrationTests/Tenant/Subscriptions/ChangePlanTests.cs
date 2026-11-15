@@ -39,7 +39,7 @@ public sealed class ChangePlanTests(Database database) : IAsyncLifetime
         var answer = await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, _tenants.Business));
 
         answer.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await MoveOfAsync(answer)).ShouldBe("now");
+        (await MoveOfAsync(answer)).ShouldBe("at_once");
         _api.Billing.MovesNow.Select(move => (move.Order.SubscriptionId, move.Order.PlanId, move.Order.BaseAmount, move.Order.PerPersonAmount, move.Order.People, move.Order.Yearly))
             .ShouldBe([($"sub_{tenantId:N}", _tenants.Business, 9900L, 800L, 1, false)]);
         (await _tenants.PlanOfAsync(tenantId)).ShouldBe(_tenants.Business);
@@ -53,7 +53,7 @@ public sealed class ChangePlanTests(Database database) : IAsyncLifetime
 
         var answer = await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, _tenants.Team, "yearly"));
 
-        (await MoveOfAsync(answer)).ShouldBe("now");
+        (await MoveOfAsync(answer)).ShouldBe("at_once");
         (await _tenants.SubscriptionOfAsync(tenantId)).ShouldBe($"{_tenants.Team}|Yearly|f||");
     }
 

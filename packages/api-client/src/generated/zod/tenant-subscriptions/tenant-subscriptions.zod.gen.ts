@@ -54,10 +54,10 @@ export const PreviewPlanChangeBody = zod.object({
 
 export const PreviewPlanChangeResponse = zod.object({
   "move": zod.enum({
-  Now: 'now',
+  AtOnce: 'at_once',
   AtPeriodEnd: 'at_period_end',
   Cancellation: 'cancellation',
-}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period\'s end.'),
+}).describe('When the move applies (B9): `at_once`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period\'s end.'),
   "at": zod.iso.datetime({"offset":true}),
   "currency": zod.string(),
   "amount": zod.int(),
@@ -80,12 +80,12 @@ export const ChangePlanBody = zod.object({
 
 export const ChangePlanResponse = zod.object({
   "move": zod.enum({
-  Now: 'now',
+  AtOnce: 'at_once',
   AtPeriodEnd: 'at_period_end',
   Cancellation: 'cancellation',
-}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period\'s end.'),
+}).describe('When the move applies (B9): `at_once`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period\'s end.'),
   "at": zod.iso.datetime({"offset":true})
-}).describe('The move the provider took, and when it applies. The tenant\'s plan changes when the provider\'s event of the change arrives: at once\nfor `now`, at `at` for the others.')
+}).describe('The move the provider took, and when it applies. The tenant\'s plan changes when the provider\'s event of the change arrives: at once\nfor `at_once`, at `at` for the others.')
 
 export const UndoScheduledChangeParams = zod.object({
   "tenantId": zod.uuid()

@@ -1920,14 +1920,14 @@ export interface PlanChangePreviewRequest {
 }
 
 /**
- * When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to
+ * When the move applies (B9): `at_once`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to
  * monthly; `cancellation`, the move to the default plan at the period's end.
  */
 export type PlanChangeResponseMove = typeof PlanChangeResponseMove[keyof typeof PlanChangeResponseMove];
 
 
 export const PlanChangeResponseMove = {
-  Now: 'now',
+  AtOnce: 'at_once',
   AtPeriodEnd: 'at_period_end',
   Cancellation: 'cancellation',
 } as const;
@@ -1962,7 +1962,7 @@ export interface PlanChangeRequest {
 
 /**
  * The move the provider took, and when it applies. The tenant's plan changes when the provider's event of the change arrives: at once
- * for `now`, at `at` for the others.
+ * for `at_once`, at `at` for the others.
  */
 export interface PlanChangeResponse {
   move: PlanChangeResponseMove;

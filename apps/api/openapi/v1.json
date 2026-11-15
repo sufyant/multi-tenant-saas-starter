@@ -16148,18 +16148,18 @@
             "format": "date-time"
           }
         },
-        "description": "The move the provider took, and when it applies. The tenant's plan changes when the provider's event of the change arrives: at once\nfor `now`, at `at` for the others."
+        "description": "The move the provider took, and when it applies. The tenant's plan changes when the provider's event of the change arrives: at once\nfor `at_once`, at `at` for the others."
       },
       "PlanChangeResponseMove": {
         "enum": [
-          "now",
+          "at_once",
           "at_period_end",
           "cancellation"
         ],
         "type": "string",
-        "description": "When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period's end.",
+        "description": "When the move applies (B9): `at_once`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period's end.",
         "x-enumNames": [
-          "Now",
+          "AtOnce",
           "AtPeriodEnd",
           "Cancellation"
         ]
