@@ -392,6 +392,10 @@
         "purge_warned": "<target></target> kuruluşunun Sahiplerine kuruluşun {date} tarihinde silineceği bildirildi.",
         "purged": "<target></target> silindi.",
         "plan_changed": "<actor></actor>, <target></target> kuruluşunu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.",
+        "plan_cancelled": "<actor></actor>, <target></target> kuruluşunun planını iptal etti. {date} tarihinde <newPlan></newPlan> planına geçer.",
+        "plan_cancellation_undone": "<actor></actor>, <target></target> kuruluşunun iptalini geri aldı. <plan></plan> planında kalır.",
+        "plan_change_scheduled": "{interval, select, yes {<actor></actor>, <target></target> kuruluşunu <plan></plan> planında aylık faturalamaya geçirdi. {date} tarihinde geçerli olur.} other {<actor></actor>, <target></target> kuruluşunun planını <oldPlan></oldPlan> planından <newPlan></newPlan> planına değiştirdi. {date} tarihinde geçerli olur.}}",
+        "plan_change_undone": "<actor></actor>, <target></target> kuruluşunun planlanan değişikliğini geri aldı. <plan></plan> planında kalır.",
         "entitlement_override_set": "<actor></actor>, <target></target> kuruluşunun {key} değerini {expiry, select, none {süresiz olarak} other {{date} tarihine kadar}} {value} yaptı (önceki: {previous}).{hasReason, select, yes { Neden: <name>{reason}</name>.} ended { Neden: <name>{reason}</name>} other {}}",
         "entitlement_override_removed": "<actor></actor>, <target></target> kuruluşunun {key} istisnasını kaldırdı ({value}, {expiry, select, none {süresiz} other {{date} tarihine kadar}})."
       },

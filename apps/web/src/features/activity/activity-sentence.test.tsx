@@ -871,6 +871,42 @@ describe("ActivitySentence", () => {
       expect(shown(text)).toBeInTheDocument();
     },
   );
+
+  // 12.12: a member's cancellation, its undo and a scheduled move (B9). The detail of 1 Dec at midnight in UTC is 1 Dec in Dublin.
+  it.each([
+    [
+      AuditOperation.TenantPlanCancelled,
+      "Ayşe Yılmaz cancelled the plan. Northwind Traders moves to Free on 1 Dec 2026.",
+    ],
+    [
+      AuditOperation.TenantPlanCancellationUndone,
+      "Ayşe Yılmaz undid the cancellation. Northwind Traders stays on Pro.",
+    ],
+    [
+      AuditOperation.TenantPlanChangeScheduled,
+      "Ayşe Yılmaz changed the plan from Pro to Team. It applies on 1 Dec 2026.",
+    ],
+    [
+      AuditOperation.TenantPlanChangeUndone,
+      "Ayşe Yılmaz undid the scheduled change. Northwind Traders stays on Pro.",
+    ],
+  ] as const)(
+    "ActivitySentence_%s_WritesTheBoardsSentence",
+    (operation, text) => {
+      renderWithProviders(
+        <ActivitySentence
+          entry={entry({
+            operation,
+            target: northwindTarget,
+            details: detailsOf[operation],
+          })}
+          timeZone="Europe/Dublin"
+        />,
+      );
+
+      expect(shown(text)).toBeInTheDocument();
+    },
+  );
 });
 
 const languages = Object.keys(messages) as (keyof typeof messages)[];

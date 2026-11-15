@@ -1,5 +1,6 @@
 using ControlPlane.Application.Plans;
 using ControlPlane.Contracts.Plans;
+using ControlPlane.Domain.Plans;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.Plans;
@@ -10,13 +11,16 @@ namespace ControlPlane.Infrastructure.Persistence.Plans;
 public sealed class PlanDirectory(ControlPlaneDbContext controlPlane, BillingOptions billing) : IPlanDirectory
 {
     public async Task<PlanRecord?> FindPlanAsync(Guid planId, CancellationToken cancellationToken) =>
-        await controlPlane.Plans
-            .Where(plan => plan.Id == planId)
-            .Select(plan => new PlanRecord(
-                plan.Id,
-                plan.Name,
-                billing.Currency,
-                new PlanPricesRecord(plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly),
-                controlPlane.DefaultPlans.Any(mark => mark.PlanId == plan.Id)))
-            .SingleOrDefaultAsync(cancellationToken);
+        await Records(controlPlane.Plans.Where(plan => plan.Id == planId)).SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<PlanRecord?> FindDefaultPlanAsync(CancellationToken cancellationToken) =>
+        await Records(controlPlane.Plans.Where(plan => controlPlane.DefaultPlans.Any(mark => mark.PlanId == plan.Id))).SingleOrDefaultAsync(cancellationToken);
+
+    private IQueryable<PlanRecord> Records(IQueryable<Plan> plans) =>
+        plans.Select(plan => new PlanRecord(
+            plan.Id,
+            plan.Name,
+            billing.Currency,
+            new PlanPricesRecord(plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly),
+            controlPlane.DefaultPlans.Any(mark => mark.PlanId == plan.Id)));
 }

@@ -493,6 +493,58 @@ export interface TenantPlanChangedDetailsResponse {
   newPlan: AuditPlanResponse;
 }
 
+export type TenantPlanCancelledDetailsResponseOperation = typeof TenantPlanCancelledDetailsResponseOperation[keyof typeof TenantPlanCancelledDetailsResponseOperation];
+
+
+export const TenantPlanCancelledDetailsResponseOperation = {
+  TenantPlanCancelled: 'tenant.plan_cancelled',
+} as const;
+
+export interface TenantPlanCancelledDetailsResponse {
+  operation: TenantPlanCancelledDetailsResponseOperation;
+  plan: AuditPlanResponse;
+  newPlan: AuditPlanResponse;
+  movesAt: string;
+}
+
+export type TenantPlanCancellationUndoneDetailsResponseOperation = typeof TenantPlanCancellationUndoneDetailsResponseOperation[keyof typeof TenantPlanCancellationUndoneDetailsResponseOperation];
+
+
+export const TenantPlanCancellationUndoneDetailsResponseOperation = {
+  TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',
+} as const;
+
+export interface TenantPlanCancellationUndoneDetailsResponse {
+  operation: TenantPlanCancellationUndoneDetailsResponseOperation;
+  plan: AuditPlanResponse;
+}
+
+export type TenantPlanChangeScheduledDetailsResponseOperation = typeof TenantPlanChangeScheduledDetailsResponseOperation[keyof typeof TenantPlanChangeScheduledDetailsResponseOperation];
+
+
+export const TenantPlanChangeScheduledDetailsResponseOperation = {
+  TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
+} as const;
+
+export interface TenantPlanChangeScheduledDetailsResponse {
+  operation: TenantPlanChangeScheduledDetailsResponseOperation;
+  oldPlan: AuditPlanResponse;
+  newPlan: AuditPlanResponse;
+  appliesAt: string;
+}
+
+export type TenantPlanChangeUndoneDetailsResponseOperation = typeof TenantPlanChangeUndoneDetailsResponseOperation[keyof typeof TenantPlanChangeUndoneDetailsResponseOperation];
+
+
+export const TenantPlanChangeUndoneDetailsResponseOperation = {
+  TenantPlanChangeUndone: 'tenant.plan_change_undone',
+} as const;
+
+export interface TenantPlanChangeUndoneDetailsResponse {
+  operation: TenantPlanChangeUndoneDetailsResponseOperation;
+  plan: AuditPlanResponse;
+}
+
 export type TenantPurgeWarnedDetailsResponseOperation = typeof TenantPurgeWarnedDetailsResponseOperation[keyof typeof TenantPurgeWarnedDetailsResponseOperation];
 
 
@@ -600,7 +652,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -637,6 +689,10 @@ export const AuditOperation = {
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',
+  TenantPlanCancelled: 'tenant.plan_cancelled',
+  TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
+  TenantPlanChangeUndone: 'tenant.plan_change_undone',
   TenantPlanChanged: 'tenant.plan_changed',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',

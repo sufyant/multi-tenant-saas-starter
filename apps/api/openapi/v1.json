@@ -13056,6 +13056,18 @@
             "$ref": "#/components/schemas/TenantPlanChangedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantPlanCancelledDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantPlanCancellationUndoneDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantPlanChangeScheduledDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantPlanChangeUndoneDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantPurgeWarnedDetailsResponse"
           },
           {
@@ -13097,6 +13109,10 @@
             "tenant.owner_invited": "#/components/schemas/TenantOwnerInvitedDetailsResponse",
             "tenant.owner_made": "#/components/schemas/TenantOwnerMadeDetailsResponse",
             "tenant.plan_changed": "#/components/schemas/TenantPlanChangedDetailsResponse",
+            "tenant.plan_cancelled": "#/components/schemas/TenantPlanCancelledDetailsResponse",
+            "tenant.plan_cancellation_undone": "#/components/schemas/TenantPlanCancellationUndoneDetailsResponse",
+            "tenant.plan_change_scheduled": "#/components/schemas/TenantPlanChangeScheduledDetailsResponse",
+            "tenant.plan_change_undone": "#/components/schemas/TenantPlanChangeUndoneDetailsResponse",
             "tenant.purge_warned": "#/components/schemas/TenantPurgeWarnedDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse",
@@ -13247,6 +13263,10 @@
           "tenant.entitlement_override_set",
           "tenant.owner_invited",
           "tenant.owner_made",
+          "tenant.plan_cancellation_undone",
+          "tenant.plan_cancelled",
+          "tenant.plan_change_scheduled",
+          "tenant.plan_change_undone",
           "tenant.plan_changed",
           "tenant.purge_warned",
           "tenant.purged",
@@ -13299,6 +13319,10 @@
           "TenantEntitlementOverrideSet",
           "TenantOwnerInvited",
           "TenantOwnerMade",
+          "TenantPlanCancellationUndone",
+          "TenantPlanCancelled",
+          "TenantPlanChangeScheduled",
+          "TenantPlanChangeUndone",
           "TenantPlanChanged",
           "TenantPurgeWarned",
           "TenantPurged",
@@ -17790,6 +17814,55 @@
         },
         "description": "An Owner of a tenant: the user's id, name and address."
       },
+      "TenantPlanCancellationUndoneDetailsResponse": {
+        "required": [
+          "plan",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.plan_cancellation_undone"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPlanCancellationUndone"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          }
+        }
+      },
+      "TenantPlanCancelledDetailsResponse": {
+        "required": [
+          "plan",
+          "newPlan",
+          "movesAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.plan_cancelled"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPlanCancelled"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "newPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "movesAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "TenantPlanChangedDetailsResponse": {
         "required": [
           "oldPlan",
@@ -17846,6 +17919,55 @@
           }
         },
         "description": "What a change of the tenant's plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch. A shorter Activity log period, null when the\nnew plan keeps it as long or longer."
+      },
+      "TenantPlanChangeScheduledDetailsResponse": {
+        "required": [
+          "oldPlan",
+          "newPlan",
+          "appliesAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.plan_change_scheduled"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPlanChangeScheduled"
+            ]
+          },
+          "oldPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "newPlan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "appliesAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TenantPlanChangeUndoneDetailsResponse": {
+        "required": [
+          "plan",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.plan_change_undone"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPlanChangeUndone"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          }
+        }
       },
       "TenantPlanResponse": {
         "required": [

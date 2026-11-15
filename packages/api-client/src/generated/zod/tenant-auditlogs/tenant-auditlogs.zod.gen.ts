@@ -53,6 +53,10 @@ export const ListAuditEntriesResponse = zod.object({
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantOwnerInvited: 'tenant.owner_invited',
   TenantOwnerMade: 'tenant.owner_made',
+  TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',
+  TenantPlanCancelled: 'tenant.plan_cancelled',
+  TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
+  TenantPlanChangeUndone: 'tenant.plan_change_undone',
   TenantPlanChanged: 'tenant.plan_changed',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',
@@ -346,6 +350,48 @@ export const ListAuditEntriesResponse = zod.object({
   "name": zod.string()
 }).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
   "newPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
+}),zod.object({
+  "operation": zod.enum({
+  TenantPlanCancelled: 'tenant.plan_cancelled',
+}),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "newPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "movesAt": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantPlanCancellationUndone: 'tenant.plan_cancellation_undone',
+}),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
+}),zod.object({
+  "operation": zod.enum({
+  TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
+}),
+  "oldPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "newPlan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "appliesAt": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantPlanChangeUndone: 'tenant.plan_change_undone',
+}),
+  "plan": zod.object({
   "id": zod.uuid(),
   "name": zod.string()
 }).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')

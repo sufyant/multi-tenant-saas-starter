@@ -2,6 +2,7 @@ using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions.CancelSubscription;
+using Billing.Application.Subscriptions.NameScheduleChange;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Contracts.Subscriptions;
 using Billing.Domain.Subscriptions;
@@ -50,9 +51,23 @@ public static class ApplySubscriptionHandler
             subscription = Subscription.Start(state, now);
             subscriptions.Add(subscription);
         }
-        else if (subscription.Sync(state, now) == StateChange.Unchanged)
+        else
         {
-            return [];
+            // B9, 12.12: a member's cancellation, a scheduled move and their undo are entries of the Activity log, by the member who changed
+            // the plan last, once the provider's state shows them. Read before the row takes the state, which it compares with.
+            var scheduleChange = subscription.ScheduleChangeOf(state, customer.ClosedAt is not null);
+            if (subscription.Sync(state, now) == StateChange.Unchanged)
+            {
+                return [];
+            }
+
+            if (scheduleChange is { } change)
+            {
+                var moves = change is ScheduleChange.Cancelled or ScheduleChange.MoveScheduled;
+                messages.Add(new NameScheduleChangeCommand(
+                    Guid.CreateVersion7(now), now, command.TenantId, change.ToString(), command.PaidBy, subscription.PlanId,
+                    change == ScheduleChange.MoveScheduled ? subscription.ScheduledPlanId : null, moves ? subscription.CurrentPeriodEnd : null));
+            }
         }
 
         // B8: the provider ends in what the closure or the reopen asked, whatever order our calls reached it in, and a subscription of a

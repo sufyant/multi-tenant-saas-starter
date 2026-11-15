@@ -76,6 +76,7 @@ using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Subscriptions.ApplySubscription;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.RouteSubscription;
+using Billing.Application.Subscriptions.NameScheduleChange;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using Billing.Application.Webhooks.ReceiveWebhook;
@@ -345,6 +346,35 @@ public sealed class HostRoleTests(Database database)
         worker.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
         runs.In("worker").Count(run => run.Handler == typeof(SetCancelAtPeriodEndHandler)).ShouldBe(2);
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetCancelAtPeriodEndHandler));
+    }
+
+    // B9, 12.12: a member's cancellation is the web host's call to Stripe; the sync, the names and both audit entries run in the worker.
+    [Fact]
+    public async Task ChangePlan_ACancellationOnAWebAndAWorkerHost_RecordsItInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var team = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(team, 900, 1000, 9000, 10000);
+        var free = await database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans", name);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, team)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, team));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, team) with { CancelAtPeriodEnd = true });
+
+        var answer = await web.CreateClient(owner).ChangePlanAsync(tenant.Id, free);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_cancelled") > 0);
+
+        answer.StatusCode.ShouldBe(HttpStatusCode.OK);
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(NameScheduleChangeHandler));
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(NameScheduleChangeHandler));
     }
 
     // B9: a member's upgrade is the web host's call to Stripe; the sync that follows, and the plan change it brings, run in the worker.

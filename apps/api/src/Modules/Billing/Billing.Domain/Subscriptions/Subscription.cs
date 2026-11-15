@@ -126,6 +126,33 @@ internal sealed class Subscription : ITenantEntity
     }
 
     /// <summary>
+    /// The member's change of the period's end that the provider's new state shows, before the row takes it (B9): none when the state
+    /// changes nothing at the period's end, moves the plan or the interval now, is another subscription's, or comes while the tenant is
+    /// closed or the closure or the reopen asked the provider about the end (B8), as that end is the closure's, not a member's. A move
+    /// scheduled after a cancellation replaces it, so it is a move; a cancellation drops a scheduled move, so it is a cancellation.
+    /// </summary>
+    public ScheduleChange? ScheduleChangeOf(SubscriptionState state, bool tenantClosed)
+    {
+        if (tenantClosed || ClosureEnd != ClosureEnd.None || state.SubscriptionId != SubscriptionId || !PaysForItsPlan
+            || state.Status != SubscriptionStatus.Active || state.PlanId != PlanId || state.Interval != Interval)
+        {
+            return null;
+        }
+
+        if (state.CancelAtPeriodEnd)
+        {
+            return CancelAtPeriodEnd ? null : ScheduleChange.Cancelled;
+        }
+
+        if (state.ScheduledPlanId is not null)
+        {
+            return (state.ScheduledPlanId, state.ScheduledInterval) == (ScheduledPlanId, ScheduledInterval) ? null : ScheduleChange.MoveScheduled;
+        }
+
+        return CancelAtPeriodEnd ? ScheduleChange.CancellationUndone : ScheduledPlanId is null ? null : ScheduleChange.MoveUndone;
+    }
+
+    /// <summary>
     /// Takes the provider's state. A state it has already changes nothing (I1). Another subscription of the customer replaces this one
     /// unless the other has ended: a late read of an ended subscription never takes the row back from the one that replaced it, as the
     /// provider sends its events in no order (B5).
