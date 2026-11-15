@@ -769,7 +769,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Step 40, in the parts of section 8. 40-start, 40-design, 40a-backend (#299, #300) and 40a-frontend (#PRNUM) are done. 40b-backend is next. Then steps 41 to 47, in the order of section 1.
+5. Step 40, in the parts of section 8. 40-start, 40-design, 40a-backend (#299, #300) and 40a-frontend (#304) are done. 40b-backend is next. Then steps 41 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:
