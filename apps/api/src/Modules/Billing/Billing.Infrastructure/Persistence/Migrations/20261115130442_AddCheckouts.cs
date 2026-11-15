@@ -11,6 +11,21 @@ namespace Billing.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<bool>(
+                name: "ended_by_closure",
+                schema: "billing",
+                table: "subscriptions",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "closed_at",
+                schema: "billing",
+                table: "customers",
+                type: "timestamp with time zone",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "checkouts",
                 schema: "billing",
@@ -21,10 +36,10 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     plan_id = table.Column<Guid>(type: "uuid", nullable: false),
                     yearly = table.Column<bool>(type: "boolean", nullable: false),
                     people = table.Column<int>(type: "integer", nullable: false),
+                    return_url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     session_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -43,6 +58,16 @@ namespace Billing.Infrastructure.Persistence.Migrations
             migrationBuilder.DropTable(
                 name: "checkouts",
                 schema: "billing");
+
+            migrationBuilder.DropColumn(
+                name: "ended_by_closure",
+                schema: "billing",
+                table: "subscriptions");
+
+            migrationBuilder.DropColumn(
+                name: "closed_at",
+                schema: "billing",
+                table: "customers");
         }
     }
 }

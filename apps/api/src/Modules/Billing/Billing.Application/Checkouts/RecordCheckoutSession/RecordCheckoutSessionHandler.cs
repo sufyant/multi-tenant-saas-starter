@@ -1,16 +1,28 @@
-using SharedKernel;
+using Billing.Application.Checkouts.ExpireOtherCheckouts;
+using Billing.Application.Customers;
+using Wolverine;
 
 namespace Billing.Application.Checkouts.RecordCheckoutSession;
 
-// A page of a key that another checkout replaced since changes nothing: the reservation that replaced it expired it, or will.
+// The tenant's customer is locked first (K6a, B7). A page of a replaced key may have been made after the replacement expired the customer's
+// open pages, so it is expired here, but the page of the checkout that replaced it.
 public static class RecordCheckoutSessionHandler
 {
-    public static async Task HandleAsync(RecordCheckoutSessionCommand command, ICheckoutRepository checkouts, CancellationToken cancellationToken)
+    public static async Task<(bool, OutgoingMessages)> HandleAsync(
+        RecordCheckoutSessionCommand command,
+        ICustomerStore customers,
+        ICheckoutRepository checkouts,
+        CancellationToken cancellationToken)
     {
-        if (await checkouts.FindForUpdateAsync(cancellationToken) is { } checkout
-            && checkout.Record(command.Key, command.SessionId, command.Url.ToString(), command.ExpiresAt) == StateChange.Changed)
+        var customer = await customers.FindForUpdateAsync(cancellationToken)
+            ?? throw new InvalidOperationException("The endpoint keeps the tenant's customer before its checkout.");
+        var checkout = await checkouts.FindForUpdateAsync(cancellationToken);
+        if (checkout is not null && checkout.Record(command.Key, command.SessionId, command.Url.ToString()))
         {
             await checkouts.SaveChangesAsync(cancellationToken);
+            return (true, []);
         }
+
+        return (false, [new ExpireOtherCheckoutsCommand(customer.CustomerId, checkout?.Key)]);
     }
 }

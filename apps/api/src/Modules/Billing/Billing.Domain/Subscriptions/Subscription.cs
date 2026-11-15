@@ -34,6 +34,12 @@ internal sealed class Subscription : ITenantEntity
     /// <summary>Whether the subscription ends at <see cref="CurrentPeriodEnd"/>.</summary>
     public bool CancelAtPeriodEnd { get; private set; }
 
+    /// <summary>
+    /// Whether our app asked the provider to end the subscription at the end of its period because the tenant was closed (B8), so a reopen
+    /// takes back only that end, never one that a member asked for.
+    /// </summary>
+    public bool EndedByClosure { get; private set; }
+
     /// <summary>When billing last wrote the row.</summary>
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -50,6 +56,12 @@ internal sealed class Subscription : ITenantEntity
         subscription.Sync(state, at);
         return subscription;
     }
+
+    /// <summary>The closure asked the provider to end the subscription at the end of its period.</summary>
+    public void EndByClosure() => EndedByClosure = true;
+
+    /// <summary>The reopen took back the end that the closure asked for.</summary>
+    public void KeepAfterReopen() => EndedByClosure = false;
 
     /// <summary>
     /// Takes the provider's state. A state it has already changes nothing (I1). Another subscription of the customer replaces this one

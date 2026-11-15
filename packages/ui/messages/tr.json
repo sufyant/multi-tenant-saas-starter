@@ -71,11 +71,13 @@
     },
     "billing": {
       "already_subscribed": "Bu kuruluş zaten kartla ödüyor. Bunun yerine planını değiştirin.",
+      "checkout_replaced": "Başka bir ödeme sayfası bunun yerini aldı. Ödemeyi yeniden açın.",
       "no_customer": "Bu kuruluş henüz kartla ödeme yapmadı.",
       "off": "Faturalama kullanılamıyor.",
       "plan_free": "Bu plan ücretsiz, ödenecek bir şey yok.",
       "plan_not_found": "Bu plan yok.",
       "return_url_invalid": "Geri dönülecek sayfa bu uygulamaya ait değil.",
+      "tenant_closed": "Bu kuruluş kapalı, bu yüzden hiçbir şey ödemiyor.",
       "webhook_invalid": "Olayın imzası geçerli değil."
     },
     "data_export": {

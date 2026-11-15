@@ -70,7 +70,8 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
 
-        _api.Billing.Expired.ShouldBe([$"cs_{key:N}"]);
+        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", (Guid?)null));
+        key.ShouldNotBe(Guid.Empty);
         (await _testData.CountAsync($"SELECT count(*) FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
         _api.Billing.PeriodEnds.ShouldBeEmpty();
     }
@@ -84,7 +85,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
 
-        (_api.Billing.PeriodEnds.Count, _api.Billing.Expired.Count, _api.Billing.Cancelled.Count).ShouldBe((0, 0, 0));
+        (_api.Billing.PeriodEnds.Count, _api.Billing.Expiries.Count, _api.Billing.Cancelled.Count).ShouldBe((0, 0, 0));
     }
 
     [Theory]

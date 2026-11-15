@@ -22,7 +22,8 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
             var checkoutRepository = new Billing.Infrastructure.Persistence.Checkouts.CheckoutRepository(billingDbContext);
-            var subscriptionQueries = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionQueries(billingDbContext);
+            var subscriptionRepository = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionRepository(billingDbContext);
+            var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
             // The actual message body
             var tenantClosedEvent = (ControlPlane.Contracts.Tenants.TenantClosedEvent)context.Envelope.Message;
 
@@ -42,7 +43,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Tenants.StopBillingAtClose.StopBillingAtCloseHandler");
                 
                 // The actual message execution
-                var outgoing3 = await Billing.Application.Tenants.StopBillingAtClose.StopBillingAtCloseHandler.HandleAsync(tenantClosedEvent, subscriptionQueries, checkoutRepository, cancellation).ConfigureAwait(false);
+                var outgoing3 = await Billing.Application.Tenants.StopBillingAtClose.StopBillingAtCloseHandler.HandleAsync(tenantClosedEvent, customerStore, subscriptionRepository, checkoutRepository, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

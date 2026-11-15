@@ -8,12 +8,11 @@ namespace Billing.Infrastructure.Persistence.Checkouts;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class CheckoutRepository(BillingDbContext billing) : ICheckoutRepository
 {
-    // The tenant's customer row is locked by its own statement, as the first checkout has no row of its own to lock yet; the checkout is
-    // then read. Row level security keeps the checkout to the declared tenant, and the customer's read names it (R6).
+    // The caller locked the tenant's customer, the root of its billing, first (B7); the checkout is then locked and read. Row level security
+    // keeps it to the declared tenant.
     async Task<Checkout?> ICheckoutRepository.FindForUpdateAsync(CancellationToken cancellationToken)
     {
-        var tenantId = billing.MessageTenantId ?? throw new InvalidOperationException("A tenant's checkout is read in the tenant's transaction.");
-        await billing.Database.ExecuteSqlAsync($"SELECT customer_id FROM billing.customers WHERE tenant_id = {tenantId} FOR UPDATE", cancellationToken);
+        await billing.Database.ExecuteSqlAsync($"SELECT tenant_id FROM billing.checkouts FOR UPDATE", cancellationToken);
         return await billing.Checkouts.SingleOrDefaultAsync(cancellationToken);
     }
 

@@ -17,15 +17,19 @@ public interface IBillingProvider
     Task<string> CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of the provider where the person pays for the order by card, which works for a short time and is never stored. The provider
+    /// A page of the provider where the person pays for the order by card, until the order's expiry. The provider
     /// writes the plan's prices as its own prices when it has none of these amounts yet, as a price never changes there (Stripe, "Change
-    /// prices"). The order names the tenant's customer and the checkout's idempotency key, so two calls of one key make one page (B7); the
+    /// prices"). The order names the tenant's customer, the checkout's idempotency key and its expiry, so every call of one key is the same call
+    /// and makes one page (B7), and the checkout's key goes into the page's metadata, which the expiry of the customer's other pages reads; the
     /// signed event of the payment then names the subscription.
     /// </summary>
     Task<CheckoutPage> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken);
 
-    /// <summary>Expires a checkout's page, so nobody can pay on it; a page that was paid or expired already changes nothing (B7).</summary>
-    Task ExpireCheckoutAsync(string sessionId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Expires every open checkout page of the customer but the one of this key, or all of them without a key, so nobody can pay on them
+    /// (B7). A page that was paid or expired already is not open.
+    /// </summary>
+    Task ExpireOpenCheckoutsAsync(string customerId, Guid? keepKey, CancellationToken cancellationToken);
 
     /// <summary>Ends the subscription at the end of the period it has paid for, or keeps it (B8).</summary>
     Task SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken);

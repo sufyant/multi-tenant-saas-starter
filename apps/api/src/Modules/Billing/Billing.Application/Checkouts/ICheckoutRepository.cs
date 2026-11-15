@@ -7,8 +7,8 @@ namespace Billing.Application.Checkouts;
 public interface ICheckoutRepository
 {
     /// <summary>
-    /// The tenant's open checkout, after a lock of the tenant's customer, so two checkouts of one tenant run one after the other, the first
-    /// one too (K6a). None when the tenant has none.
+    /// The tenant's open checkout, locked for the rest of the transaction. The caller locks the tenant's customer first, the root of its
+    /// billing, so two checkouts of one tenant run one after the other, the first one too (K6a, B7). None when the tenant has none.
     /// </summary>
     internal Task<Checkout?> FindForUpdateAsync(CancellationToken cancellationToken);
 

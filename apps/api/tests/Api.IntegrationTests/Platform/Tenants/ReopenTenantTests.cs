@@ -160,6 +160,21 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // B8: a reopen before Stripe's event of the closure's end has arrived still takes the end back: our own mark says who asked for it.
+    [Fact]
+    public async Task ReopenTenant_BeforeStripesEventOfTheClosure_KeepsTheSubscription()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var planId = await PricedPlanAsync();
+        await _api.PayAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), tenant.Id, planId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
+
+        await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant.Id));
+
+        _api.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
+    }
+
     // B8: a reopen within the paid period keeps the subscription that the closure ended at the period's end (billing is on in this class's host).
     // Stripe's event brings the end at the period's end to the row; the reopen then takes it back.
     [Fact]

@@ -22,6 +22,7 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
             var checkoutRepository = new Billing.Infrastructure.Persistence.Checkouts.CheckoutRepository(billingDbContext);
+            var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
             // The actual message body
             var recordCheckoutSessionCommand = (Billing.Application.Checkouts.RecordCheckoutSession.RecordCheckoutSessionCommand)context.Envelope.Message;
 
@@ -41,7 +42,15 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Checkouts.RecordCheckoutSession.RecordCheckoutSessionHandler");
                 
                 // The actual message execution
-                await Billing.Application.Checkouts.RecordCheckoutSession.RecordCheckoutSessionHandler.HandleAsync(recordCheckoutSessionCommand, checkoutRepository, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await Billing.Application.Checkouts.RecordCheckoutSession.RecordCheckoutSessionHandler.HandleAsync(recordCheckoutSessionCommand, customerStore, checkoutRepository, cancellation).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

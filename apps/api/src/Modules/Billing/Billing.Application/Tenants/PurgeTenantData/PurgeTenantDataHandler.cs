@@ -1,8 +1,8 @@
-using Billing.Application.Checkouts.ExpireCheckoutSession;
 using Billing.Application.Checkouts;
+using Billing.Application.Checkouts.ExpireOtherCheckouts;
 using Billing.Application.Customers;
-using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions;
+using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Domain.Subscriptions;
 using ControlPlane.Contracts.Tenants;
 using Wolverine;
@@ -10,9 +10,10 @@ using Wolverine;
 namespace Billing.Application.Tenants.PurgeTenantData;
 
 // The tenant purge asks Billing to delete the tenant's data, in the tenant's transaction (docs/flows/tenant-purge.md): its subscription's
-// row, its open checkout and its customer in billing's map. A subscription that has not ended ends at the provider at once, and an open
-// checkout's page is expired, through the outbox in the same transaction (B8). The provider keeps its own records of the payments, which the law asks it to keep. It replies, so the purge goes on; a second copy
-// deletes nothing more (S7).
+// row, its open checkout and its customer in billing's map. The customer, the root of its billing, is locked first (K6a, B7). A
+// subscription that has not ended ends at the provider at once, and every open page of the customer is expired, through the outbox in the
+// same transaction (B8). The provider keeps its own records of the payments, which the law asks it to keep. It replies, so the purge goes
+// on; a second copy deletes nothing more (S7).
 public static class PurgeTenantDataHandler
 {
     /// <summary>The name Billing takes part in the purge by, which its replies carry.</summary>
@@ -20,22 +21,19 @@ public static class PurgeTenantDataHandler
 
     public static async Task<OutgoingMessages> HandleAsync(
         PurgeTenantDataCommand purge,
-        ISubscriptionRepository subscriptions,
-        ISubscriptionQueries subscriptionQueries,
-        ICheckoutRepository checkouts,
         ICustomerStore customers,
+        ISubscriptionRepository subscriptions,
+        ICheckoutRepository checkouts,
         CancellationToken cancellationToken)
     {
         OutgoingMessages messages = [];
-        if (await subscriptionQueries.FindSubscriptionAsync(cancellationToken) is { } subscription
-            && !Subscription.HasEnded(Enum.Parse<SubscriptionStatus>(subscription.Status)))
+        if (await customers.FindForUpdateAsync(cancellationToken) is { } customer)
         {
-            messages.Add(new CancelSubscriptionCommand(subscription.SubscriptionId));
-        }
-
-        if (await checkouts.FindForUpdateAsync(cancellationToken) is { SessionId: { } sessionId })
-        {
-            messages.Add(new ExpireCheckoutSessionCommand(sessionId));
+            messages.Add(new ExpireOtherCheckoutsCommand(customer.CustomerId, KeepKey: null));
+            if (await subscriptions.FindForUpdateAsync(cancellationToken) is { } subscription && !Subscription.HasEnded(subscription.Status))
+            {
+                messages.Add(new CancelSubscriptionCommand(subscription.SubscriptionId));
+            }
         }
 
         await checkouts.DeleteAsync(cancellationToken);

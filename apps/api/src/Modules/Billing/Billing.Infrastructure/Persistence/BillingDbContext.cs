@@ -58,6 +58,7 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             checkout.HasKey("TenantId");
             checkout.Property(c => c.SessionId).HasMaxLength(StripeEvent.IdMaxLength);
             checkout.Property(c => c.Url).HasMaxLength(2048);
+            checkout.Property(c => c.ReturnUrl).HasMaxLength(2048);
         });
 
         // B5: one customer for each tenant, and a customer belongs to one tenant.

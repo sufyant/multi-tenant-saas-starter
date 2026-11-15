@@ -17,5 +17,9 @@ public static class BillingErrorCodes
 
     public static readonly ErrorCode BillingReturnUrlInvalid = ErrorCode.Declare("billing.return_url_invalid");
 
+    public static readonly ErrorCode BillingCheckoutReplaced = ErrorCode.Declare("billing.checkout_replaced");
+
+    public static readonly ErrorCode BillingTenantClosed = ErrorCode.Declare("billing.tenant_closed");
+
     public static readonly ErrorCode BillingWebhookInvalid = ErrorCode.Declare("billing.webhook_invalid");
 }

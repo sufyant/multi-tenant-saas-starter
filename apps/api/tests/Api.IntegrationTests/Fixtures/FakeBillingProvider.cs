@@ -16,7 +16,7 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     private readonly ConcurrentDictionary<Guid, CheckoutPage> _pages = new();
 
-    public static DateTimeOffset PageExpiry { get; } = new(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private Func<Task>? _whileOpening;
 
     public static Uri PortalLink { get; } = new("https://billing.stripe.test/p/session/bps_test_1");
 
@@ -24,11 +24,15 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     public ConcurrentQueue<CheckoutOrder> Checkouts { get; } = [];
 
+    // Runs once, while the next checkout's page is being made, as another request that comes between.
+    public Func<Task>? WhileOpeningCheckout { get => _whileOpening; set => _whileOpening = value; }
+
     public ConcurrentQueue<(string CustomerId, Uri ReturnUrl)> Portals { get; } = [];
 
     public ConcurrentQueue<string> Reads { get; } = [];
 
-    public ConcurrentQueue<string> Expired { get; } = [];
+    // Each expiry of a customer's open pages, with the key whose page stays.
+    public ConcurrentQueue<(string CustomerId, Guid? KeepKey)> Expiries { get; } = [];
 
     public ConcurrentQueue<(string SubscriptionId, bool CancelAtPeriodEnd)> PeriodEnds { get; } = [];
 
@@ -51,15 +55,20 @@ internal sealed class FakeBillingProvider : IBillingProvider
         return Task.FromResult(CustomerOf(tenantId));
     }
 
-    public Task<CheckoutPage> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
+    public async Task<CheckoutPage> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
     {
         Checkouts.Enqueue(order);
-        return Task.FromResult(_pages.GetOrAdd(order.Key, key => new CheckoutPage($"cs_{key:N}", PageOf(key), PageExpiry)));
+        if (Interlocked.Exchange(ref _whileOpening, null) is { } between)
+        {
+            await between();
+        }
+
+        return _pages.GetOrAdd(order.Key, key => new CheckoutPage($"cs_{key:N}", PageOf(key)));
     }
 
-    public Task ExpireCheckoutAsync(string sessionId, CancellationToken cancellationToken)
+    public Task ExpireOpenCheckoutsAsync(string customerId, Guid? keepKey, CancellationToken cancellationToken)
     {
-        Expired.Enqueue(sessionId);
+        Expiries.Enqueue((customerId, keepKey));
         return Task.CompletedTask;
     }
 

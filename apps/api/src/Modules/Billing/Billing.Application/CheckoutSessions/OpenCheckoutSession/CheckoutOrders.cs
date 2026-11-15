@@ -42,6 +42,7 @@ public static class CheckoutOrders
 
         return new OpenCheckoutSessionQuery(
             Key: null,
+            ExpiresAt: null,
             tenantId, facts.PaidBy, CustomerId: null, facts.PlanId, facts.PlanName, facts.Currency, interval, baseAmount, perPerson,
             facts.SeatedMembers, new Uri($"{returnUrl}?{ReturnParameter}=success"), new Uri($"{returnUrl}?{ReturnParameter}=cancelled"));
     }

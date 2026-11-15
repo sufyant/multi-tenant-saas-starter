@@ -10,6 +10,7 @@ public static class OpenCheckoutSessionHandler
         provider.OpenCheckoutAsync(
             new CheckoutOrder(
                 query.Key ?? throw new InvalidOperationException("The endpoint names the checkout's key before the checkout."),
+                query.ExpiresAt ?? throw new InvalidOperationException("The endpoint names the checkout's expiry before the checkout."),
                 query.TenantId, query.PaidBy, query.CustomerId ?? throw new InvalidOperationException("The endpoint names the customer before the checkout."), query.PlanId, query.PlanName, query.Currency,
                 Enum.Parse<BillingInterval>(query.Interval) == BillingInterval.Yearly, query.BaseAmount, query.PerPersonAmount, query.People, query.SuccessUrl, query.CancelUrl),
             cancellationToken);

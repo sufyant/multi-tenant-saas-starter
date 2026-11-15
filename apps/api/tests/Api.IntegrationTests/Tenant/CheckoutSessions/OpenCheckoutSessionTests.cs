@@ -165,7 +165,7 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         _api.Billing.Customers.Distinct().ShouldBe([tenant.Id]);
     }
 
-    // B7: a checkout of another order replaces the open one, whose page Stripe then expires.
+    // B7: a checkout of another order replaces the open one: Stripe expires every other open page of the customer, the new one kept.
     [Fact]
     public async Task OpenCheckoutSession_AnotherOrder_ReplacesTheOpenPageAndExpiresIt()
     {
@@ -176,8 +176,10 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
 
         var yearly = await _api.WaitingForMessagesAsync(() => owner.OpenCheckoutSessionAsync(tenant.Id, _planId, interval: "yearly"));
 
-        (await UrlOfAsync(yearly)).ShouldNotBe(FakeBillingProvider.PageOf(monthly).ToString());
-        _api.Billing.Expired.ShouldBe([$"cs_{monthly:N}"]);
+        var kept = _api.Billing.Checkouts.Last().Key;
+        (await UrlOfAsync(yearly)).ShouldBe(FakeBillingProvider.PageOf(kept).ToString());
+        kept.ShouldNotBe(monthly);
+        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", kept));
     }
 
     // B7: a subscription that pays ends the tenant's open checkout and expires its page; a new checkout is then refused.
@@ -191,9 +193,40 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         await _api.PayAsync(owner, tenant.Id, _planId);
         var again = await _api.CreateClient(manager).OpenCheckoutSessionAsync(tenant.Id, _planId);
 
-        _api.Billing.Expired.ShouldBe([$"cs_{_api.Billing.Checkouts.ShouldHaveSingleItem().Key:N}"]);
+        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", (Guid?)null));
         (await _testData.CountAsync($"SELECT count(*) FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
         (await BillingRequests.CodeOfAsync(again)).ShouldBe("billing.already_subscribed");
+    }
+
+    // B7: a page made under a key that another order replaced while Stripe made it is expired, and the person is not sent to it.
+    [Fact]
+    public async Task OpenCheckoutSession_ReplacedWhileItsPageWasMade_IsAConflictAndExpiresThePage()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        _api.Billing.WhileOpeningCheckout = () => owner.OpenCheckoutSessionAsync(tenant.Id, _planId, interval: "yearly");
+
+        var first = await _api.WaitingForMessagesAsync(() => owner.OpenCheckoutSessionAsync(tenant.Id, _planId));
+
+        first.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await BillingRequests.CodeOfAsync(first)).ShouldBe("billing.checkout_replaced");
+        var current = await database.ScalarAsSuperuserAsync<Guid>($"SELECT key FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'");
+        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", (Guid?)current));
+    }
+
+    // B8: a closed tenant opens no checkout, though its member passed the door before the closure.
+    [Fact]
+    public async Task OpenCheckoutSession_ATenantThatBillingKnowsClosed_IsAConflict()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        await owner.OpenCheckoutSessionAsync(tenant.Id, _planId);
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE billing.customers SET closed_at = now() WHERE tenant_id = '{tenant.Id}'");
+
+        var again = await owner.OpenCheckoutSessionAsync(tenant.Id, _planId, interval: "yearly");
+
+        again.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await BillingRequests.CodeOfAsync(again)).ShouldBe("billing.tenant_closed");
     }
 
     // A refused checkout creates no customer.

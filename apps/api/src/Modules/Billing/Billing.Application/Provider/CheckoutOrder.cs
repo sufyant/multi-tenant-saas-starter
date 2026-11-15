@@ -6,6 +6,7 @@ namespace Billing.Application.Provider;
 /// </summary>
 public sealed record CheckoutOrder(
     Guid Key,
+    DateTimeOffset ExpiresAt,
     Guid TenantId,
     Guid PaidBy,
     string CustomerId,

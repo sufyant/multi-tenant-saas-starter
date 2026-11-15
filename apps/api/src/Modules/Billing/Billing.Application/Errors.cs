@@ -18,5 +18,9 @@ public static class Errors
 
     public static readonly Error ReturnUrlInvalid = Error.Validation(BillingErrorCodes.BillingReturnUrlInvalid, "The address to come back to is not a page of the web app.");
 
+    public static readonly Error CheckoutReplaced = Error.Conflict(BillingErrorCodes.BillingCheckoutReplaced, "Another checkout replaced this one while it opened. Open the checkout again.");
+
+    public static readonly Error TenantClosed = Error.Conflict(BillingErrorCodes.BillingTenantClosed, "The organisation is closed, so it pays for nothing.");
+
     public static readonly Error WebhookInvalid = Error.Validation(BillingErrorCodes.BillingWebhookInvalid, "The event's signature is missing, wrong or too old.");
 }

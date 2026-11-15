@@ -57,15 +57,22 @@ public static class CheckoutSessionEndpoints
         var customerId = await bus.InvokeAsync<string?>(new GetCustomerQuery(), cancellationToken)
             ?? await bus.InvokeAsync<string>(new CreateCustomerCommand(tenantId, facts.Value.Email), cancellationToken);
         var kept = await bus.InvokeAsync<string>(new KeepCustomerCommand(facts.Value.PaidBy, customerId), cancellationToken);
-        var reservation = await bus.InvokeAsync<CheckoutReservation>(
-            new ReserveCheckoutCommand(order.Value.PlanId, request.Interval == OpenCheckoutSessionRequestInterval.Yearly, order.Value.People), cancellationToken);
-        if (reservation.Url is { } open)
+        var reservation = await bus.InvokeAsync<Result<CheckoutReservation>>(
+            new ReserveCheckoutCommand(order.Value.PlanId, request.Interval == OpenCheckoutSessionRequestInterval.Yearly, order.Value.People, request.ReturnUrl),
+            cancellationToken);
+        if (!reservation.IsSuccess)
+        {
+            return reservation.Error;
+        }
+
+        if (reservation.Value.Url is { } open)
         {
             return new CheckoutSessionResponse(open);
         }
 
-        var page = await bus.InvokeAsync<CheckoutPage>(order.Value with { Key = reservation.Key, CustomerId = kept }, cancellationToken);
-        await bus.InvokeAsync(new RecordCheckoutSessionCommand(reservation.Key, page.SessionId, page.Url, page.ExpiresAt), cancellationToken);
-        return new CheckoutSessionResponse(page.Url);
+        var page = await bus.InvokeAsync<CheckoutPage>(
+            order.Value with { Key = reservation.Value.Key, ExpiresAt = reservation.Value.ExpiresAt, CustomerId = kept }, cancellationToken);
+        var recorded = await bus.InvokeAsync<bool>(new RecordCheckoutSessionCommand(reservation.Value.Key, page.SessionId, page.Url), cancellationToken);
+        return recorded ? new CheckoutSessionResponse(page.Url) : Errors.CheckoutReplaced;
     }
 }

@@ -86,6 +86,37 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(tenant.Id))!.Split(", ").Length.ShouldBe(1);
     }
 
+    // B7: a second subscription while the first has not ended came from a page that a race left payable: it ends at Stripe at once, and the
+    // tenant keeps the first.
+    [Fact]
+    public async Task ReceiveWebhook_ASecondActiveSubscription_EndsItAtOnceAndKeepsTheFirst()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        await _api.PayAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), tenant.Id, _planId);
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, _planId) with { SubscriptionId = $"sub_second_{tenant.Id:N}" });
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_second_{tenant.Id:N}"));
+
+        _api.Billing.Cancelled.ShouldBe([$"sub_second_{tenant.Id:N}"]);
+        (await SubscriptionOfAsync(tenant.Id)).ShouldBe($"cus_{tenant.Id:N}|sub_{tenant.Id:N}|{_planId}|Monthly|Active|f");
+        (await _audit.TenantLogAsync(tenant.Id))!.Split(", ").Length.ShouldBe(1);
+    }
+
+    // B8: a subscription that arrives after the closure, from a page paid in between, ends at its period's end too.
+    [Fact]
+    public async Task ReceiveWebhook_ASubscriptionOfATenantThatBillingKnowsClosed_EndsItAtThePeriodsEnd()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        (await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId)).EnsureSuccessStatusCode();
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE billing.customers SET closed_at = now() WHERE tenant_id = '{tenant.Id}'");
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, _planId));
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}"));
+
+        _api.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true)]);
+    }
+
     // Only an active subscription pays for its plan (Stripe, "Subscription statuses"): an unpaid first invoice keeps the tenant's plan.
     [Fact]
     public async Task ReceiveWebhook_AnIncompleteSubscription_KeepsItButNotThePlan()

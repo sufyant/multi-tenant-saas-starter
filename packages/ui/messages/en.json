@@ -71,11 +71,13 @@
     },
     "billing": {
       "already_subscribed": "This organisation already pays by card. Change its plan instead.",
+      "checkout_replaced": "Another checkout replaced this one. Open the checkout again.",
       "no_customer": "This organisation has not paid by card yet.",
       "off": "Billing is not available.",
       "plan_free": "This plan costs nothing, so there is nothing to pay.",
       "plan_not_found": "This plan does not exist.",
       "return_url_invalid": "The page to come back to is not part of this app.",
+      "tenant_closed": "This organisation is closed, so it pays for nothing.",
       "webhook_invalid": "The event's signature is not valid."
     },
     "data_export": {

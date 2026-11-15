@@ -22,7 +22,7 @@ internal static class TenantTables
             tenant => $"INSERT INTO audit.tenant_retentions (tenant_id, days) VALUES ('{tenant}', 365)"),
         ["billing.checkouts"] = new(
             ApplicationMayUpdate: true,
-            tenant => $"INSERT INTO billing.checkouts (tenant_id, key, plan_id, yearly, people, created_at) VALUES ('{tenant}', gen_random_uuid(), gen_random_uuid(), false, 1, now())"),
+            tenant => $"INSERT INTO billing.checkouts (tenant_id, key, plan_id, yearly, people, return_url, expires_at) VALUES ('{tenant}', gen_random_uuid(), gen_random_uuid(), false, 1, 'https://app.test/', now())"),
         ["billing.subscriptions"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""

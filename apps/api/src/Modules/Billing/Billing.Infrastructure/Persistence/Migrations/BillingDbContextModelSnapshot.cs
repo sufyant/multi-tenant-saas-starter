@@ -31,11 +31,7 @@ namespace Billing.Infrastructure.Persistence.Migrations
                         .HasColumnName("tenant_id")
                         .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTimeOffset?>("ExpiresAt")
+                    b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
@@ -50,6 +46,12 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uuid")
                         .HasColumnName("plan_id");
+
+                    b.Property<string>("ReturnUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("return_url");
 
                     b.Property<string>("SessionId")
                         .HasMaxLength(255)
@@ -81,6 +83,10 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CheckoutBy")
                         .HasColumnType("uuid")
                         .HasColumnName("checkout_by");
+
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -144,6 +150,10 @@ namespace Billing.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("customer_id");
+
+                    b.Property<bool>("EndedByClosure")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ended_by_closure");
 
                     b.Property<string>("Interval")
                         .IsRequired()

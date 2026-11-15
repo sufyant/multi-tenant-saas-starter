@@ -25,6 +25,7 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
             var checkoutRepository = new Billing.Infrastructure.Persistence.Checkouts.CheckoutRepository(billingDbContext);
+            var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
             // The actual message body
             var reserveCheckoutCommand = (Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutCommand)context.Envelope.Message;
 
@@ -42,9 +43,10 @@ namespace Internal.Generated.WolverineHandlers
             {
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutHandler");
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutHandler");
+                await Api.Idempotency.IdempotencyResultMiddleware<Billing.Application.Checkouts.ReserveCheckout.CheckoutReservation, Billing.Infrastructure.Persistence.BillingDbContext>.BeforeAsync(context.Envelope, billingDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutHandler.HandleAsync(reserveCheckoutCommand, checkoutRepository, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutHandler.HandleAsync(reserveCheckoutCommand, customerStore, checkoutRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -54,6 +56,7 @@ namespace Internal.Generated.WolverineHandlers
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
+                await Api.Idempotency.IdempotencyResultMiddleware<Billing.Application.Checkouts.ReserveCheckout.CheckoutReservation, Billing.Infrastructure.Persistence.BillingDbContext>.AfterAsync(outgoing1, context.Envelope, billingDbContext, cancellation).ConfigureAwait(false);
                 
                 // Added by EF Core Transaction Middleware
                 var result_of_SaveChangesAsync = await billingDbContext.SaveChangesAsync(cancellation).ConfigureAwait(false);

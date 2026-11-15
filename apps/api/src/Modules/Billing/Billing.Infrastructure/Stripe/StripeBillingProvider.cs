@@ -9,7 +9,7 @@ namespace Billing.Infrastructure.Stripe;
 // Stripe behind IBillingProvider. Our app keeps the plans' prices and writes them to Stripe as Products and Prices: a plan is one Product,
 // with the plan's id as its own id, and each amount is one Price, found again by its lookup key. A Price never changes, so a new amount is a
 // new Price (Stripe, "Change prices"). The plan a subscription pays for is read back from its Price's Product, whose id Stripe never
-// changes. The customer, the Checkout and the subscription carry the tenant, the plan and the member who paid as metadata for support only:
+// changes. The customer, the Checkout and the subscription carry the tenant and the plan as metadata for support only:
 // anyone with access to Stripe's dashboard can edit metadata, so no read takes the tenant from it (B5). Stripe.net retries a failed network call itself, with an idempotency key (Stripe, "Idempotent
 // requests"); each call has the time limit of the HTTP client.
 internal sealed class StripeBillingProvider(IStripeClient client, IOptions<StripeOptions> settings) : IBillingProvider
@@ -18,14 +18,11 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     private const string PlanKey = "plan_id";
 
-    private const string PaidByKey = "paid_by";
+    private const string CheckoutKey = "checkout_key";
 
     private const string AlreadyExists = "resource_already_exists";
 
     private const string ProductPrefix = "plan_";
-
-    // B7: a checkout's page works for an hour, the shortest window that leaves a person time to pay; Stripe allows 30 minutes to 24 hours.
-    private static readonly TimeSpan CheckoutLifetime = TimeSpan.FromHours(1);
 
     // The event types whose object names a subscription; any other event is kept and needs no sync.
     private static readonly HashSet<string> SubscriptionEvents =
@@ -63,7 +60,7 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         {
             [TenantKey] = order.TenantId.ToString(),
             [PlanKey] = order.PlanId.ToString(),
-            [PaidByKey] = order.PaidBy.ToString(),
+            [CheckoutKey] = order.Key.ToString(),
         };
         var session = await new SessionService(client).CreateAsync(
             new SessionCreateOptions
@@ -79,24 +76,26 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
                 SubscriptionData = new SessionSubscriptionDataOptions { Metadata = metadata },
                 SuccessUrl = order.SuccessUrl.ToString(),
                 CancelUrl = order.CancelUrl.ToString(),
-                ExpiresAt = DateTime.UtcNow.Add(CheckoutLifetime),
+                ExpiresAt = order.ExpiresAt.UtcDateTime,
             },
             new RequestOptions { IdempotencyKey = $"checkout-{order.Key}" },
             cancellationToken);
-        return new CheckoutPage(session.Id, new Uri(session.Url), session.ExpiresAt);
+        return new CheckoutPage(session.Id, new Uri(session.Url));
     }
 
-    // A page that was paid or expired already is no longer open, and Stripe would refuse to expire it: nothing is left to do. A race with a
-    // payment between the read and the expiry fails the call, and its retry reads the page paid.
-    async Task IBillingProvider.ExpireCheckoutAsync(string sessionId, CancellationToken cancellationToken)
+    // Every open page of the customer but the one of the kept key, by the key in its metadata, which our app wrote: a page Stripe already
+    // closed (paid or expired) is not listed. A race with a payment fails the expiry, and its retry no longer lists the page.
+    async Task IBillingProvider.ExpireOpenCheckoutsAsync(string customerId, Guid? keepKey, CancellationToken cancellationToken)
     {
         var sessions = new SessionService(client);
-        if ((await sessions.GetAsync(sessionId, cancellationToken: cancellationToken)).Status != "open")
+        var keep = keepKey?.ToString();
+        await foreach (var session in sessions.ListAutoPagingAsync(new SessionListOptions { Customer = customerId, Status = "open" }, cancellationToken: cancellationToken))
         {
-            return;
+            if (session.Metadata.GetValueOrDefault(CheckoutKey) != keep || keep is null)
+            {
+                await sessions.ExpireAsync(session.Id, cancellationToken: cancellationToken);
+            }
         }
-
-        await sessions.ExpireAsync(sessionId, cancellationToken: cancellationToken);
     }
 
     async Task IBillingProvider.SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken) =>
