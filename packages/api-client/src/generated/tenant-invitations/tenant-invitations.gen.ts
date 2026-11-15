@@ -193,7 +193,6 @@ export function useListInvitationsInfinite<TData = InfiniteData<Awaited<ReturnTy
     params?: ListInvitationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListInvitationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listInvitations>>, ListInvitationsParams['page']>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListInvitationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData, QueryKey, ListInvitationsParams['page']>>, request?: SecondParameter<typeof apiFetch>}
@@ -262,7 +261,6 @@ export function useListInvitations<TData = Awaited<ReturnType<typeof listInvitat
     params?: ListInvitationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListInvitations<TData = Awaited<ReturnType<typeof listInvitations>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListInvitationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}

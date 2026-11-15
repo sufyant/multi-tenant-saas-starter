@@ -151,7 +151,6 @@ export function useListAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnT
     params?: ListAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listAuditEntries>>, TError, TData, QueryKey, ListAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listAuditEntries>>, ListAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listAuditEntries>>, TError, TData, QueryKey, ListAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
@@ -220,7 +219,6 @@ export function useListAuditEntries<TData = Awaited<ReturnType<typeof listAuditE
     params?: ListAuditEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListAuditEntries<TData = Awaited<ReturnType<typeof listAuditEntries>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListAuditEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
@@ -336,7 +334,6 @@ export function useGetAuditRetention<TData = Awaited<ReturnType<typeof getAuditR
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetAuditRetention<TData = Awaited<ReturnType<typeof getAuditRetention>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

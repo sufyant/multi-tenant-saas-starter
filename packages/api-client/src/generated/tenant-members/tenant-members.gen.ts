@@ -152,7 +152,6 @@ export function useListMembersInfinite<TData = InfiniteData<Awaited<ReturnType<t
     params?: ListMembersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListMembersInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listMembers>>, ListMembersParams['page']>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListMembersParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData, QueryKey, ListMembersParams['page']>>, request?: SecondParameter<typeof apiFetch>}
@@ -221,7 +220,6 @@ export function useListMembers<TData = Awaited<ReturnType<typeof listMembers>>, 
     params?: ListMembersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListMembers<TData = Awaited<ReturnType<typeof listMembers>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListMembersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMembers>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}

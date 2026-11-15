@@ -163,7 +163,6 @@ export function useGetMyDataExport<TData = Awaited<ReturnType<typeof getMyDataEx
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyDataExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetMyDataExport<TData = Awaited<ReturnType<typeof getMyDataExport>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyDataExport>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

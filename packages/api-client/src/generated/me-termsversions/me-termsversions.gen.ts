@@ -124,7 +124,6 @@ export function useGetMyTerms<TData = Awaited<ReturnType<typeof getMyTerms>>, TE
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTerms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetMyTerms<TData = Awaited<ReturnType<typeof getMyTerms>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyTerms>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

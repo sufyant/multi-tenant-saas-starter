@@ -129,7 +129,6 @@ export function useGetFeatureFlags<TData = Awaited<ReturnType<typeof getFeatureF
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFeatureFlags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetFeatureFlags<TData = Awaited<ReturnType<typeof getFeatureFlags>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFeatureFlags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -223,7 +222,6 @@ export function useGetFeatureFlag<TData = Awaited<ReturnType<typeof getFeatureFl
  key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFeatureFlag>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetFeatureFlag<TData = Awaited<ReturnType<typeof getFeatureFlag>>, TError = ErrorType<ProblemDetails>>(
  key: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFeatureFlag>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -471,7 +469,6 @@ export function useGetTenantFeatureFlags<TData = Awaited<ReturnType<typeof getTe
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTenantFeatureFlags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetTenantFeatureFlags<TData = Awaited<ReturnType<typeof getTenantFeatureFlags>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTenantFeatureFlags>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

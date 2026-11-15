@@ -143,7 +143,6 @@ export function useListPlatformAuditEntriesInfinite<TData = InfiniteData<Awaited
  params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListPlatformAuditEntriesInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listPlatformAuditEntries>>, ListPlatformAuditEntriesParams['cursor']>, TError = ErrorType<ProblemDetails>>(
  params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData, QueryKey, ListPlatformAuditEntriesParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -207,7 +206,6 @@ export function useListPlatformAuditEntries<TData = Awaited<ReturnType<typeof li
  params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListPlatformAuditEntries<TData = Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError = ErrorType<ProblemDetails>>(
  params?: ListPlatformAuditEntriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPlatformAuditEntries>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
@@ -301,7 +299,6 @@ export function useGetPlatformAuditRetention<TData = Awaited<ReturnType<typeof g
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetPlatformAuditRetention<TData = Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError = ErrorType<ProblemDetails>>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformAuditRetention>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

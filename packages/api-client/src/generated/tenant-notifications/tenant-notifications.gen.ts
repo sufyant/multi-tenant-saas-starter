@@ -151,7 +151,6 @@ export function useListNotificationsInfinite<TData = InfiniteData<Awaited<Return
     params?: ListNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData, QueryKey, ListNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListNotificationsInfinite<TData = InfiniteData<Awaited<ReturnType<typeof listNotifications>>, ListNotificationsParams['cursor']>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListNotificationsParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData, QueryKey, ListNotificationsParams['cursor']>>, request?: SecondParameter<typeof apiFetch>}
@@ -220,7 +219,6 @@ export function useListNotifications<TData = Awaited<ReturnType<typeof listNotif
     params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string,
     params?: ListNotificationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
@@ -315,7 +313,6 @@ export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof 
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
 export function useGetUnreadNotificationCount<TData = Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError = ErrorType<ProblemDetails>>(
  tenantId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUnreadNotificationCount>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
  , queryClient?: QueryClient

@@ -225,15 +225,21 @@ describe("BFF stream", () => {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  /** The API's stream: its first event, then nothing until the test ends it. */
+  /** The API's stream: its first event, then nothing until the test ends it or the reader cancels it. */
   function upstream() {
     let end = () => {};
     server.use(
       http.get(`${api}/v1/me/notifications/stream`, () => {
+        let cancelled = false;
         const body = new ReadableStream<Uint8Array>({
           start(controller) {
             controller.enqueue(encoder.encode(event));
-            end = () => controller.close();
+            end = () => {
+              if (!cancelled) controller.close();
+            };
+          },
+          cancel() {
+            cancelled = true;
           },
         });
         return new HttpResponse(body, {
