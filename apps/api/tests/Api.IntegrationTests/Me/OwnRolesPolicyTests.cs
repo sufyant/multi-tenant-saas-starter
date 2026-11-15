@@ -38,7 +38,7 @@ public sealed class OwnRolesPolicyTests(Database database)
             $"INSERT INTO control_plane.roles (id, tenant_id, name) VALUES (gen_random_uuid(), '{tenant.Id}', 'Intruder')");
 
         (await insert.ShouldThrowAsync<PostgresException>()).SqlState.ShouldBe(PostgresErrorCodes.InsufficientPrivilege);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenant.Id}'")).ShouldBe(3);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{tenant.Id}'")).ShouldBe(4);
     }
 
     [Fact]

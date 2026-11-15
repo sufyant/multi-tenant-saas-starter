@@ -37,12 +37,14 @@ public sealed class ListRolesTests(Database database) : IAsyncLifetime
 
         var items = page.GetProperty("items").EnumerateArray().ToList();
         items.Select(item => $"{item.GetProperty("name").GetString()}:{item.GetProperty("builtIn").GetBoolean()}")
-            .ShouldBe(["admin:True", "Billing:False", "member:True", "owner:True"]);
+            .ShouldBe(["admin:True", "Billing:False", "billing_manager:True", "member:True", "owner:True"]);
         items[1].GetProperty("id").GetGuid().ShouldBe(billing);
         items[1].GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.audit.read", "tenant.members.read"]);
-        items[2].GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.members.read", "tenant.profile.read"]);
-        items[2].GetProperty("id").GetGuid().ShouldBe(await _testData.RoleIdOfAsync(tenant.Id, "Member"));
-        page.GetProperty("total").GetInt32().ShouldBe(4);
+        items[2].GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString())
+            .ShouldBe(["tenant.billing.manage", "tenant.members.read", "tenant.profile.read"]);
+        items[3].GetProperty("permissions").EnumerateArray().Select(permission => permission.GetString()).ShouldBe(["tenant.members.read", "tenant.profile.read"]);
+        items[3].GetProperty("id").GetGuid().ShouldBe(await _testData.RoleIdOfAsync(tenant.Id, "Member"));
+        page.GetProperty("total").GetInt32().ShouldBe(5);
         items[0].EnumerateObject().Select(field => field.Name)
             .ShouldBe(["id", "name", "builtIn", "permissions", "memberCount", "pendingInvitationCount"], ignoreOrder: true);
     }
@@ -116,7 +118,7 @@ public sealed class ListRolesTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/roles?q=billing&sort=-name", Cancellation);
 
-        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("name").GetString()).ShouldBe(["Billing writer", "Billing reader"]);
+        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("name").GetString()).ShouldBe(["Billing writer", "Billing reader", "billing_manager"]);
     }
 
     // A Member gives no role, so it does not read them.
@@ -142,7 +144,7 @@ public sealed class ListRolesTests(Database database) : IAsyncLifetime
 
         var page = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}/roles", Cancellation);
 
-        page.GetProperty("total").GetInt32().ShouldBe(3);
+        page.GetProperty("total").GetInt32().ShouldBe(4);
     }
 
     // The page is one query, with each role's permissions read with it: a longer page sends no more commands (K5).
@@ -170,6 +172,6 @@ public sealed class ListRolesTests(Database database) : IAsyncLifetime
 
         var listed = await owner.GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}/roles", Cancellation);
 
-        listed.GetProperty("total").GetInt32().ShouldBe(4);
+        listed.GetProperty("total").GetInt32().ShouldBe(5);
     }
 }
