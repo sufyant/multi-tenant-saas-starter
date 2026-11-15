@@ -26,6 +26,22 @@ export function useRoleDescription() {
   };
 }
 
+/**
+ * A built-in role's own note under `notes`, or null: the Billing manager's words that it is for billing only and takes no seat
+ * (14.01, 14.03). A note is a role's text, like its name; it decides nothing (F51).
+ */
+export function useRoleNote() {
+  const t = useTranslations();
+  return (
+    role: Pick<RoleResponse, "name" | "builtIn">,
+    notes: "roles.builtInNotes" | "roles.seatNotes" | "members.inviteNotes",
+  ): string | null => {
+    const builtIn = builtInRoleOf(role);
+    const key = `${notes}.${builtIn}` as "roles.seatNotes.billing_manager";
+    return builtIn && t.has(key) ? t(key) : null;
+  };
+}
+
 /** The `role` of a message's `select`: the built-in role, which the text names with its grammar, or `other` for a custom role. */
 export const roleSelect = (role: Pick<RoleResponse, "name" | "builtIn">) =>
   builtInRoleOf(role) ?? "other";

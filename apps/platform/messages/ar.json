@@ -246,6 +246,7 @@
     "roles": {
       "owner": "مالك",
       "admin": "مشرف",
+      "billing_manager": "مدير الفوترة",
       "member": "عضو"
     },
     "makeOwner": "تعيين مالكًا",

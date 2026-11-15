@@ -4,7 +4,6 @@ import {
   Permission,
   type RoleDetailResponse,
 } from "@repo/api-client";
-import { brand } from "@repo/brand";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
@@ -105,6 +104,7 @@ describe("RolesPage", () => {
     expect(await rows()).toEqual([
       expect.stringMatching(/^OwnerBuilt inNot in use14 permissions/),
       expect.stringMatching(/^AdminBuilt inNot in use9 permissions/),
+      expect.stringMatching(/^Billing managerBuilt inNot in use3 permissions/),
       expect.stringMatching(/^MemberBuilt inNot in use2 permissions/),
       expect.stringMatching(/^Billing leadCustomNot in use3 permissions/),
       expect.stringMatching(/^ReviewerCustomNot in use2 permissions/),
@@ -193,7 +193,7 @@ describe("RolesPage", () => {
 
       renderInTenant(<RolesPage />, { url });
 
-      expect((await rows())[3]).toBe(`ReviewerCustom${text}2 permissions`);
+      expect((await rows())[4]).toBe(`ReviewerCustom${text}2 permissions`);
     },
   );
 
@@ -405,7 +405,8 @@ describe("RolesPage", () => {
     ]);
   });
 
-  it("RolesPage_UnderTheLimit_CountsTheCustomRolesOfTheUsage", async () => {
+  // F56 since 40a: no count beside "New role", as Members shows none beside "Invite member".
+  it("RolesPage_UnderTheLimit_ShowsNoCountAndCreates", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
@@ -417,15 +418,13 @@ describe("RolesPage", () => {
 
     renderInTenant(<RolesPage />, { url });
 
-    expect(
-      await screen.findByText("15 of 20 custom roles"),
-    ).toBeInTheDocument();
+    // The list's skeleton is a status too: the banner's absence is checked once the rows came.
+    await rows();
+    expect(screen.queryByText(/custom roles?$/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New role" })).toHaveAttribute(
       "href",
       "/northwind/settings/roles/new",
     );
-    // The list's skeleton is a status too: the banner's absence is checked once the rows came.
-    await rows();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
@@ -441,7 +440,7 @@ describe("RolesPage", () => {
 
     renderInTenant(<RolesPage />, { url });
 
-    expect(await rows()).toHaveLength(5);
+    expect(await rows()).toHaveLength(6);
     expect(screen.queryByText(/custom roles?$/)).not.toBeInTheDocument();
     expect(screen.queryByText(/null/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New role" })).toHaveAttribute(
@@ -450,18 +449,21 @@ describe("RolesPage", () => {
     );
   });
 
+  // At the limit "New role" stays enabled and opens "No custom role left"; the banner says the limit's reason (F56).
   it.each([
     [
       2,
       "Your organisation’s plan allows 2 custom roles. Delete one to create another.",
+      "Your organisation’s plan allows 2 custom roles, and Northwind Traders uses 2. Delete one to create another.",
     ],
     [
       1,
       "Your organisation’s plan allows 1 custom role. Delete one to create another.",
+      "Your organisation’s plan allows 1 custom role, and Northwind Traders uses 1. Delete one to create another.",
     ],
   ])(
-    "RolesPage_AtALimitOf%s_DisablesCreateWithTheReason",
-    async (max, reason) => {
+    "RolesPage_AtALimitOf%s_OpensNoCustomRoleLeft",
+    async (max, reason, text) => {
       server.use(
         ...tenantAnswers(
           BuiltInRole.Owner,
@@ -473,18 +475,26 @@ describe("RolesPage", () => {
 
       renderInTenant(<RolesPage />, { url });
 
-      const create = await screen.findByRole("button", {
-        name: "New role",
+      expect(await screen.findByRole("status")).toHaveTextContent(reason);
+      expect(screen.queryByRole("link", { name: "Contact us" })).toBeNull();
+      const create = screen.getByRole("button", { name: "New role" });
+      expect(create).toBeEnabled();
+      await userEvent.click(create);
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "No custom role left",
       });
-      await waitFor(() => expect(create).toBeDisabled());
-      expect(create).not.toHaveAttribute("href");
-      expect(create).toHaveAccessibleDescription(reason);
-      expect(screen.getByText(reason)).toBeVisible();
-      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(dialog).toHaveAccessibleDescription(text);
+      expect(
+        within(dialog).getByRole("button", { name: "Request a plan change" }),
+      ).toBeVisible();
+      await userEvent.click(
+        within(dialog).getByRole("button", { name: "Close" }),
+      );
+      await waitFor(() => expect(dialog).not.toBeInTheDocument());
     },
   );
 
-  it("RolesPage_OverTheLimit_DisablesCreateAndShowsTheBanner", async () => {
+  it("RolesPage_OverTheLimit_ShowsTheBannerAndOpensNoCustomRoleLeft", async () => {
     // A limit lowered after the tenant made its roles: 3 custom roles against a limit of 2.
     server.use(
       ...tenantAnswers(
@@ -501,15 +511,16 @@ describe("RolesPage", () => {
     expect(banner).toHaveTextContent(
       "You have 3 custom roles; your plan allows 2. Delete roles to create new ones. Every role and its members keep working.",
     );
+    // As Members' banner: no link to support, which only the dialog offers (F56).
+    expect(within(banner).queryByRole("link")).toBeNull();
+    expect(screen.queryByText("3 of 2 custom roles")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "New role" }));
     expect(
-      within(banner).getByRole("link", { name: "Contact us" }),
-    ).toHaveAttribute("href", brand.supportUrl);
-    expect(screen.getByText("3 of 2 custom roles")).toBeVisible();
-    const create = screen.getByRole("button", { name: "New role" });
-    expect(create).toBeDisabled();
-    expect(create).toHaveAccessibleDescription(
-      "You have 3 custom roles; your plan allows 2. Delete roles to create new ones. Every role and its members keep working.",
+      await screen.findByRole("alertdialog", { name: "No custom role left" }),
+    ).toHaveAccessibleDescription(
+      "Your organisation’s plan allows 2 custom roles, and Northwind Traders uses 3. Delete one to create another.",
     );
+    await userEvent.keyboard("{Escape}");
     // Over the limit, nothing is locked: a role not in use still deletes.
     expect(await menuItems("Reviewer")).toEqual([
       ["Edit role", false],
@@ -529,7 +540,7 @@ describe("RolesPage", () => {
 
     renderInTenant(<RolesPage />, { url });
 
-    expect(await rows()).toHaveLength(6);
+    expect(await rows()).toHaveLength(7);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.queryByText(/custom roles?$/)).not.toBeInTheDocument();
   });
@@ -570,6 +581,7 @@ describe("RolesPage", () => {
     expect(await rows()).toEqual([
       expect.stringMatching(/^Owner/),
       expect.stringMatching(/^Admin/),
+      expect.stringMatching(/^Billing manager/),
       expect.stringMatching(/^Member/),
       expect.stringMatching(/^Billing lead/),
       expect.stringMatching(/^Reviewer/),
@@ -626,10 +638,11 @@ describe("RolesPage", () => {
     renderInTenant(<RolesPage />, { url });
 
     const reason = "Your organisation’s plan allows no custom roles.";
-    const create = await screen.findByRole("button", { name: "New role" });
-    await waitFor(() => expect(create).toBeDisabled());
-    expect(create).toHaveAccessibleDescription(reason);
-    expect(screen.getByText(reason)).toBeVisible();
+    expect(await screen.findByRole("status")).toHaveTextContent(reason);
+    await userEvent.click(screen.getByRole("button", { name: "New role" }));
+    expect(
+      await screen.findByRole("alertdialog", { name: "No custom role left" }),
+    ).toHaveAccessibleDescription(reason);
     expect(screen.queryByText(/Delete one/)).not.toBeInTheDocument();
   });
 
@@ -656,7 +669,7 @@ describe("RolesPage", () => {
     ]);
   });
 
-  it("RolesPage_ArabicOverTheLimit_ShowsTheCountAndTheBanner", async () => {
+  it("RolesPage_ArabicOverTheLimit_ShowsTheBanner", async () => {
     server.use(
       ...tenantAnswers(
         BuiltInRole.Owner,
@@ -671,8 +684,7 @@ describe("RolesPage", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(
       "لديك 3 من الأدوار المخصصة؛ وتسمح خطتك بـ2.",
     );
-    expect(screen.getByText("3 من 2 من الأدوار المخصصة")).toBeVisible();
-    expect(screen.getByRole("link", { name: "تواصل معنا" })).toBeVisible();
+    expect(screen.queryByText("3 من 2 من الأدوار المخصصة")).toBeNull();
   });
 
   it("RolesPage_WithoutCreate_ShowsNoCounter", async () => {
@@ -680,7 +692,7 @@ describe("RolesPage", () => {
 
     renderInTenant(<RolesPage />, { url });
 
-    expect(await rows()).toHaveLength(4);
+    expect(await rows()).toHaveLength(5);
     expect(screen.queryByText(/custom role/)).not.toBeInTheDocument();
   });
 
@@ -690,7 +702,7 @@ describe("RolesPage", () => {
     renderInTenant(<RolesPage />, { url });
 
     expect(await screen.findByText("No custom roles yet")).toBeInTheDocument();
-    expect(await rows()).toHaveLength(3);
+    expect(await rows()).toHaveLength(4);
     // The header's "New role" is the one action (9.04).
     expect(screen.getAllByRole("button", { name: "New role" })).toHaveLength(1);
   });
@@ -701,7 +713,7 @@ describe("RolesPage", () => {
 
     renderInTenant(<RolesPage />, { url });
 
-    expect(await rows()).toHaveLength(4);
+    expect(await rows()).toHaveLength(5);
     expect(
       screen.getByText(
         "Owner, Admin and Member are built in. Create a role when a person needs a different set of permissions.",

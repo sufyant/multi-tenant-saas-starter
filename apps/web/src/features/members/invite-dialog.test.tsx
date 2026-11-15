@@ -337,6 +337,32 @@ describe("InviteDialog", () => {
     expect(dialog).not.toHaveTextContent(/bill/);
   });
 
+  // The Billing manager takes no seat: the dialog says so in place of the seats left (14.03).
+  it("Invite_BillingManagerChosen_SaysItIsFreeInPlaceOfTheSeats", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await userEvent.click(
+      await within(dialog).findByRole("radio", { name: "Billing manager" }),
+    );
+
+    expect(
+      within(dialog).getByText(
+        "Billing managers are free and use no seat. They see Billing and Usage, and can’t use the product.",
+      ),
+    ).toBeVisible();
+    expect(within(dialog).queryByText("3 seats left.")).not.toBeInTheDocument();
+  });
+
   it("Invite_SeatsLeftInArabic_SaysThemInArabic", async () => {
     server.use(
       ...tenantAnswers(

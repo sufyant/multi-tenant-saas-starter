@@ -27,6 +27,7 @@
     "roleNames": {
       "owner": "Sahip",
       "admin": "Yönetici",
+      "billing_manager": "Fatura yöneticisi",
       "member": "Üye"
     }
   },
@@ -100,7 +101,7 @@
       "deletedUser": "sizi davet eden kişi"
     },
     "invited": "{inviter} sizi {tenant} kuruluşuna katılmaya davet etti.",
-    "invitedAs": "{inviter} sizi {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}} olarak davet etti.",
+    "invitedAs": "{inviter} sizi {role, select, owner {Sahip} admin {Yönetici} billing_manager {Fatura yöneticisi} member {Üye} other {{roleName}}} olarak davet etti.",
     "expires": "Bitiş: {when}",
     "join": "{tenant} kuruluşuna katıl",
     "joinsWith": "<email></email> e-postasıyla katılırsınız. Davet yalnızca bu adres için geçerlidir.",
@@ -193,12 +194,13 @@
     "roleDescriptions": {
       "owner": "Her şey; Sahip rolünü vermek ve geri almak da dahil.",
       "admin": "Üye davet eder, rolleri değiştirir, üye çıkarır, Etkinlik kaydını okur.",
+      "billing_manager": "Faturalama, Kullanım ve faturalar. Ürünü kullanamaz. Ücretsiz: koltuk kullanmaz.",
       "member": "Ürünü kullanır. Üye listesini görür, Etkinlik kaydını ve Davetler'i görmez."
     },
     "changeRoleTitle": "{name} adlı kişinin rolünü değiştirin",
-    "changeRoleText": "{name}, {organisation} kuruluşunda {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}} rolünde. Değişiklik hemen geçerli olur.",
+    "changeRoleText": "{name}, {organisation} kuruluşunda {role, select, owner {Sahip} admin {Yönetici} billing_manager {Fatura yöneticisi} member {Üye} other {{roleName}}} rolünde. Değişiklik hemen geçerli olur.",
     "roleChanged": "Rol değiştirildi",
-    "roleChangedText": "{name} artık {role, select, owner {Sahip} admin {Yönetici} member {Üye} other {{roleName}}}.",
+    "roleChangedText": "{name} artık {role, select, owner {Sahip} admin {Yönetici} billing_manager {Fatura yöneticisi} member {Üye} other {{roleName}}}.",
     "changeRoleFailed": "Rol değiştirilemedi",
     "removeTitle": "{name}, {organisation} kuruluşundan çıkarılsın mı?",
     "removeText": "Erişimini hemen kaybeder. Geçmiş etkinliği kayıtta kalır. Daha sonra yeniden davet edebilirsiniz.",
@@ -237,6 +239,9 @@
     "inviteEmailPlaceholder": "ad@sirket.com",
     "revokeOwnerHint": "Bu daveti yalnızca bir Sahip geri çekebilir.",
     "inviteLanguage": "E-posta dili",
+    "inviteNotes": {
+      "billing_manager": "Fatura yöneticileri ücretsizdir ve koltuk kullanmaz. Faturalama ve Kullanım’ı görürler, ürünü kullanamazlar."
+    },
     "inviteLanguageHint": "Davet e-postası ve ilk ekranlar bu dilde olur. Kişi daha sonra değiştirebilir.",
     "languageSearch": "Dil ara",
     "languageEmpty": "Dil bulunamadı",
@@ -533,6 +538,13 @@
     },
     "customType": "Özel",
     "summary": "{type} · {permissions} · {users}",
+    "summaryWithNote": "{type} · {permissions} · {users} · {note}",
+    "builtInNotes": {
+      "billing_manager": "Yalnızca Faturalama, Kullanım ve faturalar. Ürünü kullanamaz: ürün modülleri izinlerini Fatura yöneticisine değil, Üyeye ekler."
+    },
+    "seatNotes": {
+      "billing_manager": "ücretsiz, koltuk kullanmaz"
+    },
     "notInUseLower": "kullanılmıyor",
     "inUseTitle": "{name} kullanımda",
     "inUseDialog": "Bu rol {users} tarafından kullanılıyor. Önce {kind, select, members {{total, plural, one {üyesine} other {üyelerine}}} invitations {{total, plural, one {davetine} other {davetlerine}}} other {onlara}} başka bir rol verin.",
@@ -607,6 +619,8 @@
     "noSeat": "Boş yer yok",
     "noSeatText": "{organisation}, {limit} yerin {count} tanesini kullanıyor: {members} üye ve {invitations} bekleyen davet. Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin.",
     "noSeatOverText": "Planınız {limit} yer veriyor. {count} yer kullanıyorsunuz: {members} üye ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
+    "noRoleLeft": "Özel rol hakkı kalmadı",
+    "noRoleLeftText": "Kuruluşunuzun planı {limit} özel role izin veriyor ve {organisation} {count} tane kullanıyor. Yenisini oluşturmak için birini silin.",
     "requestChange": "Plan değişikliği iste",
     "viewInvitations": "Davetleri görüntüle",
     "seatsLeft": "{count, plural, one {# yer kaldı.} other {# yer kaldı.}}"

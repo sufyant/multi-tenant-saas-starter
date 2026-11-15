@@ -32,6 +32,7 @@ import { firstInviteRole } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useCanActOn, useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
+import { useRoleNote } from "@/shared/use-role-name";
 import { RoleChoice } from "./role-choice";
 
 type Invitation = z.infer<typeof schemas.InviteMemberBody>;
@@ -41,7 +42,8 @@ type Invitation = z.infer<typeof schemas.InviteMemberBody>;
  * role list holds every role of the tenant (ListRoles); a role the viewer's role does not fully hold is disabled, with its reason
  * (F51). The role starts as Member, and the language as the viewer's own (GetMe). One Idempotency-Key per intent (F48):
  * a new key when the dialog opens and when the email, the role or the language changes; the same key for a retry. Under a
- * limit of `members.max` it says how many seats are left, and nothing when unlimited (F56).
+ * limit of `members.max` it says how many seats are left, and nothing when unlimited (F56). A role with an invite note (the Billing
+ * manager's) says it in place of the seats left (14.03).
  */
 export function InviteDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations();
@@ -54,6 +56,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
   const planReason = usePlanReason();
   const { left } = usePlan().limit(LimitKey.MembersMax);
   const canActOn = useCanActOn();
+  const roleNote = useRoleNote();
   const tenantRoles = useTenantRoles();
   const roles = tenantRoles.data?.items ?? [];
   const memberRole = firstInviteRole(roles);
@@ -175,6 +178,9 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
       ),
   );
 
+  const chosen = roles.find((role) => role.id === form.watch("roleId"));
+  const note = chosen && roleNote(chosen, "members.inviteNotes");
+
   return (
     <Dialog
       open
@@ -191,10 +197,14 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         onSubmit={(event) => void submit(event)}
         className="flex flex-col gap-3"
       >
-        {left !== null && (
-          <p className="text-small text-muted-foreground">
-            {t("plans.seatsLeft", { count: left })}
-          </p>
+        {note ? (
+          <p className="text-small text-muted-foreground">{note}</p>
+        ) : (
+          left !== null && (
+            <p className="text-small text-muted-foreground">
+              {t("plans.seatsLeft", { count: left })}
+            </p>
+          )
         )}
         {banner && (
           <Banner tone="destructive" title={banner.title}>

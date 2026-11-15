@@ -7,8 +7,7 @@ import type { ReactNode } from "react";
 
 /**
  * Over a limit (E4), on the page where it applies: a warning, what to do, and by default its one link, "Contact us", to the
- * brand's support contact (the board notes of the plan limits). Members passes its own action, or none (F56). The disabled
- * action names its title and text as its reason (`reasonIdsOf`), not its link.
+ * brand's support contact (the board notes of the plan limits). Members passes its own action, or none (F56).
  */
 export function PlanBanner({
   id,
@@ -45,6 +44,3 @@ export function PlanBanner({
     </Banner>
   );
 }
-
-/** The ids of the banner's title and text, for the `aria-describedby` of the action it closes. */
-export const reasonIdsOf = (id: string) => `${id}-title ${id}-text`;

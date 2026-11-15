@@ -246,6 +246,7 @@
     "roles": {
       "owner": "Sahip",
       "admin": "Yönetici",
+      "billing_manager": "Fatura yöneticisi",
       "member": "Üye"
     },
     "makeOwner": "Sahip yap",

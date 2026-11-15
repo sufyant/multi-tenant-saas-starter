@@ -7,6 +7,7 @@ import type { RoleResponse } from "./generated/endpoints.schemas.gen";
 export const BuiltInRole = {
   Owner: "owner",
   Admin: "admin",
+  BillingManager: "billing_manager",
   Member: "member",
 } as const;
 

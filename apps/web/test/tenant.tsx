@@ -31,6 +31,11 @@ export const roleOf: Record<BuiltInRole, RoleResponse> = {
     name: BuiltInRole.Admin,
     builtIn: true,
   },
+  billing_manager: {
+    id: "0198f0a2-0000-7000-8000-0000000000f4",
+    name: BuiltInRole.BillingManager,
+    builtIn: true,
+  },
   member: {
     id: "0198f0a2-0000-7000-8000-0000000000f3",
     name: BuiltInRole.Member,
@@ -89,12 +94,20 @@ export const john = member(
   BuiltInRole.Member,
   "2026-03-09T08:00:00Z",
 );
+export const grace = member(
+  "0198f0a2-0000-7000-8000-000000000008",
+  "Grace Okafor",
+  "grace@northwind.io",
+  BuiltInRole.BillingManager,
+  "2026-10-20T09:00:00Z",
+);
 export const people = [ayse, mehmet, ibrahim, john];
 
-/** The signed-in person of each role: the Owner Ayşe, the Admin Mehmet, the Member İbrahim. */
+/** The signed-in person of each role: the Owner Ayşe, the Admin Mehmet, the Billing manager Grace, the Member İbrahim. */
 export const viewerOf: Record<BuiltInRole, MemberResponse> = {
   owner: ayse,
   admin: mehmet,
+  billing_manager: grace,
   member: ibrahim,
 };
 
@@ -115,6 +128,11 @@ const ownerOnly = new Set<Permission>([
 export const permissionsOf: Record<BuiltInRole, Permission[]> = {
   owner: tenantPermissions,
   admin: tenantPermissions.filter((name) => !ownerOnly.has(name)),
+  billing_manager: [
+    Permission.TenantProfileRead,
+    Permission.TenantMembersRead,
+    Permission.TenantBillingManage,
+  ],
   member: [Permission.TenantMembersRead, Permission.TenantProfileRead],
 };
 

@@ -246,6 +246,7 @@
     "roles": {
       "owner": "Owner",
       "admin": "Admin",
+      "billing_manager": "Billing manager",
       "member": "Member"
     },
     "makeOwner": "Make Owner",

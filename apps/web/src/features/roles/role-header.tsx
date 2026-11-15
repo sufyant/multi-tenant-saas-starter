@@ -6,11 +6,12 @@ import { ArrowLeftIcon, Icon } from "@repo/ui/components/icon";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useTenant } from "@/shared/tenant-context";
+import { useRoleNote } from "@/shared/use-role-name";
 import { useRoleUsers } from "./role-users";
 
 /**
- * The head of a role's page (9.08, 9.10, 9.11, 9.20): "Back to Roles", the title, and under an existing role its summary: the
- * type, the permissions and who uses it, as the list's columns count them.
+ * The head of a role's page (9.08, 9.10, 9.11, 9.20, 14.01): "Back to Roles", the title, and under an existing role its summary:
+ * the type, the permissions and who uses it, as the list's columns count them, and the Billing manager's seat note.
  */
 export function RoleHeader({
   title,
@@ -22,6 +23,8 @@ export function RoleHeader({
   const t = useTranslations();
   const { tenant } = useTenant();
   const usersOf = useRoleUsers();
+  const roleNote = useRoleNote();
+  const seatNote = role && roleNote(role, "roles.seatNotes");
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -42,12 +45,13 @@ export function RoleHeader({
         </h1>
         {role && (
           <p className="text-body text-muted-foreground">
-            {t("roles.summary", {
+            {t(seatNote ? "roles.summaryWithNote" : "roles.summary", {
               type: role.builtIn ? t("roles.builtIn") : t("roles.customType"),
               permissions: t("members.permissionCount", {
                 count: role.permissions.length,
               }),
               users: usersOf(role, "usageBoth") ?? t("roles.notInUseLower"),
+              note: seatNote ?? "",
             })}
           </p>
         )}

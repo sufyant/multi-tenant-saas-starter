@@ -27,6 +27,7 @@
     "roleNames": {
       "owner": "مالك",
       "admin": "مشرف",
+      "billing_manager": "مدير الفوترة",
       "member": "عضو"
     }
   },
@@ -100,7 +101,7 @@
       "deletedUser": "الشخص الذي دعاك"
     },
     "invited": "دعاك {inviter} للانضمام إلى {tenant}.",
-    "invitedAs": "دعاك {inviter} بدور {role, select, owner {مالك} admin {مشرف} member {عضو} other {{roleName}}}.",
+    "invitedAs": "دعاك {inviter} بدور {role, select, owner {مالك} admin {مشرف} billing_manager {مدير الفوترة} member {عضو} other {{roleName}}}.",
     "expires": "تنتهي: {when}",
     "join": "انضم إلى {tenant}",
     "joinsWith": "تنضم بالبريد الإلكتروني <email></email>. تعمل الدعوة لهذا العنوان فقط.",
@@ -193,12 +194,13 @@
     "roleDescriptions": {
       "owner": "كل شيء، بما في ذلك منح دور المالك وسحبه.",
       "admin": "يدعو الأعضاء ويغيّر الأدوار ويزيل الأعضاء ويقرأ سجل النشاط.",
+      "billing_manager": "الفوترة والاستخدام والفواتير. لا يمكنه استخدام المنتج. مجاني: لا يستخدم مقعدًا.",
       "member": "يستخدم المنتج. يرى قائمة الأعضاء، لا سجل النشاط ولا الدعوات."
     },
     "changeRoleTitle": "تغيير دور {name}",
-    "changeRoleText": "{name} {role, select, owner {مالكًا} admin {مشرفًا} member {عضوًا} other {{roleName}}} في {organisation}. يسري التغيير فورًا.",
+    "changeRoleText": "{name} {role, select, owner {مالكًا} admin {مشرفًا} billing_manager {مديرًا للفوترة} member {عضوًا} other {{roleName}}} في {organisation}. يسري التغيير فورًا.",
     "roleChanged": "تم تغيير الدور",
-    "roleChangedText": "أصبح {name} {role, select, owner {مالكًا} admin {مشرفًا} member {عضوًا} other {{roleName}}}.",
+    "roleChangedText": "أصبح {name} {role, select, owner {مالكًا} admin {مشرفًا} billing_manager {مديرًا للفوترة} member {عضوًا} other {{roleName}}}.",
     "changeRoleFailed": "تعذّر تغيير الدور",
     "removeTitle": "إزالة {name} من {organisation}؟",
     "removeText": "يفقد الوصول فورًا. يبقى نشاطه السابق في السجل. يمكنك دعوته مرة أخرى لاحقًا.",
@@ -237,6 +239,9 @@
     "inviteEmailPlaceholder": "name@company.com",
     "revokeOwnerHint": "لا يسحب هذه الدعوة إلا مالك.",
     "inviteLanguage": "لغة البريد الإلكتروني",
+    "inviteNotes": {
+      "billing_manager": "مديرو الفوترة مجانيون ولا يستخدمون مقاعد. يرون الفوترة والاستخدام، ولا يمكنهم استخدام المنتج."
+    },
     "inviteLanguageHint": "تستخدم رسالة الدعوة وشاشاته الأولى هذه اللغة. يمكنه تغييرها لاحقًا.",
     "languageSearch": "ابحث عن لغة",
     "languageEmpty": "لم يُعثر على لغة",
@@ -533,6 +538,13 @@
     },
     "customType": "مخصّص",
     "summary": "{type} · {permissions} · {users}",
+    "summaryWithNote": "{type} · {permissions} · {users} · {note}",
+    "builtInNotes": {
+      "billing_manager": "الفوترة والاستخدام والفواتير فقط. لا يمكنه استخدام المنتج: تضيف وحدات المنتج أذوناتها إلى العضو، وليس إلى مدير الفوترة أبدًا."
+    },
+    "seatNotes": {
+      "billing_manager": "مجاني، لا يستخدم مقعدًا"
+    },
     "notInUseLower": "غير مستخدم",
     "inUseTitle": "{name} مستخدم",
     "inUseDialog": "هذا الدور مستخدم: {users}. {kind, select, members {امنح {total, plural, one {عضوه} two {عضوَيه} other {أعضاءه}}} invitations {امنح {total, plural, one {دعوته} two {دعوتَيه} other {دعواته}}} other {امنحهم}} دورًا آخر أولًا.",
@@ -607,6 +619,8 @@
     "noSeat": "لا يوجد مقعد متاح",
     "noSeatText": "تستخدم {organisation} {count} من {limit} من المقاعد: {members} من الأعضاء و{invitations} من الدعوات المعلّقة. أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
     "noSeatOverText": "تمنحك خطتك {limit} من المقاعد. وتستخدم {count}: {members} من الأعضاء و{invitations} من الدعوات المعلّقة.{invitations, plural, =0 {} one { لا يزال قبول الدعوة ممكنًا.} other { لا يزال قبول الدعوات ممكنًا.}} لا يمكنك دعوة أي شخص جديد حتى يقل العدد عن {limit}. لا يفقد أحد وصوله.",
+    "noRoleLeft": "لم يتبقَّ دور مخصص",
+    "noRoleLeftText": "تسمح خطة مؤسستك بـ{limit} من الأدوار المخصصة، وتستخدم {organisation} {count}. احذف دورًا لإنشاء آخر.",
     "requestChange": "اطلب تغيير الخطة",
     "viewInvitations": "عرض الدعوات",
     "seatsLeft": "{count, plural, zero {لا مقاعد متبقية.} one {مقعد واحد متبقٍ.} two {مقعدان متبقيان.} few {# مقاعد متبقية.} many {# مقعدًا متبقيًا.} other {# مقعد متبقٍ.}}"

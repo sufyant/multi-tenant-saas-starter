@@ -30,15 +30,16 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
-import { PlanBanner, reasonIdsOf } from "@/shared/plan-banner";
+import { PlanBanner } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
 import { inListOrder } from "@/shared/roles";
 import { TableSkeleton } from "@/shared/table-skeleton";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll } from "@/shared/use-can-act-on";
-import { sentenceOf, usePlanReason } from "@/shared/use-plan-reason";
+import { usePlanReason } from "@/shared/use-plan-reason";
 import { useRoleName } from "@/shared/use-role-name";
 import { DeleteRoleDialog } from "./delete-role-dialog";
+import { NoRoleLeftDialog } from "./no-role-left-dialog";
 import { useRoleUsers } from "./role-users";
 import { RolesFrame } from "./roles-frame";
 
@@ -57,10 +58,10 @@ type InUse = { role: RoleDetailResponse; link: UsersLink | null };
  * custom role offers "Edit role" and "Delete role" by their permissions (F5), both disabled with the reason when the viewer's role
  * does not hold every permission of it (F51); without the update permission it opens read-only. A role in use offers its members,
  * or its invitations when only invitations use it; its "Delete role" opens a dialog that says who uses it and offers the same list
- * (9.13), and calls no delete. The plan (through `usePlan`, F56 until 40a): a viewer who may create sees the count of
- * `roles.custom.max` (none when unlimited); at the limit "New role" is disabled with the reason, over it with the banner. With
- * `roles.custom` off the custom roles stay listed, "New role" and "Edit role" are disabled with the feature's reason in place of
- * the count, and "Delete role" keeps its own rules.
+ * (9.13), and calls no delete. The plan (through `usePlan`, F56): at and over the limit of `roles.custom.max` "New role" stays
+ * enabled and opens "No custom role left", and the banner shows as Members' does, with no count beside the button. With
+ * `roles.custom` off the custom roles stay listed, "New role" and "Edit role" are disabled with the feature's reason under the
+ * button, and "Delete role" keeps its own rules.
  */
 export function RolesPage() {
   const t = useTranslations();
@@ -89,6 +90,7 @@ export function RolesPage() {
   const [deleting, setDeleting] = useState<RoleDetailResponse | null>(null);
   const [inUse, setInUse] = useState<InUse | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
+  const [noRoleLeft, setNoRoleLeft] = useState(false);
   const counterId = useId();
   const bannerId = useId();
 
@@ -111,28 +113,35 @@ export function RolesPage() {
     ? undefined
     : planReason.feature(FeatureKey.RolesCustom);
   const roleLimit = plan.limit(LimitKey.RolesCustomMax);
-  const over = featureOff === undefined && roleLimit.overLimit;
-  const counter = (() => {
-    if (featureOff) return featureOff;
-    if (roleLimit.limit === null) return null;
-    if (roleLimit.atLimit)
-      return sentenceOf(planReason.limit(LimitKey.RolesCustomMax));
-    return t("plans.rolesCount", {
-      count: roleLimit.count,
-      limit: roleLimit.limit,
-    });
+  // The banner's text, as Members' (F56): at the limit the limit's reason; over it the count and what still works. A limit of 0
+  // is always over, yet nothing gets under it, so it says the limit's reason too.
+  const banner = (() => {
+    if (featureOff || !roleLimit.full || roleLimit.limit === null) return null;
+    if (roleLimit.atLimit || roleLimit.limit === 0)
+      return planReason.limit(LimitKey.RolesCustomMax);
+    return {
+      title: t("plans.rolesOver", {
+        count: roleLimit.count,
+        limit: roleLimit.limit,
+      }),
+      text: t("plans.rolesOverText"),
+    };
   })();
   const plus = <Icon icon={PlusIcon} size={16} />;
   // The button stands while the list loads or fails, as 9.02 and 9.03 draw it: the plan decides it, not the list.
   const createButton =
     canCreate &&
-    (featureOff || roleLimit.full ? (
+    (featureOff ? (
       <Button
         variant="primary"
         icon={plus}
         disabled
-        aria-describedby={over ? reasonIdsOf(bannerId) : counterId}
+        aria-describedby={counterId}
       >
+        {t("roles.newRole")}
+      </Button>
+    ) : roleLimit.full ? (
+      <Button variant="primary" icon={plus} onClick={() => setNoRoleLeft(true)}>
         {t("roles.newRole")}
       </Button>
     ) : (
@@ -347,27 +356,26 @@ export function RolesPage() {
         {canCreate && (
           <div className="flex shrink-0 flex-col items-end gap-1">
             {createButton}
-            {counter && (
+            {featureOff && (
               <span
                 id={counterId}
                 className="max-w-90 text-end text-small text-muted-foreground"
               >
-                {counter}
+                {featureOff}
               </span>
             )}
           </div>
         )}
       </div>
-      {canCreate && over && roleLimit.limit !== null && (
+      {canCreate && banner && (
         <PlanBanner
           id={bannerId}
-          title={t("plans.rolesOver", {
-            count: roleLimit.count,
-            limit: roleLimit.limit,
-          })}
-          text={t("plans.rolesOverText")}
+          title={banner.title}
+          text={banner.text ?? ""}
+          action={null}
         />
       )}
+      {noRoleLeft && <NoRoleLeftDialog onClose={() => setNoRoleLeft(false)} />}
       {body}
       {deleting && (
         <DeleteRoleDialog role={deleting} onClose={() => setDeleting(null)} />
