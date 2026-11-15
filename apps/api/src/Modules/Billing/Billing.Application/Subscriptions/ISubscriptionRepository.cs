@@ -7,8 +7,8 @@ namespace Billing.Application.Subscriptions;
 public interface ISubscriptionRepository
 {
     /// <summary>
-    /// The tenant's subscription, locked for the rest of the transaction, so two syncs of one tenant run one after the other (K6a). None
-    /// when the tenant has never paid by card.
+    /// The tenant's subscription, locked for the rest of the transaction. The caller locks the tenant's customer first, the root of its
+    /// billing (K6a, B7). None when the tenant has never paid by card.
     /// </summary>
     internal Task<Subscription?> FindForUpdateAsync(CancellationToken cancellationToken);
 

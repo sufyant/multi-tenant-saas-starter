@@ -1,4 +1,5 @@
 using Billing.Application.Customers;
+using Billing.Domain.Customers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Billing.Infrastructure.Persistence.Customers;
@@ -32,6 +33,16 @@ public sealed class CustomerStore(BillingDbContext billing) : ICustomerStore
             cancellationToken);
         return await billing.Customers.Where(customer => customer.TenantId == tenantId).Select(customer => customer.CustomerId).SingleAsync(cancellationToken);
     }
+
+    // The root of the tenant's billing (B7): locked by its own statement, then read for its change.
+    async Task<Customer?> ICustomerStore.FindForUpdateAsync(CancellationToken cancellationToken)
+    {
+        var tenantId = DeclaredTenant;
+        await billing.Database.ExecuteSqlAsync($"SELECT customer_id FROM billing.customers WHERE tenant_id = {tenantId} FOR UPDATE", cancellationToken);
+        return await billing.Customers.SingleOrDefaultAsync(customer => customer.TenantId == tenantId, cancellationToken);
+    }
+
+    Task ICustomerStore.SaveChangesAsync(CancellationToken cancellationToken) => billing.SaveChangesAsync(cancellationToken);
 
     public async Task DeleteAsync(CancellationToken cancellationToken)
     {

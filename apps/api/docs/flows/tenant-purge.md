@@ -36,7 +36,7 @@ sequenceDiagram
 | `TenantPurgeWarnedEvent` | `WarnTenantPurgeHandler` | Audit, `RecordTenantPurgeWarnedHandler` (`tenant.purge_warned`, platform and tenant log) | Yes |
 | `TenantPurgeWarningReadyEvent` | `WarnTenantPurgeHandler`, one for each Owner | Notifications, `SendTenantPurgeWarningEmailHandler` (calls the email service) | No |
 | `StartTenantPurgeCommand` | `CloseTenantHandler`, scheduled at the closure plus the reopen period | ControlPlane, `StartTenantPurgeHandler` (the pivot) | Yes, the tenant's |
-| `PurgeTenantDataCommand` | `TenantPurgeSaga` | Audit, `PurgeTenantDataHandler`; Notifications, `PurgeTenantDataHandler`; Billing, `PurgeTenantDataHandler` (the subscription's row; step 40); the host, `PurgeTenantFilesHandler` (the file store) | Yes, the tenant's, in Audit, Notifications and Billing; none in the host, which calls the file store |
+| `PurgeTenantDataCommand` | `TenantPurgeSaga` | Audit, `PurgeTenantDataHandler`; Notifications, `PurgeTenantDataHandler`; Billing, `PurgeTenantDataHandler` (its rows; a subscription that has not ended ends at Stripe at once, B8); the host, `PurgeTenantFilesHandler` (the file store) | Yes, the tenant's, in Audit, Notifications and Billing; none in the host, which calls the file store |
 | `PurgeTenantDataReply` | each module's `PurgeTenantDataHandler`, and the host's `PurgeTenantFilesHandler` | ControlPlane, `TenantPurgeSaga` | Yes |
 | `CompleteTenantPurgeCommand` | `TenantPurgeSaga`, after the last module's reply | ControlPlane, `CompleteTenantPurgeHandler` | Yes, the tenant's |
 | `CompleteTenantPurgeReply` | `CompleteTenantPurgeHandler` | ControlPlane, `TenantPurgeSaga` | Yes |

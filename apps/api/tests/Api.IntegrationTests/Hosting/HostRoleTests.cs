@@ -72,11 +72,15 @@ using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using Audit.Application.DataExports.RecordDataExportRequested;
+using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Subscriptions.ApplySubscription;
+using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.RouteSubscription;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using Billing.Application.Webhooks.ReceiveWebhook;
+using Billing.Application.Tenants.ResumeBillingAtReopen;
+using Billing.Application.Tenants.StopBillingAtClose;
 using Billing.Contracts.Subscriptions;
 using ControlPlane.Application.Tenants.ChangeBilledPlan;
 using ControlPlane.Application.DataExports.CompleteDataExport;
@@ -127,6 +131,7 @@ public sealed class HostRoleTests(Database database)
     private static readonly HandlerRun[] HandlersOfThePurge =
     [
         new(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler)),
+        new(typeof(TenantClosedEvent), typeof(StopBillingAtCloseHandler)),
         new(typeof(WarnTenantPurgeCommand), typeof(WarnTenantPurgeHandler)),
         new(typeof(TenantPurgeWarnedEvent), typeof(RecordTenantPurgeWarnedHandler)),
         new(typeof(TenantPurgeWarningReadyEvent), typeof(SendTenantPurgeWarningEmailHandler)),
@@ -298,15 +303,48 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(ReceiveWebhookCommand), typeof(ReceiveWebhookHandler)),
             ],
             ignoreOrder: true);
-        runs.WithoutNotificationsIn("worker").ShouldBe(
+        // The expiries of the customer's open pages run beside the plan's change, the reservation's one too, so they are waited for apart.
+        await Waiting.UntilAsync(() => worker.Billing.Expiries.Contains(($"cus_{tenant.Id:N}", web.Billing.Checkouts.Single().Key)));
+        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(ExpireCheckoutPagesHandler)).ShouldBe(
             [
                 new HandlerRun(typeof(SyncSubscriptionCommand), typeof(SyncSubscriptionHandler)),
                 new HandlerRun(typeof(RouteSubscriptionCommand), typeof(RouteSubscriptionHandler)),
                 new HandlerRun(typeof(ApplySubscriptionCommand), typeof(ApplySubscriptionHandler)),
                 new HandlerRun(typeof(PlanPaidEvent), typeof(ChangeBilledPlanHandler)),
                 new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler)),
-            ]);
+            ],
+            ignoreOrder: true);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
+    }
+
+    // B8: the closure and the reopen of a paying tenant reach Stripe from the worker: the end at the period's end, then its undo.
+    [Fact]
+    public async Task CloseAndReopenTenant_APayingTenantOnAWebAndAWorkerHost_EndAndKeepItsSubscriptionInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var planId = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, planId)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, planId));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        await admin.CloseTenantAsync(tenant.Id);
+        await Waiting.UntilAsync(() => Task.FromResult(!worker.Billing.PeriodEnds.IsEmpty));
+        await admin.ReopenTenantAsync(tenant.Id);
+        await Waiting.UntilAsync(() => Task.FromResult(worker.Billing.PeriodEnds.Count > 1));
+
+        worker.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
+        runs.In("worker").Count(run => run.Handler == typeof(SetCancelAtPeriodEndHandler)).ShouldBe(2);
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetCancelAtPeriodEndHandler));
     }
 
     // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row
@@ -449,7 +487,8 @@ public sealed class HostRoleTests(Database database)
 
         closed.StatusCode.ShouldBe(HttpStatusCode.OK);
         runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
-        runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler))]);
+        // Billing hears the closure too (B8), beside the audit entry this test waits for, so it may not have run yet.
+        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(StopBillingAtCloseHandler)).ShouldBe([new HandlerRun(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
     }
@@ -548,7 +587,8 @@ public sealed class HostRoleTests(Database database)
 
         reopened.StatusCode.ShouldBe(HttpStatusCode.OK);
         runs.In("web").ShouldBe([new HandlerRun(typeof(ReopenTenantCommand), typeof(ReopenTenantHandler))]);
-        runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantReopenedEvent), typeof(RecordTenantReopenedHandler))]);
+        // Billing hears the reopen too (B8), beside the audit entry this test waits for, so it may not have run yet.
+        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(ResumeBillingAtReopenHandler)).ShouldBe([new HandlerRun(typeof(TenantReopenedEvent), typeof(RecordTenantReopenedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
     }

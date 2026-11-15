@@ -819,7 +819,7 @@ export interface ChangeTenantPlanRequest {
 }
 
 /**
- * The provider's page where the person pays by card. It works for a short time and is never stored; the page comes back with
+ * The provider's page of the tenant's one open checkout, where the person pays by card, for an hour; the page comes back with
  * `checkout=success` or `checkout=cancelled` after the address of the request.
  */
 export interface CheckoutSessionResponse {
@@ -1181,11 +1181,13 @@ export const ErrorCode = {
   AuthForbidden: 'auth.forbidden',
   AuthUnauthenticated: 'auth.unauthenticated',
   BillingAlreadySubscribed: 'billing.already_subscribed',
+  BillingCheckoutReplaced: 'billing.checkout_replaced',
   BillingNoCustomer: 'billing.no_customer',
   BillingOff: 'billing.off',
   BillingPlanFree: 'billing.plan_free',
   BillingPlanNotFound: 'billing.plan_not_found',
   BillingReturnUrlInvalid: 'billing.return_url_invalid',
+  BillingTenantClosed: 'billing.tenant_closed',
   BillingWebhookInvalid: 'billing.webhook_invalid',
   DataExportInProgress: 'data_export.in_progress',
   DataExportNotFound: 'data_export.not_found',

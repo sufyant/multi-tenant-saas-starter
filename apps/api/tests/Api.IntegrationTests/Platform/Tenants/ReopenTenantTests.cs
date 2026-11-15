@@ -154,11 +154,45 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
 
     public ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time);
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time, settings: BillingRequests.On);
         return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
+
+    // B8: a reopen before Stripe's event of the closure's end has arrived still takes the end back: our own mark says who asked for it.
+    [Fact]
+    public async Task ReopenTenant_BeforeStripesEventOfTheClosure_KeepsTheSubscription()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var planId = await PricedPlanAsync();
+        await _api.PayAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), tenant.Id, planId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
+
+        await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant.Id));
+
+        _api.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
+    }
+
+    // B8: a reopen within the paid period keeps the subscription that the closure ended at the period's end (billing is on in this class's host).
+    // Stripe's event brings the end at the period's end to the row; the reopen then takes it back.
+    [Fact]
+    public async Task ReopenTenant_ASubscriptionThatTheClosureEnds_KeepsIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var planId = await PricedPlanAsync();
+        await _api.PayAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), tenant.Id, planId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, planId) with { CancelAtPeriodEnd = true });
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenant.Id:N}"));
+
+        var reopened = await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant.Id));
+
+        reopened.StatusCode.ShouldBe(HttpStatusCode.OK);
+        _api.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
+    }
 
     private static async Task<string?> SuspensionReasonOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("suspensionReason").GetString();
@@ -171,4 +205,11 @@ public sealed class ReopenTenantTests(Database database) : IAsyncLifetime
     private Task<long> AuditEntryCountAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}') + (SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenantId}')");
+
+    private async Task<Guid> PricedPlanAsync()
+    {
+        var planId = await _testData.AddPlanAsync(new() { ["members.max"] = TestData.Unlimited }, name: $"Team {Guid.NewGuid():N}");
+        await _testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        return planId;
+    }
 }

@@ -23,6 +23,70 @@ namespace Billing.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Billing.Domain.Checkouts.Checkout", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<long>("BaseAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("base_amount");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("Key")
+                        .HasColumnType("uuid")
+                        .HasColumnName("key");
+
+                    b.Property<int>("People")
+                        .HasColumnType("integer")
+                        .HasColumnName("people");
+
+                    b.Property<long>("PerPersonAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("per_person_amount");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<string>("ReturnUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("return_url");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.Property<bool>("Yearly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("yearly");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_checkouts");
+
+                    b.ToTable("checkouts", "billing");
+                });
+
             modelBuilder.Entity("Billing.Domain.Customers.Customer", b =>
                 {
                     b.Property<string>("CustomerId")
@@ -34,9 +98,17 @@ namespace Billing.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("checkout_by");
 
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("LifecycleAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lifecycle_at");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -87,6 +159,12 @@ namespace Billing.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("cancel_at_period_end");
 
+                    b.Property<string>("ClosureEnd")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("closure_end");
+
                     b.Property<DateTimeOffset>("CurrentPeriodEnd")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("current_period_end");
@@ -136,6 +214,8 @@ namespace Billing.Infrastructure.Persistence.Migrations
 
                     b.ToTable("subscriptions", "billing", t =>
                         {
+                            t.HasCheckConstraint("ck_subscriptions_closure_end", "closure_end IN ('None', 'Asked', 'Released')");
+
                             t.HasCheckConstraint("ck_subscriptions_interval", "interval IN ('Monthly', 'Yearly')");
 
                             t.HasCheckConstraint("ck_subscriptions_status", "status IN ('Incomplete', 'IncompleteExpired', 'Trialing', 'Active', 'PastDue', 'Canceled', 'Unpaid', 'Paused')");

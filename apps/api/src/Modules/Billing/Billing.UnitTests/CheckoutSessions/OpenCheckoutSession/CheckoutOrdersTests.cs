@@ -1,7 +1,7 @@
 using Billing.Application.CheckoutSessions.GetCheckoutFacts;
 using Billing.Application.CheckoutSessions.OpenCheckoutSession;
-using Billing.Application.Subscriptions;
 using Billing.Application.Subscriptions.GetBilling;
+using Billing.Application.Subscriptions;
 
 namespace Billing.UnitTests.CheckoutSessions.OpenCheckoutSession;
 
@@ -93,5 +93,5 @@ public sealed class CheckoutOrdersTests
         new(Guid.CreateVersion7(), "ada@example.test", Guid.CreateVersion7(), "Team", "EUR", baseMonthly, perPersonMonthly, baseYearly, perPersonYearly, seated);
 
     private static SubscriptionView Subscription(string status) =>
-        new("cus_1", Guid.CreateVersion7(), "Monthly", status, DateTimeOffset.UnixEpoch, false);
+        new("cus_1", "sub_1", Guid.CreateVersion7(), "Monthly", status, DateTimeOffset.UnixEpoch, false);
 }

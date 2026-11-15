@@ -1,7 +1,7 @@
-using Billing.Application.Subscriptions;
 using Billing.Api.Statuses;
-using Billing.Application;
 using Billing.Application.Subscriptions.GetBilling;
+using Billing.Application.Subscriptions;
+using Billing.Application;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;

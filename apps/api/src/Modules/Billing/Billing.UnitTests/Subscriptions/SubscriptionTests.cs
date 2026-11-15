@@ -53,6 +53,70 @@ public sealed class SubscriptionTests
         (change, subscription.SubscriptionId, subscription.Status).ShouldBe((StateChange.Changed, "sub_b", SubscriptionStatus.Active));
     }
 
+    // B8: the closure's end, then the reopen's undo; a late "end" that reached Stripe after the undo is asked to undo again at the next event.
+    [Fact]
+    public void ClosureCorrection_ALateEndAfterTheReopen_AsksForTheUndoAgainUntilTheStateShowsIt()
+    {
+        var subscription = Subscription.Start(Active, At);
+        subscription.EndForClosure();
+        subscription.KeepAfterReopen();
+        subscription.Sync(Active with { CancelAtPeriodEnd = true }, At.AddMinutes(1));
+
+        var again = subscription.ClosureCorrection(tenantClosed: false);
+        subscription.Sync(Active, At.AddMinutes(2));
+        var done = subscription.ClosureCorrection(tenantClosed: false);
+
+        (again, done, subscription.ClosureEnd).ShouldBe((false, null, ClosureEnd.None));
+    }
+
+    [Fact]
+    public void ClosureCorrection_TheClosuresEndNotYetAtStripe_AsksForItAgain()
+    {
+        var subscription = Subscription.Start(Active, At);
+        subscription.EndForClosure();
+
+        var again = subscription.ClosureCorrection(tenantClosed: true);
+
+        again.ShouldBe(true);
+    }
+
+    // A subscription that arrives after the closure ends at its period's end too.
+    [Fact]
+    public void ClosureCorrection_ASubscriptionOfAClosedTenant_AsksForTheEnd()
+    {
+        var subscription = Subscription.Start(Active, At);
+
+        var end = subscription.ClosureCorrection(tenantClosed: true);
+
+        (end, subscription.ClosureEnd).ShouldBe((true, ClosureEnd.Asked));
+    }
+
+    // An end that a member asked for is not the closure's: the reopen keeps it.
+    [Fact]
+    public void KeepAfterReopen_AnEndTheClosureDidNotAskFor_AsksNothing()
+    {
+        var subscription = Subscription.Start(Active with { CancelAtPeriodEnd = true }, At);
+        subscription.EndForClosure();
+
+        var undo = subscription.KeepAfterReopen();
+
+        (undo, subscription.ClosureEnd).ShouldBe((null, ClosureEnd.None));
+    }
+
+    // Another subscription starts with nothing asked of it.
+    [Fact]
+    public void Sync_AnotherSubscription_ForgetsWhatTheClosureAsked()
+    {
+        var subscription = Subscription.Start(Active with { SubscriptionId = "sub_a", Status = SubscriptionStatus.Canceled }, At);
+        subscription.EndForClosure();
+        subscription.Sync(Active with { SubscriptionId = "sub_a" }, At);
+        subscription.EndForClosure();
+
+        subscription.Sync(Active with { SubscriptionId = "sub_b" }, At.AddMinutes(1));
+
+        subscription.ClosureEnd.ShouldBe(ClosureEnd.None);
+    }
+
     [Theory]
     [InlineData("Active", true)]
     [InlineData("Trialing", false)]

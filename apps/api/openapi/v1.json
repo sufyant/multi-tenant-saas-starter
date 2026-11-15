@@ -13119,7 +13119,7 @@
             "format": "uri"
           }
         },
-        "description": "The provider's page where the person pays by card. It works for a short time and is never stored; the page comes back with\n`checkout=success` or `checkout=cancelled` after the address of the request."
+        "description": "The provider's page of the tenant's one open checkout, where the person pays by card, for an hour; the page comes back with\n`checkout=success` or `checkout=cancelled` after the address of the request."
       },
       "ConfirmAccountDeletionRequest": {
         "required": [
@@ -13525,11 +13525,13 @@
           "auth.forbidden",
           "auth.unauthenticated",
           "billing.already_subscribed",
+          "billing.checkout_replaced",
           "billing.no_customer",
           "billing.off",
           "billing.plan_free",
           "billing.plan_not_found",
           "billing.return_url_invalid",
+          "billing.tenant_closed",
           "billing.webhook_invalid",
           "data_export.in_progress",
           "data_export.not_found",
@@ -13639,11 +13641,13 @@
           "AuthForbidden",
           "AuthUnauthenticated",
           "BillingAlreadySubscribed",
+          "BillingCheckoutReplaced",
           "BillingNoCustomer",
           "BillingOff",
           "BillingPlanFree",
           "BillingPlanNotFound",
           "BillingReturnUrlInvalid",
+          "BillingTenantClosed",
           "BillingWebhookInvalid",
           "DataExportInProgress",
           "DataExportNotFound",

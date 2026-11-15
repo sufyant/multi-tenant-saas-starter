@@ -32,8 +32,8 @@ Every success answers 200 with the tenant as the system admin sees it (`TenantRe
 | `TenantRenamedEvent` | `RenameTenantHandler`, on a change of name | Audit, `RecordTenantRenamedHandler` (`tenant.renamed`, both logs) | Yes |
 | `TenantSuspendedEvent` | `SuspendTenantHandler`, on a change of status | Audit, `RecordTenantSuspendedHandler` (`tenant.suspended`, both logs) | Yes |
 | `TenantReactivatedEvent` | `ReactivateTenantHandler`, on a change of status | Audit, `RecordTenantReactivatedHandler` (`tenant.reactivated`, both logs) | Yes |
-| `TenantClosedEvent` | `CloseTenantHandler`, on a change of status | Audit, `RecordTenantClosedHandler` (`tenant.closed`, both logs) | Yes |
-| `TenantReopenedEvent` | `ReopenTenantHandler`, on a change of status | Audit, `RecordTenantReopenedHandler` (`tenant.reopened`, both logs) | Yes |
+| `TenantClosedEvent` | `CloseTenantHandler`, on a change of status | Audit, `RecordTenantClosedHandler` (`tenant.closed`, both logs); Billing, `StopBillingAtCloseHandler` (the subscription ends at the end of its paid period, and the open checkout's page is expired, B8) | Yes |
+| `TenantReopenedEvent` | `ReopenTenantHandler`, on a change of status | Audit, `RecordTenantReopenedHandler` (`tenant.reopened`, both logs); Billing, `ResumeBillingAtReopenHandler` (the end that the closure asked for is taken back, B8) | Yes |
 
 - A request that changes nothing publishes nothing, so Audit records each change once.
 - The tenant keeps who and when of its events, for the platform's banners (step 37b): `created_by` from its creation, `suspended_at` and `suspended_by` with the reason, `closed_by` with `closed_at`, and `purge_started_at` from the purge's pivot (`tenant-purge.md`). `GetTenant` names each system admin as they are named now, `{ name, deleted }`. A seed and an event before step 37b have none: nothing is backfilled from the Activity log (the maintainer's decision of 2026-11-08). The tombstone keeps none of them (K4).

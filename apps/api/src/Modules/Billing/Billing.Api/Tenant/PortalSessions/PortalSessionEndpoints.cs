@@ -1,7 +1,7 @@
+using Billing.Application.Customers.GetCustomer;
+using Billing.Application.PortalSessions.GetPortalLink;
 using Billing.Application.Subscriptions;
 using Billing.Application;
-using Billing.Application.PortalSessions.GetPortalLink;
-using Billing.Application.Customers.GetCustomer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;

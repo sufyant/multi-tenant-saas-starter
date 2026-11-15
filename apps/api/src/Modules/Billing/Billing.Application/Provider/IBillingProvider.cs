@@ -17,11 +17,25 @@ public interface IBillingProvider
     Task<string> CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken);
 
     /// <summary>
-    /// A page of the provider where the person pays for the order by card, which works for a short time and is never stored. The provider
+    /// A page of the provider where the person pays for the order by card, until the order's expiry. The provider
     /// writes the plan's prices as its own prices when it has none of these amounts yet, as a price never changes there (Stripe, "Change
-    /// prices"). The order names the tenant's customer, and the signed event of the payment then names the subscription.
+    /// prices"). The order names the tenant's customer, the checkout's idempotency key and its expiry, so every call of one key is the same call
+    /// and makes one page (B7), and the checkout's key goes into the page's metadata, which the expiry of the key's pages reads; the
+    /// signed event of the payment then names the subscription.
     /// </summary>
-    Task<Uri> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken);
+    Task<CheckoutPage> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Expires the open checkout pages of the customer that this key made, by the key in each page's metadata, so nobody can pay on them
+    /// (B7). A page that was paid or expired already is not open.
+    /// </summary>
+    Task ExpireOpenCheckoutsAsync(string customerId, Guid key, CancellationToken cancellationToken);
+
+    /// <summary>Ends the subscription at the end of the period it has paid for, or keeps it (B8).</summary>
+    Task SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken);
+
+    /// <summary>Ends the subscription at once, with no refund and no new invoice; one that has ended already changes nothing (B8).</summary>
+    Task CancelSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken);
 
     /// <summary>The provider's page where the customer manages its card, address, VAT ID and invoices, which works for a short time.</summary>
     Task<Uri> OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken);
