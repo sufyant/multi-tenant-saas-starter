@@ -1,0 +1,25 @@
+{
+  "portal": {
+    "features": {
+      "customer_update": {
+        "enabled": true,
+        "allowed_updates": ["address", "name", "phone", "tax_id"]
+      },
+      "invoice_history": { "enabled": true },
+      "payment_method_update": { "enabled": true },
+      "subscription_cancel": { "enabled": false },
+      "subscription_update": { "enabled": false }
+    }
+  },
+  "webhook": {
+    "path": "/v1/public/billing/webhook",
+    "enabled_events": [
+      "checkout.session.completed",
+      "customer.subscription.created",
+      "customer.subscription.deleted",
+      "customer.subscription.paused",
+      "customer.subscription.resumed",
+      "customer.subscription.updated"
+    ]
+  }
+}
