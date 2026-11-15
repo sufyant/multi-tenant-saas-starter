@@ -13,7 +13,7 @@ public sealed class AuditRetentionTests(Database database) : IAsyncLifetime
 
     private ApiFactory _api = null!;
 
-    public static TheoryData<Guid> SeedPlanIds => new() { SeedPlans.Free, SeedPlans.Pro };
+    public static TheoryData<Guid> SeedPlanIds => new() { SeedPlans.Free, SeedPlans.Business };
 
     public ValueTask InitializeAsync()
     {

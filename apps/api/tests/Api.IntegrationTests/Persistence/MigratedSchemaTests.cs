@@ -148,6 +148,7 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.invitations: DELETE, INSERT, SELECT, UPDATE
             table control_plane.memberships: DELETE, INSERT, SELECT, UPDATE
             table control_plane.plan_entitlements: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.plan_meters: DELETE, INSERT, SELECT, UPDATE
             table control_plane.plans: DELETE, INSERT, SELECT, UPDATE
             table control_plane.role_permissions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.roles: DELETE, INSERT, SELECT, UPDATE
@@ -435,6 +436,7 @@ public sealed class MigratedSchemaTests(Database database)
             fk_memberships_tenants_tenant_id: RESTRICT
             fk_memberships_users_user_id: RESTRICT
             fk_plan_entitlements_plans_plan_id: RESTRICT
+            fk_plan_meters_plans_plan_id: RESTRICT
             fk_role_permissions_roles_tenant_id_role_id: CASCADE
             fk_roles_tenants_tenant_id: RESTRICT
             fk_stored_files_users_user_id: RESTRICT

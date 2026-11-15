@@ -71,7 +71,7 @@ public sealed class EntitlementCacheTests(Valkey valkey, Database database) : IC
     public async Task CheckFeature_AfterTheTenantsPlanChanges_SeesTheNewPlanAtOnce()
     {
         var admin = await AdminAsync();
-        var (tenantId, owner) = await OwnerAsync(SeedPlans.Pro);
+        var (tenantId, owner) = await OwnerAsync(SeedPlans.Business);
         var before = await owner.CreateRoleAsync(tenantId, "Billing", ["tenant.profile.read"]);
 
         (await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenantId, SeedPlans.Free))).EnsureSuccessStatusCode();

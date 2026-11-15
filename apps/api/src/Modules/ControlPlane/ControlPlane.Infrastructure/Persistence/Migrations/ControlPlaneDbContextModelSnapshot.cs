@@ -292,6 +292,27 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Prices", "ControlPlane.Domain.Plans.Plan.Prices#PlanPrices", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<long>("BaseMonthly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("base_monthly");
+
+                            b1.Property<long>("BaseYearly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("base_yearly");
+
+                            b1.Property<long>("PerPersonMonthly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("per_person_monthly");
+
+                            b1.Property<long>("PerPersonYearly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("per_person_yearly");
+                        });
+
                     b.HasKey("Id")
                         .HasName("pk_plans");
 
@@ -304,7 +325,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex(new[] { "Name" }, "ix_plans_name_trgm"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex(new[] { "Name" }, "ix_plans_name_trgm"), new[] { "gin_trgm_ops" });
 
-                    b.ToTable("plans", "control_plane");
+                    b.ToTable("plans", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_plans_prices", "base_monthly BETWEEN 0 AND 10000000000 AND per_person_monthly BETWEEN 0 AND 10000000000 AND base_yearly BETWEEN 0 AND 10000000000 AND per_person_yearly BETWEEN 0 AND 10000000000");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Plans.PlanEntitlement", b =>
@@ -342,6 +366,46 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_plan_entitlements_maximum", "maximum >= 0");
 
                             t.HasCheckConstraint("ck_plan_entitlements_value_of_its_kind", "(key IN ('roles.custom') AND enabled IS NOT NULL AND maximum IS NULL AND NOT unlimited) OR (key IN ('audit.retention.days', 'members.max', 'roles.custom.max') AND enabled IS NULL AND (maximum IS NOT NULL) <> unlimited)");
+                        });
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Plans.PlanMeter", b =>
+                {
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Overage")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("overage");
+
+                    b.Property<long>("Quota")
+                        .HasColumnType("bigint")
+                        .HasColumnName("quota");
+
+                    b.Property<long>("UnitPrice")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_price");
+
+                    b.Property<long>("UnitSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_size");
+
+                    b.HasKey("PlanId", "Key")
+                        .HasName("pk_plan_meters");
+
+                    b.ToTable("plan_meters", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_plan_meters_overage", "overage IN ('Stop', 'Charge')");
+
+                            t.HasCheckConstraint("ck_plan_meters_ranges", "quota BETWEEN 0 AND 1000000000000 AND unit_price BETWEEN 0 AND 10000000000 AND unit_size BETWEEN 1 AND 1000000000000");
                         });
                 });
 
@@ -1278,6 +1342,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_plan_entitlements_plans_plan_id");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Plans.PlanMeter", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Plans.Plan", null)
+                        .WithMany("Meters")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_plan_meters_plans_plan_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Roles.Role", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
@@ -1506,6 +1580,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ControlPlane.Domain.Plans.Plan", b =>
                 {
+                    b.Navigation("Meters");
+
                     b.Navigation("Values");
                 });
 

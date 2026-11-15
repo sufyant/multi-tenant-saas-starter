@@ -15,6 +15,7 @@ public static class CreatePlanHandler
         IPlanRepository plans,
         IPlanQueries queries,
         IUserRepository users,
+        MeterCode meterCode,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -24,9 +25,16 @@ public static class CreatePlanHandler
             return (values.Error, []);
         }
 
+        var meters = MeterSettingView.Read(command.Meters ?? []);
+        if (!meters.IsSuccess)
+        {
+            return (meters.Error, []);
+        }
+
         var now = time.GetUtcNow();
         var nameTaken = await plans.IsNameTakenAsync(command.Name.Trim(), null, cancellationToken);
-        var created = Plan.Create(Guid.CreateVersion7(now), command.Name, values.Value, nameTaken, now);
+        var content = new PlanContent(values.Value, command.Prices?.ToPrices() ?? PlanPrices.Zero, meters.Value);
+        var created = Plan.Create(Guid.CreateVersion7(now), command.Name, content, meterCode.Catalog, nameTaken, now);
         if (!created.IsSuccess)
         {
             return (created.Error, []);
@@ -44,6 +52,19 @@ public static class CreatePlanHandler
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
         var view = await queries.FindPlanAsync(plan.Id, cancellationToken) ?? throw new InvalidOperationException("The plan was added in this transaction.");
-        return (view, [new PlanCreatedEvent(Guid.CreateVersion7(now), now, plan.Id, actor, plan.Name, command.IsDefault, EntitlementValueView.RecordsOf(plan.ValueMap))]);
+        return (
+            view,
+            [
+                new PlanCreatedEvent(
+                    Guid.CreateVersion7(now),
+                    now,
+                    plan.Id,
+                    actor,
+                    plan.Name,
+                    command.IsDefault,
+                    EntitlementValueView.RecordsOf(plan.ValueMap),
+                    PlanPricesView.RecordOf(plan.Prices),
+                    MeterSettingView.RecordsOf(plan.MeterMap)),
+            ]);
     }
 }

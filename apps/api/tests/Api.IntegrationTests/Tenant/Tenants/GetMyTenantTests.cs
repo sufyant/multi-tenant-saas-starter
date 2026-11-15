@@ -52,7 +52,7 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     // false, a limit a number, and null is unlimited. For each limit it reads the tenant's count, so it adds no list up (D1). A Pro tenant
     // with one custom role, two members and one pending invitation.
     [Fact]
-    public async Task GetMyTenant_AProTenant_AnswersThePlanItsEntitlementsAndTheCounts()
+    public async Task GetMyTenant_ABusinessTenant_AnswersThePlanItsEntitlementsAndTheCounts()
     {
         var tenant = await _testData.AddTenantAsync();
         var member = await _testData.AddMemberAsync(tenant.Id);
@@ -63,8 +63,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
 
         var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
 
-        found.GetProperty("planName").GetString().ShouldBe("Pro");
-        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"audit.retention.days":365,"members.max":null,"roles.custom":true,"roles.custom.max":20}""");
+        found.GetProperty("planName").GetString().ShouldBe("Business");
+        found.GetProperty("entitlements").GetRawText().ShouldBe("""{"audit.retention.days":365,"members.max":50,"roles.custom":true,"roles.custom.max":20}""");
         found.GetProperty("usage").GetRawText().ShouldBe("""{"audit.retention.days":0,"members.max":3,"roles.custom.max":1}""");
     }
 

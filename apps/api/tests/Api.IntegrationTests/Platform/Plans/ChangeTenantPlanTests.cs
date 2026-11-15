@@ -43,7 +43,7 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var tenant = await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 }));
 
-        (await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Pro))).EnsureSuccessStatusCode();
+        (await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Business))).EnsureSuccessStatusCode();
 
         (await new AuditEntries(database).RetentionHoldAsync(tenant.Id, "tenant.plan_changed")).ShouldBeNull();
     }
@@ -84,19 +84,19 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
     public async Task ChangeTenantPlan_Closed_IsAConflictAndKeepsThePlan()
     {
         var admin = await AdminAsync();
-        var tenant = await _testData.AddTenantRowAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow, planId: SeedPlans.Pro);
+        var tenant = await _testData.AddTenantRowAsync(status: "Closed", closedAt: DateTimeOffset.UtcNow, planId: SeedPlans.Business);
 
         var changed = await admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Free);
 
         (changed.StatusCode, (await PlanRequests.ProblemOfAsync(changed)).Code).ShouldBe((HttpStatusCode.Conflict, "tenant.not_active"));
-        (await database.ScalarAsSuperuserAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE id = '{tenant.Id}'")).ShouldBe(SeedPlans.Pro);
+        (await database.ScalarAsSuperuserAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE id = '{tenant.Id}'")).ShouldBe(SeedPlans.Business);
     }
 
     [Fact]
     public async Task ChangeTenantPlan_Purged_IsAConflict()
     {
         var admin = await AdminAsync();
-        var tenant = await _testData.AddTenantRowAsync(status: "Purged", planId: SeedPlans.Pro);
+        var tenant = await _testData.AddTenantRowAsync(status: "Purged", planId: SeedPlans.Business);
 
         var changed = await admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Free);
 
@@ -126,7 +126,7 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
 
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.plan_changed|User|{await _testData.UserIdOfAsync(adminId)}|Tenant|{tenant.Id}|Acme Ltd");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.plan_changed|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
-        (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe($$$"""{"newPlan": {"id": "{{{SeedPlans.Free}}}", "name": "Free"}, "oldPlan": {"id": "{{{SeedPlans.Pro}}}", "name": "Pro"}}""");
+        (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe($$$"""{"newPlan": {"id": "{{{SeedPlans.Free}}}", "name": "Free"}, "oldPlan": {"id": "{{{SeedPlans.Business}}}", "name": "Business"}}""");
     }
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);

@@ -231,14 +231,14 @@ public sealed class MigrationStepTests(Database database)
         exitCode.ShouldBe(0, output);
         (await RowsOfAsync(before, "control_plane", "users", "memberships", "roles", "role_permissions", "invitations")).ShouldBe(tenantsBefore);
         (await database.ScalarAsSuperuserAsync<long>(
-            $"SELECT count(*) FROM control_plane.tenants WHERE id IN ('{active.Id}', '{closed.Id}') AND plan_id = '{SeedPlans.Pro}'", before)).ShouldBe(2);
+            $"SELECT count(*) FROM control_plane.tenants WHERE id IN ('{active.Id}', '{closed.Id}') AND plan_id = '{SeedPlans.Business}'", before)).ShouldBe(2);
         (await database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans", before)).ShouldBe(SeedPlans.Free);
         (await database.ScalarAsSuperuserAsync<string>(
             $"""
             SELECT string_agg(key || '=' || coalesce(enabled::text, maximum::text, 'unlimited'), ',' ORDER BY key)
-            FROM control_plane.plan_entitlements WHERE plan_id = '{SeedPlans.Pro}'
+            FROM control_plane.plan_entitlements WHERE plan_id = '{SeedPlans.Business}'
             """,
-            before)).ShouldBe("audit.retention.days=365,members.max=unlimited,roles.custom=true,roles.custom.max=20");
+            before)).ShouldBe("audit.retention.days=365,members.max=50,roles.custom=true,roles.custom.max=20"); // Step 40 makes Pro Business, with 50 seats.
         (await database.ScalarAsSuperuserAsync<string>(
             $"SELECT custom_role_count || ':' || array_to_string(pending_invitation_expiries, ',') FROM control_plane.tenant_summaries WHERE tenant_id = '{active.Id}'",
             before)).ShouldBe("2:2030-01-02 03:04:05+00");
@@ -438,6 +438,38 @@ public sealed class MigrationStepTests(Database database)
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{purged.Id}'", before)).ShouldBe(0);
     }
 
+    // Step 40 (the maintainer's decision of 2026-11-15): Pro becomes Business with 50 seats, Team is added with 15 seats and 5 custom roles,
+    // and Free gets 3 seats; every plan's prices are 0. A plan a system admin named Team keeps its name with " (old)" after it. The tenants
+    // stay on their plans.
+    [Fact]
+    public async Task Migrate_AddPlanPricesAndMeters_SeedsFreeTeamAndBusinessAndKeepsTheTenantsOnTheirPlans()
+    {
+        var before = await database.CreateDatabaseBeforeControlPlaneMigrationAsync("AddPlanPricesAndMeters");
+        var testData = new TestData(database, before);
+        var own = await testData.AddPlanAsync(new() { ["members.max"] = 7 }, name: "team");
+        var onBusiness = await testData.AddTenantAsync();
+        var onOwn = await testData.AddTenantAsync(planId: own);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(plans.name || ':' || base_monthly || '/' || per_person_monthly || '/' || base_yearly || '/' || per_person_yearly || ':'
+                || (SELECT string_agg(key || '=' || coalesce(enabled::text, maximum::text, 'unlimited'), ',' ORDER BY key) FROM control_plane.plan_entitlements WHERE plan_id = plans.id),
+                ' | ' ORDER BY plans.name COLLATE "C")
+            FROM control_plane.plans
+            """,
+            before)).ShouldBe(
+            "Business:0/0/0/0:audit.retention.days=365,members.max=50,roles.custom=true,roles.custom.max=20 | "
+            + "Free:0/0/0/0:audit.retention.days=365,members.max=3,roles.custom=false,roles.custom.max=0 | "
+            + "Team:0/0/0/0:audit.retention.days=365,members.max=15,roles.custom=true,roles.custom.max=5 | "
+            + "team (old):0/0/0/0:members.max=7");
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(plan_id::text, ',' ORDER BY id::text) FROM control_plane.tenants WHERE id IN ('{onBusiness.Id}', '{onOwn.Id}')", before))
+            .ShouldBe(string.Join(',', new[] { (onBusiness.Id, SeedPlans.Business), (onOwn.Id, own) }.OrderBy(pair => pair.Item1.ToString(), StringComparer.Ordinal).Select(pair => pair.Item2)));
+    }
+
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
     // default mark (R15).
     [Fact]
@@ -448,16 +480,16 @@ public sealed class MigrationStepTests(Database database)
         var deletePlan = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>($"DELETE FROM control_plane.plans WHERE id = '{SeedPlans.Free}'", name));
         var secondMark = await Should.ThrowAsync<PostgresException>(() =>
-            database.ScalarAsSuperuserAsync<object>($"INSERT INTO control_plane.default_plans (id, plan_id) VALUES (false, '{SeedPlans.Pro}')", name));
+            database.ScalarAsSuperuserAsync<object>($"INSERT INTO control_plane.default_plans (id, plan_id) VALUES (false, '{SeedPlans.Business}')", name));
         var limitOfAFeature = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>(
-                $"INSERT INTO control_plane.plan_entitlements (plan_id, key, maximum, unlimited) VALUES ('{SeedPlans.Pro}', 'roles.custom', 3, false)", name));
+                $"INSERT INTO control_plane.plan_entitlements (plan_id, key, maximum, unlimited) VALUES ('{SeedPlans.Business}', 'roles.custom', 3, false)", name));
         var unknownKey = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>(
-                $"UPDATE control_plane.plan_entitlements SET key = 'projects.max' WHERE plan_id = '{SeedPlans.Pro}' AND key = 'members.max'", name));
+                $"UPDATE control_plane.plan_entitlements SET key = 'projects.max' WHERE plan_id = '{SeedPlans.Business}' AND key = 'members.max'", name));
         var numberAndUnlimited = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>(
-                $"UPDATE control_plane.plan_entitlements SET maximum = 3 WHERE plan_id = '{SeedPlans.Pro}' AND key = 'members.max'", name));
+                $"UPDATE control_plane.plan_entitlements SET unlimited = true WHERE plan_id = '{SeedPlans.Business}' AND key = 'members.max'", name));
 
         deletePlan.SqlState.ShouldBe(PostgresErrorCodes.RestrictViolation);
         secondMark.ConstraintName.ShouldBe("ck_default_plans_one_row");

@@ -21,7 +21,11 @@ public static class RecordPlanUpdatedHandler
                 updated.IsDefault,
                 AuditEntitlementValue.Of(updated.OldEntitlements),
                 AuditEntitlementValue.Of(updated.NewEntitlements),
-                updated is { PreviousDefaultPlanId: { } previousId, PreviousDefaultPlanName: { } previousName } ? new AuditPlan(previousId, previousName) : null),
+                updated is { PreviousDefaultPlanId: { } previousId, PreviousDefaultPlanName: { } previousName } ? new AuditPlan(previousId, previousName) : null,
+                AuditPlanPrices.Of(updated.OldPrices),
+                AuditPlanPrices.Of(updated.NewPrices),
+                AuditMeterSetting.Of(updated.OldMeters),
+                AuditMeterSetting.Of(updated.NewMeters)),
             JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(updated.EventId, updated.OccurredAt, AuditActor.User(updated.UpdatedBy), AuditOperations.PlanUpdated, AuditTarget.Plan(updated.PlanId, updated.NewName), details),

@@ -15,7 +15,7 @@ public sealed class PlanRepository(ControlPlaneDbContext controlPlane) : IPlanRe
     async Task<Plan?> IPlanRepository.FindPlanForUpdateAsync(Guid planId, CancellationToken cancellationToken)
     {
         await controlPlane.Database.ExecuteSqlAsync($"SELECT id FROM control_plane.plans WHERE id = {planId} FOR UPDATE", cancellationToken);
-        return await controlPlane.Plans.Include(plan => plan.Values).SingleOrDefaultAsync(plan => plan.Id == planId, cancellationToken);
+        return await controlPlane.Plans.Include(plan => plan.Values).Include(plan => plan.Meters).SingleOrDefaultAsync(plan => plan.Id == planId, cancellationToken);
     }
 
     async Task<PlanNames?> IPlanRepository.FindPlanNameAsync(Guid planId, CancellationToken cancellationToken) =>

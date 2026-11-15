@@ -8,6 +8,14 @@ namespace Audit.Api.Statuses;
 /// </summary>
 internal static class ResponseStatus
 {
+    /// <summary>A meter's overage at the quota, as a plan's entry keeps it (step 40).</summary>
+    public static AuditMeterSettingResponseOverage OfMeterOverage(string overage) => overage switch
+    {
+        "Stop" => AuditMeterSettingResponseOverage.Stop,
+        "Charge" => AuditMeterSettingResponseOverage.Charge,
+        _ => throw Unknown(overage),
+    };
+
     public static AuditActorResponseKind OfActor(string kind) => kind switch
     {
         "User" => AuditActorResponseKind.User,

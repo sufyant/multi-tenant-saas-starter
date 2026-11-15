@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Application.Plans;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Plans;
@@ -9,6 +12,10 @@ namespace Api.IntegrationTests.Platform.Plans;
 // The edit applies at once to every tenant on the plan: nothing is deleted, and over a limit nothing new is added.
 public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
 {
+    private static readonly object TeamPrices = new { baseMonthly = 0, perPersonMonthly = 1_000, baseYearly = 0, perPersonYearly = 10_000 };
+
+    private static readonly object AiRequests = new { key = "ai.requests", quota = 10_000, overage = "charge", unitPrice = 100, unitSize = 1_000 };
+
     private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
@@ -19,7 +26,10 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
 
     public ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application));
+        // The template defines no meter (step 40), so the host defines one of its own.
+        _api = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            configureServices: services => services.Replace(ServiceDescriptor.Singleton(MeterCode.Of(("ai.requests", "AI requests the members make.")))));
         return ValueTask.CompletedTask;
     }
 
@@ -81,12 +91,12 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, own));
         var admin = api.CreateClient(await new TestData(database, own).AddSystemAdminAsync(), secondFactor: true);
 
-        var updated = await api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(SeedPlans.Pro, "Pro", new Dictionary<string, object>(), isDefault: true));
+        var updated = await api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(SeedPlans.Business, "Business", new Dictionary<string, object>(), isDefault: true));
 
         updated.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans", own)).ShouldBe(SeedPlans.Pro);
+        (await database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans", own)).ShouldBe(SeedPlans.Business);
         (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM control_plane.default_plans", own)).ShouldBe(1);
-        (await database.ScalarAsSuperuserAsync<string>($"SELECT details->>'previousDefaultPlan' FROM audit.platform_entries WHERE target_id = '{SeedPlans.Pro}'", own))
+        (await database.ScalarAsSuperuserAsync<string>($"SELECT details->>'previousDefaultPlan' FROM audit.platform_entries WHERE target_id = '{SeedPlans.Business}'", own))
             .ShouldBe($$"""{"id": "{{SeedPlans.Free}}", "name": "Free"}""");
     }
 
@@ -205,8 +215,81 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.plan_entitlements WHERE plan_id = '{planId}' AND key = 'roles.custom.max'")).ShouldBe(0);
     }
 
+    // An edit gives the plan exactly the prices and the meters it sends; a request without them keeps the plan's (a client of the
+    // version before step 40).
+    [Fact]
+    public async Task UpdatePlan_NewPricesAndNoMeter_KeepsTheEditAndAnEditWithoutThemKeepsThePlans()
+    {
+        var admin = await AdminAsync();
+        var name = $"Team {Guid.NewGuid():N}";
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreatePlanAsync(name, new Dictionary<string, object>(), TeamPrices, [AiRequests]));
+        var planId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+        var newPrices = new { baseMonthly = 500, perPersonMonthly = 1_200, baseYearly = 5_000, perPersonYearly = 12_000 };
+
+        var edited = await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, name, new Dictionary<string, object>(), newPrices, []));
+        var kept = await admin.UpdatePlanAsync(planId, name, new Dictionary<string, object>());
+
+        edited.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var plan = await kept.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+        (plan.GetProperty("prices").GetRawText(), plan.GetProperty("meters").GetArrayLength())
+            .ShouldBe(("""{"baseMonthly":500,"perPersonMonthly":1200,"baseYearly":5000,"perPersonYearly":12000}""", 0));
+    }
+
+    // An edit of the prices only is a change: it writes plan.updated with the old and the new prices.
+    [Fact]
+    public async Task UpdatePlan_OnlyThePrices_RecordsTheOldAndTheNewPrices()
+    {
+        var admin = await AdminAsync();
+        var name = $"Team {Guid.NewGuid():N}";
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreatePlanAsync(name, new Dictionary<string, object>(), TeamPrices, [AiRequests]));
+        var planId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
+        await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(
+            planId, name, new Dictionary<string, object>(), new { baseMonthly = 0, perPersonMonthly = 1_200, baseYearly = 0, perPersonYearly = 12_000 }, [AiRequests]));
+
+        var details = await _audit.PlatformDetailsAsync(planId);
+        details!.ShouldContain("\"oldPrices\": {\"baseYearly\": 0, \"baseMonthly\": 0, \"perPersonYearly\": 10000, \"perPersonMonthly\": 1000}");
+        details!.ShouldContain("\"newPrices\": {\"baseYearly\": 0, \"baseMonthly\": 0, \"perPersonYearly\": 12000, \"perPersonMonthly\": 1200}");
+    }
+
+    // An edit of the meters only is a change too: removing the meter writes plan.updated with the meters before and after.
+    [Fact]
+    public async Task UpdatePlan_OnlyTheMeters_RecordsTheOldAndTheNewMeters()
+    {
+        var admin = await AdminAsync();
+        var name = $"Team {Guid.NewGuid():N}";
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreatePlanAsync(name, new Dictionary<string, object>(), TeamPrices, [AiRequests]));
+        var planId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
+        await _api.WaitingForMessagesAsync(() => admin.UpdatePlanAsync(planId, name, new Dictionary<string, object>(), TeamPrices, []));
+
+        var details = await _audit.PlatformDetailsAsync(planId);
+        details!.ShouldContain("\"newMeters\": []");
+        details!.ShouldContain("\"oldMeters\": [{\"key\": \"ai.requests\", \"quota\": 10000, \"overage\": \"Charge\", \"unitSize\": 1000, \"unitPrice\": 100}]");
+    }
+
+    [Fact]
+    public async Task UpdatePlan_AMeterTheCodeDoesNotDefine_IsInvalidAndChangesNothing()
+    {
+        var admin = await AdminAsync();
+        var name = $"Team {Guid.NewGuid():N}";
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreatePlanAsync(name, new Dictionary<string, object>(), TeamPrices, [AiRequests]));
+        var planId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+
+        var edited = await admin.UpdatePlanAsync(
+            planId, name, new Dictionary<string, object>(), TeamPrices, [new { key = "storage.bytes", quota = 1, overage = "stop", unitPrice = 0, unitSize = 1 }]);
+
+        (edited.StatusCode, await CodeOfAsync(edited)).ShouldBe((HttpStatusCode.BadRequest, "plan.meter_invalid"));
+        var plan = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/plans/{planId}", Cancellation);
+        plan.GetProperty("meters")[0].GetProperty("key").GetString().ShouldBe("ai.requests");
+    }
+
+    private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
+        (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString();
+
     private Task<int> StoredMaximumAsync(Guid planId, string key) =>
         database.ScalarAsSuperuserAsync<int>($"SELECT maximum FROM control_plane.plan_entitlements WHERE plan_id = '{planId}' AND key = '{key}'");
 
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
 }

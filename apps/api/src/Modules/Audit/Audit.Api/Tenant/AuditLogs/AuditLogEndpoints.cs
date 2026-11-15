@@ -58,7 +58,7 @@ public static class AuditLogEndpoints
         MemberRoleChangedDetails changed => new MemberRoleChangedDetailsResponse(
             RoleOf(changed.OldRole, changed.OldRoleId, changed.OldRoleBuiltIn),
             RoleOf(changed.NewRole, changed.NewRoleId, changed.NewRoleBuiltIn)),
-        PlanCreatedDetails created => new PlanCreatedDetailsResponse(created.IsDefault, ValuesOf(created.Entitlements)),
+        PlanCreatedDetails created => new PlanCreatedDetailsResponse(created.IsDefault, ValuesOf(created.Entitlements), PricesOf(created.Prices), MetersOf(created.Meters)),
         PlanUpdatedDetails updated => new PlanUpdatedDetailsResponse(
             updated.OldName,
             updated.NewName,
@@ -66,7 +66,11 @@ public static class AuditLogEndpoints
             updated.IsDefault,
             ValuesOf(updated.OldEntitlements),
             ValuesOf(updated.NewEntitlements),
-            updated.PreviousDefaultPlan is { } previous ? PlanOf(previous) : null),
+            updated.PreviousDefaultPlan is { } previous ? PlanOf(previous) : null,
+            PricesOf(updated.OldPrices),
+            PricesOf(updated.NewPrices),
+            MetersOf(updated.OldMeters),
+            MetersOf(updated.NewMeters)),
         TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(PlanOf(changed.OldPlan), PlanOf(changed.NewPlan)),
         TenantCreatedDetails created => new TenantCreatedDetailsResponse(PlanOf(created.Plan)),
         TenantEntitlementOverrideSetDetails set => new TenantEntitlementOverrideSetDetailsResponse(
@@ -102,6 +106,12 @@ public static class AuditLogEndpoints
     private static AuditPlanResponse PlanOf(AuditPlan plan) => new(plan.Id, plan.Name);
 
     private static AuditEntitlementValueResponse ValueOf(AuditEntitlementValue value) => new(value.Enabled, value.Maximum, value.Unlimited);
+
+    private static AuditPlanPricesResponse? PricesOf(AuditPlanPrices? prices) =>
+        prices is null ? null : new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
+
+    private static List<AuditMeterSettingResponse>? MetersOf(IReadOnlyList<AuditMeterSetting>? meters) =>
+        meters is null ? null : [.. meters.Select(meter => new AuditMeterSettingResponse(meter.Key, meter.Quota, ResponseStatus.OfMeterOverage(meter.Overage), meter.UnitPrice, meter.UnitSize))];
 
     private static Dictionary<string, AuditEntitlementValueResponse> ValuesOf(IReadOnlyDictionary<string, AuditEntitlementValue> values) =>
         values.ToDictionary(value => value.Key, value => ValueOf(value.Value), StringComparer.Ordinal);

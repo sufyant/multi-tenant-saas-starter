@@ -75,6 +75,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
 
     internal DbSet<PlanEntitlement> PlanEntitlements => Set<PlanEntitlement>();
 
+    internal DbSet<PlanMeter> PlanMeters => Set<PlanMeter>();
+
     internal DbSet<DefaultPlan> DefaultPlans => Set<DefaultPlan>();
 
     internal DbSet<EntitlementOverride> EntitlementOverrides => Set<EntitlementOverride>();
@@ -185,6 +187,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new TenantPurgeSagaConfiguration());
         modelBuilder.ApplyConfiguration(new PlanConfiguration());
         modelBuilder.ApplyConfiguration(new PlanEntitlementConfiguration());
+        modelBuilder.ApplyConfiguration(new PlanMeterConfiguration());
         modelBuilder.ApplyConfiguration(new DefaultPlanConfiguration());
         modelBuilder.ApplyConfiguration(new EntitlementOverrideConfiguration());
         modelBuilder.ApplyConfiguration(new StoredFileConfiguration());

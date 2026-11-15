@@ -135,10 +135,12 @@
       "feature_required": "Önce bu sınırın özelliğini açın.",
       "feature_unavailable": "Bu kuruluşun planı bu özelliği içermiyor.",
       "limit_reached": "Bu kuruluş planının bir sınırına ulaştı.",
+      "meter_invalid": "Ürünün tanımladığı bir sayacı seçin; kota 0 veya daha büyük, birim boyutu 1 veya daha büyük olsun.",
       "name_invalid": "Bir ad girin.",
       "name_taken": "Bu ad başka bir planda var.",
       "not_found": "Bu plan artık yok.",
-      "override_not_found": "Bu kuruluşta bu anahtar için istisna yok."
+      "override_not_found": "Bu kuruluşta bu anahtar için istisna yok.",
+      "price_invalid": "0 veya daha büyük bir fiyat girin."
     },
     "role": {
       "built_in": "Yerleşik bir rolün adı ve izinleri değişmez, rol silinemez.",

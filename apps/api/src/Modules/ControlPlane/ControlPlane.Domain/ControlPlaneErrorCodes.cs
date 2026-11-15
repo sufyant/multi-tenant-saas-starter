@@ -59,6 +59,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode PlanLimitReached = ErrorCode.Declare("plan.limit_reached");
 
+    public static readonly ErrorCode PlanMeterInvalid = ErrorCode.Declare("plan.meter_invalid");
+
     public static readonly ErrorCode PlanNameInvalid = ErrorCode.Declare("plan.name_invalid");
 
     public static readonly ErrorCode PlanNameTaken = ErrorCode.Declare("plan.name_taken");
@@ -66,6 +68,8 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode PlanNotFound = ErrorCode.Declare("plan.not_found");
 
     public static readonly ErrorCode PlanOverrideNotFound = ErrorCode.Declare("plan.override_not_found");
+
+    public static readonly ErrorCode PlanPriceInvalid = ErrorCode.Declare("plan.price_invalid");
 
     public static readonly ErrorCode RoleBuiltIn = ErrorCode.Declare("role.built_in");
 

@@ -369,7 +369,7 @@ public sealed class HostRoleTests(Database database)
         var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
 
         var set = await admin.SetOverrideAsync(tenant.Id, "members.max", PlanRequests.Max(50));
-        var created = await admin.CreatePlanAsync("Business", new Dictionary<string, object>());
+        var created = await admin.CreatePlanAsync("Enterprise", new Dictionary<string, object>());
         var planId = await IdOfAsync(created);
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, planId, "plan.created") > 0
             && await PlatformEntriesAsync(name, tenant.Id, "tenant.entitlement_override_set") > 0);

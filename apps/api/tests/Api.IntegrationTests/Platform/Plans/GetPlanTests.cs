@@ -23,15 +23,15 @@ public sealed class GetPlanTests(Database database) : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Fact]
-    public async Task GetPlan_Pro_AnswersItsSeedValues()
+    public async Task GetPlan_Business_AnswersItsSeedValues()
     {
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
-        var plan = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/plans/{SeedPlans.Pro}", Cancellation);
+        var plan = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/plans/{SeedPlans.Business}", Cancellation);
 
-        (plan.GetProperty("name").GetString(), plan.GetProperty("isDefault").GetBoolean()).ShouldBe(("Pro", false));
+        (plan.GetProperty("name").GetString(), plan.GetProperty("isDefault").GetBoolean()).ShouldBe(("Business", false));
         plan.GetProperty("entitlements").GetRawText().ShouldBe(
-            """{"audit.retention.days":{"enabled":null,"maximum":365,"unlimited":false},"members.max":{"enabled":null,"maximum":null,"unlimited":true},"roles.custom":{"enabled":true,"maximum":null,"unlimited":false},"roles.custom.max":{"enabled":null,"maximum":20,"unlimited":false}}""");
+            """{"audit.retention.days":{"enabled":null,"maximum":365,"unlimited":false},"members.max":{"enabled":null,"maximum":50,"unlimited":false},"roles.custom":{"enabled":true,"maximum":null,"unlimited":false},"roles.custom.max":{"enabled":null,"maximum":20,"unlimited":false}}""");
     }
 
     [Fact]

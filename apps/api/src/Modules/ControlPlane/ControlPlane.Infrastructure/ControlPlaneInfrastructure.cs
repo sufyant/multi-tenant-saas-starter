@@ -101,6 +101,14 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IFeatureFlags, FeatureFlagEvaluation>();
         services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IFeatureFlags>());
         services.AddSingleton(FeatureFlagCode.Template);
+        services.AddSingleton(MeterCode.Template);
+        services.AddOptions<BillingOptions>()
+            .BindConfiguration(BillingOptions.Section)
+            .Validate(
+                settings => settings.Currency is { Length: 3 } currency && currency.All(char.IsAsciiLetterUpper),
+                $"{BillingOptions.Section}:Currency must be an ISO 4217 code in capitals, such as EUR.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<BillingOptions>>().Value);
         services.AddOptions<FeatureFlagOptions>().BindConfiguration(FeatureFlagOptions.Section).ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<FeatureFlagOptions>>().Value);
 

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Api.Tenant.Invitations;
+using ControlPlane.Api.Statuses;
 using ControlPlane.Application.Plans;
 using ControlPlane.Application.Plans.CreatePlan;
 using ControlPlane.Application.Plans.GetPlan;
@@ -64,22 +65,23 @@ public static class PlanEndpoints
         return plans.Map(found => found.Map(plan => new PlanListItemResponse(plan.Id, plan.Name, plan.IsDefault, plan.TenantCount, plan.CreatedAt)));
     }
 
-    private static async Task<Result<PlanResponse>> GetPlan(Guid planId, IMessageBus bus, CancellationToken cancellationToken) =>
-        (await bus.InvokeAsync<Result<PlanView>>(new GetPlanQuery(planId), cancellationToken)).Map(ToResponse);
+    private static async Task<Result<PlanResponse>> GetPlan(Guid planId, IMessageBus bus, BillingOptions billing, CancellationToken cancellationToken) =>
+        (await bus.InvokeAsync<Result<PlanView>>(new GetPlanQuery(planId), cancellationToken)).Map(plan => ToResponse(plan, billing));
 
     // The client gives each new plan an idempotency key (I1); the endpoint declares 201, with the plan's address, where GetPlan reads it.
     private static async Task<Result<PlanResponse>> CreatePlan(
         CreatePlanRequest request,
         ClaimsPrincipal user,
         IIdempotencyExecutor idempotency,
+        BillingOptions billing,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
         var created = await idempotency.ExecuteAsync<PlanView>(
-            new CreatePlanCommand(user.Id(), request.Name, request.IsDefault, ToViews(request.Entitlements)),
+            new CreatePlanCommand(user.Id(), request.Name, request.IsDefault, ToViews(request.Entitlements), ToView(request.Prices), ToViews(request.Meters)),
             Guid.CreateVersion7(time.GetUtcNow()).ToString(),
             cancellationToken);
-        return created.Map(ToResponse);
+        return created.Map(plan => ToResponse(plan, billing));
     }
 
     // An edit sets a state, so it takes no idempotency key (I1).
@@ -88,9 +90,11 @@ public static class PlanEndpoints
         UpdatePlanRequest request,
         ClaimsPrincipal user,
         IMessageBus bus,
+        BillingOptions billing,
         CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<PlanView>>(
-            new UpdatePlanCommand(user.Id(), planId, request.Name, request.IsDefault, ToViews(request.Entitlements)), cancellationToken)).Map(ToResponse);
+            new UpdatePlanCommand(user.Id(), planId, request.Name, request.IsDefault, ToViews(request.Entitlements), ToView(request.Prices), ToViews(request.Meters)),
+            cancellationToken)).Map(plan => ToResponse(plan, billing));
 
     // A preview only reads, so it takes no idempotency key (I1). It reads across tenants, so it runs without one.
     private static async Task<Result<PlanUpdatePreviewPageResponse>> GetPlanUpdatePreview(
@@ -174,14 +178,25 @@ public static class PlanEndpoints
 
     private static ExcessResponse ToResponse(ExcessView excess) => new(excess.Key, excess.Count, ToResponse(excess.NewValue), excess.Amount);
 
-    private static PlanResponse ToResponse(PlanView plan) =>
+    private static PlanResponse ToResponse(PlanView plan, BillingOptions billing) =>
         new(
             plan.Id,
             plan.Name,
             plan.IsDefault,
             plan.TenantCount,
             plan.Entitlements.OrderBy(value => value.Key, StringComparer.Ordinal).ToDictionary(value => value.Key, value => ToResponse(value.Value), StringComparer.Ordinal),
+            billing.Currency,
+            ToResponse(plan.Prices ?? PlanPricesView.Zero),
+            [.. (plan.Meters ?? []).Select(meter => new MeterSettingResponse(meter.Key, meter.Quota, ResponseStatus.OfMeterOverage(meter.Overage), meter.UnitPrice, meter.UnitSize))],
             plan.CreatedAt);
+
+    private static PlanPricesResponse ToResponse(PlanPricesView prices) => new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
+
+    private static PlanPricesView? ToView(PlanPricesRequest? prices) =>
+        prices is null ? null : new(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly);
+
+    private static IReadOnlyList<MeterSettingView>? ToViews(IReadOnlyList<MeterSettingRequest>? meters) =>
+        meters is null ? null : [.. meters.Select(meter => new MeterSettingView(meter.Key, meter.Quota, ResponseStatus.MeterOverageOf(meter.Overage), meter.UnitPrice, meter.UnitSize))];
 
     private static TenantPlanResponse ToResponse(TenantPlanView plan) =>
         new(plan.TenantId, new PlanNameResponse(plan.Plan.Id, plan.Plan.Name), [.. plan.Entitlements.Select(entitlement => new TenantEntitlementResponse(

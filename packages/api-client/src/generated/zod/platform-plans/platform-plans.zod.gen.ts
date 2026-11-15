@@ -58,8 +58,24 @@ export const CreatePlanBody = zod.object({
   "enabled": zod.boolean().nullish(),
   "maximum": zod.int().nullish(),
   "unlimited": zod.boolean().default(createPlanBodyEntitlementsUnlimitedDefault)
-}).describe('One key\'s value in a request: a feature\'s state in `enabled`, or a limit\'s number of 0 or more in `maximum`, or an unlimited\nlimit with `unlimited` true. Exactly one, of the key\'s kind; else 400 `plan.entitlement_invalid` with the key. Unlimited is a\nvalue of its own, never a number.'))
-}).describe('A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is\nclosed. The API trims the name before it counts its length.')
+}).describe('One key\'s value in a request: a feature\'s state in `enabled`, or a limit\'s number of 0 or more in `maximum`, or an unlimited\nlimit with `unlimited` true. Exactly one, of the key\'s kind; else 400 `plan.entitlement_invalid` with the key. Unlimited is a\nvalue of its own, never a number.')),
+  "prices": zod.union([zod.null(),zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor\nunit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40).')]).optional(),
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter.')).nullish()
+}).describe('A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is\nclosed. Its prices, 0 when left out, and its meters, none when left out (step 40). The API trims the name before it counts its length.')
 
 export const CreatePlanResponse = zod.object({
   "id": zod.uuid(),
@@ -71,8 +87,25 @@ export const CreatePlanResponse = zod.object({
   "maximum": zod.int().nullable(),
   "unlimited": zod.boolean()
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.')),
+  "currency": zod.string(),
+  "prices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment\'s currency. A Billing manager takes no seat, so it pays no fee per person (step 40).'),
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40).')),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was\ncreated. A key the plan has no value for is closed.')
+}).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 
 export const GetPlanParams = zod.object({
   "planId": zod.uuid()
@@ -88,8 +121,25 @@ export const GetPlanResponse = zod.object({
   "maximum": zod.int().nullable(),
   "unlimited": zod.boolean()
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.')),
+  "currency": zod.string(),
+  "prices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment\'s currency. A Billing manager takes no seat, so it pays no fee per person (step 40).'),
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40).')),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was\ncreated. A key the plan has no value for is closed.')
+}).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 
 export const UpdatePlanParams = zod.object({
   "planId": zod.uuid()
@@ -106,8 +156,24 @@ export const UpdatePlanBody = zod.object({
   "enabled": zod.boolean().nullish(),
   "maximum": zod.int().nullish(),
   "unlimited": zod.boolean().default(updatePlanBodyEntitlementsUnlimitedDefault)
-}).describe('One key\'s value in a request: a feature\'s state in `enabled`, or a limit\'s number of 0 or more in `maximum`, or an unlimited\nlimit with `unlimited` true. Exactly one, of the key\'s kind; else 400 `plan.entitlement_invalid` with the key. Unlimited is a\nvalue of its own, never a number.'))
-}).describe('A plan\'s name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. The API trims the name before it counts its length.')
+}).describe('One key\'s value in a request: a feature\'s state in `enabled`, or a limit\'s number of 0 or more in `maximum`, or an unlimited\nlimit with `unlimited` true. Exactly one, of the key\'s kind; else 400 `plan.entitlement_invalid` with the key. Unlimited is a\nvalue of its own, never a number.')),
+  "prices": zod.union([zod.null(),zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor\nunit of the deployment\'s currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40).')]).optional(),
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter.')).nullish()
+}).describe('A plan\'s name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length.')
 
 export const UpdatePlanResponse = zod.object({
   "id": zod.uuid(),
@@ -119,8 +185,25 @@ export const UpdatePlanResponse = zod.object({
   "maximum": zod.int().nullable(),
   "unlimited": zod.boolean()
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.')),
+  "currency": zod.string(),
+  "prices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the\ndeployment\'s currency. A Billing manager takes no seat, so it pays no fee per person (step 40).'),
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,\n`unitPrice` minor units for each `unitSize` units (step 40).')),
   "createdAt": zod.iso.datetime({"offset":true})
-}).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was\ncreated. A key the plan has no value for is closed.')
+}).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 
 export const GetPlanUpdatePreviewParams = zod.object({
   "planId": zod.uuid()

@@ -7,8 +7,8 @@ namespace Api.IntegrationTests.Fixtures;
 // Writes ControlPlane's rows with plain SQL: the host's tests may not see ControlPlane's internals. Built-in roles are found by
 // name, the way ControlPlane stores them. A membership belongs to a tenant, so it is written with its tenant declared. The rows go
 // into the main database unless the test names a database of its own.
-// A tenant is on Pro unless the test names a plan, so a test written before the plans keeps what every tenant had (the migration moved
-// every tenant to Pro). A database taken back before the plans has no plan column: such a test passes withPlans false.
+// A tenant is on Business unless the test names a plan: the seeded plan once named Pro, which every tenant had before the plans (step 40
+// renamed it and gave it 50 seats). A database taken back before the plans has no plan column: such a test passes withPlans false.
 internal sealed class TestData(Database database, string databaseName = Database.MainDatabase, bool withPlans = true, bool withBillingManager = true)
 {
     // The value of a limit without a number, for AddPlanAsync and SetPlanValueAsync.
@@ -33,7 +33,7 @@ internal sealed class TestData(Database database, string databaseName = Database
         DateTimeOffset? createdAt = null,
         Guid? planId = null)
     {
-        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt, withPlans ? planId ?? SeedPlans.Pro : null);
+        var tenant = await AddTenantRowAsync(status, slug, name, tenantId, suspensionReason, closedAt, createdAt, withPlans ? planId ?? SeedPlans.Business : null);
         await database.ScalarAsync<object>($"INSERT INTO control_plane.tenant_summaries (tenant_id) VALUES ('{tenant.Id}')", database: databaseName);
         await database.ExecuteInTenantAsync(
             tenant.Id,

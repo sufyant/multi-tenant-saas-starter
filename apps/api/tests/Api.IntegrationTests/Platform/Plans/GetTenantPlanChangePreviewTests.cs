@@ -25,8 +25,8 @@ public sealed class GetTenantPlanChangePreviewTests(Database database) : IAsyncL
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
-    // A Pro tenant with two custom roles and six members, two of them by pending invitations that have not expired, previewed on Free: the
-    // feature in use, its limit 0, and five members.
+    // A Business tenant with two custom roles and six members, two of them by pending invitations that have not expired, previewed on Free: the
+    // feature in use, its limit 0, and three seats (step 40).
     [Fact]
     public async Task GetTenantPlanChangePreview_ToFree_ListsEachKeyOverWithItsCount()
     {
@@ -39,7 +39,7 @@ public sealed class GetTenantPlanChangePreviewTests(Database database) : IAsyncL
         var preview = await previewed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         preview.GetProperty("excesses").EnumerateArray()
             .Select(excess => $"{excess.GetProperty("key").GetString()}:{excess.GetProperty("count").GetInt32()}:{excess.GetProperty("amount").GetInt32()}")
-            .ShouldBe(["members.max:6:1", "roles.custom:2:2", "roles.custom.max:2:2"]);
+            .ShouldBe(["members.max:6:3", "roles.custom:2:2", "roles.custom.max:2:2"]);
         preview.GetProperty("overriddenKeys").GetArrayLength().ShouldBe(0);
     }
 

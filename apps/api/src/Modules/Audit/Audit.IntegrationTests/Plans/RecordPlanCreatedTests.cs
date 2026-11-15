@@ -17,12 +17,14 @@ public sealed class RecordPlanCreatedTests(Database database)
     {
         var created = new PlanCreatedEvent(
             Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), "Team", true,
-            new Dictionary<string, EntitlementValueRecord> { ["roles.custom"] = new(true, null, false), ["members.max"] = new(null, null, true) });
+            new Dictionary<string, EntitlementValueRecord> { ["roles.custom"] = new(true, null, false), ["members.max"] = new(null, null, true) },
+            new PlanPricesRecord(0, 1_000, 0, 10_000),
+            [new MeterSettingRecord("ai.requests", 10_000, "Charge", 100, 1_000)]);
 
         await InTenant.RunAsync(database.Services, null, scope => RecordPlanCreatedHandler.HandleAsync(created, scope.GetRequiredService<IAuditLog>(), Cancellation));
 
         (await Logs.DescribeAsync(database.Services, Logs.Platform, null, created.EventId)).ShouldBe($"plan.created|User|{created.CreatedBy}|Plan|{created.PlanId}|Team");
         (await Logs.DetailsAsync(database.Services, Logs.Platform, null, created.EventId)).ShouldBe(
-            """{"isDefault": true, "entitlements": {"members.max": {"enabled": null, "maximum": null, "unlimited": true}, "roles.custom": {"enabled": true, "maximum": null, "unlimited": false}}}""");
+            """{"meters": [{"key": "ai.requests", "quota": 10000, "overage": "Charge", "unitSize": 1000, "unitPrice": 100}], "prices": {"baseYearly": 0, "baseMonthly": 0, "perPersonYearly": 10000, "perPersonMonthly": 1000}, "isDefault": true, "entitlements": {"members.max": {"enabled": null, "maximum": null, "unlimited": true}, "roles.custom": {"enabled": true, "maximum": null, "unlimited": false}}}""");
     }
 }

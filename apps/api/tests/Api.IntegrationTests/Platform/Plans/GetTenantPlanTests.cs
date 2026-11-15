@@ -34,7 +34,7 @@ public sealed class GetTenantPlanTests(Database database) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetTenantPlan_AProTenant_AnswersEveryKeyWithItsValuesAndCount()
+    public async Task GetTenantPlan_ABusinessTenant_AnswersEveryKeyWithItsValuesAndCount()
     {
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
         var tenant = await _testData.AddTenantAsync();
@@ -44,12 +44,12 @@ public sealed class GetTenantPlanTests(Database database) : IAsyncLifetime
 
         var plan = await admin.TenantPlanAsync(tenant.Id);
 
-        plan.GetProperty("plan").GetProperty("id").GetGuid().ShouldBe(SeedPlans.Pro);
+        plan.GetProperty("plan").GetProperty("id").GetGuid().ShouldBe(SeedPlans.Business);
         plan.GetProperty("entitlements").EnumerateArray().Select(entry => entry.GetProperty("key").GetString()).ShouldBe(["audit.retention.days", "members.max", "roles.custom", "roles.custom.max"]);
         var limit = PlanRequests.EntitlementOf(plan, "roles.custom.max");
         (limit.GetProperty("isFeature").GetBoolean(), limit.GetProperty("planValue").GetProperty("maximum").GetInt32(), limit.GetProperty("count").GetInt32())
             .ShouldBe((false, 20, 1));
         limit.GetProperty("override").ValueKind.ShouldBe(JsonValueKind.Null);
-        PlanRequests.EntitlementOf(plan, "members.max").GetProperty("effective").GetProperty("unlimited").GetBoolean().ShouldBeTrue();
+        PlanRequests.EntitlementOf(plan, "members.max").GetProperty("effective").GetProperty("maximum").GetInt32().ShouldBe(50);
     }
 }

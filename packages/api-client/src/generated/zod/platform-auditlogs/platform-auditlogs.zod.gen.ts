@@ -151,7 +151,23 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "enabled": zod.boolean().nullable(),
   "maximum": zod.int().nullable(),
   "unlimited": zod.boolean()
-}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.'))
+}).describe('One key\'s value as an entry keeps it: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited\nlimit with `unlimited` true.')),
+  "prices": zod.union([zod.null(),zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).')]).optional(),
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).')).nullish()
 }),zod.object({
   "operation": zod.enum({
   PlanUpdated: 'plan.updated',
@@ -173,7 +189,39 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "previousDefaultPlan": zod.union([zod.null(),zod.object({
   "id": zod.uuid(),
   "name": zod.string()
-}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')])
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')]),
+  "oldPrices": zod.union([zod.null(),zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).')]).optional(),
+  "newPrices": zod.union([zod.null(),zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).')]).optional(),
+  "oldMeters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).')).nullish(),
+  "newMeters": zod.array(zod.object({
+  "key": zod.string(),
+  "quota": zod.int(),
+  "overage": zod.enum({
+  Stop: 'stop',
+  Charge: 'charge',
+}).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
+  "unitPrice": zod.int(),
+  "unitSize": zod.int()
+}).describe('A plan\'s setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).')).nullish()
 }),zod.object({
   "operation": zod.enum({
   RoleCreated: 'role.created',

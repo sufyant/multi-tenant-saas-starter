@@ -226,12 +226,48 @@ export interface AuditEntitlementValueResponse {
   unlimited: boolean;
 }
 
+/**
+ * A plan's prices as an entry keeps them, each a whole number of the minor unit of the deployment's currency (step 40).
+ */
+export interface AuditPlanPricesResponse {
+  baseMonthly: number;
+  perPersonMonthly: number;
+  baseYearly: number;
+  perPersonYearly: number;
+}
+
+/**
+ * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
+ */
+export type AuditMeterSettingResponseOverage = typeof AuditMeterSettingResponseOverage[keyof typeof AuditMeterSettingResponseOverage];
+
+
+export const AuditMeterSettingResponseOverage = {
+  Stop: 'stop',
+  Charge: 'charge',
+} as const;
+
+/**
+ * A plan's setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and
+ * the price of the extra, `unitPrice` minor units for each `unitSize` units (step 40).
+ */
+export interface AuditMeterSettingResponse {
+  key: string;
+  quota: number;
+  overage: AuditMeterSettingResponseOverage;
+  unitPrice: number;
+  unitSize: number;
+}
+
 export type PlanCreatedDetailsResponseEntitlements = {[key: string]: AuditEntitlementValueResponse};
 
 export interface PlanCreatedDetailsResponse {
   operation: PlanCreatedDetailsResponseOperation;
   isDefault: boolean;
   entitlements: PlanCreatedDetailsResponseEntitlements;
+  prices?: null | AuditPlanPricesResponse;
+  /** @nullable */
+  meters?: AuditMeterSettingResponse[] | null;
 }
 
 export type PlanUpdatedDetailsResponseOperation = typeof PlanUpdatedDetailsResponseOperation[keyof typeof PlanUpdatedDetailsResponseOperation];
@@ -263,6 +299,12 @@ export interface PlanUpdatedDetailsResponse {
   oldEntitlements: PlanUpdatedDetailsResponseOldEntitlements;
   newEntitlements: PlanUpdatedDetailsResponseNewEntitlements;
   previousDefaultPlan: null | AuditPlanResponse;
+  oldPrices?: null | AuditPlanPricesResponse;
+  newPrices?: null | AuditPlanPricesResponse;
+  /** @nullable */
+  oldMeters?: AuditMeterSettingResponse[] | null;
+  /** @nullable */
+  newMeters?: AuditMeterSettingResponse[] | null;
 }
 
 export type RoleCreatedDetailsResponseOperation = typeof RoleCreatedDetailsResponseOperation[keyof typeof RoleCreatedDetailsResponseOperation];
@@ -752,14 +794,53 @@ export interface EntitlementValueRequest {
 export type CreatePlanRequestEntitlements = {[key: string]: EntitlementValueRequest};
 
 /**
+ * A plan's prices in a request: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor
+ * unit of the deployment's currency, 0 to 10 000 000 000; else 400 `plan.price_invalid` (step 40).
+ */
+export interface PlanPricesRequest {
+  baseMonthly: number;
+  perPersonMonthly: number;
+  baseYearly: number;
+  perPersonYearly: number;
+}
+
+/**
+ * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
+ */
+export type MeterSettingRequestOverage = typeof MeterSettingRequestOverage[keyof typeof MeterSettingRequestOverage];
+
+
+export const MeterSettingRequestOverage = {
+  Stop: 'stop',
+  Charge: 'charge',
+} as const;
+
+/**
+ * A plan's setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of
+ * the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a
+ * unit size out of range, or a unit price out of the prices' range answers 400 `plan.meter_invalid` (step 40). The template defines
+ * no meter.
+ */
+export interface MeterSettingRequest {
+  key: string;
+  quota: number;
+  overage: MeterSettingRequestOverage;
+  unitPrice: number;
+  unitSize: number;
+}
+
+/**
  * A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is
- * closed. The API trims the name before it counts its length.
+ * closed. Its prices, 0 when left out, and its meters, none when left out (step 40). The API trims the name before it counts its length.
  */
 export interface CreatePlanRequest {
   /** @maxLength 100 */
   name: string;
   isDefault: boolean;
   entitlements: CreatePlanRequestEntitlements;
+  prices?: null | PlanPricesRequest;
+  /** @nullable */
+  meters?: MeterSettingRequest[] | null;
 }
 
 /**
@@ -1081,10 +1162,12 @@ export const ErrorCode = {
   PlanFeatureRequired: 'plan.feature_required',
   PlanFeatureUnavailable: 'plan.feature_unavailable',
   PlanLimitReached: 'plan.limit_reached',
+  PlanMeterInvalid: 'plan.meter_invalid',
   PlanNameInvalid: 'plan.name_invalid',
   PlanNameTaken: 'plan.name_taken',
   PlanNotFound: 'plan.not_found',
   PlanOverrideNotFound: 'plan.override_not_found',
+  PlanPriceInvalid: 'plan.price_invalid',
   RateLimitExceeded: 'rate_limit.exceeded',
   RequestInvalid: 'request.invalid',
   RequestTimeout: 'request.timeout',
@@ -1603,6 +1686,29 @@ export interface MeResponse {
   timeZone: string | null;
 }
 
+/**
+ * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
+ */
+export type MeterSettingResponseOverage = typeof MeterSettingResponseOverage[keyof typeof MeterSettingResponseOverage];
+
+
+export const MeterSettingResponseOverage = {
+  Stop: 'stop',
+  Charge: 'charge',
+} as const;
+
+/**
+ * A plan's setting of one meter of the code: its key, the quota of each period, what happens at the quota, and the price of the extra,
+ * `unitPrice` minor units for each `unitSize` units (step 40).
+ */
+export interface MeterSettingResponse {
+  key: string;
+  quota: number;
+  overage: MeterSettingResponseOverage;
+  unitPrice: number;
+  unitSize: number;
+}
+
 export type MyFeatureFlagsResponseFlags = {[key: string]: boolean};
 
 /**
@@ -1694,11 +1800,23 @@ export interface PlanNameResponse {
   name: string;
 }
 
+/**
+ * A plan's prices: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole number of the minor unit of the
+ * deployment's currency. A Billing manager takes no seat, so it pays no fee per person (step 40).
+ */
+export interface PlanPricesResponse {
+  baseMonthly: number;
+  perPersonMonthly: number;
+  baseYearly: number;
+  perPersonYearly: number;
+}
+
 export type PlanResponseEntitlements = {[key: string]: EntitlementValueResponse};
 
 /**
- * A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was
- * created. A key the plan has no value for is closed.
+ * A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the
+ * deployment's one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no
+ * value for is closed; a plan without a meter shows no Usage (step 40).
  */
 export interface PlanResponse {
   id: string;
@@ -1706,6 +1824,9 @@ export interface PlanResponse {
   isDefault: boolean;
   tenantCount: number;
   entitlements: PlanResponseEntitlements;
+  currency: string;
+  prices: PlanPricesResponse;
+  meters: MeterSettingResponse[];
   createdAt: string;
 }
 
@@ -2204,13 +2325,17 @@ export type UpdatePlanRequestEntitlements = {[key: string]: EntitlementValueRequ
 
 /**
  * A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another
- * plan takes it. The API trims the name before it counts its length.
+ * plan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it
+ * counts its length.
  */
 export interface UpdatePlanRequest {
   /** @maxLength 100 */
   name: string;
   isDefault: boolean;
   entitlements: UpdatePlanRequestEntitlements;
+  prices?: null | PlanPricesRequest;
+  /** @nullable */
+  meters?: MeterSettingRequest[] | null;
 }
 
 /**
