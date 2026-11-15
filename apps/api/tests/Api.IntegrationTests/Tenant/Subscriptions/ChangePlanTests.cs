@@ -106,7 +106,7 @@ public sealed class ChangePlanTests(Database database) : IAsyncLifetime
 
         var answer = await _api.WaitingForMessagesAsync(() => _api.CreateClient(manager).ChangePlanAsync(tenantId, free));
 
-        (await MoveOfAsync(answer)).ShouldBe("cancel");
+        (await MoveOfAsync(answer)).ShouldBe("cancellation");
         _api.Billing.PeriodEnds.ShouldBe([($"sub_{tenantId:N}", true)]);
         (await BillingOfAsync(manager, tenantId)).GetProperty("cancelAtPeriodEnd").GetBoolean().ShouldBeTrue();
         (await database.ScalarAsSuperuserAsync<string>($"SELECT closure_end FROM billing.subscriptions WHERE tenant_id = '{tenantId}'")).ShouldBe("None");

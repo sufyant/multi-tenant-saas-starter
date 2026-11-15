@@ -4,7 +4,7 @@ namespace Billing.Api.Tenant.Subscriptions;
 
 /// <summary>
 /// When the move applies (B9): <c>now</c>, with the rest of the period charged today; <c>at_period_end</c>, a lower plan or yearly to
-/// monthly; <c>cancel</c>, the move to the default plan at the period's end.
+/// monthly; <c>cancellation</c>, the move to the default plan at the period's end.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<PlanChangeResponseMove>))]
 public enum PlanChangeResponseMove
@@ -15,6 +15,6 @@ public enum PlanChangeResponseMove
     [JsonStringEnumMemberName("at_period_end")]
     AtPeriodEnd,
 
-    [JsonStringEnumMemberName("cancel")]
-    Cancel,
+    [JsonStringEnumMemberName("cancellation")]
+    Cancellation,
 }

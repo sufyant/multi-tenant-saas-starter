@@ -56,8 +56,8 @@ export const PreviewPlanChangeResponse = zod.object({
   "move": zod.enum({
   Now: 'now',
   AtPeriodEnd: 'at_period_end',
-  Cancel: 'cancel',
-}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancel`, the move to the default plan at the period\'s end.'),
+  Cancellation: 'cancellation',
+}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period\'s end.'),
   "at": zod.iso.datetime({"offset":true}),
   "currency": zod.string(),
   "amount": zod.int(),
@@ -82,8 +82,8 @@ export const ChangePlanResponse = zod.object({
   "move": zod.enum({
   Now: 'now',
   AtPeriodEnd: 'at_period_end',
-  Cancel: 'cancel',
-}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancel`, the move to the default plan at the period\'s end.'),
+  Cancellation: 'cancellation',
+}).describe('When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period\'s end.'),
   "at": zod.iso.datetime({"offset":true})
 }).describe('The move the provider took, and when it applies. The tenant\'s plan changes when the provider\'s event of the change arrives: at once\nfor `now`, at `at` for the others.')
 

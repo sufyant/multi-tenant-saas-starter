@@ -177,5 +177,5 @@ public static class PlanChangeEndpoints
     }
 
     private static PlanChangeResponseMove MoveOf(PlanChange change) =>
-        change.IsNow ? PlanChangeResponseMove.Now : change.IsCancel ? PlanChangeResponseMove.Cancel : PlanChangeResponseMove.AtPeriodEnd;
+        change.IsNow ? PlanChangeResponseMove.Now : change.IsCancel ? PlanChangeResponseMove.Cancellation : PlanChangeResponseMove.AtPeriodEnd;
 }

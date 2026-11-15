@@ -1921,7 +1921,7 @@ export interface PlanChangePreviewRequest {
 
 /**
  * When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to
- * monthly; `cancel`, the move to the default plan at the period's end.
+ * monthly; `cancellation`, the move to the default plan at the period's end.
  */
 export type PlanChangeResponseMove = typeof PlanChangeResponseMove[keyof typeof PlanChangeResponseMove];
 
@@ -1929,7 +1929,7 @@ export type PlanChangeResponseMove = typeof PlanChangeResponseMove[keyof typeof 
 export const PlanChangeResponseMove = {
   Now: 'now',
   AtPeriodEnd: 'at_period_end',
-  Cancel: 'cancel',
+  Cancellation: 'cancellation',
 } as const;
 
 /**

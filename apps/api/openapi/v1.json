@@ -16154,14 +16154,14 @@
         "enum": [
           "now",
           "at_period_end",
-          "cancel"
+          "cancellation"
         ],
         "type": "string",
-        "description": "When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancel`, the move to the default plan at the period's end.",
+        "description": "When the move applies (B9): `now`, with the rest of the period charged today; `at_period_end`, a lower plan or yearly to\nmonthly; `cancellation`, the move to the default plan at the period's end.",
         "x-enumNames": [
           "Now",
           "AtPeriodEnd",
-          "Cancel"
+          "Cancellation"
         ]
       },
       "PlanChoiceResponse": {
