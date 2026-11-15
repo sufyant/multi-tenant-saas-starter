@@ -1855,7 +1855,7 @@ const shellShots: {
   },
 ];
 
-// The Billing manager (14.01 to 14.10, 14.13) and No custom role left (9.14) of step 40a. Billing and Usage, and the bill's
+// The Billing manager (14.01 to 14.10, 14.13) and No custom role left without billing (9.21) of step 40a. Billing and Usage, and the bill's
 // sentences of 14.02 and 14.04 to 14.07, come with 40b and 40c.
 shellShots.push(
   {
@@ -1931,7 +1931,7 @@ shellShots.push(
     },
   },
   {
-    file: "9.14-no-custom-role-left-en-light-desktop",
+    file: "9.21-no-custom-role-left-billing-off-en-light-desktop",
     size: "desktop",
     path: roles,
     plan: planWith({ "roles.custom.max": 4 }, { "roles.custom.max": 4 }),
