@@ -10,6 +10,7 @@ using Billing.Application.Subscriptions.GetPlanChangePreview;
 using Billing.Application.Subscriptions.SchedulePlanChange;
 using Billing.Application.Subscriptions.UndoScheduledChange;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
+using Billing.Application.Subscriptions.SetSeats;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using ControlPlane.Application.DataExports.DeleteStoredFile;
@@ -72,7 +73,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(CreateCustomerCommand), typeof(OpenCheckoutSessionQuery), typeof(GetPortalLinkQuery), typeof(GetWebhookPayloadQuery), typeof(SyncSubscriptionCommand),
                 typeof(ExpireCheckoutPagesCommand), typeof(SetCancelAtPeriodEndCommand), typeof(CancelSubscriptionCommand),
                 typeof(GetPlanChangePreviewQuery), typeof(ChangePlanNowCommand), typeof(SchedulePlanChangeCommand), typeof(CancelAtPeriodEndCommand),
-                typeof(UndoScheduledChangeCommand),
+                typeof(UndoScheduledChangeCommand), typeof(SetSeatsCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

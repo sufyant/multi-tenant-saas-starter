@@ -198,6 +198,22 @@ public sealed class LeaveTenantTests(Database database) : IAsyncLifetime
         (await _audit.TenantRecordsHoldingAsync(tenant.Id, "Hopper")).ShouldBe(0);
     }
 
+    // Step 40, billing per person: a member who leaves no longer takes a seat at Stripe.
+    [Fact]
+    public async Task LeaveTenant_OfATenantThatPays_SetsItsSeatsAtStripe()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var member = await _testData.AddMemberAsync(tenantId);
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(member).LeaveTenantAsync(tenantId));
+
+        _api.Billing.Seats.ShouldBe([($"sub_{tenantId:N}", 1)]);
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

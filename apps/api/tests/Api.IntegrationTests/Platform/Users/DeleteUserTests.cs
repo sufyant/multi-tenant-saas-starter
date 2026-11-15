@@ -61,6 +61,23 @@ public sealed class DeleteUserTests(Database database) : IAsyncLifetime
         await _summaries.ShouldMatchTheRowsAsync(second.Id);
     }
 
+    // Step 40, billing per person: a deleted user leaves the tenant, so it takes no seat at Stripe.
+    [Fact]
+    public async Task DeleteUser_AMemberOfATenantThatPays_SetsItsSeatsAtStripe()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var user = await _testData.AddMemberAsync(tenantId);
+        var admin = await _testData.AddSystemAdminAsync();
+
+        await _api.WaitingForMessagesAsync(async () => await DeleteAsync(admin, await _testData.UserIdOfAsync(user)));
+
+        _api.Billing.Seats.ShouldBe([($"sub_{tenantId:N}", 1)]);
+    }
+
     // U8: a user's deletion deletes their notifications, in every bell, and leaves another user's.
     [Fact]
     public async Task DeleteUser_WithNotifications_DeletesThemAndKeepsAnotherUsers()

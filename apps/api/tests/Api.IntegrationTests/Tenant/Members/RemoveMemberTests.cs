@@ -227,6 +227,38 @@ public sealed class RemoveMemberTests(Database database) : IAsyncLifetime
         removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
+    // Step 40, billing per person: a removal sets the fee per person at Stripe to the members who take a seat now.
+    [Fact]
+    public async Task RemoveMember_OfATenantThatPays_SetsItsSeatsAtStripe()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenantId));
+        await _testData.AddMemberAsync(tenantId);
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(tenants.OwnerOf(tenantId)).RemoveMemberAsync(tenantId, member));
+
+        _api.Billing.Seats.ShouldBe([($"sub_{tenantId:N}", 2)]);
+    }
+
+    [Fact]
+    public async Task RemoveMember_OfATenantThatNeverPaid_SetsNoSeats()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenant.Id));
+
+        var removed = await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).RemoveMemberAsync(tenant.Id, member));
+
+        removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        _api.Billing.Seats.ShouldBeEmpty();
+    }
+
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 

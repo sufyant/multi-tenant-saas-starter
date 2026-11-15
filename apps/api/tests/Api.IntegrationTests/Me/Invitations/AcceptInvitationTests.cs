@@ -679,6 +679,26 @@ public sealed class AcceptInvitationTests(Database database) : IAsyncLifetime
         (await own.ScalarAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{invitee}'")).ShouldBe(0);
     }
 
+    // Step 40, billing per person: billing starts when the person accepts, so the fee per person at Stripe counts them.
+    [Fact]
+    public async Task AcceptInvitation_ToATenantThatPays_SetsItsSeatsAtStripe()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var (email, secret, invitee) = ($"{Guid.NewGuid():N}@example.com", Guid.NewGuid().ToString("N"), $"user_{Guid.NewGuid():N}");
+        _api.Identity.AddAccount(invitee, email);
+        await _testData.AddInvitationAsync(tenantId, email, secret: secret, expiresAt: DateTimeOffset.UtcNow.AddDays(7));
+
+        var accepted = await _api.WaitingForMessagesAsync(() => _api.CreateClient(invitee).PostAsJsonAsync(
+            "/v1/me/invitations/accept", new { code = TestData.InvitationCodeOf(tenantId, secret), name = "Ada Lovelace" }, Cancellation));
+
+        accepted.StatusCode.ShouldBe(HttpStatusCode.OK);
+        _api.Billing.Seats.ShouldBe([($"sub_{tenantId:N}", 2)]);
+    }
+
     // An invitation code is `<tenantId>.<secret>`.
     private static string TenantIdOf(string code) => code[..code.IndexOf('.', StringComparison.Ordinal)];
 

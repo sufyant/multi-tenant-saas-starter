@@ -42,6 +42,34 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         (await _audit.PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.plan_changed|User|{payer}|Tenant|{tenant.Id}|Acme Ltd");
     }
 
+    // Step 40, billing per person: each state of an active subscription brings Stripe's count of seats, and a count that differs from the
+    // members who take a seat is set again, whatever order our calls reached Stripe in.
+    [Fact]
+    public async Task ReceiveWebhook_SeatsThatDifferFromTheMembers_SetsThemAtStripe()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, _planId) with { People = 3 });
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenant.Id:N}"));
+
+        _api.Billing.Seats.ShouldBe([($"sub_{tenant.Id:N}", 1)]);
+    }
+
+    [Fact]
+    public async Task ReceiveWebhook_SeatsThatMatchTheMembers_SetsNone()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        _api.Billing.Put(BillingRequests.Subscription(tenant.Id, _planId) with { People = 1 });
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenant.Id:N}"));
+
+        _api.Billing.Seats.ShouldBeEmpty();
+    }
+
     // The bell's text of a plan change says that the platform acted, so a plan a member paid for tells nobody there (step 40).
     [Fact]
     public async Task ReceiveWebhook_AnActiveSubscription_SendsNoPlanChangedNotification()

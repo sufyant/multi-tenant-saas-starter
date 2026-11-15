@@ -77,6 +77,8 @@ using Billing.Application.Subscriptions.ApplySubscription;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.RouteSubscription;
 using Billing.Application.Subscriptions.NameScheduleChange;
+using Billing.Application.Members.CountSeatsAtMemberChange;
+using Billing.Application.Subscriptions.SetSeats;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using Billing.Application.Webhooks.ReceiveWebhook;
@@ -406,6 +408,36 @@ public sealed class HostRoleTests(Database database)
         web.Billing.MovesNow.Select(move => move.Order.PlanId).ShouldBe([business]);
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(SyncSubscriptionHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(SyncSubscriptionHandler));
+    }
+
+    // B10: a removal on the web host sets the seats at Stripe in the worker, and the event's Audit handler still runs beside the seats'.
+    [Fact]
+    public async Task RemoveMember_APayingTenantOnAWebAndAWorkerHost_SetsItsSeatsAndRecordsTheRemovalInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var member = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id));
+        var team = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(team, 0, 1000, 0, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, team)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, team));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+
+        var removed = await web.CreateClient(owner).RemoveMemberAsync(tenant.Id, member);
+        await Waiting.UntilAsync(() => !worker.Billing.Seats.IsEmpty);
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "member.removed") > 0);
+
+        removed.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        worker.Billing.Seats.ShouldBe([($"sub_{tenant.Id:N}", 1)]);
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetSeatsHandler));
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(CountSeatsAtMemberChangeHandler));
     }
 
     // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row
