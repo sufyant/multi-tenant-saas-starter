@@ -128,10 +128,10 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         var slug = Slug();
         var admin = await SystemAdminAsync();
 
-        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com", planId = SeedPlans.Pro }));
+        var created = await _api.WaitingForMessagesAsync(() => admin.CreateTenantAsync(new { name = "Acme Ltd", slug, ownerEmail = $"{Guid.NewGuid():N}@example.com", planId = SeedPlans.Business }));
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await database.ScalarAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(SeedPlans.Pro);
+        (await database.ScalarAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(SeedPlans.Business);
     }
 
     [Fact]

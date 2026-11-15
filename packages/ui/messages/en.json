@@ -135,10 +135,12 @@
       "feature_required": "Turn on the feature of this limit first.",
       "feature_unavailable": "This organisation's plan does not include this feature.",
       "limit_reached": "This organisation has reached a limit of its plan.",
+      "meter_invalid": "Choose a meter the product defines, with a quota of 0 or more and a unit size of 1 or more.",
       "name_invalid": "Enter a name.",
       "name_taken": "Another plan has this name.",
       "not_found": "This plan no longer exists.",
-      "override_not_found": "This organisation has no override of this key."
+      "override_not_found": "This organisation has no override of this key.",
+      "price_invalid": "Enter a price of 0 or more, up to 100,000,000."
     },
     "role": {
       "built_in": "A built-in role keeps its name and its permissions, and cannot be deleted.",

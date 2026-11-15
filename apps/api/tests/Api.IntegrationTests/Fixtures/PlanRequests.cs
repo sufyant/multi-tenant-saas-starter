@@ -25,6 +25,20 @@ internal static class PlanRequests
     public static Task<HttpResponseMessage> UpdatePlanAsync(this HttpClient client, Guid planId, string name, object entitlements, bool isDefault = false) =>
         client.PatchAsJsonAsync($"/v1/platform/plans/{planId}", new { name, isDefault, entitlements }, TestContext.Current.CancellationToken);
 
+    // Step 40: the body with the plan's prices and meters, as the plan editor of 6.13 sends it.
+    public static async Task<HttpResponseMessage> CreatePlanAsync(this HttpClient client, string name, object entitlements, object prices, object[] meters)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/platform/plans")
+        {
+            Content = JsonContent.Create(new { name, isDefault = false, entitlements, prices, meters }),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
+    public static Task<HttpResponseMessage> UpdatePlanAsync(this HttpClient client, Guid planId, string name, object entitlements, object prices, object[] meters) =>
+        client.PatchAsJsonAsync($"/v1/platform/plans/{planId}", new { name, isDefault = false, entitlements, prices, meters }, TestContext.Current.CancellationToken);
+
     public static Task<HttpResponseMessage> GetPlanUpdatePreviewAsync(this HttpClient client, Guid planId, object entitlements, string query = "") =>
         client.PostAsJsonAsync($"/v1/platform/plans/{planId}/preview{query}", new { entitlements }, TestContext.Current.CancellationToken);
 

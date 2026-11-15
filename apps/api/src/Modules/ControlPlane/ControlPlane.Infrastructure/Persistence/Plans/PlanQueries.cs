@@ -51,6 +51,7 @@ public sealed class PlanQueries(ControlPlaneDbContext controlPlane) : IPlanQueri
                 plan.Id,
                 plan.Name,
                 plan.CreatedAt,
+                plan.Prices,
                 IsDefault = controlPlane.DefaultPlans.Any(mark => mark.PlanId == plan.Id),
                 TenantCount = controlPlane.Tenants.Count(tenant => tenant.PlanId == plan.Id),
             })
@@ -61,12 +62,15 @@ public sealed class PlanQueries(ControlPlaneDbContext controlPlane) : IPlanQueri
         }
 
         var values = await controlPlane.PlanValuesAsync(planId, cancellationToken);
+        var meters = await controlPlane.PlanMeters.Where(meter => meter.PlanId == planId).AsNoTracking().ToListAsync(cancellationToken);
         return new PlanView(
             found.Id,
             found.Name,
             found.IsDefault,
             found.TenantCount,
             values.ToDictionary(value => value.Key, value => EntitlementValueView.Of(value.Value), StringComparer.Ordinal),
+            PlanPricesView.Of(found.Prices),
+            MeterSettingView.Of(meters.ToDictionary(meter => meter.Key, meter => meter.Setting, StringComparer.Ordinal)),
             found.CreatedAt);
     }
 

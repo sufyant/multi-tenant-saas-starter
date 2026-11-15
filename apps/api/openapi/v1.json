@@ -12301,6 +12301,37 @@
         },
         "description": "One entry of an audit log: when, the operation (`member.invited`), who acted, what it was done to, and the details the entry\nkeeps: the shape of its operation, or null for an operation without details. Names are resolved when the log is read; a name is only\na person's real name. It holds no email address."
       },
+      "AuditMeterSettingResponse": {
+        "required": [
+          "key",
+          "quota",
+          "overage",
+          "unitPrice",
+          "unitSize"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "quota": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overage": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unitSize": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's setting of one meter as an entry keeps it: its key, the quota of each period, `overage``stop` or `charge`, and\nthe price of the extra, `unitPrice` minor units for each `unitSize` units (step 40)."
+      },
       "AuditOperation": {
         "enum": [
           "activity_log.exported",
@@ -12404,6 +12435,34 @@
           "UserRenamed",
           "UserSuspended"
         ]
+      },
+      "AuditPlanPricesResponse": {
+        "required": [
+          "baseMonthly",
+          "perPersonMonthly",
+          "baseYearly",
+          "perPersonYearly"
+        ],
+        "type": "object",
+        "properties": {
+          "baseMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "baseYearly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonYearly": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's prices as an entry keeps them, each a whole number of the minor unit of the deployment's currency (step 40)."
       },
       "AuditPlanResponse": {
         "required": [
@@ -12670,9 +12729,28 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/EntitlementValueRequest"
             }
+          },
+          "prices": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlanPricesBody"
+              }
+            ]
+          },
+          "meters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MeterSettingBody"
+            }
           }
         },
-        "description": "A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is\nclosed. The API trims the name before it counts its length."
+        "description": "A new plan: its name, whether it takes the default mark, and its value of some keys of the list; a key left out has no value, and is\nclosed. Its prices, 0 when left out, and its meters, none when left out (step 40). The API trims the name before it counts its length."
       },
       "CreateRoleRequest": {
         "required": [
@@ -13059,10 +13137,12 @@
           "plan.feature_required",
           "plan.feature_unavailable",
           "plan.limit_reached",
+          "plan.meter_invalid",
           "plan.name_invalid",
           "plan.name_taken",
           "plan.not_found",
           "plan.override_not_found",
+          "plan.price_invalid",
           "rate_limit.exceeded",
           "request.invalid",
           "request.timeout",
@@ -13164,10 +13244,12 @@
           "PlanFeatureRequired",
           "PlanFeatureUnavailable",
           "PlanLimitReached",
+          "PlanMeterInvalid",
           "PlanNameInvalid",
           "PlanNameTaken",
           "PlanNotFound",
           "PlanOverrideNotFound",
+          "PlanPriceInvalid",
           "RateLimitExceeded",
           "RequestInvalid",
           "RequestTimeout",
@@ -14387,6 +14469,49 @@
         },
         "description": "The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
       },
+      "MeterOverageBody": {
+        "enum": [
+          "stop",
+          "charge"
+        ],
+        "type": "string",
+        "description": "What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.",
+        "x-enumNames": [
+          "Stop",
+          "Charge"
+        ]
+      },
+      "MeterSettingBody": {
+        "required": [
+          "key",
+          "quota",
+          "overage",
+          "unitPrice",
+          "unitSize"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "quota": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overage": {
+            "$ref": "#/components/schemas/MeterOverageBody"
+          },
+          "unitPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unitSize": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's setting of one meter of the code, in a request and in a response: its key, the quota of each period, what happens at the\nquota, and the price of the extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key\nsent twice, a quota or a unit size out of range, or a unit price out of the prices' range answers 400 `plan.meter_invalid` (step\n40). The template defines no meter."
+      },
       "MyFeatureFlagsResponse": {
         "required": [
           "flags"
@@ -14899,6 +15024,25 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/AuditEntitlementValueResponse"
             }
+          },
+          "prices": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditPlanPricesResponse"
+              }
+            ]
+          },
+          "meters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AuditMeterSettingResponse"
+            }
           }
         }
       },
@@ -14950,6 +15094,34 @@
         },
         "description": "A plan as another resource names it: its id and its name."
       },
+      "PlanPricesBody": {
+        "required": [
+          "baseMonthly",
+          "perPersonMonthly",
+          "baseYearly",
+          "perPersonYearly"
+        ],
+        "type": "object",
+        "properties": {
+          "baseMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "baseYearly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonYearly": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's prices, in a request and in a response: a base fee and a fee for each person who takes a seat, monthly and yearly, each a whole\nnumber of the minor unit of the deployment's currency, 0 to 10 000 000 000; else 400 `plan.price_invalid`. A Billing manager takes\nno seat, so it pays no fee per person (step 40)."
+      },
       "PlanResponse": {
         "required": [
           "id",
@@ -14957,6 +15129,9 @@
           "isDefault",
           "tenantCount",
           "entitlements",
+          "currency",
+          "prices",
+          "meters",
           "createdAt"
         ],
         "type": "object",
@@ -14981,12 +15156,24 @@
               "$ref": "#/components/schemas/EntitlementValueResponse"
             }
           },
+          "currency": {
+            "type": "string"
+          },
+          "prices": {
+            "$ref": "#/components/schemas/PlanPricesBody"
+          },
+          "meters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeterSettingBody"
+            }
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
           }
         },
-        "description": "A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, and when it was\ncreated. A key the plan has no value for is closed."
+        "description": "A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment's one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40)."
       },
       "PlanRetentionShortenedResponse": {
         "required": [
@@ -15068,6 +15255,44 @@
                 "$ref": "#/components/schemas/AuditPlanResponse"
               }
             ]
+          },
+          "oldPrices": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditPlanPricesResponse"
+              }
+            ]
+          },
+          "newPrices": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AuditPlanPricesResponse"
+              }
+            ]
+          },
+          "oldMeters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AuditMeterSettingResponse"
+            }
+          },
+          "newMeters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AuditMeterSettingResponse"
+            }
           }
         }
       },
@@ -16787,9 +17012,28 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/EntitlementValueRequest"
             }
+          },
+          "prices": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlanPricesBody"
+              }
+            ]
+          },
+          "meters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MeterSettingBody"
+            }
           }
         },
-        "description": "A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. The API trims the name before it counts its length."
+        "description": "A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length."
       },
       "UpdateRoleRequest": {
         "required": [

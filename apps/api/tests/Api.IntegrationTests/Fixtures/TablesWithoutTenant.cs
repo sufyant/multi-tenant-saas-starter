@@ -8,7 +8,7 @@ internal static class TablesWithoutTenant
     public const string MigrationHistory = "__ef_migrations_history";
 
     // ControlPlane's data above tenants (the roles belong to a tenant, A2), the tenants' summaries and entitlement overrides, which the
-    // platform reads across tenants as it reads the tenants (R12), the plans, their values and the default mark, the terms versions
+    // platform reads across tenants as it reads the tenants (R12), the plans, their values, their meters (step 40) and the default mark, the terms versions
     // and the users' acceptances and dismissals of them, which belong to no tenant (step 38), the feature flags with their listed organisations and their history, which only the platform writes (step 39), the platform's audit log,
     // and the host's idempotency keys. Notifications, and the deliveries by email only, belong to a user (U3):
     // their own policy keeps each user to their rows (ExtraPolicies).
@@ -19,6 +19,7 @@ internal static class TablesWithoutTenant
         "control_plane.entitlement_overrides",
         "control_plane.plans",
         "control_plane.plan_entitlements",
+        "control_plane.plan_meters",
         "control_plane.default_plans",
         "control_plane.users",
         "control_plane.system_admins",

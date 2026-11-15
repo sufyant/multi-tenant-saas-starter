@@ -7,4 +7,8 @@ public sealed record PlanUpdatedDetailsResponse(
     bool IsDefault,
     IReadOnlyDictionary<string, AuditEntitlementValueResponse> OldEntitlements,
     IReadOnlyDictionary<string, AuditEntitlementValueResponse> NewEntitlements,
-    AuditPlanResponse? PreviousDefaultPlan) : AuditDetailsResponse;
+    AuditPlanResponse? PreviousDefaultPlan,
+    AuditPlanPricesResponse? OldPrices = null,
+    AuditPlanPricesResponse? NewPrices = null,
+    IReadOnlyList<AuditMeterSettingResponse>? OldMeters = null,
+    IReadOnlyList<AuditMeterSettingResponse>? NewMeters = null) : AuditDetailsResponse;

@@ -12,7 +12,9 @@ public static class RecordPlanCreatedHandler
 {
     public static Task HandleAsync(PlanCreatedEvent created, IAuditLog log, CancellationToken cancellationToken)
     {
-        var details = JsonSerializer.Serialize(new PlanCreatedDetails(created.IsDefault, AuditEntitlementValue.Of(created.Entitlements)), JsonSerializerOptions.Web);
+        var details = JsonSerializer.Serialize(
+            new PlanCreatedDetails(created.IsDefault, AuditEntitlementValue.Of(created.Entitlements), AuditPlanPrices.Of(created.Prices), AuditMeterSetting.Of(created.Meters)),
+            JsonSerializerOptions.Web);
         return log.RecordAsync(
             new PlatformAuditEntry(created.EventId, created.OccurredAt, AuditActor.User(created.CreatedBy), AuditOperations.PlanCreated, AuditTarget.Plan(created.PlanId, created.Name), details),
             null,

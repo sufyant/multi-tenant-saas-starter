@@ -4,14 +4,15 @@ A system admin decides from the platform what each tenant may use, with no deplo
 
 ## 1. The keys of this step
 
-| Key | Kind | Counts | Free (default) | Pro |
-| --- | --- | --- | --- | --- |
-| `roles.custom` | feature | the tenant's custom roles, which use it | off | on |
-| `roles.custom.max` | limit | the tenant's custom roles | 0 | 20 |
-| `members.max` | limit | the tenant's seats: its members and its pending invitations that have not expired, without the Billing manager's | 5 | unlimited |
-| `audit.retention.days` | limit | nothing: the days the tenant's Activity log keeps an entry (K14) | 365 | 365 |
+| Key | Kind | Counts | Free (default) | Team | Business |
+| --- | --- | --- | --- | --- | --- |
+| `roles.custom` | feature | the tenant's custom roles, which use it | off | on | on |
+| `roles.custom.max` | limit | the tenant's custom roles | 0 | 5 | 20 |
+| `members.max` | limit | the tenant's seats: its members and its pending invitations that have not expired, without the Billing manager's | 3 | 15 | 50 |
+| `audit.retention.days` | limit | nothing: the days the tenant's Activity log keeps an entry (K14) | 365 | 365 | 365 |
 
 - The migration `AddPlansAndEntitlements` seeds Free and Pro, marks Free default and moves every existing tenant to Pro. Pro holds what every tenant had before: custom roles on, 20 of them, members without a limit. The migration takes nothing away.
+- Step 40's migration `AddPlanPricesAndMeters` renames Pro to Business with 50 seats, adds Team and gives Free 3 seats, so a new and an existing database hold the same three plans. It takes Pro's unlimited members away, on purpose: a tenant over 50 keeps everything (E4). A plan a system admin named Team or Business keeps its name with " (old)" after it. The seeded prices are 0 (the maintainer's decision of 2026-11-15, `docs/roadmap.md`, section 8).
 - A Billing manager takes no seat (step 40, frame 10.01). Its members and its pending invitations are not counted, so a Billing manager is invited when the seats are full. Example: 11 members, 1 of them a Billing manager, and 2 pending invitations use 12 seats.
 - A pending invitation counts toward `members.max`. Example: a limit of 10 and 9 members. Without the invitations, 5 invitations could go out and 14 members could join. With them, one invitation can go out.
 - The migration `AddRetentionLimit` (step 37c) gives every plan 365 days of `audit.retention.days`. A plan that a system admin creates later gets the value its editor sends.
@@ -84,6 +85,14 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 - `CreateTenant` takes an optional `planId`; without one, the tenant gets the default plan.
 - A closed, purging or purged tenant's plan and overrides are read-only (409 `tenant.not_active`). A suspended tenant's can change. The purge deletes the overrides; the tombstone keeps its plan, because a tenant always has one.
 - There is no deletion of a plan, no plan version, no trial and no billing in this step. A trial is an override with an expiry; billing (step 40) will change a tenant's plan through ControlPlane.
+
+## 5a. Prices and meters (step 40)
+
+- A plan has prices: `prices` `{ baseMonthly, perPersonMonthly, baseYearly, perPersonYearly }`, each a whole number of the minor unit of the deployment's one currency, 0 to 10 000 000 000 (400 `plan.price_invalid`; `ck_plans_prices`). The currency is `ControlPlane:Billing:Currency`, EUR by default, and `PlanResponse` answers it as `currency` (the maintainer's decision of 2026-11-14; Fowler, *Patterns of Enterprise Application Architecture*, "Money"). The fee per person counts the seats, so a Billing manager pays none.
+- A plan sets some meters of the code: `meters[]` `{ key, quota, overage, unitPrice, unitSize }`. `overage` is `stop` or `charge` at the quota; the extra costs `unitPrice` minor units for each `unitSize` units. The meters are the code's (`MeterCatalog`), as the keys are; the template defines none, so a plan of the template sets none, and a test's host defines one of its own (`MeterCode.Of`). A key the code does not define, a key sent twice, a quota out of 0 to 10^12, a unit size out of 1 to 10^12 or a unit price out of the prices' range answers 400 `plan.meter_invalid`. The key has no CHECK constraint: a product adds a meter without a migration. A plan without a meter shows no Usage.
+- `CreatePlan` takes both, optional: prices left out are 0, meters left out are none. `UpdatePlan` sets exactly the prices and the meters it sends, as it does the values; left out, the plan keeps its own, so a client of the version before step 40 changes neither. `GetPlan` answers both, the meters by key.
+- `plan.created` and `plan.updated` keep the prices and the meters in their details (an entry from before step 40 has none). An edit of only the prices or the meters writes `plan.updated`.
+- Not in this step: the prices in Stripe and a price change (40b), the meters' counts and the Usage page (40c).
 
 ## 6. The previews
 

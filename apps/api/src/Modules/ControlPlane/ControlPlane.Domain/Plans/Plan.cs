@@ -4,7 +4,8 @@ using SharedKernel;
 namespace ControlPlane.Domain.Plans;
 
 /// <summary>
-/// A plan: a name, and a value for some keys of the code's list (<see cref="EntitlementKeys"/>). A key without a value is closed. Every
+/// A plan: a name, a value for some keys of the code's list (<see cref="EntitlementKeys"/>), its prices, and its setting of some meters
+/// of the code (<see cref="MeterCatalog"/>, step 40). A key without a value is closed; a meter without a setting is not on the plan. Every
 /// tenant has one plan; a system admin creates and edits plans from the platform, with no deploy (Stripe, "Entitlements"; Hodgson,
 /// "Feature Toggles", permissioning toggles). An edit applies at once to every tenant on the plan: there are no plan versions.
 /// </summary>
@@ -15,6 +16,8 @@ internal sealed class Plan
     public static readonly Error NotFound = Error.NotFound(ControlPlaneErrorCodes.PlanNotFound, "The plan was not found.");
 
     private readonly List<PlanEntitlement> _values = [];
+
+    private readonly List<PlanMeter> _meters = [];
 
     private Plan(Guid id, string name, DateTimeOffset createdAt)
     {
@@ -37,41 +40,57 @@ internal sealed class Plan
     public IReadOnlyDictionary<string, EntitlementValue> ValueMap =>
         _values.ToFrozenDictionary(value => value.Key, value => value.Value, StringComparer.Ordinal);
 
+    /// <summary>The plan's prices, in the minor unit of the deployment's currency.</summary>
+    public PlanPrices Prices { get; private set; } = PlanPrices.Zero;
+
+    /// <summary>The plan's rows of <c>plan_meters</c>, one for each meter it sets.</summary>
+    public IReadOnlyCollection<PlanMeter> Meters => _meters;
+
+    /// <summary>The plan's setting of each meter it sets.</summary>
+    public IReadOnlyDictionary<string, MeterSetting> MeterMap =>
+        _meters.ToFrozenDictionary(meter => meter.Key, meter => meter.Setting, StringComparer.Ordinal);
+
+    /// <summary>What the plan gives and costs now.</summary>
+    public PlanContent Content => new(ValueMap, Prices, MeterMap);
+
     /// <summary>
-    /// A new plan with the name, kept without the spaces around it, and the values. The name is 1 to <see cref="NameMaxLength"/>
-    /// characters and no other plan has it; each key is on the code's list, with a value of its kind. Every rejection comes first.
+    /// A new plan with the name, kept without the spaces around it, and the content. The name is 1 to <see cref="NameMaxLength"/>
+    /// characters and no other plan has it; each key is on the code's list, with a value of its kind; each price is in range; each meter is
+    /// one the code defines, with a setting in range. Every rejection comes first.
     /// </summary>
-    public static Result<Plan> Create(Guid id, string name, IReadOnlyDictionary<string, EntitlementValue> values, bool nameTaken, DateTimeOffset createdAt)
+    public static Result<Plan> Create(Guid id, string name, PlanContent content, MeterCatalog catalog, bool nameTaken, DateTimeOffset createdAt)
     {
         var trimmed = name.Trim();
-        var allowed = Check(trimmed, new Dictionary<string, EntitlementValue>(), values, nameTaken);
+        var allowed = Check(trimmed, new Dictionary<string, EntitlementValue>(), content, catalog, nameTaken);
         if (!allowed.IsSuccess)
         {
             return allowed.Error;
         }
 
-        var plan = new Plan(id, trimmed, createdAt);
-        plan._values.AddRange(values.Select(value => new PlanEntitlement(id, value.Key, value.Value)));
+        var plan = new Plan(id, trimmed, createdAt) { Prices = content.Prices };
+        plan._values.AddRange(content.Values.Select(value => new PlanEntitlement(id, value.Key, value.Value)));
+        plan._meters.AddRange(content.Meters.Select(meter => new PlanMeter(id, meter.Key, meter.Value)));
         return plan;
     }
 
     /// <summary>
-    /// Gives the plan the name and exactly these values, under the rules of <see cref="Create"/>: a key left out loses its value, and is
-    /// then closed. Returns what the plan had before; the name and the values it has change nothing (I1). Every rejection comes first.
+    /// Gives the plan the name and exactly this content, under the rules of <see cref="Create"/>: a key or a meter left out loses its value
+    /// or its setting. Returns what the plan had before; the name and the content it has change nothing (I1). Every rejection comes first.
     /// </summary>
-    public Result<PlanEdit> Edit(string name, IReadOnlyDictionary<string, EntitlementValue> values, bool nameTaken)
+    public Result<PlanEdit> Edit(string name, PlanContent content, MeterCatalog catalog, bool nameTaken)
     {
         var trimmed = name.Trim();
-        var allowed = Check(trimmed, ValueMap, values, nameTaken);
+        var allowed = Check(trimmed, ValueMap, content, catalog, nameTaken);
         if (!allowed.IsSuccess)
         {
             return allowed.Error;
         }
 
-        var before = new PlanEdit(Name, ValueMap);
+        var before = new PlanEdit(Name, Content);
         Name = trimmed;
-        _values.RemoveAll(value => !values.ContainsKey(value.Key));
-        foreach (var (key, value) in values)
+        Prices = content.Prices;
+        _values.RemoveAll(value => !content.Values.ContainsKey(value.Key));
+        foreach (var (key, value) in content.Values)
         {
             if (_values.Find(existing => existing.Key == key) is { } existing)
             {
@@ -83,15 +102,30 @@ internal sealed class Plan
             }
         }
 
+        _meters.RemoveAll(meter => !content.Meters.ContainsKey(meter.Key));
+        foreach (var (key, setting) in content.Meters)
+        {
+            if (_meters.Find(existing => existing.Key == key) is { } existing)
+            {
+                existing.Set(setting);
+            }
+            else
+            {
+                _meters.Add(new PlanMeter(Id, key, setting));
+            }
+        }
+
         return before;
     }
 
     private static Result Check(
         string trimmedName,
         IReadOnlyDictionary<string, EntitlementValue> before,
-        IReadOnlyDictionary<string, EntitlementValue> values,
+        PlanContent content,
+        MeterCatalog catalog,
         bool nameTaken)
     {
+        var values = content.Values;
         if (trimmedName.Length is < 1 or > NameMaxLength)
         {
             return Error.Validation(ControlPlaneErrorCodes.PlanNameInvalid, $"A plan's name is 1 to {NameMaxLength} characters, not counting the spaces around it.");
@@ -108,6 +142,21 @@ internal sealed class Plan
             if (!valid.IsSuccess)
             {
                 return valid.Error;
+            }
+        }
+
+        var prices = content.Prices.Check();
+        if (!prices.IsSuccess)
+        {
+            return prices;
+        }
+
+        foreach (var (key, setting) in content.Meters)
+        {
+            var meter = PlanMeter.Check(key, setting, catalog);
+            if (!meter.IsSuccess)
+            {
+                return meter;
             }
         }
 

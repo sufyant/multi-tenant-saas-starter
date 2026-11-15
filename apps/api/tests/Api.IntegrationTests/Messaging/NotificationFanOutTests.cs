@@ -159,7 +159,7 @@ public sealed class NotificationFanOutTests(Database database) : IAsyncLifetime
                 NotificationRows.Row(laterId, "member.role_changed", tenant.Id, "Tenant"),
             }.Order());
         (await _rows.ValueListOfAsync(firstId, "tenant.plan_changed")).ShouldStartWith("newPlanName=Scale ");
-        (await _rows.ValueListOfAsync(firstId, "tenant.plan_changed")).ShouldEndWith(", oldPlanName=Pro, tenantName=Acme Ltd");
+        (await _rows.ValueListOfAsync(firstId, "tenant.plan_changed")).ShouldEndWith(", oldPlanName=Business, tenantName=Acme Ltd");
     }
 
     // K14: a plan change that shortens the Activity log period names the new period and the moment the older entries go, the event's

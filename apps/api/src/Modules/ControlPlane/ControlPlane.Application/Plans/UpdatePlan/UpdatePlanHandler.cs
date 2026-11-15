@@ -17,6 +17,7 @@ public static class UpdatePlanHandler
         IPlanRepository plans,
         IPlanQueries queries,
         IUserRepository users,
+        MeterCode meterCode,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -24,6 +25,12 @@ public static class UpdatePlanHandler
         if (!values.IsSuccess)
         {
             return (values.Error, []);
+        }
+
+        var meters = command.Meters is { } sent ? MeterSettingView.Read(sent) : null;
+        if (meters is { IsSuccess: false })
+        {
+            return (meters.Error, []);
         }
 
         if (await plans.FindPlanForUpdateAsync(command.PlanId, cancellationToken) is not { } plan)
@@ -39,7 +46,8 @@ public static class UpdatePlanHandler
         }
 
         var nameTaken = await plans.IsNameTakenAsync(command.Name.Trim(), plan.Id, cancellationToken);
-        var edited = plan.Edit(command.Name, values.Value, nameTaken);
+        var content = new PlanContent(values.Value, command.Prices?.ToPrices() ?? plan.Prices, meters?.Value ?? plan.MeterMap);
+        var edited = plan.Edit(command.Name, content, meterCode.Catalog, nameTaken);
         if (!edited.IsSuccess)
         {
             return (edited.Error, []);
@@ -48,7 +56,11 @@ public static class UpdatePlanHandler
         var previousDefault = wasDefault || !command.IsDefault ? null : await plans.FindPlanNameAsync(mark.PlanId, cancellationToken);
         mark.Mark(plan.Id, command.IsDefault);
         var before = edited.Value;
-        var changed = before.OldName != plan.Name || wasDefault != command.IsDefault || !SameValues(before.OldValues, plan.ValueMap);
+        var changed = before.OldName != plan.Name
+            || wasDefault != command.IsDefault
+            || !SameValues(before.Old.Values, plan.ValueMap)
+            || before.Old.Prices != plan.Prices
+            || !SameMeters(before.Old.Meters, plan.MeterMap);
         await plans.SaveChangesAsync(cancellationToken);
         var view = await queries.FindPlanAsync(plan.Id, cancellationToken) ?? throw new InvalidOperationException("The plan was locked in this transaction.");
         if (!changed)
@@ -68,12 +80,19 @@ public static class UpdatePlanHandler
             plan.Name,
             wasDefault,
             command.IsDefault,
-            EntitlementValueView.RecordsOf(before.OldValues),
+            EntitlementValueView.RecordsOf(before.Old.Values),
             EntitlementValueView.RecordsOf(plan.ValueMap),
             previousDefault?.Id,
-            previousDefault?.Name)]);
+            previousDefault?.Name,
+            PlanPricesView.RecordOf(before.Old.Prices),
+            PlanPricesView.RecordOf(plan.Prices),
+            MeterSettingView.RecordsOf(before.Old.Meters),
+            MeterSettingView.RecordsOf(plan.MeterMap))]);
     }
 
     private static bool SameValues(IReadOnlyDictionary<string, EntitlementValue> before, IReadOnlyDictionary<string, EntitlementValue> after) =>
         before.Count == after.Count && before.All(value => after.TryGetValue(value.Key, out var other) && other == value.Value);
+
+    private static bool SameMeters(IReadOnlyDictionary<string, MeterSetting> before, IReadOnlyDictionary<string, MeterSetting> after) =>
+        before.Count == after.Count && before.All(meter => after.TryGetValue(meter.Key, out var other) && other == meter.Value);
 }
