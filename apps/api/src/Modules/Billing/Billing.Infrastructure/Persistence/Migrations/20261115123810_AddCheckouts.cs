@@ -1,0 +1,48 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace Billing.Infrastructure.Persistence.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddCheckouts : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.CreateTable(
+                name: "checkouts",
+                schema: "billing",
+                columns: table => new
+                {
+                    tenant_id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NULLIF(current_setting('app.tenant_id', true), '')::uuid"),
+                    key = table.Column<Guid>(type: "uuid", nullable: false),
+                    plan_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    yearly = table.Column<bool>(type: "boolean", nullable: false),
+                    people = table.Column<int>(type: "integer", nullable: false),
+                    session_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_checkouts", x => x.tenant_id);
+                });
+
+            // Privileges come from migrations: the application writes and deletes a tenant's open checkout (B7).
+            migrationBuilder.Sql("""
+                GRANT SELECT, INSERT, UPDATE, DELETE ON billing.checkouts TO api_application;
+                """);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "checkouts",
+                schema: "billing");
+        }
+    }
+}

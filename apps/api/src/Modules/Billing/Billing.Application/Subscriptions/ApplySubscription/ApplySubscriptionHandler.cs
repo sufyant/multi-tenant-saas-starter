@@ -1,5 +1,7 @@
-using Billing.Domain.Subscriptions;
+using Billing.Application.Checkouts.ExpireCheckoutSession;
+using Billing.Application.Checkouts;
 using Billing.Contracts.Subscriptions;
+using Billing.Domain.Subscriptions;
 using SharedKernel;
 using Wolverine;
 
@@ -12,6 +14,7 @@ public static class ApplySubscriptionHandler
     public static async Task<OutgoingMessages> HandleAsync(
         ApplySubscriptionCommand command,
         ISubscriptionRepository subscriptions,
+        ICheckoutRepository checkouts,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -30,7 +33,26 @@ public static class ApplySubscriptionHandler
             return [];
         }
 
+        if (!subscription.PaysForItsPlan)
+        {
+            await subscriptions.SaveChangesAsync(cancellationToken);
+            return [];
+        }
+
+        // B7: a subscription that pays ends the tenant's open checkout, and its page is expired, so a second member cannot pay a second one.
+        OutgoingMessages messages = [];
+        messages.Add(new PlanPaidEvent(Guid.CreateVersion7(now), now, command.TenantId, subscription.PlanId, command.PaidBy));
+        if (await checkouts.FindForUpdateAsync(cancellationToken) is { } checkout)
+        {
+            if (checkout.SessionId is { } sessionId)
+            {
+                messages.Add(new ExpireCheckoutSessionCommand(sessionId));
+            }
+
+            checkouts.Remove(checkout);
+        }
+
         await subscriptions.SaveChangesAsync(cancellationToken);
-        return subscription.PaysForItsPlan ? [new PlanPaidEvent(Guid.CreateVersion7(now), now, command.TenantId, subscription.PlanId, command.PaidBy)] : [];
+        return messages;
     }
 }

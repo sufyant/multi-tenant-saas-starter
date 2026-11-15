@@ -5,7 +5,8 @@ using Billing.Application.Provider;
 namespace Api.IntegrationTests.Fixtures;
 
 // Stripe is a system we do not own, so the tests fake it behind IBillingProvider (section 9). A customer is cus_ and the tenant's id. A
-// checkout and a portal answer a link of the fake and keep what they were asked; a subscription is what the test put there. A webhook's body is the fake's own JSON, {"id", "type",
+// checkout's page is one for each idempotency key, as Stripe keeps a key (cs_ and the key), and a portal answers a link of the fake; each
+// keeps what it was asked; an expiry, an end at the period's end and an end at once are kept too; a subscription is what the test put there. A webhook's body is the fake's own JSON, {"id", "type",
 // "subscriptionId"}, and only the signature Signature proves it: the real signature is the adapter's, which Billing.UnitTests checks.
 internal sealed class FakeBillingProvider : IBillingProvider
 {
@@ -13,7 +14,9 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     private readonly ConcurrentDictionary<string, ProviderSubscription> _subscriptions = new();
 
-    public static Uri CheckoutLink { get; } = new("https://checkout.stripe.test/c/pay/cs_test_1");
+    private readonly ConcurrentDictionary<Guid, CheckoutPage> _pages = new();
+
+    public static DateTimeOffset PageExpiry { get; } = new(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     public static Uri PortalLink { get; } = new("https://billing.stripe.test/p/session/bps_test_1");
 
@@ -25,7 +28,16 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     public ConcurrentQueue<string> Reads { get; } = [];
 
+    public ConcurrentQueue<string> Expired { get; } = [];
+
+    public ConcurrentQueue<(string SubscriptionId, bool CancelAtPeriodEnd)> PeriodEnds { get; } = [];
+
+    public ConcurrentQueue<string> Cancelled { get; } = [];
+
     public static string CustomerOf(Guid tenantId) => $"cus_{tenantId:N}";
+
+    // The page of a checkout's key, the same one for each call of the key.
+    public static Uri PageOf(Guid key) => new($"https://checkout.stripe.test/c/pay/cs_{key:N}");
 
     // A webhook's body of the fake.
     public static string Body(string eventId, string type, string? subscriptionId) =>
@@ -39,10 +51,28 @@ internal sealed class FakeBillingProvider : IBillingProvider
         return Task.FromResult(CustomerOf(tenantId));
     }
 
-    public Task<Uri> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
+    public Task<CheckoutPage> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
     {
         Checkouts.Enqueue(order);
-        return Task.FromResult(CheckoutLink);
+        return Task.FromResult(_pages.GetOrAdd(order.Key, key => new CheckoutPage($"cs_{key:N}", PageOf(key), PageExpiry)));
+    }
+
+    public Task ExpireCheckoutAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        Expired.Enqueue(sessionId);
+        return Task.CompletedTask;
+    }
+
+    public Task SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken)
+    {
+        PeriodEnds.Enqueue((subscriptionId, cancelAtPeriodEnd));
+        return Task.CompletedTask;
+    }
+
+    public Task CancelSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
+    {
+        Cancelled.Enqueue(subscriptionId);
+        return Task.CompletedTask;
     }
 
     public Task<Uri> OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken)

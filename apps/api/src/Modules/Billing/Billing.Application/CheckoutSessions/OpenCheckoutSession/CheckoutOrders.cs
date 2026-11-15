@@ -1,6 +1,6 @@
-using Billing.Application.Subscriptions;
 using Billing.Application.CheckoutSessions.GetCheckoutFacts;
 using Billing.Application.Subscriptions.GetBilling;
+using Billing.Application.Subscriptions;
 using Billing.Domain.Subscriptions;
 using SharedKernel;
 
@@ -41,6 +41,7 @@ public static class CheckoutOrders
         }
 
         return new OpenCheckoutSessionQuery(
+            Key: null,
             tenantId, facts.PaidBy, CustomerId: null, facts.PlanId, facts.PlanName, facts.Currency, interval, baseAmount, perPerson,
             facts.SeatedMembers, new Uri($"{returnUrl}?{ReturnParameter}=success"), new Uri($"{returnUrl}?{ReturnParameter}=cancelled"));
     }

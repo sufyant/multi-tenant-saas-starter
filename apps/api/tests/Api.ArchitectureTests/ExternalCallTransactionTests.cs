@@ -1,7 +1,10 @@
+using Billing.Application.Checkouts.ExpireCheckoutSession;
 using Billing.Application.CheckoutSessions.OpenCheckoutSession;
 using Billing.Application.Customers.CreateCustomer;
 using Billing.Application.PortalSessions.GetPortalLink;
 using Billing.Application.Provider;
+using Billing.Application.Subscriptions.CancelSubscription;
+using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using ControlPlane.Application.DataExports.DeleteStoredFile;
@@ -62,6 +65,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(PrepareDataExportCommand), typeof(DeleteStoredFileCommand), typeof(GetDownloadLinkQuery), typeof(DeleteUserFilesCommand),
                 typeof(PurgeTenantDataCommand),
                 typeof(CreateCustomerCommand), typeof(OpenCheckoutSessionQuery), typeof(GetPortalLinkQuery), typeof(GetWebhookPayloadQuery), typeof(SyncSubscriptionCommand),
+                typeof(ExpireCheckoutSessionCommand), typeof(SetCancelAtPeriodEndCommand), typeof(CancelSubscriptionCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

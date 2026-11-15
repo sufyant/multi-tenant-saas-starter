@@ -22,6 +22,8 @@ namespace Internal.Generated.WolverineHandlers
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
             var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
+            var checkoutRepository = new Billing.Infrastructure.Persistence.Checkouts.CheckoutRepository(billingDbContext);
+            var subscriptionQueries = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionQueries(billingDbContext);
             var subscriptionRepository = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionRepository(billingDbContext);
             // The actual message body
             var purgeTenantDataCommand = (ControlPlane.Contracts.Tenants.PurgeTenantDataCommand)context.Envelope.Message;
@@ -42,7 +44,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
                 
                 // The actual message execution
-                var outgoing4 = await Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, subscriptionRepository, customerStore, cancellation).ConfigureAwait(false);
+                var outgoing4 = await Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, subscriptionRepository, subscriptionQueries, checkoutRepository, customerStore, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

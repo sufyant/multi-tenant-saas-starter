@@ -77,6 +77,30 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
     }
 
+    // B8: a subscription that has not ended ends at Stripe at once with the purge; the tenant's rows go with its other data.
+    [Fact]
+    public async Task PurgeTenant_ASubscriptionThatHasNotEnded_EndsItAtStripe()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE billing.subscriptions SET status = 'Active', cancel_at_period_end = true WHERE tenant_id = '{tenant.Id}'", _databaseName);
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        _api.Billing.Cancelled.ShouldBe([$"sub_{tenant.Id:N}"]);
+        (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
+    }
+
+    // An ended subscription asks Stripe nothing.
+    [Fact]
+    public async Task PurgeTenant_AnEndedSubscription_AsksStripeNothing()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        _api.Billing.Cancelled.ShouldBeEmpty();
+    }
+
     // K4: the tombstone keeps none of the "who and when" of the tenant's events: not who created it, suspended it or closed it, and not
     // when it was suspended or its purge started.
     [Fact]

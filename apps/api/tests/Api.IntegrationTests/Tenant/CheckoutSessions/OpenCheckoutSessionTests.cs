@@ -38,8 +38,8 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         var answer = await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId);
 
         answer.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("url").GetString().ShouldBe(FakeBillingProvider.CheckoutLink.ToString());
         var order = _api.Billing.Checkouts.ShouldHaveSingleItem();
+        (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("url").GetString().ShouldBe(FakeBillingProvider.PageOf(order.Key).ToString());
         (order.TenantId, order.PaidBy, order.PlanId, order.Currency, order.Yearly).ShouldBe((tenant.Id, await _testData.UserIdOfAsync(owner), _planId, "EUR", false));
         (order.BaseAmount, order.PerPersonAmount, order.People, order.CustomerId).ShouldBe((900L, 1000L, 2, $"cus_{tenant.Id:N}"));
         _api.Billing.Customers.ShouldBe([tenant.Id]);
@@ -130,21 +130,70 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         (await BillingRequests.CodeOfAsync(answer)).ShouldBe("billing.already_subscribed");
     }
 
-    // B5: the tenant has one customer. A second checkout, by another member, keeps it and names the new member.
+    // B5 and B7: the tenant has one customer and one open checkout. A second checkout of the same order, by another member, gets the same
+    // page and names the new member.
     [Fact]
-    public async Task OpenCheckoutSession_ASecondTime_KeepsTheTenantsCustomerAndNamesTheNewMember()
+    public async Task OpenCheckoutSession_ASecondTime_GetsTheSamePageAndNamesTheNewMember()
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
         var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
-        await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId);
+        var first = await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId);
 
         var second = await _api.CreateClient(manager).OpenCheckoutSessionAsync(tenant.Id, _planId);
 
         second.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await UrlOfAsync(second)).ShouldBe(await UrlOfAsync(first));
         _api.Billing.Customers.ShouldBe([tenant.Id]);
-        _api.Billing.Checkouts.Select(order => order.CustomerId).ShouldBe([$"cus_{tenant.Id:N}", $"cus_{tenant.Id:N}"]);
+        _api.Billing.Checkouts.ShouldHaveSingleItem().CustomerId.ShouldBe($"cus_{tenant.Id:N}");
         (await CustomerMapOfAsync(tenant.Id)).ShouldBe($"cus_{tenant.Id:N}|{await _testData.UserIdOfAsync(manager)}");
+    }
+
+    // B7: two first checkouts at once, by two members, open one page at Stripe, so the tenant cannot pay twice.
+    [Fact]
+    public async Task OpenCheckoutSession_TwoFirstCheckoutsAtOnce_OpenOnePage()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        var manager = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "BillingManager"));
+
+        var answers = await Task.WhenAll(owner.OpenCheckoutSessionAsync(tenant.Id, _planId), manager.OpenCheckoutSessionAsync(tenant.Id, _planId));
+
+        answers.Select(answer => answer.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
+        (await UrlOfAsync(answers[1])).ShouldBe(await UrlOfAsync(answers[0]));
+        _api.Billing.Checkouts.Select(order => order.Key).Distinct().ShouldHaveSingleItem();
+        _api.Billing.Customers.Distinct().ShouldBe([tenant.Id]);
+    }
+
+    // B7: a checkout of another order replaces the open one, whose page Stripe then expires.
+    [Fact]
+    public async Task OpenCheckoutSession_AnotherOrder_ReplacesTheOpenPageAndExpiresIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner"));
+        await owner.OpenCheckoutSessionAsync(tenant.Id, _planId);
+        var monthly = _api.Billing.Checkouts.ShouldHaveSingleItem().Key;
+
+        var yearly = await _api.WaitingForMessagesAsync(() => owner.OpenCheckoutSessionAsync(tenant.Id, _planId, interval: "yearly"));
+
+        (await UrlOfAsync(yearly)).ShouldNotBe(FakeBillingProvider.PageOf(monthly).ToString());
+        _api.Billing.Expired.ShouldBe([$"cs_{monthly:N}"]);
+    }
+
+    // B7: a subscription that pays ends the tenant's open checkout and expires its page; a new checkout is then refused.
+    [Fact]
+    public async Task OpenCheckoutSession_AfterThePayment_TheOpenPageIsExpiredAndANewOneIsRefused()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        var again = await _api.CreateClient(manager).OpenCheckoutSessionAsync(tenant.Id, _planId);
+
+        _api.Billing.Expired.ShouldBe([$"cs_{_api.Billing.Checkouts.ShouldHaveSingleItem().Key:N}"]);
+        (await _testData.CountAsync($"SELECT count(*) FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
+        (await BillingRequests.CodeOfAsync(again)).ShouldBe("billing.already_subscribed");
     }
 
     // A refused checkout creates no customer.
@@ -173,6 +222,9 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         answer.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await BillingRequests.CodeOfAsync(answer)).ShouldBe("billing.off");
     }
+
+    private static async Task<string?> UrlOfAsync(HttpResponseMessage answer) =>
+        (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("url").GetString();
 
     private Task<string?> CustomerMapOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>($"SELECT concat_ws('|', customer_id, checkout_by) FROM billing.customers WHERE tenant_id = '{tenantId}'");

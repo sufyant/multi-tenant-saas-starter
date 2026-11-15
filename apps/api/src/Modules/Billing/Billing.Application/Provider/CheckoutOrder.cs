@@ -5,6 +5,7 @@ namespace Billing.Application.Provider;
 /// unit. A price of 0 is left out. The tenant's customer pays; the tenant and the member who pays go into the metadata for support only (B5).
 /// </summary>
 public sealed record CheckoutOrder(
+    Guid Key,
     Guid TenantId,
     Guid PaidBy,
     string CustomerId,

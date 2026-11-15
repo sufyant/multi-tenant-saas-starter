@@ -1,19 +1,21 @@
-using Billing.Application;
+using Billing.Application.Checkouts;
 using Billing.Application.Customers;
 using Billing.Application.Provider;
 using Billing.Application.StripeEvents;
 using Billing.Application.Subscriptions;
-using Billing.Infrastructure.Persistence;
+using Billing.Application;
+using Billing.Infrastructure.Persistence.Checkouts;
 using Billing.Infrastructure.Persistence.Customers;
 using Billing.Infrastructure.Persistence.StripeEvents;
 using Billing.Infrastructure.Persistence.Subscriptions;
+using Billing.Infrastructure.Persistence;
 using Billing.Infrastructure.Stripe;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Stripe;
 using Tenancy;
-using Wolverine;
 using Wolverine.EntityFrameworkCore;
+using Wolverine;
 
 namespace Billing.Infrastructure;
 
@@ -35,6 +37,7 @@ public static class BillingInfrastructure
         services.AddScoped<ISubscriptionQueries, SubscriptionQueries>();
         services.AddScoped<IStripeEventStore, StripeEventStore>();
         services.AddScoped<ICustomerStore, CustomerStore>();
+        services.AddScoped<ICheckoutRepository, CheckoutRepository>();
 
         // Billing is off by default (the maintainer's decision of 2026-11-14). While it is on, the web's root and Stripe's keys are required.
         services.AddOptions<BillingOptions>()

@@ -72,11 +72,14 @@ using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using Audit.Application.DataExports.RecordDataExportRequested;
+using Billing.Application.Checkouts.ExpireCheckoutSession;
 using Billing.Application.Subscriptions.ApplySubscription;
 using Billing.Application.Subscriptions.RouteSubscription;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using Billing.Application.Webhooks.ReceiveWebhook;
+using Billing.Application.Tenants.ResumeBillingAtReopen;
+using Billing.Application.Tenants.StopBillingAtClose;
 using Billing.Contracts.Subscriptions;
 using ControlPlane.Application.Tenants.ChangeBilledPlan;
 using ControlPlane.Application.DataExports.CompleteDataExport;
@@ -127,6 +130,7 @@ public sealed class HostRoleTests(Database database)
     private static readonly HandlerRun[] HandlersOfThePurge =
     [
         new(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler)),
+        new(typeof(TenantClosedEvent), typeof(StopBillingAtCloseHandler)),
         new(typeof(WarnTenantPurgeCommand), typeof(WarnTenantPurgeHandler)),
         new(typeof(TenantPurgeWarnedEvent), typeof(RecordTenantPurgeWarnedHandler)),
         new(typeof(TenantPurgeWarningReadyEvent), typeof(SendTenantPurgeWarningEmailHandler)),
@@ -303,9 +307,11 @@ public sealed class HostRoleTests(Database database)
                 new HandlerRun(typeof(SyncSubscriptionCommand), typeof(SyncSubscriptionHandler)),
                 new HandlerRun(typeof(RouteSubscriptionCommand), typeof(RouteSubscriptionHandler)),
                 new HandlerRun(typeof(ApplySubscriptionCommand), typeof(ApplySubscriptionHandler)),
+                new HandlerRun(typeof(ExpireCheckoutSessionCommand), typeof(ExpireCheckoutSessionHandler)),
                 new HandlerRun(typeof(PlanPaidEvent), typeof(ChangeBilledPlanHandler)),
                 new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler)),
-            ]);
+            ],
+            ignoreOrder: true);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
     }
 
@@ -449,7 +455,8 @@ public sealed class HostRoleTests(Database database)
 
         closed.StatusCode.ShouldBe(HttpStatusCode.OK);
         runs.In("web").ShouldBe([new HandlerRun(typeof(CloseTenantCommand), typeof(CloseTenantHandler))]);
-        runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler))]);
+        // Billing hears the closure too (B8), beside the audit entry this test waits for, so it may not have run yet.
+        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(StopBillingAtCloseHandler)).ShouldBe([new HandlerRun(typeof(TenantClosedEvent), typeof(RecordTenantClosedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.closed")).ShouldBe(1L);
     }
@@ -548,7 +555,8 @@ public sealed class HostRoleTests(Database database)
 
         reopened.StatusCode.ShouldBe(HttpStatusCode.OK);
         runs.In("web").ShouldBe([new HandlerRun(typeof(ReopenTenantCommand), typeof(ReopenTenantHandler))]);
-        runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantReopenedEvent), typeof(RecordTenantReopenedHandler))]);
+        // Billing hears the reopen too (B8), beside the audit entry this test waits for, so it may not have run yet.
+        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(ResumeBillingAtReopenHandler)).ShouldBe([new HandlerRun(typeof(TenantReopenedEvent), typeof(RecordTenantReopenedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.reopened")).ShouldBe(1L);
     }

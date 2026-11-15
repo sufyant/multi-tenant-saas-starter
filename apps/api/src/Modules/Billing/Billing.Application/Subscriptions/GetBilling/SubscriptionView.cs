@@ -5,6 +5,7 @@ namespace Billing.Application.Subscriptions.GetBilling;
 /// </summary>
 public sealed record SubscriptionView(
     string CustomerId,
+    string SubscriptionId,
     Guid PlanId,
     string Interval,
     string Status,

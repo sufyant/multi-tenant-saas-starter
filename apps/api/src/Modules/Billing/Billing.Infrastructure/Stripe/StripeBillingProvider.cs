@@ -1,8 +1,8 @@
 using Billing.Application.Provider;
 using Billing.Domain.Subscriptions;
 using Microsoft.Extensions.Options;
-using Stripe;
 using Stripe.Checkout;
+using Stripe;
 
 namespace Billing.Infrastructure.Stripe;
 
@@ -24,6 +24,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     private const string ProductPrefix = "plan_";
 
+    // B7: a checkout's page works for an hour, the shortest window that leaves a person time to pay; Stripe allows 30 minutes to 24 hours.
+    private static readonly TimeSpan CheckoutLifetime = TimeSpan.FromHours(1);
+
     // The event types whose object names a subscription; any other event is kept and needs no sync.
     private static readonly HashSet<string> SubscriptionEvents =
     [
@@ -43,7 +46,7 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         return customer.Id;
     }
 
-    async Task<Uri> IBillingProvider.OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
+    async Task<CheckoutPage> IBillingProvider.OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
     {
         var lines = new List<SessionLineItemOptions>();
         if (order.BaseAmount > 0)
@@ -76,9 +79,41 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
                 SubscriptionData = new SessionSubscriptionDataOptions { Metadata = metadata },
                 SuccessUrl = order.SuccessUrl.ToString(),
                 CancelUrl = order.CancelUrl.ToString(),
+                ExpiresAt = DateTime.UtcNow.Add(CheckoutLifetime),
             },
+            new RequestOptions { IdempotencyKey = $"checkout-{order.Key}" },
+            cancellationToken);
+        return new CheckoutPage(session.Id, new Uri(session.Url), session.ExpiresAt);
+    }
+
+    // A page that was paid or expired already is no longer open, and Stripe would refuse to expire it: nothing is left to do. A race with a
+    // payment between the read and the expiry fails the call, and its retry reads the page paid.
+    async Task IBillingProvider.ExpireCheckoutAsync(string sessionId, CancellationToken cancellationToken)
+    {
+        var sessions = new SessionService(client);
+        if ((await sessions.GetAsync(sessionId, cancellationToken: cancellationToken)).Status != "open")
+        {
+            return;
+        }
+
+        await sessions.ExpireAsync(sessionId, cancellationToken: cancellationToken);
+    }
+
+    async Task IBillingProvider.SetCancelAtPeriodEndAsync(string subscriptionId, bool cancelAtPeriodEnd, CancellationToken cancellationToken) =>
+        await new SubscriptionService(client).UpdateAsync(
+            subscriptionId,
+            new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelAtPeriodEnd },
             cancellationToken: cancellationToken);
-        return new Uri(session.Url);
+
+    async Task IBillingProvider.CancelSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        if ((await subscriptions.GetAsync(subscriptionId, cancellationToken: cancellationToken)).Status is "canceled" or "incomplete_expired")
+        {
+            return;
+        }
+
+        await subscriptions.CancelAsync(subscriptionId, new SubscriptionCancelOptions { InvoiceNow = false, Prorate = false }, cancellationToken: cancellationToken);
     }
 
     async Task<Uri> IBillingProvider.OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken)

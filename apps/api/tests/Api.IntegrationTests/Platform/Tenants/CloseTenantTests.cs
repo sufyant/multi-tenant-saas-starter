@@ -37,11 +37,55 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
     public ValueTask InitializeAsync()
     {
-        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time);
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), time: _time, settings: BillingRequests.On);
         return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
+
+    // B8: a closed tenant pays nothing more. Its subscription ends at the end of the period it paid for, and its open checkout's page is expired (billing is on in this class's host).
+    [Fact]
+    public async Task CloseTenant_APayingTenant_EndsItsSubscriptionAtThePeriodsEnd()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var planId = await PricedPlanAsync();
+        await _api.PayAsync(await _testData.AddMemberAsync(tenant.Id, role: "Owner"), tenant.Id, planId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var closed = await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
+
+        closed.StatusCode.ShouldBe(HttpStatusCode.OK);
+        _api.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true)]);
+        _api.Billing.Cancelled.ShouldBeEmpty();
+    }
+
+    // B8: a closed tenant pays nothing more. Its subscription ends at the end of the period it paid for, and its open checkout's page is expired (billing is on in this class's host).
+    [Fact]
+    public async Task CloseTenant_AnOpenCheckout_ExpiresItsPage()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        await _api.CreateClient(await _testData.AddMemberAsync(tenant.Id, role: "Owner")).OpenCheckoutSessionAsync(tenant.Id, await PricedPlanAsync());
+        var key = _api.Billing.Checkouts.ShouldHaveSingleItem().Key;
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
+
+        _api.Billing.Expired.ShouldBe([$"cs_{key:N}"]);
+        (await _testData.CountAsync($"SELECT count(*) FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
+        _api.Billing.PeriodEnds.ShouldBeEmpty();
+    }
+
+    // B8: a closed tenant pays nothing more. Its subscription ends at the end of the period it paid for, and its open checkout's page is expired (billing is on in this class's host).
+    [Fact]
+    public async Task CloseTenant_ATenantThatNeverPaid_AsksStripeNothing()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
+
+        (_api.Billing.PeriodEnds.Count, _api.Billing.Expired.Count, _api.Billing.Cancelled.Count).ShouldBe((0, 0, 0));
+    }
 
     [Theory]
     [InlineData("Active")]
@@ -328,4 +372,11 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     // The purge warnings to the address, by the warning's idempotency key.
     private int WarningsTo(string? email) =>
         _api.Email.Sent.Count(sent => sent.To == email && sent.IdempotencyKey.StartsWith("purge-warning/", StringComparison.Ordinal));
+
+    private async Task<Guid> PricedPlanAsync()
+    {
+        var planId = await _testData.AddPlanAsync(new() { ["members.max"] = TestData.Unlimited }, name: $"Team {Guid.NewGuid():N}");
+        await _testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        return planId;
+    }
 }
