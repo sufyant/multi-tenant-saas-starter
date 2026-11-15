@@ -1,3 +1,4 @@
+using Billing.Application.Provider;
 using ControlPlane.Application.Identity;
 using JasperFx.CodeGeneration;
 using Microsoft.AspNetCore.Hosting;
@@ -71,6 +72,8 @@ internal sealed class ApiFactory(
     public FakeIdentityProvider Identity { get; } = new();
 
     public FakeEmailChannel Email { get; } = new();
+
+    public FakeBillingProvider Billing { get; } = new();
 
     public HostPorts Ports => ports ?? throw new InvalidOperationException("The factory was given no ports.");
 
@@ -204,6 +207,7 @@ internal sealed class ApiFactory(
             services.Replace(ServiceDescriptor.Singleton<IHostLifetime>(provider =>
                 new StartsWhenTheFactoryWaits((IHostLifetime)provider.GetRequiredService(lifetime), _factoryWaits.Task)));
             services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(Identity));
+            services.Replace(ServiceDescriptor.Singleton<IBillingProvider>(Billing));
             if (fakeEmailChannel)
             {
                 services.Replace(ServiceDescriptor.Singleton<IEmailChannel>(Email));

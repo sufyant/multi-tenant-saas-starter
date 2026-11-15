@@ -8,4 +8,10 @@ public interface IMemberDirectory
 {
     /// <summary>The user ids of the tenant's Owners at this moment: the members whose role holds <c>tenant.owners.manage</c> (A1).</summary>
     Task<IReadOnlyList<Guid>> ListOwnerIdsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// How many of the tenant's members take a seat: every member whose role is not the Billing manager (A2). Billing charges the fee per
+    /// person for each of them; a pending invitation is not charged until it is accepted (step 40).
+    /// </summary>
+    Task<int> CountSeatedMembersAsync(CancellationToken cancellationToken);
 }

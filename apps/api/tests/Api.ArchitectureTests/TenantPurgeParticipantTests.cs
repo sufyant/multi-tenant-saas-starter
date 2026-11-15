@@ -30,6 +30,6 @@ public sealed class TenantPurgeParticipantTests : IAsyncLifetime
         var named = _application.Services.GetServices<TenantPurgeParticipant>().Select(participant => participant.Module).ToList();
 
         named.ShouldBe(handling, ignoreOrder: true);
-        named.ShouldBe(["Audit", "Notifications", "Api"], ignoreOrder: true);
+        named.ShouldBe(["Audit", "Notifications", "Billing", "Api"], ignoreOrder: true);
     }
 }

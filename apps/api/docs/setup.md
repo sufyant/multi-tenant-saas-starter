@@ -130,3 +130,12 @@ The shared cache needs a server that speaks the Redis protocol (section 3 of `AR
 - Reach it over a private network only, with a password.
 - Railway: `.railway/railway.ts` declares the service `valkey` from the official image; `docs/deployment.md` at the repository root, section 17, gives the steps. A managed Valkey or Redis-protocol service of another platform works too, with the same settings.
 - Local development: `docker run --rm -d --name valkey -p 6379:6379 valkey/valkey:9.1.2`, then start each process with `ConnectionStrings__Cache=localhost:6379`. Without it the API runs as before.
+
+## 7. Billing provider
+
+Stripe, behind `IBillingProvider` (ARCHITECTURE.md, B2). Billing is off by default (`Billing:Payments:Enabled`, B1), so a deployment without a Stripe account runs as before step 40.
+
+- Turn it on with a Stripe account's secret key (`Billing:Stripe:SecretKey`), the web app's root (`Billing:Payments:WebUrl`) and the signing secret of a webhook endpoint that points at `https://<api>/v1/public/billing/webhook` (`Billing:Stripe:WebhookSecret`). Staging uses the account's test mode, with `sk_test_...`; production its live mode.
+- The endpoint listens to `checkout.session.completed` and `customer.subscription.created`, `updated`, `deleted`, `paused` and `resumed`. The API keeps any other event and does nothing with it.
+- Our app writes the plans' prices to Stripe itself, as a Product for each plan and a Price for each amount (B2), so nobody creates a product in the dashboard.
+- The customer portal and the webhook endpoint become settings as code in `.stripe/`, with `pnpm stripe:plan` and `pnpm stripe:apply`, in a later part of step 40b (`docs/roadmap.md`, section 8). Until then the maintainer creates the endpoint in the dashboard for a staging run.

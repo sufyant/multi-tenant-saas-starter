@@ -7,8 +7,8 @@ using ControlPlane.Contracts.Plans;
 namespace Audit.Application.Plans.RecordTenantPlanChanged;
 
 // The audit entries of a tenant's new plan, written when ControlPlane announces it, under that tenant. The system admin who changed it
-// acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3). Both logs hold the old and the
-// new plan.
+// acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3). A member who paid for the plan
+// through billing acted in the tenant, so both logs name them (step 40). Both logs hold the old and the new plan.
 // A shorter Activity log period starts the tenant's hold, after the entry, in the same transaction (K14).
 public static class RecordTenantPlanChangedHandler
 {
@@ -20,7 +20,8 @@ public static class RecordTenantPlanChangedHandler
             JsonSerializerOptions.Web);
         var recorded = await log.RecordAsync(
             new PlatformAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.User(changed.ChangedBy), AuditOperations.TenantPlanChanged, tenant, details),
-            new TenantAuditEntry(changed.EventId, changed.OccurredAt, AuditActor.Platform, AuditOperations.TenantPlanChanged, tenant, details),
+            new TenantAuditEntry(
+                changed.EventId, changed.OccurredAt, changed.ByMember ? AuditActor.User(changed.ChangedBy) : AuditActor.Platform, AuditOperations.TenantPlanChanged, tenant, details),
             cancellationToken);
         await RetentionHolds.StartAsync(retention, recorded, changed.RetentionShortened, changed.OccurredAt, cancellationToken);
     }

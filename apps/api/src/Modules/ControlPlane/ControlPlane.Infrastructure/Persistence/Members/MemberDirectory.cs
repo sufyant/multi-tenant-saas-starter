@@ -16,4 +16,11 @@ public sealed class MemberDirectory(ControlPlaneDbContext controlPlane) : IMembe
                 orderby membership.UserId
                 select membership.UserId)
             .ToListAsync(cancellationToken);
+
+    // The one predicate of the free seat (Role.TakingNoSeat), as the seat count of the tenant's methods reads it.
+    public async Task<int> CountSeatedMembersAsync(CancellationToken cancellationToken)
+    {
+        var seatless = controlPlane.Roles.Where(Role.TakingNoSeat).Select(role => role.Id);
+        return await controlPlane.Memberships.CountAsync(membership => !seatless.Contains(membership.RoleId), cancellationToken);
+    }
 }

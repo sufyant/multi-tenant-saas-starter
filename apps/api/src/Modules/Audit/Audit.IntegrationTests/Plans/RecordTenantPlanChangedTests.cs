@@ -31,6 +31,20 @@ public sealed class RecordTenantPlanChangedTests(Database database)
         (details.GetProperty("newPlan").GetProperty("id").GetGuid(), details.GetProperty("newPlan").GetProperty("name").GetString()).ShouldBe((changed.NewPlanId, "Free"));
     }
 
+    // Step 40: a member who paid for the plan through billing acted in the tenant, so the tenant's log names them too.
+    [Fact]
+    public async Task RecordTenantPlanChanged_PaidByAMember_NamesTheMemberInBothLogs()
+    {
+        var changed = new TenantPlanChangedEvent(
+            Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), "Acme", Guid.CreateVersion7(), Guid.CreateVersion7(), "Free", Guid.CreateVersion7(), "Team", ByMember: true);
+
+        await InTenant.RunAsync(database.Services, changed.TenantId, scope =>
+            RecordTenantPlanChangedHandler.HandleAsync(changed, scope.GetRequiredService<IAuditLog>(), scope.GetRequiredService<IRetentionStore>(), Cancellation));
+
+        (await Logs.DescribeAsync(database.Services, Logs.Platform, null, changed.EventId)).ShouldBe($"tenant.plan_changed|User|{changed.ChangedBy}|Tenant|{changed.TenantId}|Acme");
+        (await Logs.DescribeAsync(database.Services, Logs.Tenant, changed.TenantId, changed.EventId)).ShouldBe($"tenant.plan_changed|User|{changed.ChangedBy}|Tenant|{changed.TenantId}|Acme");
+    }
+
     [Fact]
     public async Task RecordTenantPlanChanged_ShorterPeriod_HoldsWhatThePeriodBeforeKeptFor30Days()
     {

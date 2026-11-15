@@ -95,10 +95,11 @@ public sealed class ProjectReferenceTests
                 [Wolverine, "FluentValidation.*"],
                 []),
             "Api" => new([$"{module}.Application", $"{module}.Contracts", Solution.SharedKernel], [Wolverine], [AspNetCore]),
-            // Wolverine's EF Core integration registers the module's DbContext (W1).
+            // Wolverine's EF Core integration registers the module's DbContext (W1). Billing's adapter of the billing provider is
+            // Stripe's own library (step 40; the coordinator's choice of 2026-11-15, docs/licenses.md).
             "Infrastructure" => new(
                 [$"{module}.Application", $"{module}.Domain", $"{module}.Contracts", Solution.SharedKernel, Solution.Tenancy],
-                ["Microsoft.EntityFrameworkCore.*", "Npgsql.*", "Microsoft.Extensions.*", "WolverineFx", "WolverineFx.EntityFrameworkCore"],
+                ["Microsoft.EntityFrameworkCore.*", "Npgsql.*", "Microsoft.Extensions.*", "WolverineFx", "WolverineFx.EntityFrameworkCore", .. module == "Billing" ? ["Stripe.net"] : Array.Empty<string>()],
                 []),
             _ => throw new ArgumentOutOfRangeException(nameof(layer), layer, "Every layer has a row in the table."),
         };

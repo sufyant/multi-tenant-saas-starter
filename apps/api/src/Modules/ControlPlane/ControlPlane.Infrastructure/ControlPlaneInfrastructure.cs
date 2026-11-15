@@ -62,6 +62,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddScoped<IInvitationDirectory, InvitationDirectory>();
         services.AddScoped<IMemberDirectory, MemberDirectory>();
+        services.AddScoped<IPlanDirectory, PlanDirectory>();
         services.AddScoped<ISystemAdminDirectory, SystemAdminDirectory>();
         services.AddScoped<IAuditRetentionDirectory, AuditRetentionDirectory>();
         services.AddScoped<ITermsVersionDirectory, TermsVersionDirectory>();

@@ -20,7 +20,7 @@ public sealed class ModuleStructureTests
     [Fact]
     public void FindModules_InTheSolution_IncludesTheTemplateModules()
     {
-        string[] templateModules = ["Audit", "ControlPlane", "Notifications"];
+        string[] templateModules = ["Audit", "Billing", "ControlPlane", "Notifications"];
 
         templateModules.ShouldBeSubsetOf(Solution.Modules);
     }

@@ -1,0 +1,20 @@
+namespace Billing.Application.Provider;
+
+/// <summary>
+/// What a checkout pays for: the plan's base fee once and its fee per person for each seated member, every interval, in the currency's minor
+/// unit. A price of 0 is left out. <paramref name="PaidBy"/> is the member who pays, kept on the subscription.
+/// </summary>
+public sealed record CheckoutOrder(
+    Guid TenantId,
+    Guid PaidBy,
+    string? Email,
+    string? CustomerId,
+    Guid PlanId,
+    string PlanName,
+    string Currency,
+    bool Yearly,
+    long BaseAmount,
+    long PerPersonAmount,
+    int People,
+    Uri SuccessUrl,
+    Uri CancelUrl);

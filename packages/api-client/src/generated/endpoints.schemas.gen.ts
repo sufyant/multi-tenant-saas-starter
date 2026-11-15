@@ -725,6 +725,53 @@ export interface AuditRetentionResponse {
 }
 
 /**
+ * How often the subscription pays.
+ */
+export type SubscriptionResponseInterval = typeof SubscriptionResponseInterval[keyof typeof SubscriptionResponseInterval];
+
+
+export const SubscriptionResponseInterval = {
+  Monthly: 'monthly',
+  Yearly: 'yearly',
+} as const;
+
+/**
+ * The subscription's state at the provider (Stripe, "Subscription statuses"). Only an active one keeps the tenant on its plan.
+ */
+export type SubscriptionResponseStatus = typeof SubscriptionResponseStatus[keyof typeof SubscriptionResponseStatus];
+
+
+export const SubscriptionResponseStatus = {
+  Incomplete: 'incomplete',
+  IncompleteExpired: 'incomplete_expired',
+  Trialing: 'trialing',
+  Active: 'active',
+  PastDue: 'past_due',
+  Canceled: 'canceled',
+  Unpaid: 'unpaid',
+  Paused: 'paused',
+} as const;
+
+/**
+ * The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it
+ * has paid for, and whether it ends then.
+ */
+export interface SubscriptionResponse {
+  planId: string;
+  interval: SubscriptionResponseInterval;
+  status: SubscriptionResponseStatus;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+/**
+ * The tenant's billing: its subscription, none until it pays by card the first time.
+ */
+export interface BillingResponse {
+  subscription: null | SubscriptionResponse;
+}
+
+/**
  * The six digits that went to the new address.
  */
 export interface ChangeEmailRequest {
@@ -769,6 +816,14 @@ export interface ChangePreferencesRequest {
  */
 export interface ChangeTenantPlanRequest {
   planId: string;
+}
+
+/**
+ * The provider's page where the person pays by card. It works for a short time and is never stored; the page comes back with
+ * `checkout=success` or `checkout=cancelled` after the address of the request.
+ */
+export interface CheckoutSessionResponse {
+  url: string;
 }
 
 /**
@@ -1125,6 +1180,13 @@ export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
 export const ErrorCode = {
   AuthForbidden: 'auth.forbidden',
   AuthUnauthenticated: 'auth.unauthenticated',
+  BillingAlreadySubscribed: 'billing.already_subscribed',
+  BillingNoCustomer: 'billing.no_customer',
+  BillingOff: 'billing.off',
+  BillingPlanFree: 'billing.plan_free',
+  BillingPlanNotFound: 'billing.plan_not_found',
+  BillingReturnUrlInvalid: 'billing.return_url_invalid',
+  BillingWebhookInvalid: 'billing.webhook_invalid',
   DataExportInProgress: 'data_export.in_progress',
   DataExportNotFound: 'data_export.not_found',
   DataExportNotReady: 'data_export.not_ready',
@@ -1778,6 +1840,33 @@ export interface MyTermsResponse {
 }
 
 /**
+ * How often the subscription pays.
+ */
+export type OpenCheckoutSessionRequestInterval = typeof OpenCheckoutSessionRequestInterval[keyof typeof OpenCheckoutSessionRequestInterval];
+
+
+export const OpenCheckoutSessionRequestInterval = {
+  Monthly: 'monthly',
+  Yearly: 'yearly',
+} as const;
+
+/**
+ * The plan to pay for, how often, and the web app's page to come back to, without a query.
+ */
+export interface OpenCheckoutSessionRequest {
+  planId: string;
+  interval: OpenCheckoutSessionRequestInterval;
+  returnUrl: string;
+}
+
+/**
+ * The web app's page to come back to, without a query.
+ */
+export interface OpenPortalSessionRequest {
+  returnUrl: string;
+}
+
+/**
  * The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:
  * `pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only
  * while the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner
@@ -1871,6 +1960,13 @@ export interface PlanUpdatePreviewPageResponse {
  */
 export interface PlatformAuditRetentionResponse {
   days: number;
+}
+
+/**
+ * The provider's page where the customer manages its card, address, VAT ID and invoices. It works for a short time.
+ */
+export interface PortalSessionResponse {
+  url: string;
 }
 
 /**

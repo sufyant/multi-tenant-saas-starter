@@ -5,6 +5,7 @@ using Api.Observability;
 using Api.Routing;
 using Api.Persistence;
 using Audit.Api;
+using Billing.Api;
 using ControlPlane.Api;
 using Notifications.Api;
 using JasperFx;
@@ -54,10 +55,11 @@ try
     {
         var v1 = app.MapV1();
         var (platform, tenant) = (v1.MapPlatform(), v1.MapTenant());
-        var me = v1.MapMe();
-        ControlPlaneModule.MapEndpoints(platform, me, tenant, v1.MapPublic());
+        var (me, publicRoutes) = (v1.MapMe(), v1.MapPublic());
+        ControlPlaneModule.MapEndpoints(platform, me, tenant, publicRoutes);
         NotificationsModule.MapEndpoints(platform, me, tenant);
         AuditModule.MapEndpoints(platform, tenant);
+        BillingModule.MapEndpoints(tenant, publicRoutes);
         app.MapApiDocuments();
     }
 }

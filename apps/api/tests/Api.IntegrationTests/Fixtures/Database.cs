@@ -2,6 +2,7 @@ using Api.Idempotency;
 using Api.Persistence;
 using Audit.Infrastructure;
 using Audit.Infrastructure.Persistence;
+using Billing.Infrastructure;
 using ControlPlane.Infrastructure;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -480,6 +481,7 @@ public sealed class Database : IAsyncLifetime
             .AddControlPlaneInfrastructure()
             .AddNotificationsInfrastructure()
             .AddAuditInfrastructure()
+            .AddBillingInfrastructure()
             .BuildServiceProvider();
 
         await MigrationStep.RunAsync(services, ConnectionStringFor(DatabaseRoles.Owner, database), CancellationToken.None);

@@ -1,6 +1,8 @@
 using Api.Storage;
 using Audit.Api;
 using Audit.Infrastructure;
+using Billing.Api;
+using Billing.Infrastructure;
 using ControlPlane.Api;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Infrastructure;
@@ -16,10 +18,11 @@ internal static class ModuleComposition
     // Returns the role the host runs as, or null when the setting is wrong and the host will not start (AddApiPipeline).
     public static HostRole? AddApiWithModules(this WebApplicationBuilder builder)
     {
-        var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly);
+        var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly, BillingModule.HandlerAssembly);
         builder.Services.AddControlPlaneInfrastructure();
         builder.Services.AddNotificationsInfrastructure();
         builder.Services.AddAuditInfrastructure();
+        builder.Services.AddBillingInfrastructure();
 
         // The hourly retention of the notifications, the daily retention of the audit logs, and the sync and the cleanup of the feature
         // flags run where the background work runs (W5), as the idempotency cleanup does (I7).
@@ -35,6 +38,7 @@ internal static class ModuleComposition
         // (TenantPurgeParticipantTests). The host's file store takes part too: it deletes the tenant's files.
         builder.Services.AddSingleton(new TenantPurgeParticipant(AuditModule.TenantPurgeParticipant));
         builder.Services.AddSingleton(new TenantPurgeParticipant(NotificationsModule.TenantPurgeParticipant));
+        builder.Services.AddSingleton(new TenantPurgeParticipant(BillingModule.TenantPurgeParticipant));
         builder.Services.AddSingleton(new TenantPurgeParticipant(PurgeTenantFilesHandler.Participant));
 
         return role;
