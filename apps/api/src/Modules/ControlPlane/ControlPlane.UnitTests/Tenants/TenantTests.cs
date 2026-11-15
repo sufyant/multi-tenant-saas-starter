@@ -906,7 +906,7 @@ public sealed class TenantTests
     {
         var changed = Membership(target);
 
-        var result = Active().ChangeRole(Membership(actor), RoleOf(role), new MemberFacts(changed, 2, Roles), Entitled);
+        var result = Active().ChangeRole(Membership(actor), RoleOf(role), new MemberFacts(changed, 2, Roles), Entitled, seats: 0);
 
         result.Value.Change.ShouldBe(StateChange.Changed);
         changed.RoleId.ShouldBe(RoleOf(role).Id);
@@ -921,7 +921,7 @@ public sealed class TenantTests
     {
         var changed = Membership(target);
 
-        var result = Active().ChangeRole(Membership("Admin"), RoleOf(role), new MemberFacts(changed, 2, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Admin"), RoleOf(role), new MemberFacts(changed, 2, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         result.Error.Type.ShouldBe(ErrorType.Forbidden);
@@ -935,7 +935,7 @@ public sealed class TenantTests
     {
         var changed = Membership("Owner");
 
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(changed, 1, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(changed, 1, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         result.Error.Type.ShouldBe(ErrorType.Conflict);
@@ -948,7 +948,7 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().ChangeRole(self, RoleOf("Admin"), new MemberFacts(self, 2, Roles), Entitled);
+        var result = Active().ChangeRole(self, RoleOf("Admin"), new MemberFacts(self, 2, Roles), Entitled, seats: 0);
 
         result.Value.Change.ShouldBe(StateChange.Changed);
         self.RoleId.ShouldBe(RoleOf("Admin").Id);
@@ -959,7 +959,7 @@ public sealed class TenantTests
     {
         var self = Membership("Owner");
 
-        var result = Active().ChangeRole(self, RoleOf("Admin"), new MemberFacts(self, 1, Roles), Entitled);
+        var result = Active().ChangeRole(self, RoleOf("Admin"), new MemberFacts(self, 1, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberLastOwner);
         self.RoleId.ShouldBe(RoleOf("Owner").Id);
@@ -971,7 +971,7 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Active().ChangeRole(self, RoleOf("Member"), new MemberFacts(self, 1, Roles), Entitled);
+        var result = Active().ChangeRole(self, RoleOf("Member"), new MemberFacts(self, 1, Roles), Entitled, seats: 0);
 
         result.Value.Change.ShouldBe(StateChange.Changed);
     }
@@ -981,7 +981,7 @@ public sealed class TenantTests
     {
         var self = Membership("Admin");
 
-        var result = Active().ChangeRole(self, RoleOf("Owner"), new MemberFacts(self, 1, Roles), Entitled);
+        var result = Active().ChangeRole(self, RoleOf("Owner"), new MemberFacts(self, 1, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
         self.RoleId.ShouldBe(RoleOf("Admin").Id);
@@ -994,7 +994,7 @@ public sealed class TenantTests
     [InlineData("Member", 1)]
     public void ChangeMemberRole_TheRoleTheMemberHas_ChangesNothing(string role, int owners)
     {
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(Membership(role), owners, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(role), new MemberFacts(Membership(role), owners, Roles), Entitled, seats: 0);
 
         result.Value.Change.ShouldBe(StateChange.Unchanged);
     }
@@ -1003,7 +1003,7 @@ public sealed class TenantTests
     [Fact]
     public void ChangeMemberRole_AnAdminOnTheLastOwner_IsForbiddenFirst()
     {
-        var result = Active().ChangeRole(Membership("Admin"), RoleOf("Member"), new MemberFacts(Membership("Owner"), 1, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Admin"), RoleOf("Member"), new MemberFacts(Membership("Owner"), 1, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberOwnerRequiresOwner);
     }
@@ -1069,7 +1069,7 @@ public sealed class TenantTests
     {
         var target = Membership("Admin");
 
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(target, 1, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(target, 1, Roles), Entitled, seats: 0);
 
         result.Value.Member.ShouldBeSameAs(target);
         result.Value.OldRole.ShouldBe(RoleOf("Admin"));
@@ -1079,7 +1079,7 @@ public sealed class TenantTests
     [Fact]
     public void ChangeMemberRole_NoTargetMembership_IsNotFound()
     {
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(null, 1, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(null, 1, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
         result.Error.Type.ShouldBe(ErrorType.NotFound);
@@ -1090,7 +1090,7 @@ public sealed class TenantTests
     {
         var other = new Membership(Guid.NewGuid(), Guid.NewGuid(), RoleOf("Member").Id, DateTimeOffset.UnixEpoch);
 
-        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Admin"), new MemberFacts(other, 1, Roles), Entitled);
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Admin"), new MemberFacts(other, 1, Roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.MemberNotFound);
         other.RoleId.ShouldBe(RoleOf("Member").Id);
@@ -1901,7 +1901,7 @@ public sealed class TenantTests
         var roles = RolesWith(actorRole, newRole, oldRole);
         var target = Membership(oldRole);
 
-        var result = Active().ChangeRole(Membership(actorRole), newRole, new MemberFacts(target, 1, roles), Entitled);
+        var result = Active().ChangeRole(Membership(actorRole), newRole, new MemberFacts(target, 1, roles), Entitled, seats: 0);
 
         result.Value.Change.ShouldBe(StateChange.Changed);
     }
@@ -1913,7 +1913,7 @@ public sealed class TenantTests
         var roles = RolesWith(actorRole);
         var target = Membership(RoleOf("Member"));
 
-        var result = Active().ChangeRole(Membership(actorRole), RoleOf("Admin"), new MemberFacts(target, 1, roles), Entitled);
+        var result = Active().ChangeRole(Membership(actorRole), RoleOf("Admin"), new MemberFacts(target, 1, roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
         target.RoleId.ShouldBe(RoleOf("Member").Id);
@@ -1927,7 +1927,7 @@ public sealed class TenantTests
         var roles = RolesWith(actorRole);
         var target = Membership(RoleOf("Admin"));
 
-        var result = Active().ChangeRole(Membership(actorRole), RoleOf("Member"), new MemberFacts(target, 1, roles), Entitled);
+        var result = Active().ChangeRole(Membership(actorRole), RoleOf("Member"), new MemberFacts(target, 1, roles), Entitled, seats: 0);
 
         result.Error.Code.ShouldBe(ControlPlaneErrorCodes.RoleEscalation);
         target.RoleId.ShouldBe(RoleOf("Admin").Id);
@@ -2040,6 +2040,54 @@ public sealed class TenantTests
         pending.Select(invitation => invitation.Status).ShouldAllBe(status => status == InvitationStatus.Pending);
     }
 
+    // A Billing manager takes no seat (step 40): it is invited at the limit, and its pending invitation leaves a seat to a Member.
+    [Fact]
+    public void InviteMember_BillingManagerAtTheLimit_IsInvited()
+    {
+        var limited = EntitledTo(customRoles: true, EntitlementValue.Limit(20), EntitlementValue.Limit(3));
+
+        var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("BillingManager")), Facts(owners: 1, members: 3), DailyLimit, limited);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void InviteMember_APendingBillingManagerInvitation_TakesNoSeat()
+    {
+        var limited = EntitledTo(customRoles: true, EntitlementValue.Limit(20), EntitlementValue.Limit(3));
+        var billing = RoleOf("BillingManager");
+        Invitation[] pending = [PendingTo("grace@example.com", billing)];
+
+        var invited = Active().Invite(
+            MemberOf("Owner"), Request("ada@example.com", RoleOf("Member")), Facts(owners: 1, pending: pending, members: 2, freeRoles: new HashSet<Guid> { billing.Id }), DailyLimit, limited);
+
+        invited.IsSuccess.ShouldBeTrue();
+    }
+
+    // A Billing manager who gets a role that takes a seat needs a free seat; the other way frees one, and asks nothing (step 40).
+    [Theory]
+    [InlineData("BillingManager", "Member", 2)]
+    [InlineData("Member", "BillingManager", 3)]
+    [InlineData("Admin", "Member", 3)]
+    public void ChangeRole_ASeatFreeOrNoneAsked_ChangesTheRole(string from, string to, int seats)
+    {
+        var limited = EntitledTo(customRoles: true, EntitlementValue.Limit(20), EntitlementValue.Limit(3));
+
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf(to), new MemberFacts(Membership(from), 1, Roles), limited, seats);
+
+        result.IsSuccess.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ChangeRole_ABillingManagerToMemberWhenTheSeatsAreFull_IsAConflictWithTheKey()
+    {
+        var limited = EntitledTo(customRoles: true, EntitlementValue.Limit(20), EntitlementValue.Limit(3));
+
+        var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(Membership("BillingManager"), 1, Roles), limited, seats: 3);
+
+        (result.Error.Code, result.Error.Entitlement).ShouldBe((ControlPlaneErrorCodes.PlanLimitReached, LimitKeys.MembersMax));
+    }
+
     [Fact]
     public void InviteMember_APendingInvitationThatExpired_DoesNotCount()
     {
@@ -2082,7 +2130,7 @@ public sealed class TenantTests
         var custom = Custom("Viewer", ProfileRead, MembersRead);
         var member = Membership("Member");
 
-        var changed = Active().ChangeRole(Membership("Owner"), custom, new MemberFacts(member, 1, RolesWith(custom)), off);
+        var changed = Active().ChangeRole(Membership("Owner"), custom, new MemberFacts(member, 1, RolesWith(custom)), off, seats: 0);
 
         (changed.Error.Code, changed.Error.Entitlement).ShouldBe((ControlPlaneErrorCodes.PlanFeatureUnavailable, FeatureKeys.RolesCustom));
     }
@@ -2094,7 +2142,7 @@ public sealed class TenantTests
         var custom = Custom("Viewer", ProfileRead, MembersRead);
         var member = Membership(custom);
 
-        var changed = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(member, 1, RolesWith(custom)), off);
+        var changed = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(member, 1, RolesWith(custom)), off, seats: 0);
 
         changed.IsSuccess.ShouldBeTrue();
     }
@@ -2254,8 +2302,14 @@ public sealed class TenantTests
     private static NewInvitation Request(string email, Role role, Language? language = Language.En) =>
         new(Guid.NewGuid(), EmailAddress.Create(email), role, language, InvitationSecret.Generate(), Now, Lifetime);
 
-    private static InvitationFacts Facts(int owners, bool member = false, int sent = 0, IReadOnlyList<Invitation>? pending = null, int members = 1) =>
-        new(owners, member, sent, pending ?? [], members);
+    private static InvitationFacts Facts(
+        int owners,
+        bool member = false,
+        int sent = 0,
+        IReadOnlyList<Invitation>? pending = null,
+        int members = 1,
+        IReadOnlySet<Guid>? freeRoles = null) =>
+        new(owners, member, sent, pending ?? [], members, freeRoles ?? new HashSet<Guid>());
 
     // The effective entitlements of a tenant without a value of any key: every key is closed.
     private static EffectiveEntitlements NothingEntitled() => EffectiveEntitlements.Of(new Dictionary<string, EntitlementValue>(), [], Now);

@@ -5,7 +5,7 @@ namespace ControlPlane.UnitTests.Plans;
 // What each key counts lives once, here in the domain (D1): the previews and the tenant's plan read it, and the web adds nothing up.
 public sealed class EntitlementUsageTests
 {
-    private static readonly EntitlementUsage Usage = new(CustomRoles: 3, Members: 4, PendingInvitations: 2);
+    private static readonly EntitlementUsage Usage = new(CustomRoles: 3, SeatedMembers: 4, SeatedInvitations: 2);
 
     [Fact]
     public void Count_RolesCustomMax_IsTheCustomRoles() => Usage.CountOf(LimitKeys.RolesCustomMax).ShouldBe(3);

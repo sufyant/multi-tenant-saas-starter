@@ -414,9 +414,10 @@ internal sealed class Tenant
     /// <see cref="Role.CheckEscalation"/>). A member may change their own role under the same rules. The caller holds the tenant's
     /// lock and read the facts under it (K6j). The role the member already has changes nothing (I1). A custom role is given only while the
     /// tenant's plan has <c>roles.custom</c> on; a built-in role always (docs/flows/plans-and-entitlements.md). Every rejection comes before
-    /// the change.
+    /// the change. A member whose role takes no seat gets a role that takes one only while <c>members.max</c> allows one more seat, at
+    /// the count of the seats in use, which the caller read under the lock (<c>Role.TakesSeat</c>).
     /// </summary>
-    public Result<RoleChange> ChangeRole(Membership actor, Role role, MemberFacts facts, EffectiveEntitlements entitlements)
+    public Result<RoleChange> ChangeRole(Membership actor, Role role, MemberFacts facts, EffectiveEntitlements entitlements, int seats)
     {
         if (MemberOf(facts) is not { } target)
         {
@@ -446,6 +447,15 @@ internal sealed class Tenant
         if (ManagesOwners(oldRole) && !ManagesOwners(role) && facts.Owners <= 1)
         {
             return LastOwner;
+        }
+
+        if (!oldRole.TakesSeat && role.TakesSeat)
+        {
+            var limit = entitlements.CheckLimit(LimitKeys.MembersMax, seats);
+            if (!limit.IsSuccess)
+            {
+                return limit.Error;
+            }
         }
 
         return new RoleChange(target, oldRole, target.Assign(role));
@@ -819,8 +829,8 @@ internal sealed class Tenant
     private static bool ManagesOwners(Role role) => role.Holds(PermissionPools.TenantOwnersManage);
 
     // A member's invitation: the role rules first, the Owner's and then the escalation rule, then the plan's feature for a custom role,
-    // then a member's address, then the plan's members.max, then the daily limit (docs/flows/invitations.md, section 2, "Member
-    // invitation"). The new invitation replaces a pending one to the same address, so that one does not count.
+    // then a member's address, then the plan's members.max for a role that takes a seat, then the daily limit (docs/flows/invitations.md,
+    // section 2, "Member invitation"). The new invitation replaces a pending one to the same address, so that one does not count.
     private static Result CheckMemberInvitation(Role inviter, NewInvitation request, InvitationFacts facts, int dailyLimit, EffectiveEntitlements entitlements)
     {
         var role = request.Role;
@@ -847,11 +857,16 @@ internal sealed class Tenant
             return Error.Conflict(ControlPlaneErrorCodes.MemberExists, "Someone with this email address is already a member of this tenant.");
         }
 
-        var counted = facts.Members + facts.Pending.Count(pending => pending.ExpiresAt > request.Now && pending.Email != request.Email.Value);
-        var limit = entitlements.CheckLimit(LimitKeys.MembersMax, counted);
-        if (!limit.IsSuccess)
+        // A role that takes no seat is invited past members.max, and its pending invitations take no seat either (Role.TakesSeat).
+        if (role.TakesSeat)
         {
-            return limit;
+            var counted = facts.SeatedMembers + facts.Pending.Count(pending =>
+                pending.ExpiresAt > request.Now && pending.Email != request.Email.Value && !(pending.RoleId is { } id && facts.FreeRoles.Contains(id)));
+            var limit = entitlements.CheckLimit(LimitKeys.MembersMax, counted);
+            if (!limit.IsSuccess)
+            {
+                return limit;
+            }
         }
 
         return facts.SentInWindow >= dailyLimit

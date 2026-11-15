@@ -20,7 +20,7 @@ public sealed class TenantSummaryTests
     {
         var summary = new TenantSummary(TenantId);
 
-        summary.Summarize(3, 1, null, 4, [Now.AddDays(1), Now.AddDays(-1)]);
+        summary.Summarize(3, 1, null, 4, Seats([Now.AddDays(1), Now.AddDays(-1)]));
 
         (summary.CustomRoleCount, summary.PendingInvitationExpiries.Count).ShouldBe((4, 2));
     }
@@ -30,9 +30,20 @@ public sealed class TenantSummaryTests
     public void CountPendingInvitations_AtAMoment_CountsOnlyThoseNotExpired()
     {
         var summary = new TenantSummary(TenantId);
-        summary.Summarize(3, 1, null, 0, [Now.AddDays(1), Now.AddDays(-1), Now]);
+        summary.Summarize(3, 1, null, 0, Seats([Now.AddDays(1), Now.AddDays(-1), Now]));
 
         summary.PendingInvitationsAt(Now).ShouldBe(1);
+    }
+
+    // A Billing manager takes no seat (step 40): members.max counts the members and the pending invitations that have not expired, less
+    // those of a role that takes no seat.
+    [Fact]
+    public void CountSeats_WithBillingManagers_LeavesThemOut()
+    {
+        var summary = new TenantSummary(TenantId);
+        summary.Summarize(5, 1, null, 0, new TenantSeats(2, [Now.AddDays(1), Now.AddDays(2), Now.AddDays(-1)], [Now.AddDays(2), Now.AddDays(-1)]));
+
+        (summary.SeatedMembers, summary.SeatedInvitationsAt(Now)).ShouldBe((3, 1));
     }
 
     [Fact]
@@ -40,7 +51,7 @@ public sealed class TenantSummaryTests
     {
         var summary = new TenantSummary(TenantId);
 
-        summary.Summarize(0, 0, OwnerInvitation(), 0, []);
+        summary.Summarize(0, 0, OwnerInvitation(), 0, Seats([]));
 
         (summary.MemberCount, summary.OwnerCount).ShouldBe((0, 0));
         (summary.OwnerInvitationEmail, summary.OwnerInvitationExpiresAt, summary.OwnerInvitationStatus)
@@ -52,9 +63,9 @@ public sealed class TenantSummaryTests
     public void SummarizeTenant_AnOwnerJoined_KeepsTheCountsAndClearsTheOwnerInvitation()
     {
         var summary = new TenantSummary(TenantId);
-        summary.Summarize(0, 0, OwnerInvitation(), 0, []);
+        summary.Summarize(0, 0, OwnerInvitation(), 0, Seats([]));
 
-        summary.Summarize(3, 2, OwnerInvitation(), 0, []);
+        summary.Summarize(3, 2, OwnerInvitation(), 0, Seats([]));
 
         (summary.MemberCount, summary.OwnerCount).ShouldBe((3, 2));
         (summary.OwnerInvitationEmail, summary.OwnerInvitationExpiresAt, summary.OwnerInvitationStatus).ShouldBe((null, null, null));
@@ -70,7 +81,7 @@ public sealed class TenantSummaryTests
     public void ReadOwnerInvitationState_APendingInvitation_IsExpiredFromItsExpiryOn(int days, string state)
     {
         var summary = new TenantSummary(TenantId);
-        summary.Summarize(0, 0, OwnerInvitation(), 0, []);
+        summary.Summarize(0, 0, OwnerInvitation(), 0, Seats([]));
 
         summary.OwnerInvitationStateAt(Now.AddDays(days)).ShouldBe(Enum.Parse<OwnerInvitationState>(state));
     }
@@ -81,11 +92,13 @@ public sealed class TenantSummaryTests
         var summary = new TenantSummary(TenantId);
         var invitation = OwnerInvitation();
         invitation.Cancel();
-        summary.Summarize(0, 0, invitation, 0, []);
+        summary.Summarize(0, 0, invitation, 0, Seats([]));
 
         summary.OwnerInvitationStateAt(Now).ShouldBe(OwnerInvitationState.Cancelled);
     }
 
     private static Invitation OwnerInvitation() =>
         Invitation.Create(Guid.CreateVersion7(), TenantId, EmailAddress.Create("ada@example.com"), Role.CreateBuiltIn(Guid.CreateVersion7(), TenantId, BuiltInRole.Owner), Guid.CreateVersion7(), Now, TimeSpan.FromDays(7), "secret", Language.En);
+
+    private static TenantSeats Seats(IReadOnlyList<DateTimeOffset> pendingInvitationExpiries) => new(0, pendingInvitationExpiries, []);
 }

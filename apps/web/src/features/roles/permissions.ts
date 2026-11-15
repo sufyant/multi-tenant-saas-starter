@@ -2,7 +2,7 @@ import { Permission } from "@repo/api-client";
 
 /**
  * The tenant pool in the groups and the order of the roles screen (the RoleCreate board): Organisation, Members, Invitations,
- * Roles, Activity. Manage Owners closes the Members group; only the Owner holds it (K1), so only the Owner's page shows it.
+ * Roles, Activity, Billing (14.01). Manage Owners closes the Members group; only the Owner holds it (K1), so only the Owner's page shows it.
  */
 export const permissionGroups = [
   { id: "organisation", permissions: [Permission.TenantProfileRead] },
@@ -33,6 +33,7 @@ export const permissionGroups = [
     ],
   },
   { id: "activity", permissions: [Permission.TenantAuditRead] },
+  { id: "billing", permissions: [Permission.TenantBillingManage] },
 ] as const satisfies readonly {
   id: string;
   permissions: readonly Permission[];

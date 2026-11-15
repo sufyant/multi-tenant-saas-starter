@@ -51,14 +51,24 @@ internal sealed class TenantSummary(Guid tenantId)
     /// </summary>
     public List<DateTimeOffset> PendingInvitationExpiries { get; private set; } = [];
 
+    /// <summary>How many of the members have a role that takes no seat, the Billing manager (<c>Role.TakesSeat</c>).</summary>
+    public int FreeMemberCount { get; private set; }
+
+    /// <summary>When each pending invitation of a role that takes no seat expires, as <see cref="PendingInvitationExpiries"/>.</summary>
+    public List<DateTimeOffset> FreeInvitationExpiries { get; private set; } = [];
+
+    /// <summary>How many members take a seat, which <c>members.max</c> counts.</summary>
+    public int SeatedMembers => MemberCount - FreeMemberCount;
+
     /// <summary>
     /// Keeps what the tenant's memberships, invitations and roles say, after a change to one of them. The latest Owner invitation stays
     /// only while the tenant has no Owner.
     /// </summary>
-    public void Summarize(int members, int owners, Invitation? latestOwnerInvitation, int customRoles, IReadOnlyList<DateTimeOffset> pendingInvitationExpiries)
+    public void Summarize(int members, int owners, Invitation? latestOwnerInvitation, int customRoles, TenantSeats seats)
     {
-        (MemberCount, OwnerCount, CustomRoleCount) = (members, owners, customRoles);
-        PendingInvitationExpiries = [.. pendingInvitationExpiries.Order()];
+        (MemberCount, OwnerCount, CustomRoleCount, FreeMemberCount) = (members, owners, customRoles, seats.FreeMembers);
+        PendingInvitationExpiries = [.. seats.PendingInvitationExpiries.Order()];
+        FreeInvitationExpiries = [.. seats.FreeInvitationExpiries.Order()];
         var invitation = owners == 0 ? latestOwnerInvitation : null;
         (OwnerInvitationEmail, OwnerInvitationExpiresAt, OwnerInvitationStatus, OwnerInvitationLanguage, OwnerInvitationSentAt) =
             (invitation?.Email, invitation?.ExpiresAt, invitation?.Status, invitation?.Language, invitation?.CreatedAt);
@@ -66,6 +76,10 @@ internal sealed class TenantSummary(Guid tenantId)
 
     /// <summary>How many pending invitations have not expired at this moment: those that count toward <c>members.max</c>.</summary>
     public int PendingInvitationsAt(DateTimeOffset now) => PendingInvitationExpiries.Count(expiresAt => expiresAt > now);
+
+    /// <summary>How many of the pending invitations that have not expired at this moment take a seat.</summary>
+    public int SeatedInvitationsAt(DateTimeOffset now) => PendingInvitationsAt(now) - FreeInvitationExpiries.Count(expiresAt => expiresAt > now);
+
 
     /// <summary>The state of the latest Owner invitation at this moment, while the tenant has no Owner; none otherwise.</summary>
     public OwnerInvitationState? OwnerInvitationStateAt(DateTimeOffset now) => OwnerInvitationStatus switch

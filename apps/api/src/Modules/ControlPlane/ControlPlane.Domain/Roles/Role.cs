@@ -5,9 +5,9 @@ using SharedKernel;
 namespace ControlPlane.Domain.Roles;
 
 /// <summary>
-/// A set of permissions a membership is assigned. Each tenant has its own roles (A2): its creation writes its Owner, Admin and Member
-/// roles, whose permissions come from code (<see cref="BuiltInRoles"/>), and it builds its custom roles from the tenant pool, whose
-/// permissions are rows of <c>role_permissions</c> (A3). The tenant's rules create, change and delete a custom role (M1).
+/// A set of permissions a membership is assigned. Each tenant has its own roles (A2): its creation writes its Owner, Admin, Member and
+/// Billing manager roles, whose permissions come from code (<see cref="BuiltInRoles"/>), and it builds its custom roles from the tenant
+/// pool, whose permissions are rows of <c>role_permissions</c> (A3). The tenant's rules create, change and delete a custom role (M1).
 /// </summary>
 internal sealed class Role : ITenantEntity
 {
@@ -47,6 +47,9 @@ internal sealed class Role : ITenantEntity
         BuiltIn = builtIn;
     }
 
+    /// <summary>The roles that take no seat (<see cref="TakesSeat"/>), for a query that counts the seats.</summary>
+    public static Expression<Func<Role, bool>> TakingNoSeat { get; } = role => role.BuiltIn == BuiltInRole.BillingManager;
+
     public Guid Id { get; private init; }
 
     public Guid TenantId { get; private init; }
@@ -69,6 +72,13 @@ internal sealed class Role : ITenantEntity
         : _grants.Count > 0
             ? _grants.Select(grant => grant.Permission).ToFrozenSet(StringComparer.Ordinal)
             : throw new InvalidOperationException("A custom role is read with its permissions.");
+
+    /// <summary>
+    /// Whether a member or a pending invitation of the role takes a seat, which <c>members.max</c> counts. Every role does, but the
+    /// Billing manager: it cannot use the product, so it is free (step 40, frame 10.01). A seat is a fact of billing, not an access, so
+    /// asking the kind here does not break A1.
+    /// </summary>
+    public bool TakesSeat => BuiltIn != BuiltInRole.BillingManager;
 
     /// <summary>The tenant's role of the built-in kind, which its creation writes (A2).</summary>
     public static Role CreateBuiltIn(Guid id, Guid tenantId, BuiltInRole role) => new(id, tenantId, NameOf(role), role);
@@ -96,6 +106,7 @@ internal sealed class Role : ITenantEntity
         BuiltInRole.Owner => "owner",
         BuiltInRole.Admin => "admin",
         BuiltInRole.Member => "member",
+        BuiltInRole.BillingManager => "billing_manager",
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Every built-in role has a name."),
     };
 

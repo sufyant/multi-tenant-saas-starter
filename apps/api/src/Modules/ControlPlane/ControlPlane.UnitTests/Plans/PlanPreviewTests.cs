@@ -8,7 +8,7 @@ public sealed class PlanPreviewTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 28, 12, 0, 0, TimeSpan.Zero);
 
-    private static readonly EntitlementUsage Usage = new(CustomRoles: 14, Members: 8, PendingInvitations: 1);
+    private static readonly EntitlementUsage Usage = new(CustomRoles: 14, SeatedMembers: 8, SeatedInvitations: 1);
 
     [Fact]
     public void Preview_ALimitUnderTheCount_ListsTheKeyWithItsCountAndHowFarOver()

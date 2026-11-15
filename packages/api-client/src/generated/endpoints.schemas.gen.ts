@@ -308,6 +308,7 @@ export const Permission = {
   PlatformUsersSuspend: 'platform.users.suspend',
   PlatformUsersUpdate: 'platform.users.update',
   TenantAuditRead: 'tenant.audit.read',
+  TenantBillingManage: 'tenant.billing.manage',
   TenantInvitationsCreate: 'tenant.invitations.create',
   TenantInvitationsDelete: 'tenant.invitations.delete',
   TenantInvitationsRead: 'tenant.invitations.read',

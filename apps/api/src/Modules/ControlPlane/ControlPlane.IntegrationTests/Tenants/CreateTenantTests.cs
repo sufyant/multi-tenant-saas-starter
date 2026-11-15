@@ -54,7 +54,7 @@ public sealed class CreateTenantTests(Database database)
 
         (await ScalarAsync<string>(
             $"SELECT string_agg(format('%s|%s', built_in, name), ', ' ORDER BY built_in) FROM control_plane.roles WHERE tenant_id = '{tenantId}'"))
-            .ShouldBe("Admin|admin, Member|member, Owner|owner");
+            .ShouldBe("Admin|admin, BillingManager|billing_manager, Member|member, Owner|owner");
         (await ScalarAsync<string>(
             $"""
             SELECT roles.built_in FROM control_plane.invitations

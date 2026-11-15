@@ -90,4 +90,6 @@ public static class Permissions
     public const string TenantRolesUpdate = "tenant.roles.update";
 
     public const string TenantRolesDelete = "tenant.roles.delete";
+
+    public const string TenantBillingManage = "tenant.billing.manage";
 }

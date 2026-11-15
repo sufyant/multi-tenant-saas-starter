@@ -11,7 +11,7 @@ public sealed class BuiltInRolesTests
     {
         var names = Enum.GetValues<BuiltInRole>().Select(Role.NameOf);
 
-        names.ShouldBe(["owner", "admin", "member"]);
+        names.ShouldBe(["owner", "admin", "member", "billing_manager"]);
     }
 
     [Fact]
@@ -115,5 +115,21 @@ public sealed class BuiltInRolesTests
         ownerOnly.ShouldBe(["tenant.owners.manage"]);
         ownerOnly.ShouldBeSubsetOf(PermissionPools.TenantPool);
         Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Overlaps(ownerOnly)).ShouldBe([BuiltInRole.Owner]);
+    }
+
+    // Billing is the Owner's and the Billing manager's (step 40, frame 14.01): an Admin and a Member do not manage it.
+    [Fact]
+    public void ManageBilling_OwnerAndBillingManager_HoldThePermission()
+    {
+        var holders = Enum.GetValues<BuiltInRole>().Where(role => BuiltInRoles.PermissionsOf(role).Contains("tenant.billing.manage"));
+
+        holders.ShouldBe([BuiltInRole.Owner, BuiltInRole.BillingManager]);
+    }
+
+    // A Billing manager reads the tenant and its members and manages billing, nothing more, so it never uses the product.
+    [Fact]
+    public void GrantBuiltInRoles_BillingManager_HoldsOnlyItsThreePermissions()
+    {
+        BuiltInRoles.PermissionsOf(BuiltInRole.BillingManager).Order().ShouldBe(["tenant.billing.manage", "tenant.members.read", "tenant.profile.read"]);
     }
 }

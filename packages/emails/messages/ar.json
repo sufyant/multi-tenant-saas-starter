@@ -50,7 +50,8 @@
   "roles": {
     "owner": "مالك",
     "admin": "مشرف",
-    "member": "عضو"
+    "member": "عضو",
+    "billing_manager": "مدير الفوترة"
   },
   "dates": {
     "months": [

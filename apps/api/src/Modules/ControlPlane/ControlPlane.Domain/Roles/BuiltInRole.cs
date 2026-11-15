@@ -5,4 +5,5 @@ internal enum BuiltInRole
     Owner,
     Admin,
     Member,
+    BillingManager,
 }

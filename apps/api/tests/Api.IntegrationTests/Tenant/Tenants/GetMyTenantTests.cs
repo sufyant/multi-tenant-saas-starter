@@ -68,6 +68,22 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         found.GetProperty("usage").GetRawText().ShouldBe("""{"audit.retention.days":0,"members.max":3,"roles.custom.max":1}""");
     }
 
+    // Step 40: members.max counts the seats, so a Billing manager and its pending invitation are left out of the count (frame 10.01).
+    [Fact]
+    public async Task GetMyTenant_ABillingManager_TakesNoSeatInTheCount()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+        await _testData.AddInvitationAsync(tenant.Id, role: "BillingManager");
+        await _testData.AddInvitationAsync(tenant.Id);
+        await _testData.SummarizeAsync(tenant.Id);
+
+        var found = await _api.CreateClient(owner).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
+
+        found.GetProperty("usage").GetProperty("members.max").GetInt32().ShouldBe(2);
+    }
+
     // An override over the plan's value is the effective value the tenant reads.
     [Fact]
     public async Task GetMyTenant_AFreeTenantWithAnOverride_AnswersTheEffectiveValues()
@@ -84,11 +100,12 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
     }
 
     // The list is the role's permissions in code (BuiltInRoles), in ordinal order: an Owner holds the tenant pool, an Admin all of it but
-    // the Owners' own permission (K1) and the management of roles, a Member reads the members and the tenant.
+    // the Owners' own permission (K1), the management of roles and billing, a Member reads the members and the tenant, and a Billing
+    // manager reads them too and manages billing (step 40).
     [Theory]
     [InlineData("Owner", new[]
     {
-        Permissions.TenantAuditRead, Permissions.TenantInvitationsCreate, Permissions.TenantInvitationsDelete, Permissions.TenantInvitationsRead,
+        Permissions.TenantAuditRead, Permissions.TenantBillingManage, Permissions.TenantInvitationsCreate, Permissions.TenantInvitationsDelete, Permissions.TenantInvitationsRead,
         Permissions.TenantMembersDelete, Permissions.TenantMembersRead, Permissions.TenantMembersUpdate, Permissions.TenantOwnersManage,
         Permissions.TenantProfileRead, Permissions.TenantRolesCreate, Permissions.TenantRolesDelete, Permissions.TenantRolesRead,
         Permissions.TenantRolesUpdate,
@@ -100,6 +117,7 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
         Permissions.TenantRolesRead,
     })]
     [InlineData("Member", new[] { Permissions.TenantMembersRead, Permissions.TenantProfileRead })]
+    [InlineData("BillingManager", new[] { Permissions.TenantBillingManage, Permissions.TenantMembersRead, Permissions.TenantProfileRead })]
     public async Task GetMyTenant_AMemberOfEveryBuiltInRole_ReturnsTheRolesPermissionsSorted(string role, string[] permissions)
     {
         var tenant = await _testData.AddTenantAsync();

@@ -33,7 +33,13 @@ public static class ChangeMemberRoleHandler
             return (Role.NotFound, []);
         }
 
-        var changed = tenant.ChangeRole(actorMembership, role, facts, await tenants.FindEntitlementsAsync(tenant, time.GetUtcNow(), cancellationToken));
+        var now = time.GetUtcNow();
+        var changed = tenant.ChangeRole(
+            actorMembership,
+            role,
+            facts,
+            await tenants.FindEntitlementsAsync(tenant, now, cancellationToken),
+            await tenants.CountSeatsAsync(now, cancellationToken));
         if (!changed.IsSuccess)
         {
             return (changed.Error, []);
@@ -50,7 +56,6 @@ public static class ChangeMemberRoleHandler
 
         await tenants.SaveAsync(tenant, cancellationToken);
 
-        var now = time.GetUtcNow();
         return (
             member,
             [

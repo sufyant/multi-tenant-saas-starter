@@ -50,7 +50,8 @@
   "roles": {
     "owner": "Owner",
     "admin": "Admin",
-    "member": "Member"
+    "member": "Member",
+    "billing_manager": "Billing manager"
   },
   "dates": {
     "months": [

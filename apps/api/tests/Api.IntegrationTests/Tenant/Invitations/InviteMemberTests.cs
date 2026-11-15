@@ -802,6 +802,29 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
     }
 
+    // Step 40: a Billing manager takes no seat, so it is invited when the members fill the limit, and its pending invitation leaves the
+    // seat to a Member.
+    [Fact]
+    public async Task InviteMember_ABillingManagerWhenTheSeatsAreFull_IsCreated()
+    {
+        var (tenantId, owner) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 1);
+
+        var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, NewEmail(), role: "billing_manager"));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task InviteMember_APendingBillingManagerInvitation_TakesNoSeat()
+    {
+        var (tenantId, owner) = await PlanAnswers.TenantWithMembersMaxAsync(_testData, _api, membersMax: 2);
+        await _testData.AddInvitationAsync(tenantId, role: "BillingManager");
+
+        var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, NewEmail()));
+
+        invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
     private static (string? Role, string? ReplacedInvitationId) Details(string? json)
     {
         var details = JsonDocument.Parse(json!).RootElement;

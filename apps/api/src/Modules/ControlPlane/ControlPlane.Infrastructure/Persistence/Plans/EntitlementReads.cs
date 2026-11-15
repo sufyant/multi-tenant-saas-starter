@@ -21,5 +21,5 @@ internal static class EntitlementReads
 
     // What the tenant has that the keys count, from its summary (R12), at this moment. A purged tenant has no summary, and counts nothing.
     public static EntitlementUsage UsageOf(TenantSummary? summary, DateTimeOffset now) =>
-        summary is null ? new EntitlementUsage(0, 0, 0) : new EntitlementUsage(summary.CustomRoleCount, summary.MemberCount, summary.PendingInvitationsAt(now));
+        summary is null ? new EntitlementUsage(0, 0, 0) : new EntitlementUsage(summary.CustomRoleCount, summary.SeatedMembers, summary.SeatedInvitationsAt(now));
 }

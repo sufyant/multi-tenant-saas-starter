@@ -102,12 +102,13 @@ const tenantPermissions = Object.values(Permission).filter((name) =>
   name.startsWith("tenant."),
 );
 
-// An Admin holds the Owner's permissions but the Owner's own and the management of roles (the API's BuiltInRoles).
+// An Admin holds the Owner's permissions but the Owner's own, the management of roles and billing (the API's BuiltInRoles).
 const ownerOnly = new Set<Permission>([
   Permission.TenantOwnersManage,
   Permission.TenantRolesCreate,
   Permission.TenantRolesUpdate,
   Permission.TenantRolesDelete,
+  Permission.TenantBillingManage,
 ]);
 
 /** The permissions of a built-in role, as GetMyTenant answers them. */
