@@ -2,8 +2,9 @@ namespace Api.IntegrationTests.Fixtures;
 
 // The summary a tenant keeps in its own row of tenant_summaries for the platform's list (R12), and the same values counted from the tenant's own rows, as the
 // superuser, who row level security does not hold. A test compares the two after a command that changes a membership or an invitation:
-// the summary must say what the rows say. Both read as one line: the members, the Owners, and the latest Owner invitation's email,
-// expiry, status, language and creation (its sending), which the summary keeps only while the tenant has no Owner.
+// the summary must say what the rows say. Both read as one line: the members, the Owners, the latest Owner invitation's email,
+// expiry, status, language and creation (its sending), which the summary keeps only while the tenant has no Owner, and the members and
+// the pending invitations' expiries of the role that takes no seat, the Billing manager (step 40).
 internal sealed class TenantSummaries(Database database, string databaseName = Database.MainDatabase)
 {
     public Task<string?> StoredAsync(Guid tenantId) =>
@@ -11,7 +12,7 @@ internal sealed class TenantSummaries(Database database, string databaseName = D
             $"""
             SELECT concat_ws('|', member_count, owner_count, coalesce(owner_invitation_email, '-'),
                 coalesce(owner_invitation_expires_at::text, '-'), coalesce(owner_invitation_status, '-'), coalesce(owner_invitation_language, '-'),
-                coalesce(owner_invitation_sent_at::text, '-'))
+                coalesce(owner_invitation_sent_at::text, '-'), free_member_count, array_to_string(free_invitation_expiries, ','))
             FROM control_plane.tenant_summaries WHERE tenant_id = '{tenantId}'
             """,
             databaseName);
@@ -20,6 +21,7 @@ internal sealed class TenantSummaries(Database database, string databaseName = D
         database.ScalarAsSuperuserAsync<string>(
             $"""
             WITH owner AS (SELECT id FROM control_plane.roles WHERE built_in = 'Owner'),
+                free AS (SELECT id FROM control_plane.roles WHERE built_in = 'BillingManager'),
                 members AS (SELECT * FROM control_plane.memberships WHERE tenant_id = '{tenantId}'),
                 owners AS (SELECT * FROM members WHERE role_id IN (SELECT id FROM owner)),
                 latest AS (
@@ -29,7 +31,10 @@ internal sealed class TenantSummaries(Database database, string databaseName = D
             SELECT concat_ws('|', (SELECT count(*) FROM members), (SELECT count(*) FROM owners),
                 coalesce((SELECT email FROM latest), '-'), coalesce((SELECT expires_at::text FROM latest), '-'),
                 coalesce((SELECT status FROM latest), '-'), coalesce((SELECT language FROM latest), '-'),
-                coalesce((SELECT created_at::text FROM latest), '-'))
+                coalesce((SELECT created_at::text FROM latest), '-'),
+                (SELECT count(*) FROM members WHERE role_id IN (SELECT id FROM free)),
+                coalesce((SELECT array_to_string(array_agg(expires_at ORDER BY expires_at), ',') FROM control_plane.invitations
+                    WHERE tenant_id = '{tenantId}' AND status = 'Pending' AND role_id IN (SELECT id FROM free)), ''))
             """,
             databaseName);
 

@@ -812,6 +812,7 @@ public sealed class InviteMemberTests(Database database) : IAsyncLifetime
         var invited = await _api.WaitingForMessagesAsync(() => owner.InviteMemberAsync(tenantId, NewEmail(), role: "billing_manager"));
 
         invited.StatusCode.ShouldBe(HttpStatusCode.Created);
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
     [Fact]

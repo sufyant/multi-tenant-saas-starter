@@ -457,6 +457,7 @@ public sealed class ChangeMemberRoleTests(Database database) : IAsyncLifetime
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await RoleOfAsync(tenantId, member)).ShouldBe("BillingManager");
+        await _summaries.ShouldMatchTheRowsAsync(tenantId);
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

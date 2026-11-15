@@ -57,7 +57,7 @@ The tenant's method takes the effective entitlements, which the handler reads un
 - `CreateRole` refuses a new custom role when the tenant has `roles.custom.max` or more: 409 `plan.limit_reached`, `entitlement` `roles.custom.max`.
 - `InviteMember` refuses a new invitation of a role that takes a seat when the seats, the members and the pending invitations that have not expired, each of a role that takes a seat, less the one the new invitation replaces, are `members.max` or more: 409 `plan.limit_reached`, `entitlement` `members.max`. An invitation of the Billing manager is not limited.
 - `ChangeMemberRole` refuses to give a Billing manager a role that takes a seat when the seats are `members.max` or more, with the same 409. Giving a member the Billing manager role frees a seat, and is not limited.
-- `InviteOwner`, from the platform, is not limited: a tenant without an Owner always gets one.
+- `InviteOwner` and `MakeOwner`, from the platform, are not limited: a tenant always gets an Owner, a Billing manager made an Owner included (`owner-recovery.md`).
 - `AcceptInvitation` is not limited: the invitation counted already, so an acceptance adds nothing to the count and never fails on the limit.
 - Two creations at the edge run one after the other under the tenant's lock, so only one passes (`CreateRole_TwoAtOnceWithOnePlaceLeft_NeverPassTheLimit`).
 
