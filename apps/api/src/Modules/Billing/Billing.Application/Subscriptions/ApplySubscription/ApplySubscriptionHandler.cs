@@ -2,6 +2,7 @@ using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions.CancelSubscription;
+using Billing.Application.Subscriptions.CountSeats;
 using Billing.Application.Subscriptions.NameScheduleChange;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Contracts.Subscriptions;
@@ -45,7 +46,11 @@ public static class ApplySubscriptionHandler
             return [new CancelSubscriptionCommand(state.SubscriptionId)];
         }
 
-        OutgoingMessages messages = [];
+        // Step 40, billing per person: each state of a subscription that has not ended brings the provider's count of seats, which is set
+        // again when it differs from the members who take a seat, a state the row has too, as a count is no part of the row.
+        OutgoingMessages messages = command.People is { } people && !Subscription.HasEnded(state.Status)
+            ? [new CountSeatsCommand(state.SubscriptionId, people)]
+            : [];
         if (subscription is null)
         {
             subscription = Subscription.Start(state, now);
@@ -58,7 +63,7 @@ public static class ApplySubscriptionHandler
             var scheduleChange = subscription.ScheduleChangeOf(state, customer.ClosedAt is not null);
             if (subscription.Sync(state, now) == StateChange.Unchanged)
             {
-                return [];
+                return messages;
             }
 
             if (scheduleChange is { } change)
