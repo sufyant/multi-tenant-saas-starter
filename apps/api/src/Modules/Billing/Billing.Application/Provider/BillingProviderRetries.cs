@@ -1,4 +1,4 @@
-using Billing.Application.Checkouts.ExpireOtherCheckouts;
+using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.SyncSubscription;
@@ -20,7 +20,7 @@ namespace Billing.Application.Provider;
 internal sealed class BillingProviderRetries(IOptions<BillingProviderOptions> settings) : IWolverineExtension, IHandlerPolicy
 {
     private static readonly Type[] Calls =
-        [typeof(SyncSubscriptionCommand), typeof(ExpireOtherCheckoutsCommand), typeof(SetCancelAtPeriodEndCommand), typeof(CancelSubscriptionCommand)];
+        [typeof(SyncSubscriptionCommand), typeof(ExpireCheckoutPagesCommand), typeof(SetCancelAtPeriodEndCommand), typeof(CancelSubscriptionCommand)];
 
     public void Configure(WolverineOptions options) => options.Policies.Add(this);
 

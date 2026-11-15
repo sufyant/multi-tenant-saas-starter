@@ -31,7 +31,7 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // that a payment changes records tenant.plan_changed (B5 to B7).
     private static readonly string[] CommandsWithoutAudit =
     [
-        "CreateCustomerCommand", "KeepCustomerCommand", "ReserveCheckoutCommand", "RecordCheckoutSessionCommand",
+        "CreateCustomerCommand", "KeepCustomerCommand", "ReserveCheckoutCommand", "RecordCheckoutSessionCommand", "AbandonCheckoutCommand",
         "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
         "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand", "AcceptTermsVersionCommand", "DismissTermsNoticeCommand",
         "CheckFeatureFlagCleanupCommand",

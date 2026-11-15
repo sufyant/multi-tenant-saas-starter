@@ -72,7 +72,7 @@ using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using Audit.Application.DataExports.RecordDataExportRequested;
-using Billing.Application.Checkouts.ExpireOtherCheckouts;
+using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Subscriptions.ApplySubscription;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.RouteSubscription;
@@ -304,8 +304,8 @@ public sealed class HostRoleTests(Database database)
             ],
             ignoreOrder: true);
         // The expiries of the customer's open pages run beside the plan's change, the reservation's one too, so they are waited for apart.
-        await Waiting.UntilAsync(() => worker.Billing.Expiries.Contains(($"cus_{tenant.Id:N}", null)));
-        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(ExpireOtherCheckoutsHandler)).ShouldBe(
+        await Waiting.UntilAsync(() => worker.Billing.Expiries.Contains(($"cus_{tenant.Id:N}", web.Billing.Checkouts.Single().Key)));
+        runs.WithoutNotificationsIn("worker").Where(run => run.Handler != typeof(ExpireCheckoutPagesHandler)).ShouldBe(
             [
                 new HandlerRun(typeof(SyncSubscriptionCommand), typeof(SyncSubscriptionHandler)),
                 new HandlerRun(typeof(RouteSubscriptionCommand), typeof(RouteSubscriptionHandler)),

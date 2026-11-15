@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Billing.Api.Authentication;
+using Billing.Application.Checkouts.AbandonCheckout;
 using Billing.Application.Checkouts.RecordCheckoutSession;
 using Billing.Application.Checkouts.ReserveCheckout;
 using Billing.Application.CheckoutSessions.GetCheckoutFacts;
@@ -58,7 +59,9 @@ public static class CheckoutSessionEndpoints
             ?? await bus.InvokeAsync<string>(new CreateCustomerCommand(tenantId, facts.Value.Email), cancellationToken);
         var kept = await bus.InvokeAsync<string>(new KeepCustomerCommand(facts.Value.PaidBy, customerId), cancellationToken);
         var reservation = await bus.InvokeAsync<Result<CheckoutReservation>>(
-            new ReserveCheckoutCommand(order.Value.PlanId, request.Interval == OpenCheckoutSessionRequestInterval.Yearly, order.Value.People, request.ReturnUrl),
+            new ReserveCheckoutCommand(
+                order.Value.PlanId, request.Interval == OpenCheckoutSessionRequestInterval.Yearly, order.Value.People, request.ReturnUrl, order.Value.Currency,
+                order.Value.BaseAmount, order.Value.PerPersonAmount),
             cancellationToken);
         if (!reservation.IsSuccess)
         {
@@ -70,8 +73,19 @@ public static class CheckoutSessionEndpoints
             return new CheckoutSessionResponse(open);
         }
 
-        var page = await bus.InvokeAsync<CheckoutPage>(
-            order.Value with { Key = reservation.Value.Key, ExpiresAt = reservation.Value.ExpiresAt, CustomerId = kept }, cancellationToken);
+        // The provider keeps a failed call under its key too, so a failed call gives up the key, and the next request takes a new one.
+        CheckoutPage page;
+        try
+        {
+            page = await bus.InvokeAsync<CheckoutPage>(
+                order.Value with { Key = reservation.Value.Key, ExpiresAt = reservation.Value.ExpiresAt, CustomerId = kept }, cancellationToken);
+        }
+        catch (Exception)
+        {
+            await bus.InvokeAsync(new AbandonCheckoutCommand(reservation.Value.Key), CancellationToken.None);
+            throw;
+        }
+
         var recorded = await bus.InvokeAsync<bool>(new RecordCheckoutSessionCommand(reservation.Value.Key, page.SessionId, page.Url), cancellationToken);
         return recorded ? new CheckoutSessionResponse(page.Url) : Errors.CheckoutReplaced;
     }

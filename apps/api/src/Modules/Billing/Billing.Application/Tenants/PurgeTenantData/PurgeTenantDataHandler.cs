@@ -1,5 +1,5 @@
 using Billing.Application.Checkouts;
-using Billing.Application.Checkouts.ExpireOtherCheckouts;
+using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions;
 using Billing.Application.Subscriptions.CancelSubscription;
@@ -11,7 +11,7 @@ namespace Billing.Application.Tenants.PurgeTenantData;
 
 // The tenant purge asks Billing to delete the tenant's data, in the tenant's transaction (docs/flows/tenant-purge.md): its subscription's
 // row, its open checkout and its customer in billing's map. The customer, the root of its billing, is locked first (K6a, B7). A
-// subscription that has not ended ends at the provider at once, and every open page of the customer is expired, through the outbox in the
+// subscription that has not ended ends at the provider at once, and the open checkout's pages are expired, through the outbox in the
 // same transaction (B8). The provider keeps its own records of the payments, which the law asks it to keep. It replies, so the purge goes
 // on; a second copy deletes nothing more (S7).
 public static class PurgeTenantDataHandler
@@ -29,10 +29,14 @@ public static class PurgeTenantDataHandler
         OutgoingMessages messages = [];
         if (await customers.FindForUpdateAsync(cancellationToken) is { } customer)
         {
-            messages.Add(new ExpireOtherCheckoutsCommand(customer.CustomerId, KeepKey: null));
             if (await subscriptions.FindForUpdateAsync(cancellationToken) is { } subscription && !Subscription.HasEnded(subscription.Status))
             {
                 messages.Add(new CancelSubscriptionCommand(subscription.SubscriptionId));
+            }
+
+            if (await checkouts.FindForUpdateAsync(cancellationToken) is { } checkout)
+            {
+                messages.Add(new ExpireCheckoutPagesCommand(customer.CustomerId, checkout.Key));
             }
         }
 

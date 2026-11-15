@@ -1,11 +1,11 @@
-using Billing.Application.Checkouts.ExpireOtherCheckouts;
+using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Customers;
 using Wolverine;
 
 namespace Billing.Application.Checkouts.RecordCheckoutSession;
 
 // The tenant's customer is locked first (K6a, B7). A page of a replaced key may have been made after the replacement expired the customer's
-// open pages, so it is expired here, but the page of the checkout that replaced it.
+// open pages of that key, so it is expired here, by its key.
 public static class RecordCheckoutSessionHandler
 {
     public static async Task<(bool, OutgoingMessages)> HandleAsync(
@@ -23,6 +23,6 @@ public static class RecordCheckoutSessionHandler
             return (true, []);
         }
 
-        return (false, [new ExpireOtherCheckoutsCommand(customer.CustomerId, checkout?.Key)]);
+        return (false, [new ExpireCheckoutPagesCommand(customer.CustomerId, command.Key)]);
     }
 }

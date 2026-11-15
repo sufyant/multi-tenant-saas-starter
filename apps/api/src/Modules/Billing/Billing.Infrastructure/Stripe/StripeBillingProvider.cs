@@ -83,15 +83,14 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         return new CheckoutPage(session.Id, new Uri(session.Url));
     }
 
-    // Every open page of the customer but the one of the kept key, by the key in its metadata, which our app wrote: a page Stripe already
-    // closed (paid or expired) is not listed. A race with a payment fails the expiry, and its retry no longer lists the page.
-    async Task IBillingProvider.ExpireOpenCheckoutsAsync(string customerId, Guid? keepKey, CancellationToken cancellationToken)
+    // The open pages of the customer that the key made, by the key in their metadata, which our app wrote: a page Stripe already closed (paid
+    // or expired) is not listed. A race with a payment fails the expiry, and its retry no longer lists the page.
+    async Task IBillingProvider.ExpireOpenCheckoutsAsync(string customerId, Guid key, CancellationToken cancellationToken)
     {
         var sessions = new SessionService(client);
-        var keep = keepKey?.ToString();
         await foreach (var session in sessions.ListAutoPagingAsync(new SessionListOptions { Customer = customerId, Status = "open" }, cancellationToken: cancellationToken))
         {
-            if (session.Metadata.GetValueOrDefault(CheckoutKey) != keep || keep is null)
+            if (session.Metadata.GetValueOrDefault(CheckoutKey) == key.ToString())
             {
                 await sessions.ExpireAsync(session.Id, cancellationToken: cancellationToken);
             }

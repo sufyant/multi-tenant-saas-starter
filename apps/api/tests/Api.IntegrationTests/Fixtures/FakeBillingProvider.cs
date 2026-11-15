@@ -31,8 +31,8 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     public ConcurrentQueue<string> Reads { get; } = [];
 
-    // Each expiry of a customer's open pages, with the key whose page stays.
-    public ConcurrentQueue<(string CustomerId, Guid? KeepKey)> Expiries { get; } = [];
+    // Each expiry of the open pages that a checkout key made.
+    public ConcurrentQueue<(string CustomerId, Guid Key)> Expiries { get; } = [];
 
     public ConcurrentQueue<(string SubscriptionId, bool CancelAtPeriodEnd)> PeriodEnds { get; } = [];
 
@@ -66,9 +66,9 @@ internal sealed class FakeBillingProvider : IBillingProvider
         return _pages.GetOrAdd(order.Key, key => new CheckoutPage($"cs_{key:N}", PageOf(key)));
     }
 
-    public Task ExpireOpenCheckoutsAsync(string customerId, Guid? keepKey, CancellationToken cancellationToken)
+    public Task ExpireOpenCheckoutsAsync(string customerId, Guid key, CancellationToken cancellationToken)
     {
-        Expiries.Enqueue((customerId, keepKey));
+        Expiries.Enqueue((customerId, key));
         return Task.CompletedTask;
     }
 

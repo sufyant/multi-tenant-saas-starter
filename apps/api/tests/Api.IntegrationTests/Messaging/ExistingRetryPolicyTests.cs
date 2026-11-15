@@ -26,12 +26,16 @@ public sealed class ExistingRetryPolicyTests(Database database)
         rule.First().Describe().ShouldContain(firstAction);
     }
 
-    // B5: a read of a subscription from Stripe after a webhook that fails is tried again after each configured pause (Billing:Provider).
-    [Fact]
-    public async Task ReadRetryRules_TheReadOfASubscriptionFromStripe_KeepsItsMessageSpecificRule()
+    // B5, B7, B8: each call to Stripe from a queued message that fails is tried again after each configured pause (Billing:Provider).
+    [Theory]
+    [InlineData("SyncSubscriptionCommand")]
+    [InlineData("ExpireCheckoutPagesCommand")]
+    [InlineData("SetCancelAtPeriodEndCommand")]
+    [InlineData("CancelSubscriptionCommand")]
+    public async Task ReadRetryRules_ACallToStripeFromAQueuedMessage_KeepsItsMessageSpecificRule(string message)
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);
-        var chain = api.Services.GetRequiredService<HandlerGraph>().Chains.Single(chain => chain.MessageType.Name == "SyncSubscriptionCommand");
+        var chain = api.Services.GetRequiredService<HandlerGraph>().Chains.Single(chain => chain.MessageType.Name == message);
         _ = api.Services.GetRequiredService<HandlerGraph>().HandlerFor(chain.MessageType);
 
         var rule = chain.Failures.First();

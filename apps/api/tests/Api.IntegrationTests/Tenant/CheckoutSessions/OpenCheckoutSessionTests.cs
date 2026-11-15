@@ -165,7 +165,7 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         _api.Billing.Customers.Distinct().ShouldBe([tenant.Id]);
     }
 
-    // B7: a checkout of another order replaces the open one: Stripe expires every other open page of the customer, the new one kept.
+    // B7: a checkout of another order replaces the open one, and Stripe expires the pages of the replaced key.
     [Fact]
     public async Task OpenCheckoutSession_AnotherOrder_ReplacesTheOpenPageAndExpiresIt()
     {
@@ -179,7 +179,7 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         var kept = _api.Billing.Checkouts.Last().Key;
         (await UrlOfAsync(yearly)).ShouldBe(FakeBillingProvider.PageOf(kept).ToString());
         kept.ShouldNotBe(monthly);
-        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", kept));
+        _api.Billing.Expiries.ShouldBe([($"cus_{tenant.Id:N}", monthly)]);
     }
 
     // B7: a subscription that pays ends the tenant's open checkout and expires its page; a new checkout is then refused.
@@ -193,7 +193,7 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         await _api.PayAsync(owner, tenant.Id, _planId);
         var again = await _api.CreateClient(manager).OpenCheckoutSessionAsync(tenant.Id, _planId);
 
-        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", (Guid?)null));
+        _api.Billing.Expiries.ShouldBe([($"cus_{tenant.Id:N}", _api.Billing.Checkouts.ShouldHaveSingleItem().Key)]);
         (await _testData.CountAsync($"SELECT count(*) FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
         (await BillingRequests.CodeOfAsync(again)).ShouldBe("billing.already_subscribed");
     }
@@ -210,8 +210,9 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
 
         first.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await BillingRequests.CodeOfAsync(first)).ShouldBe("billing.checkout_replaced");
-        var current = await database.ScalarAsSuperuserAsync<Guid>($"SELECT key FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'");
-        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", (Guid?)current));
+        var replaced = _api.Billing.Checkouts.First().Key;
+        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", replaced));
+        (await database.ScalarAsSuperuserAsync<Guid>($"SELECT key FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldNotBe(replaced);
     }
 
     // B8: a closed tenant opens no checkout, though its member passed the door before the closure.

@@ -819,7 +819,7 @@ export interface ChangeTenantPlanRequest {
 }
 
 /**
- * The provider's page where the person pays by card. It works for a short time and is never stored; the page comes back with
+ * The provider's page of the tenant's one open checkout, where the person pays by card, for an hour; the page comes back with
  * `checkout=success` or `checkout=cancelled` after the address of the request.
  */
 export interface CheckoutSessionResponse {

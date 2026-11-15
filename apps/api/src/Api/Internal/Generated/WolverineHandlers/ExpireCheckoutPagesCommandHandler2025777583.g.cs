@@ -4,13 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: ExpireOtherCheckoutsCommandHandler1604929245
+    // START: ExpireCheckoutPagesCommandHandler2025777583
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class ExpireOtherCheckoutsCommandHandler1604929245 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class ExpireCheckoutPagesCommandHandler2025777583 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _serviceScopeFactory;
 
-        public ExpireOtherCheckoutsCommandHandler1604929245(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
+        public ExpireCheckoutPagesCommandHandler2025777583(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory serviceScopeFactory)
         {
             _serviceScopeFactory = serviceScopeFactory;
         }
@@ -22,17 +22,17 @@ namespace Internal.Generated.WolverineHandlers
             // This service has been marked as requiring service location independent of Wolverine's ability to use constructor injection of everything else
             var billingProvider = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Billing.Application.Provider.IBillingProvider>(serviceScope.ServiceProvider);
             // The actual message body
-            var expireOtherCheckoutsCommand = (Billing.Application.Checkouts.ExpireOtherCheckouts.ExpireOtherCheckoutsCommand)context.Envelope.Message;
+            var expireCheckoutPagesCommand = (Billing.Application.Checkouts.ExpireCheckoutPages.ExpireCheckoutPagesCommand)context.Envelope.Message;
 
-            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Billing.Application.Checkouts.ExpireOtherCheckouts.ExpireOtherCheckoutsHandler");
-            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Checkouts.ExpireOtherCheckouts.ExpireOtherCheckoutsHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Billing.Application.Checkouts.ExpireCheckoutPages.ExpireCheckoutPagesHandler");
+            Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Checkouts.ExpireCheckoutPages.ExpireCheckoutPagesHandler");
             
             // The actual message execution
-            await Billing.Application.Checkouts.ExpireOtherCheckouts.ExpireOtherCheckoutsHandler.HandleAsync(expireOtherCheckoutsCommand, billingProvider, cancellation).ConfigureAwait(false);
+            await Billing.Application.Checkouts.ExpireCheckoutPages.ExpireCheckoutPagesHandler.HandleAsync(expireCheckoutPagesCommand, billingProvider, cancellation).ConfigureAwait(false);
         }
     }
 
-    // END: ExpireOtherCheckoutsCommandHandler1604929245
+    // END: ExpireCheckoutPagesCommandHandler2025777583
     
     
 }

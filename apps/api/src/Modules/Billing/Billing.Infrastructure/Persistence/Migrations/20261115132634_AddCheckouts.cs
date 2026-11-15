@@ -11,16 +11,24 @@ namespace Billing.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "ended_by_closure",
+            migrationBuilder.AddColumn<string>(
+                name: "closure_end",
                 schema: "billing",
                 table: "subscriptions",
-                type: "boolean",
+                type: "character varying(20)",
+                maxLength: 20,
                 nullable: false,
-                defaultValue: false);
+                defaultValue: "None");
 
             migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "closed_at",
+                schema: "billing",
+                table: "customers",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTimeOffset>(
+                name: "lifecycle_at",
                 schema: "billing",
                 table: "customers",
                 type: "timestamp with time zone",
@@ -37,6 +45,9 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     yearly = table.Column<bool>(type: "boolean", nullable: false),
                     people = table.Column<int>(type: "integer", nullable: false),
                     return_url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: false),
+                    currency = table.Column<string>(type: "character varying(3)", maxLength: 3, nullable: false),
+                    base_amount = table.Column<long>(type: "bigint", nullable: false),
+                    per_person_amount = table.Column<long>(type: "bigint", nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     session_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     url = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true)
@@ -45,6 +56,12 @@ namespace Billing.Infrastructure.Persistence.Migrations
                 {
                     table.PrimaryKey("pk_checkouts", x => x.tenant_id);
                 });
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_subscriptions_closure_end",
+                schema: "billing",
+                table: "subscriptions",
+                sql: "closure_end IN ('None', 'Asked', 'Released')");
 
             // Privileges come from migrations: the application writes and deletes a tenant's open checkout (B7).
             migrationBuilder.Sql("""
@@ -59,13 +76,23 @@ namespace Billing.Infrastructure.Persistence.Migrations
                 name: "checkouts",
                 schema: "billing");
 
+            migrationBuilder.DropCheckConstraint(
+                name: "ck_subscriptions_closure_end",
+                schema: "billing",
+                table: "subscriptions");
+
             migrationBuilder.DropColumn(
-                name: "ended_by_closure",
+                name: "closure_end",
                 schema: "billing",
                 table: "subscriptions");
 
             migrationBuilder.DropColumn(
                 name: "closed_at",
+                schema: "billing",
+                table: "customers");
+
+            migrationBuilder.DropColumn(
+                name: "lifecycle_at",
                 schema: "billing",
                 table: "customers");
         }

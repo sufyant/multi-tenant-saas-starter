@@ -21,7 +21,30 @@ internal sealed class Customer(string customerId, Guid tenantId, Guid checkoutBy
     /// <summary>When the tenant was closed; none while it is open. A closed tenant opens no checkout and pays for nothing more (B8).</summary>
     public DateTimeOffset? ClosedAt { get; private set; }
 
-    public void Close(DateTimeOffset at) => ClosedAt ??= at;
+    /// <summary>The moment of the last closure or reopen that billing took, so an older one that arrives later changes nothing.</summary>
+    public DateTimeOffset? LifecycleAt { get; private set; }
 
-    public void Reopen() => ClosedAt = null;
+    /// <summary>Takes the tenant's closure of this moment; false for one older than the last closure or reopen billing took (one of the same moment is taken: the clock cannot order them).</summary>
+    public bool Close(DateTimeOffset at)
+    {
+        if (LifecycleAt > at)
+        {
+            return false;
+        }
+
+        (ClosedAt, LifecycleAt) = (at, at);
+        return true;
+    }
+
+    /// <summary>Takes the tenant's reopen of this moment; false for one older than the last closure or reopen billing took (one of the same moment is taken: the clock cannot order them).</summary>
+    public bool Reopen(DateTimeOffset at)
+    {
+        if (LifecycleAt > at)
+        {
+            return false;
+        }
+
+        (ClosedAt, LifecycleAt) = (null, at);
+        return true;
+    }
 }

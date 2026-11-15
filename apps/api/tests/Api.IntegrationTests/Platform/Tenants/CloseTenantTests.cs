@@ -70,8 +70,7 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
 
         await _api.WaitingForMessagesAsync(() => admin.CloseTenantAsync(tenant.Id));
 
-        _api.Billing.Expiries.ShouldContain(($"cus_{tenant.Id:N}", (Guid?)null));
-        key.ShouldNotBe(Guid.Empty);
+        _api.Billing.Expiries.ShouldBe([($"cus_{tenant.Id:N}", key)]);
         (await _testData.CountAsync($"SELECT count(*) FROM billing.checkouts WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
         _api.Billing.PeriodEnds.ShouldBeEmpty();
     }

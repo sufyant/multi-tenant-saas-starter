@@ -39,6 +39,7 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             {
                 table.HasCheckConstraint("ck_subscriptions_interval", CheckConstraints.OneOf<BillingInterval>("interval"));
                 table.HasCheckConstraint("ck_subscriptions_status", CheckConstraints.OneOf<SubscriptionStatus>("status"));
+                table.HasCheckConstraint("ck_subscriptions_closure_end", CheckConstraints.OneOf<ClosureEnd>("closure_end"));
             });
             subscription.Property<Guid>("TenantId");
             subscription.HasKey("TenantId");
@@ -46,6 +47,7 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             subscription.Property(s => s.SubscriptionId).HasMaxLength(StripeEvent.IdMaxLength).IsRequired();
             subscription.Property(s => s.Interval).HasConversion<string>().HasMaxLength(20);
             subscription.Property(s => s.Status).HasConversion<string>().HasMaxLength(20);
+            subscription.Property(s => s.ClosureEnd).HasConversion<string>().HasMaxLength(20);
             subscription.HasIndex(s => s.CustomerId).IsUnique();
             subscription.HasIndex(s => s.SubscriptionId).IsUnique();
         });
@@ -59,6 +61,8 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             checkout.Property(c => c.SessionId).HasMaxLength(StripeEvent.IdMaxLength);
             checkout.Property(c => c.Url).HasMaxLength(2048);
             checkout.Property(c => c.ReturnUrl).HasMaxLength(2048);
+            checkout.Property(c => c.Currency).HasMaxLength(3);
+            checkout.Ignore(c => c.Order);
         });
 
         // B5: one customer for each tenant, and a customer belongs to one tenant.
