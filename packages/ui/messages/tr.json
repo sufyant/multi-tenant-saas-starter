@@ -69,6 +69,15 @@
       "forbidden": "Bu işlem için yetkiniz yok.",
       "unauthenticated": "Oturumunuz sona erdi. Yeniden giriş yapın."
     },
+    "billing": {
+      "already_subscribed": "Bu kuruluş zaten kartla ödüyor. Bunun yerine planını değiştirin.",
+      "no_customer": "Bu kuruluş henüz kartla ödeme yapmadı.",
+      "off": "Faturalama kullanılamıyor.",
+      "plan_free": "Bu plan ücretsiz, ödenecek bir şey yok.",
+      "plan_not_found": "Bu plan yok.",
+      "return_url_invalid": "Geri dönülecek sayfa bu uygulamaya ait değil.",
+      "webhook_invalid": "Olayın imzası geçerli değil."
+    },
     "data_export": {
       "in_progress": "Verilerinizin dışa aktarımı hazırlanıyor. Hazır olana kadar bekleyin.",
       "not_found": "Verilerinizin bir dışa aktarımı yok.",

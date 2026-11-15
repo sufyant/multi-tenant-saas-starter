@@ -72,6 +72,13 @@ using ControlPlane.Application.Users.RemoveUserMembership;
 using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using Audit.Application.DataExports.RecordDataExportRequested;
+using Billing.Application.Subscriptions.ApplySubscription;
+using Billing.Application.Subscriptions.RouteSubscription;
+using Billing.Application.Subscriptions.SyncSubscription;
+using Billing.Application.Webhooks.GetWebhookPayload;
+using Billing.Application.Webhooks.ReceiveWebhook;
+using Billing.Contracts.Subscriptions;
+using ControlPlane.Application.Tenants.ChangeBilledPlan;
 using ControlPlane.Application.DataExports.CompleteDataExport;
 using ControlPlane.Application.DataExports.PrepareDataExport;
 using ControlPlane.Application.DataExports.RequestDataExport;
@@ -127,6 +134,7 @@ public sealed class HostRoleTests(Database database)
         new(typeof(PurgeTenantDataCommand), typeof(Audit.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
         new(typeof(PurgeTenantDataCommand), typeof(Notifications.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
         new(typeof(PurgeTenantDataCommand), typeof(Api.Storage.PurgeTenantFilesHandler)),
+        new(typeof(PurgeTenantDataCommand), typeof(Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler)),
         new(typeof(PurgeTenantDataReply), typeof(TenantPurgeSaga)),
         new(typeof(CompleteTenantPurgeCommand), typeof(CompleteTenantPurgeHandler)),
         new(typeof(CompleteTenantPurgeReply), typeof(TenantPurgeSaga)),
@@ -259,6 +267,46 @@ public sealed class HostRoleTests(Database database)
         runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
+    }
+
+    // B4 to B6: the web host keeps Stripe's event, and the worker reads the subscription, applies it, changes the plan and records it. Each
+    // host has a fake Stripe of its own, so the subscription is the worker's.
+    [Fact]
+    public async Task ReceiveWebhook_OnAWebAndAWorkerHost_KeepsTheEventInTheWebAndChangesThePlanInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var planId = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, planId)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, planId));
+        runs.Clear();
+
+        var received = await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+
+        received.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        runs.In("web").ShouldBe(
+            [
+                new HandlerRun(typeof(GetWebhookPayloadQuery), typeof(GetWebhookPayloadHandler)),
+                new HandlerRun(typeof(ReceiveWebhookCommand), typeof(ReceiveWebhookHandler)),
+            ],
+            ignoreOrder: true);
+        runs.WithoutNotificationsIn("worker").ShouldBe(
+            [
+                new HandlerRun(typeof(SyncSubscriptionCommand), typeof(SyncSubscriptionHandler)),
+                new HandlerRun(typeof(RouteSubscriptionCommand), typeof(RouteSubscriptionHandler)),
+                new HandlerRun(typeof(ApplySubscriptionCommand), typeof(ApplySubscriptionHandler)),
+                new HandlerRun(typeof(PlanPaidEvent), typeof(ChangeBilledPlanHandler)),
+                new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler)),
+            ]);
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
     }
 
     // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row

@@ -9277,6 +9277,386 @@
         }
       }
     },
+    "/v1/tenants/{tenantId}/billing": {
+      "get": {
+        "tags": [
+          "Tenant/Subscriptions"
+        ],
+        "operationId": "GetBilling",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/billing/checkout-session": {
+      "post": {
+        "tags": [
+          "Tenant/CheckoutSessions"
+        ],
+        "operationId": "OpenCheckoutSession",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenCheckoutSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/billing/portal-session": {
+      "post": {
+        "tags": [
+          "Tenant/PortalSessions"
+        ],
+        "operationId": "OpenPortalSession",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenPortalSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalSessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "tags": [
@@ -12651,6 +13031,25 @@
         },
         "description": "A terms version's values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users."
       },
+      "BillingResponse": {
+        "required": [
+          "subscription"
+        ],
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubscriptionResponse"
+              }
+            ]
+          }
+        },
+        "description": "The tenant's billing: its subscription, none until it pays by card the first time."
+      },
       "ChangeEmailRequest": {
         "required": [
           "code"
@@ -12708,6 +13107,19 @@
           }
         },
         "description": "The plan the tenant is put on, or, in a preview, would be."
+      },
+      "CheckoutSessionResponse": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "The provider's page where the person pays by card. It works for a short time and is never stored; the page comes back with\n`checkout=success` or `checkout=cancelled` after the address of the request."
       },
       "ConfirmAccountDeletionRequest": {
         "required": [
@@ -13112,6 +13524,13 @@
         "enum": [
           "auth.forbidden",
           "auth.unauthenticated",
+          "billing.already_subscribed",
+          "billing.no_customer",
+          "billing.off",
+          "billing.plan_free",
+          "billing.plan_not_found",
+          "billing.return_url_invalid",
+          "billing.webhook_invalid",
           "data_export.in_progress",
           "data_export.not_found",
           "data_export.not_ready",
@@ -13219,6 +13638,13 @@
         "x-enumNames": [
           "AuthForbidden",
           "AuthUnauthenticated",
+          "BillingAlreadySubscribed",
+          "BillingNoCustomer",
+          "BillingOff",
+          "BillingPlanFree",
+          "BillingPlanNotFound",
+          "BillingReturnUrlInvalid",
+          "BillingWebhookInvalid",
           "DataExportInProgress",
           "DataExportNotFound",
           "DataExportNotReady",
@@ -14930,6 +15356,53 @@
           "UserDataExportReady"
         ]
       },
+      "OpenCheckoutSessionRequest": {
+        "required": [
+          "planId",
+          "interval",
+          "returnUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/OpenCheckoutSessionRequestInterval"
+          },
+          "returnUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "The plan to pay for, how often, and the web app's page to come back to, without a query."
+      },
+      "OpenCheckoutSessionRequestInterval": {
+        "enum": [
+          "monthly",
+          "yearly"
+        ],
+        "type": "string",
+        "description": "How often the subscription pays.",
+        "x-enumNames": [
+          "Monthly",
+          "Yearly"
+        ]
+      },
+      "OpenPortalSessionRequest": {
+        "required": [
+          "returnUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "returnUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "The web app's page to come back to, without a query."
+      },
       "OwnerInvitationResponse": {
         "required": [
           "email",
@@ -15433,6 +15906,19 @@
         },
         "description": "How long the platform's log keeps an entry, in days: the deployment setting, never unlimited."
       },
+      "PortalSessionResponse": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "The provider's page where the customer manages its card, address, VAT ID and invoices. It works for a short time."
+      },
       "PreferencesResponse": {
         "required": [
           "language",
@@ -15879,6 +16365,72 @@
           }
         },
         "description": "The percentage of the flag's second rule: a whole percentage of the organisations; none turns the rule off."
+      },
+      "SubscriptionResponse": {
+        "required": [
+          "planId",
+          "interval",
+          "status",
+          "currentPeriodEnd",
+          "cancelAtPeriodEnd"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/SubscriptionResponseInterval"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionResponseStatus"
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean"
+          }
+        },
+        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then."
+      },
+      "SubscriptionResponseInterval": {
+        "enum": [
+          "monthly",
+          "yearly"
+        ],
+        "type": "string",
+        "description": "How often the subscription pays.",
+        "x-enumNames": [
+          "Monthly",
+          "Yearly"
+        ]
+      },
+      "SubscriptionResponseStatus": {
+        "enum": [
+          "incomplete",
+          "incomplete_expired",
+          "trialing",
+          "active",
+          "past_due",
+          "canceled",
+          "unpaid",
+          "paused"
+        ],
+        "type": "string",
+        "description": "The subscription's state at the provider (Stripe, \"Subscription statuses\"). Only an active one keeps the tenant on its plan.",
+        "x-enumNames": [
+          "Incomplete",
+          "IncompleteExpired",
+          "Trialing",
+          "Active",
+          "PastDue",
+          "Canceled",
+          "Unpaid",
+          "Paused"
+        ]
       },
       "SuspendTenantRequest": {
         "required": [
@@ -17622,6 +18174,9 @@
       "name": "Tenant/AuditLogs"
     },
     {
+      "name": "Tenant/CheckoutSessions"
+    },
+    {
       "name": "Tenant/FeatureFlags"
     },
     {
@@ -17634,7 +18189,13 @@
       "name": "Tenant/Notifications"
     },
     {
+      "name": "Tenant/PortalSessions"
+    },
+    {
       "name": "Tenant/Roles"
+    },
+    {
+      "name": "Tenant/Subscriptions"
     },
     {
       "name": "Tenant/Tenants"

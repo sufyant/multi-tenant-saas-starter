@@ -4,6 +4,8 @@ Every NuGet package of every project in `Api.slnx`, direct and transitive, with 
 
 Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under another license needs a decision first (fixed rule 4).
 
+One package declares its license as a file, not as an SPDX expression: Stripe.net, Stripe's official library, which the billing provider's adapter uses (step 40). Its file is the Apache License 2.0. `LicenseTests` reads that file for this package alone and accepts only the Apache License 2.0, so a change of the license at a new version fails as any other does. The coordinator's choice of 2026-11-15, over an HTTP client of our own: Stripe's library verifies the webhook's signature and pins the API version, which our own code would have to do (Ousterhout, *A Philosophy of Software Design*, chapter 4).
+
 `LicenseTests` in `Api.ArchitectureTests` fails in these cases:
 
 - A package in use has no row here, or has more than one row.
@@ -155,6 +157,7 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | Spectre.Console.Ansi | MIT |
 | SSH.NET | MIT |
 | StackExchange.Redis | MIT |
+| Stripe.net | Apache-2.0 |
 | StyleCop.Analyzers | MIT |
 | StyleCop.Analyzers.Unstable | MIT |
 | System.CodeDom | MIT |
@@ -164,12 +167,14 @@ Permitted licenses: MIT, Apache-2.0, BSD-3-Clause, PostgreSQL. A package under a
 | System.Composition.Hosting | MIT |
 | System.Composition.Runtime | MIT |
 | System.Composition.TypedParts | MIT |
+| System.Configuration.ConfigurationManager | MIT |
 | System.Diagnostics.EventLog | MIT |
 | System.IdentityModel.Tokens.Jwt | MIT |
 | System.IO.Hashing | MIT |
 | System.Linq.Dynamic.Core | Apache-2.0 |
 | System.Management | MIT |
 | System.Security.AccessControl | MIT |
+| System.Security.Cryptography.ProtectedData | MIT |
 | Testcontainers | MIT |
 | Testcontainers.PostgreSql | MIT |
 | Testcontainers.Redis | MIT |

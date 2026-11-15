@@ -26,9 +26,12 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // user.email_changed, and the code of a deletion is a step of the deletion, which records user.deleted (section 6, "Verification
     // codes"). A person's acceptance of a terms version is its own record, the user, the version and the moment, which the platform lists
     // (GDPR, Article 7(1)), and a dismissal of a notice is the person's own view, as a read state is (step 38). The worker's look at the
-    // feature flags' cleanup changes no data; its weekly event only tells the system admins (docs/flows/feature-flags.md).
+    // feature flags' cleanup changes no data; its weekly event only tells the system admins (docs/flows/feature-flags.md). A tenant's customer at
+    // Stripe and its row in billing's map are the means of a checkout, not a change of the product's data: the plan that a payment changes
+    // records tenant.plan_changed (B5, B6).
     private static readonly string[] CommandsWithoutAudit =
     [
+        "CreateCustomerCommand", "KeepCustomerCommand",
         "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
         "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand", "AcceptTermsVersionCommand", "DismissTermsNoticeCommand",
         "CheckFeatureFlagCleanupCommand",

@@ -11,6 +11,14 @@
     <Project Path="src/Modules/Audit/Audit.Infrastructure/Audit.Infrastructure.csproj" />
     <Project Path="src/Modules/Audit/Audit.IntegrationTests/Audit.IntegrationTests.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Billing/">
+    <Project Path="src/Modules/Billing/Billing.Api/Billing.Api.csproj" />
+    <Project Path="src/Modules/Billing/Billing.Application/Billing.Application.csproj" />
+    <Project Path="src/Modules/Billing/Billing.Contracts/Billing.Contracts.csproj" />
+    <Project Path="src/Modules/Billing/Billing.Domain/Billing.Domain.csproj" />
+    <Project Path="src/Modules/Billing/Billing.Infrastructure/Billing.Infrastructure.csproj" />
+    <Project Path="src/Modules/Billing/Billing.UnitTests/Billing.UnitTests.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/ControlPlane/">
     <Project Path="src/Modules/ControlPlane/ControlPlane.Api/ControlPlane.Api.csproj" />
     <Project Path="src/Modules/ControlPlane/ControlPlane.Application/ControlPlane.Application.csproj" />

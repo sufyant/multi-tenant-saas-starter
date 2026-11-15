@@ -69,6 +69,15 @@
       "forbidden": "You do not have permission to do this.",
       "unauthenticated": "Your session has ended. Sign in again."
     },
+    "billing": {
+      "already_subscribed": "This organisation already pays by card. Change its plan instead.",
+      "no_customer": "This organisation has not paid by card yet.",
+      "off": "Billing is not available.",
+      "plan_free": "This plan costs nothing, so there is nothing to pay.",
+      "plan_not_found": "This plan does not exist.",
+      "return_url_invalid": "The page to come back to is not part of this app.",
+      "webhook_invalid": "The event's signature is not valid."
+    },
     "data_export": {
       "in_progress": "An export of your data is being prepared. Wait until it is ready.",
       "not_found": "You have no export of your data.",

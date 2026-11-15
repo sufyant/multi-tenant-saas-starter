@@ -2,6 +2,7 @@
 
 // /dev/components (F33): every component as the design system's previews show it, in their sample data, with a language and a
 // theme switch. Both apps mount it outside production builds. The sample texts are literals on purpose: this page is outside F25.
+import { SubscriptionResponseInterval } from "@repo/api-client";
 import { NextIntlClientProvider } from "next-intl";
 import { useTheme } from "next-themes";
 import { type ReactNode, useId, useState } from "react";
@@ -1065,7 +1066,9 @@ function CheckboxPreview() {
 /** The theme at both sizes, the billing period of two options, and a disabled control. */
 function SegmentedControlPreview() {
   const [theme, setTheme] = useState("system");
-  const [period, setPeriod] = useState("monthly");
+  const [period, setPeriod] = useState<string>(
+    SubscriptionResponseInterval.Monthly,
+  );
   const themes = [
     { value: "system", label: "System", icon: MonitorIcon },
     { value: "light", label: "Light", icon: SunIcon },
@@ -1090,8 +1093,8 @@ function SegmentedControlPreview() {
         label="Billing period"
         value={period}
         options={[
-          { value: "monthly", label: "Monthly" },
-          { value: "yearly", label: "Yearly" },
+          { value: SubscriptionResponseInterval.Monthly, label: "Monthly" },
+          { value: SubscriptionResponseInterval.Yearly, label: "Yearly" },
         ]}
         onValueChange={setPeriod}
       />

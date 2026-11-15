@@ -15,6 +15,7 @@ public sealed class ContractsShapeTests
         [
             "ControlPlane.Infrastructure.Persistence.Users.UserDirectory",
             "ControlPlane.Infrastructure.Persistence.Members.MemberDirectory",
+            "ControlPlane.Infrastructure.Persistence.Plans.PlanDirectory",
             "ControlPlane.Infrastructure.Persistence.Plans.AuditRetentionDirectory",
             "ControlPlane.Infrastructure.Persistence.Invitations.InvitationDirectory",
             "ControlPlane.Infrastructure.Persistence.TermsVersions.TermsVersionDirectory",

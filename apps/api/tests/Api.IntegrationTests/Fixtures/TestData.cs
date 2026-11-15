@@ -85,6 +85,12 @@ internal sealed class TestData(Database database, string databaseName = Database
             databaseName);
     }
 
+    // Gives the plan these prices, in minor units, with plain SQL (step 40).
+    public Task SetPlanPricesAsync(Guid planId, long baseMonthly, long perPersonMonthly, long baseYearly, long perPersonYearly) =>
+        database.ScalarAsSuperuserAsync<object>(
+            $"UPDATE control_plane.plans SET base_monthly = {baseMonthly}, per_person_monthly = {perPersonMonthly}, base_yearly = {baseYearly}, per_person_yearly = {perPersonYearly} WHERE id = '{planId}'",
+            databaseName);
+
     // Puts the tenant on the plan, with plain SQL.
     public Task SetTenantPlanAsync(Guid tenantId, Guid planId) =>
         database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET plan_id = '{planId}' WHERE id = '{tenantId}'", databaseName);

@@ -1,3 +1,9 @@
+using Billing.Application.CheckoutSessions.OpenCheckoutSession;
+using Billing.Application.Customers.CreateCustomer;
+using Billing.Application.PortalSessions.GetPortalLink;
+using Billing.Application.Provider;
+using Billing.Application.Subscriptions.SyncSubscription;
+using Billing.Application.Webhooks.GetWebhookPayload;
 using ControlPlane.Application.DataExports.DeleteStoredFile;
 using ControlPlane.Application.DataExports.GetDownloadLink;
 using ControlPlane.Application.DataExports.PrepareDataExport;
@@ -28,7 +34,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
     // The tag Wolverine's EF Core integration puts on a chain whose transaction it owns (EFCorePersistenceFrameProvider, internal).
     private const string EfCoreTransaction = "uses_efcore_transaction";
 
-    private static readonly Type[] ExternalServices = [typeof(IIdentityProvider), typeof(IEmailChannel), typeof(IFileStore)];
+    private static readonly Type[] ExternalServices = [typeof(IIdentityProvider), typeof(IEmailChannel), typeof(IFileStore), typeof(IBillingProvider)];
 
     private readonly ComposedApplication _application = new();
 
@@ -55,6 +61,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(VerificationCodeReadyEvent), typeof(EmailChangeNoticeReadyEvent), typeof(UserDeletionConfirmationReadyEvent),
                 typeof(PrepareDataExportCommand), typeof(DeleteStoredFileCommand), typeof(GetDownloadLinkQuery), typeof(DeleteUserFilesCommand),
                 typeof(PurgeTenantDataCommand),
+                typeof(CreateCustomerCommand), typeof(OpenCheckoutSessionQuery), typeof(GetPortalLinkQuery), typeof(GetWebhookPayloadQuery), typeof(SyncSubscriptionCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

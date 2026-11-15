@@ -31,6 +31,9 @@ public sealed class HandlerRuns
                 or "DeleteExpiredPlatformEntriesHandler")
             && run.Message.Name is not ("DeliverNotificationCommand" or "SendNotificationEmailCommand"));
 
+    // Forgets the runs so far, for a test whose own steps come after the runs of its setup.
+    public void Clear() => _runs.Clear();
+
     internal void Record(string host, HandlerRun run) => _runs.Enqueue((host, run));
 }
 

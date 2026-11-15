@@ -26,6 +26,7 @@
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <!-- Microsoft.Extensions.Caching.StackExchangeRedis asks for 2.7.27 or later; the latest 2.x has the fixes since. -->
     <PackageVersion Include="StackExchange.Redis" Version="2.13.17" />
+    <PackageVersion Include="Stripe.net" Version="53.1.0" />
     <PackageVersion Include="WolverineFx" Version="6.62.0" />
     <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.62.0" />
     <PackageVersion Include="WolverineFx.FluentValidation" Version="6.62.0" />

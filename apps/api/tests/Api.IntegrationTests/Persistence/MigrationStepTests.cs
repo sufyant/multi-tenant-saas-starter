@@ -87,11 +87,13 @@ public sealed class MigrationStepTests(Database database)
         first.Output.ShouldContain("Migrated the audit schema:");
         first.Output.ShouldContain("Migrated the notifications schema:");
         first.Output.ShouldContain("Migrated the api schema:");
-        first.Output.ShouldContain("Migration finished: the schemas api, control_plane, notifications, audit and the message storage in wolverine are up to date");
+        first.Output.ShouldContain("Migrated the billing schema:");
+        first.Output.ShouldContain("Migration finished: the schemas api, control_plane, notifications, audit, billing and the message storage in wolverine are up to date");
         again.Output.ShouldContain("Migrated the control_plane schema: 0 migrations applied");
         again.Output.ShouldContain("Migrated the audit schema: 0 migrations applied");
         again.Output.ShouldContain("Migrated the notifications schema: 0 migrations applied");
         again.Output.ShouldContain("Migrated the api schema: 0 migrations applied");
+        again.Output.ShouldContain("Migrated the billing schema: 0 migrations applied");
     }
 
     // The application role owns nothing the migration step creates, yet it can use all of it, the message storage included.

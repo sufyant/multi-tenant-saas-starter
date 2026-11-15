@@ -249,6 +249,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "GetBilling",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/billing",
+    "tag": "Tenant/Subscriptions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "GetFeatureFlag",
     "method": "GET",
     "path": "/v1/platform/feature-flags/{key}",
@@ -746,6 +757,28 @@ export const operations = [
     "method": "POST",
     "path": "/v1/me/notifications/{notificationId}/read",
     "tag": "Me/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "OpenCheckoutSession",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/billing/checkout-session",
+    "tag": "Tenant/CheckoutSessions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "OpenPortalSession",
+    "method": "POST",
+    "path": "/v1/tenants/{tenantId}/billing/portal-session",
+    "tag": "Tenant/PortalSessions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

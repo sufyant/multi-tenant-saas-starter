@@ -1,5 +1,6 @@
 using System.Reflection;
 using Audit.Api;
+using Billing.Api;
 using ControlPlane.Api;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.Users;
@@ -18,6 +19,8 @@ public sealed class DomainNameMapTests
 
     private static readonly Type NotificationsResponseStatus =
         typeof(NotificationsModule).Assembly.GetType("Notifications.Api.Statuses.ResponseStatus", throwOnError: true)!;
+
+    private static readonly Type BillingResponseStatus = typeof(BillingModule).Assembly.GetType("Billing.Api.Statuses.ResponseStatus", throwOnError: true)!;
 
     private static readonly string[] TenantStatusNames = NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Tenants.TenantStatus");
 
@@ -43,6 +46,10 @@ public sealed class DomainNameMapTests
     public static TheoryData<string> NotificationLinkKinds => [.. NamesOf("Notifications.Domain", "Notifications.Domain.Notifications.NotificationLinkKind")];
 
     public static TheoryData<string> MeterOverages => [.. NamesOf("ControlPlane.Domain", "ControlPlane.Domain.Plans.MeterOverage")];
+
+    public static TheoryData<string> SubscriptionStatuses => [.. NamesOf("Billing.Domain", "Billing.Domain.Subscriptions.SubscriptionStatus")];
+
+    public static TheoryData<string> BillingIntervals => [.. NamesOf("Billing.Domain", "Billing.Domain.Subscriptions.BillingInterval")];
 
     public static TheoryData<string> AuditTargetKinds => [.. NamesOf("Audit.Domain", "Audit.Domain.AuditEntries.AuditTargetKind")];
 
@@ -138,9 +145,27 @@ public sealed class DomainNameMapTests
         AuditMap("OfMeterOverage", overage).ShouldNotBeNull();
     }
 
+    // Billing's subscription keeps Stripe's statuses and the intervals by the Domain's names, and its Api maps each name to the response's
+    // (step 40).
+    [Theory]
+    [MemberData(nameof(SubscriptionStatuses))]
+    public void MapASubscriptionStatus_EveryDomainStatus_HasAResponseStatus(string status)
+    {
+        BillingMap("OfSubscription", status).ShouldNotBeNull();
+    }
+
+    [Theory]
+    [MemberData(nameof(BillingIntervals))]
+    public void MapABillingInterval_EveryDomainInterval_HasAResponseInterval(string interval)
+    {
+        BillingMap("OfInterval", interval).ShouldNotBeNull();
+    }
+
     private static object? Map(string method, string name) => ResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
 
     private static object? AuditMap(string method, string name) => AuditResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
+
+    private static object? BillingMap(string method, string name) => BillingResponseStatus.GetMethod(method, [typeof(string)])!.Invoke(null, [name]);
 
     private static string[] NamesOf(string assembly, string type) => Enum.GetNames(Solution.Load(assembly).GetType(type, throwOnError: true)!);
 }

@@ -11,13 +11,19 @@ namespace Notifications.Application.Plans.NotifyTenantPlanChanged;
 // "The organisation's plan changed", with the old plan and the new one, to the tenant's Owners at that moment, in the tenant's bell. The
 // Owners are read in the tenant's transaction, which the event's envelope declares, so a member who becomes an Owner later sees no older
 // one. A plan's edit tells nobody: the platform's audit log records it. A change that shortens the Activity log period names the new period
-// and the moment the older entries go, the event's own, which starts Audit's hold too (K14).
+// and the moment the older entries go, the event's own, which starts Audit's hold too (K14). A plan that a member paid for through billing
+// tells nobody here (ByMember, step 40): its texts say that the platform acted, and billing's own bells come with their frames (3.17, 3.18).
 public static class NotifyTenantPlanChangedHandler
 {
     public const string Type = NotificationCatalog.TenantPlanChanged;
 
     public static async Task<OutgoingMessages> HandleAsync(TenantPlanChangedEvent changed, IMemberDirectory members, IUserDirectory users, CancellationToken cancellationToken)
     {
+        if (changed.ByMember)
+        {
+            return [];
+        }
+
         var values = new Dictionary<string, string> { ["tenantName"] = changed.TenantName, ["oldPlanName"] = changed.OldPlanName, ["newPlanName"] = changed.NewPlanName };
         if (changed.RetentionShortened is { } shortened)
         {

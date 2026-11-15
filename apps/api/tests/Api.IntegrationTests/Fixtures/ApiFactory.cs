@@ -1,3 +1,4 @@
+using Billing.Application.Provider;
 using ControlPlane.Application.Identity;
 using JasperFx.CodeGeneration;
 using Microsoft.AspNetCore.Hosting;
@@ -46,6 +47,9 @@ internal sealed class ApiFactory(
         ["ControlPlane:IdentityProvider:RetryDelays:0"] = "00:00:00.010",
         ["ControlPlane:IdentityProvider:RetryDelays:1"] = "00:00:00.020",
         ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:00:00.040",
+        ["Billing:Provider:RetryDelays:0"] = "00:00:00.010",
+        ["Billing:Provider:RetryDelays:1"] = "00:00:00.020",
+        ["Billing:Provider:RetryDelays:2"] = "00:00:00.040",
     };
 
     // The setting of a test of the rate limiter, which a test host leaves off.
@@ -71,6 +75,8 @@ internal sealed class ApiFactory(
     public FakeIdentityProvider Identity { get; } = new();
 
     public FakeEmailChannel Email { get; } = new();
+
+    public FakeBillingProvider Billing { get; } = new();
 
     public HostPorts Ports => ports ?? throw new InvalidOperationException("The factory was given no ports.");
 
@@ -204,6 +210,7 @@ internal sealed class ApiFactory(
             services.Replace(ServiceDescriptor.Singleton<IHostLifetime>(provider =>
                 new StartsWhenTheFactoryWaits((IHostLifetime)provider.GetRequiredService(lifetime), _factoryWaits.Task)));
             services.Replace(ServiceDescriptor.Singleton<IIdentityProvider>(Identity));
+            services.Replace(ServiceDescriptor.Singleton<IBillingProvider>(Billing));
             if (fakeEmailChannel)
             {
                 services.Replace(ServiceDescriptor.Singleton<IEmailChannel>(Email));

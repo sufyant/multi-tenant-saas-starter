@@ -55,7 +55,7 @@ ConnectionStrings__Migrations="Host=localhost;Port=5432;Database=app;Username=ap
 # ... Migrated the api schema: 1 migrations applied
 # ... Migrated the control_plane schema: 1 migrations applied
 # ... Migrated the audit schema: 1 migrations applied
-# ... Migration finished: the schemas api, control_plane, audit and the message storage in wolverine are up to date
+# ... Migration finished: the schemas api, control_plane, notifications, audit, billing and the message storage in wolverine are up to date
 ```
 
 The application does not start on a database that was not migrated. It stops at once and says so:
