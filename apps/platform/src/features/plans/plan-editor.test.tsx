@@ -3,6 +3,7 @@ import {
   FeatureKey,
   FieldErrorCode,
   LimitKey,
+  MeterSettingResponseOverage,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -88,25 +89,40 @@ const openPro = async () => {
   await screen.findByRole("heading", { level: 1, name: "Pro" });
 };
 
+// A save sends the plan's prices and meters as the form holds them (40a): the fixtures' free prices and no meter.
+const unchangedMoney = {
+  prices: {
+    baseMonthly: 0,
+    baseYearly: 0,
+    perPersonMonthly: 0,
+    perPersonYearly: 0,
+  },
+  meters: [],
+};
+
 describe("PlanEditor", () => {
   it("Edit_Pro_ShowsItsNameCountAndEveryKeyByArea", async () => {
     await openPro();
 
-    expect(screen.getByText("6 organisations are on this plan.")).toBeVisible();
+    expect(
+      screen.getByText(
+        "6 organisations are on this plan. €0 base + €0 per person a month, excl. VAT.",
+      ),
+    ).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Pro");
     // The areas in the frames' order (6.04): the plan, then Members, Roles and Activity log.
     expect(
       screen
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent),
-    ).toEqual(["Plan", "Members", "Roles", "Activity log"]);
+    ).toEqual(["Plan", "Members", "Roles", "Activity log", "Prices"]);
     expect(
       row("Custom roles").getByRole("switch", { name: "Custom roles" }),
     ).toBeChecked();
     expect(row("Custom roles").queryByText("On")).toBeNull();
     expect(
       row("Custom roles").getByText(
-        "Roles an organisation creates beyond Owner, Admin and Member.",
+        "Roles an organisation creates beyond Owner, Admin, Billing manager and Member.",
       ),
     ).toBeVisible();
     expect(row("Custom roles").queryByText(FeatureKey.RolesCustom)).toBeNull();
@@ -307,7 +323,7 @@ describe("PlanEditor", () => {
     renderWithProviders(<PlanEditor planId={free.id} />);
 
     expect(
-      await screen.findByText("One organisation is on this plan."),
+      await screen.findByText(/^One organisation is on this plan\./),
     ).toBeVisible();
   });
 
@@ -384,6 +400,7 @@ describe("PlanEditor", () => {
       {
         name: "Pro",
         isDefault: false,
+        ...unchangedMoney,
         entitlements: {
           [FeatureKey.RolesCustom]: { enabled: true },
           [LimitKey.RolesCustomMax]: { maximum: 30 },
@@ -404,6 +421,137 @@ describe("PlanEditor", () => {
     await openPro();
 
     expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  });
+
+  // 6.13: the prices in the deployment's currency, the months a yearly price saves, and the preview of a team of 10.
+  it("Edit_PlanWithPrices_ShowsThePricesMonthsFreeAndPreview", async () => {
+    const team = {
+      ...partner,
+      prices: {
+        baseMonthly: 0,
+        baseYearly: 0,
+        perPersonMonthly: 1000,
+        perPersonYearly: 10000,
+      },
+    };
+    server.use(planAnswer(team));
+
+    renderWithProviders(<PlanEditor planId={team.id} />);
+
+    expect(
+      await screen.findByText(
+        /€0 base \+ €10 per person a month, excl\. VAT\./,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("textbox", { name: "Per person, monthly" }),
+    ).toHaveValue("10");
+    expect(
+      screen.getByRole("textbox", { name: "Per person, yearly" }),
+    ).toHaveAccessibleDescription("per person a year. 2 months free.");
+    expect(
+      screen.getByText("A team of 10 pays €100 a month, excl. VAT."),
+    ).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Meters" })).toBeNull();
+  });
+
+  it("Save_PriceChanged_SaysTodaysPriceAndSendsMinorUnits", async () => {
+    const updates: Call[] = [];
+    const team = {
+      ...pro,
+      prices: { ...pro.prices, perPersonMonthly: 1000 },
+    };
+    server.use(
+      planAnswer(team),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+    const field = await screen.findByRole("textbox", {
+      name: "Per person, monthly",
+    });
+
+    await userEvent.clear(field);
+    await userEvent.type(field, "12.5");
+
+    expect(field).toHaveAccessibleDescription(
+      "per person a month. Today €10. Changed.",
+    );
+    expect(
+      screen.getByText(
+        "A team of 10 pays €125 a month, excl. VAT. Today €100.",
+      ),
+    ).toBeVisible();
+    await save();
+    await waitFor(() => expect(updates).toHaveLength(1));
+    expect(updates[0]?.body).toMatchObject({
+      prices: { perPersonMonthly: 1250 },
+    });
+  });
+
+  it("Save_PriceNotAnAmount_SaysSoAndSendsNothing", async () => {
+    const updates: Call[] = [];
+    server.use(
+      planAnswer(pro),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+    const field = await screen.findByRole("textbox", {
+      name: "Base fee, monthly",
+    });
+
+    await userEvent.clear(field);
+    await userEvent.type(field, "ten");
+    await save();
+
+    expect(field).toHaveAccessibleDescription("Enter a price of 0 or more.");
+    expect(field).toBeInvalid();
+    expect(updates).toEqual([]);
+  });
+
+  // The template defines no meter; a product's meter shows by its key until the product names it (6.13).
+  it("Save_PlanWithAMeter_ShowsItsRowAndSendsItsSetting", async () => {
+    const updates: Call[] = [];
+    const metered = {
+      ...pro,
+      meters: [
+        {
+          key: "test.requests",
+          quota: 10000,
+          overage: MeterSettingResponseOverage.Charge,
+          unitPrice: 100,
+          unitSize: 1000,
+        },
+      ],
+    };
+    server.use(
+      planAnswer(metered),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+    const meter = within(
+      await screen.findByRole("group", { name: "test.requests" }),
+    );
+    expect(meter.getByText("per 1,000")).toBeVisible();
+    const quota = meter.getByRole("textbox", {
+      name: "test.requests: quota a month",
+    });
+
+    await userEvent.clear(quota);
+    await userEvent.type(quota, "20000");
+    await save();
+
+    await waitFor(() => expect(updates).toHaveLength(1));
+    expect(updates[0]?.body).toMatchObject({
+      meters: [
+        {
+          key: "test.requests",
+          quota: 20000,
+          overage: MeterSettingResponseOverage.Charge,
+          unitPrice: 100,
+          unitSize: 1000,
+        },
+      ],
+    });
   });
 
   it("Save_ChangeThenChangeBack_IsEnabledThenDisabledAgain", async () => {
@@ -454,6 +602,7 @@ describe("PlanEditor", () => {
     expect(updates[0]?.body).toEqual({
       name: "Pro 2",
       isDefault: false,
+      ...unchangedMoney,
       entitlements: {
         [FeatureKey.RolesCustom]: { enabled: true },
         [LimitKey.RolesCustomMax]: { maximum: 20 },
@@ -636,6 +785,7 @@ describe("PlanEditor", () => {
       {
         name: "Pro",
         isDefault: false,
+        ...unchangedMoney,
         entitlements: {
           [FeatureKey.RolesCustom]: { enabled: true },
           [LimitKey.RolesCustomMax]: { maximum: 10 },
@@ -942,6 +1092,52 @@ describe("PlanEditor", () => {
     expect(await screen.findByText("Page not found")).toBeVisible();
   });
 
+  // A new plan has no currency of its own: it reads the deployment's from the default plan, then prices in it (6.13).
+  it("Create_DefaultPlanRead_ShowsPricesAndSendsThem", async () => {
+    const creates: Call[] = [];
+    server.use(
+      planAnswer(free),
+      plansCommand(
+        "post",
+        "plans",
+        [
+          () =>
+            HttpResponse.json(
+              { ...partner, name: "Starter" },
+              {
+                status: 201,
+                headers: { Location: `/api/v1/platform/plans/${partner.id}` },
+              },
+            ),
+        ],
+        creates,
+      ),
+    );
+    renderWithProviders(<PlanEditor planId={null} />);
+
+    const field = await screen.findByRole("textbox", {
+      name: "Per person, monthly",
+    });
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Name" }),
+      "Starter",
+    );
+    await userEvent.clear(field);
+    await userEvent.type(field, "8");
+    await userEvent.click(screen.getByRole("button", { name: "Create plan" }));
+
+    await expectVisibleToast(sentence("Starter created"));
+    expect(creates[0]?.body).toMatchObject({
+      prices: {
+        baseMonthly: 0,
+        baseYearly: 0,
+        perPersonMonthly: 800,
+        perPersonYearly: 0,
+      },
+      meters: [],
+    });
+  });
+
   it("Create_Empty_StartsUnsetBesideTheActivityLogAndSendsTheValuesSet", async () => {
     const creates: Call[] = [];
     server.use(
@@ -1204,6 +1400,7 @@ describe("PlanEditor", () => {
       {
         name: "Pro",
         isDefault: false,
+        ...unchangedMoney,
         entitlements: {
           [FeatureKey.RolesCustom]: { enabled: false },
           [LimitKey.RolesCustomMax]: { maximum: 20 },

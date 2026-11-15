@@ -95,6 +95,31 @@ describe("RolePage", () => {
     );
   });
 
+  // The Billing manager says what it is for and that it takes no seat (14.01).
+  it("RolePage_BuiltInBillingManager_SaysItIsFreeAndForBillingOnly", async () => {
+    open(roleOf.billing_manager.id);
+
+    await screen.findByRole("heading", { name: "Billing manager" });
+    expect(
+      screen.getByText(
+        "Built in · 3 permissions · not in use · free, uses no seat",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Billing, Usage and invoices only. It can’t use the product: product modules add their permissions to Member, never to Billing manager.",
+      ),
+    ).toBeInTheDocument();
+    const checked = states()
+      .filter(([, isChecked]) => isChecked)
+      .map(([label]) => label);
+    expect(checked).toEqual([
+      "See the organisation’s details",
+      "See members",
+      "Manage billing",
+    ]);
+  });
+
   it("RolePage_BuiltInMember_ShowsEachPermissionsStateWithoutManageOwners", async () => {
     open(roleOf.member.id);
 

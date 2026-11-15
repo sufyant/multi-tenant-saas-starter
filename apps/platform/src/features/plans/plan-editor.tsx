@@ -10,6 +10,7 @@ import {
   getGetPlanQueryOptions,
   getListPlansQueryOptions,
   getPlanUpdatePreview,
+  MeterSettingRequestOverage,
   type PlanResponse,
   type PlanUpdatePreviewPageResponse,
   ProblemDetailsError,
@@ -28,13 +29,14 @@ import { showToast } from "@repo/ui/components/toast";
 import { buttonVariants } from "@repo/ui/components/ui/button";
 import { Checkbox } from "@repo/ui/components/ui/checkbox";
 import { Input as InputBase } from "@repo/ui/components/ui/input";
+import { formatMoney, parseMoney } from "@repo/ui/lib/format-money";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -60,11 +62,43 @@ import { ProblemScreen } from "@/shared/problem-screen";
 import { afterAccountRefusal } from "@/shared/refusal";
 import { ValueField } from "@/shared/value-field";
 import { ImpactDialog } from "./impact-dialog";
+import {
+  freePrices,
+  type MeterDraft,
+  MetersArea,
+  meterDraftsOf,
+  PricesArea,
+  type PriceTexts,
+  priceKeys,
+  priceTextsOf,
+} from "./plan-prices";
 
 // The generated schema of UpdatePlan, which CreatePlan shares (F11): the API trims the name and needs 1 to 100 characters; the
 // generated schema has the limit only, so the form adds the trim and the minimum. The values are one draft per key of the list,
 // in its order, because a key's dots would nest a field's path. The Activity log's period has a floor (6.11).
-const editing = schemas.UpdatePlanBody.omit({ entitlements: true }).extend({
+const editing = schemas.UpdatePlanBody.omit({
+  entitlements: true,
+  prices: true,
+  meters: true,
+}).extend({
+  prices: z.object({
+    baseMonthly: z.string(),
+    baseYearly: z.string(),
+    perPersonMonthly: z.string(),
+    perPersonYearly: z.string(),
+  }),
+  meters: z.array(
+    z.object({
+      key: z.string(),
+      quota: z.string(),
+      overage: z.enum([
+        MeterSettingRequestOverage.Stop,
+        MeterSettingRequestOverage.Charge,
+      ]),
+      unitPrice: z.string(),
+      unitSize: z.number(),
+    }),
+  ),
   name: z.string().trim().min(1).max(schemas.updatePlanBodyNameMax),
   drafts: z
     .array(
@@ -106,9 +140,10 @@ const draftsOf = (plan: PlanResponse | null): Draft[] =>
  * Exactly the values on screen (the API's UpdatePlan: a key left out is closed). Every key of the list is here, from the generated
  * client, so no key is left out by accident: a key goes out with its value, or stays out because the screen shows it unset.
  */
-const bodyOf = (form: Editing): UpdatePlanRequest => ({
+const bodyOf = (form: Editing, currency: string | null): UpdatePlanRequest => ({
   name: form.name,
   isDefault: form.isDefault,
+  ...(currency === null ? {} : moneyBodyOf(form, currency)),
   entitlements: Object.fromEntries(
     entitlementKeys.flatMap(({ key, isFeature }, index) => {
       const draft = form.drafts[index];
@@ -116,6 +151,63 @@ const bodyOf = (form: Editing): UpdatePlanRequest => ({
       return value ? [[key, requestOf(value)]] : [];
     }),
   ),
+});
+
+/** A plan's prices and meters as the form starts them; a new plan is free and has no meter, as CreatePlan's default. */
+const moneyOf = (
+  plan: PlanResponse | null,
+  currency: string,
+): { prices: PriceTexts; meters: MeterDraft[] } => ({
+  prices: priceTextsOf(plan?.prices ?? freePrices, currency),
+  meters: meterDraftsOf(plan?.meters ?? [], currency),
+});
+
+type MoneyErrors = {
+  any: boolean;
+  prices: Partial<Record<(typeof priceKeys)[number], boolean>>;
+  meters: Partial<Record<number, { quota?: boolean; unitPrice?: boolean }>>;
+};
+const noMoneyErrors: MoneyErrors = { any: false, prices: {}, meters: {} };
+
+/** The price and meter fields that are no amount or no whole number, before a save (`plan.price_invalid`, `plan.meter_invalid`). */
+const moneyErrors = (form: Editing, currency: string): MoneyErrors => {
+  const prices = Object.fromEntries(
+    priceKeys
+      .filter((key) => parseMoney(form.prices[key], currency) === null)
+      .map((key) => [key, true]),
+  );
+  const meters = Object.fromEntries(
+    form.meters.flatMap((meter, index) => {
+      const quota = !isWholeNumber(meter.quota) || meter.quota.trim() === "";
+      const unitPrice = parseMoney(meter.unitPrice, currency) === null;
+      return quota || unitPrice ? [[index, { quota, unitPrice }]] : [];
+    }),
+  );
+  return {
+    any: Object.keys(prices).length + Object.keys(meters).length > 0,
+    prices,
+    meters,
+  };
+};
+
+/** The prices and meters of a save. The fields are checked before (`moneyErrors`): each parses here. */
+const moneyBodyOf = (
+  form: Editing,
+  currency: string,
+): Pick<UpdatePlanRequest, "prices" | "meters"> => ({
+  prices: {
+    baseMonthly: parseMoney(form.prices.baseMonthly, currency) ?? 0,
+    baseYearly: parseMoney(form.prices.baseYearly, currency) ?? 0,
+    perPersonMonthly: parseMoney(form.prices.perPersonMonthly, currency) ?? 0,
+    perPersonYearly: parseMoney(form.prices.perPersonYearly, currency) ?? 0,
+  },
+  meters: form.meters.map((meter) => ({
+    key: meter.key,
+    quota: Number(meter.quota),
+    overage: meter.overage,
+    unitPrice: parseMoney(meter.unitPrice, currency) ?? 0,
+    unitSize: meter.unitSize,
+  })),
 });
 
 /** Whether a save takes something away from the plan's organisations, so the impact preview runs first (the PlanImpact board). */
@@ -149,6 +241,7 @@ export function PlanEditor({ planId }: { planId: string | null }) {
     }),
   );
   const t = useTranslations();
+  const locale = useLocale();
   const [editing, setEditing] = useState(false);
   if (!known || problemOf(plan.error)?.code === ErrorCode.PlanNotFound)
     return <NotFoundPage />;
@@ -171,7 +264,21 @@ export function PlanEditor({ planId }: { planId: string | null }) {
         </div>
         <p className="text-body text-muted-foreground">
           {saved
-            ? t("plans.organisationCount", { count: saved.tenantCount })
+            ? `${t("plans.organisationCount", { count: saved.tenantCount })} ${t(
+                "plans.pricesLine",
+                {
+                  base: formatMoney(
+                    saved.prices.baseMonthly,
+                    saved.currency,
+                    locale,
+                  ),
+                  perPerson: formatMoney(
+                    saved.prices.perPersonMonthly,
+                    saved.currency,
+                    locale,
+                  ),
+                },
+              )}`
             : t("plans.createText")}
         </p>
       </div>
@@ -308,6 +415,13 @@ function Form({ plan }: { plan: PlanResponse | null }) {
   const markHint = useId();
   const plans = useQuery(getListPlansQueryOptions(plansQuery));
   const currentDefault = plans.data?.items.find((item) => item.isDefault);
+  // The deployment has one currency (40a); a new plan reads it from the default plan, as no plan of its own answers it yet.
+  const defaultPlan = useQuery(
+    getGetPlanQueryOptions(currentDefault?.id ?? "", {
+      query: { enabled: plan === null && currentDefault !== undefined },
+    }),
+  );
+  const currency = plan?.currency ?? defaultPlan.data?.currency ?? null;
   const [impact, setImpact] = useState<{
     body: UpdatePlanRequest;
     first: PlanUpdatePreviewPageResponse;
@@ -318,6 +432,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
       name: plan?.name ?? "",
       isDefault: plan?.isDefault ?? false,
       drafts: draftsOf(plan),
+      ...moneyOf(plan, plan?.currency ?? "EUR"),
     },
   });
   // Another value of any field is another intent of CreatePlan: it gets a new key (F48).
@@ -326,6 +441,9 @@ function Form({ plan }: { plan: PlanResponse | null }) {
     [form, renew],
   );
   const drafts = form.watch("drafts");
+  const prices = form.watch("prices");
+  const meters = form.watch("meters");
+  const [wrongMoney, setWrongMoney] = useState<MoneyErrors>(noMoneyErrors);
   const isDefault = form.watch("isDefault");
   const locked = plan?.isDefault === true;
 
@@ -351,6 +469,7 @@ function Form({ plan }: { plan: PlanResponse | null }) {
         name: saved.name,
         isDefault: saved.isDefault,
         drafts: draftsOf(saved),
+        ...moneyOf(saved, saved.currency),
       });
   };
 
@@ -418,7 +537,12 @@ function Form({ plan }: { plan: PlanResponse | null }) {
 
   const submit = form.handleSubmit((values) => {
     if (pending) return;
-    const body = bodyOf(values);
+    // Until the currency is known the prices and meters do not show, and a save leaves them out: the API keeps them (40a).
+    const wrong =
+      currency === null ? noMoneyErrors : moneyErrors(values, currency);
+    setWrongMoney(wrong);
+    if (wrong.any) return;
+    const body = bodyOf(values, currency);
     if (!plan) create.mutate({ body, key });
     else if (takesAway(plan, values)) preview.mutate({ id: plan.id, body });
     else update.mutate({ id: plan.id, body });
@@ -574,6 +698,27 @@ function Form({ plan }: { plan: PlanResponse | null }) {
           })}
         </Area>
       ))}
+      {currency !== null && (
+        <>
+          <PricesArea
+            texts={prices}
+            saved={plan?.prices ?? null}
+            currency={currency}
+            errors={wrongMoney.prices}
+            onChange={(key, text) =>
+              form.setValue(`prices.${key}`, text, { shouldDirty: true })
+            }
+          />
+          <MetersArea
+            drafts={meters}
+            currency={currency}
+            errors={wrongMoney.meters}
+            onChange={(index, meter) =>
+              form.setValue(`meters.${index}`, meter, { shouldDirty: true })
+            }
+          />
+        </>
+      )}
       {failure && (
         <Banner tone="destructive" title={t("plans.notSaved")}>
           {failure}

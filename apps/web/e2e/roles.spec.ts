@@ -1,13 +1,6 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import {
-  customRoles,
-  maxCustomRoles,
-  mockMembers,
-  northwind,
-  pro,
-  roles,
-} from "./api";
+import { customRoles, mockMembers, northwind, pro, roles } from "./api";
 import { expectAccessible } from "./axe";
 import { expireTheSession } from "./session-expiry";
 
@@ -25,9 +18,8 @@ test("Roles_Owner_ListsTheRolesWithWhoUsesThem", async ({ page }) => {
   await expect(
     page.getByRole("heading", { level: 1, name: "Roles" }),
   ).toBeVisible();
-  await expect(
-    page.getByText(`${customRoles.length} of ${maxCustomRoles} custom roles`),
-  ).toBeVisible();
+  // No count beside "New role" since 40a (F56).
+  await expect(page.getByText(/ of \d+ custom roles/)).toHaveCount(0);
   await expect(page.getByRole("row", { name: /Billing lead/ })).toContainText(
     "1 member · 1 pending invitation",
   );

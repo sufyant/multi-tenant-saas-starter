@@ -1855,6 +1855,94 @@ const shellShots: {
   },
 ];
 
+// The Billing manager (14.01 to 14.10, 14.13) and No custom role left without billing (9.21) of step 40a. Billing and Usage, and the bill's
+// sentences of 14.02 and 14.04 to 14.07, come with 40b and 40c.
+shellShots.push(
+  {
+    file: "14.01-role-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: `${roles}/${builtInRoles.billing_manager.id}`,
+    team: northwindTeam(),
+  },
+  {
+    file: "14.03-invite-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(15, 12),
+    team: northwindTeam(),
+    open: async (page) => {
+      await openInvite()(page);
+      await inviteEmail(page).fill("finance@northwind.example");
+      await page
+        .getByRole("alertdialog")
+        .getByRole("radio", { name: "Billing manager" })
+        .click();
+    },
+  },
+  {
+    file: "14.06-change-role-to-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: async (page) => {
+      await rowDialog("Omar Haddad", "Change role")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("radio", { name: "Billing manager" })
+        .click();
+    },
+  },
+  {
+    file: "14.07-change-role-from-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: northwindTeam(),
+    open: rowDialog("Grace Okafor", "Change role"),
+  },
+  {
+    file: "14.08-home-billing-manager-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.BillingManager,
+    team: northwindTeam(),
+  },
+  {
+    file: "14.09-general-billing-manager-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.BillingManager,
+    path: general,
+    team: northwindTeam(),
+  },
+  {
+    file: "14.10-members-billing-manager-en-light-desktop",
+    size: "desktop",
+    role: BuiltInRole.BillingManager,
+    path: members,
+    team: northwindTeam(),
+  },
+  {
+    file: "14.13-settings-menu-billing-manager-en-light-phone",
+    size: "phone",
+    role: BuiltInRole.BillingManager,
+    path: general,
+    team: northwindTeam(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Open menu" }).click();
+      await page.getByRole("dialog").waitFor();
+    },
+  },
+  {
+    file: "9.21-no-custom-role-left-billing-off-en-light-desktop",
+    size: "desktop",
+    path: roles,
+    plan: planWith({ "roles.custom.max": 4 }, { "roles.custom.max": 4 }),
+    team: northwindTeam(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "New role" }).click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+);
+
 // Roles (9.01 to 9.20) and the Activity log (12.01 to 12.08), with the people of the Members frames (northwindTeam).
 const rolesRead = `**/api/v1/tenants/${northwind.id}/roles?*`;
 const auditLogRead = `**/api/v1/tenants/${northwind.id}/audit-log*`;

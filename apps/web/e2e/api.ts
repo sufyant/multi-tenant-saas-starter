@@ -49,12 +49,13 @@ const tenantPermissions = Object.values(Permission).filter((name) =>
   name.startsWith("tenant."),
 );
 
-// An Admin holds the Owner's permissions but the Owner's own and the management of roles (the API's BuiltInRoles).
+// An Admin holds the Owner's permissions but the Owner's own, the management of roles and billing (the API's BuiltInRoles).
 const ownerOnly = new Set<Permission>([
   Permission.TenantOwnersManage,
   Permission.TenantRolesCreate,
   Permission.TenantRolesUpdate,
   Permission.TenantRolesDelete,
+  Permission.TenantBillingManage,
 ]);
 const adminPermissions = tenantPermissions.filter(
   (name) => !ownerOnly.has(name),
@@ -63,6 +64,13 @@ const adminPermissions = tenantPermissions.filter(
 const memberPermissions = [
   Permission.TenantMembersRead,
   Permission.TenantProfileRead,
+];
+
+// The Billing manager: the profile, the members and billing, and nothing of the product (14.01).
+const billingManagerPermissions = [
+  Permission.TenantProfileRead,
+  Permission.TenantMembersRead,
+  Permission.TenantBillingManage,
 ];
 
 const builtIn = (
@@ -92,6 +100,11 @@ export const roles: Record<BuiltInRole, RoleDetailResponse> = {
     "0198f0a2-0000-7000-8000-0000000000f2",
     BuiltInRole.Admin,
     adminPermissions,
+  ),
+  billing_manager: builtIn(
+    "0198f0a2-0000-7000-8000-0000000000f4",
+    BuiltInRole.BillingManager,
+    billingManagerPermissions,
   ),
   member: builtIn(
     "0198f0a2-0000-7000-8000-0000000000f3",
@@ -577,7 +590,7 @@ const [supportLead, roleManager] = northwindRoles as [
 
 /**
  * Northwind as the Members frames draw it (8.01): 11 people, then four more for the frames at and over a limit (8.43, 8.45). Grace
- * Okafor is a Member: the frames' Billing manager is step 40's.
+ * Okafor is the Billing manager (14.10).
  */
 const northwindPeople = [
   teammate(
@@ -654,7 +667,7 @@ const northwindPeople = [
     11,
     "Grace Okafor",
     "grace@northwind.example",
-    roles.member,
+    roles.billing_manager,
     "2026-10-20",
   ),
   teammate(

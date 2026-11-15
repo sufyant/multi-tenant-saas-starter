@@ -14,6 +14,7 @@ import {
   errorCodeMessages,
   generatedFileNames,
   messageKeySets,
+  moneyFormattingOutsideFormatter,
   numericLayerClasses,
   physicalDirectionClasses,
   primaryTextClasses,
@@ -104,6 +105,10 @@ describe("architecture of packages/ui", () => {
 
   it("F18_PackagesUi_FormatsDatesOnlyInFormatDateTime", () => {
     expect(dateFormattingOutsideFormatter(src)).toEqual([]);
+  });
+
+  it("F18_PackagesUi_FormatsMoneyOnlyInFormatMoney", () => {
+    expect(moneyFormattingOutsideFormatter(src)).toEqual([]);
   });
 
   it("F3_PackagesUi_WritesNoEnumValueAsALiteral", () => {

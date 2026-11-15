@@ -189,8 +189,8 @@ describe("ChangeRoleDialog", () => {
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
 
-    expect(within(dialog).getAllByRole("radio")).toHaveLength(3);
-    // The descriptions of the ChangeRole board.
+    expect(within(dialog).getAllByRole("radio")).toHaveLength(4);
+    // The descriptions of the ChangeRole board, and the Billing manager's of 14.06.
     expect(
       within(dialog).getByRole("radio", { name: "Owner" }),
     ).toHaveAccessibleDescription(
@@ -200,6 +200,11 @@ describe("ChangeRoleDialog", () => {
       within(dialog).getByRole("radio", { name: "Admin" }),
     ).toHaveAccessibleDescription(
       "Invites members, changes roles, removes members, reads the Activity log.",
+    );
+    expect(
+      within(dialog).getByRole("radio", { name: "Billing manager" }),
+    ).toHaveAccessibleDescription(
+      "Billing, Usage and invoices. Can’t use the product. Free: uses no seat.",
     );
     expect(
       within(dialog).getByRole("radio", { name: "Member" }),
@@ -266,7 +271,9 @@ describe("ChangeRoleDialog", () => {
     // A radio is the RadioGroup item of packages/ui, a button without a value: the order is read by each role's name.
     const radio = (name: string) => within(dialog).getByRole("radio", { name });
     expect(within(dialog).getAllByRole("radio")).toEqual(
-      ["Owner", "Admin", "Member", billingLead.name].map(radio),
+      ["Owner", "Admin", "Billing manager", "Member", billingLead.name].map(
+        radio,
+      ),
     );
     expect(
       within(dialog).getByRole("radio", { name: "Billing lead" }),

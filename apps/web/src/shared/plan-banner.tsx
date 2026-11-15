@@ -1,14 +1,11 @@
 "use client";
 
-import { brand } from "@repo/brand";
 import { Banner } from "@repo/ui/components/banner";
-import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 /**
- * Over a limit (E4), on the page where it applies: a warning, what to do, and by default its one link, "Contact us", to the
- * brand's support contact (the board notes of the plan limits). Members passes its own action, or none (F56). The disabled
- * action names its title and text as its reason (`reasonIdsOf`), not its link.
+ * At and over a limit (E4), on the page where it applies: a warning, what to do, and the one action its page gives, or none (F56).
+ * Only the limit's dialog offers support ("Request a plan change").
  */
 export function PlanBanner({
   id,
@@ -19,32 +16,16 @@ export function PlanBanner({
   id: string;
   title: string;
   text: string;
-  /** The banner's one action in place of "Contact us"; null for none. */
-  action?: ReactNode;
+  /** The banner's one action; null for none. */
+  action: ReactNode;
 }) {
-  const t = useTranslations("plans");
   return (
     <Banner
       tone="warning"
       title={<span id={`${id}-title`}>{title}</span>}
-      action={
-        action === undefined ? (
-          // A link, not a button: it leaves for the support contact. Underlined, so it is not told by colour alone (WCAG 1.4.1).
-          <a
-            href={brand.supportUrl}
-            className="shrink-0 font-medium underline underline-offset-2"
-          >
-            {t("contact")}
-          </a>
-        ) : (
-          action
-        )
-      }
+      action={action}
     >
       <span id={`${id}-text`}>{text}</span>
     </Banner>
   );
 }
-
-/** The ids of the banner's title and text, for the `aria-describedby` of the action it closes. */
-export const reasonIdsOf = (id: string) => `${id}-title ${id}-text`;

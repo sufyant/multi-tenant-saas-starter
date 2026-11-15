@@ -246,6 +246,7 @@
     "roles": {
       "owner": "مالك",
       "admin": "مشرف",
+      "billing_manager": "مدير الفوترة",
       "member": "عضو"
     },
     "makeOwner": "تعيين مالكًا",
@@ -448,7 +449,7 @@
     "keys": {
       "roles_custom": {
         "name": "الأدوار المخصصة",
-        "description": "أدوار تنشئها المؤسسة إلى جانب المالك والمشرف والعضو.",
+        "description": "أدوار تنشئها المؤسسة إلى جانب المالك والمشرف ومدير الفوترة والعضو.",
         "turnsOff": "{key}: متوقفة في {plan}. تظل الأدوار المخصصة الـ{count} تعمل لأعضائها؛ ولا يمكن إنشاء أدوار جديدة."
       },
       "roles_custom_max": {
@@ -533,7 +534,36 @@
     "savedText": "{count, plural, =0 {} one {تحصل المؤسسة التي عليها على القيم الجديدة فورًا.} other {تحصل # من المؤسسات التي عليها على القيم الجديدة فورًا.}}",
     "createdText": "امنحها لمؤسسة من تبويب الخطة لتلك المؤسسة.",
     "limits": "الحدود",
-    "edit": "تعديل الخطة"
+    "edit": "تعديل الخطة",
+    "pricesLine": "{base} أساسي + {perPerson} لكل شخص شهريًا، دون ضريبة القيمة المضافة.",
+    "pricesTitle": "الأسعار",
+    "pricesText": "رسم أساسي ورسم لكل شخص مفوتر، شهريًا وسنويًا. يمكن أن يكون أيٌّ منهما {zero}. مديرو الفوترة مجانيون. دون ضريبة القيمة المضافة؛ تضيف Stripe الضريبة.",
+    "priceLabels": {
+      "baseMonthly": "الرسم الأساسي، شهريًا",
+      "baseYearly": "الرسم الأساسي، سنويًا",
+      "perPersonMonthly": "لكل شخص، شهريًا",
+      "perPersonYearly": "لكل شخص، سنويًا"
+    },
+    "perMonth": "شهريًا.",
+    "perYear": "سنويًا.",
+    "perPersonMonth": "لكل شخص شهريًا.",
+    "perPersonYear": "لكل شخص سنويًا.",
+    "monthsFree": "{count, plural, one {شهر مجانًا.} two {شهران مجانًا.} few {# أشهر مجانًا.} other {# شهرًا مجانًا.}}",
+    "changed": "اليوم {current}. تغيّر.",
+    "preview": "معاينة",
+    "previewText": "يدفع فريق من {people} أشخاص {amount} شهريًا، دون ضريبة القيمة المضافة.",
+    "previewToday": "اليوم {current}.",
+    "priceInvalid": "أدخل سعرًا يساوي 0 أو أكثر.",
+    "metersTitle": "العدادات",
+    "metersText": "يحدد المنتج عداداته في الكود. تحدد كل خطة حصة وما يحدث عند بلوغها.",
+    "meterThen": "شهريًا، ثم",
+    "meterCharge": "احتساب الإضافي",
+    "meterStop": "إيقاف",
+    "meterPer": "لكل {per}",
+    "meterQuota": "{meter}: الحصة الشهرية",
+    "meterOverage": "عند بلوغ الحصة",
+    "meterUnitPrice": "{meter}: سعر الإضافي",
+    "meters": {}
   },
   "planSection": {
     "title": "الخطة",

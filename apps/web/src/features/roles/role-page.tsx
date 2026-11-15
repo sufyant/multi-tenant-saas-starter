@@ -15,7 +15,7 @@ import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { holdsAll, useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
-import { useRoleName } from "@/shared/use-role-name";
+import { useRoleName, useRoleNote } from "@/shared/use-role-name";
 import { NameCard } from "./name-card";
 import { PermissionList } from "./permission-list";
 import { RoleEditor } from "./role-editor";
@@ -32,6 +32,7 @@ import { RolesFrame } from "./roles-frame";
 export function RolePage({ roleId }: { roleId: string }) {
   const t = useTranslations();
   const roleName = useRoleName();
+  const roleNote = useRoleNote();
   const can = useCan();
   const { tenant, detail } = useTenant();
   const roles = useTenantRoles();
@@ -99,7 +100,7 @@ export function RolePage({ roleId }: { roleId: string }) {
       <RoleHeader title={roleName(role)} role={role} />
       {role.builtIn && (
         <Banner tone="info" title={t("roles.builtInTitle")}>
-          {t("roles.builtInText")}
+          {roleNote(role, "roles.builtInNotes") ?? t("roles.builtInText")}
         </Banner>
       )}
       {outOfReach && (

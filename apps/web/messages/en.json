@@ -27,6 +27,7 @@
     "roleNames": {
       "owner": "Owner",
       "admin": "Admin",
+      "billing_manager": "Billing manager",
       "member": "Member"
     }
   },
@@ -100,7 +101,7 @@
       "deletedUser": "the person who invited you"
     },
     "invited": "{inviter} invited you to join {tenant}.",
-    "invitedAs": "{inviter} invited you as {role, select, owner {an Owner} admin {an Admin} member {a Member} other {{roleName}}}.",
+    "invitedAs": "{inviter} invited you as {role, select, owner {an Owner} admin {an Admin} billing_manager {a Billing manager} member {a Member} other {{roleName}}}.",
     "expires": "Expires {when}",
     "join": "Join {tenant}",
     "joinsWith": "You join with the email <email></email>. The invitation only works for this address.",
@@ -193,12 +194,13 @@
     "roleDescriptions": {
       "owner": "Everything, including giving and taking the Owner role.",
       "admin": "Invites members, changes roles, removes members, reads the Activity log.",
+      "billing_manager": "Billing, Usage and invoices. Can’t use the product. Free: uses no seat.",
       "member": "Uses the product. Sees the member list, not the Activity log or Invitations."
     },
     "changeRoleTitle": "Change {name}’s role",
-    "changeRoleText": "{name} is {role, select, owner {an Owner} admin {an Admin} member {a Member} other {{roleName}}} in {organisation}. The change applies at once.",
+    "changeRoleText": "{name} is {role, select, owner {an Owner} admin {an Admin} billing_manager {a Billing manager} member {a Member} other {{roleName}}} in {organisation}. The change applies at once.",
     "roleChanged": "Role changed",
-    "roleChangedText": "{name} is now {role, select, owner {an Owner} admin {an Admin} member {a Member} other {{roleName}}}.",
+    "roleChangedText": "{name} is now {role, select, owner {an Owner} admin {an Admin} billing_manager {a Billing manager} member {a Member} other {{roleName}}}.",
     "changeRoleFailed": "Couldn’t change the role",
     "removeTitle": "Remove {name} from {organisation}?",
     "removeText": "They lose access at once. Their past activity stays in the log. You can invite them again later.",
@@ -237,6 +239,9 @@
     "inviteEmailPlaceholder": "name@company.com",
     "revokeOwnerHint": "Only an Owner can revoke this invitation.",
     "inviteLanguage": "Email language",
+    "inviteNotes": {
+      "billing_manager": "Billing managers are free and use no seat. They see Billing and Usage, and can’t use the product."
+    },
     "inviteLanguageHint": "The invitation email and their first screens use this language. They can change it later.",
     "languageSearch": "Search languages",
     "languageEmpty": "No language found",
@@ -533,6 +538,13 @@
     },
     "customType": "Custom",
     "summary": "{type} · {permissions} · {users}",
+    "summaryWithNote": "{type} · {permissions} · {users} · {note}",
+    "builtInNotes": {
+      "billing_manager": "Billing, Usage and invoices only. It can’t use the product: product modules add their permissions to Member, never to Billing manager."
+    },
+    "seatNotes": {
+      "billing_manager": "free, uses no seat"
+    },
     "notInUseLower": "not in use",
     "inUseTitle": "{name} is in use",
     "inUseDialog": "{users} {total, plural, one {has} other {have}} this role. Give {kind, select, members {{total, plural, one {its member} other {its members}}} invitations {{total, plural, one {its invitation} other {its invitations}}} other {them}} another role first.",
@@ -583,14 +595,12 @@
     "rolesLimit": "Your organisation’s plan allows {limit, plural, one {# custom role} other {# custom roles}}.",
     "rolesLimitAction": "Delete one to create another.",
     "rolesNone": "Your organisation’s plan allows no custom roles.",
-    "rolesCount": "{count} of {limit, plural, one {# custom role} other {# custom roles}}",
     "rolesOver": "You have {count, plural, one {# custom role} other {# custom roles}}; your plan allows {limit}.",
     "rolesOverText": "Delete roles to create new ones. Every role and its members keep working.",
     "membersLimit": "Your plan allows {limit, plural, one {# seat} other {# seats}}: members and pending invitations.",
     "membersLimitAction": "Remove a member or cancel an invitation to invite someone.",
     "membersNone": "Your plan allows no seats.",
     "membersOver": "Your plan gives {limit, plural, one {# seat} other {# seats}}. You use {count}.",
-    "contact": "Contact us",
     "keys": {
       "rolesCustom": "Custom roles",
       "rolesCustomMax": "Custom roles limit",
@@ -607,6 +617,8 @@
     "noSeat": "No free seat",
     "noSeatText": "{organisation} uses {count} of {limit, plural, one {# seat} other {# seats}}: {members, plural, one {# member} other {# members}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}. Remove a member or cancel an invitation to invite someone.",
     "noSeatOverText": "Your plan gives {limit, plural, one {# seat} other {# seats}}. You use {count}: {members, plural, one {# member} other {# members}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}.{invitations, plural, =0 {} one { The invitation can still be accepted.} other { The # invitations can still be accepted.}} You can’t invite anyone new until you’re under {limit}. Nobody loses access.",
+    "noRoleLeft": "No custom role left",
+    "noRoleLeftText": "Your organisation’s plan allows {limit, plural, one {# custom role} other {# custom roles}}, and {organisation} uses {count}. Delete one to create another.",
     "requestChange": "Request a plan change",
     "viewInvitations": "View invitations",
     "seatsLeft": "{count, plural, one {# seat left.} other {# seats left.}}"
