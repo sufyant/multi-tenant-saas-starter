@@ -86,5 +86,6 @@ Source: Golding, Chapter 2 (control plane, tenant management). Kleppmann, Chapte
 - A member's invitation counts toward `members.max` while it is pending and has not expired (ARCHITECTURE.md, E4). So the invitations that are out never bring more members in than the limit.
 - `InviteOwner` is not limited: a tenant without an Owner always gets one (E6).
 - `AcceptInvitation` is not limited: the invitation counted already, so an acceptance adds nothing to the count and never fails on the limit. A tenant whose plan dropped under its count still adds the member who accepts.
+- A pending invitation is not charged. A tenant that pays by card is charged for the person from their acceptance: `MemberJoinedEvent` counts the seats of its subscription again (`flows/billing.md`, section 6; B10).
 - The daily limit (`invitation.daily_limit_reached`) is an abuse guard, not a key of a plan (E7).
 
