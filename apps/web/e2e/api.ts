@@ -590,7 +590,7 @@ const [supportLead, roleManager] = northwindRoles as [
 
 /**
  * Northwind as the Members frames draw it (8.01): 11 people, then four more for the frames at and over a limit (8.43, 8.45). Grace
- * Okafor is a Member: the frames' Billing manager is step 40's.
+ * Okafor is the Billing manager (14.10).
  */
 const northwindPeople = [
   teammate(
@@ -667,7 +667,7 @@ const northwindPeople = [
     11,
     "Grace Okafor",
     "grace@northwind.example",
-    roles.member,
+    roles.billing_manager,
     "2026-10-20",
   ),
   teammate(

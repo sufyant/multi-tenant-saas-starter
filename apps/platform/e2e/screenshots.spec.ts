@@ -1311,6 +1311,48 @@ const shellShots: {
     open: turnCustomRolesOff,
     fullPage: true,
   })),
+  // Prices and meters (6.13, 40a): Team at €10 per person a month and €100 a year, with a meter of the tests' own (the template
+  // ships none; "AI requests" is the frame's sample data), and the monthly fee per person edited to €12.
+  {
+    file: "6.13-plan-team-prices-and-meters-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    fullPage: true,
+    mock: async (page) => {
+      await mockFramePlans(page);
+      await page.route(
+        `**/api/v1/platform/plans/${framePlans.team.id}`,
+        (route) =>
+          route.request().method() === "GET"
+            ? route.fulfill({
+                json: {
+                  ...framePlans.team,
+                  prices: {
+                    baseMonthly: 0,
+                    baseYearly: 0,
+                    perPersonMonthly: 1000,
+                    perPersonYearly: 10000,
+                  },
+                  meters: [
+                    {
+                      key: "ai.requests",
+                      quota: 10000,
+                      overage: "charge",
+                      unitPrice: 100,
+                      unitSize: 1000,
+                    },
+                  ],
+                },
+              })
+            : route.fallback(),
+      );
+    },
+    open: async (page) => {
+      const field = page.getByRole("textbox", { name: "Per person, monthly" });
+      await field.fill("12");
+      await page.getByText("Today €10. Changed.", { exact: false }).waitFor();
+    },
+  },
   {
     file: "6.24-plan-team-custom-roles-off-en-light-phone",
     size: "phone",
