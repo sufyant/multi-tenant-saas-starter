@@ -136,6 +136,14 @@ test("PlanEditor_LowerALimit_ShowsTheImpactAndSavesAnyway", async ({
         [LimitKey.RolesCustomMax]: { maximum: 10 },
         [LimitKey.MembersMax]: { unlimited: true },
       },
+      // The plan's prices and meters as the form holds them (6.13).
+      prices: {
+        baseMonthly: 0,
+        baseYearly: 0,
+        perPersonMonthly: 0,
+        perPersonYearly: 0,
+      },
+      meters: [],
     },
   ]);
 });
