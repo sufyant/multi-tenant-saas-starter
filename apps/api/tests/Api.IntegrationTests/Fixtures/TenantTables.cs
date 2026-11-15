@@ -20,6 +20,12 @@ internal static class TenantTables
         ["audit.tenant_retentions"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO audit.tenant_retentions (tenant_id, days) VALUES ('{tenant}', 365)"),
+        ["billing.subscriptions"] = new(
+            ApplicationMayUpdate: true,
+            tenant => $"""
+                INSERT INTO billing.subscriptions (tenant_id, customer_id, subscription_id, plan_id, interval, status, current_period_end, cancel_at_period_end, updated_at)
+                VALUES ('{tenant}', 'cus_' || gen_random_uuid(), 'sub_' || gen_random_uuid(), gen_random_uuid(), 'Monthly', 'Active', now(), false, now())
+                """),
         ["control_plane.invitations"] = new(ApplicationMayUpdate: true, tenant => InvitationRow(tenant, MemberRole)),
         ["control_plane.memberships"] = new(ApplicationMayUpdate: true, tenant => MembershipRow(tenant, MemberRole)),
         ["control_plane.role_permissions"] = new(

@@ -40,6 +40,9 @@ internal sealed class Subscription : ITenantEntity
     /// <summary>Whether the subscription puts the tenant on its plan: only while it is active (Stripe, "Subscription statuses").</summary>
     public bool PaysForItsPlan => Status == SubscriptionStatus.Active;
 
+    /// <summary>Whether a subscription in this state has ended, so the tenant may pay again (Stripe, "Subscription statuses").</summary>
+    public static bool HasEnded(SubscriptionStatus status) => status is SubscriptionStatus.Canceled or SubscriptionStatus.IncompleteExpired;
+
     /// <summary>A tenant's first subscription, from the provider's state.</summary>
     public static Subscription Start(SubscriptionState state, DateTimeOffset at)
     {
@@ -49,11 +52,17 @@ internal sealed class Subscription : ITenantEntity
     }
 
     /// <summary>
-    /// Takes the provider's state. A state it has already changes nothing (I1). A new subscription of the same customer replaces the old
-    /// one, which the provider has ended.
+    /// Takes the provider's state. A state it has already changes nothing (I1). Another subscription of the customer replaces this one
+    /// unless the other has ended: a late read of an ended subscription never takes the row back from the one that replaced it, as the
+    /// provider sends its events in no order (B5).
     /// </summary>
     public StateChange Sync(SubscriptionState state, DateTimeOffset at)
     {
+        if (state.SubscriptionId != SubscriptionId && HasEnded(state.Status))
+        {
+            return StateChange.Unchanged;
+        }
+
         if (state.CustomerId == CustomerId && state.SubscriptionId == SubscriptionId && state.PlanId == PlanId && state.Interval == Interval
             && state.Status == Status && state.CurrentPeriodEnd == CurrentPeriodEnd && state.CancelAtPeriodEnd == CancelAtPeriodEnd)
         {

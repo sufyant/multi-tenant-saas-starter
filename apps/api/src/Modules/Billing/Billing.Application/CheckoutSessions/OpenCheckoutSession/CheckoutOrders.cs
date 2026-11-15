@@ -15,9 +15,6 @@ public static class CheckoutOrders
 {
     public const string ReturnParameter = "checkout";
 
-    // A subscription in one of these states has ended, so the tenant may pay again.
-    private static readonly string[] Ended = [nameof(SubscriptionStatus.Canceled), nameof(SubscriptionStatus.IncompleteExpired)];
-
     public static Result<OpenCheckoutSessionQuery> Of(
         BillingOptions billing,
         Guid tenantId,
@@ -31,7 +28,7 @@ public static class CheckoutOrders
             return Errors.ReturnUrlInvalid;
         }
 
-        if (subscription is not null && !Ended.Contains(subscription.Status))
+        if (subscription is not null && !Subscription.HasEnded(Enum.Parse<SubscriptionStatus>(subscription.Status)))
         {
             return Errors.AlreadySubscribed;
         }
@@ -44,7 +41,7 @@ public static class CheckoutOrders
         }
 
         return new OpenCheckoutSessionQuery(
-            tenantId, facts.PaidBy, facts.Email, subscription?.CustomerId, facts.PlanId, facts.PlanName, facts.Currency, interval, baseAmount, perPerson,
+            tenantId, facts.PaidBy, CustomerId: null, facts.PlanId, facts.PlanName, facts.Currency, interval, baseAmount, perPerson,
             facts.SeatedMembers, new Uri($"{returnUrl}?{ReturnParameter}=success"), new Uri($"{returnUrl}?{ReturnParameter}=cancelled"));
     }
 }

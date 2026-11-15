@@ -1,13 +1,11 @@
 using Billing.Application.Provider;
-using SharedKernel;
 
 namespace Billing.Application.Webhooks.GetWebhookPayload;
 
-// A body whose signature is missing, wrong or too old is refused (A5's exception for signed webhooks).
+// None for a body whose signature is missing, wrong or too old (A5's exception for signed webhooks). It answers no Result: a handler that does
+// is under the idempotency layer's transaction (I4), and this one takes no transaction, as it reads the provider's adapter.
 public static class GetWebhookPayloadHandler
 {
-    public static Result<WebhookEventView> Handle(GetWebhookPayloadQuery query, IBillingProvider provider) =>
-        provider.ReadEvent(query.Body, query.Signature) is { } read
-            ? new WebhookEventView(read.Id, read.Type, read.SubscriptionId)
-            : Errors.WebhookInvalid;
+    public static WebhookEventView? Handle(GetWebhookPayloadQuery query, IBillingProvider provider) =>
+        provider.ReadEvent(query.Body, query.Signature) is { } read ? new WebhookEventView(read.Id, read.Type, read.SubscriptionId) : null;
 }

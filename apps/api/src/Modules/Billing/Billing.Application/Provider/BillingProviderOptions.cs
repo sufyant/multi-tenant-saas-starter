@@ -4,8 +4,8 @@ namespace Billing.Application.Provider;
 
 /// <summary>
 /// Configuration of the calls that read the billing provider after a webhook (section <c>Billing:Provider</c>), checked on start. The
-/// retries grow as the identity provider's do, because the provider may be down for a while; Stripe resends an event for up to three days
-/// as well (Stripe, "Webhooks", "Retry behavior").
+/// retries grow as the identity provider's do, because the provider may be down for a while. The webhook answered at once, so Stripe does
+/// not send the event again: after the last try the sync waits in the dead letter queue.
 /// </summary>
 public sealed class BillingProviderOptions
 {

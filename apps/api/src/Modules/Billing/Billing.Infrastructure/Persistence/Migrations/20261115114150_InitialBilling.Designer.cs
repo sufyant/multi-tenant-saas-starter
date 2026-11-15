@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Billing.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BillingDbContext))]
-    [Migration("20261115110556_InitialBilling")]
+    [Migration("20261115114150_InitialBilling")]
     partial class InitialBilling
     {
         /// <inheritdoc />
@@ -25,6 +25,35 @@ namespace Billing.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Billing.Domain.Customers.Customer", b =>
+                {
+                    b.Property<string>("CustomerId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid>("CheckoutBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("checkout_by");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("CustomerId")
+                        .HasName("pk_customers");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_customers_tenant_id");
+
+                    b.ToTable("customers", "billing");
+                });
 
             modelBuilder.Entity("Billing.Domain.StripeEvents.StripeEvent", b =>
                 {

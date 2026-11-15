@@ -47,6 +47,9 @@ internal sealed class ApiFactory(
         ["ControlPlane:IdentityProvider:RetryDelays:0"] = "00:00:00.010",
         ["ControlPlane:IdentityProvider:RetryDelays:1"] = "00:00:00.020",
         ["ControlPlane:IdentityProvider:RetryDelays:2"] = "00:00:00.040",
+        ["Billing:Provider:RetryDelays:0"] = "00:00:00.010",
+        ["Billing:Provider:RetryDelays:1"] = "00:00:00.020",
+        ["Billing:Provider:RetryDelays:2"] = "00:00:00.040",
     };
 
     // The setting of a test of the rate limiter, which a test host leaves off.

@@ -36,12 +36,11 @@ public static class WebhookEndpoints
 
         using var reader = new StreamReader(request.Body);
         var body = await reader.ReadToEndAsync(cancellationToken);
-        var read = await bus.InvokeAsync<Result<WebhookEventView>>(new GetWebhookPayloadQuery(body, request.Headers[SignatureHeader].FirstOrDefault()), cancellationToken);
-        if (!read.IsSuccess)
+        if (await bus.InvokeAsync<WebhookEventView?>(new GetWebhookPayloadQuery(body, request.Headers[SignatureHeader].FirstOrDefault()), cancellationToken) is not { } read)
         {
-            return read.Error;
+            return Errors.WebhookInvalid;
         }
 
-        return await bus.InvokeAsync<Result>(new ReceiveWebhookCommand(read.Value.Id, read.Value.Type, read.Value.SubscriptionId), cancellationToken);
+        return await bus.InvokeAsync<Result>(new ReceiveWebhookCommand(read.Id, read.Type, read.SubscriptionId), cancellationToken);
     }
 }

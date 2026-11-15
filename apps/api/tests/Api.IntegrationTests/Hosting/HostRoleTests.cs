@@ -73,6 +73,7 @@ using ControlPlane.Application.Users.RenameUser;
 using ControlPlane.Application.Users.SuspendUser;
 using Audit.Application.DataExports.RecordDataExportRequested;
 using Billing.Application.Subscriptions.ApplySubscription;
+using Billing.Application.Subscriptions.RouteSubscription;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
 using Billing.Application.Webhooks.ReceiveWebhook;
@@ -280,8 +281,12 @@ public sealed class HostRoleTests(Database database)
         _ = worker.Services;
         var testData = new TestData(database, name);
         var tenant = await testData.AddTenantAsync();
-        var payer = await testData.UserIdOfAsync(await testData.AddMemberAsync(tenant.Id, role: "Owner"));
-        worker.Billing.Put(BillingRequests.ActiveSubscription(tenant.Id, SeedPlans.Free, payer));
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var planId = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, planId)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, planId));
+        runs.Clear();
 
         var received = await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
@@ -296,6 +301,7 @@ public sealed class HostRoleTests(Database database)
         runs.WithoutNotificationsIn("worker").ShouldBe(
             [
                 new HandlerRun(typeof(SyncSubscriptionCommand), typeof(SyncSubscriptionHandler)),
+                new HandlerRun(typeof(RouteSubscriptionCommand), typeof(RouteSubscriptionHandler)),
                 new HandlerRun(typeof(ApplySubscriptionCommand), typeof(ApplySubscriptionHandler)),
                 new HandlerRun(typeof(PlanPaidEvent), typeof(ChangeBilledPlanHandler)),
                 new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler)),

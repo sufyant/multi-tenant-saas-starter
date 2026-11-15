@@ -38,11 +38,11 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetBilling_AfterThePayment_AnswersTheSubscription()
     {
-        var planId = await _testData.AddPlanAsync([]);
+        var planId = await PricedPlanAsync();
         var tenant = await _testData.AddTenantAsync();
         var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
-        _api.Billing.Put(BillingRequests.ActiveSubscription(tenant.Id, planId, await _testData.UserIdOfAsync(manager)));
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_{tenant.Id:N}"));
+        await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(manager, tenant.Id, planId);
 
         var answer = await _api.CreateClient(manager).GetBillingAsync(tenant.Id);
 
@@ -58,10 +58,9 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
     [Fact]
     public async Task GetBilling_AnotherTenantPays_AnswersNoSubscriptionHere()
     {
-        var planId = await _testData.AddPlanAsync([]);
+        var planId = await PricedPlanAsync();
         var paying = await _testData.AddTenantAsync();
-        _api.Billing.Put(BillingRequests.ActiveSubscription(paying.Id, planId, await _testData.UserIdOfAsync(await _testData.AddMemberAsync(paying.Id, role: "Owner"))));
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_{paying.Id:N}"));
+        await _api.PayAsync(await _testData.AddMemberAsync(paying.Id, role: "Owner"), paying.Id, planId);
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
 
@@ -79,5 +78,12 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
         var answer = await _api.CreateClient(member).GetBillingAsync(tenant.Id);
 
         answer.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    private async Task<Guid> PricedPlanAsync()
+    {
+        var planId = await _testData.AddPlanAsync([]);
+        await _testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        return planId;
     }
 }

@@ -26,6 +26,20 @@ public sealed class ExistingRetryPolicyTests(Database database)
         rule.First().Describe().ShouldContain(firstAction);
     }
 
+    // B5: a read of a subscription from Stripe after a webhook that fails is tried again after each configured pause (Billing:Provider).
+    [Fact]
+    public async Task ReadRetryRules_TheReadOfASubscriptionFromStripe_KeepsItsMessageSpecificRule()
+    {
+        await using var api = new ApiFactory(database.ApplicationConnectionString);
+        var chain = api.Services.GetRequiredService<HandlerGraph>().Chains.Single(chain => chain.MessageType.Name == "SyncSubscriptionCommand");
+        _ = api.Services.GetRequiredService<HandlerGraph>().HandlerFor(chain.MessageType);
+
+        var rule = chain.Failures.First();
+
+        rule.Count().ShouldBe(3);
+        rule.First().Describe().ShouldContain("Retry inline with a delay of 00:00:00.01");
+    }
+
     // G7: while the kill switch emails.send is off, every email waits: its first rule schedules it again, with no end.
     [Theory]
     [InlineData("InvitationReadyEvent")]

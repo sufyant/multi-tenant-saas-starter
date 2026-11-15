@@ -6,11 +6,9 @@ public sealed record CheckoutFacts(
     string? Email,
     Guid PlanId,
     string PlanName,
-    bool PlanIsDefault,
     string Currency,
     long BaseMonthly,
     long PerPersonMonthly,
     long BaseYearly,
     long PerPersonYearly,
-    Guid CurrentPlanId,
     int SeatedMembers);

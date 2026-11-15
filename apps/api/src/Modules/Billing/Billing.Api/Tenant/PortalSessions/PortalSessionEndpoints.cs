@@ -1,7 +1,7 @@
 using Billing.Application.Subscriptions;
 using Billing.Application;
 using Billing.Application.PortalSessions.GetPortalLink;
-using Billing.Application.Subscriptions.GetBilling;
+using Billing.Application.Customers.GetCustomer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using SharedKernel;
@@ -16,7 +16,7 @@ public static class PortalSessionEndpoints
         tenant.MapPost("/billing/portal-session", OpenPortalSession).RequireAuthorization(BillingPermissions.TenantBillingManage).WithMetadata(new NotPlanGated());
 
     // The page is made for this answer and never stored, and it changes nothing in our app, so the request takes no idempotency key (I1). A
-    // tenant that has never paid by card has no customer, so it has no portal.
+    // tenant that has never opened a checkout has no customer, so it has no portal.
     private static async Task<Result<PortalSessionResponse>> OpenPortalSession(
         OpenPortalSessionRequest request,
         BillingOptions billing,
@@ -33,11 +33,11 @@ public static class PortalSessionEndpoints
             return Errors.ReturnUrlInvalid;
         }
 
-        if (await bus.InvokeAsync<SubscriptionView?>(new GetBillingQuery(), cancellationToken) is not { } subscription)
+        if (await bus.InvokeAsync<string?>(new GetCustomerQuery(), cancellationToken) is not { } customerId)
         {
             return Errors.NoCustomer;
         }
 
-        return new PortalSessionResponse(await bus.InvokeAsync<Uri>(new GetPortalLinkQuery(subscription.CustomerId, request.ReturnUrl), cancellationToken));
+        return new PortalSessionResponse(await bus.InvokeAsync<Uri>(new GetPortalLinkQuery(customerId, request.ReturnUrl), cancellationToken));
     }
 }

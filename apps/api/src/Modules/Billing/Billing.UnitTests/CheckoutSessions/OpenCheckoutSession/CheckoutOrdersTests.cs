@@ -54,15 +54,15 @@ public sealed class CheckoutOrdersTests
         order.Error.Code.Value.ShouldBe("billing.already_subscribed");
     }
 
-    // A subscription that ended lets the tenant pay again, on its own customer.
+    // A subscription that ended lets the tenant pay again.
     [Theory]
     [InlineData("Canceled")]
     [InlineData("IncompleteExpired")]
-    public void Of_ASubscriptionThatEnded_OrdersOnTheSameCustomer(string status)
+    public void Of_ASubscriptionThatEnded_OrdersAgain(string status)
     {
         var order = CheckoutOrders.Of(Billing, TenantId, Facts(baseMonthly: 900), Subscription(status), "Monthly", ReturnUrl);
 
-        order.Value.CustomerId.ShouldBe("cus_1");
+        order.IsSuccess.ShouldBeTrue();
     }
 
     [Theory]
@@ -90,7 +90,7 @@ public sealed class CheckoutOrdersTests
     }
 
     private static CheckoutFacts Facts(long baseMonthly = 0, long perPersonMonthly = 0, long baseYearly = 0, long perPersonYearly = 0, int seated = 1) =>
-        new(Guid.CreateVersion7(), "ada@example.test", Guid.CreateVersion7(), "Team", false, "EUR", baseMonthly, perPersonMonthly, baseYearly, perPersonYearly, Guid.CreateVersion7(), seated);
+        new(Guid.CreateVersion7(), "ada@example.test", Guid.CreateVersion7(), "Team", "EUR", baseMonthly, perPersonMonthly, baseYearly, perPersonYearly, seated);
 
     private static SubscriptionView Subscription(string status) =>
         new("cus_1", Guid.CreateVersion7(), "Monthly", status, DateTimeOffset.UnixEpoch, false);

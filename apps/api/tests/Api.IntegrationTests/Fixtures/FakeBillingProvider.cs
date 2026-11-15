@@ -4,8 +4,8 @@ using Billing.Application.Provider;
 
 namespace Api.IntegrationTests.Fixtures;
 
-// Stripe is a system we do not own, so the tests fake it behind IBillingProvider (section 9). A checkout and a portal answer a link of the
-// fake and keep what they were asked; a subscription is what the test put there. A webhook's body is the fake's own JSON, {"id", "type",
+// Stripe is a system we do not own, so the tests fake it behind IBillingProvider (section 9). A customer is cus_ and the tenant's id. A
+// checkout and a portal answer a link of the fake and keep what they were asked; a subscription is what the test put there. A webhook's body is the fake's own JSON, {"id", "type",
 // "subscriptionId"}, and only the signature Signature proves it: the real signature is the adapter's, which Billing.UnitTests checks.
 internal sealed class FakeBillingProvider : IBillingProvider
 {
@@ -17,17 +17,27 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     public static Uri PortalLink { get; } = new("https://billing.stripe.test/p/session/bps_test_1");
 
+    public ConcurrentQueue<Guid> Customers { get; } = [];
+
     public ConcurrentQueue<CheckoutOrder> Checkouts { get; } = [];
 
     public ConcurrentQueue<(string CustomerId, Uri ReturnUrl)> Portals { get; } = [];
 
     public ConcurrentQueue<string> Reads { get; } = [];
 
+    public static string CustomerOf(Guid tenantId) => $"cus_{tenantId:N}";
+
     // A webhook's body of the fake.
     public static string Body(string eventId, string type, string? subscriptionId) =>
         JsonSerializer.Serialize(new { id = eventId, type, subscriptionId }, JsonSerializerOptions.Web);
 
     public void Put(ProviderSubscription subscription) => _subscriptions[subscription.SubscriptionId] = subscription;
+
+    public Task<string> CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken)
+    {
+        Customers.Enqueue(tenantId);
+        return Task.FromResult(CustomerOf(tenantId));
+    }
 
     public Task<Uri> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
     {

@@ -8,18 +8,21 @@ namespace Billing.Infrastructure.Stripe;
 
 // Stripe behind IBillingProvider. Our app keeps the plans' prices and writes them to Stripe as Products and Prices: a plan is one Product,
 // with the plan's id as its own id, and each amount is one Price, found again by its lookup key. A Price never changes, so a new amount is a
-// new Price (Stripe, "Change prices"). The subscription and the Checkout carry the tenant, the plan and the member who paid as metadata,
-// which every later read takes them from. Stripe.net retries a failed network call itself, with an idempotency key (Stripe, "Idempotent
+// new Price (Stripe, "Change prices"). The plan a subscription pays for is read back from its Price's Product, whose id Stripe never
+// changes. The customer, the Checkout and the subscription carry the tenant, the plan and the member who paid as metadata for support only:
+// anyone with access to Stripe's dashboard can edit metadata, so no read takes the tenant from it (B5). Stripe.net retries a failed network call itself, with an idempotency key (Stripe, "Idempotent
 // requests"); each call has the time limit of the HTTP client.
 internal sealed class StripeBillingProvider(IStripeClient client, IOptions<StripeOptions> settings) : IBillingProvider
 {
-    public const string TenantKey = "tenant_id";
+    private const string TenantKey = "tenant_id";
 
-    public const string PlanKey = "plan_id";
+    private const string PlanKey = "plan_id";
 
-    public const string PaidByKey = "paid_by";
+    private const string PaidByKey = "paid_by";
 
     private const string AlreadyExists = "resource_already_exists";
+
+    private const string ProductPrefix = "plan_";
 
     // The event types whose object names a subscription; any other event is kept and needs no sync.
     private static readonly HashSet<string> SubscriptionEvents =
@@ -30,6 +33,15 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         EventTypes.CustomerSubscriptionPaused,
         EventTypes.CustomerSubscriptionResumed,
     ];
+
+    async Task<string> IBillingProvider.CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken)
+    {
+        var customer = await new CustomerService(client).CreateAsync(
+            new CustomerCreateOptions { Email = email, Metadata = new() { [TenantKey] = tenantId.ToString() } },
+            new RequestOptions { IdempotencyKey = $"customer-{tenantId}" },
+            cancellationToken);
+        return customer.Id;
+    }
 
     async Task<Uri> IBillingProvider.OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
     {
@@ -56,8 +68,7 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
                 Mode = "subscription",
                 LineItems = lines,
                 Customer = order.CustomerId,
-                CustomerEmail = order.CustomerId is null ? order.Email : null,
-                CustomerUpdate = order.CustomerId is null ? null : new SessionCustomerUpdateOptions { Address = "auto", Name = "auto" },
+                CustomerUpdate = new SessionCustomerUpdateOptions { Address = "auto", Name = "auto" },
                 ClientReferenceId = order.TenantId.ToString(),
                 BillingAddressCollection = "required",
                 TaxIdCollection = new SessionTaxIdCollectionOptions { Enabled = true },
@@ -81,17 +92,14 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
     async Task<ProviderSubscription?> IBillingProvider.FindSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
         var subscription = await new SubscriptionService(client).GetAsync(subscriptionId, cancellationToken: cancellationToken);
-        if (!Guid.TryParse(subscription.Metadata.GetValueOrDefault(TenantKey), out var tenantId)
-            || !Guid.TryParse(subscription.Metadata.GetValueOrDefault(PlanKey), out var planId)
-            || !Guid.TryParse(subscription.Metadata.GetValueOrDefault(PaidByKey), out var paidBy))
+        var item = subscription.Items.Data[0];
+        if (!item.Price.ProductId.StartsWith(ProductPrefix, StringComparison.Ordinal)
+            || !Guid.TryParseExact(item.Price.ProductId[ProductPrefix.Length..], "N", out var planId))
         {
             return null;
         }
 
-        var item = subscription.Items.Data[0];
         return new ProviderSubscription(
-            tenantId,
-            paidBy,
             subscription.CustomerId,
             subscription.Id,
             planId,
@@ -157,7 +165,7 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             return found;
         }
 
-        var productId = $"plan_{order.PlanId:N}";
+        var productId = $"{ProductPrefix}{order.PlanId:N}";
         try
         {
             await new ProductService(client).CreateAsync(new ProductCreateOptions { Id = productId, Name = order.PlanName }, cancellationToken: cancellationToken);

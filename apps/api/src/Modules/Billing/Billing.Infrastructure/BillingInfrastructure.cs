@@ -1,8 +1,10 @@
 using Billing.Application;
+using Billing.Application.Customers;
 using Billing.Application.Provider;
 using Billing.Application.StripeEvents;
 using Billing.Application.Subscriptions;
 using Billing.Infrastructure.Persistence;
+using Billing.Infrastructure.Persistence.Customers;
 using Billing.Infrastructure.Persistence.StripeEvents;
 using Billing.Infrastructure.Persistence.Subscriptions;
 using Billing.Infrastructure.Stripe;
@@ -32,6 +34,7 @@ public static class BillingInfrastructure
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISubscriptionQueries, SubscriptionQueries>();
         services.AddScoped<IStripeEventStore, StripeEventStore>();
+        services.AddScoped<ICustomerStore, CustomerStore>();
 
         // Billing is off by default (the maintainer's decision of 2026-11-14). While it is on, the web's root and Stripe's keys are required.
         services.AddOptions<BillingOptions>()

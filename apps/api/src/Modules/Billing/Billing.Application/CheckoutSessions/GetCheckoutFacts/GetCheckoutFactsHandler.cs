@@ -23,10 +23,9 @@ public static class GetCheckoutFactsHandler
 
         var payer = await users.FindContactAsync(query.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("The tenant door proved the member, so they are a user.");
-        var current = await plans.FindPlanIdOfTenantAsync(query.TenantId, cancellationToken);
         var seated = await members.CountSeatedMembersAsync(cancellationToken);
         return new CheckoutFacts(
-            payer.UserId, payer.Email, plan.Id, plan.Name, plan.IsDefault, plan.Currency,
-            plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly, current, seated);
+            payer.UserId, payer.Email, plan.Id, plan.Name, plan.Currency,
+            plan.Prices.BaseMonthly, plan.Prices.PerPersonMonthly, plan.Prices.BaseYearly, plan.Prices.PerPersonYearly, seated);
     }
 }

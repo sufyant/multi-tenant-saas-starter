@@ -6,7 +6,7 @@ using Tenancy;
 namespace Api.IntegrationTests.Tenant.PortalSessions;
 
 // POST /v1/tenants/{tenantId}/billing/portal-session: a member who manages billing opens Stripe's customer portal, for the tenant's own
-// customer (step 40). A tenant that has never paid by card has none.
+// customer (step 40). A tenant that never opened a checkout has none.
 public sealed class OpenPortalSessionTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -27,10 +27,10 @@ public sealed class OpenPortalSessionTests(Database database) : IAsyncLifetime
     public async Task OpenPortalSession_ATenantThatPaid_AnswersThePortalOfItsCustomer()
     {
         var planId = await _testData.AddPlanAsync([]);
+        await _testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        _api.Billing.Put(BillingRequests.ActiveSubscription(tenant.Id, planId, await _testData.UserIdOfAsync(owner)));
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_{tenant.Id:N}"));
+        await _api.PayAsync(owner, tenant.Id, planId);
 
         var answer = await _api.CreateClient(owner).OpenPortalSessionAsync(tenant.Id);
 
@@ -40,7 +40,7 @@ public sealed class OpenPortalSessionTests(Database database) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task OpenPortalSession_ATenantThatNeverPaid_IsAConflict()
+    public async Task OpenPortalSession_ATenantWithoutACustomer_IsAConflict()
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");

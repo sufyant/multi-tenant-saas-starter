@@ -31,6 +31,28 @@ public sealed class SubscriptionTests
         (change, subscription.Status, subscription.PaysForItsPlan, subscription.UpdatedAt).ShouldBe((StateChange.Changed, SubscriptionStatus.PastDue, false, At.AddMinutes(1)));
     }
 
+    // B5: subscription A ended and B replaced it; a late read of A, which Stripe may send after B's, keeps B.
+    [Fact]
+    public void Sync_ALateReadOfAnEndedSubscriptionAfterItsSuccessor_KeepsTheSuccessor()
+    {
+        var subscription = Subscription.Start(Active with { SubscriptionId = "sub_b" }, At);
+
+        var change = subscription.Sync(Active with { SubscriptionId = "sub_a", Status = SubscriptionStatus.Canceled }, At.AddMinutes(1));
+
+        (change, subscription.SubscriptionId, subscription.Status).ShouldBe((StateChange.Unchanged, "sub_b", SubscriptionStatus.Active));
+    }
+
+    // A new subscription after an ended one takes the row.
+    [Fact]
+    public void Sync_ANewSubscriptionAfterAnEndedOne_TakesTheRow()
+    {
+        var subscription = Subscription.Start(Active with { SubscriptionId = "sub_a", Status = SubscriptionStatus.Canceled }, At);
+
+        var change = subscription.Sync(Active with { SubscriptionId = "sub_b" }, At.AddMinutes(1));
+
+        (change, subscription.SubscriptionId, subscription.Status).ShouldBe((StateChange.Changed, "sub_b", SubscriptionStatus.Active));
+    }
+
     [Theory]
     [InlineData("Active", true)]
     [InlineData("Trialing", false)]

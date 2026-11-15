@@ -40,9 +40,18 @@ internal static class BillingRequests
         return client.SendAsync(request, Cancellation);
     }
 
-    // An active monthly subscription of the tenant at the fake, which the member paid for.
-    public static ProviderSubscription ActiveSubscription(Guid tenantId, Guid planId, Guid paidBy, string status = "Active") =>
-        new(tenantId, paidBy, $"cus_{tenantId:N}", $"sub_{tenantId:N}", planId, Yearly: false, status, new DateTimeOffset(2026, 12, 15, 0, 0, 0, TimeSpan.Zero), CancelAtPeriodEnd: false);
+    // A monthly subscription of the tenant's customer at the fake.
+    public static ProviderSubscription Subscription(Guid tenantId, Guid planId, string status = "Active") =>
+        new(FakeBillingProvider.CustomerOf(tenantId), $"sub_{tenantId:N}", planId, Yearly: false, status, new DateTimeOffset(2026, 12, 15, 0, 0, 0, TimeSpan.Zero), CancelAtPeriodEnd: false);
+
+    // The member opens a checkout of the plan, which puts the tenant's customer in our map, then Stripe holds the subscription and sends its
+    // event, and the test waits for every message it caused. The plan must cost something. The provider is the host's that handles the sync.
+    public static async Task<HttpResponseMessage> PayAsync(this ApiFactory api, string member, Guid tenantId, Guid planId, string status = "Active", ApiFactory? worker = null)
+    {
+        (await api.CreateClient(member).OpenCheckoutSessionAsync(tenantId, planId)).EnsureSuccessStatusCode();
+        (worker ?? api).Billing.Put(Subscription(tenantId, planId, status));
+        return await api.WaitingForMessagesAsync(() => api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_{tenantId:N}"));
+    }
 
     public static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString();

@@ -6,8 +6,8 @@ using Tenancy;
 namespace Api.IntegrationTests.Tenant.CheckoutSessions;
 
 // POST /v1/tenants/{tenantId}/billing/checkout-session: a member who manages billing opens Stripe Checkout for a plan (step 40). The order
-// pays the plan's base fee once and its fee per person for each member who takes a seat; the Billing manager takes none. Our app stores
-// nothing until the signed event of the payment.
+// pays the plan's base fee once and its fee per person for each member who takes a seat; the Billing manager takes none. Our app keeps only
+// the tenant's customer in its own map, once (B5), until the signed event of the payment.
 public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -41,7 +41,9 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("url").GetString().ShouldBe(FakeBillingProvider.CheckoutLink.ToString());
         var order = _api.Billing.Checkouts.ShouldHaveSingleItem();
         (order.TenantId, order.PaidBy, order.PlanId, order.Currency, order.Yearly).ShouldBe((tenant.Id, await _testData.UserIdOfAsync(owner), _planId, "EUR", false));
-        (order.BaseAmount, order.PerPersonAmount, order.People, order.CustomerId).ShouldBe((900L, 1000L, 2, null));
+        (order.BaseAmount, order.PerPersonAmount, order.People, order.CustomerId).ShouldBe((900L, 1000L, 2, $"cus_{tenant.Id:N}"));
+        _api.Billing.Customers.ShouldBe([tenant.Id]);
+        (await CustomerMapOfAsync(tenant.Id)).ShouldBe($"cus_{tenant.Id:N}|{await _testData.UserIdOfAsync(owner)}");
         (order.SuccessUrl.ToString(), order.CancelUrl.ToString()).ShouldBe(($"{BillingRequests.ReturnUrl}?checkout=success", $"{BillingRequests.ReturnUrl}?checkout=cancelled"));
     }
 
@@ -120,13 +122,42 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-        _api.Billing.Put(BillingRequests.ActiveSubscription(tenant.Id, _planId, await _testData.UserIdOfAsync(owner)));
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.created", $"sub_{tenant.Id:N}"));
+        await _api.PayAsync(owner, tenant.Id, _planId);
 
         var answer = await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId);
 
         answer.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         (await BillingRequests.CodeOfAsync(answer)).ShouldBe("billing.already_subscribed");
+    }
+
+    // B5: the tenant has one customer. A second checkout, by another member, keeps it and names the new member.
+    [Fact]
+    public async Task OpenCheckoutSession_ASecondTime_KeepsTheTenantsCustomerAndNamesTheNewMember()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+        await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId);
+
+        var second = await _api.CreateClient(manager).OpenCheckoutSessionAsync(tenant.Id, _planId);
+
+        second.StatusCode.ShouldBe(HttpStatusCode.OK);
+        _api.Billing.Customers.ShouldBe([tenant.Id]);
+        _api.Billing.Checkouts.Select(order => order.CustomerId).ShouldBe([$"cus_{tenant.Id:N}", $"cus_{tenant.Id:N}"]);
+        (await CustomerMapOfAsync(tenant.Id)).ShouldBe($"cus_{tenant.Id:N}|{await _testData.UserIdOfAsync(manager)}");
+    }
+
+    // A refused checkout creates no customer.
+    [Fact]
+    public async Task OpenCheckoutSession_Refused_CreatesNoCustomer()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+
+        await _api.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, _planId, returnUrl: "https://evil.test/");
+
+        _api.Billing.Customers.ShouldBeEmpty();
+        (await CustomerMapOfAsync(tenant.Id)).ShouldBeNull();
     }
 
     // The maintainer's decision of 2026-11-14: billing is off by default, and the app works as before step 40.
@@ -142,4 +173,7 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         answer.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await BillingRequests.CodeOfAsync(answer)).ShouldBe("billing.off");
     }
+
+    private Task<string?> CustomerMapOfAsync(Guid tenantId) =>
+        database.ScalarAsSuperuserAsync<string>($"SELECT concat_ws('|', customer_id, checkout_by) FROM billing.customers WHERE tenant_id = '{tenantId}'");
 }
