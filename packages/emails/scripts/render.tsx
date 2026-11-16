@@ -6,6 +6,7 @@
 // (`time-zone-cities.json`, a copy of what packages/ui generates from CLDR, so the emails name a zone as the apps do). The folder holds
 // only this script's output, so the script empties it first.
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { pretty, render } from "@react-email/render";
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
@@ -165,38 +166,67 @@ const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
       }),
 });
 
-// How a language writes an amount of money, as packages/ui's formatMoney writes it with Intl: its group and decimal marks, and for each
-// currency the text before and after the number and the digits of its minor unit. The API writes an amount from it without ICU.
+// How a language writes an amount of money, from CLDR's data, which the browsers' Intl and so packages/ui's formatMoney also read: its group
+// and decimal marks, and for each currency the text before and after the number and the digits of its minor unit. The data is a package of
+// a fixed version, not the Intl of the Node that runs this script, so every machine writes the same file. A symbol that ends or starts in a
+// letter next to the number takes CLDR's pattern for it ("TRY 12"). The API writes an amount from it without ICU.
+type CldrNumbers = {
+  main: Record<
+    string,
+    {
+      numbers: Record<string, Record<string, string>> & {
+        defaultNumberingSystem: string;
+      };
+    }
+  >;
+};
+type CldrCurrencies = {
+  main: Record<
+    string,
+    { numbers: { currencies: Record<string, { symbol?: string }> } }
+  >;
+};
+type CldrCurrencyData = {
+  supplemental: {
+    currencyData: { fractions: Record<string, { _digits: string }> };
+  };
+};
+const cldr = createRequire(import.meta.url);
+const fractions = (
+  cldr("cldr-core/supplemental/currencyData.json") as CldrCurrencyData
+).supplemental.currencyData.fractions;
 const moneyOf = (language: Language) => {
-  const marks = Object.fromEntries(
-    new Intl.NumberFormat(language, { numberingSystem: "latn" })
-      .formatToParts(1234.5)
-      .filter((part) => part.type === "group" || part.type === "decimal")
-      .map((part) => [part.type, part.value]),
-  );
+  const numbers = (
+    cldr(`cldr-numbers-full/main/${language}/numbers.json`) as CldrNumbers
+  ).main[language]?.numbers;
+  const names = (
+    cldr(`cldr-numbers-full/main/${language}/currencies.json`) as CldrCurrencies
+  ).main[language]?.numbers.currencies;
+  if (!numbers || !names) {
+    throw new Error(`CLDR has no numbers of ${language}.`);
+  }
+  const marks = numbers["symbols-numberSystem-latn"] ?? {};
+  const formats = numbers["currencyFormats-numberSystem-latn"] ?? {};
   const currencies = Object.fromEntries(
-    Intl.supportedValuesOf("currency").map((currency) => {
-      const format = new Intl.NumberFormat(language, {
-        style: "currency",
-        currency,
-        numberingSystem: "latn",
-      });
-      const parts = format.formatToParts(1);
-      const first = parts.findIndex((part) => part.type === "integer");
-      const last = parts.findLastIndex(
-        (part) => part.type === "integer" || part.type === "fraction",
-      );
-      const text = (from: number, to: number) =>
-        parts
-          .slice(from, to)
-          .map((part) => part.value)
-          .join("");
+    Object.entries(names).map(([currency, name]) => {
+      const sign = name.symbol ?? currency;
+      const standard = (formats.standard ?? "¤#,##0.00").split(";")[0] ?? "";
+      const before = standard.indexOf("¤") < standard.search(/[#0]/);
+      const touching = before ? sign.slice(-1) : sign.slice(0, 1);
+      const pattern =
+        /\p{L}/u.test(touching) && formats["standard-alphaNextToNumber"]
+          ? (formats["standard-alphaNextToNumber"].split(";")[0] ?? standard)
+          : standard;
+      const first = pattern.search(/[#0]/);
+      const last = Math.max(pattern.lastIndexOf("#"), pattern.lastIndexOf("0"));
       return [
         currency,
         {
-          prefix: text(0, first),
-          suffix: text(last + 1, parts.length),
-          digits: format.resolvedOptions().maximumFractionDigits ?? 2,
+          prefix: pattern.slice(0, first).replace("¤", sign),
+          suffix: pattern.slice(last + 1).replace("¤", sign),
+          digits: Number(
+            (fractions[currency] ?? fractions.DEFAULT)?._digits ?? "2",
+          ),
         },
       ];
     }),

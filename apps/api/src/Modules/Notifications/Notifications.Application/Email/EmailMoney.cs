@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Notifications.Application.Email;
 
 /// <summary>
-/// How a language writes an amount of money in an email, from <c>packages/emails</c>, which reads it from Intl as the apps' one formatter,
+/// How a language writes an amount of money in an email, from <c>packages/emails</c>, which reads it from CLDR, as the apps' one formatter,
 /// <c>formatMoney</c> of <c>packages/ui</c>, writes it: the image has no ICU (ARCHITECTURE.md, section 7). An amount is a whole number of
 /// its currency's minor unit with its ISO 4217 code (Fowler, *Patterns of Enterprise Application Architecture*, "Money"). A whole amount
 /// shows no decimals: <c>€100</c>, <c>€12.50</c>, <c>‏100 €</c>. Digits are Western, and the integer part is grouped by three.
