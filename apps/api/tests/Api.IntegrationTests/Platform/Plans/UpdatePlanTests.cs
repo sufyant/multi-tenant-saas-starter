@@ -341,6 +341,7 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         await using var billing = await PricedPlans.StartAsync(database);
         await billing.PayingAsync(billing.Tenants.Team);
         var first = await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_after_notice" }));
+        billing.Time.Advance(TimeSpan.FromMinutes(5));
         await billing.Api.WaitingForMessagesAsync(() => billing.ChangeTeamPriceAsync(
             new { who = "new_customers_only" }, new { baseMonthly = 0, perPersonMonthly = 1_500, baseYearly = 0, perPersonYearly = 15_000 }));
 
