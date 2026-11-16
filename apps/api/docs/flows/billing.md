@@ -118,8 +118,8 @@ A member who manages billing pays for a plan by card, through Stripe, and the te
 
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
-| `GetBillingFactsQuery` | `PUT /v1/platform/tenants/{tenantId}/billing/billed-by` and `GET /v1/platform/tenants/{tenantId}/billing` | Billing, `GetBillingFactsHandler`, through ControlPlane's `ITenantNames` and `IUserDirectory`: the tenant's name, none for a tenant that does not exist (404 `billing.tenant_not_found`), and the system admin's user id | ControlPlane's DbContext, in the tenant of the route |
-| `SetBilledByCommand` | the switch | Billing, `SetBilledByHandler`: locks the tenant's customer, when it has one, then the mark, the subscription and the checkout (B7) | Billing's DbContext, in the tenant of the route |
+| `GetTenantBillingQuery` | `PUT /v1/platform/tenants/{tenantId}/billing/billed-by` and `GET /v1/platform/tenants/{tenantId}/billing` | Billing, `GetTenantBillingHandler`, through ControlPlane's `ITenantNames` and `IUserDirectory`: the tenant's name, none for a tenant that does not exist (404 `billing.tenant_not_found`), and the system admin's user id | ControlPlane's DbContext, in the tenant of the route |
+| `SetBilledByCommand` | the switch | Billing, `SetBilledByHandler`: locks the tenant's customer, when it has one, then the mark (B12), the subscription and the checkout (B7) | Billing's DbContext, in the tenant of the route |
 | `SetCancelAtPeriodEndCommand`, `ExpireCheckoutPagesCommand` | `SetBilledByHandler` | Billing, as for a closure (section 4) | No |
 | `ContractStartedEvent`, `ContractEndedEvent` | `SetBilledByHandler` | Audit, `RecordContractStartedHandler` and `RecordContractEndedHandler` (`tenant.contract_started` and `tenant.contract_ended`, by the system admin in the platform's log and by the platform in the tenant's) | Yes, the tenant's |
 | `GetContractQuery` | the tenant's and the platform's reads, Checkout, the portal, the plan change, its preview and its undo | Billing, `GetContractHandler` | Billing's DbContext, in the tenant |
@@ -128,7 +128,7 @@ A member who manages billing pays for a plan by card, through Stripe, and the te
 - To Contract: Stripe ends the subscription at the end of the period it paid for, with no refund. The subscription takes the closure's mark (`closure_end` `Asked`), so each later state of Stripe asks for the end again (section 4), and the Activity log records no member's cancellation. The open checkout goes, and Stripe expires its pages.
 - Back to card: the end that Contract asked for is taken back while the tenant is not closed, as a reopen does. A reopen takes back no end while the tenant is Contract. The members pay again by checkout once the subscription has ended.
 - The same state again answers 200 and records nothing (I1).
-- A Contract tenant's members open no checkout and no portal, and change, preview or undo no plan: 409 `billing.contract`. Checkout and the plan change check it again under the customer's lock.
+- A Contract tenant's members open no checkout and no portal, and change, preview or undo no plan: 409 `billing.contract`. Checkout checks it again under the mark's lock, and the plan change under the customer's lock. The mark's lock is the tenant's advisory lock, as a tenant may have no customer to lock: a switch that comes after a first checkout finds its customer again and expires its page.
 - A system admin sets a Contract tenant's plan (`ChangeTenantPlan`). Its last subscription, while it runs out, puts the tenant on no plan and moves it nowhere when it ends: no `PlanPaidEvent`, no `PlanEndedEvent`. It sets no seats at Stripe, and a failed payment records nothing and starts no grace.
 - The purge deletes the mark.
 

@@ -3,7 +3,7 @@ using Billing.Api.Authentication;
 using Billing.Api.Tenant.Subscriptions;
 using Billing.Application.Contracts.SetBilledBy;
 using Billing.Application.Subscriptions;
-using Billing.Application.Tenants.GetBillingFacts;
+using Billing.Application.Tenants.GetTenantBilling;
 using Billing.Application;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -16,7 +16,7 @@ namespace Billing.Api.Platform.Subscriptions;
 /// A tenant's billing for the system admins (B12, 4.31 to 4.35): how it pays and its subscription, and the switch between card and
 /// Contract. The tenant comes from the route; each message declares it, so row level security keeps billing's rows to it (W3).
 /// </summary>
-public static class TenantBillingEndpoints
+public static class PlatformSubscriptionEndpoints
 {
     public static void Map(RouteGroupBuilder platform)
     {
@@ -71,6 +71,6 @@ public static class TenantBillingEndpoints
         return await SubscriptionEndpoints.ReadAsync(bus, tenantId, cancellationToken);
     }
 
-    private static Task<BillingFacts?> FactsAsync(IMessageBus bus, Guid tenantId, ClaimsPrincipal user, CancellationToken cancellationToken) =>
-        bus.InvokeForTenantAsync<BillingFacts?>(tenantId.ToString(), new GetBillingFactsQuery(tenantId, user.Id()), cancellationToken);
+    private static Task<TenantBillingFacts?> FactsAsync(IMessageBus bus, Guid tenantId, ClaimsPrincipal user, CancellationToken cancellationToken) =>
+        bus.InvokeForTenantAsync<TenantBillingFacts?>(tenantId.ToString(), new GetTenantBillingQuery(user.Id(), tenantId), cancellationToken);
 }

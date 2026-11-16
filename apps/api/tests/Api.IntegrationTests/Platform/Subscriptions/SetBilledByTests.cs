@@ -305,6 +305,20 @@ public sealed class SetBilledByTests(Database database) : IAsyncLifetime
         _api.Billing.Seats.ShouldBeEmpty();
     }
 
+    // B10: a member who leaves a Contract tenant changes no seats at Stripe.
+    [Fact]
+    public async Task SetBilledBy_ContractThenAMemberRemoved_SetsNoSeats()
+    {
+        var (tenantId, _) = await _tenants.PayingAsync(_tenants.Team);
+        var member = await _testData.UserIdOfAsync(await _testData.AddMemberAsync(tenantId));
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(_tenants.OwnerOf(tenantId)).RemoveMemberAsync(tenantId, member));
+
+        _api.Billing.Seats.ShouldBeEmpty();
+    }
+
     // B11: a Contract tenant has no failed-payment states: a failure records nothing and starts no grace.
     [Fact]
     public async Task SetBilledBy_ContractThenAFailedPayment_RecordsNothing()

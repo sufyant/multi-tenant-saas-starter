@@ -7,8 +7,8 @@ namespace Billing.Application.Contracts;
 public interface IContractRepository
 {
     /// <summary>
-    /// The tenant's mark, locked for the rest of the transaction; none for a tenant that pays by card. A caller that changes billing locks
-    /// the tenant's customer first, when it has one (B7).
+    /// The tenant's mark, with the tenant's lock of the mark held for the rest of the transaction, also when the tenant has no mark; none
+    /// for a tenant that pays by card. A caller locks the tenant's customer first, when it has one (B7).
     /// </summary>
     internal Task<Contract?> FindForUpdateAsync(CancellationToken cancellationToken);
 

@@ -27,8 +27,9 @@ public static class ReserveCheckoutHandler
             return (Errors.TenantClosed, []);
         }
 
-        // B12: a Contract tenant opens no checkout; a mark that came after the endpoint's check is read under the customer's lock.
-        if (await contracts.IsContractAsync(cancellationToken))
+        // B12: a Contract tenant opens no checkout; a mark that came after the endpoint's check is read under its lock, so a switch that
+        // runs now either sees this checkout and expires it, or this checkout sees the mark.
+        if (await contracts.FindForUpdateAsync(cancellationToken) is not null)
         {
             return (Errors.Contract, []);
         }

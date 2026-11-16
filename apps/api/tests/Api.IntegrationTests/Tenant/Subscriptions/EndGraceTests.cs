@@ -95,6 +95,22 @@ public sealed class EndGraceTests(Database database) : IAsyncLifetime
         (await PaymentAsync(manager, tenantId)).GetProperty("state").GetString().ShouldBe("grace");
     }
 
+    // B12: a grace that started before the tenant became Contract moves nothing at its end: a system admin sets a Contract tenant's plan.
+    [Fact]
+    public async Task EndGrace_OfATenantMarkedContractDuringIt_MovesNothing()
+    {
+        var (tenantId, _) = await _tenants.PayingAsync(_tenants.Team);
+        var end = await GraceAsync(tenantId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+        _time.Advance(TimeSpan.FromDays(7));
+
+        await DeliverAsync(new EndGraceCommand(tenantId, end));
+
+        (await _tenants.PlanOfAsync(tenantId)).ShouldBe(_tenants.Team);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = 'tenant.moved_to_default_plan'")).ShouldBe(0);
+    }
+
     // Stripe's retries of the tenant's invoice are over: billing's grace starts, and the test reads the end it scheduled.
     private async Task<DateTimeOffset> GraceAsync(Guid tenantId)
     {

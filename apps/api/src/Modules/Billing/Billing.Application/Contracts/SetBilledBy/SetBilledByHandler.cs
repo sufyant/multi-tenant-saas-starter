@@ -43,10 +43,13 @@ public static class SetBilledByHandler
                 messages.Add(new SetCancelAtPeriodEndCommand(subscription.SubscriptionId, cancelAtPeriodEnd));
             }
 
-            if (customer is not null && await checkouts.FindForUpdateAsync(cancellationToken) is { } checkout)
+            // A first checkout that held the mark's lock before this switch made the customer after the switch looked for it: the lock
+            // order is the customer, then the mark (B7), so the customer is read again here, without its lock, and its checkout goes too.
+            var customerId = customer?.CustomerId ?? await customers.FindCustomerIdAsync(cancellationToken);
+            if (customerId is not null && await checkouts.FindForUpdateAsync(cancellationToken) is { } checkout)
             {
                 checkouts.Remove(checkout);
-                messages.Add(new ExpireCheckoutPagesCommand(customer.CustomerId, checkout.Key));
+                messages.Add(new ExpireCheckoutPagesCommand(customerId, checkout.Key));
             }
 
             messages.Add(new ContractStartedEvent(Guid.CreateVersion7(now), now, command.TenantId, command.TenantName, command.ActorId));

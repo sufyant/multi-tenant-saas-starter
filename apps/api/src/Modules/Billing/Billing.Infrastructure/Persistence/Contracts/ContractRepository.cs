@@ -8,9 +8,12 @@ namespace Billing.Infrastructure.Persistence.Contracts;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class ContractRepository(BillingDbContext billing) : IContractRepository
 {
+    // A missing row locks nothing, and a tenant that never paid by card has no customer to lock, so the lock is a transaction-level
+    // advisory lock of the tenant's mark (B12): two switches, or a switch and a first checkout, run one after the other.
     async Task<Contract?> IContractRepository.FindForUpdateAsync(CancellationToken cancellationToken)
     {
-        await billing.Database.ExecuteSqlAsync($"SELECT tenant_id FROM billing.contracts FOR UPDATE", cancellationToken);
+        await billing.Database.ExecuteSqlAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended('billing.contracts:' || current_setting('app.tenant_id'), 0))", cancellationToken);
         return await billing.Contracts.SingleOrDefaultAsync(cancellationToken);
     }
 

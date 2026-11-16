@@ -6,15 +6,15 @@ using Tenancy.Caching;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: GetBillingFactsQueryHandler316731922
+    // START: GetTenantBillingQueryHandler1729159188
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class GetBillingFactsQueryHandler316731922 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class GetTenantBillingQueryHandler1729159188 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
         private readonly Tenancy.Caching.ReadCache _readCache;
 
-        public GetBillingFactsQueryHandler316731922(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
+        public GetTenantBillingQueryHandler1729159188(Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, Tenancy.Caching.ReadCache readCache)
         {
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -27,7 +27,7 @@ namespace Internal.Generated.WolverineHandlers
             var userDirectory = new ControlPlane.Infrastructure.Persistence.Users.UserDirectory(controlPlaneDbContext, _readCache);
             var tenantNames = new ControlPlane.Infrastructure.Persistence.Tenants.TenantNames(controlPlaneDbContext);
             // The actual message body
-            var getBillingFactsQuery = (Billing.Application.Tenants.GetBillingFacts.GetBillingFactsQuery)context.Envelope.Message;
+            var getTenantBillingQuery = (Billing.Application.Tenants.GetTenantBilling.GetTenantBillingQuery)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -41,11 +41,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Billing.Application.Tenants.GetBillingFacts.GetBillingFactsHandler");
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Tenants.GetBillingFacts.GetBillingFactsHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Billing.Application.Tenants.GetTenantBilling.GetTenantBillingHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Tenants.GetTenantBilling.GetTenantBillingHandler");
                 
                 // The actual message execution
-                var outgoing1 = await Billing.Application.Tenants.GetBillingFacts.GetBillingFactsHandler.HandleAsync(getBillingFactsQuery, tenantNames, userDirectory, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Billing.Application.Tenants.GetTenantBilling.GetTenantBillingHandler.HandleAsync(getTenantBillingQuery, tenantNames, userDirectory, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
@@ -68,7 +68,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: GetBillingFactsQueryHandler316731922
+    // END: GetTenantBillingQueryHandler1729159188
     
     
 }

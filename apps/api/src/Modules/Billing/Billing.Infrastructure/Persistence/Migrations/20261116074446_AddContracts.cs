@@ -25,10 +25,9 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     table.PrimaryKey("pk_contracts", x => x.tenant_id);
                 });
 
-            // Privileges come from migrations: the application marks a tenant Contract and takes the mark back (B12). UPDATE is for the lock
-            // of SELECT ... FOR UPDATE, which PostgreSQL grants only with it; the code changes no row.
+            // Privileges come from migrations: the application marks a tenant Contract and takes the mark back (B12); it changes no row.
             migrationBuilder.Sql("""
-                GRANT SELECT, INSERT, UPDATE, DELETE ON billing.contracts TO api_application;
+                GRANT SELECT, INSERT, DELETE ON billing.contracts TO api_application;
                 """);
         }
 

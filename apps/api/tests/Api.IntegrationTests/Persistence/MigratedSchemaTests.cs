@@ -32,6 +32,7 @@ public sealed class MigratedSchemaTests(Database database)
             audit.platform_entries: forced
             audit.tenant_retentions: forced
             billing.checkouts: forced
+            billing.contracts: forced
             billing.subscriptions: forced
             control_plane.invitations: forced
             control_plane.memberships: forced
@@ -68,6 +69,7 @@ public sealed class MigratedSchemaTests(Database database)
             audit.platform_entries platform_read: PERMISSIVE SELECT {public} USING ((NULLIF(current_setting('app.tenant_id'::text, true), ''::text) IS NULL) AND (NULLIF(current_setting('app.user_id'::text, true), ''::text) IS NULL)) WITH CHECK -
             audit.tenant_retentions tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             billing.checkouts tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            billing.contracts tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             billing.subscriptions tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.invitations own_accepted_invitations: PERMISSIVE SELECT {public} USING (accepted_by = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK -
             control_plane.invitations tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
@@ -146,6 +148,7 @@ public sealed class MigratedSchemaTests(Database database)
             table audit.tenant_retentions: DELETE, INSERT, SELECT, UPDATE
             table billing.__ef_migrations_history: SELECT
             table billing.checkouts: DELETE, INSERT, SELECT, UPDATE
+            table billing.contracts: DELETE, INSERT, SELECT
             table billing.customers: DELETE, INSERT, SELECT, UPDATE
             table billing.stripe_events: INSERT, SELECT
             table billing.subscriptions: DELETE, INSERT, SELECT, UPDATE

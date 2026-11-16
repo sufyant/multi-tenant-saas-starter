@@ -25,7 +25,7 @@ public static class BillingModule
     /// </summary>
     public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder tenant, RouteGroupBuilder publicRoutes)
     {
-        TenantBillingEndpoints.Map(platform);
+        PlatformSubscriptionEndpoints.Map(platform);
         SubscriptionEndpoints.Map(tenant);
         CheckoutSessionEndpoints.Map(tenant);
         PortalSessionEndpoints.Map(tenant);
