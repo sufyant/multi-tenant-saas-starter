@@ -639,6 +639,24 @@ describe("ActivitySentence", () => {
     expect(shown("المنصة أعادت المنصة فتح هذه المؤسسة.")).toBeInTheDocument();
   });
 
+  // 12.12, B12: a system admin marks the organisation Contract, or takes it back to card.
+  it.each([
+    [
+      AuditOperation.TenantContractStarted,
+      "Platform The platform marked this organisation Contract. It is invoiced outside the app.",
+    ],
+    [
+      AuditOperation.TenantContractEnded,
+      "Platform The platform ended Contract. This organisation pays by card in the app.",
+    ],
+  ])("ActivitySentence_%s_SaysThatThePlatformActed", (operation, text) => {
+    renderWithProviders(
+      <ActivitySentence entry={entry({ operation, actor: thePlatform })} />,
+    );
+
+    expect(shown(text)).toBeInTheDocument();
+  });
+
   it.each([
     [
       AuditOperation.TenantPlanChanged,
