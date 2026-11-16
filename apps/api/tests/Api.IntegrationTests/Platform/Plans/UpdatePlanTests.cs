@@ -4,6 +4,8 @@ using System.Text.Json;
 using ControlPlane.Application.Plans;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Billing.Application.PriceChanges.AnnouncePriceChange;
+using Billing.Application.PriceChanges.MovePlanPrices;
 using Tenancy;
 
 namespace Api.IntegrationTests.Platform.Plans;
@@ -282,6 +284,77 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         (edited.StatusCode, await CodeOfAsync(edited)).ShouldBe((HttpStatusCode.BadRequest, "plan.meter_invalid"));
         var plan = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/plans/{planId}", Cancellation);
         plan.GetProperty("meters")[0].GetProperty("key").GetString().ShouldBe("ai.requests");
+    }
+
+    // 6.14: "Everyone, at their next period after 30 days' notice." Each paying organisation is told today, and its subscription moves to the
+    // new Prices in 30 days, with no proration, so it pays the new price from its first period after that day (B13).
+    [Fact]
+    public async Task UpdatePlan_ANewPriceForEveryoneAfterNotice_TellsEachPayerTodayAndMovesItIn30Days()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        var (tenantId, _) = await billing.PayingAsync(billing.Tenants.Team);
+
+        var session = await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_after_notice" }));
+
+        var movesAt = billing.Time.GetUtcNow().AddDays(30);
+        session.Scheduled.Envelopes().ShouldContain(envelope => envelope.Message is MovePlanPricesCommand && envelope.ScheduledTime == movesAt);
+        (await billing.AuditCountAsync(tenantId, "tenant.price_change_announced")).ShouldBe(1);
+        (await billing.PlatformAuditCountAsync(billing.Tenants.Team, "plan.price_change_scheduled")).ShouldBe(1);
+
+        await billing.DeliverScheduledAsync(session);
+
+        billing.Api.Billing.PriceMoves.ShouldBe([($"sub_{tenantId:N}", 0L, 1_200L)]);
+    }
+
+    // 6.14: "Everyone, after a set period": each payer is told 30 days before the day, and moves on the day.
+    [Fact]
+    public async Task UpdatePlan_ANewPriceFromADate_TellsEachPayer30DaysBeforeAndMovesItOnTheDay()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        var (tenantId, _) = await billing.PayingAsync(billing.Tenants.Team);
+        var from = billing.Time.GetUtcNow().AddDays(180);
+
+        var session = await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_from", from }));
+
+        session.Scheduled.Envelopes().ShouldContain(envelope => envelope.Message is MovePlanPricesCommand && envelope.ScheduledTime == from);
+        session.Scheduled.Envelopes().ShouldContain(envelope => envelope.Message is AnnouncePriceChangeCommand && envelope.ScheduledTime == from.AddDays(-30));
+        (await billing.AuditCountAsync(tenantId, "tenant.price_change_announced")).ShouldBe(0);
+    }
+
+    // 6.14: "New customers only": today's payers keep their price, and nothing is scheduled.
+    [Fact]
+    public async Task UpdatePlan_ANewPriceForNewCustomersOnly_MovesNobody()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        await billing.PayingAsync(billing.Tenants.Team);
+
+        var session = await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "new_customers_only" }));
+
+        session.Scheduled.Envelopes().ShouldNotContain(envelope => envelope.Message is MovePlanPricesCommand || envelope.Message is AnnouncePriceChangeCommand);
+        billing.Api.Billing.PriceMoves.ShouldBeEmpty();
+    }
+
+    // The notice is 30 days, so a set day comes at least 30 days after today.
+    [Fact]
+    public async Task UpdatePlan_APriceChangeFromADayInLessThan30Days_IsInvalid()
+    {
+        var admin = await AdminAsync();
+        var planId = await _testData.AddPlanAsync([]);
+        await _testData.SetPlanPricesAsync(planId, 0, 1_000, 0, 10_000);
+
+        var updated = await admin.PatchAsJsonAsync(
+            $"/v1/platform/plans/{planId}",
+            new
+            {
+                name = $"Team {Guid.NewGuid():N}",
+                isDefault = false,
+                entitlements = new Dictionary<string, object>(),
+                prices = new { baseMonthly = 0, perPersonMonthly = 1_200, baseYearly = 0, perPersonYearly = 12_000 },
+                priceChange = new { who = "everyone_from", from = DateTimeOffset.UtcNow.AddDays(29) },
+            },
+            Cancellation);
+
+        (updated.StatusCode, await CodeOfAsync(updated)).ShouldBe((HttpStatusCode.BadRequest, "plan.price_change_invalid"));
     }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>

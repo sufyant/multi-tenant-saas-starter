@@ -260,6 +260,35 @@ public sealed class StripeBillingProviderTests
         found!.People.ShouldBe(10);
     }
 
+    // B13: what the subscription's Prices charge, for the payers of a plan and its price changes.
+    [Fact]
+    public async Task FindSubscription_TwoFees_NamesTheAmountsOfTheirPrices()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", SeatedJson("month", 10));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        (found!.BaseAmount, found.PerPersonAmount).ShouldBe((9900L, 800L));
+    }
+
+    // B13, Stripe "Change prices": a move to new Prices keeps the seats and charges the new Prices from the next invoice, with no proration.
+    [Fact]
+    public async Task MovePrices_ASeatedSubscription_KeepsTheSeatsWithNoProration()
+    {
+        var stripe = Seated("month", 10)
+            .Answer("GET", "/v1/prices", """{"object": "list", "data": [{"id": "price_found", "object": "price"}], "has_more": false, "url": "/v1/prices"}""")
+            .Answer("POST", "/v1/subscriptions/sub_1", SeatedJson("month", 10));
+
+        await ProviderOf(stripe).MovePricesAsync(ToBusiness with { BaseAmount = 9900, PerPersonAmount = 900, People = 0 }, Cancellation);
+
+        stripe.Sent.Single(request => request.Method == "POST").Body.Split('&').ShouldBe(
+            [
+                "items[0][id]=si_base", "items[0][deleted]=true", "items[1][id]=si_seats", "items[1][deleted]=true",
+                "items[2][price]=price_found", "items[2][quantity]=1", "items[3][price]=price_found", "items[3][quantity]=10", "proration_behavior=none",
+            ],
+            ignoreOrder: true);
+    }
+
     [Fact]
     public async Task FindSubscription_WithoutAFeePerPerson_NamesNoCount()
     {
@@ -353,9 +382,9 @@ public sealed class StripeBillingProviderTests
         {"id": "sub_1", "object": "subscription", "customer": "cus_1", "status": "active", "cancel_at_period_end": false, "schedule": {{{schedule}}},
          "items": {"object": "list", "data": [
            {"id": "si_base", "object": "subscription_item", "quantity": 1, "current_period_end": 1800000000,
-            "price": {"id": "price_base", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_base_{{{interval}}}_eur_9900", "recurring": {"interval": "{{{interval}}}"} } },
+            "price": {"id": "price_base", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_base_{{{interval}}}_eur_9900", "unit_amount": 9900, "recurring": {"interval": "{{{interval}}}"} } },
            {"id": "si_seats", "object": "subscription_item", "quantity": {{{people}}}, "current_period_end": 1800000000,
-            "price": {"id": "price_seats", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_per_person_{{{interval}}}_eur_800", "recurring": {"interval": "{{{interval}}}"} } }]} }
+            "price": {"id": "price_seats", "object": "price", "product": "plan_{{{Business:N}}}", "lookup_key": "plan_{{{Business:N}}}_per_person_{{{interval}}}_eur_800", "unit_amount": 800, "recurring": {"interval": "{{{interval}}}"} } }]} }
         """;
 
     // A monthly subscription of ten people on Business whose latest invoice is this one, with the customer's default card, a Visa ending

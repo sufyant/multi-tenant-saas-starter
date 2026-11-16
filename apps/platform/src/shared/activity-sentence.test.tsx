@@ -14,6 +14,7 @@ import {
   FeatureKey,
   LimitKey,
   PlanCreatedDetailsResponseOperation,
+  PlanPriceChangeScheduledDetailsResponseOperation,
   type PlanUpdatedDetailsResponse,
   PlanUpdatedDetailsResponseOperation,
   TenantCreatedDetailsResponseOperation,
@@ -100,6 +101,7 @@ const platformOperations = [
   AuditOperation.TenantPaymentFailed,
   AuditOperation.TenantMovedToDefaultPlan,
   AuditOperation.TenantContractStarted,
+  AuditOperation.PlanPriceChangeScheduled,
   AuditOperation.TenantContractEnded,
   AuditOperation.TenantPlanCancelled,
   AuditOperation.TenantPlanCancellationUndone,
@@ -787,6 +789,34 @@ type PlanCase = [
 ];
 
 const planCases: PlanCase[] = [
+  [
+    "PlanPriceChangeScheduled",
+    AuditOperation.PlanPriceChangeScheduled,
+    planTarget(partner),
+    {
+      operation:
+        PlanPriceChangeScheduledDetailsResponseOperation.PlanPriceChangeScheduled,
+      oldPrices: {
+        baseMonthly: 0,
+        perPersonMonthly: 1000,
+        baseYearly: 0,
+        perPersonYearly: 10000,
+      },
+      newPrices: {
+        baseMonthly: 0,
+        perPersonMonthly: 1200,
+        baseYearly: 0,
+        perPersonYearly: 12000,
+      },
+      currency: "EUR",
+      movesAt: "2026-12-02T12:00:00Z",
+    },
+    {
+      en: "Ciara Byrne changed the price of Partner: €12 for each person a month from 2 Dec 2026 (before: €10). Every organisation on Partner is told 30 days before.",
+      tr: "Ciara Byrne, Partner fiyatını değiştirdi: 2 Ara 2026 tarihinden itibaren kişi başı ayda €12 (önceki: €10). Partner planındaki her kuruluşa 30 gün önce bildirilir.",
+      ar: "غيّر Ciara Byrne سعر Partner: ‏12 € لكل شخص شهريًا اعتبارًا من 2 ديسمبر 2026 (قبل: ‏10 €). تُبلَّغ كل مؤسسة على Partner قبل 30 يومًا.",
+    },
+  ],
   [
     "PlanCreated",
     AuditOperation.PlanCreated,

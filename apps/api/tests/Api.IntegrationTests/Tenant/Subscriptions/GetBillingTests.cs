@@ -23,6 +23,22 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // 10.18: "From {date} the {plan} fee per person goes from {old} to {new} a month, excl. VAT." The members who manage billing read the
+    // price change that their organisation was told of, until it applies (B13).
+    [Fact]
+    public async Task GetBilling_APriceChangeTheTenantWasToldOf_AnswersItsDayAndPrices()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        var (tenantId, manager) = await billing.PayingAsync(billing.Tenants.Team);
+        await billing.Api.WaitingForMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_after_notice" }));
+
+        var answer = await (await billing.Api.CreateClient(manager).GetBillingAsync(tenantId)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        var change = answer.GetProperty("subscription").GetProperty("priceChange");
+        (change.GetProperty("movesAt").GetDateTimeOffset(), change.GetProperty("oldPrices").GetProperty("perPersonMonthly").GetInt64(), change.GetProperty("newPrices").GetProperty("perPersonMonthly").GetInt64())
+            .ShouldBe((billing.Time.GetUtcNow().AddDays(30), 1_000L, 1_200L));
+    }
+
     [Fact]
     public async Task GetBilling_BeforeTheFirstPayment_AnswersNoSubscription()
     {

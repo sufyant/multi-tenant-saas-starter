@@ -35,6 +35,8 @@ internal static class TablesWithoutTenant
         "api.idempotency_keys",
         "audit.platform_entries",
         "billing.customers",
+        "billing.payers",
+        "billing.price_changes",
         "billing.stripe_events",
         "notifications.notifications",
         "notifications.email_deliveries",
