@@ -72,6 +72,7 @@
     "billing": {
       "already_subscribed": "This organisation already pays by card. Change its plan instead.",
       "checkout_replaced": "Another checkout replaced this one. Open the checkout again.",
+      "contract": "This organisation is billed outside the app by invoice. To change the plan, send a request.",
       "no_customer": "This organisation has not paid by card yet.",
       "no_subscription": "This organisation does not pay by card. Open the checkout instead.",
       "nothing_scheduled": "No plan change or cancellation is scheduled.",
@@ -84,6 +85,7 @@
       "return_url_invalid": "The page to come back to is not part of this app.",
       "subscription_not_active": "The subscription is not active, so its plan cannot change now.",
       "tenant_closed": "This organisation is closed, so it pays for nothing.",
+      "tenant_not_found": "This organisation does not exist.",
       "webhook_invalid": "The event's signature is not valid."
     },
     "data_export": {
