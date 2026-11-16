@@ -1,4 +1,5 @@
 using System.Reflection;
+using Billing.Api.Platform.PriceChanges;
 using Billing.Api.Platform.Subscriptions;
 using Billing.Api.Public.Webhooks;
 using Billing.Api.Tenant.CheckoutSessions;
@@ -26,6 +27,7 @@ public static class BillingModule
     public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder tenant, RouteGroupBuilder publicRoutes)
     {
         PlatformSubscriptionEndpoints.Map(platform);
+        PriceChangeEndpoints.Map(platform);
         SubscriptionEndpoints.Map(tenant);
         CheckoutSessionEndpoints.Map(tenant);
         PortalSessionEndpoints.Map(tenant);

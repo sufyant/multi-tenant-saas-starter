@@ -58,8 +58,23 @@ export const GetBillingResponse = zod.object({
   "brand": zod.string(),
   "last4": zod.string()
 }).describe('The card Stripe tried: its brand, as Stripe names it (`visa`, `mastercard`), and its last four digits.')])
-}).describe('A failed payment of the subscription (B11; 10.15 to 10.17): `retrying` while Stripe tries again at `nextAttemptAt`,\n`grace` once its retries are over and the plan stays until `graceEndsAt`, and `moved_to_default` since `movedAt`, until\nthe open invoice is paid. `failedAt` is when the first attempt failed and `attempts` how many failed. `amountDue` is the open\ninvoice\'s amount without tax, in the minor unit of `currency`. `card` is the card Stripe tried, or null.')])
-}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due.')])
+}).describe('A failed payment of the subscription (B11; 10.15 to 10.17): `retrying` while Stripe tries again at `nextAttemptAt`,\n`grace` once its retries are over and the plan stays until `graceEndsAt`, and `moved_to_default` since `movedAt`, until\nthe open invoice is paid. `failedAt` is when the first attempt failed and `attempts` how many failed. `amountDue` is the open\ninvoice\'s amount without tax, in the minor unit of `currency`. `card` is the card Stripe tried, or null.')]),
+  "priceChange": zod.union([zod.null(),zod.object({
+  "movesAt": zod.iso.datetime({"offset":true}),
+  "oldPrices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.'),
+  "newPrices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.')
+}).describe('A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan\'s new prices; the\nplan\'s prices before and after (B13).')])
+}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.')])
 }).describe('The tenant\'s billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant\'s last\nsubscription shows until it ends.')
 
 export const PreviewPlanChangeParams = zod.object({

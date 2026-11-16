@@ -38,4 +38,6 @@ public static class BillingErrorCodes
     public static readonly ErrorCode BillingContract = ErrorCode.Declare("billing.contract");
 
     public static readonly ErrorCode BillingTenantNotFound = ErrorCode.Declare("billing.tenant_not_found");
+
+    public static readonly ErrorCode BillingNothingToMove = ErrorCode.Declare("billing.nothing_to_move");
 }

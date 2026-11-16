@@ -288,6 +288,28 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
 
     // B7: the second subscription ends at once with no new invoice, then each paid payment of its latest invoice is refunded in full, with
     // the payment's own idempotency key (Stripe, "Refunds", "Invoice payments").
+    // Stripe, "Change prices": a subscription keeps its Price until it moves to another. The move keeps each item's quantity, and with no
+    // proration it charges the new Price from the next invoice, the subscription's next period (B13).
+    async Task IBillingProvider.MovePricesAsync(PlanChangeOrder order, CancellationToken cancellationToken)
+    {
+        var subscriptions = new SubscriptionService(client);
+        var subscription = await subscriptions.GetAsync(order.SubscriptionId, cancellationToken: cancellationToken);
+        var people = subscription.Items.Data.FirstOrDefault(item => IsPerPerson(item.Price))?.Quantity ?? 0;
+        var lines = await LinesAsync(order with { People = (int)people }, cancellationToken);
+        await subscriptions.UpdateAsync(
+            subscription.Id,
+            new SubscriptionUpdateOptions
+            {
+                Items =
+                [
+                    .. subscription.Items.Data.Select(item => new SubscriptionItemOptions { Id = item.Id, Deleted = true }),
+                    .. lines.Select(line => new SubscriptionItemOptions { Price = line.Price, Quantity = line.Quantity }),
+                ],
+                ProrationBehavior = "none",
+            },
+            cancellationToken: cancellationToken);
+    }
+
     async Task IBillingProvider.EndAndRefundAsync(string subscriptionId, CancellationToken cancellationToken)
     {
         var subscriptions = new SubscriptionService(client);
@@ -356,7 +378,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             scheduledPlanId,
             scheduledPlanId is null ? null : next!.Recurring.Interval == "year",
             subscription.Items.Data.FirstOrDefault(seats => IsPerPerson(seats.Price)) is { } perPerson ? (int)perPerson.Quantity : null,
-            FailedPaymentOf(subscription));
+            FailedPaymentOf(subscription),
+            subscription.Items.Data.FirstOrDefault(fee => !IsPerPerson(fee.Price))?.Price.UnitAmount ?? 0,
+            subscription.Items.Data.FirstOrDefault(fee => IsPerPerson(fee.Price))?.Price.UnitAmount ?? 0);
     }
 
     ProviderEvent? IBillingProvider.ReadEvent(string body, string? signature)

@@ -348,6 +348,7 @@
       },
       "plan": {
         "created": "<actor></actor> أنشأ خطة.",
+        "price_change_scheduled": "<actor></actor> غيّر سعر خطة.",
         "updated": "<actor></actor> غيّر خطة."
       },
       "role": {
@@ -373,6 +374,7 @@
         "plan_change_scheduled": "{interval, select, yes {نقل <actor></actor> <plan></plan> إلى الفوترة الشهرية. تسري في {date}.} other {غيّر <actor></actor> الخطة من <oldPlan></oldPlan> إلى <newPlan></newPlan>. تسري في {date}.}}",
         "plan_change_undone": "تراجع <actor></actor> عن التغيير المجدول. تبقى <target></target> على <plan></plan>.",
         "plan_changed": "نقلت <actor></actor> هذه المؤسسة من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
+        "price_change_announced": "يتغير سعر <plan></plan> في {date}: {new} لكل شخص شهريًا (قبل: {old}).",
         "moved_to_default_plan": "انتقلت هذه المؤسسة إلى <plan></plan>، الخطة الافتراضية: فشلت دفعة وانتهت فترة السماح.",
         "payment_failed": "فشلت دفعة بقيمة {amount}. تحاول Stripe مجددًا حتى {date}.",
         "purge_warned": "أُبلغ المالكون بأن <target></target> ستُحذف في {date}.",

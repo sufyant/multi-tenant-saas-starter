@@ -1,6 +1,8 @@
 using Billing.Domain.Checkouts;
 using Billing.Domain.Contracts;
 using Billing.Domain.Customers;
+using Billing.Domain.Payers;
+using Billing.Domain.PriceChanges;
 using Billing.Domain.StripeEvents;
 using Billing.Domain.Subscriptions;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +31,10 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
     internal DbSet<Contract> Contracts => Set<Contract>();
 
     internal DbSet<StripeEvent> StripeEvents => Set<StripeEvent>();
+
+    internal DbSet<PriceChange> PriceChanges => Set<PriceChange>();
+
+    internal DbSet<Payer> Payers => Set<Payer>();
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -95,6 +101,38 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             customer.HasKey(c => c.CustomerId);
             customer.Property(c => c.CustomerId).HasMaxLength(StripeEvent.IdMaxLength);
             customer.HasIndex(c => c.TenantId).IsUnique();
+        });
+
+        // B13: a plan's price changes and the tenants' payers, which belong to no tenant's row level security (R6).
+        modelBuilder.Entity<PriceChange>(change =>
+        {
+            change.ToTable("price_changes");
+            change.HasKey(c => c.Id);
+            change.Property(c => c.PlanName).HasMaxLength(100);
+            change.Property(c => c.Currency).HasMaxLength(3);
+            change.ComplexProperty(c => c.OldPrices, prices =>
+            {
+                prices.Property(price => price.BaseMonthly).HasColumnName("old_base_monthly");
+                prices.Property(price => price.PerPersonMonthly).HasColumnName("old_per_person_monthly");
+                prices.Property(price => price.BaseYearly).HasColumnName("old_base_yearly");
+                prices.Property(price => price.PerPersonYearly).HasColumnName("old_per_person_yearly");
+            });
+            change.ComplexProperty(c => c.NewPrices, prices =>
+            {
+                prices.Property(price => price.BaseMonthly).HasColumnName("new_base_monthly");
+                prices.Property(price => price.PerPersonMonthly).HasColumnName("new_per_person_monthly");
+                prices.Property(price => price.BaseYearly).HasColumnName("new_base_yearly");
+                prices.Property(price => price.PerPersonYearly).HasColumnName("new_per_person_yearly");
+            });
+            change.Ignore(c => c.AnnouncesAt);
+            change.HasIndex(c => new { c.PlanId, c.ChangedAt });
+        });
+
+        modelBuilder.Entity<Payer>(payer =>
+        {
+            payer.ToTable("payers");
+            payer.HasKey(p => p.TenantId);
+            payer.HasIndex(p => p.PlanId);
         });
 
         modelBuilder.Entity<StripeEvent>(stripeEvent =>

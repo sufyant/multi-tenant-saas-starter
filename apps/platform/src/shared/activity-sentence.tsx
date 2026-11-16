@@ -13,6 +13,7 @@ import {
   FeatureFlagRemovedFromCodeDetailsResponseOperation,
   FeatureFlagTenantListedDetailsResponseOperation,
   FeatureFlagTenantUnlistedDetailsResponseOperation,
+  PlanPriceChangeScheduledDetailsResponseOperation,
   PlanUpdatedDetailsResponseOperation,
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
@@ -145,6 +146,13 @@ function detailValues(
       return {
         amount: money(details.amountDue, details.currency),
         date: date(details.retriesUntil),
+      };
+    case PlanPriceChangeScheduledDetailsResponseOperation.PlanPriceChangeScheduled:
+      // 7.11 names the monthly fee per person, as the frame draws it.
+      return {
+        new: money(details.newPrices.perPersonMonthly, details.currency),
+        old: money(details.oldPrices.perPersonMonthly, details.currency),
+        date: date(details.movesAt),
       };
     case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
       return {

@@ -76,6 +76,7 @@
       "no_customer": "Bu kuruluş henüz kartla ödeme yapmadı.",
       "no_subscription": "Bu kuruluş kartla ödemiyor. Bunun yerine ödeme sayfasını açın.",
       "nothing_scheduled": "Planlanmış bir plan değişikliği ya da iptal yok.",
+      "nothing_to_move": "Bu plan için eski fiyatı ödeyen kuruluş yok.",
       "off": "Faturalama kullanılamıyor.",
       "payment_declined": "Kart reddedildi, bu yüzden plan değişmedi.",
       "plan_free": "Bu plan ücretsiz, ödenecek bir şey yok.",
@@ -159,6 +160,7 @@
       "name_taken": "Bu ad başka bir planda var.",
       "not_found": "Bu plan artık yok.",
       "override_not_found": "Bu kuruluşta bu anahtar için istisna yok.",
+      "price_change_invalid": "Bugünden en az 30 gün sonraki bir gün seçin.",
       "price_invalid": "0 veya daha büyük bir fiyat girin."
     },
     "role": {

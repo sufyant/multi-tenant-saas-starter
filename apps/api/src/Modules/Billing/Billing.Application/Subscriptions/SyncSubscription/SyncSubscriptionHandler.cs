@@ -21,7 +21,8 @@ public static class SyncSubscriptionHandler
         [
             new RouteSubscriptionCommand(
                 found.CustomerId, found.SubscriptionId, found.PlanId, IntervalOf(found.Yearly),
-                found.Status, found.CurrentPeriodEnd, found.CancelAtPeriodEnd, found.ScheduledPlanId, IntervalOf(found.ScheduledYearly), found.People, found.Payment),
+                found.Status, found.CurrentPeriodEnd, found.CancelAtPeriodEnd, found.ScheduledPlanId, IntervalOf(found.ScheduledYearly), found.People, found.Payment,
+                found.BaseAmount, found.PerPersonAmount),
         ];
     }
 

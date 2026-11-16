@@ -60,6 +60,10 @@ public static class AuditDetailsTypes
 
     public const string TenantPaymentFailed = AuditOperations.TenantPaymentFailed;
 
+    public const string PlanPriceChangeScheduled = AuditOperations.PlanPriceChangeScheduled;
+
+    public const string TenantPriceChangeAnnounced = AuditOperations.TenantPriceChangeAnnounced;
+
     public const string TenantMovedToDefaultPlan = AuditOperations.TenantMovedToDefaultPlan;
 
     public const string TenantPlanCancellationUndone = AuditOperations.TenantPlanCancellationUndone;
@@ -116,6 +120,8 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantPlanChanged] = typeof(TenantPlanChangedDetails),
         [AuditOperations.TenantPlanCancelled] = typeof(TenantPlanCancelledDetails),
         [AuditOperations.TenantPaymentFailed] = typeof(TenantPaymentFailedDetails),
+        [AuditOperations.PlanPriceChangeScheduled] = typeof(PlanPriceChangeScheduledDetails),
+        [AuditOperations.TenantPriceChangeAnnounced] = typeof(TenantPriceChangeAnnouncedDetails),
         [AuditOperations.TenantMovedToDefaultPlan] = typeof(TenantMovedToDefaultPlanDetails),
         [AuditOperations.TenantPlanCancellationUndone] = typeof(TenantPlanCancellationUndoneDetails),
         [AuditOperations.TenantPlanChangeScheduled] = typeof(TenantPlanChangeScheduledDetails),

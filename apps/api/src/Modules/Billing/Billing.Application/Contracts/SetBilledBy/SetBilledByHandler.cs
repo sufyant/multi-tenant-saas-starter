@@ -1,6 +1,7 @@
 using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Customers;
+using Billing.Application.PriceChanges;
 using Billing.Application.Subscriptions;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Contracts.Tenants;
@@ -22,6 +23,7 @@ public static class SetBilledByHandler
         IContractRepository contracts,
         ISubscriptionRepository subscriptions,
         ICheckoutRepository checkouts,
+        IPriceChangeStore payers,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -38,6 +40,12 @@ public static class SetBilledByHandler
         if (contract is null)
         {
             contracts.Add(new Contract(now, command.ActorId));
+
+            // B13: a Contract tenant pays no next period by card, so no price change counts it, tells it or moves it.
+            if (await payers.FindPayerAsync(cancellationToken) is { } payer)
+            {
+                payer.Take(payer.PlanId, payer.Yearly, payer.BaseAmount, payer.PerPersonAmount, ends: true);
+            }
             if (subscription?.EndForClosure() is { } cancelAtPeriodEnd)
             {
                 messages.Add(new SetCancelAtPeriodEndCommand(subscription.SubscriptionId, cancelAtPeriodEnd));

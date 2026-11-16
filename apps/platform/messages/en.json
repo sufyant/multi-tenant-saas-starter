@@ -417,6 +417,7 @@
       },
       "plan": {
         "created": "<actor></actor> created the plan <target></target>.",
+        "price_change_scheduled": "<actor></actor> changed the price of <target></target>: {new} for each person a month from {date} (before: {old}). Every organisation on <target></target> is told 30 days before.",
         "updated": "{change, select, renamed {<actor></actor> renamed the plan <name>{oldName}</name> to <target></target>.} default {<actor></actor> made <target></target> the default plan, in place of <previous></previous>.} defaultAndChanges {<actor></actor> made <target></target> the default plan, in place of <previous></previous>, and changed <changes></changes>.} one {<actor></actor> changed the plan <target></target>: <changes></changes>.} other {<actor></actor> changed several values of the plan <target></target>: <changes></changes>.}}"
       },
       "terms_version": {

@@ -147,6 +147,128 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     b.ToTable("customers", "billing");
                 });
 
+            modelBuilder.Entity("Billing.Domain.Payers.Payer", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<long>("BaseAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("base_amount");
+
+                    b.Property<bool>("Ends")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ends");
+
+                    b.Property<long>("PerPersonAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("per_person_amount");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<bool>("Yearly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("yearly");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_payers");
+
+                    b.HasIndex("PlanId")
+                        .HasDatabaseName("ix_payers_plan_id");
+
+                    b.ToTable("payers", "billing");
+                });
+
+            modelBuilder.Entity("Billing.Domain.PriceChanges.PriceChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at");
+
+                    b.Property<Guid>("ChangedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<DateTimeOffset?>("MovesAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("moves_at");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<string>("PlanName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("plan_name");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "NewPrices", "Billing.Domain.PriceChanges.PriceChange.NewPrices#PlanPrices", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<long>("BaseMonthly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("new_base_monthly");
+
+                            b1.Property<long>("BaseYearly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("new_base_yearly");
+
+                            b1.Property<long>("PerPersonMonthly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("new_per_person_monthly");
+
+                            b1.Property<long>("PerPersonYearly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("new_per_person_yearly");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "OldPrices", "Billing.Domain.PriceChanges.PriceChange.OldPrices#PlanPrices", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<long>("BaseMonthly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("old_base_monthly");
+
+                            b1.Property<long>("BaseYearly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("old_base_yearly");
+
+                            b1.Property<long>("PerPersonMonthly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("old_per_person_monthly");
+
+                            b1.Property<long>("PerPersonYearly")
+                                .HasColumnType("bigint")
+                                .HasColumnName("old_per_person_yearly");
+                        });
+
+                    b.HasKey("Id")
+                        .HasName("pk_price_changes");
+
+                    b.HasIndex("PlanId", "ChangedAt")
+                        .HasDatabaseName("ix_price_changes_plan_id_changed_at");
+
+                    b.ToTable("price_changes", "billing");
+                });
+
             modelBuilder.Entity("Billing.Domain.StripeEvents.StripeEvent", b =>
                 {
                     b.Property<string>("Id")

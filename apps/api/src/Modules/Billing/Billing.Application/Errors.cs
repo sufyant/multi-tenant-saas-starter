@@ -38,5 +38,7 @@ public static class Errors
 
     public static readonly Error TenantNotFound = Error.NotFound(BillingErrorCodes.BillingTenantNotFound, "The organisation was not found.");
 
+    public static readonly Error NothingToMove = Error.Conflict(BillingErrorCodes.BillingNothingToMove, "No organisation pays another price for this plan by card.");
+
     public static readonly Error WebhookInvalid = Error.Validation(BillingErrorCodes.BillingWebhookInvalid, "The event's signature is missing, wrong or too old.");
 }

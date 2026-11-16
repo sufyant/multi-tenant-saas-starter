@@ -60,6 +60,13 @@ public interface IBillingProvider
     Task SetSeatsAsync(string subscriptionId, int people, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Moves the subscription to the Prices of the order's amounts, with the same quantities and no proration, so it pays them from its next
+    /// period (B13). A part of 0 is left out, and a part the subscription had none of is added once for the base fee. The order's people
+    /// are not read.
+    /// </summary>
+    Task MovePricesAsync(PlanChangeOrder order, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Ends the subscription at once and refunds every payment of its latest invoice in full (B7): a second subscription that a race let
     /// through paid for nothing. One that has ended already is only refunded; each refund has its payment's idempotency key, so a retry
     /// refunds nothing twice.

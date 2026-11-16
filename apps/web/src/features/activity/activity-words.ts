@@ -24,6 +24,7 @@ import {
   TenantPlanChangedDetailsResponseOperation,
   TenantPlanChangeScheduledDetailsResponseOperation,
   TenantPlanChangeUndoneDetailsResponseOperation,
+  TenantPriceChangeAnnouncedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
 } from "@repo/api-client";
@@ -105,6 +106,14 @@ export function detailValues<N>(
       return {
         amount: words.money(details.amountDue, details.currency),
         date: date(details.retriesUntil),
+      };
+    case TenantPriceChangeAnnouncedDetailsResponseOperation.TenantPriceChangeAnnounced:
+      // 12.12 names the monthly fee per person, as the frame draws it.
+      return {
+        plan: words.plan(details.plan.name),
+        date: date(details.movesAt),
+        new: words.money(details.newPrices.perPersonMonthly, details.currency),
+        old: words.money(details.oldPrices.perPersonMonthly, details.currency),
       };
     case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
       return {

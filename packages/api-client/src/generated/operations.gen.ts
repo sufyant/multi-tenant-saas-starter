@@ -436,6 +436,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "GetPriceChange",
+    "method": "GET",
+    "path": "/v1/platform/plans/{planId}/price-change",
+    "tag": "Platform/PriceChanges",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "GetTenant",
     "method": "GET",
     "path": "/v1/platform/tenants/{tenantId}",
@@ -790,6 +801,17 @@ export const operations = [
     "method": "POST",
     "path": "/v1/me/notifications/{notificationId}/read",
     "tag": "Me/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "MoveToNewPrice",
+    "method": "POST",
+    "path": "/v1/platform/plans/{planId}/price-change/move",
+    "tag": "Platform/PriceChanges",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

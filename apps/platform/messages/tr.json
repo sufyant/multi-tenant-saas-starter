@@ -417,6 +417,7 @@
       },
       "plan": {
         "created": "<actor></actor>, <target></target> planını oluşturdu.",
+        "price_change_scheduled": "<actor></actor>, <target></target> fiyatını değiştirdi: {date} tarihinden itibaren kişi başı ayda {new} (önceki: {old}). <target></target> planındaki her kuruluşa 30 gün önce bildirilir.",
         "updated": "{change, select, renamed {<actor></actor>, <name>{oldName}</name> planının adını <target></target> olarak değiştirdi.} default {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı.} defaultAndChanges {<actor></actor>, <previous></previous> yerine <target></target> planını varsayılan yaptı ve şunları değiştirdi: <changes></changes>.} one {<actor></actor>, <target></target> planını değiştirdi: <changes></changes>.} other {<actor></actor>, <target></target> planında birkaç değeri değiştirdi: <changes></changes>.}}"
       },
       "terms_version": {
