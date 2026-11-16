@@ -168,15 +168,12 @@ const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
 // How a language writes an amount of money, as packages/ui's formatMoney writes it with Intl: its group and decimal marks, and for each
 // currency the text before and after the number and the digits of its minor unit. The API writes an amount from it without ICU.
 const moneyOf = (language: Language) => {
-  const marks = new Intl.NumberFormat(language, { numberingSystem: "latn" })
-    .formatToParts(1234.5)
-    .reduce<Record<string, string>>(
-      (found, part) =>
-        part.type === "group" || part.type === "decimal"
-          ? { ...found, [part.type]: part.value }
-          : found,
-      {},
-    );
+  const marks = Object.fromEntries(
+    new Intl.NumberFormat(language, { numberingSystem: "latn" })
+      .formatToParts(1234.5)
+      .filter((part) => part.type === "group" || part.type === "decimal")
+      .map((part) => [part.type, part.value]),
+  );
   const currencies = Object.fromEntries(
     Intl.supportedValuesOf("currency").map((currency) => {
       const format = new Intl.NumberFormat(language, {
