@@ -1,5 +1,6 @@
 using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions.CountSeats;
@@ -25,6 +26,7 @@ public static class ApplySubscriptionHandler
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
         ICheckoutRepository checkouts,
+        IContractRepository contracts,
         BillingOptions billing,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -55,9 +57,14 @@ public static class ApplySubscriptionHandler
             return [new RefundSubscriptionCommand(state.SubscriptionId)];
         }
 
+        // B12: a Contract tenant is billed outside the app. Its last subscription runs out with no seats, no failed-payment states and no
+        // plan of its own: a system admin sets the tenant's plan, and the end that Contract asked for is no member's.
+        var contract = await contracts.IsContractAsync(cancellationToken);
+        var stopped = customer.ClosedAt is not null || contract;
+
         // Step 40, billing per person: each state of a subscription that has not ended brings the provider's count of seats, which is set
         // again when it differs from the members who take a seat, a state the row has too, as a count is no part of the row.
-        OutgoingMessages messages = command.People is { } people && !Subscription.HasEnded(state.Status)
+        OutgoingMessages messages = command.People is { } people && !Subscription.HasEnded(state.Status) && !contract
             ? [new CountSeatsCommand(state.SubscriptionId, people)]
             : [];
         if (subscription is null)
@@ -70,7 +77,7 @@ public static class ApplySubscriptionHandler
             // B9, 12.12: a member's cancellation, a scheduled move and their undo are entries of the Activity log, by the member who changed
             // the plan last, once the provider's state shows them. Read before the row takes the state, which it compares with, as the
             // dunning's steps are (B11).
-            var scheduleChange = subscription.ScheduleChangeOf(state, customer.ClosedAt is not null);
+            var scheduleChange = subscription.ScheduleChangeOf(state, stopped);
             var dunning = subscription.DunningOf(state);
             if (subscription.Sync(state, now) == StateChange.Unchanged)
             {
@@ -78,14 +85,14 @@ public static class ApplySubscriptionHandler
             }
 
             // B11, 12.12: a payment that failed for the first time on an invoice is an entry of the Activity log; the provider retries it.
-            if (dunning.PaymentFailed && subscription.FailedPayment is { } failed)
+            if (dunning.PaymentFailed && !contract && subscription.FailedPayment is { } failed)
             {
                 messages.Add(new NamePaymentFailureCommand(
                     Guid.CreateVersion7(now), now, command.TenantId, failed.AmountDue, failed.Currency, failed.FailedAt + billing.RetryWindow));
             }
 
             // B11: a subscription that ended leaves its plan for the default plan, by the member who changed it last, or unpaid.
-            if (dunning.End is { } end)
+            if (dunning.End is { } end && !contract)
             {
                 messages.Add(new PlanEndedEvent(Guid.CreateVersion7(now), now, command.TenantId, command.PaidBy, Unpaid: end == PlanEnd.Unpaid));
             }
@@ -101,13 +108,13 @@ public static class ApplySubscriptionHandler
 
         // B8: the provider ends in what the closure or the reopen asked, whatever order our calls reached it in, and a subscription of a
         // closed tenant pays nothing after its period, however late its state arrives.
-        if (subscription.ClosureCorrection(customer.ClosedAt is not null) is { } cancelAtPeriodEnd)
+        if (subscription.ClosureCorrection(stopped) is { } cancelAtPeriodEnd)
         {
             messages.Add(new SetCancelAtPeriodEndCommand(subscription.SubscriptionId, cancelAtPeriodEnd));
         }
 
         // B11: once the provider's retries are over, billing's grace runs, and its end moves the tenant to the default plan.
-        if (subscription.StartGrace(now, billing.Grace) is { } graceEndsAt)
+        if (!contract && subscription.StartGrace(now, billing.Grace) is { } graceEndsAt)
         {
             messages.Add(new EndGraceCommand(command.TenantId, graceEndsAt).ScheduledAt(graceEndsAt));
         }
@@ -115,7 +122,11 @@ public static class ApplySubscriptionHandler
         // B7: a subscription that pays ends the tenant's open checkout, whose pages are expired, so nobody pays twice.
         if (subscription.PaysForItsPlan)
         {
-            messages.Add(new PlanPaidEvent(Guid.CreateVersion7(now), now, command.TenantId, subscription.PlanId, command.PaidBy));
+            if (!contract)
+            {
+                messages.Add(new PlanPaidEvent(Guid.CreateVersion7(now), now, command.TenantId, subscription.PlanId, command.PaidBy));
+            }
+
             if (await checkouts.FindForUpdateAsync(cancellationToken) is { } checkout)
             {
                 checkouts.Remove(checkout);

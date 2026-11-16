@@ -386,6 +386,8 @@
         "suspended": "<actor></actor>, <target></target> kuruluşunu askıya aldı. Neden: <name>{reason}</name>.",
         "reactivated": "<actor></actor>, <target></target> kuruluşunu yeniden etkinleştirdi.",
         "closed": "<actor></actor>, <target></target> kuruluşunu kapattı.",
+        "contract_started": "<actor></actor>, <target></target> kuruluşunu Sözleşme olarak işaretledi. Faturası uygulama dışında kesilir.",
+        "contract_ended": "<actor></actor>, <target></target> için Sözleşmeyi sonlandırdı. Uygulamada kartla öder.",
         "reopened": "<actor></actor>, <target></target> kuruluşunu yeniden açtı.",
         "owner_invited": "{addressed, select, yes {<actor></actor>, <invitee>{address}</invitee> adresini <target></target> kuruluşuna Sahip olarak davet etti.} other {<actor></actor>, <target></target> kuruluşuna birini Sahip olarak davet etti.}}",
         "owner_made": "{owner, select, named {<actor></actor>, <member></member> kullanıcısını <target></target> kuruluşunda Sahip yaptı.} deletedUser {<actor></actor>, <member>silinmiş bir kullanıcıyı</member> <target></target> kuruluşunda Sahip yaptı.} other {<actor></actor>, <member>bir üyeyi</member> <target></target> kuruluşunda Sahip yaptı.}}",

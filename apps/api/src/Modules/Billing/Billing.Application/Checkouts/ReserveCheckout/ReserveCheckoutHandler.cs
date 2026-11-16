@@ -1,4 +1,5 @@
 using Billing.Application.Checkouts.ExpireCheckoutPages;
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Domain.Checkouts;
 using SharedKernel;
@@ -15,6 +16,7 @@ public static class ReserveCheckoutHandler
         ReserveCheckoutCommand command,
         ICustomerStore customers,
         ICheckoutRepository checkouts,
+        IContractRepository contracts,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -23,6 +25,12 @@ public static class ReserveCheckoutHandler
         if (customer.ClosedAt is not null)
         {
             return (Errors.TenantClosed, []);
+        }
+
+        // B12: a Contract tenant opens no checkout; a mark that came after the endpoint's check is read under the customer's lock.
+        if (await contracts.IsContractAsync(cancellationToken))
+        {
+            return (Errors.Contract, []);
         }
 
         var now = time.GetUtcNow();

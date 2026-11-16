@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Billing.Api.Authentication;
 using Billing.Application.CheckoutSessions.GetCheckoutFacts;
+using Billing.Application.Contracts.GetContract;
 using Billing.Application.Provider;
 using Billing.Application.Subscriptions.BeginPlanChange;
 using Billing.Application.Subscriptions.CancelAtPeriodEnd;
@@ -121,6 +122,11 @@ public static class PlanChangeEndpoints
             return Errors.BillingOff;
         }
 
+        if (await bus.InvokeAsync<bool>(new GetContractQuery(), cancellationToken))
+        {
+            return Errors.Contract;
+        }
+
         if (await bus.InvokeAsync<SubscriptionView?>(new GetBillingQuery(), cancellationToken) is not { } subscription)
         {
             return Errors.NoSubscription;
@@ -154,6 +160,12 @@ public static class PlanChangeEndpoints
         if (!billing.Enabled)
         {
             return Errors.BillingOff;
+        }
+
+        // B12: a system admin sets a Contract tenant's plan.
+        if (await bus.InvokeAsync<bool>(new GetContractQuery(), cancellationToken))
+        {
+            return Errors.Contract;
         }
 
         var target = await bus.InvokeAsync<Result<CheckoutFacts>>(new GetCheckoutFactsQuery(user.Id(), planId), cancellationToken);

@@ -88,6 +88,28 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     b.ToTable("checkouts", "billing");
                 });
 
+            modelBuilder.Entity("Billing.Domain.Contracts.Contract", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<Guid>("StartedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("started_by");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_contracts");
+
+                    b.ToTable("contracts", "billing");
+                });
+
             modelBuilder.Entity("Billing.Domain.Customers.Customer", b =>
                 {
                     b.Property<string>("CustomerId")

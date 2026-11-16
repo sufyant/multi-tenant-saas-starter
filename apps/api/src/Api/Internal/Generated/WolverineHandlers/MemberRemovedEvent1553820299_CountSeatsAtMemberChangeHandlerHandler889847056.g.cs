@@ -21,6 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
+            var contractRepository = new Billing.Infrastructure.Persistence.Contracts.ContractRepository(billingDbContext);
             var subscriptionQueries = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionQueries(billingDbContext);
             // The actual message body
             var memberRemovedEvent = (ControlPlane.Contracts.Members.MemberRemovedEvent)context.Envelope.Message;
@@ -41,7 +42,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Members.CountSeatsAtMemberChange.CountSeatsAtMemberChangeHandler");
                 
                 // The actual message execution
-                var outgoing2 = await Billing.Application.Members.CountSeatsAtMemberChange.CountSeatsAtMemberChangeHandler.HandleAsync(memberRemovedEvent, subscriptionQueries, cancellation).ConfigureAwait(false);
+                var outgoing2 = await Billing.Application.Members.CountSeatsAtMemberChange.CountSeatsAtMemberChangeHandler.HandleAsync(memberRemovedEvent, subscriptionQueries, contractRepository, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

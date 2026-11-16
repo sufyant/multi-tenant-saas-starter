@@ -21,6 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
+            var contractRepository = new Billing.Infrastructure.Persistence.Contracts.ContractRepository(billingDbContext);
             var subscriptionRepository = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionRepository(billingDbContext);
             var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
             // The actual message body
@@ -43,7 +44,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<Billing.Application.Subscriptions.GetBilling.SubscriptionView, Billing.Infrastructure.Persistence.BillingDbContext>.BeforeAsync(context.Envelope, billingDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                var outgoing1 = await Billing.Application.Subscriptions.BeginPlanChange.BeginPlanChangeHandler.HandleAsync(beginPlanChangeCommand, customerStore, subscriptionRepository, cancellation).ConfigureAwait(false);
+                var outgoing1 = await Billing.Application.Subscriptions.BeginPlanChange.BeginPlanChangeHandler.HandleAsync(beginPlanChangeCommand, customerStore, subscriptionRepository, contractRepository, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

@@ -13,6 +13,7 @@ export * from "./platform-invitations/platform-invitations.msw.gen";
 export * from "./platform-members/platform-members.msw.gen";
 export * from "./platform-notifications/platform-notifications.msw.gen";
 export * from "./platform-plans/platform-plans.msw.gen";
+export * from "./platform-subscriptions/platform-subscriptions.msw.gen";
 export * from "./platform-systemadmins/platform-systemadmins.msw.gen";
 export * from "./platform-tenants/platform-tenants.msw.gen";
 export * from "./platform-termsversions/platform-termsversions.msw.gen";

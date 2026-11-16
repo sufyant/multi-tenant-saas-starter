@@ -5,6 +5,7 @@ using Billing.Application.Checkouts.RecordCheckoutSession;
 using Billing.Application.Checkouts.ReserveCheckout;
 using Billing.Application.CheckoutSessions.GetCheckoutFacts;
 using Billing.Application.CheckoutSessions.OpenCheckoutSession;
+using Billing.Application.Contracts.GetContract;
 using Billing.Application.Customers.CreateCustomer;
 using Billing.Application.Customers.GetCustomer;
 using Billing.Application.Customers.KeepCustomer;
@@ -40,6 +41,12 @@ public static class CheckoutSessionEndpoints
         if (!billing.Enabled)
         {
             return Errors.BillingOff;
+        }
+
+        // B12: a Contract tenant is billed outside the app, so it opens no checkout and gets no customer.
+        if (await bus.InvokeAsync<bool>(new GetContractQuery(), cancellationToken))
+        {
+            return Errors.Contract;
         }
 
         var facts = await bus.InvokeAsync<Result<CheckoutFacts>>(new GetCheckoutFactsQuery(user.Id(), request.PlanId), cancellationToken);

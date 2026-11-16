@@ -1,3 +1,4 @@
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Contracts.Subscriptions;
 using Wolverine;
@@ -14,11 +15,14 @@ public static class EndGraceHandler
         EndGraceCommand command,
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
+        IContractRepository contracts,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
+        // B12: a system admin sets a Contract tenant's plan, so its grace moves nothing either.
         if (await customers.FindForUpdateAsync(cancellationToken) is not { ClosedAt: null } customer
+            || await contracts.IsContractAsync(cancellationToken)
             || await subscriptions.FindForUpdateAsync(cancellationToken) is not { } subscription
             || !subscription.EndGrace(command.GraceEndsAt, now))
         {

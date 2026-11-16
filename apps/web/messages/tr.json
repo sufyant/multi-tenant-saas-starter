@@ -361,6 +361,8 @@
       },
       "tenant": {
         "closed": "<actor></actor> bu kuruluşu kapattı.",
+        "contract_ended": "<actor></actor> Sözleşmeyi sonlandırdı. Bu kuruluş uygulamada kartla öder.",
+        "contract_started": "<actor></actor> bu kuruluşu Sözleşme olarak işaretledi. Faturası uygulama dışında kesilir.",
         "created": "{plan, select, none {<actor></actor> bu kuruluşu oluşturdu.} other {<actor></actor> bu kuruluşu <planName></planName> planında oluşturdu.}}",
         "entitlement_override_removed": "<actor></actor> bu kuruluşun <key></key> istisnasını kaldırdı.",
         "entitlement_override_set": "{expires, select, yes {<actor></actor> bu kuruluşun <key></key> değerini {date} tarihine kadar {value} yaptı.} other {<actor></actor> bu kuruluşun <key></key> değerini {value} yaptı.}}",

@@ -59,7 +59,7 @@ try
         ControlPlaneModule.MapEndpoints(platform, me, tenant, publicRoutes);
         NotificationsModule.MapEndpoints(platform, me, tenant);
         AuditModule.MapEndpoints(platform, tenant);
-        BillingModule.MapEndpoints(tenant, publicRoutes);
+        BillingModule.MapEndpoints(platform, tenant, publicRoutes);
         app.MapApiDocuments();
     }
 }

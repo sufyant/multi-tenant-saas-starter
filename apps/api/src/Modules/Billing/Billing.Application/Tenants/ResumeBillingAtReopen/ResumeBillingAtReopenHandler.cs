@@ -1,3 +1,4 @@
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
@@ -16,6 +17,7 @@ public static class ResumeBillingAtReopenHandler
         TenantReopenedEvent reopened,
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
+        IContractRepository contracts,
         CancellationToken cancellationToken)
     {
         if (await customers.FindForUpdateAsync(cancellationToken) is not { } customer)
@@ -29,8 +31,10 @@ public static class ResumeBillingAtReopenHandler
             return [];
         }
 
+        // B12: a Contract tenant keeps the end, which Contract asks for too.
         OutgoingMessages messages = [];
-        if (await subscriptions.FindForUpdateAsync(cancellationToken) is { } subscription && subscription.KeepAfterReopen() is { } cancelAtPeriodEnd)
+        if (!await contracts.IsContractAsync(cancellationToken)
+            && await subscriptions.FindForUpdateAsync(cancellationToken) is { } subscription && subscription.KeepAfterReopen() is { } cancelAtPeriodEnd)
         {
             messages.Add(new SetCancelAtPeriodEndCommand(subscription.SubscriptionId, cancelAtPeriodEnd));
         }

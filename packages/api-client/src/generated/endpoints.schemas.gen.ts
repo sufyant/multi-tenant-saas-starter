@@ -711,6 +711,8 @@ export const AuditOperation = {
   SystemAdminGranted: 'system_admin.granted',
   SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
+  TenantContractEnded: 'tenant.contract_ended',
+  TenantContractStarted: 'tenant.contract_started',
   TenantCreated: 'tenant.created',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
@@ -810,6 +812,17 @@ export interface AuditRetentionResponse {
 }
 
 /**
+ * How the tenant pays (B12): by card in the app, or by Contract, invoiced outside the app, as a system admin set it.
+ */
+export type BillingResponseBilledBy = typeof BillingResponseBilledBy[keyof typeof BillingResponseBilledBy];
+
+
+export const BillingResponseBilledBy = {
+  Card: 'card',
+  Contract: 'contract',
+} as const;
+
+/**
  * How often the subscription pays.
  */
 export type SubscriptionResponseInterval = typeof SubscriptionResponseInterval[keyof typeof SubscriptionResponseInterval];
@@ -903,9 +916,11 @@ export interface SubscriptionResponse {
 }
 
 /**
- * The tenant's billing: its subscription, none until it pays by card the first time.
+ * The tenant's billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant's last
+ * subscription shows until it ends.
  */
 export interface BillingResponse {
+  billedBy: BillingResponseBilledBy;
   subscription: null | SubscriptionResponse;
 }
 
@@ -1320,6 +1335,7 @@ export const ErrorCode = {
   AuthUnauthenticated: 'auth.unauthenticated',
   BillingAlreadySubscribed: 'billing.already_subscribed',
   BillingCheckoutReplaced: 'billing.checkout_replaced',
+  BillingContract: 'billing.contract',
   BillingNoCustomer: 'billing.no_customer',
   BillingNoSubscription: 'billing.no_subscription',
   BillingNothingScheduled: 'billing.nothing_scheduled',
@@ -1332,6 +1348,7 @@ export const ErrorCode = {
   BillingReturnUrlInvalid: 'billing.return_url_invalid',
   BillingSubscriptionNotActive: 'billing.subscription_not_active',
   BillingTenantClosed: 'billing.tenant_closed',
+  BillingTenantNotFound: 'billing.tenant_not_found',
   BillingWebhookInvalid: 'billing.webhook_invalid',
   DataExportInProgress: 'data_export.in_progress',
   DataExportNotFound: 'data_export.not_found',
@@ -2354,6 +2371,24 @@ export interface RetentionShortenedResponse {
   /** @nullable */
   fromDays: number | null;
   toDays: number;
+}
+
+/**
+ * How the tenant pays from now on (B12): by card in the app, or by Contract, invoiced outside the app.
+ */
+export type SetBilledByRequestBilledBy = typeof SetBilledByRequestBilledBy[keyof typeof SetBilledByRequestBilledBy];
+
+
+export const SetBilledByRequestBilledBy = {
+  Card: 'card',
+  Contract: 'contract',
+} as const;
+
+/**
+ * A system admin's switch of how the tenant pays (4.35, "Switch to Contract · Switch to Card").
+ */
+export interface SetBilledByRequest {
+  billedBy: SetBilledByRequestBilledBy;
 }
 
 /**

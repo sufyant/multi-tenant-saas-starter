@@ -1,3 +1,4 @@
+using Billing.Application.Contracts;
 using Billing.Application.Subscriptions;
 using Billing.Application.Subscriptions.CountSeats;
 using Billing.Domain.Subscriptions;
@@ -13,26 +14,28 @@ namespace Billing.Application.Members.CountSeatsAtMemberChange;
 // A tenant that never paid by card has no subscription, and nothing to count.
 public static class CountSeatsAtMemberChangeHandler
 {
-    public static Task<OutgoingMessages> HandleAsync(MemberJoinedEvent joined, ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        CountAsync(subscriptions, cancellationToken);
+    public static Task<OutgoingMessages> HandleAsync(MemberJoinedEvent joined, ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        CountAsync(subscriptions, contracts, cancellationToken);
 
-    public static Task<OutgoingMessages> HandleAsync(MemberRemovedEvent removed, ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        CountAsync(subscriptions, cancellationToken);
+    public static Task<OutgoingMessages> HandleAsync(MemberRemovedEvent removed, ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        CountAsync(subscriptions, contracts, cancellationToken);
 
-    public static Task<OutgoingMessages> HandleAsync(MemberLeftEvent left, ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        CountAsync(subscriptions, cancellationToken);
+    public static Task<OutgoingMessages> HandleAsync(MemberLeftEvent left, ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        CountAsync(subscriptions, contracts, cancellationToken);
 
-    public static Task<OutgoingMessages> HandleAsync(MemberRoleChangedEvent changed, ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        CountAsync(subscriptions, cancellationToken);
+    public static Task<OutgoingMessages> HandleAsync(MemberRoleChangedEvent changed, ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        CountAsync(subscriptions, contracts, cancellationToken);
 
-    public static Task<OutgoingMessages> HandleAsync(OwnerMadeEvent made, ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        CountAsync(subscriptions, cancellationToken);
+    public static Task<OutgoingMessages> HandleAsync(OwnerMadeEvent made, ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        CountAsync(subscriptions, contracts, cancellationToken);
 
-    public static Task<OutgoingMessages> HandleAsync(UserMembershipRemovedEvent removed, ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        CountAsync(subscriptions, cancellationToken);
+    public static Task<OutgoingMessages> HandleAsync(UserMembershipRemovedEvent removed, ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        CountAsync(subscriptions, contracts, cancellationToken);
 
-    private static async Task<OutgoingMessages> CountAsync(ISubscriptionQueries subscriptions, CancellationToken cancellationToken) =>
-        await subscriptions.FindSubscriptionAsync(cancellationToken) is { } subscription
+    // B12: a Contract tenant pays no card for its seats.
+    private static async Task<OutgoingMessages> CountAsync(ISubscriptionQueries subscriptions, IContractRepository contracts, CancellationToken cancellationToken) =>
+        !await contracts.IsContractAsync(cancellationToken)
+        && await subscriptions.FindSubscriptionAsync(cancellationToken) is { } subscription
         && !Subscription.HasEnded(Enum.Parse<SubscriptionStatus>(subscription.Status))
             ? [new CountSeatsCommand(subscription.SubscriptionId, null)]
             : [];

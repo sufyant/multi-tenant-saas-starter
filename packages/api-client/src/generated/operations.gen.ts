@@ -447,6 +447,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "GetTenantBilling",
+    "method": "GET",
+    "path": "/v1/platform/tenants/{tenantId}/billing",
+    "tag": "Platform/Subscriptions",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "GetTenantFeatureFlags",
     "method": "GET",
     "path": "/v1/platform/tenants/{tenantId}/feature-flags",
@@ -975,6 +986,17 @@ export const operations = [
     "method": "DELETE",
     "path": "/v1/platform/users/{userId}/system-admin",
     "tag": "Platform/SystemAdmins",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "SetBilledBy",
+    "method": "PUT",
+    "path": "/v1/platform/tenants/{tenantId}/billing/billed-by",
+    "tag": "Platform/Subscriptions",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

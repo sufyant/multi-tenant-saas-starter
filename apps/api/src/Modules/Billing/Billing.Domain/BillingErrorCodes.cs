@@ -34,4 +34,8 @@ public static class BillingErrorCodes
     public static readonly ErrorCode BillingPreviewExpired = ErrorCode.Declare("billing.preview_expired");
 
     public static readonly ErrorCode BillingWebhookInvalid = ErrorCode.Declare("billing.webhook_invalid");
+
+    public static readonly ErrorCode BillingContract = ErrorCode.Declare("billing.contract");
+
+    public static readonly ErrorCode BillingTenantNotFound = ErrorCode.Declare("billing.tenant_not_found");
 }

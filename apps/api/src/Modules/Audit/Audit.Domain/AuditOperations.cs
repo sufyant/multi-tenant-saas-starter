@@ -92,6 +92,12 @@ public static class AuditOperations
     /// <summary>The tenant moved to the default plan: a payment failed and its grace ended (B11).</summary>
     public const string TenantMovedToDefaultPlan = "tenant.moved_to_default_plan";
 
+    /// <summary>A system admin marked the tenant Contract: it is billed outside the app (B12).</summary>
+    public const string TenantContractStarted = "tenant.contract_started";
+
+    /// <summary>A system admin ended the tenant's Contract: it pays by card in the app (B12).</summary>
+    public const string TenantContractEnded = "tenant.contract_ended";
+
     public const string TenantPurgeWarned = "tenant.purge_warned";
 
     public const string TenantPurged = "tenant.purged";

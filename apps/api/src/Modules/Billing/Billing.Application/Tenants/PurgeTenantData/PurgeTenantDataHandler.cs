@@ -1,5 +1,6 @@
 using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions;
 using Billing.Application.Subscriptions.CancelSubscription;
@@ -24,6 +25,7 @@ public static class PurgeTenantDataHandler
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
         ICheckoutRepository checkouts,
+        IContractRepository contracts,
         CancellationToken cancellationToken)
     {
         OutgoingMessages messages = [];
@@ -40,6 +42,7 @@ public static class PurgeTenantDataHandler
             }
         }
 
+        await contracts.DeleteAsync(cancellationToken);
         await checkouts.DeleteAsync(cancellationToken);
         await subscriptions.DeleteAsync(cancellationToken);
         await customers.DeleteAsync(cancellationToken);
