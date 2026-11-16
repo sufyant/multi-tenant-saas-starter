@@ -64,6 +64,9 @@ import web from "./web.json" with { type: "json" };
 // endpoint names the account by the shared variable CLOUDFLARE_ACCOUNT_ID. The two keys are a token scoped to the bucket, shared
 // variables that the maintainer enters by hand.
 //
+// Billing (step 40): the two Stripe keys are shared variables, sealed, that the maintainer enters by hand once a product turns
+// billing on. While billing is off the API reads neither, and a missing shared variable gives an empty value.
+//
 // ConfigurationDocumentTests in apps/api checks that this file sets every required key, and only
 // keys that configuration.md documents.
 const sharedVariables = [
@@ -79,6 +82,8 @@ const sharedVariables = [
   "Host__ErrorTracking__Dsn",
   "Host__Storage__AccessKeyId",
   "Host__Storage__SecretAccessKey",
+  "Billing__Stripe__SecretKey",
+  "Billing__Stripe__WebhookSecret",
 ];
 
 // ASP.NET Core's name of each environment, capitalised as its standard names are, so that a file such as
@@ -166,6 +171,13 @@ export default defineRailway((ctx) => {
         // `ctx.shared.X` is a reference object, not its value, so a string references the shared variable in Railway's syntax.
         Host__Storage__Endpoint: `https://\${{shared.CLOUDFLARE_ACCOUNT_ID}}.eu.r2.cloudflarestorage.com`,
         Host__Storage__Bucket: `starter-${ctx.environment}`,
+        // Billing is off in the template (the maintainer's decision of 2026-11-14, apps/api/docs/ARCHITECTURE.md, B1). A product turns
+        // it on here with "true", after its Stripe keys are set, and after `pnpm stripe:apply` in the environment's Stripe mode. It is a
+        // value of this file, not a shared variable: an empty value would not read as a boolean. Its pages come back to the web app's
+        // origin, which the API already trusts as the token's authorized party, so the origin has one source.
+        Billing__Payments__Enabled: "false",
+        Billing__Payments__WebUrl:
+          ctx.shared.Host__Authentication__AuthorizedParties__0,
         ...own,
       },
     });
