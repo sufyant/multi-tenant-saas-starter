@@ -101,7 +101,7 @@ public static class ApplySubscriptionHandler
             {
                 messages.Add(new NamePaymentFailureCommand(
                     Guid.CreateVersion7(now), now, command.TenantId, failed.AmountDue, failed.Currency, failed.FailedAt + billing.RetryWindow,
-                    failed.FailedAt, failed.NextAttemptAt, failed.CardBrand, failed.CardLast4));
+                    failed.FailedAt, failed.NextAttemptAt, failed.CardBrand, failed.CardLast4, customer.ClosedAt is not null));
             }
 
             // B11: a subscription that ended leaves its plan for the default plan, by the member who changed it last, or unpaid.
@@ -129,13 +129,16 @@ public static class ApplySubscriptionHandler
         }
 
         // B11: once the provider's retries are over, billing's grace runs, and its end moves the tenant to the default plan. Its start is
-        // the last warning to the members who manage billing (13.19).
+        // the last warning to the members who manage billing (13.19), but a closed tenant's grace moves nothing (E2), so it warns nobody.
         if (!contract && subscription.StartGrace(now, billing.Grace) is { } graceEndsAt)
         {
             messages.Add(new EndGraceCommand(command.TenantId, graceEndsAt).ScheduledAt(graceEndsAt));
-            var unpaid = subscription.FailedPayment!;
-            messages.Add(new PaymentGraceStartedEvent(
-                Guid.CreateVersion7(now), now, command.TenantId, graceEndsAt, unpaid.Attempts, unpaid.FailedAt, unpaid.CardBrand, unpaid.CardLast4));
+            if (customer.ClosedAt is null)
+            {
+                var unpaid = subscription.FailedPayment!;
+                messages.Add(new PaymentGraceStartedEvent(
+                    Guid.CreateVersion7(now), now, command.TenantId, graceEndsAt, unpaid.Attempts, unpaid.FailedAt, unpaid.CardBrand, unpaid.CardLast4));
+            }
         }
 
         // B7: a subscription that pays ends the tenant's open checkout, whose pages are expired, so nobody pays twice.

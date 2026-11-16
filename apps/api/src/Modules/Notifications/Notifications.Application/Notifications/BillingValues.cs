@@ -1,7 +1,7 @@
 using System.Globalization;
 using Notifications.Domain;
 
-namespace Notifications.Application.Subscriptions;
+namespace Notifications.Application.Notifications;
 
 /// <summary>The values that billing's notifications share: a moment as a <c>Date</c> value stores it, and the card the provider tried.</summary>
 internal static class BillingValues

@@ -137,6 +137,27 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         warning.Text.ShouldContain("Pay now:");
     }
 
+    // E2, B8: a closed tenant's plan is read-only and its grace moves nothing, so neither its failed payment nor its grace's start tells
+    // anyone to pay; both logs still record the failure.
+    [Fact]
+    public async Task ReceiveWebhook_AFailedPaymentOfAClosedTenant_TellsNobody()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE billing.customers SET closed_at = now() WHERE tenant_id = '{tenant.Id}'");
+        var failedAt = new DateTimeOffset(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 1, failedAt.AddDays(3)));
+        await _api.PaymentFailedAsync(tenant.Id);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 4, null));
+
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.payment_failed'")).ShouldBe(1);
+    }
+
     // B11: once Stripe's retries are over, billing's grace runs for a week, and its end is scheduled; the tenant keeps its plan until then.
     [Fact]
     public async Task ReceiveWebhook_RetriesThatEnded_SchedulesTheGracesEnd()

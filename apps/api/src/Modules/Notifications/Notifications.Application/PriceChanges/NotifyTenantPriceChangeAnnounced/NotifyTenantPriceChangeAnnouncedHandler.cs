@@ -3,7 +3,6 @@ using Billing.Contracts.PriceChanges;
 using ControlPlane.Contracts.Members;
 using ControlPlane.Contracts.Users;
 using Notifications.Application.Notifications;
-using Notifications.Application.Subscriptions;
 using Notifications.Domain;
 using Wolverine;
 

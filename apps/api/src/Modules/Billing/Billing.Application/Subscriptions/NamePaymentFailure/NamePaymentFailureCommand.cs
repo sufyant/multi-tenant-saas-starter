@@ -18,4 +18,5 @@ public sealed record NamePaymentFailureCommand(
     DateTimeOffset? FailedAt = null,
     DateTimeOffset? NextAttemptAt = null,
     string? CardBrand = null,
-    string? CardLast4 = null);
+    string? CardLast4 = null,
+    bool TenantClosed = false);

@@ -12,6 +12,6 @@ public static class NamePaymentFailureHandler
         await tenants.FindNameAsync(command.TenantId, cancellationToken) is { } tenantName
             ? [new PaymentFailedEvent(
                 command.EventId, command.OccurredAt, command.TenantId, tenantName, command.AmountDue, command.Currency, command.RetriesUntil,
-                command.FailedAt, command.NextAttemptAt, command.CardBrand, command.CardLast4)]
+                command.FailedAt, command.NextAttemptAt, command.CardBrand, command.CardLast4, command.TenantClosed)]
             : [];
 }
