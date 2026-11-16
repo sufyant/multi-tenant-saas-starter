@@ -2,7 +2,7 @@
 
 This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
 
-A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. The price changes come in its later parts.
+A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. Its later parts are the billing emails.
 
 ## 1. The first payment
 
@@ -132,6 +132,32 @@ A member who manages billing pays for a plan by card, through Stripe, and the te
 - A system admin sets a Contract tenant's plan (`ChangeTenantPlan`). Its last subscription, while it runs out, puts the tenant on no plan and moves it nowhere when it ends: no `PlanPaidEvent`, no `PlanEndedEvent`. It sets no seats at Stripe, and a failed payment records nothing and starts no grace.
 - The purge deletes the mark.
 
-Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`, `ScheduleChangeTests`, `AcceptInvitationTests`, `RemoveMemberTests`, `LeaveTenantTests`, `ChangeMemberRoleTests`, `MakeOwnerTests`, `DeleteUserTests`, `DunningTests`, `EndGraceTests`, `SetBilledByTests`, `GetTenantBillingTests`.
+## 9. A price change
+
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `PlanUpdatedEvent` (`PriceChange`, `Currency`) | ControlPlane's `UpdatePlanHandler`, when the edit changed the prices | Billing, `RecordPriceChangeHandler`, which keeps the change once (`billing.price_changes`) and schedules its notice and its move | Billing's DbContext, without a tenant (R6) |
+| `PriceChangeScheduledEvent` | `RecordPriceChangeHandler` and `MoveToNewPriceHandler`, for a move with a day | Audit, `RecordPriceChangeScheduledHandler` (`plan.price_change_scheduled`, in the platform's log, by the system admin) | Yes |
+| `AnnouncePriceChangeCommand` | the change, at once for a move 30 days away, else scheduled 30 days before the move | Billing, `AnnouncePriceChangeHandler`: only the plan's latest change; one message for each payer on another price | Billing's DbContext, without a tenant |
+| `AnnounceTenantPriceChangeCommand` | `AnnouncePriceChangeHandler`, in the payer's tenant (W3) | Billing, `AnnounceTenantPriceChangeHandler`: no Contract tenant, no payer that ends, left the plan or pays the new price | Billing's DbContext, in the tenant |
+| `NamePriceChangeCommand` | `AnnounceTenantPriceChangeHandler` | Billing, `NamePriceChangeHandler`, which names the tenant (`ITenantNames`) | ControlPlane's DbContext, in the tenant |
+| `PriceChangeAnnouncedEvent` | `NamePriceChangeHandler` | Audit, `RecordPriceChangeAnnouncedHandler` (`tenant.price_change_announced`, in the tenant's log, by the platform) | Yes, the tenant's |
+| `MovePlanPricesCommand` | the change, scheduled at its day | Billing, `MovePlanPricesHandler`: only the plan's latest change, on its day; one message for each payer on another price | Billing's DbContext, without a tenant |
+| `MoveSubscriptionPriceCommand` | `MovePlanPricesHandler`, in the payer's tenant | Billing, `MoveSubscriptionPriceHandler`: locks the customer, then the subscription (B7) | Billing's DbContext, in the tenant |
+| `MovePricesCommand` | `MoveSubscriptionPriceHandler` | Billing, `MovePricesHandler`, which moves the subscription's items to the new Prices with no proration, then asks for the sync; retried | No |
+| `GetPriceChangeFactsQuery`, `GetPriceChangeQuery` | `GET` and `POST /v1/platform/plans/{planId}/price-change...` | Billing, through ControlPlane's `IPlanDirectory` and `IUserDirectory`, then billing's payers and changes | ControlPlane's DbContext, then Billing's, without a tenant |
+| `MoveToNewPriceCommand` | `POST .../price-change/move` | Billing, `MoveToNewPriceHandler`: locks the plan's latest change; nobody on an old price 409 `billing.nothing_to_move` | Billing's DbContext, without a tenant |
+| `GetTenantPriceChangeQuery` | `GET .../billing`, the tenant's and the platform's | Billing, `GetTenantPriceChangeHandler` | Billing's DbContext, in the tenant |
+
+- A Price never changes, so a plan's new amounts are new Prices (B2). Checkout and a plan change pay them at once; a payer keeps the Price it pays until its subscription moves.
+- The plan's edit names who pays the new price (6.14): `everyone_after_notice` moves each payer 30 days after the edit, and tells it at once; `everyone_from` moves each payer on the set day, at least 30 days away, and tells it 30 days before; `new_customers_only`, the default, moves nobody. "Move to the new price" (6.16) moves the payers on an old price after 30 days' notice; a move that is scheduled already keeps its day.
+- The move changes the subscription's Prices with the same quantities and no proration, so each payer pays the new price from its first period after the day; a yearly payer keeps its price until it renews. A Contract tenant, a closed one, a subscription that is not active, ends at its period's end or has a scheduled move, and one that pays the new price already, move nowhere.
+- Only the plan's latest change tells or moves anybody, and a move that arrives before its day moves nobody.
+- `billing.payers` keeps what each tenant pays: the plan, the interval and the amounts of Stripe's Prices, from each state of its subscription, in the tenant's transaction. An ended subscription deletes the row; one that ends at its period's end, or a Contract tenant, is marked as ending. The platform counts a plan's payers and the ones on an old price from it (6.14, 6.15).
+- A member who manages billing reads the change from its notice to its day, as `subscription.priceChange` of `GET .../billing` (10.18).
+- While billing is off, nothing follows a price change.
+- Known gap: a move of another plan or interval that a member scheduled at the period's end (B9) takes the Prices of its own moment.
+
+Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`, `ScheduleChangeTests`, `AcceptInvitationTests`, `RemoveMemberTests`, `LeaveTenantTests`, `ChangeMemberRoleTests`, `MakeOwnerTests`, `DeleteUserTests`, `DunningTests`, `EndGraceTests`, `SetBilledByTests`, `GetTenantBillingTests`, `UpdatePlanTests`, `GetPriceChangeTests`, `MoveToNewPriceTests`.
 
 Source: Stripe, "Checkout", "Customer portal", "Webhooks", "Subscription statuses", "Change prices", "Prorations", "Pending updates", "Subscription schedules", "Per-seat pricing", "Automate payment retries" and "Invoice lifecycle". Richardson, *Microservices Patterns*, Chapter 3.
