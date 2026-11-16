@@ -309,6 +309,27 @@ public sealed class StripeBillingProviderTests
         read.ShouldBe(new ProviderEvent("evt_8", "invoice.payment_failed", "sub_8"));
     }
 
+    // B7: a second subscription ends at once with no new invoice, then the paid payment of its latest invoice is refunded in full, under
+    // the payment's own idempotency key.
+    [Fact]
+    public async Task EndAndRefund_ASecondActiveSubscription_EndsItThenRefundsItsPayment()
+    {
+        var stripe = new StripeRequests()
+            .Answer("GET", "/v1/subscriptions/sub_1", """{"id": "sub_1", "object": "subscription", "status": "active", "latest_invoice": "in_1", "items": {"object": "list", "data": []}}""")
+            .Answer("DELETE", "/v1/subscriptions/sub_1", """{"id": "sub_1", "object": "subscription", "status": "canceled"}""")
+            .Answer("GET", "/v1/invoice_payments", """{"object": "list", "url": "/v1/invoice_payments", "has_more": false, "data": [{"id": "inpay_1", "object": "invoice_payment", "status": "paid", "payment": {"type": "payment_intent", "payment_intent": "pi_1"}}]}""")
+            .Answer("POST", "/v1/refunds", """{"id": "re_1", "object": "refund"}""");
+
+        await ProviderOf(stripe).EndAndRefundAsync("sub_1", Cancellation);
+
+        stripe.Sent.Where(request => request.Method != "GET").Select(request => (request.Method, request.Path, request.Body)).ShouldBe(
+        [
+            ("DELETE", "/v1/subscriptions/sub_1?invoice_now=false&prorate=false", string.Empty),
+            ("POST", "/v1/refunds", "payment_intent=pi_1&reason=duplicate"),
+        ]);
+        stripe.Sent.ShouldContain(request => request.Path.StartsWith("/v1/invoice_payments?invoice=in_1", StringComparison.Ordinal) && request.Path.Contains("status=paid", StringComparison.Ordinal));
+    }
+
     private static string EventBody(string id, string type, string dataObject) =>
         $$$"""{"id": "{{{id}}}", "object": "event", "type": "{{{type}}}", "api_version": "{{{StripeConfiguration.ApiVersion}}}", "created": 1, "data": {"object": {{{dataObject}}} }}""";
 
