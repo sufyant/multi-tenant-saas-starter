@@ -37,7 +37,10 @@ export function TermsGate({ children }: { children: ReactNode }) {
         (terms?.errorUpdatedAt ?? 0) >= lastRefusal.current
       )
         return;
-      dismissToasts();
+      // The command's own failure toast is created a moment before this, and sonner's Toaster renders a new toast in a later task. A
+      // dismissal sent now can reach the Toaster first, by the next animation frame, and miss it: the toast then stays. So the dismissal
+      // waits for that task (timers of the same delay run in order).
+      setTimeout(dismissToasts);
       lastRefusal.current = Date.now();
       setRefusedAt(lastRefusal.current);
       void queryClient.invalidateQueries({

@@ -23,6 +23,7 @@ import {
   describe,
   expect,
   it,
+  onTestFinished,
   vi,
 } from "vitest";
 import { renderWithProviders } from "../../../test/render";
@@ -317,6 +318,14 @@ describe("TermsGate", () => {
         return termsRefusal();
       }),
     );
+    // A frame that comes before the toast reaches the Toaster (a busy run): the page's dismissal must still close it.
+    const frames = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((frame) => {
+        queueMicrotask(() => frame(performance.now()));
+        return 0;
+      });
+    onTestFinished(() => frames.mockRestore());
     const user = userEvent.setup();
     renderWithProviders(
       <>
