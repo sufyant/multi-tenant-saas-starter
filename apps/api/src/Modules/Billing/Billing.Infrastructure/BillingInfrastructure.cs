@@ -1,10 +1,12 @@
 using Billing.Application.Checkouts;
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Application.Provider;
 using Billing.Application.StripeEvents;
 using Billing.Application.Subscriptions;
 using Billing.Application;
 using Billing.Infrastructure.Persistence.Checkouts;
+using Billing.Infrastructure.Persistence.Contracts;
 using Billing.Infrastructure.Persistence.Customers;
 using Billing.Infrastructure.Persistence.StripeEvents;
 using Billing.Infrastructure.Persistence.Subscriptions;
@@ -38,6 +40,7 @@ public static class BillingInfrastructure
         services.AddScoped<IStripeEventStore, StripeEventStore>();
         services.AddScoped<ICustomerStore, CustomerStore>();
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+        services.AddScoped<IContractRepository, ContractRepository>();
 
         // Billing is off by default (the maintainer's decision of 2026-11-14). While it is on, the web's root and Stripe's keys are required.
         services.AddOptions<BillingOptions>()

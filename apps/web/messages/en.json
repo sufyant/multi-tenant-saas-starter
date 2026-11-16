@@ -361,6 +361,8 @@
       },
       "tenant": {
         "closed": "<actor></actor> closed this organisation.",
+        "contract_ended": "<actor></actor> ended Contract. This organisation pays by card in the app.",
+        "contract_started": "<actor></actor> marked this organisation Contract. It is invoiced outside the app.",
         "created": "{plan, select, none {<actor></actor> created this organisation.} other {<actor></actor> created this organisation on <planName></planName>.}}",
         "entitlement_override_removed": "<actor></actor> removed this organisation’s override on <key></key>.",
         "entitlement_override_set": "{expires, select, yes {<actor></actor> set this organisation’s <key></key> to {value} until {date}.} other {<actor></actor> set this organisation’s <key></key> to {value}.}}",

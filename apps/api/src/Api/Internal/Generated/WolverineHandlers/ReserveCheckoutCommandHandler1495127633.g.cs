@@ -24,6 +24,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
+            var contractRepository = new Billing.Infrastructure.Persistence.Contracts.ContractRepository(billingDbContext);
             var checkoutRepository = new Billing.Infrastructure.Persistence.Checkouts.CheckoutRepository(billingDbContext);
             var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
             // The actual message body
@@ -46,7 +47,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<Billing.Application.Checkouts.ReserveCheckout.CheckoutReservation, Billing.Infrastructure.Persistence.BillingDbContext>.BeforeAsync(context.Envelope, billingDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutHandler.HandleAsync(reserveCheckoutCommand, customerStore, checkoutRepository, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await Billing.Application.Checkouts.ReserveCheckout.ReserveCheckoutHandler.HandleAsync(reserveCheckoutCommand, customerStore, checkoutRepository, contractRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

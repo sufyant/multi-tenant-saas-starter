@@ -10,6 +10,7 @@ export * from './platform-invitations/platform-invitations.gen';
 export * from './platform-members/platform-members.gen';
 export * from './platform-notifications/platform-notifications.gen';
 export * from './platform-plans/platform-plans.gen';
+export * from './platform-subscriptions/platform-subscriptions.gen';
 export * from './platform-systemadmins/platform-systemadmins.gen';
 export * from './platform-tenants/platform-tenants.gen';
 export * from './platform-termsversions/platform-termsversions.gen';

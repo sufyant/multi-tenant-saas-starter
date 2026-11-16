@@ -1,3 +1,4 @@
+using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Application.Subscriptions.GetBilling;
 using Billing.Domain.Subscriptions;
@@ -15,6 +16,7 @@ public static class BeginPlanChangeHandler
         BeginPlanChangeCommand command,
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
+        IContractRepository contracts,
         CancellationToken cancellationToken)
     {
         if (await customers.FindForUpdateAsync(cancellationToken) is not { } customer)
@@ -25,6 +27,12 @@ public static class BeginPlanChangeHandler
         if (customer.ClosedAt is not null)
         {
             return Errors.TenantClosed;
+        }
+
+        // B12: a system admin sets a Contract tenant's plan; a mark that came after the endpoint's check is read under the customer's lock.
+        if (await contracts.IsContractAsync(cancellationToken))
+        {
+            return Errors.Contract;
         }
 
         if (await subscriptions.FindForUpdateAsync(cancellationToken) is not { } subscription || Subscription.HasEnded(subscription.Status))

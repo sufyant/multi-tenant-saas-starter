@@ -23,6 +23,9 @@ internal static class TenantTables
         ["billing.checkouts"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO billing.checkouts (tenant_id, key, plan_id, yearly, people, return_url, currency, base_amount, per_person_amount, expires_at) VALUES ('{tenant}', gen_random_uuid(), gen_random_uuid(), false, 1, 'https://app.test/', 'EUR', 900, 1000, now())"),
+        ["billing.contracts"] = new(
+            ApplicationMayUpdate: false,
+            tenant => $"INSERT INTO billing.contracts (tenant_id, started_at, started_by) VALUES ('{tenant}', now(), gen_random_uuid())"),
         ["billing.subscriptions"] = new(
             ApplicationMayUpdate: true,
             tenant => $"""

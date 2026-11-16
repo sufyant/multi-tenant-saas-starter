@@ -34,5 +34,9 @@ public static class Errors
 
     public static readonly Error PreviewExpired = Error.Validation(BillingErrorCodes.BillingPreviewExpired, "The preview is too old or from the future. Ask for a new one.");
 
+    public static readonly Error Contract = Error.Conflict(BillingErrorCodes.BillingContract, "The organisation is billed outside the app by invoice. To change its plan, send a request.");
+
+    public static readonly Error TenantNotFound = Error.NotFound(BillingErrorCodes.BillingTenantNotFound, "The organisation was not found.");
+
     public static readonly Error WebhookInvalid = Error.Validation(BillingErrorCodes.BillingWebhookInvalid, "The event's signature is missing, wrong or too old.");
 }

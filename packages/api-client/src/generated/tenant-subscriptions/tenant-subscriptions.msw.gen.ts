@@ -18,6 +18,7 @@ import type {
 } from 'msw';
 
 import {
+  BillingResponseBilledBy,
   PaymentResponseState,
   PlanChangeResponseMove,
   SubscriptionResponseInterval,
@@ -44,7 +45,7 @@ export const getGetBillingResponsePaymentResponseMock = (overrideResponse: Parti
 
 export const getGetBillingResponseSubscriptionResponseMock = (overrideResponse: Partial<SubscriptionResponse> = {}): SubscriptionResponse => ({...{planId: faker.string.uuid(), interval: faker.helpers.arrayElement(Object.values(SubscriptionResponseInterval)), status: faker.helpers.arrayElement(Object.values(SubscriptionResponseStatus)), currentPeriodEnd: faker.date.past().toISOString().slice(0, 19) + 'Z', cancelAtPeriodEnd: faker.datatype.boolean(), scheduledChange: faker.helpers.arrayElement([null,{...getGetBillingResponseScheduledChangeResponseMock()},]), payment: faker.helpers.arrayElement([null,{...getGetBillingResponsePaymentResponseMock()},])}, ...overrideResponse});
 
-export const getGetBillingResponseMock = (overrideResponse: Partial<Extract<BillingResponse, object>> = {}): BillingResponse => ({subscription: faker.helpers.arrayElement([null,{...getGetBillingResponseSubscriptionResponseMock()},]), ...overrideResponse})
+export const getGetBillingResponseMock = (overrideResponse: Partial<Extract<BillingResponse, object>> = {}): BillingResponse => ({billedBy: faker.helpers.arrayElement(Object.values(BillingResponseBilledBy)), subscription: faker.helpers.arrayElement([null,{...getGetBillingResponseSubscriptionResponseMock()},]), ...overrideResponse})
 
 export const getPreviewPlanChangeResponseMock = (overrideResponse: Partial<Extract<PlanChangePreviewResponse, object>> = {}): PlanChangePreviewResponse => ({move: faker.helpers.arrayElement(Object.values(PlanChangeResponseMove)), at: faker.date.past().toISOString().slice(0, 19) + 'Z', currency: faker.string.alpha({length: {min: 10, max: 20}}), amount: faker.number.int(), amountToday: faker.helpers.arrayElement([faker.number.int(), null]), proratedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 

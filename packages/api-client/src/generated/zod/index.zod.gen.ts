@@ -10,6 +10,7 @@ export * from './platform-invitations/platform-invitations.zod.gen';
 export * from './platform-members/platform-members.zod.gen';
 export * from './platform-notifications/platform-notifications.zod.gen';
 export * from './platform-plans/platform-plans.zod.gen';
+export * from './platform-subscriptions/platform-subscriptions.zod.gen';
 export * from './platform-systemadmins/platform-systemadmins.zod.gen';
 export * from './platform-tenants/platform-tenants.zod.gen';
 export * from './platform-termsversions/platform-termsversions.zod.gen';

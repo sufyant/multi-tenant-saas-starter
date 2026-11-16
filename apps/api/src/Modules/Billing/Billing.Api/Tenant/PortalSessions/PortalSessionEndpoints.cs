@@ -1,3 +1,4 @@
+using Billing.Application.Contracts.GetContract;
 using Billing.Application.Customers.GetCustomer;
 using Billing.Application.PortalSessions.GetPortalLink;
 using Billing.Application.Subscriptions;
@@ -31,6 +32,12 @@ public static class PortalSessionEndpoints
         if (!billing.Accepts(request.ReturnUrl))
         {
             return Errors.ReturnUrlInvalid;
+        }
+
+        // B12: a Contract tenant has no card; its invoices come from outside the app.
+        if (await bus.InvokeAsync<bool>(new GetContractQuery(), cancellationToken))
+        {
+            return Errors.Contract;
         }
 
         if (await bus.InvokeAsync<string?>(new GetCustomerQuery(), cancellationToken) is not { } customerId)

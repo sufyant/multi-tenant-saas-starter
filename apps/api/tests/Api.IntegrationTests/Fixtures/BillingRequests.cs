@@ -38,6 +38,13 @@ internal static class BillingRequests
     public static Task<HttpResponseMessage> UndoScheduledChangeAsync(this HttpClient client, Guid tenantId) =>
         client.DeleteAsync($"/v1/tenants/{tenantId}/billing/scheduled-change", Cancellation);
 
+    // B12, 4.34 and 4.35: the platform's read of a tenant's billing, and its switch between card and Contract.
+    public static Task<HttpResponseMessage> GetTenantBillingAsync(this HttpClient admin, Guid tenantId) =>
+        admin.GetAsync($"/v1/platform/tenants/{tenantId}/billing", Cancellation);
+
+    public static Task<HttpResponseMessage> SetBilledByAsync(this HttpClient admin, Guid tenantId, string billedBy) =>
+        admin.PutAsJsonAsync($"/v1/platform/tenants/{tenantId}/billing/billed-by", new { billedBy }, Cancellation);
+
     public static Task<HttpResponseMessage> GetPlanChoicesAsync(this HttpClient client, Guid tenantId) =>
         client.GetAsync($"/v1/tenants/{tenantId}/plans", Cancellation);
 

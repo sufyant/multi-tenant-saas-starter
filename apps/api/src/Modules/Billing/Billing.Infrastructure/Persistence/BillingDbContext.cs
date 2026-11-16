@@ -1,4 +1,5 @@
 using Billing.Domain.Checkouts;
+using Billing.Domain.Contracts;
 using Billing.Domain.Customers;
 using Billing.Domain.StripeEvents;
 using Billing.Domain.Subscriptions;
@@ -24,6 +25,8 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
     internal DbSet<Checkout> Checkouts => Set<Checkout>();
 
     internal DbSet<Customer> Customers => Set<Customer>();
+
+    internal DbSet<Contract> Contracts => Set<Contract>();
 
     internal DbSet<StripeEvent> StripeEvents => Set<StripeEvent>();
 
@@ -75,6 +78,14 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             checkout.Property(c => c.ReturnUrl).HasMaxLength(2048);
             checkout.Property(c => c.Currency).HasMaxLength(3);
             checkout.Ignore(c => c.Order);
+        });
+
+        // B12: a tenant's Contract mark, one row for each tenant that is Contract, keyed by the tenant column.
+        modelBuilder.Entity<Contract>(contract =>
+        {
+            contract.ToTable("contracts");
+            contract.Property<Guid>("TenantId");
+            contract.HasKey("TenantId");
         });
 
         // B5: one customer for each tenant, and a customer belongs to one tenant.

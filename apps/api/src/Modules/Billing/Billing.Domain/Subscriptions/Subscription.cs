@@ -80,12 +80,13 @@ internal sealed class Subscription : ITenantEntity
     }
 
     /// <summary>
-    /// The end at the period's end that the tenant's closure asks for (B8): true to ask for it, none when nothing is to ask, because the
-    /// subscription has ended or ends at its period's end already, by a member's wish too.
+    /// The end at the period's end that the tenant's closure asks for (B8), or its Contract (B12): true to ask for it, none when nothing is
+    /// to ask, because the subscription has ended or ends at its period's end already, by a member's wish too, or because the other one
+    /// asked for the end already.
     /// </summary>
     public bool? EndForClosure()
     {
-        if (HasEnded(Status) || CancelAtPeriodEnd)
+        if (HasEnded(Status) || CancelAtPeriodEnd || ClosureEnd == ClosureEnd.Asked)
         {
             return null;
         }
@@ -94,7 +95,10 @@ internal sealed class Subscription : ITenantEntity
         return true;
     }
 
-    /// <summary>The undo of the closure's end that the reopen asks for: false to ask for it, none when the closure asked for no end.</summary>
+    /// <summary>
+    /// The undo of the closure's end that the reopen asks for, or of Contract's end that the return to card asks for (B12): false to ask for
+    /// it, none when neither asked for an end. The caller asks it only when the tenant is neither closed nor Contract.
+    /// </summary>
     public bool? KeepAfterReopen()
     {
         if (ClosureEnd != ClosureEnd.Asked || HasEnded(Status))

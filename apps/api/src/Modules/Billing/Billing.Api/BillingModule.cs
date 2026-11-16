@@ -1,4 +1,5 @@
 using System.Reflection;
+using Billing.Api.Platform.Subscriptions;
 using Billing.Api.Public.Webhooks;
 using Billing.Api.Tenant.CheckoutSessions;
 using Billing.Api.Tenant.PortalSessions;
@@ -19,11 +20,12 @@ public static class BillingModule
     public static Assembly HandlerAssembly => typeof(ApplySubscriptionHandler).Assembly;
 
     /// <summary>
-    /// Maps the module's endpoints into the host's route groups: a tenant's billing for the members who manage it, and Stripe's signed
-    /// webhook on the public route. Each names its state (A5).
+    /// Maps the module's endpoints into the host's route groups: a tenant's billing for the system admins and for the members who manage
+    /// it, and Stripe's signed webhook on the public route. Each names its state (A5).
     /// </summary>
-    public static void MapEndpoints(RouteGroupBuilder tenant, RouteGroupBuilder publicRoutes)
+    public static void MapEndpoints(RouteGroupBuilder platform, RouteGroupBuilder tenant, RouteGroupBuilder publicRoutes)
     {
+        PlatformSubscriptionEndpoints.Map(platform);
         SubscriptionEndpoints.Map(tenant);
         CheckoutSessionEndpoints.Map(tenant);
         PortalSessionEndpoints.Map(tenant);

@@ -45,6 +45,8 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   SystemAdminGranted: 'system_admin.granted',
   SystemAdminRevoked: 'system_admin.revoked',
   TenantClosed: 'tenant.closed',
+  TenantContractEnded: 'tenant.contract_ended',
+  TenantContractStarted: 'tenant.contract_started',
   TenantCreated: 'tenant.created',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',

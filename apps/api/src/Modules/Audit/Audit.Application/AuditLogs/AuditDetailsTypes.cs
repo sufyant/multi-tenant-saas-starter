@@ -106,6 +106,8 @@ public static class AuditDetailsTypes
         [AuditOperations.SystemAdminGranted] = null,
         [AuditOperations.SystemAdminRevoked] = null,
         [AuditOperations.TenantClosed] = null,
+        [AuditOperations.TenantContractEnded] = null,
+        [AuditOperations.TenantContractStarted] = null,
         [AuditOperations.TenantCreated] = typeof(TenantCreatedDetails),
         [AuditOperations.TenantEntitlementOverrideRemoved] = typeof(TenantEntitlementOverrideRemovedDetails),
         [AuditOperations.TenantEntitlementOverrideSet] = typeof(TenantEntitlementOverrideSetDetails),

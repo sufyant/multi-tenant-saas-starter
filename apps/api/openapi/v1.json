@@ -6463,6 +6463,256 @@
         }
       }
     },
+    "/v1/platform/tenants/{tenantId}/billing": {
+      "get": {
+        "tags": [
+          "Platform/Subscriptions"
+        ],
+        "operationId": "GetTenantBilling",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/billing/billed-by": {
+      "put": {
+        "tags": [
+          "Platform/Subscriptions"
+        ],
+        "operationId": "SetBilledBy",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBilledByRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tenants/{tenantId}": {
       "get": {
         "tags": [
@@ -13266,6 +13516,8 @@
           "system_admin.granted",
           "system_admin.revoked",
           "tenant.closed",
+          "tenant.contract_ended",
+          "tenant.contract_started",
           "tenant.created",
           "tenant.entitlement_override_removed",
           "tenant.entitlement_override_set",
@@ -13324,6 +13576,8 @@
           "SystemAdminGranted",
           "SystemAdminRevoked",
           "TenantClosed",
+          "TenantContractEnded",
+          "TenantContractStarted",
           "TenantCreated",
           "TenantEntitlementOverrideRemoved",
           "TenantEntitlementOverrideSet",
@@ -13562,10 +13816,14 @@
       },
       "BillingResponse": {
         "required": [
+          "billedBy",
           "subscription"
         ],
         "type": "object",
         "properties": {
+          "billedBy": {
+            "$ref": "#/components/schemas/BillingResponseBilledBy"
+          },
           "subscription": {
             "oneOf": [
               {
@@ -13577,7 +13835,19 @@
             ]
           }
         },
-        "description": "The tenant's billing: its subscription, none until it pays by card the first time."
+        "description": "The tenant's billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant's last\nsubscription shows until it ends."
+      },
+      "BillingResponseBilledBy": {
+        "enum": [
+          "card",
+          "contract"
+        ],
+        "type": "string",
+        "description": "How the tenant pays (B12): by card in the app, or by Contract, invoiced outside the app, as a system admin set it.",
+        "x-enumNames": [
+          "Card",
+          "Contract"
+        ]
       },
       "ChangeEmailRequest": {
         "required": [
@@ -14055,6 +14325,7 @@
           "auth.unauthenticated",
           "billing.already_subscribed",
           "billing.checkout_replaced",
+          "billing.contract",
           "billing.no_customer",
           "billing.no_subscription",
           "billing.nothing_scheduled",
@@ -14067,6 +14338,7 @@
           "billing.return_url_invalid",
           "billing.subscription_not_active",
           "billing.tenant_closed",
+          "billing.tenant_not_found",
           "billing.webhook_invalid",
           "data_export.in_progress",
           "data_export.not_found",
@@ -14177,6 +14449,7 @@
           "AuthUnauthenticated",
           "BillingAlreadySubscribed",
           "BillingCheckoutReplaced",
+          "BillingContract",
           "BillingNoCustomer",
           "BillingNoSubscription",
           "BillingNothingScheduled",
@@ -14189,6 +14462,7 @@
           "BillingReturnUrlInvalid",
           "BillingSubscriptionNotActive",
           "BillingTenantClosed",
+          "BillingTenantNotFound",
           "BillingWebhookInvalid",
           "DataExportInProgress",
           "DataExportNotFound",
@@ -17156,6 +17430,30 @@
         },
         "description": "The plan and the interval that the subscription moves to at the end of its paid period, by a member's wish (B9)."
       },
+      "SetBilledByRequest": {
+        "required": [
+          "billedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "billedBy": {
+            "$ref": "#/components/schemas/SetBilledByRequestBilledBy"
+          }
+        },
+        "description": "A system admin's switch of how the tenant pays (4.35, \"Switch to Contract · Switch to Card\")."
+      },
+      "SetBilledByRequestBilledBy": {
+        "enum": [
+          "card",
+          "contract"
+        ],
+        "type": "string",
+        "description": "How the tenant pays from now on (B12): by card in the app, or by Contract, invoiced outside the app.",
+        "x-enumNames": [
+          "Card",
+          "Contract"
+        ]
+      },
       "SetEntitlementOverrideRequest": {
         "required": [
           "value",
@@ -19168,6 +19466,9 @@
     },
     {
       "name": "Platform/Plans"
+    },
+    {
+      "name": "Platform/Subscriptions"
     },
     {
       "name": "Platform/SystemAdmins"

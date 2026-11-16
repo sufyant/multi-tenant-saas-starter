@@ -72,6 +72,7 @@
     "billing": {
       "already_subscribed": "Bu kuruluş zaten kartla ödüyor. Bunun yerine planını değiştirin.",
       "checkout_replaced": "Başka bir ödeme sayfası bunun yerini aldı. Ödemeyi yeniden açın.",
+      "contract": "Bu kuruluşun faturası uygulama dışında kesilir. Planı değiştirmek için talep gönderin.",
       "no_customer": "Bu kuruluş henüz kartla ödeme yapmadı.",
       "no_subscription": "Bu kuruluş kartla ödemiyor. Bunun yerine ödeme sayfasını açın.",
       "nothing_scheduled": "Planlanmış bir plan değişikliği ya da iptal yok.",
@@ -84,6 +85,7 @@
       "return_url_invalid": "Geri dönülecek sayfa bu uygulamaya ait değil.",
       "subscription_not_active": "Abonelik etkin değil, bu yüzden planı şimdi değişemez.",
       "tenant_closed": "Bu kuruluş kapalı, bu yüzden hiçbir şey ödemiyor.",
+      "tenant_not_found": "Bu kuruluş yok.",
       "webhook_invalid": "Olayın imzası geçerli değil."
     },
     "data_export": {

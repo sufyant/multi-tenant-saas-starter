@@ -21,6 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
+            var contractRepository = new Billing.Infrastructure.Persistence.Contracts.ContractRepository(billingDbContext);
             var subscriptionRepository = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionRepository(billingDbContext);
             var customerStore = new Billing.Infrastructure.Persistence.Customers.CustomerStore(billingDbContext);
             // The actual message body
@@ -42,7 +43,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Tenants.ResumeBillingAtReopen.ResumeBillingAtReopenHandler");
                 
                 // The actual message execution
-                var outgoing3 = await Billing.Application.Tenants.ResumeBillingAtReopen.ResumeBillingAtReopenHandler.HandleAsync(tenantReopenedEvent, customerStore, subscriptionRepository, cancellation).ConfigureAwait(false);
+                var outgoing3 = await Billing.Application.Tenants.ResumeBillingAtReopen.ResumeBillingAtReopenHandler.HandleAsync(tenantReopenedEvent, customerStore, subscriptionRepository, contractRepository, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

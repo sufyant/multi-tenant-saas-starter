@@ -12,6 +12,7 @@ using Audit.Application.Members.RecordMemberLeft;
 using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
 using Audit.Application.Members.RecordOwnerMade;
+using Audit.Application.Plans.RecordContractStarted;
 using Audit.Application.Plans.RecordPlanCreated;
 using Audit.Application.Plans.RecordTenantEntitlementOverrideSet;
 using Audit.Application.Plans.RecordTenantPlanChanged;
@@ -350,6 +351,34 @@ public sealed class HostRoleTests(Database database)
         worker.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
         runs.In("worker").Count(run => run.Handler == typeof(SetCancelAtPeriodEndHandler)).ShouldBe(2);
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetCancelAtPeriodEndHandler));
+    }
+
+    // B12: the switch to Contract runs in the web host; Stripe's end at the period's end and both audit entries run in the worker.
+    [Fact]
+    public async Task SetBilledBy_APayingTenantOnAWebAndAWorkerHost_EndsItsSubscriptionAndRecordsItInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var planId = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(planId, 900, 1000, 9000, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, planId)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, planId));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        (await admin.SetBilledByAsync(tenant.Id, "contract")).EnsureSuccessStatusCode();
+        await Waiting.UntilAsync(async () => !worker.Billing.PeriodEnds.IsEmpty && await AuditEntriesAsync(name, tenant.Id, "tenant.contract_started") > 0);
+
+        worker.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true)]);
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(RecordContractStartedHandler));
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetCancelAtPeriodEndHandler) || run.Handler == typeof(RecordContractStartedHandler));
     }
 
     // B9, 12.12: a member's cancellation is the web host's call to Stripe; the sync, the names and both audit entries run in the worker.

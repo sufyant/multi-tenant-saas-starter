@@ -12,6 +12,10 @@ export const GetBillingParams = zod.object({
 })
 
 export const GetBillingResponse = zod.object({
+  "billedBy": zod.enum({
+  Card: 'card',
+  Contract: 'contract',
+}).describe('How the tenant pays (B12): by card in the app, or by Contract, invoiced outside the app, as a system admin set it.'),
   "subscription": zod.union([zod.null(),zod.object({
   "planId": zod.uuid(),
   "interval": zod.enum({
@@ -56,7 +60,7 @@ export const GetBillingResponse = zod.object({
 }).describe('The card Stripe tried: its brand, as Stripe names it (`visa`, `mastercard`), and its last four digits.')])
 }).describe('A failed payment of the subscription (B11; 10.15 to 10.17): `retrying` while Stripe tries again at `nextAttemptAt`,\n`grace` once its retries are over and the plan stays until `graceEndsAt`, and `moved_to_default` since `movedAt`, until\nthe open invoice is paid. `failedAt` is when the first attempt failed and `attempts` how many failed. `amountDue` is the open\ninvoice\'s amount without tax, in the minor unit of `currency`. `card` is the card Stripe tried, or null.')])
 }).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due.')])
-}).describe('The tenant\'s billing: its subscription, none until it pays by card the first time.')
+}).describe('The tenant\'s billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant\'s last\nsubscription shows until it ends.')
 
 export const PreviewPlanChangeParams = zod.object({
   "tenantId": zod.uuid()
