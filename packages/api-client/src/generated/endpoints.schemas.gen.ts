@@ -2061,14 +2061,13 @@ export interface MyTermsResponse {
 }
 
 /**
- * The payers on a price the plan no longer has (6.15): how many, the plan's prices before its latest change, and since when new customers
- * pay the new ones; both null for payers of a price older than billing knows of.
+ * The payers on another price than the plan's latest change (6.15): how many, the plan's prices before that change, and since when new
+ * customers pay the new ones.
  */
 export interface OldPriceResponse {
   count: number;
-  oldPrices: null | PricesResponse;
-  /** @nullable */
-  since: string | null;
+  oldPrices: PricesResponse;
+  since: string;
 }
 
 /**

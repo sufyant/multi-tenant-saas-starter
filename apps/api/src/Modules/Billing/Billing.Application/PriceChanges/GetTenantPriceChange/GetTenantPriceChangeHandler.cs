@@ -1,4 +1,5 @@
 using Billing.Application.PriceChanges.GetPriceChange;
+using Billing.Application.Subscriptions;
 
 namespace Billing.Application.PriceChanges.GetTenantPriceChange;
 
@@ -6,14 +7,17 @@ namespace Billing.Application.PriceChanges.GetTenantPriceChange;
 // its subscription does not end at its period's end (B13). A Contract tenant's payer ends (B12).
 public static class GetTenantPriceChangeHandler
 {
-    public static async Task<TenantPriceChangeView?> HandleAsync(GetTenantPriceChangeQuery query, IPriceChangeStore changes, TimeProvider time, CancellationToken cancellationToken)
+    public static async Task<TenantPriceChangeView?> HandleAsync(
+        GetTenantPriceChangeQuery query, IPriceChangeStore changes, ISubscriptionQueries subscriptions, TimeProvider time, CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
         if (await changes.FindPayerAsync(cancellationToken) is not { Ends: false } payer
             || await changes.FindLatestAsync(payer.PlanId, cancellationToken) is not { MovesAt: { } movesAt, AnnouncesAt: { } announcesAt } change
             || movesAt <= now
             || announcesAt > now
-            || !change.Moves(payer.Yearly, payer.BaseAmount, payer.PerPersonAmount))
+            || !change.Moves(payer.Yearly, payer.BaseAmount, payer.PerPersonAmount)
+            || await subscriptions.FindSubscriptionAsync(cancellationToken) is not { } subscription
+            || !PriceMoves.Takes(subscription, change.PlanId))
         {
             return null;
         }

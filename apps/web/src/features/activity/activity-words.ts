@@ -108,12 +108,23 @@ export function detailValues<N>(
         date: date(details.retriesUntil),
       };
     case TenantPriceChangeAnnouncedDetailsResponseOperation.TenantPriceChangeAnnounced:
-      // 12.12 names the monthly fee per person, as the frame draws it.
+      // 12.12 names the fee per person of the interval the organisation pays.
       return {
+        yearly: details.yearly ? "yes" : "no",
         plan: words.plan(details.plan.name),
         date: date(details.movesAt),
-        new: words.money(details.newPrices.perPersonMonthly, details.currency),
-        old: words.money(details.oldPrices.perPersonMonthly, details.currency),
+        new: words.money(
+          details.yearly
+            ? details.newPrices.perPersonYearly
+            : details.newPrices.perPersonMonthly,
+          details.currency,
+        ),
+        old: words.money(
+          details.yearly
+            ? details.oldPrices.perPersonYearly
+            : details.oldPrices.perPersonMonthly,
+          details.currency,
+        ),
       };
     case TenantPlanCancelledDetailsResponseOperation.TenantPlanCancelled:
       return {

@@ -25,8 +25,8 @@ public static class MoveSubscriptionPriceHandler
         if (await changes.FindAsync(command.PriceChangeId, cancellationToken) is not { } change
             || await customers.FindForUpdateAsync(cancellationToken) is not { ClosedAt: null }
             || await contracts.IsContractAsync(cancellationToken)
-            || await subscriptions.FindForUpdateAsync(cancellationToken) is not { PaysForItsPlan: true, CancelAtPeriodEnd: false, ScheduledPlanId: null } subscription
-            || subscription.PlanId != change.PlanId
+            || await subscriptions.FindForUpdateAsync(cancellationToken) is not { } subscription
+            || !PriceMoves.Takes(subscription, change.PlanId)
             || await changes.FindPayerAsync(cancellationToken) is not { } payer
             || !change.Moves(payer.Yearly, payer.BaseAmount, payer.PerPersonAmount))
         {

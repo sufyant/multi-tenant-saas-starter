@@ -16,14 +16,14 @@ export const GetPriceChangeResponse = zod.object({
   "yearlyPayers": zod.int(),
   "onOldPrice": zod.union([zod.null(),zod.object({
   "count": zod.int(),
-  "oldPrices": zod.union([zod.null(),zod.object({
+  "oldPrices": zod.object({
   "baseMonthly": zod.int(),
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.')]),
-  "since": zod.iso.datetime({"offset":true}).nullable()
-}).describe('The payers on a price the plan no longer has (6.15): how many, the plan\'s prices before its latest change, and since when new customers\npay the new ones; both null for payers of a price older than billing knows of.')]),
+}).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.'),
+  "since": zod.iso.datetime({"offset":true})
+}).describe('The payers on another price than the plan\'s latest change (6.15): how many, the plan\'s prices before that change, and since when new\ncustomers pay the new ones.')]),
   "movesAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A plan\'s payers by card and its price change (B13): `payers` and `yearlyPayers`, without the ones that end at their period\'s\nend (6.14, "Affects {count} organisations"); `onOldPrice`, the payers on a price the plan no longer has, or null (6.15); and\n`movesAt`, the day they move to the new price, or null while nothing is scheduled (6.16).')
 
@@ -36,14 +36,14 @@ export const MoveToNewPriceResponse = zod.object({
   "yearlyPayers": zod.int(),
   "onOldPrice": zod.union([zod.null(),zod.object({
   "count": zod.int(),
-  "oldPrices": zod.union([zod.null(),zod.object({
+  "oldPrices": zod.object({
   "baseMonthly": zod.int(),
   "perPersonMonthly": zod.int(),
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
-}).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.')]),
-  "since": zod.iso.datetime({"offset":true}).nullable()
-}).describe('The payers on a price the plan no longer has (6.15): how many, the plan\'s prices before its latest change, and since when new customers\npay the new ones; both null for payers of a price older than billing knows of.')]),
+}).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.'),
+  "since": zod.iso.datetime({"offset":true})
+}).describe('The payers on another price than the plan\'s latest change (6.15): how many, the plan\'s prices before that change, and since when new\ncustomers pay the new ones.')]),
   "movesAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('A plan\'s payers by card and its price change (B13): `payers` and `yearlyPayers`, without the ones that end at their period\'s\nend (6.14, "Affects {count} organisations"); `onOldPrice`, the payers on a price the plan no longer has, or null (6.15); and\n`movesAt`, the day they move to the new price, or null while nothing is scheduled (6.16).')
 

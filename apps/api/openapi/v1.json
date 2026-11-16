@@ -16444,24 +16444,14 @@
             "format": "int32"
           },
           "oldPrices": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/PricesResponse"
-              }
-            ]
+            "$ref": "#/components/schemas/PricesResponse"
           },
           "since": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "date-time"
           }
         },
-        "description": "The payers on a price the plan no longer has (6.15): how many, the plan's prices before its latest change, and since when new customers\npay the new ones; both null for payers of a price older than billing knows of."
+        "description": "The payers on another price than the plan's latest change (6.15): how many, the plan's prices before that change, and since when new\ncustomers pay the new ones."
       },
       "OpenCheckoutSessionRequest": {
         "required": [

@@ -19,20 +19,15 @@ import type {
 
 import type {
   OldPriceResponse,
-  PriceChangeResponse,
-  PricesResponse
+  PriceChangeResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getGetPriceChangeResponsePricesResponseMock = (overrideResponse: Partial<PricesResponse> = {}): PricesResponse => ({...{baseMonthly: faker.number.int(), perPersonMonthly: faker.number.int(), baseYearly: faker.number.int(), perPersonYearly: faker.number.int()}, ...overrideResponse});
-
-export const getGetPriceChangeResponseOldPriceResponseMock = (overrideResponse: Partial<OldPriceResponse> = {}): OldPriceResponse => ({...{count: faker.number.int(), oldPrices: faker.helpers.arrayElement([null,{...getGetPriceChangeResponsePricesResponseMock()},]), since: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, ...overrideResponse});
+export const getGetPriceChangeResponseOldPriceResponseMock = (overrideResponse: Partial<OldPriceResponse> = {}): OldPriceResponse => ({...{count: faker.number.int(), oldPrices: {baseMonthly: faker.number.int(), perPersonMonthly: faker.number.int(), baseYearly: faker.number.int(), perPersonYearly: faker.number.int()}, since: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse});
 
 export const getGetPriceChangeResponseMock = (overrideResponse: Partial<Extract<PriceChangeResponse, object>> = {}): PriceChangeResponse => ({payers: faker.number.int(), yearlyPayers: faker.number.int(), onOldPrice: faker.helpers.arrayElement([null,{...getGetPriceChangeResponseOldPriceResponseMock()},]), movesAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
-export const getMoveToNewPriceResponsePricesResponseMock = (overrideResponse: Partial<PricesResponse> = {}): PricesResponse => ({...{baseMonthly: faker.number.int(), perPersonMonthly: faker.number.int(), baseYearly: faker.number.int(), perPersonYearly: faker.number.int()}, ...overrideResponse});
-
-export const getMoveToNewPriceResponseOldPriceResponseMock = (overrideResponse: Partial<OldPriceResponse> = {}): OldPriceResponse => ({...{count: faker.number.int(), oldPrices: faker.helpers.arrayElement([null,{...getMoveToNewPriceResponsePricesResponseMock()},]), since: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, ...overrideResponse});
+export const getMoveToNewPriceResponseOldPriceResponseMock = (overrideResponse: Partial<OldPriceResponse> = {}): OldPriceResponse => ({...{count: faker.number.int(), oldPrices: {baseMonthly: faker.number.int(), perPersonMonthly: faker.number.int(), baseYearly: faker.number.int(), perPersonYearly: faker.number.int()}, since: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse});
 
 export const getMoveToNewPriceResponseMock = (overrideResponse: Partial<Extract<PriceChangeResponse, object>> = {}): PriceChangeResponse => ({payers: faker.number.int(), yearlyPayers: faker.number.int(), onOldPrice: faker.helpers.arrayElement([null,{...getMoveToNewPriceResponseOldPriceResponseMock()},]), movesAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 

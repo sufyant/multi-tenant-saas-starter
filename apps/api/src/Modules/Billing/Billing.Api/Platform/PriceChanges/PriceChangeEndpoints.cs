@@ -25,7 +25,7 @@ public static class PriceChangeEndpoints
         platform.MapPost("/plans/{planId:guid}/price-change/move", MoveToNewPrice).RequireAuthorization(BillingPermissions.PlatformPlansUpdate);
     }
 
-    // ControlPlane's plan and its prices of today, then billing's payers and changes, each on its module's DbContext (W1).
+    // ControlPlane's plan, then billing's payers and changes, each on its module's DbContext (W1).
     private static async Task<Result<PriceChangeResponse>> GetPriceChange(Guid planId, ClaimsPrincipal user, BillingOptions billing, IMessageBus bus, CancellationToken cancellationToken)
     {
         if (!billing.Enabled)
@@ -65,11 +65,11 @@ public static class PriceChangeEndpoints
 
     private static async Task<PriceChangeResponse> ReadAsync(IMessageBus bus, PriceChangeFacts facts, CancellationToken cancellationToken)
     {
-        var view = await bus.InvokeAsync<PriceChangeView>(new GetPriceChangeQuery(facts.PlanId, facts.Prices), cancellationToken);
+        var view = await bus.InvokeAsync<PriceChangeView>(new GetPriceChangeQuery(facts.PlanId), cancellationToken);
         return new PriceChangeResponse(
             view.Payers,
             view.YearlyPayers,
-            view.OnOldPrice is { } old ? new OldPriceResponse(old.Count, old.OldPrices is { } before ? PricesResponse.Of(before) : null, old.Since) : null,
+            view.OnOldPrice is { } old ? new OldPriceResponse(old.Count, PricesResponse.Of(old.OldPrices), old.Since) : null,
             view.MovesAt);
     }
 }

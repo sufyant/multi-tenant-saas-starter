@@ -1,4 +1,3 @@
-using Billing.Application.PriceChanges.GetPriceChange;
 using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.Users;
 
@@ -15,7 +14,6 @@ public static class GetPriceChangeFactsHandler
         }
 
         var actor = await users.FindContactAsync(query.ActorId, cancellationToken) ?? throw new InvalidOperationException("The system door lets in only a user.");
-        var prices = plan.Prices;
-        return new PriceChangeFacts(plan.Id, new PricesView(prices.BaseMonthly, prices.PerPersonMonthly, prices.BaseYearly, prices.PerPersonYearly), actor.UserId);
+        return new PriceChangeFacts(plan.Id, actor.UserId);
     }
 }
