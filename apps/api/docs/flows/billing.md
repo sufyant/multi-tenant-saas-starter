@@ -2,7 +2,7 @@
 
 This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
 
-A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. Contract and the price changes come in its later parts.
+A member who manages billing pays for a plan by card, through Stripe, and the tenant moves to the plan once Stripe says the subscription is active (B1 to B6; `docs/roadmap.md`, section 8, step 40b). Billing is off by default: while `Billing:Payments:Enabled` is false, every step below answers 404 `billing.off` (B1). Step 40b builds billing in parts; this file says what is built. The price changes come in its later parts.
 
 ## 1. The first payment
 
@@ -114,6 +114,24 @@ A member who manages billing pays for a plan by card, through Stripe, and the te
 - The subscription stays past due at Stripe. A payment of its open invoice makes it active, the sync clears the failed payment, the grace and the move, and the tenant is back on its plan at once, as after a checkout (B6).
 - A subscription that ends moves the tenant to the default plan: one that a member cancelled, at the end of its period, by that member (`tenant.plan_changed`); one that ended unpaid by the platform (`tenant.moved_to_default_plan`). A tenant on the default plan already, after the grace, changes nothing. A closed tenant's plan is read-only, so its end changes nothing (E2).
 
-Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`, `ScheduleChangeTests`, `AcceptInvitationTests`, `RemoveMemberTests`, `LeaveTenantTests`, `ChangeMemberRoleTests`, `MakeOwnerTests`, `DeleteUserTests`, `DunningTests`, `EndGraceTests`.
+## 8. Contract
+
+| Message | Sent by | Handled by | Handler has a transaction |
+| --- | --- | --- | --- |
+| `GetBillingFactsQuery` | `PUT /v1/platform/tenants/{tenantId}/billing/billed-by` and `GET /v1/platform/tenants/{tenantId}/billing` | Billing, `GetBillingFactsHandler`, through ControlPlane's `ITenantNames` and `IUserDirectory`: the tenant's name, none for a tenant that does not exist (404 `billing.tenant_not_found`), and the system admin's user id | ControlPlane's DbContext, in the tenant of the route |
+| `SetBilledByCommand` | the switch | Billing, `SetBilledByHandler`: locks the tenant's customer, when it has one, then the mark, the subscription and the checkout (B7) | Billing's DbContext, in the tenant of the route |
+| `SetCancelAtPeriodEndCommand`, `ExpireCheckoutPagesCommand` | `SetBilledByHandler` | Billing, as for a closure (section 4) | No |
+| `ContractStartedEvent`, `ContractEndedEvent` | `SetBilledByHandler` | Audit, `RecordContractStartedHandler` and `RecordContractEndedHandler` (`tenant.contract_started` and `tenant.contract_ended`, by the system admin in the platform's log and by the platform in the tenant's) | Yes, the tenant's |
+| `GetContractQuery` | the tenant's and the platform's reads, Checkout, the portal, the plan change, its preview and its undo | Billing, `GetContractHandler` | Billing's DbContext, in the tenant |
+
+- A tenant pays by card by default. A system admin marks it Contract, and it is billed outside the app by invoice (B12, 4.34, 4.35). The mark is a row of `billing.contracts`, so a tenant that never paid by card can be Contract too. `billedBy` in both reads says `card` or `contract` (10.19).
+- To Contract: Stripe ends the subscription at the end of the period it paid for, with no refund. The subscription takes the closure's mark (`closure_end` `Asked`), so each later state of Stripe asks for the end again (section 4), and the Activity log records no member's cancellation. The open checkout goes, and Stripe expires its pages.
+- Back to card: the end that Contract asked for is taken back while the tenant is not closed, as a reopen does. A reopen takes back no end while the tenant is Contract. The members pay again by checkout once the subscription has ended.
+- The same state again answers 200 and records nothing (I1).
+- A Contract tenant's members open no checkout and no portal, and change, preview or undo no plan: 409 `billing.contract`. Checkout and the plan change check it again under the customer's lock.
+- A system admin sets a Contract tenant's plan (`ChangeTenantPlan`). Its last subscription, while it runs out, puts the tenant on no plan and moves it nowhere when it ends: no `PlanPaidEvent`, no `PlanEndedEvent`. It sets no seats at Stripe, and a failed payment records nothing and starts no grace.
+- The purge deletes the mark.
+
+Tests: `OpenCheckoutSessionTests`, `ReceiveWebhookTests`, `TenantPurgeTests`, `CloseTenantTests`, `ReopenTenantTests`, `HostRoleTests`, `GetBillingTests`, `OpenPortalSessionTests`, `CheckoutOrdersTests`, `StripeBillingProviderTests`, `SubscriptionTests`, `RecordTenantPlanChangedTests`, `PlanMovesTests`, `SubscriptionEndByMemberTests`, `ChangePlanTests`, `PreviewPlanChangeTests`, `UndoScheduledChangeTests`, `GetPlanChoicesTests`, `ScheduleChangeTests`, `AcceptInvitationTests`, `RemoveMemberTests`, `LeaveTenantTests`, `ChangeMemberRoleTests`, `MakeOwnerTests`, `DeleteUserTests`, `DunningTests`, `EndGraceTests`, `SetBilledByTests`, `GetTenantBillingTests`.
 
 Source: Stripe, "Checkout", "Customer portal", "Webhooks", "Subscription statuses", "Change prices", "Prorations", "Pending updates", "Subscription schedules", "Per-seat pricing", "Automate payment retries" and "Invoice lifecycle". Richardson, *Microservices Patterns*, Chapter 3.
