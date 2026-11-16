@@ -652,7 +652,9 @@ describe("ActivitySentence", () => {
     );
 
     expect(
-      shown("Platform The price of Team changes on 2 Dec 2026: €12 for each person a month (before: €10)."),
+      shown(
+        "Platform The price of Team changes on 2 Dec 2026: €12 for each person a month (before: €10).",
+      ),
     ).toBeInTheDocument();
   });
 

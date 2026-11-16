@@ -334,6 +334,34 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         billing.Api.Billing.PriceMoves.ShouldBeEmpty();
     }
 
+    // Only the plan's latest change moves anybody: a later edit replaces an earlier one (B13).
+    [Fact]
+    public async Task UpdatePlan_ASecondPriceChangeBeforeTheFirstMoves_MovesNobodyOnTheFirstsDay()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        await billing.PayingAsync(billing.Tenants.Team);
+        var first = await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_after_notice" }));
+        await billing.Api.WaitingForMessagesAsync(() => billing.ChangeTeamPriceAsync(
+            new { who = "new_customers_only" }, new { baseMonthly = 0, perPersonMonthly = 1_500, baseYearly = 0, perPersonYearly = 15_000 }));
+
+        await billing.DeliverScheduledAsync(first);
+
+        billing.Api.Billing.PriceMoves.ShouldBeEmpty();
+    }
+
+    // A move that arrives before its day moves nobody: "Move to the new price" may have given the change a later day (B13).
+    [Fact]
+    public async Task UpdatePlan_AMoveThatArrivesBeforeItsDay_MovesNobody()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        await billing.PayingAsync(billing.Tenants.Team);
+        var session = await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_after_notice" }));
+
+        await billing.DeliverNowAsync(session.Scheduled.MessagesOf<MovePlanPricesCommand>().Single());
+
+        billing.Api.Billing.PriceMoves.ShouldBeEmpty();
+    }
+
     // The notice is 30 days, so a set day comes at least 30 days after today.
     [Fact]
     public async Task UpdatePlan_APriceChangeFromADayInLessThan30Days_IsInvalid()

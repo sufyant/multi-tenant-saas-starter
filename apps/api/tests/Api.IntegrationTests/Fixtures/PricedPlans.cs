@@ -61,13 +61,13 @@ internal sealed class PricedPlans : IAsyncDisposable
     public async Task<HttpClient> AdminAsync() => Api.CreateClient(await TestData.AddSystemAdminAsync(), secondFactor: true);
 
     // The platform's edit of Team's prices (6.14), with the answer to "Who pays the new price, and when?".
-    public async Task<HttpResponseMessage> ChangeTeamPriceAsync(object priceChange)
+    public async Task<HttpResponseMessage> ChangeTeamPriceAsync(object priceChange, object? prices = null)
     {
         var admin = await AdminAsync();
         var name = await _database.ScalarAsSuperuserAsync<string>($"SELECT name FROM control_plane.plans WHERE id = '{Tenants.Team}'");
         var changed = await admin.PatchAsJsonAsync(
             $"/v1/platform/plans/{Tenants.Team}",
-            new { name, isDefault = false, entitlements = new Dictionary<string, object> { ["members.max"] = PlanRequests.Unlimited }, prices = NewTeamPrices, priceChange },
+            new { name, isDefault = false, entitlements = new Dictionary<string, object> { ["members.max"] = PlanRequests.Unlimited }, prices = prices ?? NewTeamPrices, priceChange },
             Cancellation);
         changed.EnsureSuccessStatusCode();
         return changed;
@@ -87,6 +87,15 @@ internal sealed class PricedPlans : IAsyncDisposable
             });
         }
     }
+
+    // A message delivered now, by the clock the test holds.
+    public Task DeliverNowAsync(object message) =>
+        Api.WaitingForMessagesAsync(async () =>
+        {
+            using var scope = Api.Services.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeAsync(message, Cancellation);
+            return message;
+        });
 
     public Task<long> AuditCountAsync(Guid tenantId, string operation) =>
         _database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}' AND actor_kind = 'Platform'");
