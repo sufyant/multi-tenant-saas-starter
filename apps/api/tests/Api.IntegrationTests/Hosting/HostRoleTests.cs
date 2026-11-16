@@ -13,6 +13,8 @@ using Audit.Application.Members.RecordMemberRemoved;
 using Audit.Application.Members.RecordMemberRoleChanged;
 using Audit.Application.Members.RecordOwnerMade;
 using Audit.Application.Plans.RecordContractStarted;
+using Billing.Application.PriceChanges.AnnounceTenantPriceChange;
+using Billing.Application.PriceChanges.RecordPriceChange;
 using Audit.Application.Plans.RecordPlanCreated;
 using Audit.Application.Plans.RecordTenantEntitlementOverrideSet;
 using Audit.Application.Plans.RecordTenantPlanChanged;
@@ -351,6 +353,46 @@ public sealed class HostRoleTests(Database database)
         worker.Billing.PeriodEnds.ShouldBe([($"sub_{tenant.Id:N}", true), ($"sub_{tenant.Id:N}", false)]);
         runs.In("worker").Count(run => run.Handler == typeof(SetCancelAtPeriodEndHandler)).ShouldBe(2);
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(SetCancelAtPeriodEndHandler));
+    }
+
+    // B13: a plan edit on the web host; the price change, its notice and both audit entries run in the worker. The move is scheduled 30
+    // days away by the real clock, so no run reaches it.
+    [Fact]
+    public async Task UpdatePlan_APriceChangeOnAWebAndAWorkerHost_TellsThePayerInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var planName = $"Team {Guid.NewGuid():N}";
+        var planId = await testData.AddPlanAsync([], name: planName);
+        await testData.SetPlanPricesAsync(planId, 0, 1000, 0, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, planId)).EnsureSuccessStatusCode();
+        worker.Billing.Put(BillingRequests.Subscription(tenant.Id, planId) with { BaseAmount = 0, PerPersonAmount = 1000 });
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "checkout.session.completed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+
+        (await admin.PatchAsJsonAsync(
+            $"/v1/platform/plans/{planId}",
+            new
+            {
+                name = planName,
+                isDefault = false,
+                entitlements = new Dictionary<string, object>(),
+                prices = new { baseMonthly = 0, perPersonMonthly = 1200, baseYearly = 0, perPersonYearly = 12000 },
+                priceChange = new { who = "everyone_after_notice" },
+            },
+            TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.price_change_announced") > 0);
+
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(RecordPriceChangeHandler));
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(AnnounceTenantPriceChangeHandler));
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(RecordPriceChangeHandler) || run.Handler == typeof(AnnounceTenantPriceChangeHandler));
     }
 
     // B12: the switch to Contract runs in the web host; Stripe's end at the period's end and both audit entries run in the worker.

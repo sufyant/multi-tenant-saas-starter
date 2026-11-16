@@ -76,6 +76,7 @@
       "no_customer": "This organisation has not paid by card yet.",
       "no_subscription": "This organisation does not pay by card. Open the checkout instead.",
       "nothing_scheduled": "No plan change or cancellation is scheduled.",
+      "nothing_to_move": "No organisation pays an old price for this plan.",
       "off": "Billing is not available.",
       "payment_declined": "The card was declined, so the plan did not change.",
       "plan_free": "This plan costs nothing, so there is nothing to pay.",
@@ -159,6 +160,7 @@
       "name_taken": "Another plan has this name.",
       "not_found": "This plan no longer exists.",
       "override_not_found": "This organisation has no override of this key.",
+      "price_change_invalid": "Choose a day at least 30 days from today.",
       "price_invalid": "Enter a price of 0 or more."
     },
     "role": {

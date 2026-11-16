@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: PlanUpdatedEventHandler1892398036
+    // START: PriceChangeScheduledEventHandler115685054
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class PlanUpdatedEventHandler1892398036 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class PriceChangeScheduledEventHandler115685054 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public PlanUpdatedEventHandler1892398036(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public PriceChangeScheduledEventHandler115685054(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var planUpdatedEvent = (ControlPlane.Contracts.Plans.PlanUpdatedEvent)context.Envelope.Message;
+            var priceChangeScheduledEvent = (Billing.Contracts.PriceChanges.PriceChangeScheduledEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -37,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordPlanUpdated.RecordPlanUpdatedHandler");
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordPlanUpdated.RecordPlanUpdatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordPriceChangeScheduled.RecordPriceChangeScheduledHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordPriceChangeScheduled.RecordPriceChangeScheduledHandler");
                 
                 // The actual message execution
-                await Audit.Application.Plans.RecordPlanUpdated.RecordPlanUpdatedHandler.HandleAsync(planUpdatedEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Plans.RecordPriceChangeScheduled.RecordPriceChangeScheduledHandler.HandleAsync(priceChangeScheduledEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: PlanUpdatedEventHandler1892398036
+    // END: PriceChangeScheduledEventHandler115685054
     
     
 }

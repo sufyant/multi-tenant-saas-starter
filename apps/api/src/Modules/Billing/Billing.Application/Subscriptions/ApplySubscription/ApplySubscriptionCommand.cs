@@ -14,6 +14,8 @@ namespace Billing.Application.Subscriptions.ApplySubscription;
 /// message of the version before 40b-backend's seats.</param>
 /// <param name="Payment">The open invoice whose payment failed (B11); none when nothing is due, and in a message of the version before the
 /// dunning.</param>
+/// <param name="BaseAmount">What the subscription's Prices charge, with <paramref name="PerPersonAmount"/> (B13); none in a message of the
+/// version before the price changes.</param>
 /// <param name="PaidBy">The user id of the member who paid for the subscription.</param>
 [MessageName("apply-subscription")]
 public sealed record ApplySubscriptionCommand(
@@ -29,4 +31,6 @@ public sealed record ApplySubscriptionCommand(
     Guid? ScheduledPlanId = null,
     string? ScheduledInterval = null,
     int? People = null,
-    ProviderPayment? Payment = null);
+    ProviderPayment? Payment = null,
+    long? BaseAmount = null,
+    long? PerPersonAmount = null);

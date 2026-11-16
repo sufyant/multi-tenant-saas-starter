@@ -13,6 +13,7 @@ namespace Internal.Generated.WolverineHandlers
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
     public sealed class UpdatePlanCommandHandler1121035150 : Wolverine.Runtime.Handlers.MessageHandler
     {
+        private readonly ControlPlane.Application.Plans.BillingOptions _billingOptions;
         private readonly ControlPlane.Application.Plans.MeterCode _meterCode;
         private readonly FluentValidation.IValidator<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand> _validatorOfUpdatePlanCommand;
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> _dbContextOptionsOfControlPlaneDbContext;
@@ -20,8 +21,9 @@ namespace Internal.Generated.WolverineHandlers
         private readonly System.TimeProvider _timeProvider;
         private readonly Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand> _failureActionOfUpdatePlanCommand;
 
-        public UpdatePlanCommandHandler1121035150(ControlPlane.Application.Plans.MeterCode meterCode, FluentValidation.IValidator<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand> validatorOfUpdatePlanCommand, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand> failureActionOfUpdatePlanCommand)
+        public UpdatePlanCommandHandler1121035150(ControlPlane.Application.Plans.BillingOptions billingOptions, ControlPlane.Application.Plans.MeterCode meterCode, FluentValidation.IValidator<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand> validatorOfUpdatePlanCommand, Microsoft.EntityFrameworkCore.DbContextOptions<ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext> dbContextOptionsOfControlPlaneDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable, System.TimeProvider timeProvider, Wolverine.FluentValidation.IFailureAction<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand> failureActionOfUpdatePlanCommand)
         {
+            _billingOptions = billingOptions;
             _meterCode = meterCode;
             _validatorOfUpdatePlanCommand = validatorOfUpdatePlanCommand;
             _dbContextOptionsOfControlPlaneDbContext = dbContextOptionsOfControlPlaneDbContext;
@@ -57,7 +59,7 @@ namespace Internal.Generated.WolverineHandlers
                 await Wolverine.FluentValidation.Internals.FluentValidationExecutor.ExecuteOne<ControlPlane.Application.Plans.UpdatePlan.UpdatePlanCommand>(_validatorOfUpdatePlanCommand, _failureActionOfUpdatePlanCommand, updatePlanCommand).ConfigureAwait(false);
                 
                 // The actual message execution
-                (var outgoing1, var outgoing2) = await ControlPlane.Application.Plans.UpdatePlan.UpdatePlanHandler.HandleAsync(updatePlanCommand, planRepository, planQueries, userRepository, _meterCode, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Plans.UpdatePlan.UpdatePlanHandler.HandleAsync(updatePlanCommand, planRepository, planQueries, userRepository, _meterCode, _billingOptions, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

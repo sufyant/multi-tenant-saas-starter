@@ -7,6 +7,7 @@ using Billing.Application.Subscriptions.CancelAtPeriodEnd;
 using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions.ChangePlanNow;
 using Billing.Application.Subscriptions.GetPlanChangePreview;
+using Billing.Application.PriceChanges.MovePrices;
 using Billing.Application.Subscriptions.RefundSubscription;
 using Billing.Application.Subscriptions.SchedulePlanChange;
 using Billing.Application.Subscriptions.UndoScheduledChange;
@@ -75,6 +76,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(ExpireCheckoutPagesCommand), typeof(SetCancelAtPeriodEndCommand), typeof(CancelSubscriptionCommand),
                 typeof(GetPlanChangePreviewQuery), typeof(ChangePlanNowCommand), typeof(SchedulePlanChangeCommand), typeof(CancelAtPeriodEndCommand),
                 typeof(UndoScheduledChangeCommand), typeof(SetSeatsCommand), typeof(RefundSubscriptionCommand),
+                typeof(MovePricesCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

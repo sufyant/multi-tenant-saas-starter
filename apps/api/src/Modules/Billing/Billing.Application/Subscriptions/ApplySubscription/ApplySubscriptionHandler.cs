@@ -2,6 +2,7 @@ using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Contracts;
 using Billing.Application.Customers;
+using Billing.Application.PriceChanges;
 using Billing.Application.Subscriptions.CancelSubscription;
 using Billing.Application.Subscriptions.CountSeats;
 using Billing.Application.Subscriptions.EndGrace;
@@ -10,6 +11,7 @@ using Billing.Application.Subscriptions.RefundSubscription;
 using Billing.Application.Subscriptions.NameScheduleChange;
 using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Contracts.Subscriptions;
+using Billing.Domain.Payers;
 using Billing.Domain.Subscriptions;
 using SharedKernel;
 using Wolverine;
@@ -27,6 +29,7 @@ public static class ApplySubscriptionHandler
         ISubscriptionRepository subscriptions,
         ICheckoutRepository checkouts,
         IContractRepository contracts,
+        IPriceChangeStore payers,
         BillingOptions billing,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -67,6 +70,13 @@ public static class ApplySubscriptionHandler
         OutgoingMessages messages = command.People is { } people && !Subscription.HasEnded(state.Status) && !contract
             ? [new CountSeatsCommand(state.SubscriptionId, people)]
             : [];
+
+        // B13: what the tenant pays, for the platform's counts and the price changes, from each state of its own subscription or of one
+        // that replaces it, as the amounts are no part of the row. A late read of another subscription that ended changes nothing.
+        if (subscription is null || subscription.SubscriptionId == state.SubscriptionId || !Subscription.HasEnded(state.Status))
+        {
+            await TakePayerAsync(payers, state, command, contract, cancellationToken);
+        }
         if (subscription is null)
         {
             subscription = Subscription.Start(state, now);
@@ -81,6 +91,8 @@ public static class ApplySubscriptionHandler
             var dunning = subscription.DunningOf(state);
             if (subscription.Sync(state, now) == StateChange.Unchanged)
             {
+                // The payer's amounts can change with the row's state unchanged: a price change's move (B13).
+                await subscriptions.SaveChangesAsync(cancellationToken);
                 return messages;
             }
 
@@ -136,5 +148,26 @@ public static class ApplySubscriptionHandler
 
         await subscriptions.SaveChangesAsync(cancellationToken);
         return messages;
+    }
+
+    // An ended subscription pays nothing more; one that ends at its period's end, or a Contract tenant's, pays no next period, so no price
+    // change counts it, tells it or moves it (B12). A message of the version before the price changes keeps the amounts billing knows.
+    private static async Task TakePayerAsync(IPriceChangeStore payers, SubscriptionState state, ApplySubscriptionCommand command, bool contract, CancellationToken cancellationToken)
+    {
+        if (Subscription.HasEnded(state.Status))
+        {
+            await payers.DeletePayerAsync(cancellationToken);
+            return;
+        }
+
+        var yearly = state.Interval == BillingInterval.Yearly;
+        var ends = state.CancelAtPeriodEnd || contract;
+        if (await payers.FindPayerAsync(cancellationToken) is { } payer)
+        {
+            payer.Take(state.PlanId, yearly, command.BaseAmount ?? payer.BaseAmount, command.PerPersonAmount ?? payer.PerPersonAmount, ends);
+            return;
+        }
+
+        payers.AddPayer(new Payer(command.TenantId, state.PlanId, yearly, command.BaseAmount ?? 0, command.PerPersonAmount ?? 0, ends));
     }
 }

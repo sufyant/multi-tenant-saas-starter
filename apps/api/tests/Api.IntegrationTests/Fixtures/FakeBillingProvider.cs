@@ -51,6 +51,9 @@ internal sealed class FakeBillingProvider : IBillingProvider
     // Each count of seated members that the fee per person was set to (step 40, billing per person).
     public ConcurrentQueue<(string SubscriptionId, int People)> Seats { get; } = [];
 
+    // Each move of a subscription to the Prices of a plan's new amounts, its base fee and its fee per person (B13).
+    public ConcurrentQueue<(string SubscriptionId, long BaseAmount, long PerPersonAmount)> PriceMoves { get; } = [];
+
     // The prorated amount of a preview, and whether the card pays a move at once.
     public long PreviewAmount { get; set; } = 5325;
 
@@ -152,6 +155,14 @@ internal sealed class FakeBillingProvider : IBillingProvider
     {
         Seats.Enqueue((subscriptionId, people));
         Change(subscriptionId, held => held with { People = people });
+        return Task.CompletedTask;
+    }
+
+    // As Stripe, the subscription the fake holds takes the new amounts, so the sync that follows reads them.
+    public Task MovePricesAsync(PlanChangeOrder order, CancellationToken cancellationToken)
+    {
+        PriceMoves.Enqueue((order.SubscriptionId, order.BaseAmount, order.PerPersonAmount));
+        Change(order.SubscriptionId, held => held with { BaseAmount = order.BaseAmount, PerPersonAmount = order.PerPersonAmount });
         return Task.CompletedTask;
     }
 

@@ -150,6 +150,8 @@ public sealed class MigratedSchemaTests(Database database)
             table billing.checkouts: DELETE, INSERT, SELECT, UPDATE
             table billing.contracts: DELETE, INSERT, SELECT
             table billing.customers: DELETE, INSERT, SELECT, UPDATE
+            table billing.payers: DELETE, INSERT, SELECT, UPDATE
+            table billing.price_changes: INSERT, SELECT, UPDATE
             table billing.stripe_events: INSERT, SELECT
             table billing.subscriptions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.__ef_migrations_history: SELECT

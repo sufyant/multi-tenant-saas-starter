@@ -172,8 +172,16 @@ export const UpdatePlanBody = zod.object({
 }).describe('What happens when a tenant\'s use of a meter reaches the plan\'s quota in a period: the use stops, or the extra is charged.'),
   "unitPrice": zod.int(),
   "unitSize": zod.int()
-}).describe('A plan\'s setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter.')).nullish()
-}).describe('A plan\'s name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length.')
+}).describe('A plan\'s setting of one meter of the code in a request: its key, the quota of each period, what happens at the quota, and the price of\nthe extra, `unitPrice` minor units for each `unitSize` units. A key the code does not define, a key sent twice, a quota or a\nunit size out of range, or a unit price out of the prices\' range answers 400 `plan.meter_invalid` (step 40). The template defines\nno meter.')).nullish(),
+  "priceChange": zod.union([zod.null(),zod.object({
+  "who": zod.enum({
+  EveryoneAfterNotice: 'everyone_after_notice',
+  EveryoneFrom: 'everyone_from',
+  NewCustomersOnly: 'new_customers_only',
+}).describe('The choice of 6.14.'),
+  "from": zod.iso.datetime({"offset":true}).nullish().describe('The set day of `everyone_from`; none for the others.')
+}).describe('The answer to "Who pays the new price, and when?" (6.14, B13): every organisation that pays for the plan, at its first period after 30\ndays\' notice; every one from a set day, at least 30 days away, with the notice 30 days before; or new customers only. Read only when the\nedit changes the prices.')]).optional()
+}).describe('A plan\'s name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length. A change of the prices names who pays the new price, and when; left out, only new customers pay it (B13).')
 
 export const UpdatePlanResponse = zod.object({
   "id": zod.uuid(),

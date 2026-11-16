@@ -13,6 +13,7 @@ import {
   MemberRemovedDetailsResponseOperation,
   MemberRoleChangedDetailsResponseOperation,
   Permission,
+  PlanPriceChangeScheduledDetailsResponseOperation,
   RoleCreatedDetailsResponseOperation,
   RoleUpdatedDetailsResponseOperation,
   TenantCreatedDetailsResponseOperation,
@@ -26,6 +27,7 @@ import {
   TenantPlanChangedDetailsResponseOperation,
   TenantPlanChangeScheduledDetailsResponseOperation,
   TenantPlanChangeUndoneDetailsResponseOperation,
+  TenantPriceChangeAnnouncedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -138,6 +140,44 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation: TenantPlanChangedDetailsResponseOperation.TenantPlanChanged,
       oldPlan: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
       newPlan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantPriceChangeAnnounced]: {
+      operation:
+        TenantPriceChangeAnnouncedDetailsResponseOperation.TenantPriceChangeAnnounced,
+      plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Team" },
+      oldPrices: {
+        baseMonthly: 0,
+        perPersonMonthly: 1000,
+        baseYearly: 0,
+        perPersonYearly: 10000,
+      },
+      newPrices: {
+        baseMonthly: 0,
+        perPersonMonthly: 1200,
+        baseYearly: 0,
+        perPersonYearly: 12000,
+      },
+      currency: "EUR",
+      yearly: false,
+      movesAt: "2026-12-02T00:00:00Z",
+    },
+    [AuditOperation.PlanPriceChangeScheduled]: {
+      operation:
+        PlanPriceChangeScheduledDetailsResponseOperation.PlanPriceChangeScheduled,
+      oldPrices: {
+        baseMonthly: 0,
+        perPersonMonthly: 1000,
+        baseYearly: 0,
+        perPersonYearly: 10000,
+      },
+      newPrices: {
+        baseMonthly: 0,
+        perPersonMonthly: 1200,
+        baseYearly: 0,
+        perPersonYearly: 12000,
+      },
+      currency: "EUR",
+      movesAt: "2026-12-02T00:00:00Z",
     },
     [AuditOperation.TenantPaymentFailed]: {
       operation:

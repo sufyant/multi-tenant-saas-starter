@@ -6713,6 +6713,246 @@
         }
       }
     },
+    "/v1/platform/plans/{planId}/price-change": {
+      "get": {
+        "tags": [
+          "Platform/PriceChanges"
+        ],
+        "operationId": "GetPriceChange",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/plans/{planId}/price-change/move": {
+      "post": {
+        "tags": [
+          "Platform/PriceChanges"
+        ],
+        "operationId": "MoveToNewPrice",
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceChangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tenants/{tenantId}": {
       "get": {
         "tags": [
@@ -13312,6 +13552,12 @@
             "$ref": "#/components/schemas/TenantPaymentFailedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/PlanPriceChangeScheduledDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantPriceChangeAnnouncedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantMovedToDefaultPlanDetailsResponse"
           },
           {
@@ -13367,6 +13613,8 @@
             "tenant.plan_changed": "#/components/schemas/TenantPlanChangedDetailsResponse",
             "tenant.plan_cancelled": "#/components/schemas/TenantPlanCancelledDetailsResponse",
             "tenant.payment_failed": "#/components/schemas/TenantPaymentFailedDetailsResponse",
+            "plan.price_change_scheduled": "#/components/schemas/PlanPriceChangeScheduledDetailsResponse",
+            "tenant.price_change_announced": "#/components/schemas/TenantPriceChangeAnnouncedDetailsResponse",
             "tenant.moved_to_default_plan": "#/components/schemas/TenantMovedToDefaultPlanDetailsResponse",
             "tenant.plan_cancellation_undone": "#/components/schemas/TenantPlanCancellationUndoneDetailsResponse",
             "tenant.plan_change_scheduled": "#/components/schemas/TenantPlanChangeScheduledDetailsResponse",
@@ -13509,6 +13757,7 @@
           "member.role_changed",
           "members.exported",
           "plan.created",
+          "plan.price_change_scheduled",
           "plan.updated",
           "role.created",
           "role.deleted",
@@ -13530,6 +13779,7 @@
           "tenant.plan_change_scheduled",
           "tenant.plan_change_undone",
           "tenant.plan_changed",
+          "tenant.price_change_announced",
           "tenant.purge_warned",
           "tenant.purged",
           "tenant.reactivated",
@@ -13569,6 +13819,7 @@
           "MemberRoleChanged",
           "MembersExported",
           "PlanCreated",
+          "PlanPriceChangeScheduled",
           "PlanUpdated",
           "RoleCreated",
           "RoleDeleted",
@@ -13590,6 +13841,7 @@
           "TenantPlanChangeScheduled",
           "TenantPlanChangeUndone",
           "TenantPlanChanged",
+          "TenantPriceChangeAnnounced",
           "TenantPurgeWarned",
           "TenantPurged",
           "TenantReactivated",
@@ -14329,6 +14581,7 @@
           "billing.no_customer",
           "billing.no_subscription",
           "billing.nothing_scheduled",
+          "billing.nothing_to_move",
           "billing.off",
           "billing.payment_declined",
           "billing.plan_free",
@@ -14382,6 +14635,7 @@
           "plan.name_taken",
           "plan.not_found",
           "plan.override_not_found",
+          "plan.price_change_invalid",
           "plan.price_invalid",
           "rate_limit.exceeded",
           "request.invalid",
@@ -14453,6 +14707,7 @@
           "BillingNoCustomer",
           "BillingNoSubscription",
           "BillingNothingScheduled",
+          "BillingNothingToMove",
           "BillingOff",
           "BillingPaymentDeclined",
           "BillingPlanFree",
@@ -14506,6 +14761,7 @@
           "PlanNameTaken",
           "PlanNotFound",
           "PlanOverrideNotFound",
+          "PlanPriceChangeInvalid",
           "PlanPriceInvalid",
           "RateLimitExceeded",
           "RequestInvalid",
@@ -16175,6 +16431,28 @@
           "UserDataExportReady"
         ]
       },
+      "OldPriceResponse": {
+        "required": [
+          "count",
+          "oldPrices",
+          "since"
+        ],
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oldPrices": {
+            "$ref": "#/components/schemas/PricesResponse"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The payers on another price than the plan's latest change (6.15): how many, the plan's prices before that change, and since when new\ncustomers pay the new ones."
+      },
       "OpenCheckoutSessionRequest": {
         "required": [
           "planId",
@@ -16719,6 +16997,74 @@
         },
         "description": "A plan as another resource names it: its id and its name."
       },
+      "PlanPriceChangeRequest": {
+        "required": [
+          "who"
+        ],
+        "type": "object",
+        "properties": {
+          "who": {
+            "description": "The choice of 6.14.",
+            "$ref": "#/components/schemas/PlanPriceChangeRequestWho"
+          },
+          "from": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The set day of `everyone_from`; none for the others.",
+            "format": "date-time"
+          }
+        },
+        "description": "The answer to \"Who pays the new price, and when?\" (6.14, B13): every organisation that pays for the plan, at its first period after 30\ndays' notice; every one from a set day, at least 30 days away, with the notice 30 days before; or new customers only. Read only when the\nedit changes the prices."
+      },
+      "PlanPriceChangeRequestWho": {
+        "enum": [
+          "everyone_after_notice",
+          "everyone_from",
+          "new_customers_only"
+        ],
+        "type": "string",
+        "description": "Who pays a plan's new price, and when (6.14, B13).",
+        "x-enumNames": [
+          "EveryoneAfterNotice",
+          "EveryoneFrom",
+          "NewCustomersOnly"
+        ]
+      },
+      "PlanPriceChangeScheduledDetailsResponse": {
+        "required": [
+          "oldPrices",
+          "newPrices",
+          "currency",
+          "movesAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "plan.price_change_scheduled"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "PlanPriceChangeScheduled"
+            ]
+          },
+          "oldPrices": {
+            "$ref": "#/components/schemas/AuditPlanPricesResponse"
+          },
+          "newPrices": {
+            "$ref": "#/components/schemas/AuditPlanPricesResponse"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "movesAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "PlanPricesRequest": {
         "required": [
           "baseMonthly",
@@ -17034,6 +17380,71 @@
           }
         },
         "description": "The user's preferences, which follow them to every tenant and device. A null time zone is not set."
+      },
+      "PriceChangeResponse": {
+        "required": [
+          "payers",
+          "yearlyPayers",
+          "onOldPrice",
+          "movesAt"
+        ],
+        "type": "object",
+        "properties": {
+          "payers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "yearlyPayers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onOldPrice": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OldPriceResponse"
+              }
+            ]
+          },
+          "movesAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "A plan's payers by card and its price change (B13): `payers` and `yearlyPayers`, without the ones that end at their period's\nend (6.14, \"Affects {count} organisations\"); `onOldPrice`, the payers on a price the plan no longer has, or null (6.15); and\n`movesAt`, the day they move to the new price, or null while nothing is scheduled (6.16)."
+      },
+      "PricesResponse": {
+        "required": [
+          "baseMonthly",
+          "perPersonMonthly",
+          "baseYearly",
+          "perPersonYearly"
+        ],
+        "type": "object",
+        "properties": {
+          "baseMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonMonthly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "baseYearly": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "perPersonYearly": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A plan's four prices in a price change, each a whole number of the minor unit of the deployment's currency, without tax."
       },
       "ProblemDetails": {
         "required": [
@@ -17504,6 +17915,27 @@
         },
         "description": "The percentage of the flag's second rule: a whole percentage of the organisations; none turns the rule off."
       },
+      "SubscriptionPriceChangeResponse": {
+        "required": [
+          "movesAt",
+          "oldPrices",
+          "newPrices"
+        ],
+        "type": "object",
+        "properties": {
+          "movesAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "oldPrices": {
+            "$ref": "#/components/schemas/PricesResponse"
+          },
+          "newPrices": {
+            "$ref": "#/components/schemas/PricesResponse"
+          }
+        },
+        "description": "A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan's new prices; the\nplan's prices before and after (B13)."
+      },
       "SubscriptionResponse": {
         "required": [
           "planId",
@@ -17512,7 +17944,8 @@
           "currentPeriodEnd",
           "cancelAtPeriodEnd",
           "scheduledChange",
-          "payment"
+          "payment",
+          "priceChange"
         ],
         "type": "object",
         "properties": {
@@ -17552,9 +17985,19 @@
                 "$ref": "#/components/schemas/PaymentResponse"
               }
             ]
+          },
+          "priceChange": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubscriptionPriceChangeResponse"
+              }
+            ]
           }
         },
-        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment's dunning (B11), or null when nothing is due."
+        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment's dunning (B11), or null when nothing is due. `priceChange` is the plan's new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null."
       },
       "SubscriptionResponseInterval": {
         "enum": [
@@ -18464,6 +18907,47 @@
         },
         "description": "A tenant's plan and every key of the list with its plan value, override, effective value and count."
       },
+      "TenantPriceChangeAnnouncedDetailsResponse": {
+        "required": [
+          "plan",
+          "oldPrices",
+          "newPrices",
+          "currency",
+          "yearly",
+          "movesAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.price_change_announced"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantPriceChangeAnnounced"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "oldPrices": {
+            "$ref": "#/components/schemas/AuditPlanPricesResponse"
+          },
+          "newPrices": {
+            "$ref": "#/components/schemas/AuditPlanPricesResponse"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "yearly": {
+            "type": "boolean"
+          },
+          "movesAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "TenantPurgeWarnedDetailsResponse": {
         "required": [
           "purgesAt",
@@ -18978,9 +19462,19 @@
             "items": {
               "$ref": "#/components/schemas/MeterSettingRequest"
             }
+          },
+          "priceChange": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PlanPriceChangeRequest"
+              }
+            ]
           }
         },
-        "description": "A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length."
+        "description": "A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another\nplan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it\ncounts its length. A change of the prices names who pays the new price, and when; left out, only new customers pay it (B13)."
       },
       "UpdateRoleRequest": {
         "required": [
@@ -19466,6 +19960,9 @@
     },
     {
       "name": "Platform/Plans"
+    },
+    {
+      "name": "Platform/PriceChanges"
     },
     {
       "name": "Platform/Subscriptions"

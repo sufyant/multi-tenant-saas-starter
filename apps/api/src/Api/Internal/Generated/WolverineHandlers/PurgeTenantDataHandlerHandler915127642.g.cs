@@ -21,6 +21,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var billingDbContext = new Billing.Infrastructure.Persistence.BillingDbContext(_dbContextOptionsOfBillingDbContext, context);
+            var priceChangeStore = new Billing.Infrastructure.Persistence.PriceChanges.PriceChangeStore(billingDbContext);
             var contractRepository = new Billing.Infrastructure.Persistence.Contracts.ContractRepository(billingDbContext);
             var checkoutRepository = new Billing.Infrastructure.Persistence.Checkouts.CheckoutRepository(billingDbContext);
             var subscriptionRepository = new Billing.Infrastructure.Persistence.Subscriptions.SubscriptionRepository(billingDbContext);
@@ -44,7 +45,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler");
                 
                 // The actual message execution
-                var outgoing4 = await Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, customerStore, subscriptionRepository, checkoutRepository, contractRepository, cancellation).ConfigureAwait(false);
+                var outgoing4 = await Billing.Application.Tenants.PurgeTenantData.PurgeTenantDataHandler.HandleAsync(purgeTenantDataCommand, customerStore, subscriptionRepository, checkoutRepository, contractRepository, priceChangeStore, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

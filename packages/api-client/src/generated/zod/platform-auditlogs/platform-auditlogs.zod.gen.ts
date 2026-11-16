@@ -38,6 +38,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   MemberRoleChanged: 'member.role_changed',
   MembersExported: 'members.exported',
   PlanCreated: 'plan.created',
+  PlanPriceChangeScheduled: 'plan.price_change_scheduled',
   PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
@@ -59,6 +60,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
   TenantPlanChangeUndone: 'tenant.plan_change_undone',
   TenantPlanChanged: 'tenant.plan_changed',
+  TenantPriceChangeAnnounced: 'tenant.price_change_announced',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
@@ -374,6 +376,47 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "amountDue": zod.int(),
   "currency": zod.string(),
   "retriesUntil": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  PlanPriceChangeScheduled: 'plan.price_change_scheduled',
+}),
+  "oldPrices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).'),
+  "newPrices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).'),
+  "currency": zod.string(),
+  "movesAt": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantPriceChangeAnnounced: 'tenant.price_change_announced',
+}),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "oldPrices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).'),
+  "newPrices": zod.object({
+  "baseMonthly": zod.int(),
+  "perPersonMonthly": zod.int(),
+  "baseYearly": zod.int(),
+  "perPersonYearly": zod.int()
+}).describe('A plan\'s prices as an entry keeps them, each a whole number of the minor unit of the deployment\'s currency (step 40).'),
+  "currency": zod.string(),
+  "yearly": zod.boolean(),
+  "movesAt": zod.iso.datetime({"offset":true})
 }),zod.object({
   "operation": zod.enum({
   TenantMovedToDefaultPlan: 'tenant.moved_to_default_plan',

@@ -639,6 +639,25 @@ describe("ActivitySentence", () => {
     expect(shown("المنصة أعادت المنصة فتح هذه المؤسسة.")).toBeInTheDocument();
   });
 
+  // 12.12, B13: the organisation is told that its plan's price changes; the platform acted.
+  it("ActivitySentence_TenantPriceChangeAnnounced_SaysTheDayAndTheMonthlyPricePerPerson", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantPriceChangeAnnounced,
+          actor: thePlatform,
+          details: detailsOf[AuditOperation.TenantPriceChangeAnnounced],
+        })}
+      />,
+    );
+
+    expect(
+      shown(
+        "Platform The price of Team changes on 2 Dec 2026: €12 for each person a month (before: €10).",
+      ),
+    ).toBeInTheDocument();
+  });
+
   // 12.12, B12: a system admin marks the organisation Contract, or takes it back to card.
   it.each([
     [

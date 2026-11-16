@@ -12,12 +12,22 @@ namespace ControlPlane.Application.Plans.UpdatePlan;
 // the mark set states (I1): what the plan has already announces nothing. The cache of every tenant on the plan follows the plan's tag (C5).
 public static class UpdatePlanHandler
 {
+    private const string EveryoneFrom = "EveryoneFrom";
+
+    private const string NewCustomersOnly = "NewCustomersOnly";
+
+    private static readonly TimeSpan PriceChangeNotice = TimeSpan.FromDays(30);
+
+    private static readonly Error PriceChangeInvalid = Error.Validation(
+        ControlPlaneErrorCodes.PlanPriceChangeInvalid, "A price change from a set day names a day at least 30 days away; the other choices name none.");
+
     public static async Task<(Result<PlanView>, OutgoingMessages)> HandleAsync(
         UpdatePlanCommand command,
         IPlanRepository plans,
         IPlanQueries queries,
         IUserRepository users,
         MeterCode meterCode,
+        BillingOptions billing,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -31,6 +41,14 @@ public static class UpdatePlanHandler
         if (meters is { IsSuccess: false })
         {
             return (meters.Error, []);
+        }
+
+        // B13: a set day comes at least 30 days after today, as each payer is told 30 days before it; the other choices name no day.
+        var now = time.GetUtcNow();
+        if (command.PriceChange is { } priceChange
+            && (priceChange.Who == EveryoneFrom ? priceChange.From is not { } from || from < now + PriceChangeNotice : priceChange.From is not null))
+        {
+            return (PriceChangeInvalid, []);
         }
 
         if (await plans.FindPlanForUpdateAsync(command.PlanId, cancellationToken) is not { } plan)
@@ -70,7 +88,7 @@ public static class UpdatePlanHandler
 
         var actor = await users.FindUserIdAsync(command.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("A system actor is always a user.");
-        var now = time.GetUtcNow();
+        var pricesChanged = before.Old.Prices != plan.Prices;
         return (view, [new PlanUpdatedEvent(
             Guid.CreateVersion7(now),
             now,
@@ -87,7 +105,9 @@ public static class UpdatePlanHandler
             PlanPricesView.RecordOf(before.Old.Prices),
             PlanPricesView.RecordOf(plan.Prices),
             MeterSettingView.RecordsOf(before.Old.Meters),
-            MeterSettingView.RecordsOf(plan.MeterMap))]);
+            MeterSettingView.RecordsOf(plan.MeterMap),
+            pricesChanged ? new PriceChangeRecord(command.PriceChange?.Who ?? NewCustomersOnly, command.PriceChange?.From) : null,
+            billing.Currency)]);
     }
 
     private static bool SameValues(IReadOnlyDictionary<string, EntitlementValue> before, IReadOnlyDictionary<string, EntitlementValue> after) =>

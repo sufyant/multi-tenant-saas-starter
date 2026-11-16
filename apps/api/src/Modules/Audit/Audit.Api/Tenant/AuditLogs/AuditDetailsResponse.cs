@@ -29,6 +29,8 @@ namespace Audit.Api.Tenant.AuditLogs;
 [JsonDerivedType(typeof(TenantPlanChangedDetailsResponse), AuditDetailsTypes.TenantPlanChanged)]
 [JsonDerivedType(typeof(TenantPlanCancelledDetailsResponse), AuditDetailsTypes.TenantPlanCancelled)]
 [JsonDerivedType(typeof(TenantPaymentFailedDetailsResponse), AuditDetailsTypes.TenantPaymentFailed)]
+[JsonDerivedType(typeof(PlanPriceChangeScheduledDetailsResponse), AuditDetailsTypes.PlanPriceChangeScheduled)]
+[JsonDerivedType(typeof(TenantPriceChangeAnnouncedDetailsResponse), AuditDetailsTypes.TenantPriceChangeAnnounced)]
 [JsonDerivedType(typeof(TenantMovedToDefaultPlanDetailsResponse), AuditDetailsTypes.TenantMovedToDefaultPlan)]
 [JsonDerivedType(typeof(TenantPlanCancellationUndoneDetailsResponse), AuditDetailsTypes.TenantPlanCancellationUndone)]
 [JsonDerivedType(typeof(TenantPlanChangeScheduledDetailsResponse), AuditDetailsTypes.TenantPlanChangeScheduled)]

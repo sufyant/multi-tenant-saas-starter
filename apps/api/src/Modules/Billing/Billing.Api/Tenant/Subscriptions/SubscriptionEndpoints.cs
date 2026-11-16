@@ -1,5 +1,6 @@
 using Billing.Api.Statuses;
 using Billing.Application.Contracts.GetContract;
+using Billing.Application.PriceChanges.GetTenantPriceChange;
 using Billing.Application.Subscriptions.GetBilling;
 using Billing.Application.Subscriptions;
 using Billing.Application;
@@ -23,7 +24,9 @@ public static class SubscriptionEndpoints
     {
         var contract = await InvokeAsync<bool>(bus, tenantId, new GetContractQuery(), cancellationToken);
         var subscription = await InvokeAsync<SubscriptionView?>(bus, tenantId, new GetBillingQuery(), cancellationToken);
-        return new BillingResponse(contract ? BillingResponseBilledBy.Contract : BillingResponseBilledBy.Card, subscription is null ? null : ToResponse(subscription));
+        var priceChange = subscription is null ? null : await InvokeAsync<TenantPriceChangeView?>(bus, tenantId, new GetTenantPriceChangeQuery(), cancellationToken);
+        return new BillingResponse(
+            contract ? BillingResponseBilledBy.Contract : BillingResponseBilledBy.Card, subscription is null ? null : ToResponse(subscription, priceChange));
     }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the read to it.
@@ -40,7 +43,7 @@ public static class SubscriptionEndpoints
     private static Task<T> InvokeAsync<T>(IMessageBus bus, Guid? tenantId, object query, CancellationToken cancellationToken) =>
         tenantId is { } id ? bus.InvokeForTenantAsync<T>(id.ToString(), query, cancellationToken) : bus.InvokeAsync<T>(query, cancellationToken);
 
-    private static SubscriptionResponse ToResponse(SubscriptionView subscription) =>
+    private static SubscriptionResponse ToResponse(SubscriptionView subscription, TenantPriceChangeView? priceChange) =>
         new(
             subscription.PlanId,
             ResponseStatus.OfInterval(subscription.Interval),
@@ -55,5 +58,8 @@ public static class SubscriptionEndpoints
                     ResponseStatus.OfPayment(payment.State), payment.FailedAt, payment.Attempts, payment.NextAttemptAt, payment.GraceEndsAt, payment.MovedAt,
                     payment.AmountDue, payment.Currency,
                     payment is { CardBrand: { } brand, CardLast4: { } last4 } ? new PaymentCardResponse(brand, last4) : null)
-                : null);
+                : null,
+            priceChange is null
+                ? null
+                : new SubscriptionPriceChangeResponse(priceChange.MovesAt, PricesResponse.Of(priceChange.OldPrices), PricesResponse.Of(priceChange.NewPrices)));
 }

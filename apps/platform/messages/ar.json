@@ -417,6 +417,7 @@
       },
       "plan": {
         "created": "أنشأ <actor></actor> الخطة <target></target>.",
+        "price_change_scheduled": "غيّر <actor></actor> سعر <target></target>: {new} لكل شخص شهريًا اعتبارًا من {date} (قبل: {old}). تُبلَّغ كل مؤسسة على <target></target> قبل 30 يومًا.",
         "updated": "{change, select, renamed {غيّر <actor></actor> اسم الخطة <name>{oldName}</name> إلى <target></target>.} default {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>.} defaultAndChanges {جعل <actor></actor> <target></target> الخطة الافتراضية بدلًا من <previous></previous>، وغيّر <changes></changes>.} one {غيّر <actor></actor> الخطة <target></target>: <changes></changes>.} other {غيّر <actor></actor> عدة قيم في الخطة <target></target>: <changes></changes>.}}"
       },
       "terms_version": {

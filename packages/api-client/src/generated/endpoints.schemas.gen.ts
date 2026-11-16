@@ -521,6 +521,38 @@ export interface TenantPaymentFailedDetailsResponse {
   retriesUntil: string;
 }
 
+export type PlanPriceChangeScheduledDetailsResponseOperation = typeof PlanPriceChangeScheduledDetailsResponseOperation[keyof typeof PlanPriceChangeScheduledDetailsResponseOperation];
+
+
+export const PlanPriceChangeScheduledDetailsResponseOperation = {
+  PlanPriceChangeScheduled: 'plan.price_change_scheduled',
+} as const;
+
+export interface PlanPriceChangeScheduledDetailsResponse {
+  operation: PlanPriceChangeScheduledDetailsResponseOperation;
+  oldPrices: AuditPlanPricesResponse;
+  newPrices: AuditPlanPricesResponse;
+  currency: string;
+  movesAt: string;
+}
+
+export type TenantPriceChangeAnnouncedDetailsResponseOperation = typeof TenantPriceChangeAnnouncedDetailsResponseOperation[keyof typeof TenantPriceChangeAnnouncedDetailsResponseOperation];
+
+
+export const TenantPriceChangeAnnouncedDetailsResponseOperation = {
+  TenantPriceChangeAnnounced: 'tenant.price_change_announced',
+} as const;
+
+export interface TenantPriceChangeAnnouncedDetailsResponse {
+  operation: TenantPriceChangeAnnouncedDetailsResponseOperation;
+  plan: AuditPlanResponse;
+  oldPrices: AuditPlanPricesResponse;
+  newPrices: AuditPlanPricesResponse;
+  currency: string;
+  yearly: boolean;
+  movesAt: string;
+}
+
 export type TenantMovedToDefaultPlanDetailsResponseOperation = typeof TenantMovedToDefaultPlanDetailsResponseOperation[keyof typeof TenantMovedToDefaultPlanDetailsResponseOperation];
 
 
@@ -679,7 +711,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -704,6 +736,7 @@ export const AuditOperation = {
   MemberRoleChanged: 'member.role_changed',
   MembersExported: 'members.exported',
   PlanCreated: 'plan.created',
+  PlanPriceChangeScheduled: 'plan.price_change_scheduled',
   PlanUpdated: 'plan.updated',
   RoleCreated: 'role.created',
   RoleDeleted: 'role.deleted',
@@ -725,6 +758,7 @@ export const AuditOperation = {
   TenantPlanChangeScheduled: 'tenant.plan_change_scheduled',
   TenantPlanChangeUndone: 'tenant.plan_change_undone',
   TenantPlanChanged: 'tenant.plan_changed',
+  TenantPriceChangeAnnounced: 'tenant.price_change_announced',
   TenantPurgeWarned: 'tenant.purge_warned',
   TenantPurged: 'tenant.purged',
   TenantReactivated: 'tenant.reactivated',
@@ -900,10 +934,31 @@ export interface PaymentResponse {
 }
 
 /**
+ * A plan's four prices in a price change, each a whole number of the minor unit of the deployment's currency, without tax.
+ */
+export interface PricesResponse {
+  baseMonthly: number;
+  perPersonMonthly: number;
+  baseYearly: number;
+  perPersonYearly: number;
+}
+
+/**
+ * A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan's new prices; the
+ * plan's prices before and after (B13).
+ */
+export interface SubscriptionPriceChangeResponse {
+  movesAt: string;
+  oldPrices: PricesResponse;
+  newPrices: PricesResponse;
+}
+
+/**
  * The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it
  * has paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's
  * (B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or
- * null. `payment` is a failed payment's dunning (B11), or null when nothing is due.
+ * null. `payment` is a failed payment's dunning (B11), or null when nothing is due. `priceChange` is the plan's new price that the
+ * tenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.
  */
 export interface SubscriptionResponse {
   planId: string;
@@ -913,6 +968,7 @@ export interface SubscriptionResponse {
   cancelAtPeriodEnd: boolean;
   scheduledChange: null | ScheduledChangeResponse;
   payment: null | PaymentResponse;
+  priceChange: null | SubscriptionPriceChangeResponse;
 }
 
 /**
@@ -1339,6 +1395,7 @@ export const ErrorCode = {
   BillingNoCustomer: 'billing.no_customer',
   BillingNoSubscription: 'billing.no_subscription',
   BillingNothingScheduled: 'billing.nothing_scheduled',
+  BillingNothingToMove: 'billing.nothing_to_move',
   BillingOff: 'billing.off',
   BillingPaymentDeclined: 'billing.payment_declined',
   BillingPlanFree: 'billing.plan_free',
@@ -1392,6 +1449,7 @@ export const ErrorCode = {
   PlanNameTaken: 'plan.name_taken',
   PlanNotFound: 'plan.not_found',
   PlanOverrideNotFound: 'plan.override_not_found',
+  PlanPriceChangeInvalid: 'plan.price_change_invalid',
   PlanPriceInvalid: 'plan.price_invalid',
   RateLimitExceeded: 'rate_limit.exceeded',
   RequestInvalid: 'request.invalid',
@@ -2003,6 +2061,16 @@ export interface MyTermsResponse {
 }
 
 /**
+ * The payers on another price than the plan's latest change (6.15): how many, the plan's prices before that change, and since when new
+ * customers pay the new ones.
+ */
+export interface OldPriceResponse {
+  count: number;
+  oldPrices: PricesResponse;
+  since: string;
+}
+
+/**
  * How often the subscription pays.
  */
 export type OpenCheckoutSessionRequestInterval = typeof OpenCheckoutSessionRequestInterval[keyof typeof OpenCheckoutSessionRequestInterval];
@@ -2157,6 +2225,33 @@ export interface PlanNameResponse {
   name: string;
 }
 
+/**
+ * Who pays a plan's new price, and when (6.14, B13).
+ */
+export type PlanPriceChangeRequestWho = typeof PlanPriceChangeRequestWho[keyof typeof PlanPriceChangeRequestWho];
+
+
+export const PlanPriceChangeRequestWho = {
+  EveryoneAfterNotice: 'everyone_after_notice',
+  EveryoneFrom: 'everyone_from',
+  NewCustomersOnly: 'new_customers_only',
+} as const;
+
+/**
+ * The answer to "Who pays the new price, and when?" (6.14, B13): every organisation that pays for the plan, at its first period after 30
+ * days' notice; every one from a set day, at least 30 days away, with the notice 30 days before; or new customers only. Read only when the
+ * edit changes the prices.
+ */
+export interface PlanPriceChangeRequest {
+  /** The choice of 6.14. */
+  who: PlanPriceChangeRequestWho;
+  /**
+     * The set day of `everyone_from`; none for the others.
+     * @nullable
+     */
+  from?: string | null;
+}
+
 export type PlanResponseEntitlements = {[key: string]: EntitlementValueResponse};
 
 /**
@@ -2233,6 +2328,19 @@ export interface PreferencesResponse {
   language: Language;
   /** @nullable */
   timeZone: string | null;
+}
+
+/**
+ * A plan's payers by card and its price change (B13): `payers` and `yearlyPayers`, without the ones that end at their period's
+ * end (6.14, "Affects {count} organisations"); `onOldPrice`, the payers on a price the plan no longer has, or null (6.15); and
+ * `movesAt`, the day they move to the new price, or null while nothing is scheduled (6.16).
+ */
+export interface PriceChangeResponse {
+  payers: number;
+  yearlyPayers: number;
+  onOldPrice: null | OldPriceResponse;
+  /** @nullable */
+  movesAt: string | null;
 }
 
 /**
@@ -2697,7 +2805,7 @@ export type UpdatePlanRequestEntitlements = {[key: string]: EntitlementValueRequ
 /**
  * A plan's name, its default mark and exactly these values: a key left out loses its value. The default plan keeps its mark until another
  * plan takes it. Its prices and its meters, exactly these; left out, the plan keeps its own (step 40). The API trims the name before it
- * counts its length.
+ * counts its length. A change of the prices names who pays the new price, and when; left out, only new customers pay it (B13).
  */
 export interface UpdatePlanRequest {
   /** @maxLength 100 */
@@ -2707,6 +2815,7 @@ export interface UpdatePlanRequest {
   prices?: null | PlanPricesRequest;
   /** @nullable */
   meters?: MeterSettingRequest[] | null;
+  priceChange?: null | PlanPriceChangeRequest;
 }
 
 /**

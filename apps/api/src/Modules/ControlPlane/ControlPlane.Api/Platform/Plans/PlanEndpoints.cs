@@ -93,7 +93,8 @@ public static class PlanEndpoints
         BillingOptions billing,
         CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<PlanView>>(
-            new UpdatePlanCommand(user.Id(), planId, request.Name, request.IsDefault, ToViews(request.Entitlements), ToView(request.Prices), ToViews(request.Meters)),
+            new UpdatePlanCommand(user.Id(), planId, request.Name, request.IsDefault, ToViews(request.Entitlements), ToView(request.Prices), ToViews(request.Meters),
+                request.PriceChange is { } change ? new PriceChangeView(change.Who.ToString(), change.From) : null),
             cancellationToken)).Map(plan => ToResponse(plan, billing));
 
     // A preview only reads, so it takes no idempotency key (I1). It reads across tenants, so it runs without one.
