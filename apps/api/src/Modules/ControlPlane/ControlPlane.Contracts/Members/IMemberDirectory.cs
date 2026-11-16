@@ -10,6 +10,12 @@ public interface IMemberDirectory
     Task<IReadOnlyList<Guid>> ListOwnerIdsAsync(CancellationToken cancellationToken);
 
     /// <summary>
+    /// The user ids of the members who manage the tenant's billing at this moment: the members whose role holds <c>tenant.billing.manage</c>,
+    /// the Owners, the Billing managers and any custom role with it (A1, step 40).
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListBillingManagerIdsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// How many of the tenant's members take a seat: every member whose role is not the Billing manager (A2). Billing charges the fee per
     /// person for each of them; a pending invitation is not charged until it is accepted (step 40).
     /// </summary>

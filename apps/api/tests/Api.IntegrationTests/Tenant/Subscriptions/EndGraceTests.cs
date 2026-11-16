@@ -49,6 +49,24 @@ public sealed class EndGraceTests(Database database) : IAsyncLifetime
         (payment.GetProperty("state").GetString(), payment.GetProperty("movedAt").GetDateTimeOffset()).ShouldBe(("moved_to_default", _time.GetUtcNow()));
     }
 
+    // 13.20, 3.18: the move tells the members who manage billing, with the open invoice that pays the plan back.
+    [Fact]
+    public async Task EndGrace_AtItsEnd_TellsTheMembersWhoManageBillingOfTheOpenInvoice()
+    {
+        var (tenantId, _) = await _tenants.PayingAsync(_tenants.Team);
+        var end = await GraceAsync(tenantId);
+        _time.Advance(TimeSpan.FromDays(7));
+
+        await DeliverAsync(new EndGraceCommand(tenantId, end));
+
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = 'tenant.moved_to_default_plan'")).ShouldBe(2);
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = 'tenant.plan_changed'")).ShouldBe(0);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(DISTINCT \"values\"->>'amountDue', ',') FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = 'tenant.moved_to_default_plan'")).ShouldBe("10000 EUR");
+    }
+
     // A message that arrives early moves nothing: the grace still runs.
     [Fact]
     public async Task EndGrace_BeforeItsEnd_MovesNothing()

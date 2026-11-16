@@ -10,6 +10,8 @@ public static class NamePaymentFailureHandler
 {
     public static async Task<OutgoingMessages> HandleAsync(NamePaymentFailureCommand command, ITenantNames tenants, CancellationToken cancellationToken) =>
         await tenants.FindNameAsync(command.TenantId, cancellationToken) is { } tenantName
-            ? [new PaymentFailedEvent(command.EventId, command.OccurredAt, command.TenantId, tenantName, command.AmountDue, command.Currency, command.RetriesUntil)]
+            ? [new PaymentFailedEvent(
+                command.EventId, command.OccurredAt, command.TenantId, tenantName, command.AmountDue, command.Currency, command.RetriesUntil,
+                command.FailedAt, command.NextAttemptAt, command.CardBrand, command.CardLast4)]
             : [];
 }

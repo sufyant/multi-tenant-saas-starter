@@ -113,6 +113,10 @@ using Tenancy;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Util;
+using Notifications.Application.Plans.NotifyTenantMovedToDefaultPlan;
+using Notifications.Application.PriceChanges.NotifyTenantPriceChangeAnnounced;
+using Notifications.Application.Subscriptions.NotifyTenantPaymentFailed;
+using Notifications.Application.Subscriptions.NotifyTenantPaymentGraceStarted;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -393,6 +397,9 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldContain(run => run.Handler == typeof(RecordPriceChangeHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(AnnounceTenantPriceChangeHandler));
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(RecordPriceChangeHandler) || run.Handler == typeof(AnnounceTenantPriceChangeHandler));
+        await Waiting.UntilAsync(async () => await NotificationsAsync(name, tenant.Id, "tenant.price_change_announced") > 0);
+        runs.In("worker").ShouldContain(run => run.Handler == typeof(NotifyTenantPriceChangeAnnouncedHandler));
+        runs.In("web").ShouldNotContain(run => run.Handler == typeof(NotifyTenantPriceChangeAnnouncedHandler));
     }
 
     // B12: the switch to Contract runs in the web host; Stripe's end at the period's end and both audit entries run in the worker.
@@ -513,10 +520,11 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldContain(run => run.Handler == typeof(CountSeatsAtMemberChangeHandler));
     }
 
-    // B11: Stripe's events of a failed payment and of the unpaid subscription's end arrive at the web host; the failed payment's entry and
-    // the move to the default plan run in the worker, through Audit and ControlPlane, once each.
+    // B11: Stripe's events of a failed payment, of the end of its retries and of the unpaid subscription's end arrive at the web host; the
+    // failed payment's entry and the move to the default plan run in the worker, through Audit and ControlPlane, once each, and so do the
+    // bells and emails of the three (13.18 to 13.20).
     [Fact]
-    public async Task ReceiveWebhook_AFailedPaymentThenItsEndOnAWebAndAWorkerHost_RecordBothInTheWorker()
+    public async Task ReceiveWebhook_AFailedPaymentThenItsEndOnAWebAndAWorkerHost_RecordBothAndTellInTheWorker()
     {
         var name = await database.CreateMigratedDatabaseAsync();
         var runs = new HandlerRuns();
@@ -537,11 +545,19 @@ public sealed class HostRoleTests(Database database)
 
         await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.payment_failed", $"sub_{tenant.Id:N}");
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.payment_failed") > 0);
+        worker.Billing.Put(BillingRequests.PastDue(tenant.Id, team, failedAt, 4, null));
+        await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.payment_failed", $"sub_{tenant.Id:N}");
+        await Waiting.UntilAsync(async () => await NotificationsAsync(name, tenant.Id, "tenant.payment_grace_started") > 0);
         worker.Billing.Put(BillingRequests.PastDue(tenant.Id, team, failedAt, 4, null) with { Status = "Canceled" });
         await web.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.deleted", $"sub_{tenant.Id:N}");
-        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.moved_to_default_plan") > 0);
+        await Waiting.UntilAsync(async () => await NotificationsAsync(name, tenant.Id, "tenant.moved_to_default_plan") > 0);
 
         (await AuditEntriesAsync(name, tenant.Id, "tenant.payment_failed"), await AuditEntriesAsync(name, tenant.Id, "tenant.moved_to_default_plan")).ShouldBe((1L, 1L));
+        (await NotificationsAsync(name, tenant.Id, "tenant.payment_failed"), await NotificationsAsync(name, tenant.Id, "tenant.payment_grace_started"),
+            await NotificationsAsync(name, tenant.Id, "tenant.moved_to_default_plan")).ShouldBe((1L, 1L, 1L));
+        Type[] tells = [typeof(NotifyTenantPaymentFailedHandler), typeof(NotifyTenantPaymentGraceStartedHandler), typeof(NotifyTenantMovedToDefaultPlanHandler)];
+        runs.In("worker").Select(run => run.Handler).Intersect(tells).Count().ShouldBe(3);
+        runs.In("web").ShouldNotContain(run => tells.Contains(run.Handler));
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(MoveToDefaultPlanHandler) || run.Handler == typeof(RecordPaymentFailedHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(MoveToDefaultPlanHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(RecordPaymentFailedHandler));
@@ -1430,6 +1446,10 @@ public sealed class HostRoleTests(Database database)
         });
 
     private Task<long> TenantCreatedEntriesAsync(string databaseName, Guid tenantId) => AuditEntriesAsync(databaseName, tenantId, "tenant.created");
+
+    private Task<long> NotificationsAsync(string databaseName, Guid tenantId, string type) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = '{type}'", databaseName);
 
     private Task<long> AuditEntriesAsync(string databaseName, Guid tenantId, string operation) =>
         database.ScalarAsSuperuserAsync<long>(

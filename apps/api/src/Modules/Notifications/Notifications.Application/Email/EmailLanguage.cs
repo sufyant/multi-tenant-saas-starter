@@ -5,11 +5,11 @@ namespace Notifications.Application.Email;
 
 /// <summary>
 /// What an email needs of a language beyond its texts, from <c>languages.json</c> and <c>time-zone-cities.json</c> of
-/// <c>Email/Generated</c>: the names of the built-in roles and the data of its dates, the zones' cities included. The texts are the
-/// generated templates'.
+/// <c>Email/Generated</c>: the names of the built-in roles, the data of its dates, the zones' cities included, and how it writes money. The
+/// texts are the generated templates'.
 /// </summary>
 /// <param name="Roles">Each built-in role's name in the language, by the role's stored name: <c>owner</c>, <c>admin</c>, <c>member</c>.</param>
-internal sealed record EmailLanguage(IReadOnlyDictionary<string, string> Roles, EmailDates Dates)
+internal sealed record EmailLanguage(IReadOnlyDictionary<string, string> Roles, EmailDates Dates, EmailMoney Money)
 {
     private static readonly Dictionary<Language, EmailLanguage> ByLanguage = Read();
 

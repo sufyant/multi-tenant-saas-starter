@@ -35,7 +35,7 @@ import {
   notificationSubject,
   notificationText,
 } from "../src/templates/notification";
-import { languages, messages } from "../src/texts";
+import { format, languages, messages } from "../src/texts";
 
 const output = new URL(
   "../../../apps/api/src/Modules/Notifications/Notifications.Application/Email/Generated/",
@@ -69,7 +69,7 @@ const deletionWarning = (language: Language): DeletionWarningProps => ({
 
 const notification = (language: Language): NotificationProps => ({
   language,
-  ...placeholders("title", "body", "link", "footer"),
+  ...placeholders("title", "body", "button", "link", "footer"),
 });
 
 // The emails about the person's own account, each under its own name, with the placeholders its kind uses.
@@ -128,17 +128,28 @@ const emails: Email[] = [
 const apiPlaceholders = (text: string) =>
   text.replace(/\{(\w+)\}/g, (_, name: string) => `{{${name}}}`);
 
-// A type's title and body, its texts without each optional value, which may keep the main title (U2), and the footer of its email, which
-// may name a value the type always has (U5).
+// A type's title and body, the body and the button of its email where they differ from the bell's, its texts without each optional value,
+// which may keep the main title (U2), and the footer of its email, which may name a value the type always has (U5).
 type NotificationTexts = {
   title?: string;
   body: string;
+  email?: { body: string; button?: string };
   without?: Record<string, NotificationTexts>;
   footer?: string;
 };
 const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
   ...(texts.title === undefined ? {} : { title: apiPlaceholders(texts.title) }),
   body: apiPlaceholders(texts.body),
+  ...(texts.email === undefined
+    ? {}
+    : {
+        email: {
+          body: apiPlaceholders(texts.email.body),
+          ...(texts.email.button === undefined
+            ? {}
+            : { button: texts.email.button }),
+        },
+      }),
   ...(texts.footer === undefined
     ? {}
     : { footer: apiPlaceholders(texts.footer) }),
@@ -153,6 +164,48 @@ const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
         ),
       }),
 });
+
+// How a language writes an amount of money, as packages/ui's formatMoney writes it with Intl: its group and decimal marks, and for each
+// currency the text before and after the number and the digits of its minor unit. The API writes an amount from it without ICU.
+const moneyOf = (language: Language) => {
+  const marks = new Intl.NumberFormat(language, { numberingSystem: "latn" })
+    .formatToParts(1234.5)
+    .reduce<Record<string, string>>(
+      (found, part) =>
+        part.type === "group" || part.type === "decimal"
+          ? { ...found, [part.type]: part.value }
+          : found,
+      {},
+    );
+  const currencies = Object.fromEntries(
+    Intl.supportedValuesOf("currency").map((currency) => {
+      const format = new Intl.NumberFormat(language, {
+        style: "currency",
+        currency,
+        numberingSystem: "latn",
+      });
+      const parts = format.formatToParts(1);
+      const first = parts.findIndex((part) => part.type === "integer");
+      const last = parts.findLastIndex(
+        (part) => part.type === "integer" || part.type === "fraction",
+      );
+      const text = (from: number, to: number) =>
+        parts
+          .slice(from, to)
+          .map((part) => part.value)
+          .join("");
+      return [
+        currency,
+        {
+          prefix: text(0, first),
+          suffix: text(last + 1, parts.length),
+          digits: format.resolvedOptions().maximumFractionDigits ?? 2,
+        },
+      ];
+    }),
+  );
+  return { group: marks.group, decimal: marks.decimal, currencies };
+};
 
 const write = (file: string, content: string) =>
   writeFile(new URL(file, output), content, "utf8");
@@ -180,7 +233,11 @@ await write(
     Object.fromEntries(
       languages.map((language) => [
         language,
-        { roles: messages[language].roles, dates: messages[language].dates },
+        {
+          roles: messages[language].roles,
+          dates: messages[language].dates,
+          money: moneyOf(language),
+        },
       ]),
     ),
     null,
@@ -204,6 +261,9 @@ await write(
             ),
           ),
           words: messages[language].notificationWords,
+          button: format(messages[language].notificationEmail.button, {
+            brandName: brand.name,
+          }),
         },
       ]),
     ),

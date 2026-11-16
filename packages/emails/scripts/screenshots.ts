@@ -24,15 +24,37 @@ type Dates = {
   moment: string;
   zone: string;
 };
-type LanguageData = { roles: Record<string, string>; dates: Dates };
-type TypeTexts = { title: string; body: string; footer: string };
+type LanguageData = {
+  roles: Record<string, string>;
+  dates: Dates;
+  money: Money;
+};
+type TypeTexts = {
+  title: string;
+  body: string;
+  email?: { body: string; button?: string };
+  without?: Record<string, TypeTexts>;
+  footer: string;
+};
+type Money = {
+  group: string;
+  decimal: string;
+  currencies: Record<string, { prefix: string; suffix: string }>;
+};
 
 const languageData =
   await json<Record<Language, LanguageData>>("languages.json");
 const notificationTexts =
-  await json<Record<Language, { types: Record<string, TypeTexts> }>>(
-    "notifications.json",
-  );
+  await json<
+    Record<
+      Language,
+      {
+        types: Record<string, TypeTexts>;
+        words: Record<string, Record<string, string>>;
+        button: string;
+      }
+    >
+  >("notifications.json");
 const cities = await json<Record<string, Record<Language, string>>>(
   "time-zone-cities.json",
 );
@@ -74,23 +96,38 @@ const moment = (language: Language, date: number, month: number) =>
 const webApp = "https://app.starter.example/";
 const platformApp = "https://platform.starter.example/";
 
-// A notification email as SendNotificationEmailHandler writes it: the type's title, body and footer with its values, and the button to the
-// web app, or to the platform app for the platform's notifications.
+// A whole amount of euros as EmailMoney writes it, for the boards' amounts: "€100", "‏100 €".
+const euros = (language: Language, amount: number) => {
+  const money = languageData[language].money;
+  const sign = money.currencies.EUR ?? { prefix: "€", suffix: "" };
+  return `${sign.prefix}${String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, money.group)}${sign.suffix}`;
+};
+const word = (language: Language, list: string, name: string) =>
+  notificationTexts[language].words[list]?.[name] ?? "";
+
+// A notification email as SendNotificationEmailHandler writes it: the type's title, the body of its email and its footer with its values,
+// and its button to the web app, or to the platform app for the platform's notifications. Without a value, the type's text without it.
 const notification = (
   language: Language,
   type: string,
   values: Record<string, string>,
   link = webApp,
+  without?: string,
 ) => {
-  const texts = notificationTexts[language].types[type];
-  if (!texts) {
+  const all = notificationTexts[language].types[type];
+  if (!all) {
     throw new Error(`No texts of ${type}.`);
   }
+  const texts = without === undefined ? all : all.without?.[without];
+  if (!texts) {
+    throw new Error(`No texts of ${type} without ${without}.`);
+  }
   return {
-    title: fill(texts.title, values),
-    body: fill(texts.body, values),
+    title: fill(texts.title ?? all.title, values),
+    body: fill(texts.email?.body ?? texts.body, values),
+    button: all.email?.button ?? notificationTexts[language].button,
     link,
-    footer: fill(texts.footer, values),
+    footer: fill(all.footer, values),
   };
 };
 
@@ -206,6 +243,72 @@ const shots: Shot[] = [
         "tenant.purged",
         { tenantName: "Greyfield Books" },
         platformApp,
+      ),
+  },
+  {
+    frame: "13.18-payment-failed",
+    email: "notification",
+    values: (language) =>
+      notification(language, "tenant.payment_failed", {
+        tenantName: "Northwind Traders",
+        cardBrand: word(language, "cardBrand", "visa"),
+        cardLast4: "4242",
+        failedAt: day(language, 1, 10),
+        amountDue: euros(language, 100),
+        nextAttemptAt: day(language, 5, 10),
+      }),
+  },
+  {
+    frame: "13.19-last-warning",
+    email: "notification",
+    values: (language) =>
+      notification(language, "tenant.payment_grace_started", {
+        tenantName: "Northwind Traders",
+        defaultPlanName: "Free",
+        graceEndsAt: day(language, 20, 10),
+        attempts: word(language, "attempts", "other").replace("#", "4"),
+        failedAt: day(language, 1, 10),
+        cardBrand: word(language, "cardBrand", "visa"),
+        cardLast4: "4242",
+      }),
+  },
+  {
+    frame: "13.20-moved-to-free",
+    email: "notification",
+    values: (language) =>
+      notification(language, "tenant.moved_to_default_plan", {
+        tenantName: "Northwind Traders",
+        planName: "Team",
+        defaultPlanName: "Free",
+        movedAt: day(language, 20, 10),
+        amountDue: euros(language, 100),
+      }),
+  },
+  {
+    frame: "13.21-price-is-changing",
+    email: "notification",
+    values: (language) =>
+      notification(
+        language,
+        "tenant.price_change_announced",
+        {
+          tenantName: "Northwind Traders",
+          planName: "Team",
+          movesAt: fill(languageData[language].dates.date, {
+            day: "1",
+            month: languageData[language].dates.months[1] ?? "",
+            year: "2027",
+          }),
+          period: word(language, "period", "month"),
+          perPerson: euros(language, 12),
+          oldPerPerson: euros(language, 10),
+          base: euros(language, 0),
+          people: word(language, "people", "other").replace("#", "10"),
+          newTotal: euros(language, 120),
+          oldTotal: euros(language, 100),
+        },
+        webApp,
+        "oldBase",
       ),
   },
 ];

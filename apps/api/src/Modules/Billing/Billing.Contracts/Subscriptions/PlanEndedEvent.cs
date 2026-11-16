@@ -10,5 +10,15 @@ namespace Billing.Contracts.Subscriptions;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="EndedBy">The user id of the member who changed the plan last (B9); the move of an unpaid subscription is nobody's act.</param>
+/// <param name="AmountDue">An unpaid subscription's open invoice without tax, in the currency's minor unit, for the email of the move (13.20);
+/// none when the provider holds no failed payment, or in a message of the version before part 10.</param>
+/// <param name="Currency">The open invoice's currency, with <paramref name="AmountDue"/>.</param>
 [MessageName("plan-ended")]
-public sealed record PlanEndedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, Guid EndedBy, bool Unpaid);
+public sealed record PlanEndedEvent(
+    Guid EventId,
+    DateTimeOffset OccurredAt,
+    Guid TenantId,
+    Guid EndedBy,
+    bool Unpaid,
+    long? AmountDue = null,
+    string? Currency = null);

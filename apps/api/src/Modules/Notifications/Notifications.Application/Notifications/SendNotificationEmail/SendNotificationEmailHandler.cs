@@ -6,7 +6,7 @@ using Notifications.Domain.Notifications;
 
 namespace Notifications.Application.Notifications.SendNotificationEmail;
 
-// The generic notification email (U2, U4): the notification's title and body, rendered in the recipient's language and time zone as the
+// The generic notification email (U2, U4): the notification's title, the body of its email and the label of its button, rendered in the recipient's language and time zone as the
 // bell renders them, with the names of its people at the moment of the event; one button to the web app, to its Account and security
 // for the link kind AccountSecurity, or to the platform app for the platform's notifications; and the footer of its type, which says
 // why the email came (U5). The handler takes no DbContext, so Wolverine opens no transaction around the call to the email service. An email that fails is tried again and then goes to the dead letter
@@ -21,13 +21,14 @@ public static class SendNotificationEmailHandler
         CancellationToken cancellationToken)
     {
         var people = send.People ?? new Dictionary<Guid, UserName>();
-        var text = NotificationText.Render(send.Type, send.Values, people, send.Language, send.TimeZone);
+        var text = NotificationText.RenderEmail(send.Type, send.Values, people, send.Language, send.TimeZone);
         var kind = NotificationCatalog.Of(send.Type);
         var link = LinkOf(kind, links.Value);
         List<EmailValue> values =
         [
             EmailValue.Text("title", text.Title),
             EmailValue.Text("body", text.Body),
+            EmailValue.Text("button", text.Button),
             EmailValue.Link("link", link),
             EmailValue.Text("footer", NotificationText.FooterOf(send.Type, send.Values, people, send.Language, send.TimeZone)),
         ];

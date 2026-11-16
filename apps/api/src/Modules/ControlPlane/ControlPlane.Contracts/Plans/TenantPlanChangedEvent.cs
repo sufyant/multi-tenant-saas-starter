@@ -13,6 +13,9 @@ namespace ControlPlane.Contracts.Plans;
 /// version before step 40.</param>
 /// <param name="Unpaid">Whether billing moved the tenant to the default plan because a payment failed and its grace ended (B11): nobody
 /// acted. False in an event of the version before the dunning.</param>
+/// <param name="UnpaidAmountDue">With <paramref name="Unpaid"/>, the open invoice without tax, in the currency's minor unit, which pays the
+/// plan back (13.20); none when billing held no failed payment, or in an event of the version before part 10 of step 40.</param>
+/// <param name="UnpaidCurrency">The open invoice's currency, with <paramref name="UnpaidAmountDue"/>.</param>
 [MessageName("tenant-plan-changed")]
 public sealed record TenantPlanChangedEvent(
     Guid EventId,
@@ -26,4 +29,6 @@ public sealed record TenantPlanChangedEvent(
     string NewPlanName,
     AuditRetentionShortening? RetentionShortened = null,
     bool ByMember = false,
-    bool Unpaid = false);
+    bool Unpaid = false,
+    long? UnpaidAmountDue = null,
+    string? UnpaidCurrency = null);

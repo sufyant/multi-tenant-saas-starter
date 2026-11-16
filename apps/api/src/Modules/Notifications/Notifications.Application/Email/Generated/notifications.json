@@ -119,6 +119,80 @@
       "feature_flags.unused": {
         "title": "{{count}} off for everyone for 30 days",
         "body": "No organisation uses these flags. Remove them from the code."
+      },
+      "tenant.payment_failed": {
+        "title": "We couldn’t take the payment for {{tenantName}}",
+        "body": "We’ll try again on {{nextAttemptAt}}. Update the card in Billing.",
+        "email": {
+          "body": "Stripe tried {{cardBrand}} ending in {{cardLast4}} on {{failedAt}} for {{amountDue}} excl. VAT. We’ll try again on {{nextAttemptAt}}. Everything keeps working. Update the card to pay now.",
+          "button": "Update card"
+        },
+        "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email.",
+        "without": {
+          "cardBrand": {
+            "body": "We’ll try again on {{nextAttemptAt}}. Update the card in Billing.",
+            "email": {
+              "body": "Stripe tried to take {{amountDue}} excl. VAT on {{failedAt}}. We’ll try again on {{nextAttemptAt}}. Everything keeps working. Update the card to pay now."
+            }
+          }
+        }
+      },
+      "tenant.payment_grace_started": {
+        "title": "{{tenantName}} moves to {{defaultPlanName}} on {{graceEndsAt}} unless you pay",
+        "body": "The payment failed {{attempts}}.",
+        "email": {
+          "body": "We tried {{cardBrand}} ending in {{cardLast4}} {{attempts}} since {{failedAt}}. Everything keeps working until {{graceEndsAt}}. Then {{tenantName}} moves to {{defaultPlanName}}. Nothing is deleted.",
+          "button": "Pay now"
+        },
+        "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email.",
+        "without": {
+          "cardBrand": {
+            "body": "The payment failed {{attempts}}.",
+            "email": {
+              "body": "We tried the payment {{attempts}} since {{failedAt}}. Everything keeps working until {{graceEndsAt}}. Then {{tenantName}} moves to {{defaultPlanName}}. Nothing is deleted."
+            }
+          }
+        }
+      },
+      "tenant.moved_to_default_plan": {
+        "title": "{{tenantName}} moved to {{defaultPlanName}}",
+        "body": "We couldn’t take the payment. Nothing was deleted.",
+        "email": {
+          "body": "We couldn’t take the payment for {{planName}}, so {{tenantName}} moved to {{defaultPlanName}} on {{movedAt}}. Nothing was deleted. Pay the open invoice of {{amountDue}} excl. VAT to get {{planName}} back at once.",
+          "button": "Pay now"
+        },
+        "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email.",
+        "without": {
+          "amountDue": {
+            "body": "We couldn’t take the payment. Nothing was deleted.",
+            "email": {
+              "body": "We couldn’t take the payment for {{planName}}, so {{tenantName}} moved to {{defaultPlanName}} on {{movedAt}}. Nothing was deleted. Pay for a plan to get {{planName}} back at once."
+            }
+          }
+        }
+      },
+      "tenant.price_change_announced": {
+        "title": "{{planName}}’s price changes on {{movesAt}}",
+        "body": "{{perPerson}} per person and a base fee of {{base}} {{period}} instead of {{oldPerPerson}} and {{oldBase}}, excl. VAT.",
+        "email": {
+          "body": "From {{movesAt}} the {{planName}} fee per person goes from {{oldPerPerson}} to {{perPerson}} {{period}}, and the base fee from {{oldBase}} to {{base}}, excl. VAT. For your {{people}}: {{newTotal}} {{period}} instead of {{oldTotal}}, excl. VAT. Nothing changes before {{movesAt}}. You can change or cancel your plan at any time.",
+          "button": "Open Billing"
+        },
+        "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email.",
+        "without": {
+          "oldBase": {
+            "body": "{{perPerson}} per person {{period}} instead of {{oldPerPerson}}, excl. VAT.",
+            "email": {
+              "body": "From {{movesAt}} the {{planName}} fee per person goes from {{oldPerPerson}} to {{perPerson}} {{period}}, excl. VAT. The base fee stays {{base}}. For your {{people}}: {{newTotal}} {{period}} instead of {{oldTotal}}, excl. VAT. Nothing changes before {{movesAt}}. You can change or cancel your plan at any time."
+            }
+          },
+          "oldPerPerson": {
+            "body": "A base fee of {{base}} {{period}} instead of {{oldBase}}, excl. VAT.",
+            "email": {
+              "body": "From {{movesAt}} the {{planName}} base fee goes from {{oldBase}} to {{base}} {{period}}, excl. VAT. The fee per person stays {{perPerson}}. For your {{people}}: {{newTotal}} {{period}} instead of {{oldTotal}}, excl. VAT. Nothing changes before {{movesAt}}. You can change or cancel your plan at any time."
+            }
+          }
+        }
       }
     },
     "words": {
@@ -157,8 +231,35 @@
       "featureFlags": {
         "one": "# feature flag",
         "other": "# feature flags"
+      },
+      "attempts": {
+        "one": "once",
+        "other": "# times"
+      },
+      "people": {
+        "one": "# person",
+        "other": "# people"
+      },
+      "period": {
+        "month": "a month",
+        "year": "a year"
+      },
+      "cardBrand": {
+        "amex": "American Express",
+        "cartes_bancaires": "Cartes Bancaires",
+        "diners": "Diners Club",
+        "discover": "Discover",
+        "eftpos_au": "eftpos Australia",
+        "interac": "Interac",
+        "jcb": "JCB",
+        "link": "Link",
+        "mastercard": "Mastercard",
+        "unionpay": "UnionPay",
+        "visa": "Visa",
+        "unknown": "the card"
       }
-    }
+    },
+    "button": "Open Starter"
   },
   "tr": {
     "types": {
@@ -280,6 +381,80 @@
       "feature_flags.unused": {
         "title": "{{count}} 30 gündür herkes için kapalı",
         "body": "Bu bayrakları hiçbir kuruluş kullanmıyor. Onları koddan kaldırın."
+      },
+      "tenant.payment_failed": {
+        "title": "{{tenantName}} için ödemeyi alamadık",
+        "body": "{{nextAttemptAt}} tarihinde yeniden deneyeceğiz. Kartı Faturalama’da güncelleyin.",
+        "email": {
+          "body": "Stripe, {{failedAt}} tarihinde {{cardLast4}} ile biten {{cardBrand}} kartından KDV hariç {{amountDue}} tahsil etmeyi denedi. {{nextAttemptAt}} tarihinde yeniden deneyeceğiz. Her şey çalışmaya devam ediyor. Şimdi ödemek için kartı güncelleyin.",
+          "button": "Kartı güncelle"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız.",
+        "without": {
+          "cardBrand": {
+            "body": "{{nextAttemptAt}} tarihinde yeniden deneyeceğiz. Kartı Faturalama’da güncelleyin.",
+            "email": {
+              "body": "Stripe, {{failedAt}} tarihinde KDV hariç {{amountDue}} tahsil etmeyi denedi. {{nextAttemptAt}} tarihinde yeniden deneyeceğiz. Her şey çalışmaya devam ediyor. Şimdi ödemek için kartı güncelleyin."
+            }
+          }
+        }
+      },
+      "tenant.payment_grace_started": {
+        "title": "Ödeme yapmazsanız {{tenantName}}, {{graceEndsAt}} tarihinde {{defaultPlanName}} planına geçer",
+        "body": "Ödeme {{attempts}} başarısız oldu.",
+        "email": {
+          "body": "{{failedAt}} tarihinden beri {{cardLast4}} ile biten {{cardBrand}} kartını {{attempts}} denedik. {{graceEndsAt}} tarihine kadar her şey çalışmaya devam eder. Sonra {{tenantName}} {{defaultPlanName}} planına geçer. Hiçbir şey silinmez.",
+          "button": "Şimdi öde"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız.",
+        "without": {
+          "cardBrand": {
+            "body": "Ödeme {{attempts}} başarısız oldu.",
+            "email": {
+              "body": "{{failedAt}} tarihinden beri ödemeyi {{attempts}} denedik. {{graceEndsAt}} tarihine kadar her şey çalışmaya devam eder. Sonra {{tenantName}} {{defaultPlanName}} planına geçer. Hiçbir şey silinmez."
+            }
+          }
+        }
+      },
+      "tenant.moved_to_default_plan": {
+        "title": "{{tenantName}} {{defaultPlanName}} planına geçti",
+        "body": "Ödemeyi alamadık. Hiçbir şey silinmedi.",
+        "email": {
+          "body": "{{planName}} için ödemeyi alamadığımızdan {{tenantName}}, {{movedAt}} tarihinde {{defaultPlanName}} planına geçti. Hiçbir şey silinmedi. {{planName}} planını hemen geri almak için KDV hariç {{amountDue}} tutarındaki açık faturayı ödeyin.",
+          "button": "Şimdi öde"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız.",
+        "without": {
+          "amountDue": {
+            "body": "Ödemeyi alamadık. Hiçbir şey silinmedi.",
+            "email": {
+              "body": "{{planName}} için ödemeyi alamadığımızdan {{tenantName}}, {{movedAt}} tarihinde {{defaultPlanName}} planına geçti. Hiçbir şey silinmedi. {{planName}} planını hemen geri almak için bir plana ödeme yapın."
+            }
+          }
+        }
+      },
+      "tenant.price_change_announced": {
+        "title": "{{planName}} fiyatı {{movesAt}} tarihinde değişiyor",
+        "body": "Kişi başı {{period}} {{oldPerPerson}} yerine {{perPerson}}, temel ücret {{oldBase}} yerine {{base}}, KDV hariç.",
+        "email": {
+          "body": "{{movesAt}} tarihinden itibaren {{planName}} kişi başı ücreti {{period}} {{oldPerPerson}} yerine {{perPerson}}, temel ücreti {{oldBase}} yerine {{base}} olur, KDV hariç. {{people}}niz için: {{period}} {{oldTotal}} yerine {{newTotal}}, KDV hariç. {{movesAt}} öncesinde hiçbir şey değişmez. Planınızı istediğiniz zaman değiştirebilir veya iptal edebilirsiniz.",
+          "button": "Faturalamayı aç"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız.",
+        "without": {
+          "oldBase": {
+            "body": "Kişi başı {{period}} {{oldPerPerson}} yerine {{perPerson}}, KDV hariç.",
+            "email": {
+              "body": "{{movesAt}} tarihinden itibaren {{planName}} kişi başı ücreti {{period}} {{oldPerPerson}} yerine {{perPerson}} olur, KDV hariç. Temel ücret {{base}} olarak kalır. {{people}}niz için: {{period}} {{oldTotal}} yerine {{newTotal}}, KDV hariç. {{movesAt}} öncesinde hiçbir şey değişmez. Planınızı istediğiniz zaman değiştirebilir veya iptal edebilirsiniz."
+            }
+          },
+          "oldPerPerson": {
+            "body": "Temel ücret {{period}} {{oldBase}} yerine {{base}}, KDV hariç.",
+            "email": {
+              "body": "{{movesAt}} tarihinden itibaren {{planName}} temel ücreti {{period}} {{oldBase}} yerine {{base}} olur, KDV hariç. Kişi başı ücret {{perPerson}} olarak kalır. {{people}}niz için: {{period}} {{oldTotal}} yerine {{newTotal}}, KDV hariç. {{movesAt}} öncesinde hiçbir şey değişmez. Planınızı istediğiniz zaman değiştirebilir veya iptal edebilirsiniz."
+            }
+          }
+        }
       }
     },
     "words": {
@@ -318,8 +493,35 @@
       "featureFlags": {
         "one": "# özellik bayrağı",
         "other": "# özellik bayrağı"
+      },
+      "attempts": {
+        "one": "# kez",
+        "other": "# kez"
+      },
+      "people": {
+        "one": "# kişi",
+        "other": "# kişi"
+      },
+      "period": {
+        "month": "ayda",
+        "year": "yılda"
+      },
+      "cardBrand": {
+        "amex": "American Express",
+        "cartes_bancaires": "Cartes Bancaires",
+        "diners": "Diners Club",
+        "discover": "Discover",
+        "eftpos_au": "eftpos Australia",
+        "interac": "Interac",
+        "jcb": "JCB",
+        "link": "Link",
+        "mastercard": "Mastercard",
+        "unionpay": "UnionPay",
+        "visa": "Visa",
+        "unknown": "banka"
       }
-    }
+    },
+    "button": "Starter uygulamasını aç"
   },
   "ar": {
     "types": {
@@ -441,6 +643,80 @@
       "feature_flags.unused": {
         "title": "{{count}} معطّلة للجميع منذ 30 يومًا",
         "body": "لا تستخدم أي مؤسسة هذه العلامات. أزِلها من الشيفرة."
+      },
+      "tenant.payment_failed": {
+        "title": "لم نتمكن من تحصيل الدفعة لـ{{tenantName}}",
+        "body": "سنحاول مجددًا في {{nextAttemptAt}}. حدّث البطاقة في الفوترة.",
+        "email": {
+          "body": "حاولت Stripe في {{failedAt}} تحصيل {{amountDue}} دون ضريبة القيمة المضافة من {{cardBrand}} المنتهية بـ{{cardLast4}}. سنحاول مجددًا في {{nextAttemptAt}}. يستمر كل شيء في العمل. حدّث البطاقة للدفع الآن.",
+          "button": "تحديث البطاقة"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة.",
+        "without": {
+          "cardBrand": {
+            "body": "سنحاول مجددًا في {{nextAttemptAt}}. حدّث البطاقة في الفوترة.",
+            "email": {
+              "body": "حاولت Stripe في {{failedAt}} تحصيل {{amountDue}} دون ضريبة القيمة المضافة. سنحاول مجددًا في {{nextAttemptAt}}. يستمر كل شيء في العمل. حدّث البطاقة للدفع الآن."
+            }
+          }
+        }
+      },
+      "tenant.payment_grace_started": {
+        "title": "تنتقل {{tenantName}} إلى {{defaultPlanName}} في {{graceEndsAt}} ما لم تدفع",
+        "body": "فشل الدفع {{attempts}}.",
+        "email": {
+          "body": "حاولنا استخدام {{cardBrand}} المنتهية بـ{{cardLast4}} {{attempts}} منذ {{failedAt}}. يستمر كل شيء في العمل حتى {{graceEndsAt}}. بعدها تنتقل {{tenantName}} إلى {{defaultPlanName}}. لا يُحذف شيء.",
+          "button": "ادفع الآن"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة.",
+        "without": {
+          "cardBrand": {
+            "body": "فشل الدفع {{attempts}}.",
+            "email": {
+              "body": "حاولنا تحصيل الدفعة {{attempts}} منذ {{failedAt}}. يستمر كل شيء في العمل حتى {{graceEndsAt}}. بعدها تنتقل {{tenantName}} إلى {{defaultPlanName}}. لا يُحذف شيء."
+            }
+          }
+        }
+      },
+      "tenant.moved_to_default_plan": {
+        "title": "انتقلت {{tenantName}} إلى {{defaultPlanName}}",
+        "body": "لم نتمكن من تحصيل الدفعة. لم يُحذف شيء.",
+        "email": {
+          "body": "لم نتمكن من تحصيل دفعة {{planName}}، لذا انتقلت {{tenantName}} إلى {{defaultPlanName}} في {{movedAt}}. لم يُحذف شيء. ادفع الفاتورة المفتوحة بقيمة {{amountDue}} دون ضريبة القيمة المضافة لاستعادة {{planName}} فورًا.",
+          "button": "ادفع الآن"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة.",
+        "without": {
+          "amountDue": {
+            "body": "لم نتمكن من تحصيل الدفعة. لم يُحذف شيء.",
+            "email": {
+              "body": "لم نتمكن من تحصيل دفعة {{planName}}، لذا انتقلت {{tenantName}} إلى {{defaultPlanName}} في {{movedAt}}. لم يُحذف شيء. ادفع مقابل خطة لاستعادة {{planName}} فورًا."
+            }
+          }
+        }
+      },
+      "tenant.price_change_announced": {
+        "title": "يتغير سعر {{planName}} في {{movesAt}}",
+        "body": "{{perPerson}} لكل شخص ورسم أساسي {{base}} {{period}} بدلًا من {{oldPerPerson}} و{{oldBase}}، دون ضريبة القيمة المضافة.",
+        "email": {
+          "body": "اعتبارًا من {{movesAt}} يتغير رسم {{planName}} لكل شخص من {{oldPerPerson}} إلى {{perPerson}} {{period}}، والرسم الأساسي من {{oldBase}} إلى {{base}}، دون ضريبة القيمة المضافة. لأشخاصك الـ{{people}}: {{newTotal}} {{period}} بدلًا من {{oldTotal}}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {{movesAt}}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت.",
+          "button": "فتح الفوترة"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة.",
+        "without": {
+          "oldBase": {
+            "body": "{{perPerson}} لكل شخص {{period}} بدلًا من {{oldPerPerson}}، دون ضريبة القيمة المضافة.",
+            "email": {
+              "body": "اعتبارًا من {{movesAt}} يتغير رسم {{planName}} لكل شخص من {{oldPerPerson}} إلى {{perPerson}} {{period}}، دون ضريبة القيمة المضافة. يبقى الرسم الأساسي {{base}}. لأشخاصك الـ{{people}}: {{newTotal}} {{period}} بدلًا من {{oldTotal}}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {{movesAt}}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت."
+            }
+          },
+          "oldPerPerson": {
+            "body": "رسم أساسي {{base}} {{period}} بدلًا من {{oldBase}}، دون ضريبة القيمة المضافة.",
+            "email": {
+              "body": "اعتبارًا من {{movesAt}} يتغير الرسم الأساسي لـ{{planName}} من {{oldBase}} إلى {{base}} {{period}}، دون ضريبة القيمة المضافة. يبقى الرسم لكل شخص {{perPerson}}. لأشخاصك الـ{{people}}: {{newTotal}} {{period}} بدلًا من {{oldTotal}}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {{movesAt}}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت."
+            }
+          }
+        }
       }
     },
     "words": {
@@ -487,7 +763,42 @@
         "few": "# علامات ميزات",
         "many": "# علامة ميزات",
         "other": "# علامة ميزات"
+      },
+      "attempts": {
+        "zero": "# مرة",
+        "one": "مرة واحدة",
+        "two": "مرتين",
+        "few": "# مرات",
+        "many": "# مرة",
+        "other": "# مرة"
+      },
+      "people": {
+        "zero": "#",
+        "one": "#",
+        "two": "#",
+        "few": "#",
+        "many": "#",
+        "other": "#"
+      },
+      "period": {
+        "month": "شهريًا",
+        "year": "سنويًا"
+      },
+      "cardBrand": {
+        "amex": "American Express",
+        "cartes_bancaires": "Cartes Bancaires",
+        "diners": "Diners Club",
+        "discover": "Discover",
+        "eftpos_au": "eftpos Australia",
+        "interac": "Interac",
+        "jcb": "JCB",
+        "link": "Link",
+        "mastercard": "Mastercard",
+        "unionpay": "UnionPay",
+        "visa": "Visa",
+        "unknown": "البطاقة"
       }
-    }
+    },
+    "button": "افتح Starter"
   }
 }

@@ -85,3 +85,4 @@ Do not offer these again. Where an architecture rule or a roadmap step already h
 | 2026-11-14 | Emails dropped while `emails.send` is off, written to the log only | Section 2: invitations, codes and warnings would be lost. |
 | 2026-11-14 | One alert for each dead letter, or a Better Stack threshold | Section 2, the dead letter's alert. |
 | 2026-11-14 | The live stream of notifications behind the terms gate | The platform's live bell would stop for a system admin who is also a member and has not accepted (section 2, the exemptions of the terms gate). |
+| 2026-11-16 | A new audit operation for the last warning before an unpaid organisation moves to the default plan (13.19), with an Activity log sentence | 12.12 and 7.11 draw no entry of it, so the operation would add a row that no frame draws; the notification is named apart instead (`docs/roadmap.md`, 40b-backend, part 10; U9). |

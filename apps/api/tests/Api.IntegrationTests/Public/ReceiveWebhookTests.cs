@@ -94,6 +94,49 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.platform_entries WHERE target_id = '{tenant.Id}' AND operation = 'tenant.payment_failed'")).ShouldBe(1);
     }
 
+    // 13.18, 3.17: a failed payment that Stripe retries tells the members who manage billing, the Owner and the Billing manager, in the
+    // tenant's bell and by email, with the card, the amount and the next attempt; a Member is told nothing.
+    [Fact]
+    public async Task ReceiveWebhook_AFailedPaymentThatStripeRetries_TellsTheMembersWhoManageBilling()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = PlatformTenants.Email();
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email), role: "Owner");
+        var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+        await _testData.AddMemberAsync(tenant.Id);
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        var failedAt = new DateTimeOffset(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 1, failedAt.AddDays(3)));
+
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        (await ToldAsync(tenant.Id, "tenant.payment_failed")).ShouldBe(string.Join(",", new[] { owner, manager }.Order(StringComparer.Ordinal)));
+        var sent = _api.Email.Sent.Single(sent => sent.To == email && sent.Subject == "We couldn’t take the payment for Acme Ltd");
+        sent.Text.ShouldContain("Stripe tried Visa ending in 4242 on 15 Nov 2026 for €100 excl. VAT. We’ll try again on 18 Nov 2026.");
+        sent.Text.ShouldContain("Update card:");
+    }
+
+    // 13.19, 3.18: once Stripe's retries are over, the grace's start is the last warning, once; the failure with no next attempt is no
+    // retry to tell of.
+    [Fact]
+    public async Task ReceiveWebhook_RetriesThatEnded_WarnsTheMembersWhoManageBillingOnce()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var email = PlatformTenants.Email();
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: email), role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, new DateTimeOffset(2026, 11, 1, 9, 0, 0, TimeSpan.Zero), 4, null));
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        (await ToldAsync(tenant.Id, "tenant.payment_grace_started")).ShouldBe(owner);
+        (await ToldAsync(tenant.Id, "tenant.payment_failed")).ShouldBeNull();
+        var warning = _api.Email.Sent.Single(sent => sent.To == email && sent.Subject.StartsWith("Acme Ltd moves to Free on ", StringComparison.Ordinal));
+        warning.Text.ShouldContain("We tried Visa ending in 4242 4 times since 1 Nov 2026.");
+        warning.Text.ShouldContain("Pay now:");
+    }
+
     // B11: once Stripe's retries are over, billing's grace runs for a week, and its end is scheduled; the tenant keeps its plan until then.
     [Fact]
     public async Task ReceiveWebhook_RetriesThatEnded_SchedulesTheGracesEnd()
@@ -131,10 +174,10 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.plan_changed' AND actor_id = '{payer}'")).ShouldBe(2);
     }
 
-    // B11: an unpaid subscription that Stripe ends moves the tenant to the default plan, by the platform, and tells nobody: billing's own
-    // bells and emails come later (13.18 to 13.21).
+    // B11: an unpaid subscription that Stripe ends moves the tenant to the default plan, by the platform. The move tells the members who
+    // manage billing, with the open invoice (13.20), and no plan change of the platform's.
     [Fact]
-    public async Task ReceiveWebhook_AnUnpaidSubscriptionThatStripeEnds_MovesTheTenantToTheDefaultPlanAndTellsNobody()
+    public async Task ReceiveWebhook_AnUnpaidSubscriptionThatStripeEnds_MovesTheTenantToTheDefaultPlanAndTellsTheMembersWhoManageBilling()
     {
         var tenant = await _testData.AddTenantAsync();
         var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
@@ -149,7 +192,10 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
         (await PlanOfAsync(tenant.Id)).ShouldBe(await DefaultPlanAsync());
         (await database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.moved_to_default_plan' AND actor_kind = 'Platform'")).ShouldBe(1);
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenant.Id}'")).ShouldBe(0);
+        (await ToldAsync(tenant.Id, "tenant.moved_to_default_plan")).ShouldBe(owner);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT \"values\"->>'amountDue' FROM notifications.notifications WHERE tenant_id = '{tenant.Id}' AND type = 'tenant.moved_to_default_plan'")).ShouldBe("10000 EUR");
+        (await ToldAsync(tenant.Id, "tenant.plan_changed")).ShouldBeNull();
     }
 
     // The bell's text of a plan change says that the platform acted, so a plan a member paid for tells nobody there (step 40).
@@ -306,4 +352,9 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
     private Task<string?> SubscriptionOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(
             $"SELECT concat_ws('|', customer_id, subscription_id, plan_id, interval, status, cancel_at_period_end) FROM billing.subscriptions WHERE tenant_id = '{tenantId}'");
+
+    // The external ids of the users that the tenant's notifications of the type went to, in order; none when none went.
+    private Task<string?> ToldAsync(Guid tenantId, string type) =>
+        database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(users.external_id, ',' ORDER BY users.external_id COLLATE \"C\") FROM notifications.notifications JOIN control_plane.users ON users.id = notifications.user_id WHERE notifications.tenant_id = '{tenantId}' AND notifications.type = '{type}'");
 }

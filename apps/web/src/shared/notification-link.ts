@@ -14,6 +14,8 @@ const tenantPages: Partial<Record<NotificationLinkResponseKind, string>> = {
   [NotificationLinkResponseKind.TenantSettings]: "settings/general",
   // An override of the Activity log's period (37c).
   [NotificationLinkResponseKind.TenantActivityLog]: "settings/activity",
+  // Billing's payment and price notifications (3.17, 3.18); 40b-frontend builds the page.
+  [NotificationLinkResponseKind.TenantBilling]: "settings/billing",
 };
 
 const start = "/";

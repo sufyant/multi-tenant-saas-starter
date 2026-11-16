@@ -40,4 +40,22 @@ public enum NotificationValueKind
     /// as <see cref="Days"/> is.
     /// </summary>
     FeatureFlags,
+
+    /// <summary>
+    /// An amount of money, stored as the whole number of its currency's minor unit and the ISO 4217 code (<c>10000 EUR</c>), written as the
+    /// apps' <c>formatMoney</c> writes it in the language: <c>€100</c>, <c>€12.50</c>; a whole amount shows no decimals.
+    /// </summary>
+    Money,
+
+    /// <summary>
+    /// A number of attempts at a payment, stored as digits, written with its noun in the form of the number's CLDR plural category in the
+    /// language, as <see cref="Days"/> is.
+    /// </summary>
+    Attempts,
+
+    /// <summary>
+    /// A number of people who take a seat, stored as digits, written with its noun in the form of the number's CLDR plural category in the
+    /// language, as <see cref="Days"/> is.
+    /// </summary>
+    People,
 }
