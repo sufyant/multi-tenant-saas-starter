@@ -24,9 +24,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { refreshTenant } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
+import { usePortal } from "@/shared/use-portal";
 import { feesOf, planOf } from "./billing-facts";
 import { useBillingText, useSeatFacts } from "./use-billing-text";
-import { usePortal } from "./use-portal";
 
 /**
  * An upgrade, or monthly to yearly, at once (10.04, 10.05; B9): Stripe's preview of what the rest of the period costs today and what
@@ -58,7 +58,8 @@ export function UpgradeDialog({
   const paid = planOf(plans, subscription.planId);
   const samePlan = target.id === subscription.planId;
   const preview = useQuery({
-    queryKey: ["billing-preview", tenant.id, target.id, interval],
+    // A POST that only reads: its operation id and its arguments (F2).
+    queryKey: ["previewPlanChange", tenant.id, { planId: target.id, interval }],
     queryFn: () =>
       previewPlanChange(tenant.id, { planId: target.id, interval }),
     staleTime: 0,
@@ -185,6 +186,11 @@ export function UpgradeDialog({
             </div>
           </dl>
         ) : null}
+        {failure && (
+          <Banner tone="destructive" title={failure.title}>
+            {failure.text}
+          </Banner>
+        )}
       </div>
       {declined && (
         <Banner
@@ -197,11 +203,6 @@ export function UpgradeDialog({
           }
         >
           {t("billing.change.declinedText")}
-        </Banner>
-      )}
-      {failure && (
-        <Banner tone="destructive" title={failure.title}>
-          {failure.text}
         </Banner>
       )}
     </Dialog>

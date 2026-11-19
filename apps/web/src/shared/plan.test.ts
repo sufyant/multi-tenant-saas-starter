@@ -92,6 +92,19 @@ describe("seatsOf", () => {
 
     expect(seatsOf(limitOf(plan, LimitKey.MembersMax), 15)).toEqual({
       members: 15,
+      billing: 0,
+      seated: 15,
+      invitations: 2,
+    });
+  });
+
+  it("SeatsOf_ABillingManager_TakesNoSeatSoTheInvitationsAreTheRest", () => {
+    const plan = planWith({ "members.max": 15 }, { "members.max": 15 });
+
+    expect(seatsOf(limitOf(plan, LimitKey.MembersMax), 14, 1)).toEqual({
+      members: 14,
+      billing: 1,
+      seated: 13,
       invitations: 2,
     });
   });
@@ -101,6 +114,8 @@ describe("seatsOf", () => {
 
     expect(seatsOf(limitOf(plan, LimitKey.MembersMax), 16)).toEqual({
       members: 16,
+      billing: 0,
+      seated: 16,
       invitations: 0,
     });
   });

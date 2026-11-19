@@ -628,13 +628,14 @@
     },
     "membersOverText": "{members, plural, one {# member} other {# members}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}.{invitations, plural, =0 {} one { The invitation can still be accepted.} other { The # invitations can still be accepted.}} You can’t invite anyone new until you’re under {limit}. Nobody loses access.",
     "noSeat": "No free seat",
-    "noSeatText": "{organisation} uses {count} of {limit, plural, one {# seat} other {# seats}}: {members, plural, one {# member} other {# members}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}. Remove a member or cancel an invitation to invite someone.",
-    "noSeatOverText": "Your plan gives {limit, plural, one {# seat} other {# seats}}. You use {count}: {members, plural, one {# member} other {# members}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}.{invitations, plural, =0 {} one { The invitation can still be accepted.} other { The # invitations can still be accepted.}} You can’t invite anyone new until you’re under {limit}. Nobody loses access.",
+    "noSeatText": "{organisation} uses {count} of {limit, plural, one {# seat} other {# seats}}: {members, plural, one {# member} other {# members}}{billing, plural, =0 {} one {, # of them a billing manager who uses no seat,} other {, # of them billing managers who use no seat,}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}. Remove a member or cancel an invitation to invite someone{change, select, yes {, or change the plan} other {}}.",
+    "noSeatOverText": "Your plan gives {limit, plural, one {# seat} other {# seats}}. You use {count}: {members, plural, one {# member} other {# members}}{billing, plural, =0 {} one {, # of them a billing manager who uses no seat,} other {, # of them billing managers who use no seat,}} and {invitations, plural, one {# pending invitation} other {# pending invitations}}.{invitations, plural, =0 {} one { The invitation can still be accepted.} other { The # invitations can still be accepted.}} You can’t invite anyone new until you’re under {limit}. Nobody loses access.",
     "noRoleLeft": "No custom role left",
     "noRoleLeftText": "Your organisation’s plan allows {limit, plural, one {# custom role} other {# custom roles}}, and {organisation} uses {count}. Delete one to create another.",
     "requestChange": "Request a plan change",
     "viewInvitations": "View invitations",
-    "seatsLeft": "{count, plural, one {# seat left.} other {# seats left.}}"
+    "seatsLeft": "{count, plural, one {# seat left.} other {# seats left.}}",
+    "changePlan": "Change plan"
   },
   "billing": {
     "title": "Billing",

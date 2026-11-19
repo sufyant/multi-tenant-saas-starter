@@ -35,6 +35,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useBillingShown } from "@/shared/billing";
+import { BillingBar } from "@/shared/billing-bar";
 import { rememberOrganisation } from "@/shared/last-organisation";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
@@ -103,6 +104,11 @@ export function TenantShell({
         role,
         can,
         billing,
+        billingBar: (
+          <BillingBar
+            onBilling={pathname.startsWith(`/${tenant.slug}/settings/billing`)}
+          />
+        ),
         counts: {
           members: members.data?.total,
           roles: inSettings ? roles.data?.total : undefined,
@@ -187,6 +193,8 @@ type Known = {
   counts: Partial<Record<"members" | "roles", number>>;
   /** Billing is a page of the organisation: the deployment's billing is on (`useBillingShown`). */
   billing?: boolean;
+  /** The billing bar, after the connection bar (2.32, 2.33). */
+  billingBar?: ReactNode;
 };
 
 /** The AppShell with what is known. Without the tenant, the name waits in place and the settings menu shows no page yet. */
@@ -401,7 +409,12 @@ function TenantFrame({
             : [{ label: name ?? "" }, { label: pageName }]
         }
         commands={commands}
-        bar={<ServerBar />}
+        bar={
+          <>
+            <ServerBar />
+            {known?.billingBar}
+          </>
+        }
         tabTitle={tabTitle(pageName, unread.data?.unread)}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}

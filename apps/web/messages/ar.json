@@ -628,13 +628,14 @@
     },
     "membersOverText": "{members} من الأعضاء و{invitations} من الدعوات المعلّقة.{invitations, plural, =0 {} one { لا يزال قبول الدعوة ممكنًا.} other { لا يزال قبول الدعوات ممكنًا.}} لا يمكنك دعوة أي شخص جديد حتى يقل العدد عن {limit}. لا يفقد أحد وصوله.",
     "noSeat": "لا يوجد مقعد متاح",
-    "noSeatText": "تستخدم {organisation} {count} من {limit} من المقاعد: {members} من الأعضاء و{invitations} من الدعوات المعلّقة. أزل عضوًا أو ألغِ دعوة لدعوة شخص.",
-    "noSeatOverText": "تمنحك خطتك {limit} من المقاعد. وتستخدم {count}: {members} من الأعضاء و{invitations} من الدعوات المعلّقة.{invitations, plural, =0 {} one { لا يزال قبول الدعوة ممكنًا.} other { لا يزال قبول الدعوات ممكنًا.}} لا يمكنك دعوة أي شخص جديد حتى يقل العدد عن {limit}. لا يفقد أحد وصوله.",
+    "noSeatText": "تستخدم {organisation} {count} من {limit} من المقاعد: {members} من الأعضاء{billing, plural, =0 {} other {، منهم {billing} مدير فوترة لا يستخدم مقعدًا،}} و{invitations} من الدعوات المعلّقة. أزل عضوًا أو ألغِ دعوة لدعوة شخص{change, select, yes {، أو غيّر الخطة} other {}}.",
+    "noSeatOverText": "تمنحك خطتك {limit} من المقاعد. وتستخدم {count}: {members} من الأعضاء{billing, plural, =0 {} other {، منهم {billing} مدير فوترة لا يستخدم مقعدًا،}} و{invitations} من الدعوات المعلّقة.{invitations, plural, =0 {} one { لا يزال قبول الدعوة ممكنًا.} other { لا يزال قبول الدعوات ممكنًا.}} لا يمكنك دعوة أي شخص جديد حتى يقل العدد عن {limit}. لا يفقد أحد وصوله.",
     "noRoleLeft": "لم يتبقَّ دور مخصص",
     "noRoleLeftText": "تسمح خطة مؤسستك بـ{limit} من الأدوار المخصصة، وتستخدم {organisation} {count}. احذف دورًا لإنشاء آخر.",
     "requestChange": "اطلب تغيير الخطة",
     "viewInvitations": "عرض الدعوات",
-    "seatsLeft": "{count, plural, zero {لا مقاعد متبقية.} one {مقعد واحد متبقٍ.} two {مقعدان متبقيان.} few {# مقاعد متبقية.} many {# مقعدًا متبقيًا.} other {# مقعد متبقٍ.}}"
+    "seatsLeft": "{count, plural, zero {لا مقاعد متبقية.} one {مقعد واحد متبقٍ.} two {مقعدان متبقيان.} few {# مقاعد متبقية.} many {# مقعدًا متبقيًا.} other {# مقعد متبقٍ.}}",
+    "changePlan": "تغيير الخطة"
   },
   "billing": {
     "title": "الفوترة",

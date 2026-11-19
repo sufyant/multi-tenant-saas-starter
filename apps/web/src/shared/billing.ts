@@ -1,4 +1,5 @@
 import {
+  BillingResponseBilledBy,
   ErrorCode,
   getGetBillingQueryOptions,
   Permission,
@@ -34,4 +35,16 @@ export function useBillingShown(onBilling = false): boolean {
   if (billing.isSuccess) return true;
   if (billing.isPending) return onBilling && billing.fetchStatus !== "idle";
   return !isBillingOff(billing.error);
+}
+
+/**
+ * How a limit's dialog offers more (8.39, 8.40, 8.43, 8.45, 9.14, 9.19): "change", Change plan, for a viewer who manages billing
+ * while the organisation pays by card; "request", the brand's support contact, while billing is off, for a Contract organisation,
+ * and while GetBilling is not known.
+ */
+export function usePlanChange(): "change" | "request" {
+  const billing = useBilling();
+  return billing.data?.billedBy === BillingResponseBilledBy.Card
+    ? "change"
+    : "request";
 }

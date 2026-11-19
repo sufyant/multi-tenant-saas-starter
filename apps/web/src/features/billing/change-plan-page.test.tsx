@@ -18,6 +18,7 @@ import {
   billingOf,
   businessPlan,
   freePlan,
+  teamMonthly,
   teamPlan,
   teamTenant,
 } from "../../../test/billing";
@@ -31,11 +32,10 @@ import {
 import { ChangePlanPage } from "./change-plan-page";
 
 const push = vi.fn();
+const notFound = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
-  notFound: () => {
-    throw new Error("not found");
-  },
+  notFound,
 }));
 
 // clerk-js as loaded: useFreshRouter waits for it, then asks the session for a token before it navigates.
@@ -52,6 +52,7 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   push.mockReset();
+  notFound.mockReset();
 });
 afterAll(() => server.close());
 
@@ -91,7 +92,7 @@ describe("ChangePlanPage", () => {
 
     const team = await card("Team");
     expect(
-      team.getByText("For your 10 people: €100 a month, excl. VAT."),
+      await team.findByText("For your 10 people: €100 a month, excl. VAT."),
     ).toBeVisible();
     expect(team.getByText("Current plan", { selector: "span" })).toBeVisible();
     expect(team.getByRole("button", { name: "Current plan" })).toBeDisabled();
@@ -107,6 +108,33 @@ describe("ChangePlanPage", () => {
     const free = await card("Free");
     expect(free.getByText("No custom roles")).toBeVisible();
     expect(free.getByRole("button", { name: "Move to Free" })).toBeEnabled();
+  });
+
+  it("ChangePlanPage_BillingOff_IsNotFound", async () => {
+    server.use(
+      ...tenantAnswers(BuiltInRole.Owner, permissionsOf.owner, [], teamTenant),
+      http.get(`*/v1/tenants/${northwind.id}/plans`, () =>
+        problem(404, ErrorCode.BillingOff),
+      ),
+    );
+
+    renderInTenant(<ChangePlanPage />, { url });
+
+    await vi.waitFor(() => expect(notFound).toHaveBeenCalled());
+  });
+
+  it("ChangePlanPage_YearlySubscriber_OpensOnYearlyWithItsPlanCurrent", async () => {
+    server.use(...owner(billingOf({ ...teamMonthly, interval: "yearly" })));
+
+    renderInTenant(<ChangePlanPage />, { url });
+
+    const team = await card("Team");
+    expect(
+      await team.findByRole("button", { name: "Current plan" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("radio", { name: "Yearly · 2 months free" }),
+    ).toBeChecked();
   });
 
   it("ChangePlanPage_Yearly_ShowsTheYearsPriceAndTheMonthsItSaves", async () => {

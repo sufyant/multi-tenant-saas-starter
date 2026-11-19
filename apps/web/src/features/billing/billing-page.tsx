@@ -25,6 +25,7 @@ import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { usePortal } from "@/shared/use-portal";
 import { BillingBanners } from "./billing-banners";
 import { BillingEmailCard } from "./billing-email-card";
 import {
@@ -38,7 +39,6 @@ import {
 import { CancelPlanDialog } from "./cancel-plan-dialog";
 import { CheckoutReturn } from "./checkout-return";
 import { useBillingText, useSeatFacts } from "./use-billing-text";
-import { usePortal } from "./use-portal";
 
 /**
  * Settings > Billing (10.01, 10.07, 10.15 to 10.24, 14.11, 14.14): the plan the organisation pays for and what it costs, its seats and

@@ -92,6 +92,11 @@ export function isTimeZone(name: string): boolean {
   }
 }
 
+/** The moment a number of whole days after another: the day an older Activity log entry goes after a shorter period (10.06). */
+export function daysAfter(at: Instant, days: number): string {
+  return new Date(toDate(at).getTime() + days * 86_400_000).toISOString();
+}
+
 /** The calendar day before a day of `calendarDay`: `2026-03-01` gives `2026-02-28`. */
 export function dayBefore(day: string): string {
   const [year = 0, month = 1, date = 1] = day.split("-").map(Number);

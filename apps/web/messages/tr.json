@@ -628,13 +628,14 @@
     },
     "membersOverText": "{members} üye ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
     "noSeat": "Boş yer yok",
-    "noSeatText": "{organisation}, {limit} yerin {count} tanesini kullanıyor: {members} üye ve {invitations} bekleyen davet. Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin.",
-    "noSeatOverText": "Planınız {limit} yer veriyor. {count} yer kullanıyorsunuz: {members} üye ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
+    "noSeatText": "{organisation}, {limit} yerin {count} tanesini kullanıyor: {members} üye{billing, plural, =0 {} other { (bunlardan {billing} tanesi koltuk kullanmayan fatura yöneticisi)}} ve {invitations} bekleyen davet. Birini davet etmek için bir üyeyi çıkarın veya bir daveti iptal edin{change, select, yes {; ya da planı değiştirin} other {}}.",
+    "noSeatOverText": "Planınız {limit} yer veriyor. {count} yer kullanıyorsunuz: {members} üye{billing, plural, =0 {} other { (bunlardan {billing} tanesi koltuk kullanmayan fatura yöneticisi)}} ve {invitations} bekleyen davet.{invitations, plural, =0 {} one { Davet hâlâ kabul edilebilir.} other { # davet hâlâ kabul edilebilir.}} {limit} yerin altına inene kadar kimseyi yeni davet edemezsiniz. Kimse erişimini kaybetmez.",
     "noRoleLeft": "Özel rol hakkı kalmadı",
     "noRoleLeftText": "Kuruluşunuzun planı {limit} özel role izin veriyor ve {organisation} {count} tane kullanıyor. Yenisini oluşturmak için birini silin.",
     "requestChange": "Plan değişikliği iste",
     "viewInvitations": "Davetleri görüntüle",
-    "seatsLeft": "{count, plural, one {# yer kaldı.} other {# yer kaldı.}}"
+    "seatsLeft": "{count, plural, one {# yer kaldı.} other {# yer kaldı.}}",
+    "changePlan": "Planı değiştir"
   },
   "billing": {
     "title": "Faturalama",

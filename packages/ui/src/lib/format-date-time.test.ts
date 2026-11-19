@@ -3,6 +3,7 @@ import {
   browserTimeZone,
   calendarDay,
   dayBefore,
+  daysAfter,
   formatDate,
   formatDateTime,
   formatMonth,
@@ -57,6 +58,12 @@ describe("format-date-time", () => {
   it("FormatMonth_TheLastHourOfAMonthInItsZone_NamesTheZonesMonth", () => {
     expect(formatMonth("2026-10-31T23:30:00Z", dublin)).toBe("October");
     expect(formatMonth("2026-10-31T23:30:00Z", istanbul)).toBe("Kasım");
+  });
+
+  it("DaysAfter_ThirtyDays_IsTheSameTimeThirtyDaysLater", () => {
+    expect(daysAfter("2026-12-01T00:00:00Z", 30)).toBe(
+      "2026-12-31T00:00:00.000Z",
+    );
   });
 
   it("FormatTime_EnIe_ShowsHoursAndMinutes", () => {

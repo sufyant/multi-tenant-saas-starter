@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AuditRetention,
   changePlan,
   FeatureKey,
   getGetBillingQueryKey,
@@ -13,6 +14,7 @@ import {
 import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
+import { daysAfter } from "@repo/ui/lib/format-date-time";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -21,9 +23,6 @@ import { afterRefusal } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
 import { defaultPlanOf, planOf } from "./billing-facts";
 import { useBillingText, useSeatFacts } from "./use-billing-text";
-
-/** After a shorter retention, an older entry stays this many days before it goes (the API's AuditRetention). */
-const retentionGraceDays = 30;
 
 /**
  * Cancel the plan (10.06), or move to a lower paid plan, at the end of the paid period (B9): what the target gives less than the
@@ -107,13 +106,16 @@ export function CancelPlanDialog({
       typeof days === "number" &&
       (today === null || (typeof today === "number" && days < today))
     ) {
-      const stay = new Date(subscription.currentPeriodEnd);
-      stay.setUTCDate(stay.getUTCDate() + retentionGraceDays);
+      // After a shorter period an older entry stays AuditRetention.Grace days before it goes (the API's K14).
+      const stay = daysAfter(
+        subscription.currentPeriodEnd,
+        AuditRetention.Grace,
+      );
       lines.push(
         t("billing.change.lessLog", {
           plan: name,
           days,
-          date: text.date(stay.toISOString()),
+          date: text.date(stay),
         }),
       );
     }

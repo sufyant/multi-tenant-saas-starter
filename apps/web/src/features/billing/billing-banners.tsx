@@ -17,9 +17,9 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { refreshTenant } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
+import { usePortal } from "@/shared/use-portal";
 import { defaultPlanOf, feesOf, planOf, totalOf } from "./billing-facts";
 import { useBillingText, useSeatFacts } from "./use-billing-text";
-import { usePortal } from "./use-portal";
 
 /**
  * The Billing page's banners, above the plan (10.07, 10.15 to 10.18): a failed payment, while Stripe retries, in billing's grace, or

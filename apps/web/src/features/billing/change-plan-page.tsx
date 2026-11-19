@@ -28,6 +28,7 @@ import { isBillingOff, useBilling } from "@/shared/billing";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { billingAddress } from "@/shared/use-portal";
 import {
   feesOf,
   planNamed,
@@ -39,7 +40,6 @@ import {
 import { CancelPlanDialog } from "./cancel-plan-dialog";
 import { UpgradeDialog } from "./upgrade-dialog";
 import { useBillingText, useSeatFacts } from "./use-billing-text";
-import { billingAddress } from "./use-portal";
 
 const { Monthly, Yearly } = SubscriptionResponseInterval;
 
@@ -67,9 +67,10 @@ export function ChangePlanPage() {
   const state = billing.data ? stateOf(billing.data) : undefined;
   const subscription =
     state?.kind === "paying" ? state.subscription : undefined;
-  const [interval, setInterval] = useState<SubscriptionResponseInterval>(
-    subscription?.interval ?? Monthly,
-  );
+  const [chosenInterval, setInterval] =
+    useState<SubscriptionResponseInterval>();
+  // The interval starts as the subscription's, once GetBilling has answered; the person's choice wins after that.
+  const interval = chosenInterval ?? subscription?.interval ?? Monthly;
   const [chosen, setChosen] = useState<{
     plan: PlanChoiceResponse;
     move: "upgrade" | "lower";
@@ -136,7 +137,7 @@ export function ChangePlanPage() {
         />
       </Frame>
     );
-  if (!state || !choices.data || !seats)
+  if (!state || !choices.data)
     return (
       <Frame>
         {back}
@@ -160,7 +161,8 @@ export function ChangePlanPage() {
       </Frame>
     );
 
-  const people = seats.people;
+  // Without the people (a role that may not read the members), the totals for them are left out.
+  const people = seats?.people ?? 0;
   const paid = subscription ? planOf(plans, subscription.planId) : undefined;
   const onNow = paid ?? planNamed(plans, detail.planName);
   const costOf = (plan: PlanChoiceResponse, at: SubscriptionResponseInterval) =>
@@ -197,7 +199,8 @@ export function ChangePlanPage() {
         ? t("billing.plans.switchToYearly")
         : t("billing.plans.switchToMonthly");
     if (move === "lower") return t("billing.plans.moveTo", { plan: plan.name });
-    if (move === "checkout" && costOf(plan, interval) === 0)
+    const fees = feesOf(plan.prices, interval);
+    if (move === "checkout" && fees.base === 0 && fees.perPerson === 0)
       return t("billing.plans.moveTo", { plan: plan.name });
     return t("billing.plans.upgradeTo", { plan: plan.name });
   };
@@ -266,25 +269,27 @@ export function ChangePlanPage() {
                 )}
               </div>
               <Price fees={fees} interval={interval} money={text.money} />
-              <p
-                className={`text-small ${
-                  interval === Yearly && savedMonths > 0 && total > 0
-                    ? "text-success-text"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {total === 0
-                  ? t("billing.plans.forPeopleFree", {
-                      people,
-                      amount: text.money(0),
-                    })
-                  : t("billing.plans.forPeople", {
-                      people,
-                      amount: text.money(total),
-                      interval,
-                      months: interval === Yearly ? savedMonths : 0,
-                    })}
-              </p>
+              {seats && (
+                <p
+                  className={`text-small ${
+                    interval === Yearly && savedMonths > 0 && total > 0
+                      ? "text-success-text"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {total === 0
+                    ? t("billing.plans.forPeopleFree", {
+                        people,
+                        amount: text.money(0),
+                      })
+                    : t("billing.plans.forPeople", {
+                        people,
+                        amount: text.money(total),
+                        interval,
+                        months: interval === Yearly ? savedMonths : 0,
+                      })}
+                </p>
+              )}
               <ul className="flex flex-1 flex-col gap-2 text-small">
                 {limitsOf(plan).map((line) => (
                   <li key={line.key} className="flex items-start gap-2">
@@ -299,7 +304,8 @@ export function ChangePlanPage() {
               </ul>
               <Button
                 variant={
-                  move === "upgrade" || (move === "checkout" && total > 0)
+                  move === "upgrade" ||
+                  (move === "checkout" && (fees.base > 0 || fees.perPerson > 0))
                     ? "primary"
                     : "secondary"
                 }

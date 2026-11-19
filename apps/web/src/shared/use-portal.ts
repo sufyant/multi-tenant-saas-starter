@@ -28,6 +28,8 @@ export function usePortal() {
     pending: portal.isPending,
     open: () => {
       const tab = window.open("", "_blank");
+      // Stripe's page gets no way back to this tab (OWASP, "HTML5 Security Cheat Sheet", tabnabbing).
+      if (tab) tab.opener = null;
       portal.mutate(undefined, {
         onSuccess: ({ url }) => {
           if (tab) tab.location.href = url;

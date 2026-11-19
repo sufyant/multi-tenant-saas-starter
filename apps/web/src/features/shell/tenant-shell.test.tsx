@@ -13,7 +13,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { HttpResponse, http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -101,6 +101,7 @@ const answers = (total: number) => [
     getGetMeResponseMock({
       name: "Ayşe Yılmaz",
       language: "en",
+      timeZone: "Europe/Dublin",
     }),
   ),
 ];
@@ -306,6 +307,75 @@ describe("TenantShell", () => {
     expect(
       await within(menu).findByRole("link", { name: "Billing" }),
     ).toHaveAttribute("href", "/northwind/settings/billing");
+  });
+
+  it("TenantShell_PaymentRetrying_ShowsTheBillingBarWithUpdateCard", async () => {
+    route.pathname = "/northwind";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          billingEmail: null,
+          subscription: {
+            planId: "0198f0a2-0000-7000-8000-0000000000a2",
+            interval: "monthly",
+            status: "past_due",
+            currentPeriodEnd: "2026-12-01T00:00:00Z",
+            cancelAtPeriodEnd: false,
+            scheduledChange: null,
+            priceChange: null,
+            payment: {
+              state: "retrying",
+              failedAt: "2026-11-01T10:00:00Z",
+              attempts: 1,
+              nextAttemptAt: "2026-11-05T10:00:00Z",
+              graceEndsAt: null,
+              movedAt: null,
+              amountDue: 10000,
+              currency: "EUR",
+              card: null,
+            },
+          },
+        }),
+      ),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    expect(
+      await screen.findByText(
+        "We couldn’t take your payment. We’ll try again on 5 Nov 2026.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Update card" })).toBeVisible();
+  });
+
+  it("TenantShell_BillingLoadsOnItsOwnPage_ListsBilling", async () => {
+    route.pathname = "/northwind/settings/billing";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      // GetBilling never answers.
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () => delay("infinite")),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(within(menu).getByRole("link", { name: "Billing" })).toBeVisible();
   });
 
   it("TenantShell_BillingOff_ListsNoBilling", async () => {

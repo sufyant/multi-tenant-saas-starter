@@ -97,16 +97,19 @@ export function useSeatFacts():
     ...getListMembersQueryOptions(tenant.id, { roleId, pageSize: 5 }),
     enabled: roleId !== undefined,
   });
-  if (!members.data || !managers.data) return null;
+  // A viewer who may not read the roles has no id of the Billing manager's role: the count takes none apart then.
+  const unknownRole =
+    roleId === undefined && (roles.isError || roles.fetchStatus === "idle");
+  if (!members.data || (!managers.data && !unknownRole)) return null;
   const facts = {
     members: members.data.total,
-    billing: managers.data.total,
+    billing: managers.data?.total ?? 0,
     used: plan.limit(LimitKey.MembersMax).count,
   };
   return {
     ...facts,
     ...seatsOf(facts),
-    billingNames: managers.data.items.flatMap((item) =>
+    billingNames: (managers.data?.items ?? []).flatMap((item) =>
       item.name ? [item.name] : [],
     ),
   };

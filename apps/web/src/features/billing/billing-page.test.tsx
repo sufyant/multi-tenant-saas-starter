@@ -456,6 +456,15 @@ describe("BillingPage", () => {
     );
   });
 
+  it("BillingPage_CheckoutSuccess_SaysThePlanAndDropsTheQuery", async () => {
+    server.use(...as(BuiltInRole.Owner));
+
+    renderInTenant(<BillingPage />, { url: `${url}?checkout=success` });
+
+    await expectVisibleToast("Payment successful. You’re on Team.");
+    await vi.waitFor(() => expect(window.location.search).toBe(""));
+  });
+
   it("CancelPlan_Confirm_MovesToTheDefaultPlanAtThePeriodsEnd", async () => {
     const user = userEvent.setup();
     const sent: unknown[] = [];

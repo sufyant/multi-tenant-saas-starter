@@ -44,7 +44,7 @@ import { PermissionDenied } from "@/shared/permission-denied";
 import { usePlan } from "@/shared/plan";
 import { PlanBanner } from "@/shared/plan-banner";
 import { leaveOf } from "@/shared/problem-screen";
-import { inListOrder } from "@/shared/roles";
+import { inListOrder, takesNoSeat } from "@/shared/roles";
 import { TableSkeleton } from "@/shared/table-skeleton";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
@@ -159,9 +159,11 @@ export function MembersPage() {
   const canInvite = can(Permission.TenantInvitationsCreate);
   const memberLimit = plan.limit(LimitKey.MembersMax);
   const membersTotal = memberCount.data?.total;
+  // The Billing managers take no seat (A2): ListRoles counts them.
+  const freeMembers = roles.data?.items.find(takesNoSeat)?.memberCount ?? 0;
   const pending =
     membersTotal !== undefined &&
-    plan.pending(LimitKey.MembersMax, membersTotal);
+    plan.pending(LimitKey.MembersMax, membersTotal, freeMembers);
   const viewInvitations = () =>
     void setParams({ tab: "invitations", q: null, roleId: null, sort: null });
 
@@ -370,7 +372,17 @@ export function MembersPage() {
         membersTotal === undefined
           ? null
           : t("plans.membersOverText", {
-              ...plan.seats(LimitKey.MembersMax, membersTotal),
+              // The banner counts the members who take a seat (8.40); the dialog names the Billing managers apart.
+              members: plan.seats(
+                LimitKey.MembersMax,
+                membersTotal,
+                freeMembers,
+              ).seated,
+              invitations: plan.seats(
+                LimitKey.MembersMax,
+                membersTotal,
+                freeMembers,
+              ).invitations,
               limit: memberLimit.limit,
             }),
     };
@@ -524,6 +536,7 @@ export function MembersPage() {
         (memberLimit.full ? (
           <NoFreeSeatDialog
             members={membersTotal}
+            billing={freeMembers}
             onViewInvitations={
               seesInvitations
                 ? () => {
