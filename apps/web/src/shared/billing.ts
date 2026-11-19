@@ -2,10 +2,15 @@ import {
   BillingResponseBilledBy,
   ErrorCode,
   getGetBillingQueryOptions,
+  getGetPlanChoicesQueryOptions,
   Permission,
   problemOf,
+  SubscriptionResponseInterval,
+  SubscriptionResponseStatus,
 } from "@repo/api-client";
+import { formatMoney } from "@repo/ui/lib/format-money";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { useCan, useTenant } from "./tenant-context";
 
 /** The API answers 404 `billing.off` for every billing call while the deployment's billing is off (the API's B1). */
@@ -47,4 +52,33 @@ export function usePlanChange(): "change" | "request" {
   return billing.data?.billedBy === BillingResponseBilledBy.Card
     ? "change"
     : "request";
+}
+
+/**
+ * The monthly fee per person that a seat adds to the bill, as text, for a viewer who manages billing of an organisation that pays
+ * monthly by card (14.02, 14.06, 14.07); null otherwise. A yearly payer is charged the rest of the year at once (14.04), an amount
+ * that only Stripe's proration knows, so no line says it.
+ */
+export function useSeatPrice(): string | null {
+  const t = useTranslations();
+  const { tenant } = useTenant();
+  const billing = useBilling();
+  const subscription = billing.data?.subscription;
+  const monthly =
+    billing.data?.billedBy === BillingResponseBilledBy.Card &&
+    subscription?.status === SubscriptionResponseStatus.Active &&
+    subscription.interval === SubscriptionResponseInterval.Monthly;
+  const choices = useQuery({
+    ...getGetPlanChoicesQueryOptions(tenant.id),
+    enabled: monthly,
+  });
+  const plan = choices.data?.plans.find(
+    (choice) => choice.id === subscription?.planId,
+  );
+  if (!monthly || !plan || plan.prices.perPersonMonthly === 0) return null;
+  return formatMoney(
+    plan.prices.perPersonMonthly,
+    plan.currency,
+    t("locale.format"),
+  );
 }

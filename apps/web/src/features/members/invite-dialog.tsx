@@ -26,6 +26,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
+import { useSeatPrice } from "@/shared/billing";
 import { usePlan } from "@/shared/plan";
 import { afterRefusal, refreshInvitations } from "@/shared/refresh";
 import { firstInviteRole } from "@/shared/roles";
@@ -180,6 +181,7 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
 
   const chosen = roles.find((role) => role.id === form.watch("roleId"));
   const note = chosen && roleNote(chosen, "members.inviteNotes");
+  const seatPrice = useSeatPrice();
 
   return (
     <Dialog
@@ -202,7 +204,9 @@ export function InviteDialog({ onClose }: { onClose: () => void }) {
         ) : (
           left !== null && (
             <p className="text-small text-muted-foreground">
-              {t("plans.seatsLeft", { count: left })}
+              {seatPrice
+                ? t("plans.seatsLeftBill", { count: left, amount: seatPrice })
+                : t("plans.seatsLeft", { count: left })}
             </p>
           )
         )}

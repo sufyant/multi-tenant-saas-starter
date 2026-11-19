@@ -375,7 +375,7 @@
         "plan_cancelled": "ألغى <actor></actor> الخطة. تنتقل <target></target> إلى <newPlan></newPlan> في {date}.",
         "plan_change_scheduled": "{interval, select, yes {نقل <actor></actor> <plan></plan> إلى الفوترة الشهرية. تسري في {date}.} other {غيّر <actor></actor> الخطة من <oldPlan></oldPlan> إلى <newPlan></newPlan>. تسري في {date}.}}",
         "plan_change_undone": "تراجع <actor></actor> عن التغيير المجدول. تبقى <target></target> على <plan></plan>.",
-        "plan_changed": "نقلت <actor></actor> هذه المؤسسة من <oldPlan></oldPlan> إلى <newPlan></newPlan>.",
+        "plan_changed": "{actorKind, select, user {غيّر <actor></actor> الخطة من <oldPlan></oldPlan> إلى <newPlan></newPlan>. تسري فورًا.} other {نقلت <actor></actor> هذه المؤسسة من <oldPlan></oldPlan> إلى <newPlan></newPlan>.}}",
         "price_change_announced": "{yearly, select, yes {يتغير سعر <plan></plan> في {date}: {new} لكل شخص سنويًا (قبل: {old}).} other {يتغير سعر <plan></plan> في {date}: {new} لكل شخص شهريًا (قبل: {old}).}}",
         "moved_to_default_plan": "انتقلت هذه المؤسسة إلى <plan></plan>، الخطة الافتراضية: فشلت دفعة وانتهت فترة السماح.",
         "payment_failed": "فشلت دفعة بقيمة {amount}. تحاول Stripe مجددًا حتى {date}.",
@@ -635,7 +635,10 @@
     "requestChange": "اطلب تغيير الخطة",
     "viewInvitations": "عرض الدعوات",
     "seatsLeft": "{count, plural, zero {لا مقاعد متبقية.} one {مقعد واحد متبقٍ.} two {مقعدان متبقيان.} few {# مقاعد متبقية.} many {# مقعدًا متبقيًا.} other {# مقعد متبقٍ.}}",
-    "changePlan": "تغيير الخطة"
+    "changePlan": "تغيير الخطة",
+    "seatsLeftBill": "{count, plural, zero {لا مقاعد متبقية.} one {مقعد واحد متبقٍ.} two {مقعدان متبقيان.} few {# مقاعد متبقية.} many {# مقعدًا متبقيًا.} other {# مقعد متبقٍ.}} عندما يقبلون، تزيد فاتورتك {amount} شهريًا، دون ضريبة القيمة المضافة.",
+    "billDown": "لن يستخدم {name} مقعدًا. تنخفض فاتورتك {amount} شهريًا. يُضاف باقي هذا الشهر رصيدًا في فاتورتك التالية.",
+    "billUp": "سيستخدم {name} مقعدًا. تزيد فاتورتك {amount} شهريًا، دون ضريبة القيمة المضافة. يُضاف باقي هذا الشهر إلى فاتورتك التالية."
   },
   "billing": {
     "title": "الفوترة",

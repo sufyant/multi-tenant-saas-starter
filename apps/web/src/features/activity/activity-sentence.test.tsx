@@ -933,6 +933,24 @@ describe("ActivitySentence", () => {
     },
   );
 
+  it("ActivitySentence_AMemberChangedThePlan_SaysItAppliesAtOnce", () => {
+    renderWithProviders(
+      <ActivitySentence
+        entry={entry({
+          operation: AuditOperation.TenantPlanChanged,
+          target: northwindTarget,
+          details: detailsOf[AuditOperation.TenantPlanChanged],
+        })}
+      />,
+    );
+
+    expect(
+      shown(
+        "Ayşe Yılmaz changed the plan from Free to Pro. It applies at once.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("ActivitySentence_AScheduledMoveToMonthlyOnTheSamePlan_SaysMonthlyBilling", () => {
     renderWithProviders(
       <ActivitySentence

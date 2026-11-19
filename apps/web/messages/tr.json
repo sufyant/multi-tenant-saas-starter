@@ -375,7 +375,7 @@
         "plan_cancelled": "<actor></actor> planı iptal etti. <target></target>, {date} tarihinde <newPlan></newPlan> planına geçer.",
         "plan_change_scheduled": "{interval, select, yes {<actor></actor> <plan></plan> planını aylık faturalamaya geçirdi. {date} tarihinde geçerli olur.} other {<actor></actor> planı <oldPlan></oldPlan> planından <newPlan></newPlan> planına değiştirdi. {date} tarihinde geçerli olur.}}",
         "plan_change_undone": "<actor></actor> planlanan değişikliği geri aldı. <target></target> <plan></plan> planında kalır.",
-        "plan_changed": "<actor></actor> bu kuruluşu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.",
+        "plan_changed": "{actorKind, select, user {<actor></actor> planı <oldPlan></oldPlan> planından <newPlan></newPlan> planına değiştirdi. Hemen geçerli olur.} other {<actor></actor> bu kuruluşu <oldPlan></oldPlan> planından <newPlan></newPlan> planına geçirdi.}}",
         "price_change_announced": "{yearly, select, yes {<plan></plan> fiyatı {date} tarihinde değişiyor: kişi başı yılda {new} (önceki: {old}).} other {<plan></plan> fiyatı {date} tarihinde değişiyor: kişi başı ayda {new} (önceki: {old}).}}",
         "moved_to_default_plan": "Bu kuruluş varsayılan plan olan <plan></plan> planına geçti: bir ödeme başarısız oldu ve ek süre bitti.",
         "payment_failed": "{amount} tutarındaki bir ödeme başarısız oldu. Stripe {date} tarihine kadar yeniden dener.",
@@ -635,7 +635,10 @@
     "requestChange": "Plan değişikliği iste",
     "viewInvitations": "Davetleri görüntüle",
     "seatsLeft": "{count, plural, one {# yer kaldı.} other {# yer kaldı.}}",
-    "changePlan": "Planı değiştir"
+    "changePlan": "Planı değiştir",
+    "seatsLeftBill": "{count} koltuk kaldı. Kabul ettiklerinde faturanız ayda {amount} artar, KDV hariç.",
+    "billDown": "{name} koltuk kullanmayacak. Faturanız ayda {amount} azalır. Bu ayın kalanı sonraki faturanıza alacak olarak yansır.",
+    "billUp": "{name} bir koltuk kullanacak. Faturanız ayda {amount} artar, KDV hariç. Bu ayın kalanı sonraki faturanıza eklenir."
   },
   "billing": {
     "title": "Faturalama",

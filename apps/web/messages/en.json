@@ -375,7 +375,7 @@
         "plan_cancelled": "<actor></actor> cancelled the plan. <target></target> moves to <newPlan></newPlan> on {date}.",
         "plan_change_scheduled": "{interval, select, yes {<actor></actor> moved <plan></plan> to monthly billing. It applies on {date}.} other {<actor></actor> changed the plan from <oldPlan></oldPlan> to <newPlan></newPlan>. It applies on {date}.}}",
         "plan_change_undone": "<actor></actor> undid the scheduled change. <target></target> stays on <plan></plan>.",
-        "plan_changed": "<actor></actor> moved this organisation from <oldPlan></oldPlan> to <newPlan></newPlan>.",
+        "plan_changed": "{actorKind, select, user {<actor></actor> changed the plan from <oldPlan></oldPlan> to <newPlan></newPlan>. It applies at once.} other {<actor></actor> moved this organisation from <oldPlan></oldPlan> to <newPlan></newPlan>.}}",
         "price_change_announced": "{yearly, select, yes {The price of <plan></plan> changes on {date}: {new} for each person a year (before: {old}).} other {The price of <plan></plan> changes on {date}: {new} for each person a month (before: {old}).}}",
         "moved_to_default_plan": "This organisation moved to <plan></plan>, the default plan: a payment failed and the grace period ended.",
         "payment_failed": "A payment of {amount} failed. Stripe tries again until {date}.",
@@ -635,7 +635,10 @@
     "requestChange": "Request a plan change",
     "viewInvitations": "View invitations",
     "seatsLeft": "{count, plural, one {# seat left.} other {# seats left.}}",
-    "changePlan": "Change plan"
+    "changePlan": "Change plan",
+    "seatsLeftBill": "{count, plural, one {# seat left} other {# seats left}}. When they accept, your bill goes up by {amount} a month, excl. VAT.",
+    "billDown": "{name} will use no seat. Your bill goes down by {amount} a month. The rest of this month is credited on your next invoice.",
+    "billUp": "{name} will use a seat. Your bill goes up by {amount} a month, excl. VAT. The rest of this month is added to your next invoice."
   },
   "billing": {
     "title": "Billing",
