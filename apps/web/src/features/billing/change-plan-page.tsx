@@ -216,21 +216,23 @@ export function ChangePlanPage() {
     <Frame>
       {back}
       {header}
-      <SegmentedControl
-        label={t("billing.plans.interval")}
-        value={interval}
-        onValueChange={setInterval}
-        options={[
-          { value: Monthly, label: t("billing.plans.monthly") },
-          {
-            value: Yearly,
-            label:
-              savedMonths > 0
-                ? t("billing.plans.yearlyFree", { months: savedMonths })
-                : t("billing.plans.yearly"),
-          },
-        ]}
-      />
+      <div className="self-start">
+        <SegmentedControl
+          label={t("billing.plans.interval")}
+          value={interval}
+          onValueChange={setInterval}
+          options={[
+            { value: Monthly, label: t("billing.plans.monthly") },
+            {
+              value: Yearly,
+              label:
+                savedMonths > 0
+                  ? t("billing.plans.yearlyFree", { months: savedMonths })
+                  : t("billing.plans.yearly"),
+            },
+          ]}
+        />
+      </div>
       <ul className="grid gap-4 desktop:grid-cols-3">
         {plans.map((plan) => {
           const move = moveOf(plan);
@@ -401,8 +403,10 @@ function Price({
       : money(shape === "base" ? fees.base : fees.perPerson);
   return (
     <p className="flex items-baseline gap-2">
-      <span className="text-page-title">{amount}</span>
-      <span className="text-small text-muted-foreground">
+      <span className="shrink-0 whitespace-nowrap text-page-title">
+        {amount}
+      </span>
+      <span className="min-w-0 text-small text-muted-foreground">
         {t(`billing.plans.unit.${shape}`, { interval })}
       </span>
     </p>

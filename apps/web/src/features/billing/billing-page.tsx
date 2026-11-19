@@ -353,15 +353,21 @@ function LimitRows({ planName }: { planName: string }) {
         term={t("billing.seats")}
         value={ofLimit(members.count, members.limit)}
         hint={
-          seats
-            ? t("billing.seatsText", {
-                members: seats.members,
-                billing: seats.billing,
+          seats && members.overLimit && members.limit !== null
+            ? t("plans.membersOverText", {
+                members: seats.people,
                 invitations: seats.invitations,
-                used: members.count,
-                limit: members.limit === null ? "none" : members.limit,
+                limit: members.limit,
               })
-            : undefined
+            : seats
+              ? t("billing.seatsText", {
+                  members: seats.members,
+                  billing: seats.billing,
+                  invitations: seats.invitations,
+                  used: members.count,
+                  limit: members.limit === null ? "none" : members.limit,
+                })
+              : undefined
         }
         hintClass={over(members)}
       />

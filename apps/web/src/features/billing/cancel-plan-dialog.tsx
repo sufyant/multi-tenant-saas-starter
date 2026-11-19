@@ -143,13 +143,13 @@ export function CancelPlanDialog({
               date,
               default: name,
               plan: current,
-              month: text.month(subscription.currentPeriodEnd),
+              month: text.month(new Date().toISOString()),
             })
           : t("billing.change.moveText", {
               date,
               plan: name,
               current,
-              month: text.month(subscription.currentPeriodEnd),
+              month: text.month(new Date().toISOString()),
             })
       }
       tone={cancellation ? "destructive" : "default"}
@@ -178,7 +178,11 @@ export function CancelPlanDialog({
     >
       {less.length > 0 && (
         <Banner tone="warning" title={t("billing.change.less", { plan: name })}>
-          {less.join(" ")}
+          {less.map((line, index) => (
+            <span key={line} className={index > 0 ? "mt-1 block" : "block"}>
+              {line}
+            </span>
+          ))}
         </Banner>
       )}
       {failure && (

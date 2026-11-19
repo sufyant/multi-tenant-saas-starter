@@ -6,6 +6,8 @@ import {
   AuditOperation,
   type AuditRetentionResponse,
   AuditTargetResponseKind,
+  type BillingResponse,
+  BillingResponseBilledBy,
   BuiltInRole,
   type ChangeMemberRoleRequest,
   type ChangePreferencesRequest,
@@ -33,11 +35,15 @@ import {
   type NotificationResponse,
   NotificationType,
   Permission,
+  type PlanChoiceResponse,
   type RenameMeRequest,
   RoleCreatedDetailsResponseOperation,
   type RoleDetailResponse,
   type RoleResponse,
   RoleUpdatedDetailsResponseOperation,
+  type SubscriptionResponse,
+  SubscriptionResponseInterval,
+  SubscriptionResponseStatus,
   TenantEntitlementOverrideSetDetailsResponseOperation,
   type TermsInForceResponse,
 } from "@repo/api-client";
@@ -260,6 +266,10 @@ export async function mockApi(
     }),
   );
   await mockRetention(page);
+  // The deployment's billing is off, as the template ships it (B1): no Billing page; a billing frame mocks its own.
+  await page.route(`**/api/v1/tenants/${northwind.id}/billing`, (route) =>
+    route.fulfill(problem(404, ErrorCode.BillingOff)),
+  );
   await page.route(`**/api/v1/tenants/${northwind.id}/roles*`, (route) => {
     const items = [...Object.values(roles), ...customRoles];
     return route.fulfill({
@@ -1461,5 +1471,128 @@ export async function mockDataExport(
             traceId: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
           },
         }),
+  );
+}
+
+// The Billing frames (10.01 to 10.24, 14.11, 14.14): Northwind on Team, monthly, paid until 1 Dec 2026, with the plans of 10.02.
+
+const choice = (
+  id: string,
+  name: string,
+  prices: PlanChoiceResponse["prices"],
+  entitlements: PlanChoiceResponse["entitlements"],
+  isDefault = false,
+): PlanChoiceResponse => ({
+  id,
+  name,
+  isDefault,
+  entitlements,
+  currency: "EUR",
+  prices,
+  meters: [],
+});
+
+export const freePlan = choice(
+  "0198f0a2-0000-7000-8000-0000000000a1",
+  "Free",
+  { baseMonthly: 0, perPersonMonthly: 0, baseYearly: 0, perPersonYearly: 0 },
+  {
+    "members.max": 3,
+    "roles.custom": false,
+    "roles.custom.max": 0,
+    "audit.retention.days": 90,
+  },
+  true,
+);
+export const teamPlan = choice(
+  "0198f0a2-0000-7000-8000-0000000000a2",
+  "Team",
+  {
+    baseMonthly: 0,
+    perPersonMonthly: 1000,
+    baseYearly: 0,
+    perPersonYearly: 10000,
+  },
+  {
+    "members.max": 15,
+    "roles.custom": true,
+    "roles.custom.max": 5,
+    "audit.retention.days": 365,
+  },
+);
+export const businessPlan = choice(
+  "0198f0a2-0000-7000-8000-0000000000a3",
+  "Business",
+  {
+    baseMonthly: 9900,
+    perPersonMonthly: 800,
+    baseYearly: 99000,
+    perPersonYearly: 8000,
+  },
+  {
+    "members.max": 50,
+    "roles.custom": true,
+    "roles.custom.max": 20,
+    "audit.retention.days": 365,
+  },
+);
+
+/** Team as GetMyTenant answers it for Northwind: 12 of 15 seats (ten people and two invitations), 4 custom roles. */
+export const team: Plan = {
+  planName: "Team",
+  entitlements: {
+    "members.max": 15,
+    "roles.custom": true,
+    "roles.custom.max": 5,
+    "audit.retention.days": 365,
+  },
+  usage: { "members.max": 12, "roles.custom.max": 4 },
+};
+
+export const teamMonthly: SubscriptionResponse = {
+  planId: teamPlan.id,
+  interval: SubscriptionResponseInterval.Monthly,
+  status: SubscriptionResponseStatus.Active,
+  currentPeriodEnd: "2026-12-01T00:00:00Z",
+  cancelAtPeriodEnd: false,
+  scheduledChange: null,
+  payment: null,
+  priceChange: null,
+};
+
+export const billing = (
+  subscription: SubscriptionResponse | null = teamMonthly,
+  more: Partial<BillingResponse> = {},
+): BillingResponse => ({
+  billedBy: BillingResponseBilledBy.Card,
+  subscription,
+  billingEmail: "accounts@northwind.example",
+  ...more,
+});
+
+/** GetBilling, GetPlanChoices and the preview of an upgrade to Business (10.04): €53.25 today. */
+export async function mockBilling(
+  page: Page,
+  answer: BillingResponse = billing(),
+): Promise<void> {
+  await page.route(`**/api/v1/tenants/${northwind.id}/billing`, (route) =>
+    route.fulfill({ json: answer }),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}/plans`, (route) =>
+    route.fulfill({ json: { plans: [freePlan, teamPlan, businessPlan] } }),
+  );
+  await page.route(
+    `**/api/v1/tenants/${northwind.id}/billing/plan-change/preview`,
+    (route) =>
+      route.fulfill({
+        json: {
+          move: "at_once",
+          at: "2026-11-15T10:00:00Z",
+          currency: "EUR",
+          amount: 17900,
+          amountToday: 5325,
+          proratedAt: "2026-11-15T10:00:00Z",
+        },
+      }),
   );
 }

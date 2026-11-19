@@ -62,13 +62,15 @@ export function useBillingText(currency: string) {
       people: number,
       interval: SubscriptionResponseInterval,
     ) =>
-      t(`billing.price.${priceShapeOf(fees)}`, {
-        base: money(fees.base),
-        perPerson: money(fees.perPerson),
-        people,
-        total: money(totalOf(fees, people)),
-        interval,
-      }),
+      totalOf(fees, people) === 0
+        ? money(0)
+        : t(`billing.price.${priceShapeOf(fees)}`, {
+            base: money(fees.base),
+            perPerson: money(fees.perPerson),
+            people,
+            total: money(totalOf(fees, people)),
+            interval,
+          }),
   };
 }
 

@@ -83,7 +83,9 @@ export function TenantShell({
     ),
   );
   const roles = useTenantRoles();
-  const billing = useBillingShown();
+  const billing = useBillingShown(
+    pathname.startsWith(`/${tenant.slug}/settings/billing`),
+  );
   // The role changed while a page is open (GetMyTenant read again): the page says so until the person opens another page.
   const shownRole = useRef(detail.role.id);
   const [changed, setChanged] = useState<{ role: string; on: string }>();

@@ -25,12 +25,13 @@ export function useBilling() {
 }
 
 /**
- * Whether Billing is a page of this organisation for the viewer: they manage billing and GetBilling answered. While it loads, and when
- * billing is off, the page is in no menu, so a template without billing shows no Billing (B1). Another failure keeps it, so the
- * page can say what failed.
+ * Whether Billing is a page of this organisation for the viewer: they manage billing and GetBilling answered. When billing is off the
+ * page is in no menu, so a template without billing shows no Billing (B1); while GetBilling loads it is only in the menu of its own
+ * page (10.20), so the other pages do not show it for a moment. Another failure keeps it, so the page can say what failed (10.21).
  */
-export function useBillingShown(): boolean {
+export function useBillingShown(onBilling = false): boolean {
   const billing = useBilling();
   if (billing.isSuccess) return true;
-  return billing.isError && !isBillingOff(billing.error);
+  if (billing.isPending) return onBilling && billing.fetchStatus !== "idle";
+  return !isBillingOff(billing.error);
 }
