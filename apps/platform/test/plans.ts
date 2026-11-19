@@ -259,3 +259,17 @@ export const anyTenantPlanAnswer = () =>
   http.get("*/v1/platform/tenants/:tenantId/plan", ({ params }) =>
     HttpResponse.json({ ...burrenPlan(), tenantId: String(params.tenantId) }),
   );
+
+/** GetPriceChange of a plan: its payers by card and its price change (6.14 to 6.16). */
+export const priceChangeAnswer = (
+  planId: string,
+  answer: {
+    payers: number;
+    yearlyPayers: number;
+    onOldPrice: unknown;
+    movesAt: string | null;
+  },
+) =>
+  http.get(`*/v1/platform/plans/${planId}/price-change`, () =>
+    HttpResponse.json(answer),
+  );

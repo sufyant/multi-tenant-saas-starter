@@ -836,5 +836,30 @@
     "reasonKillSwitch": "Kill switch.",
     "organisationNone": "No flag is on for this organisation.",
     "organisationError": "Couldn’t load the feature flags"
+  },
+  "priceChange": {
+    "title": "{plan}: per person {old} → {new} a month. The base fee stays {base}.",
+    "titleBase": "{plan}: base fee {old} → {new} a month.",
+    "question": "Who pays the new price, and when?",
+    "afterNotice": "Everyone, at their next period after 30 days’ notice",
+    "afterNoticeText": "Each customer gets an email today. Most pay {new} per person from their first period after {date}.",
+    "from": "Everyone, after a set period",
+    "fromText": "For example in 6 months. Each customer gets an email 30 days before.",
+    "fromDay": "From",
+    "newOnly": "New customers only",
+    "newOnlyText": "Today’s customers keep {old} per person. Later, “Move to the new price” moves them, with 30 days’ notice.",
+    "affects": "Affects {count, plural, one {# organisation} other {# organisations}}.",
+    "yearly": "{count} on yearly plans keep their price until renewal.",
+    "save": "Save new price",
+    "invalidDay": "Choose a day at least 30 days from today.",
+    "oldTitle": "{count, plural, one {# customer} other {# customers}} on the old price",
+    "oldText": "They pay {old} per person a month. New customers pay {new} per person since {date}.",
+    "move": "Move to the new price",
+    "moveTitle": "Move {count, plural, one {# customer} other {# customers}} to {new} per person a month?",
+    "moveText": "Each gets an email today. They pay {new} per person from their first period after 30 days’ notice, so after {date}.{yearly, plural, =0 {} other { The # on yearly plans keep {yearlyPrice} per person a year until they renew.}}",
+    "moveButton": "Move {count, plural, one {# customer} other {# customers}}",
+    "moved": "Customers told of the new price",
+    "moveFailed": "Couldn’t move the customers",
+    "scheduled": "They move on {date}."
   }
 }

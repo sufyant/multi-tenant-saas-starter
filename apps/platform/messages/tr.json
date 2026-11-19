@@ -836,5 +836,30 @@
     "reasonKillSwitch": "Acil kapatma.",
     "organisationNone": "Bu kuruluş için açık bayrak yok.",
     "organisationError": "Özellik bayrakları yüklenemedi"
+  },
+  "priceChange": {
+    "title": "{plan}: kişi başı ayda {old} → {new}. Temel ücret {base} olarak kalır.",
+    "titleBase": "{plan}: temel ücret ayda {old} → {new}.",
+    "question": "Yeni fiyatı kim, ne zaman öder?",
+    "afterNotice": "Herkes, 30 günlük bildirimden sonraki ilk döneminde",
+    "afterNoticeText": "Her müşteri bugün bir e-posta alır. Çoğu, {date} sonrasındaki ilk döneminden itibaren kişi başı {new} öder.",
+    "from": "Herkes, belirli bir süreden sonra",
+    "fromText": "Örneğin 6 ay sonra. Her müşteri 30 gün önce bir e-posta alır.",
+    "fromDay": "Başlangıç",
+    "newOnly": "Yalnızca yeni müşteriler",
+    "newOnlyText": "Bugünkü müşteriler kişi başı {old} ödemeye devam eder. Daha sonra “Yeni fiyata taşı” onları 30 günlük bildirimle taşır.",
+    "affects": "{count} kuruluşu etkiler.",
+    "yearly": "Yıllık plandaki {count} kuruluş yenilemeye kadar fiyatını korur.",
+    "save": "Yeni fiyatı kaydet",
+    "invalidDay": "Bugünden en az 30 gün sonraki bir gün seçin.",
+    "oldTitle": "Eski fiyatta {count} müşteri",
+    "oldText": "Kişi başı ayda {old} öderler. Yeni müşteriler {date} tarihinden beri kişi başı {new} öder.",
+    "move": "Yeni fiyata taşı",
+    "moveTitle": "{count} müşteri kişi başı ayda {new} fiyatına taşınsın mı?",
+    "moveText": "Her biri bugün e-posta alır. 30 günlük bildirimden sonraki ilk dönemlerinden, yani {date} sonrasından itibaren kişi başı {new} öderler.{yearly, plural, =0 {} other { Yıllık plandaki {yearly} müşteri yenileyene kadar kişi başı yıllık {yearlyPrice} öder.}}",
+    "moveButton": "{count} müşteriyi taşı",
+    "moved": "Müşterilere yeni fiyat bildirildi",
+    "moveFailed": "Müşteriler taşınamadı",
+    "scheduled": "{date} tarihinde taşınırlar."
   }
 }
