@@ -395,10 +395,9 @@ describe("OrganisationPage", () => {
     expect(
       await screen.findByRole("group", { name: "Custom roles limit" }),
     ).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Plan and billing" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(
+      screen.getByRole("tab", { name: "Plan and billing" }),
+    ).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: "Change plan" })).toBeVisible();
     expect(screen.queryByRole("term")).toBeNull();
   });
