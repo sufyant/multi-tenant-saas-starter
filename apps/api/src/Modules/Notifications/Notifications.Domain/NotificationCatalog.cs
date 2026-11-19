@@ -32,6 +32,25 @@ public static class NotificationCatalog
 
     public const string TenantPlanChanged = "tenant.plan_changed";
 
+    public const string TenantPaymentFailed = "tenant.payment_failed";
+
+    /// <summary>
+    /// The third exception of U9: the last warning before an unpaid tenant moves to the default plan (13.19, 3.18). Billing's grace starts
+    /// when the provider's retries are over; no command does it, and the Activity log records no entry of it (12.12).
+    /// </summary>
+    public const string TenantPaymentGraceStarted = "tenant.payment_grace_started";
+
+    public const string TenantMovedToDefaultPlan = "tenant.moved_to_default_plan";
+
+    public const string TenantPriceChangeAnnounced = "tenant.price_change_announced";
+
+    /// <summary>The words of <c>period</c> of <see cref="TenantPriceChangeAnnounced"/>: the tenant pays monthly or yearly.</summary>
+    public const string Month = "month";
+
+    public const string Year = "year";
+
+    public const string UnknownCard = "unknown";
+
     public const string TenantPurged = "tenant.purged";
 
     public const string TenantPurgedForOwners = "tenant.purged_for_owners";
@@ -67,11 +86,19 @@ public static class NotificationCatalog
     /// </summary>
     public const string UserDataExportReady = "user.data_export_ready";
 
+    /// <summary>
+    /// The card brands as the provider names them (Stripe, "Card object", <c>brand</c>), the words of <c>cardBrand</c>. A brand that is not
+    /// in the list is <see cref="UnknownCard"/>, which the texts write as "the card".
+    /// </summary>
+    public static readonly IReadOnlyList<string> CardBrands =
+        ["amex", "cartes_bancaires", "diners", "discover", "eftpos_au", "interac", "jcb", "link", "mastercard", "unionpay", "visa", UnknownCard];
+
     /// <summary>The types whose name is no audit operation, each with its reason (U9).</summary>
     public static readonly IReadOnlyDictionary<string, string> NamedApart = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
         [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
+        [TenantPaymentGraceStarted] = "Billing's grace starts when the provider's retries are over; no command does, and the Activity log has no entry of it.",
         [FeatureFlagsReadyToRemove] = FlagsApart,
         [FeatureFlagsUnused] = FlagsApart,
         [TenantSuspendedForOwners] = OwnersApart,
@@ -128,6 +155,72 @@ public static class NotificationCatalog
                 new("newPlanName", NotificationValueKind.Text),
                 new("retentionDays", NotificationValueKind.Days, Optional: true),
                 new("retentionGoesAt", NotificationValueKind.Date, Optional: true, With: "retentionDays"),
+            ]),
+
+        // Billing tells the members who manage it, in the tenant's bell and by email, as the organisation's plan depends on the payment
+        // (U5). Each leads to Billing. A card the provider did not name, or an invoice it no longer holds, is missing: the texts then say
+        // the payment without it.
+        new(
+            TenantPaymentFailed,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [
+                Tenant(),
+                Money("amountDue"),
+                new("failedAt", NotificationValueKind.Date),
+                new("nextAttemptAt", NotificationValueKind.Date),
+                .. Card(),
+            ]),
+        new(
+            TenantPaymentGraceStarted,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [
+                Tenant(),
+                new("defaultPlanName", NotificationValueKind.Text),
+                new("graceEndsAt", NotificationValueKind.Date),
+                new("attempts", NotificationValueKind.Attempts),
+                new("failedAt", NotificationValueKind.Date),
+                .. Card(),
+            ]),
+        new(
+            TenantMovedToDefaultPlan,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [
+                Tenant(),
+                new("planName", NotificationValueKind.Text),
+                new("defaultPlanName", NotificationValueKind.Text),
+                new("movedAt", NotificationValueKind.Date),
+                Money("amountDue", optional: true),
+            ]),
+
+        // A price change names the fees that change: the fee per person, the base fee or both, so at least one old fee is there. The
+        // amounts are of the interval the tenant pays (period), and the totals are for the people who take a seat at the notice.
+        new(
+            TenantPriceChangeAnnounced,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [
+                Tenant(),
+                new("planName", NotificationValueKind.Text),
+                new("movesAt", NotificationValueKind.Date),
+                new("period", NotificationValueKind.Word, Words: [Month, Year]),
+                Money("perPerson"),
+                Money("oldPerPerson", optional: true),
+                Money("base"),
+                Money("oldBase", optional: true),
+                new("people", NotificationValueKind.People),
+                Money("newTotal"),
+                Money("oldTotal"),
             ]),
 
         // An override without an end has no expiry. An override leads to the page of its key (NotificationLinks).
@@ -267,6 +360,15 @@ public static class NotificationCatalog
     private static NotificationValue Person(string name, bool optional = false) => new(name, NotificationValueKind.Person, Optional: optional);
 
     private static NotificationValue Role(string name) => new(name, NotificationValueKind.Role);
+
+    private static NotificationValue Money(string name, bool optional = false) => new(name, NotificationValueKind.Money, Optional: optional);
+
+    // The card the provider tried: its brand and its last four digits, there together or not at all.
+    private static NotificationValue[] Card() =>
+    [
+        new("cardBrand", NotificationValueKind.Word, Words: CardBrands, Optional: true),
+        new("cardLast4", NotificationValueKind.Text, Optional: true, With: "cardBrand"),
+    ];
 
     private static NotificationValue Key() => new(NotificationKind.KeyValue, NotificationValueKind.EntitlementKey);
 

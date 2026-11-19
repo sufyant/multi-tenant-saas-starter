@@ -196,6 +196,80 @@
     "feature_flags.unused": {
       "title": "{count} معطّلة للجميع منذ 30 يومًا",
       "body": "لا تستخدم أي مؤسسة هذه العلامات. أزِلها من الشيفرة."
+    },
+    "tenant.payment_failed": {
+      "title": "لم نتمكن من تحصيل الدفعة لـ{tenantName}",
+      "body": "سنحاول مجددًا في {nextAttemptAt}. حدّث البطاقة في الفوترة.",
+      "email": {
+        "body": "حاولت Stripe في {failedAt} تحصيل {amountDue} دون ضريبة القيمة المضافة من {cardBrand} المنتهية بـ{cardLast4}. سنحاول مجددًا في {nextAttemptAt}. يستمر كل شيء في العمل. حدّث البطاقة للدفع الآن.",
+        "button": "تحديث البطاقة"
+      },
+      "without": {
+        "cardBrand": {
+          "body": "سنحاول مجددًا في {nextAttemptAt}. حدّث البطاقة في الفوترة.",
+          "email": {
+            "body": "حاولت Stripe في {failedAt} تحصيل {amountDue} دون ضريبة القيمة المضافة. سنحاول مجددًا في {nextAttemptAt}. يستمر كل شيء في العمل. حدّث البطاقة للدفع الآن."
+          }
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.payment_grace_started": {
+      "title": "تنتقل {tenantName} إلى {defaultPlanName} في {graceEndsAt} ما لم تدفع",
+      "body": "فشل الدفع {attempts}.",
+      "email": {
+        "body": "حاولنا استخدام {cardBrand} المنتهية بـ{cardLast4} {attempts} منذ {failedAt}. يستمر كل شيء في العمل حتى {graceEndsAt}. بعدها تنتقل {tenantName} إلى {defaultPlanName}. لا يُحذف شيء.",
+        "button": "ادفع الآن"
+      },
+      "without": {
+        "cardBrand": {
+          "body": "فشل الدفع {attempts}.",
+          "email": {
+            "body": "حاولنا تحصيل الدفعة {attempts} منذ {failedAt}. يستمر كل شيء في العمل حتى {graceEndsAt}. بعدها تنتقل {tenantName} إلى {defaultPlanName}. لا يُحذف شيء."
+          }
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.moved_to_default_plan": {
+      "title": "انتقلت {tenantName} إلى {defaultPlanName}",
+      "body": "لم نتمكن من تحصيل الدفعة. لم يُحذف شيء.",
+      "email": {
+        "body": "لم نتمكن من تحصيل دفعة {planName}، لذا انتقلت {tenantName} إلى {defaultPlanName} في {movedAt}. لم يُحذف شيء. ادفع الفاتورة المفتوحة بقيمة {amountDue} دون ضريبة القيمة المضافة لاستعادة {planName} فورًا.",
+        "button": "ادفع الآن"
+      },
+      "without": {
+        "amountDue": {
+          "body": "لم نتمكن من تحصيل الدفعة. لم يُحذف شيء.",
+          "email": {
+            "body": "لم نتمكن من تحصيل دفعة {planName}، لذا انتقلت {tenantName} إلى {defaultPlanName} في {movedAt}. لم يُحذف شيء. ادفع مقابل خطة لاستعادة {planName} فورًا."
+          }
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.price_change_announced": {
+      "title": "يتغير سعر {planName} في {movesAt}",
+      "body": "{perPerson} لكل شخص ورسم أساسي {base} {period} بدلًا من {oldPerPerson} و{oldBase}، دون ضريبة القيمة المضافة.",
+      "email": {
+        "body": "اعتبارًا من {movesAt} يتغير رسم {planName} لكل شخص من {oldPerPerson} إلى {perPerson} {period}، والرسم الأساسي من {oldBase} إلى {base}، دون ضريبة القيمة المضافة. لأشخاصك الـ{people}: {newTotal} {period} بدلًا من {oldTotal}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {movesAt}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت.",
+        "button": "فتح الفوترة"
+      },
+      "without": {
+        "oldBase": {
+          "body": "{perPerson} لكل شخص {period} بدلًا من {oldPerPerson}، دون ضريبة القيمة المضافة.",
+          "email": {
+            "body": "اعتبارًا من {movesAt} يتغير رسم {planName} لكل شخص من {oldPerPerson} إلى {perPerson} {period}، دون ضريبة القيمة المضافة. يبقى الرسم الأساسي {base}. لأشخاصك الـ{people}: {newTotal} {period} بدلًا من {oldTotal}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {movesAt}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت."
+          }
+        },
+        "oldPerPerson": {
+          "body": "رسم أساسي {base} {period} بدلًا من {oldBase}، دون ضريبة القيمة المضافة.",
+          "email": {
+            "body": "اعتبارًا من {movesAt} يتغير الرسم الأساسي لـ{planName} من {oldBase} إلى {base} {period}، دون ضريبة القيمة المضافة. يبقى الرسم لكل شخص {perPerson}. لأشخاصك الـ{people}: {newTotal} {period} بدلًا من {oldTotal}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {movesAt}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت."
+          }
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
     }
   },
   "notificationWords": {
@@ -242,6 +316,40 @@
       "few": "# علامات ميزات",
       "many": "# علامة ميزات",
       "other": "# علامة ميزات"
+    },
+    "attempts": {
+      "zero": "# مرة",
+      "one": "مرة واحدة",
+      "two": "مرتين",
+      "few": "# مرات",
+      "many": "# مرة",
+      "other": "# مرة"
+    },
+    "people": {
+      "zero": "#",
+      "one": "#",
+      "two": "#",
+      "few": "#",
+      "many": "#",
+      "other": "#"
+    },
+    "period": {
+      "month": "شهريًا",
+      "year": "سنويًا"
+    },
+    "cardBrand": {
+      "amex": "American Express",
+      "cartes_bancaires": "Cartes Bancaires",
+      "diners": "Diners Club",
+      "discover": "Discover",
+      "eftpos_au": "eftpos Australia",
+      "interac": "Interac",
+      "jcb": "JCB",
+      "link": "Link",
+      "mastercard": "Mastercard",
+      "unionpay": "UnionPay",
+      "visa": "Visa",
+      "unknown": "البطاقة"
     }
   }
 }

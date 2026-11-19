@@ -1,30 +1,28 @@
 import type { Language } from "@repo/api-client";
 import { brand } from "@repo/brand";
 import { Button, Fallback, Heading, Layout, Paragraph } from "../layout/layout";
-import { format, messages } from "../texts";
+import { messages } from "../texts";
 
 /**
  * The values of the one generic notification email (apps/api/docs/ARCHITECTURE.md, U2). The API renders a notification's title and body
- * in the recipient's language from the texts of `messages/*.json` (`notifications`), and fills them here with the link of its button and
- * the footer of its type, which says only why the email came (U5). Nobody chooses a type's channels (U4).
+ * in the recipient's language from the texts of `messages/*.json` (`notifications`), and fills them here with the button of its type, its link
+ * and the footer of its type, which says only why the email came (U5). Nobody chooses a type's channels (U4).
  */
 export type NotificationProps = {
   language: Language;
   title: string;
   body: string;
+  /** The button's label: the type's own, such as "Update card", or "Open {brandName}". */
+  button: string;
   /** Where the button leads: the web app or the platform app. */
   link: string;
   /** Why the email came: the footer of the notification's type. */
   footer: string;
 };
 
-const textsOf = ({ language }: NotificationProps) => {
-  const texts = messages[language].notificationEmail;
-  return {
-    button: format(texts.button, { brandName: brand.name }),
-    fallback: texts.fallback,
-  };
-};
+const textsOf = ({ language }: NotificationProps) => ({
+  fallback: messages[language].notificationEmail.fallback,
+});
 
 /** The subject is the notification's title. */
 export const notificationSubject = (props: NotificationProps): string =>
@@ -32,12 +30,11 @@ export const notificationSubject = (props: NotificationProps): string =>
 
 /** The plain-text part: the brand, the title, the body, the button as its label, a colon and the link, and the footer. */
 export function notificationText(props: NotificationProps): string {
-  const texts = textsOf(props);
   return [
     brand.name,
     props.title,
     props.body,
-    `${texts.button}:\n${props.link}`,
+    `${props.button}:\n${props.link}`,
     props.footer,
   ].join("\n\n");
 }
@@ -51,7 +48,7 @@ export function Notification(props: NotificationProps) {
       <Heading language={language}>{props.title}</Heading>
       <Paragraph language={language}>{props.body}</Paragraph>
       <Button language={language} href={props.link}>
-        {texts.button}
+        {props.button}
       </Button>
       <Fallback language={language} href={props.link}>
         {texts.fallback}

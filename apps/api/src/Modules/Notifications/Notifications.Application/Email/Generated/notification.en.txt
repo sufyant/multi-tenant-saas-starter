@@ -4,7 +4,7 @@ Starter
 
 {{body}}
 
-Open Starter:
+{{button}}:
 {{link}}
 
 {{footer}}

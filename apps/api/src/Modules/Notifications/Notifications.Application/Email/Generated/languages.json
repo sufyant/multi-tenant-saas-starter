@@ -25,6 +25,1542 @@
       "moment": "{date} at {time} {zone}",
       "zone": "{city} ({offset})",
       "utc": "UTC"
+    },
+    "money": {
+      "group": ",",
+      "decimal": ".",
+      "currencies": {
+        "ADP": {
+          "prefix": "ADP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "AED": {
+          "prefix": "AED ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AFA": {
+          "prefix": "AFA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AFN": {
+          "prefix": "AFN ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ALK": {
+          "prefix": "ALK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ALL": {
+          "prefix": "ALL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "AMD": {
+          "prefix": "AMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ANG": {
+          "prefix": "ANG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AOA": {
+          "prefix": "AOA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AOK": {
+          "prefix": "AOK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AON": {
+          "prefix": "AON ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AOR": {
+          "prefix": "AOR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARA": {
+          "prefix": "ARA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARL": {
+          "prefix": "ARL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARM": {
+          "prefix": "ARM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARP": {
+          "prefix": "ARP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARS": {
+          "prefix": "ARS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ATS": {
+          "prefix": "ATS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AUD": {
+          "prefix": "A$",
+          "suffix": "",
+          "digits": 2
+        },
+        "AWG": {
+          "prefix": "AWG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AZM": {
+          "prefix": "AZM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AZN": {
+          "prefix": "AZN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BAD": {
+          "prefix": "BAD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BAM": {
+          "prefix": "BAM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BAN": {
+          "prefix": "BAN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BBD": {
+          "prefix": "BBD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BDT": {
+          "prefix": "BDT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BEC": {
+          "prefix": "BEC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BEF": {
+          "prefix": "BEF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BEL": {
+          "prefix": "BEL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGL": {
+          "prefix": "BGL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGM": {
+          "prefix": "BGM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGN": {
+          "prefix": "BGN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGO": {
+          "prefix": "BGO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BHD": {
+          "prefix": "BHD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "BIF": {
+          "prefix": "BIF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "BMD": {
+          "prefix": "BMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BND": {
+          "prefix": "BND ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOB": {
+          "prefix": "BOB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOL": {
+          "prefix": "BOL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOP": {
+          "prefix": "BOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOV": {
+          "prefix": "BOV ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRB": {
+          "prefix": "BRB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRC": {
+          "prefix": "BRC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRE": {
+          "prefix": "BRE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRL": {
+          "prefix": "R$",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRN": {
+          "prefix": "BRN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRR": {
+          "prefix": "BRR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRZ": {
+          "prefix": "BRZ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BSD": {
+          "prefix": "BSD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BTN": {
+          "prefix": "BTN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BUK": {
+          "prefix": "BUK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BWP": {
+          "prefix": "BWP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BYB": {
+          "prefix": "BYB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BYN": {
+          "prefix": "BYN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BYR": {
+          "prefix": "BYR ",
+          "suffix": "",
+          "digits": 0
+        },
+        "BZD": {
+          "prefix": "BZD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CAD": {
+          "prefix": "CA$",
+          "suffix": "",
+          "digits": 2
+        },
+        "CDF": {
+          "prefix": "CDF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CHE": {
+          "prefix": "CHE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CHF": {
+          "prefix": "CHF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CHW": {
+          "prefix": "CHW ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CLE": {
+          "prefix": "CLE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CLF": {
+          "prefix": "CLF ",
+          "suffix": "",
+          "digits": 4
+        },
+        "CLP": {
+          "prefix": "CLP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "CNH": {
+          "prefix": "CNH ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CNY": {
+          "prefix": "CN¥",
+          "suffix": "",
+          "digits": 2
+        },
+        "COP": {
+          "prefix": "COP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "COU": {
+          "prefix": "COU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CRC": {
+          "prefix": "CRC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CSD": {
+          "prefix": "CSD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CSK": {
+          "prefix": "CSK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CUC": {
+          "prefix": "CUC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CUP": {
+          "prefix": "CUP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CVE": {
+          "prefix": "CVE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CYP": {
+          "prefix": "CYP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CZK": {
+          "prefix": "CZK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DDM": {
+          "prefix": "DDM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DEM": {
+          "prefix": "DEM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DJF": {
+          "prefix": "DJF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "DKK": {
+          "prefix": "DKK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DOP": {
+          "prefix": "DOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DZD": {
+          "prefix": "DZD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ECS": {
+          "prefix": "ECS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ECV": {
+          "prefix": "ECV ",
+          "suffix": "",
+          "digits": 2
+        },
+        "EEK": {
+          "prefix": "EEK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "EGP": {
+          "prefix": "EGP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ERN": {
+          "prefix": "ERN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ESA": {
+          "prefix": "ESA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ESB": {
+          "prefix": "ESB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ESP": {
+          "prefix": "ESP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ETB": {
+          "prefix": "ETB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "EUR": {
+          "prefix": "€",
+          "suffix": "",
+          "digits": 2
+        },
+        "FIM": {
+          "prefix": "FIM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "FJD": {
+          "prefix": "FJD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "FKP": {
+          "prefix": "FKP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "FRF": {
+          "prefix": "FRF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GBP": {
+          "prefix": "£",
+          "suffix": "",
+          "digits": 2
+        },
+        "GEK": {
+          "prefix": "GEK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GEL": {
+          "prefix": "GEL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GHC": {
+          "prefix": "GHC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GHS": {
+          "prefix": "GHS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GIP": {
+          "prefix": "GIP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GMD": {
+          "prefix": "GMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GNF": {
+          "prefix": "GNF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "GNS": {
+          "prefix": "GNS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GQE": {
+          "prefix": "GQE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GRD": {
+          "prefix": "GRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GTQ": {
+          "prefix": "GTQ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GWE": {
+          "prefix": "GWE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GWP": {
+          "prefix": "GWP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GYD": {
+          "prefix": "GYD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HKD": {
+          "prefix": "HK$",
+          "suffix": "",
+          "digits": 2
+        },
+        "HNL": {
+          "prefix": "HNL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HRD": {
+          "prefix": "HRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HRK": {
+          "prefix": "HRK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HTG": {
+          "prefix": "HTG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HUF": {
+          "prefix": "HUF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "IDR": {
+          "prefix": "IDR ",
+          "suffix": "",
+          "digits": 0
+        },
+        "IEP": {
+          "prefix": "IEP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ILP": {
+          "prefix": "ILP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ILR": {
+          "prefix": "ILR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ILS": {
+          "prefix": "₪",
+          "suffix": "",
+          "digits": 2
+        },
+        "INR": {
+          "prefix": "₹",
+          "suffix": "",
+          "digits": 2
+        },
+        "IQD": {
+          "prefix": "IQD ",
+          "suffix": "",
+          "digits": 0
+        },
+        "IRR": {
+          "prefix": "IRR ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ISJ": {
+          "prefix": "ISJ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ISK": {
+          "prefix": "ISK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ITL": {
+          "prefix": "ITL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "JMD": {
+          "prefix": "JMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "JOD": {
+          "prefix": "JOD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "JPY": {
+          "prefix": "¥",
+          "suffix": "",
+          "digits": 0
+        },
+        "KES": {
+          "prefix": "KES ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KGS": {
+          "prefix": "KGS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KHR": {
+          "prefix": "KHR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KMF": {
+          "prefix": "KMF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "KPW": {
+          "prefix": "KPW ",
+          "suffix": "",
+          "digits": 0
+        },
+        "KRH": {
+          "prefix": "KRH ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KRO": {
+          "prefix": "KRO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KRW": {
+          "prefix": "₩",
+          "suffix": "",
+          "digits": 0
+        },
+        "KWD": {
+          "prefix": "KWD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "KYD": {
+          "prefix": "KYD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KZT": {
+          "prefix": "KZT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LAK": {
+          "prefix": "LAK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "LBP": {
+          "prefix": "LBP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "LKR": {
+          "prefix": "LKR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LRD": {
+          "prefix": "LRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LSL": {
+          "prefix": "LSL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LTL": {
+          "prefix": "LTL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LTT": {
+          "prefix": "LTT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LUC": {
+          "prefix": "LUC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LUF": {
+          "prefix": "LUF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "LUL": {
+          "prefix": "LUL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LVL": {
+          "prefix": "LVL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LVR": {
+          "prefix": "LVR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LYD": {
+          "prefix": "LYD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "MAD": {
+          "prefix": "MAD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MAF": {
+          "prefix": "MAF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MCF": {
+          "prefix": "MCF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MDC": {
+          "prefix": "MDC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MDL": {
+          "prefix": "MDL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MGA": {
+          "prefix": "MGA ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MGF": {
+          "prefix": "MGF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MKD": {
+          "prefix": "MKD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MKN": {
+          "prefix": "MKN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MLF": {
+          "prefix": "MLF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MMK": {
+          "prefix": "MMK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MNT": {
+          "prefix": "MNT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MOP": {
+          "prefix": "MOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MRO": {
+          "prefix": "MRO ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MRU": {
+          "prefix": "MRU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MTL": {
+          "prefix": "MTL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MTP": {
+          "prefix": "MTP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MUR": {
+          "prefix": "MUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MVP": {
+          "prefix": "MVP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MVR": {
+          "prefix": "MVR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MWK": {
+          "prefix": "MWK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MXN": {
+          "prefix": "MX$",
+          "suffix": "",
+          "digits": 2
+        },
+        "MXP": {
+          "prefix": "MXP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MXV": {
+          "prefix": "MXV ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MYR": {
+          "prefix": "MYR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MZE": {
+          "prefix": "MZE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MZM": {
+          "prefix": "MZM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MZN": {
+          "prefix": "MZN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NAD": {
+          "prefix": "NAD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NGN": {
+          "prefix": "NGN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NIC": {
+          "prefix": "NIC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NIO": {
+          "prefix": "NIO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NLG": {
+          "prefix": "NLG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NOK": {
+          "prefix": "NOK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NPR": {
+          "prefix": "NPR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NZD": {
+          "prefix": "NZ$",
+          "suffix": "",
+          "digits": 2
+        },
+        "OMR": {
+          "prefix": "OMR ",
+          "suffix": "",
+          "digits": 3
+        },
+        "PAB": {
+          "prefix": "PAB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PEI": {
+          "prefix": "PEI ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PEN": {
+          "prefix": "PEN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PES": {
+          "prefix": "PES ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PGK": {
+          "prefix": "PGK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PHP": {
+          "prefix": "₱",
+          "suffix": "",
+          "digits": 2
+        },
+        "PKR": {
+          "prefix": "PKR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PLN": {
+          "prefix": "PLN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PLZ": {
+          "prefix": "PLZ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PTE": {
+          "prefix": "PTE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PYG": {
+          "prefix": "PYG ",
+          "suffix": "",
+          "digits": 0
+        },
+        "QAR": {
+          "prefix": "QAR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RHD": {
+          "prefix": "RHD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ROL": {
+          "prefix": "ROL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RON": {
+          "prefix": "RON ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RSD": {
+          "prefix": "RSD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RUB": {
+          "prefix": "RUB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RUR": {
+          "prefix": "RUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RWF": {
+          "prefix": "RWF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SAR": {
+          "prefix": "SAR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SBD": {
+          "prefix": "SBD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SCR": {
+          "prefix": "SCR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SDD": {
+          "prefix": "SDD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SDG": {
+          "prefix": "SDG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SDP": {
+          "prefix": "SDP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SEK": {
+          "prefix": "SEK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SGD": {
+          "prefix": "SGD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SHP": {
+          "prefix": "SHP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SIT": {
+          "prefix": "SIT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SKK": {
+          "prefix": "SKK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SLE": {
+          "prefix": "SLE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SLL": {
+          "prefix": "SLL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SOS": {
+          "prefix": "SOS ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SRD": {
+          "prefix": "SRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SRG": {
+          "prefix": "SRG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SSP": {
+          "prefix": "SSP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "STD": {
+          "prefix": "STD ",
+          "suffix": "",
+          "digits": 0
+        },
+        "STN": {
+          "prefix": "STN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SUR": {
+          "prefix": "SUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SVC": {
+          "prefix": "SVC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SYP": {
+          "prefix": "SYP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SZL": {
+          "prefix": "SZL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "THB": {
+          "prefix": "THB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TJR": {
+          "prefix": "TJR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TJS": {
+          "prefix": "TJS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TMM": {
+          "prefix": "TMM ",
+          "suffix": "",
+          "digits": 0
+        },
+        "TMT": {
+          "prefix": "TMT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TND": {
+          "prefix": "TND ",
+          "suffix": "",
+          "digits": 3
+        },
+        "TOP": {
+          "prefix": "TOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TPE": {
+          "prefix": "TPE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TRL": {
+          "prefix": "TRL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "TRY": {
+          "prefix": "TRY ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TTD": {
+          "prefix": "TTD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TWD": {
+          "prefix": "NT$",
+          "suffix": "",
+          "digits": 2
+        },
+        "TZS": {
+          "prefix": "TZS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UAH": {
+          "prefix": "UAH ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UAK": {
+          "prefix": "UAK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UGS": {
+          "prefix": "UGS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UGX": {
+          "prefix": "UGX ",
+          "suffix": "",
+          "digits": 0
+        },
+        "USD": {
+          "prefix": "$",
+          "suffix": "",
+          "digits": 2
+        },
+        "USN": {
+          "prefix": "USN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "USS": {
+          "prefix": "USS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UYI": {
+          "prefix": "UYI ",
+          "suffix": "",
+          "digits": 0
+        },
+        "UYP": {
+          "prefix": "UYP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UYU": {
+          "prefix": "UYU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UYW": {
+          "prefix": "UYW ",
+          "suffix": "",
+          "digits": 4
+        },
+        "UZS": {
+          "prefix": "UZS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VEB": {
+          "prefix": "VEB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VED": {
+          "prefix": "VED ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VEF": {
+          "prefix": "VEF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VES": {
+          "prefix": "VES ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VND": {
+          "prefix": "₫",
+          "suffix": "",
+          "digits": 0
+        },
+        "VNN": {
+          "prefix": "VNN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VUV": {
+          "prefix": "VUV ",
+          "suffix": "",
+          "digits": 0
+        },
+        "WST": {
+          "prefix": "WST ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XAF": {
+          "prefix": "FCFA ",
+          "suffix": "",
+          "digits": 0
+        },
+        "XAG": {
+          "prefix": "XAG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XAU": {
+          "prefix": "XAU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBA": {
+          "prefix": "XBA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBB": {
+          "prefix": "XBB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBC": {
+          "prefix": "XBC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBD": {
+          "prefix": "XBD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XCD": {
+          "prefix": "EC$",
+          "suffix": "",
+          "digits": 2
+        },
+        "XCG": {
+          "prefix": "Cg.",
+          "suffix": "",
+          "digits": 2
+        },
+        "XDR": {
+          "prefix": "XDR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XEU": {
+          "prefix": "XEU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XFO": {
+          "prefix": "XFO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XFU": {
+          "prefix": "XFU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XOF": {
+          "prefix": "F CFA ",
+          "suffix": "",
+          "digits": 0
+        },
+        "XPD": {
+          "prefix": "XPD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XPF": {
+          "prefix": "CFPF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "XPT": {
+          "prefix": "XPT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XRE": {
+          "prefix": "XRE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XSU": {
+          "prefix": "XSU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XTS": {
+          "prefix": "XTS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XUA": {
+          "prefix": "XUA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XXX": {
+          "prefix": "¤",
+          "suffix": "",
+          "digits": 2
+        },
+        "YDD": {
+          "prefix": "YDD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YER": {
+          "prefix": "YER ",
+          "suffix": "",
+          "digits": 0
+        },
+        "YUD": {
+          "prefix": "YUD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YUM": {
+          "prefix": "YUM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YUN": {
+          "prefix": "YUN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YUR": {
+          "prefix": "YUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZAL": {
+          "prefix": "ZAL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZAR": {
+          "prefix": "ZAR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZMK": {
+          "prefix": "ZMK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ZMW": {
+          "prefix": "ZMW ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZRN": {
+          "prefix": "ZRN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZRZ": {
+          "prefix": "ZRZ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZWD": {
+          "prefix": "ZWD ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ZWG": {
+          "prefix": "ZWG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZWL": {
+          "prefix": "ZWL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZWR": {
+          "prefix": "ZWR ",
+          "suffix": "",
+          "digits": 2
+        }
+      }
     }
   },
   "tr": {
@@ -53,6 +1589,1532 @@
       "moment": "{date}, saat {time} {zone}",
       "zone": "{city} ({offset})",
       "utc": "UTC"
+    },
+    "money": {
+      "group": ".",
+      "decimal": ",",
+      "currencies": {
+        "ADP": {
+          "prefix": "ADP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "AED": {
+          "prefix": "AED ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AFA": {
+          "prefix": "AFA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AFN": {
+          "prefix": "AFN ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ALK": {
+          "prefix": "ALK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ALL": {
+          "prefix": "ALL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "AMD": {
+          "prefix": "AMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ANG": {
+          "prefix": "ANG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AOA": {
+          "prefix": "AOA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AOK": {
+          "prefix": "AOK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AON": {
+          "prefix": "AON ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AOR": {
+          "prefix": "AOR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARA": {
+          "prefix": "ARA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARL": {
+          "prefix": "ARL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARM": {
+          "prefix": "ARM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARP": {
+          "prefix": "ARP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ARS": {
+          "prefix": "ARS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ATS": {
+          "prefix": "ATS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AUD": {
+          "prefix": "AU$",
+          "suffix": "",
+          "digits": 2
+        },
+        "AWG": {
+          "prefix": "AWG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AZM": {
+          "prefix": "AZM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "AZN": {
+          "prefix": "AZN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BAD": {
+          "prefix": "BAD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BAM": {
+          "prefix": "BAM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BAN": {
+          "prefix": "BAN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BBD": {
+          "prefix": "BBD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BDT": {
+          "prefix": "BDT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BEC": {
+          "prefix": "BEC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BEF": {
+          "prefix": "BEF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BEL": {
+          "prefix": "BEL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGL": {
+          "prefix": "BGL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGM": {
+          "prefix": "BGM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGN": {
+          "prefix": "BGN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BGO": {
+          "prefix": "BGO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BHD": {
+          "prefix": "BHD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "BIF": {
+          "prefix": "BIF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "BMD": {
+          "prefix": "BMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BND": {
+          "prefix": "BND ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOB": {
+          "prefix": "BOB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOL": {
+          "prefix": "BOL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOP": {
+          "prefix": "BOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BOV": {
+          "prefix": "BOV ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRB": {
+          "prefix": "BRB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRC": {
+          "prefix": "BRC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRE": {
+          "prefix": "BRE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRL": {
+          "prefix": "R$",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRN": {
+          "prefix": "BRN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRR": {
+          "prefix": "BRR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BRZ": {
+          "prefix": "BRZ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BSD": {
+          "prefix": "BSD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BTN": {
+          "prefix": "BTN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BUK": {
+          "prefix": "BUK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BWP": {
+          "prefix": "BWP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BYB": {
+          "prefix": "BYB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BYN": {
+          "prefix": "BYN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "BYR": {
+          "prefix": "BYR ",
+          "suffix": "",
+          "digits": 0
+        },
+        "BZD": {
+          "prefix": "BZD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CAD": {
+          "prefix": "CA$",
+          "suffix": "",
+          "digits": 2
+        },
+        "CDF": {
+          "prefix": "CDF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CHE": {
+          "prefix": "CHE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CHF": {
+          "prefix": "CHF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CHW": {
+          "prefix": "CHW ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CLE": {
+          "prefix": "CLE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CLF": {
+          "prefix": "CLF ",
+          "suffix": "",
+          "digits": 4
+        },
+        "CLP": {
+          "prefix": "CLP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "CNH": {
+          "prefix": "CNH ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CNY": {
+          "prefix": "CN¥",
+          "suffix": "",
+          "digits": 2
+        },
+        "COP": {
+          "prefix": "COP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "COU": {
+          "prefix": "COU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CRC": {
+          "prefix": "CRC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CSD": {
+          "prefix": "CSD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CSK": {
+          "prefix": "CSK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CUC": {
+          "prefix": "CUC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CUP": {
+          "prefix": "CUP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CVE": {
+          "prefix": "CVE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CYP": {
+          "prefix": "CYP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "CZK": {
+          "prefix": "CZK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DDM": {
+          "prefix": "DDM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DEM": {
+          "prefix": "DEM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DJF": {
+          "prefix": "DJF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "DKK": {
+          "prefix": "DKK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DOP": {
+          "prefix": "DOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "DZD": {
+          "prefix": "DZD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ECS": {
+          "prefix": "ECS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ECV": {
+          "prefix": "ECV ",
+          "suffix": "",
+          "digits": 2
+        },
+        "EEK": {
+          "prefix": "EEK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "EGP": {
+          "prefix": "EGP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ERN": {
+          "prefix": "ERN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ESA": {
+          "prefix": "ESA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ESB": {
+          "prefix": "ESB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ESP": {
+          "prefix": "ESP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ETB": {
+          "prefix": "ETB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "EUR": {
+          "prefix": "€",
+          "suffix": "",
+          "digits": 2
+        },
+        "FIM": {
+          "prefix": "FIM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "FJD": {
+          "prefix": "FJD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "FKP": {
+          "prefix": "FKP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "FRF": {
+          "prefix": "FRF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GBP": {
+          "prefix": "£",
+          "suffix": "",
+          "digits": 2
+        },
+        "GEK": {
+          "prefix": "GEK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GEL": {
+          "prefix": "GEL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GHC": {
+          "prefix": "GHC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GHS": {
+          "prefix": "GHS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GIP": {
+          "prefix": "GIP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GMD": {
+          "prefix": "GMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GNF": {
+          "prefix": "GNF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "GNS": {
+          "prefix": "GNS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GQE": {
+          "prefix": "GQE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GRD": {
+          "prefix": "GRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GTQ": {
+          "prefix": "GTQ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GWE": {
+          "prefix": "GWE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GWP": {
+          "prefix": "GWP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "GYD": {
+          "prefix": "GYD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HKD": {
+          "prefix": "HK$",
+          "suffix": "",
+          "digits": 2
+        },
+        "HNL": {
+          "prefix": "HNL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HRD": {
+          "prefix": "HRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HRK": {
+          "prefix": "HRK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HTG": {
+          "prefix": "HTG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "HUF": {
+          "prefix": "HUF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "IDR": {
+          "prefix": "IDR ",
+          "suffix": "",
+          "digits": 0
+        },
+        "IEP": {
+          "prefix": "IEP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ILP": {
+          "prefix": "ILP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ILR": {
+          "prefix": "ILR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ILS": {
+          "prefix": "₪",
+          "suffix": "",
+          "digits": 2
+        },
+        "INR": {
+          "prefix": "₹",
+          "suffix": "",
+          "digits": 2
+        },
+        "IQD": {
+          "prefix": "IQD ",
+          "suffix": "",
+          "digits": 0
+        },
+        "IRR": {
+          "prefix": "IRR ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ISJ": {
+          "prefix": "ISJ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ISK": {
+          "prefix": "ISK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ITL": {
+          "prefix": "ITL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "JMD": {
+          "prefix": "JMD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "JOD": {
+          "prefix": "JOD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "JPY": {
+          "prefix": "¥",
+          "suffix": "",
+          "digits": 0
+        },
+        "KES": {
+          "prefix": "KES ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KGS": {
+          "prefix": "KGS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KHR": {
+          "prefix": "KHR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KMF": {
+          "prefix": "KMF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "KPW": {
+          "prefix": "KPW ",
+          "suffix": "",
+          "digits": 0
+        },
+        "KRH": {
+          "prefix": "KRH ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KRO": {
+          "prefix": "KRO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KRW": {
+          "prefix": "₩",
+          "suffix": "",
+          "digits": 0
+        },
+        "KWD": {
+          "prefix": "KWD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "KYD": {
+          "prefix": "KYD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "KZT": {
+          "prefix": "KZT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LAK": {
+          "prefix": "LAK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "LBP": {
+          "prefix": "LBP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "LKR": {
+          "prefix": "LKR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LRD": {
+          "prefix": "LRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LSL": {
+          "prefix": "LSL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LTL": {
+          "prefix": "LTL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LTT": {
+          "prefix": "LTT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LUC": {
+          "prefix": "LUC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LUF": {
+          "prefix": "LUF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "LUL": {
+          "prefix": "LUL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LVL": {
+          "prefix": "LVL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LVR": {
+          "prefix": "LVR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "LYD": {
+          "prefix": "LYD ",
+          "suffix": "",
+          "digits": 3
+        },
+        "MAD": {
+          "prefix": "MAD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MAF": {
+          "prefix": "MAF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MCF": {
+          "prefix": "MCF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MDC": {
+          "prefix": "MDC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MDL": {
+          "prefix": "MDL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MGA": {
+          "prefix": "MGA ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MGF": {
+          "prefix": "MGF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MKD": {
+          "prefix": "MKD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MKN": {
+          "prefix": "MKN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MLF": {
+          "prefix": "MLF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MMK": {
+          "prefix": "MMK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MNT": {
+          "prefix": "MNT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MOP": {
+          "prefix": "MOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MRO": {
+          "prefix": "MRO ",
+          "suffix": "",
+          "digits": 0
+        },
+        "MRU": {
+          "prefix": "MRU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MTL": {
+          "prefix": "MTL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MTP": {
+          "prefix": "MTP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MUR": {
+          "prefix": "MUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MVP": {
+          "prefix": "MVP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MVR": {
+          "prefix": "MVR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MWK": {
+          "prefix": "MWK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MXN": {
+          "prefix": "MX$",
+          "suffix": "",
+          "digits": 2
+        },
+        "MXP": {
+          "prefix": "MXP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MXV": {
+          "prefix": "MXV ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MYR": {
+          "prefix": "MYR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MZE": {
+          "prefix": "MZE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MZM": {
+          "prefix": "MZM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "MZN": {
+          "prefix": "MZN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NAD": {
+          "prefix": "NAD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NGN": {
+          "prefix": "NGN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NIC": {
+          "prefix": "NIC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NIO": {
+          "prefix": "NIO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NLG": {
+          "prefix": "NLG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NOK": {
+          "prefix": "NOK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NPR": {
+          "prefix": "NPR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "NZD": {
+          "prefix": "NZ$",
+          "suffix": "",
+          "digits": 2
+        },
+        "OMR": {
+          "prefix": "OMR ",
+          "suffix": "",
+          "digits": 3
+        },
+        "PAB": {
+          "prefix": "PAB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PEI": {
+          "prefix": "PEI ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PEN": {
+          "prefix": "PEN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PES": {
+          "prefix": "PES ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PGK": {
+          "prefix": "PGK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PHP": {
+          "prefix": "PHP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PKR": {
+          "prefix": "PKR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PLN": {
+          "prefix": "PLN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PLZ": {
+          "prefix": "PLZ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PTE": {
+          "prefix": "PTE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "PYG": {
+          "prefix": "PYG ",
+          "suffix": "",
+          "digits": 0
+        },
+        "QAR": {
+          "prefix": "QAR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RHD": {
+          "prefix": "RHD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ROL": {
+          "prefix": "ROL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RON": {
+          "prefix": "RON ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RSD": {
+          "prefix": "RSD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RUB": {
+          "prefix": "RUB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RUR": {
+          "prefix": "RUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "RWF": {
+          "prefix": "RWF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SAR": {
+          "prefix": "SAR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SBD": {
+          "prefix": "SBD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SCR": {
+          "prefix": "SCR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SDD": {
+          "prefix": "SDD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SDG": {
+          "prefix": "SDG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SDP": {
+          "prefix": "SDP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SEK": {
+          "prefix": "SEK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SGD": {
+          "prefix": "SGD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SHP": {
+          "prefix": "SHP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SIT": {
+          "prefix": "SIT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SKK": {
+          "prefix": "SKK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SLE": {
+          "prefix": "SLE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SLL": {
+          "prefix": "SLL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SOS": {
+          "prefix": "SOS ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SRD": {
+          "prefix": "SRD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SRG": {
+          "prefix": "SRG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SSP": {
+          "prefix": "SSP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "STD": {
+          "prefix": "STD ",
+          "suffix": "",
+          "digits": 0
+        },
+        "STN": {
+          "prefix": "STN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SUR": {
+          "prefix": "SUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SVC": {
+          "prefix": "SVC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "SYP": {
+          "prefix": "SYP ",
+          "suffix": "",
+          "digits": 0
+        },
+        "SZL": {
+          "prefix": "SZL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "THB": {
+          "prefix": "฿",
+          "suffix": "",
+          "digits": 2
+        },
+        "TJR": {
+          "prefix": "TJR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TJS": {
+          "prefix": "TJS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TMM": {
+          "prefix": "TMM ",
+          "suffix": "",
+          "digits": 0
+        },
+        "TMT": {
+          "prefix": "TMT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TND": {
+          "prefix": "TND ",
+          "suffix": "",
+          "digits": 3
+        },
+        "TOP": {
+          "prefix": "TOP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TPE": {
+          "prefix": "TPE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TRL": {
+          "prefix": "TRL ",
+          "suffix": "",
+          "digits": 0
+        },
+        "TRY": {
+          "prefix": "₺",
+          "suffix": "",
+          "digits": 2
+        },
+        "TTD": {
+          "prefix": "TTD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "TWD": {
+          "prefix": "NT$",
+          "suffix": "",
+          "digits": 2
+        },
+        "TZS": {
+          "prefix": "TZS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UAH": {
+          "prefix": "UAH ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UAK": {
+          "prefix": "UAK ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UGS": {
+          "prefix": "UGS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UGX": {
+          "prefix": "UGX ",
+          "suffix": "",
+          "digits": 0
+        },
+        "USD": {
+          "prefix": "$",
+          "suffix": "",
+          "digits": 2
+        },
+        "USN": {
+          "prefix": "USN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "USS": {
+          "prefix": "USS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UYI": {
+          "prefix": "UYI ",
+          "suffix": "",
+          "digits": 0
+        },
+        "UYP": {
+          "prefix": "UYP ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UYU": {
+          "prefix": "UYU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "UZS": {
+          "prefix": "UZS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VEB": {
+          "prefix": "VEB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VEF": {
+          "prefix": "VEF ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VES": {
+          "prefix": "VES ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VND": {
+          "prefix": "₫",
+          "suffix": "",
+          "digits": 0
+        },
+        "VNN": {
+          "prefix": "VNN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "VUV": {
+          "prefix": "VUV ",
+          "suffix": "",
+          "digits": 0
+        },
+        "WST": {
+          "prefix": "WST ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XAF": {
+          "prefix": "FCFA ",
+          "suffix": "",
+          "digits": 0
+        },
+        "XAG": {
+          "prefix": "XAG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XAU": {
+          "prefix": "XAU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBA": {
+          "prefix": "XBA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBB": {
+          "prefix": "XBB ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBC": {
+          "prefix": "XBC ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XBD": {
+          "prefix": "XBD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XCD": {
+          "prefix": "EC$",
+          "suffix": "",
+          "digits": 2
+        },
+        "XCG": {
+          "prefix": "Cg.",
+          "suffix": "",
+          "digits": 2
+        },
+        "XDR": {
+          "prefix": "XDR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XEU": {
+          "prefix": "XEU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XFO": {
+          "prefix": "XFO ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XFU": {
+          "prefix": "XFU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XOF": {
+          "prefix": "F CFA ",
+          "suffix": "",
+          "digits": 0
+        },
+        "XPD": {
+          "prefix": "XPD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XPF": {
+          "prefix": "CFPF ",
+          "suffix": "",
+          "digits": 0
+        },
+        "XPT": {
+          "prefix": "XPT ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XRE": {
+          "prefix": "XRE ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XSU": {
+          "prefix": "XSU ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XTS": {
+          "prefix": "XTS ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XUA": {
+          "prefix": "XUA ",
+          "suffix": "",
+          "digits": 2
+        },
+        "XXX": {
+          "prefix": "¤",
+          "suffix": "",
+          "digits": 2
+        },
+        "YDD": {
+          "prefix": "YDD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YER": {
+          "prefix": "YER ",
+          "suffix": "",
+          "digits": 0
+        },
+        "YUD": {
+          "prefix": "YUD ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YUM": {
+          "prefix": "YUM ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YUN": {
+          "prefix": "YUN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "YUR": {
+          "prefix": "YUR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZAL": {
+          "prefix": "ZAL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZAR": {
+          "prefix": "ZAR ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZMK": {
+          "prefix": "ZMK ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ZMW": {
+          "prefix": "ZMW ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZRN": {
+          "prefix": "ZRN ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZRZ": {
+          "prefix": "ZRZ ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZWD": {
+          "prefix": "ZWD ",
+          "suffix": "",
+          "digits": 0
+        },
+        "ZWG": {
+          "prefix": "ZWG ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZWL": {
+          "prefix": "ZWL ",
+          "suffix": "",
+          "digits": 2
+        },
+        "ZWR": {
+          "prefix": "ZWR ",
+          "suffix": "",
+          "digits": 2
+        }
+      }
     }
   },
   "ar": {
@@ -81,6 +3143,1322 @@
       "moment": "{date} الساعة {time} {zone}",
       "zone": "بتوقيت {city} ({offset})",
       "utc": "بالتوقيت العالمي (UTC)"
+    },
+    "money": {
+      "group": ",",
+      "decimal": ".",
+      "currencies": {
+        "ADP": {
+          "prefix": "‏",
+          "suffix": " ADP",
+          "digits": 0
+        },
+        "AED": {
+          "prefix": "‏",
+          "suffix": " د.إ.‏",
+          "digits": 2
+        },
+        "AFA": {
+          "prefix": "‏",
+          "suffix": " AFA",
+          "digits": 2
+        },
+        "AFN": {
+          "prefix": "‏",
+          "suffix": " AFN",
+          "digits": 0
+        },
+        "ALL": {
+          "prefix": "‏",
+          "suffix": " ALL",
+          "digits": 0
+        },
+        "AMD": {
+          "prefix": "‏",
+          "suffix": " AMD",
+          "digits": 2
+        },
+        "ANG": {
+          "prefix": "‏",
+          "suffix": " ANG",
+          "digits": 2
+        },
+        "AOA": {
+          "prefix": "‏",
+          "suffix": " AOA",
+          "digits": 2
+        },
+        "AOK": {
+          "prefix": "‏",
+          "suffix": " AOK",
+          "digits": 2
+        },
+        "AON": {
+          "prefix": "‏",
+          "suffix": " AON",
+          "digits": 2
+        },
+        "AOR": {
+          "prefix": "‏",
+          "suffix": " AOR",
+          "digits": 2
+        },
+        "ARA": {
+          "prefix": "‏",
+          "suffix": " ARA",
+          "digits": 2
+        },
+        "ARP": {
+          "prefix": "‏",
+          "suffix": " ARP",
+          "digits": 2
+        },
+        "ARS": {
+          "prefix": "‏",
+          "suffix": " ARS",
+          "digits": 2
+        },
+        "ATS": {
+          "prefix": "‏",
+          "suffix": " ATS",
+          "digits": 2
+        },
+        "AUD": {
+          "prefix": "‏",
+          "suffix": " AU$",
+          "digits": 2
+        },
+        "AWG": {
+          "prefix": "‏",
+          "suffix": " AWG",
+          "digits": 2
+        },
+        "AZM": {
+          "prefix": "‏",
+          "suffix": " AZM",
+          "digits": 2
+        },
+        "AZN": {
+          "prefix": "‏",
+          "suffix": " AZN",
+          "digits": 2
+        },
+        "BAD": {
+          "prefix": "‏",
+          "suffix": " BAD",
+          "digits": 2
+        },
+        "BAM": {
+          "prefix": "‏",
+          "suffix": " BAM",
+          "digits": 2
+        },
+        "BBD": {
+          "prefix": "‏",
+          "suffix": " BBD",
+          "digits": 2
+        },
+        "BDT": {
+          "prefix": "‏",
+          "suffix": " BDT",
+          "digits": 2
+        },
+        "BEC": {
+          "prefix": "‏",
+          "suffix": " BEC",
+          "digits": 2
+        },
+        "BEF": {
+          "prefix": "‏",
+          "suffix": " BEF",
+          "digits": 2
+        },
+        "BEL": {
+          "prefix": "‏",
+          "suffix": " BEL",
+          "digits": 2
+        },
+        "BGN": {
+          "prefix": "‏",
+          "suffix": " BGN",
+          "digits": 2
+        },
+        "BHD": {
+          "prefix": "‏",
+          "suffix": " د.ب.‏",
+          "digits": 3
+        },
+        "BIF": {
+          "prefix": "‏",
+          "suffix": " BIF",
+          "digits": 0
+        },
+        "BMD": {
+          "prefix": "‏",
+          "suffix": " BMD",
+          "digits": 2
+        },
+        "BND": {
+          "prefix": "‏",
+          "suffix": " BND",
+          "digits": 2
+        },
+        "BOB": {
+          "prefix": "‏",
+          "suffix": " BOB",
+          "digits": 2
+        },
+        "BOP": {
+          "prefix": "‏",
+          "suffix": " BOP",
+          "digits": 2
+        },
+        "BOV": {
+          "prefix": "‏",
+          "suffix": " BOV",
+          "digits": 2
+        },
+        "BRB": {
+          "prefix": "‏",
+          "suffix": " BRB",
+          "digits": 2
+        },
+        "BRC": {
+          "prefix": "‏",
+          "suffix": " BRC",
+          "digits": 2
+        },
+        "BRE": {
+          "prefix": "‏",
+          "suffix": " BRE",
+          "digits": 2
+        },
+        "BRL": {
+          "prefix": "‏",
+          "suffix": " R$",
+          "digits": 2
+        },
+        "BSD": {
+          "prefix": "‏",
+          "suffix": " BSD",
+          "digits": 2
+        },
+        "BTN": {
+          "prefix": "‏",
+          "suffix": " BTN",
+          "digits": 2
+        },
+        "BUK": {
+          "prefix": "‏",
+          "suffix": " BUK",
+          "digits": 2
+        },
+        "BWP": {
+          "prefix": "‏",
+          "suffix": " BWP",
+          "digits": 2
+        },
+        "BYB": {
+          "prefix": "‏",
+          "suffix": " BYB",
+          "digits": 2
+        },
+        "BYN": {
+          "prefix": "‏",
+          "suffix": " BYN",
+          "digits": 2
+        },
+        "BYR": {
+          "prefix": "‏",
+          "suffix": " BYR",
+          "digits": 0
+        },
+        "BZD": {
+          "prefix": "‏",
+          "suffix": " BZD",
+          "digits": 2
+        },
+        "CAD": {
+          "prefix": "‏",
+          "suffix": " CA$",
+          "digits": 2
+        },
+        "CDF": {
+          "prefix": "‏",
+          "suffix": " CDF",
+          "digits": 2
+        },
+        "CHF": {
+          "prefix": "‏",
+          "suffix": " CHF",
+          "digits": 2
+        },
+        "CLP": {
+          "prefix": "‏",
+          "suffix": " CLP",
+          "digits": 0
+        },
+        "CNH": {
+          "prefix": "‏",
+          "suffix": " CNH",
+          "digits": 2
+        },
+        "CNY": {
+          "prefix": "‏",
+          "suffix": " CN¥",
+          "digits": 2
+        },
+        "COP": {
+          "prefix": "‏",
+          "suffix": " COP",
+          "digits": 0
+        },
+        "CRC": {
+          "prefix": "‏",
+          "suffix": " CRC",
+          "digits": 2
+        },
+        "CSD": {
+          "prefix": "‏",
+          "suffix": " CSD",
+          "digits": 2
+        },
+        "CSK": {
+          "prefix": "‏",
+          "suffix": " CSK",
+          "digits": 2
+        },
+        "CUC": {
+          "prefix": "‏",
+          "suffix": " CUC",
+          "digits": 2
+        },
+        "CUP": {
+          "prefix": "‏",
+          "suffix": " CUP",
+          "digits": 2
+        },
+        "CVE": {
+          "prefix": "‏",
+          "suffix": " CVE",
+          "digits": 2
+        },
+        "CYP": {
+          "prefix": "‏",
+          "suffix": " CYP",
+          "digits": 2
+        },
+        "CZK": {
+          "prefix": "‏",
+          "suffix": " CZK",
+          "digits": 2
+        },
+        "DDM": {
+          "prefix": "‏",
+          "suffix": " DDM",
+          "digits": 2
+        },
+        "DEM": {
+          "prefix": "‏",
+          "suffix": " DEM",
+          "digits": 2
+        },
+        "DJF": {
+          "prefix": "‏",
+          "suffix": " DJF",
+          "digits": 0
+        },
+        "DKK": {
+          "prefix": "‏",
+          "suffix": " DKK",
+          "digits": 2
+        },
+        "DOP": {
+          "prefix": "‏",
+          "suffix": " DOP",
+          "digits": 2
+        },
+        "DZD": {
+          "prefix": "‏",
+          "suffix": " د.ج.‏",
+          "digits": 2
+        },
+        "EEK": {
+          "prefix": "‏",
+          "suffix": " EEK",
+          "digits": 2
+        },
+        "EGP": {
+          "prefix": "‏",
+          "suffix": " ج.م.‏",
+          "digits": 2
+        },
+        "ERN": {
+          "prefix": "‏",
+          "suffix": " ERN",
+          "digits": 2
+        },
+        "ESP": {
+          "prefix": "‏",
+          "suffix": " ESP",
+          "digits": 0
+        },
+        "ETB": {
+          "prefix": "‏",
+          "suffix": " ETB",
+          "digits": 2
+        },
+        "EUR": {
+          "prefix": "‏",
+          "suffix": " €",
+          "digits": 2
+        },
+        "FIM": {
+          "prefix": "‏",
+          "suffix": " FIM",
+          "digits": 2
+        },
+        "FJD": {
+          "prefix": "‏",
+          "suffix": " FJD",
+          "digits": 2
+        },
+        "FKP": {
+          "prefix": "‏",
+          "suffix": " FKP",
+          "digits": 2
+        },
+        "FRF": {
+          "prefix": "‏",
+          "suffix": " FRF",
+          "digits": 2
+        },
+        "GBP": {
+          "prefix": "‏",
+          "suffix": " UK£",
+          "digits": 2
+        },
+        "GEL": {
+          "prefix": "‏",
+          "suffix": " GEL",
+          "digits": 2
+        },
+        "GHC": {
+          "prefix": "‏",
+          "suffix": " GHC",
+          "digits": 2
+        },
+        "GHS": {
+          "prefix": "‏",
+          "suffix": " GHS",
+          "digits": 2
+        },
+        "GIP": {
+          "prefix": "‏",
+          "suffix": " GIP",
+          "digits": 2
+        },
+        "GMD": {
+          "prefix": "‏",
+          "suffix": " GMD",
+          "digits": 2
+        },
+        "GNF": {
+          "prefix": "‏",
+          "suffix": " GNF",
+          "digits": 0
+        },
+        "GNS": {
+          "prefix": "‏",
+          "suffix": " GNS",
+          "digits": 2
+        },
+        "GQE": {
+          "prefix": "‏",
+          "suffix": " GQE",
+          "digits": 2
+        },
+        "GRD": {
+          "prefix": "‏",
+          "suffix": " GRD",
+          "digits": 2
+        },
+        "GTQ": {
+          "prefix": "‏",
+          "suffix": " GTQ",
+          "digits": 2
+        },
+        "GWE": {
+          "prefix": "‏",
+          "suffix": " GWE",
+          "digits": 2
+        },
+        "GWP": {
+          "prefix": "‏",
+          "suffix": " GWP",
+          "digits": 2
+        },
+        "GYD": {
+          "prefix": "‏",
+          "suffix": " GYD",
+          "digits": 2
+        },
+        "HKD": {
+          "prefix": "‏",
+          "suffix": " HK$",
+          "digits": 2
+        },
+        "HNL": {
+          "prefix": "‏",
+          "suffix": " HNL",
+          "digits": 2
+        },
+        "HRD": {
+          "prefix": "‏",
+          "suffix": " HRD",
+          "digits": 2
+        },
+        "HRK": {
+          "prefix": "‏",
+          "suffix": " HRK",
+          "digits": 2
+        },
+        "HTG": {
+          "prefix": "‏",
+          "suffix": " HTG",
+          "digits": 2
+        },
+        "HUF": {
+          "prefix": "‏",
+          "suffix": " HUF",
+          "digits": 0
+        },
+        "IDR": {
+          "prefix": "‏",
+          "suffix": " IDR",
+          "digits": 0
+        },
+        "IEP": {
+          "prefix": "‏",
+          "suffix": " IEP",
+          "digits": 2
+        },
+        "ILP": {
+          "prefix": "‏",
+          "suffix": " ILP",
+          "digits": 2
+        },
+        "ILS": {
+          "prefix": "‏",
+          "suffix": " ₪",
+          "digits": 2
+        },
+        "INR": {
+          "prefix": "‏",
+          "suffix": " ₹",
+          "digits": 2
+        },
+        "IQD": {
+          "prefix": "‏",
+          "suffix": " د.ع.‏",
+          "digits": 0
+        },
+        "IRR": {
+          "prefix": "‏",
+          "suffix": " ر.إ.",
+          "digits": 0
+        },
+        "ISK": {
+          "prefix": "‏",
+          "suffix": " ISK",
+          "digits": 0
+        },
+        "ITL": {
+          "prefix": "‏",
+          "suffix": " ITL",
+          "digits": 0
+        },
+        "JMD": {
+          "prefix": "‏",
+          "suffix": " JMD",
+          "digits": 2
+        },
+        "JOD": {
+          "prefix": "‏",
+          "suffix": " د.أ.‏",
+          "digits": 3
+        },
+        "JPY": {
+          "prefix": "‏",
+          "suffix": " JP¥",
+          "digits": 0
+        },
+        "KES": {
+          "prefix": "‏",
+          "suffix": " KES",
+          "digits": 2
+        },
+        "KGS": {
+          "prefix": "‏",
+          "suffix": " KGS",
+          "digits": 2
+        },
+        "KHR": {
+          "prefix": "‏",
+          "suffix": " KHR",
+          "digits": 2
+        },
+        "KMF": {
+          "prefix": "‏",
+          "suffix": " KMF",
+          "digits": 0
+        },
+        "KPW": {
+          "prefix": "‏",
+          "suffix": " KPW",
+          "digits": 0
+        },
+        "KRW": {
+          "prefix": "‏",
+          "suffix": " ₩",
+          "digits": 0
+        },
+        "KWD": {
+          "prefix": "‏",
+          "suffix": " د.ك.‏",
+          "digits": 3
+        },
+        "KYD": {
+          "prefix": "‏",
+          "suffix": " KYD",
+          "digits": 2
+        },
+        "KZT": {
+          "prefix": "‏",
+          "suffix": " KZT",
+          "digits": 2
+        },
+        "LAK": {
+          "prefix": "‏",
+          "suffix": " LAK",
+          "digits": 0
+        },
+        "LBP": {
+          "prefix": "‏",
+          "suffix": " ل.ل.‏",
+          "digits": 0
+        },
+        "LKR": {
+          "prefix": "‏",
+          "suffix": " LKR",
+          "digits": 2
+        },
+        "LRD": {
+          "prefix": "‏",
+          "suffix": " LRD",
+          "digits": 2
+        },
+        "LSL": {
+          "prefix": "‏",
+          "suffix": " LSL",
+          "digits": 2
+        },
+        "LTL": {
+          "prefix": "‏",
+          "suffix": " LTL",
+          "digits": 2
+        },
+        "LTT": {
+          "prefix": "‏",
+          "suffix": " LTT",
+          "digits": 2
+        },
+        "LUC": {
+          "prefix": "‏",
+          "suffix": " LUC",
+          "digits": 2
+        },
+        "LUF": {
+          "prefix": "‏",
+          "suffix": " LUF",
+          "digits": 0
+        },
+        "LUL": {
+          "prefix": "‏",
+          "suffix": " LUL",
+          "digits": 2
+        },
+        "LVL": {
+          "prefix": "‏",
+          "suffix": " LVL",
+          "digits": 2
+        },
+        "LVR": {
+          "prefix": "‏",
+          "suffix": " LVR",
+          "digits": 2
+        },
+        "LYD": {
+          "prefix": "‏",
+          "suffix": " د.ل.‏",
+          "digits": 3
+        },
+        "MAD": {
+          "prefix": "‏",
+          "suffix": " د.م.‏",
+          "digits": 2
+        },
+        "MAF": {
+          "prefix": "‏",
+          "suffix": " MAF",
+          "digits": 2
+        },
+        "MDL": {
+          "prefix": "‏",
+          "suffix": " MDL",
+          "digits": 2
+        },
+        "MGA": {
+          "prefix": "‏",
+          "suffix": " MGA",
+          "digits": 0
+        },
+        "MGF": {
+          "prefix": "‏",
+          "suffix": " MGF",
+          "digits": 0
+        },
+        "MKD": {
+          "prefix": "‏",
+          "suffix": " MKD",
+          "digits": 2
+        },
+        "MLF": {
+          "prefix": "‏",
+          "suffix": " MLF",
+          "digits": 2
+        },
+        "MMK": {
+          "prefix": "‏",
+          "suffix": " MMK",
+          "digits": 0
+        },
+        "MNT": {
+          "prefix": "‏",
+          "suffix": " MNT",
+          "digits": 2
+        },
+        "MOP": {
+          "prefix": "‏",
+          "suffix": " MOP",
+          "digits": 2
+        },
+        "MRO": {
+          "prefix": "‏",
+          "suffix": " MRO",
+          "digits": 0
+        },
+        "MRU": {
+          "prefix": "‏",
+          "suffix": " أ.م.",
+          "digits": 2
+        },
+        "MTL": {
+          "prefix": "‏",
+          "suffix": " MTL",
+          "digits": 2
+        },
+        "MTP": {
+          "prefix": "‏",
+          "suffix": " MTP",
+          "digits": 2
+        },
+        "MUR": {
+          "prefix": "‏",
+          "suffix": " MUR",
+          "digits": 2
+        },
+        "MVR": {
+          "prefix": "‏",
+          "suffix": " MVR",
+          "digits": 2
+        },
+        "MWK": {
+          "prefix": "‏",
+          "suffix": " MWK",
+          "digits": 2
+        },
+        "MXN": {
+          "prefix": "‏",
+          "suffix": " MX$",
+          "digits": 2
+        },
+        "MXP": {
+          "prefix": "‏",
+          "suffix": " MXP",
+          "digits": 2
+        },
+        "MYR": {
+          "prefix": "‏",
+          "suffix": " MYR",
+          "digits": 2
+        },
+        "MZE": {
+          "prefix": "‏",
+          "suffix": " MZE",
+          "digits": 2
+        },
+        "MZN": {
+          "prefix": "‏",
+          "suffix": " MZN",
+          "digits": 2
+        },
+        "NAD": {
+          "prefix": "‏",
+          "suffix": " NAD",
+          "digits": 2
+        },
+        "NGN": {
+          "prefix": "‏",
+          "suffix": " NGN",
+          "digits": 2
+        },
+        "NIC": {
+          "prefix": "‏",
+          "suffix": " NIC",
+          "digits": 2
+        },
+        "NIO": {
+          "prefix": "‏",
+          "suffix": " NIO",
+          "digits": 2
+        },
+        "NLG": {
+          "prefix": "‏",
+          "suffix": " NLG",
+          "digits": 2
+        },
+        "NOK": {
+          "prefix": "‏",
+          "suffix": " NOK",
+          "digits": 2
+        },
+        "NPR": {
+          "prefix": "‏",
+          "suffix": " NPR",
+          "digits": 2
+        },
+        "NZD": {
+          "prefix": "‏",
+          "suffix": " NZ$",
+          "digits": 2
+        },
+        "OMR": {
+          "prefix": "‏",
+          "suffix": " ر.ع.‏",
+          "digits": 3
+        },
+        "PAB": {
+          "prefix": "‏",
+          "suffix": " PAB",
+          "digits": 2
+        },
+        "PEN": {
+          "prefix": "‏",
+          "suffix": " PEN",
+          "digits": 2
+        },
+        "PGK": {
+          "prefix": "‏",
+          "suffix": " PGK",
+          "digits": 2
+        },
+        "PHP": {
+          "prefix": "‏",
+          "suffix": " PHP",
+          "digits": 2
+        },
+        "PKR": {
+          "prefix": "‏",
+          "suffix": " PKR",
+          "digits": 2
+        },
+        "PLN": {
+          "prefix": "‏",
+          "suffix": " PLN",
+          "digits": 2
+        },
+        "PLZ": {
+          "prefix": "‏",
+          "suffix": " PLZ",
+          "digits": 2
+        },
+        "PTE": {
+          "prefix": "‏",
+          "suffix": " PTE",
+          "digits": 2
+        },
+        "PYG": {
+          "prefix": "‏",
+          "suffix": " PYG",
+          "digits": 0
+        },
+        "QAR": {
+          "prefix": "‏",
+          "suffix": " ر.ق.‏",
+          "digits": 2
+        },
+        "RHD": {
+          "prefix": "‏",
+          "suffix": " RHD",
+          "digits": 2
+        },
+        "ROL": {
+          "prefix": "‏",
+          "suffix": " ROL",
+          "digits": 2
+        },
+        "RON": {
+          "prefix": "‏",
+          "suffix": " RON",
+          "digits": 2
+        },
+        "RSD": {
+          "prefix": "‏",
+          "suffix": " RSD",
+          "digits": 2
+        },
+        "RUB": {
+          "prefix": "‏",
+          "suffix": " RUB",
+          "digits": 2
+        },
+        "RUR": {
+          "prefix": "‏",
+          "suffix": " RUR",
+          "digits": 2
+        },
+        "RWF": {
+          "prefix": "‏",
+          "suffix": " RWF",
+          "digits": 0
+        },
+        "SAR": {
+          "prefix": "‏",
+          "suffix": " ر.س.‏",
+          "digits": 2
+        },
+        "SBD": {
+          "prefix": "‏",
+          "suffix": " SBD",
+          "digits": 2
+        },
+        "SCR": {
+          "prefix": "‏",
+          "suffix": " SCR",
+          "digits": 2
+        },
+        "SDD": {
+          "prefix": "‏",
+          "suffix": " د.س.‏",
+          "digits": 2
+        },
+        "SDG": {
+          "prefix": "‏",
+          "suffix": " ج.س.",
+          "digits": 2
+        },
+        "SDP": {
+          "prefix": "‏",
+          "suffix": " SDP",
+          "digits": 2
+        },
+        "SEK": {
+          "prefix": "‏",
+          "suffix": " SEK",
+          "digits": 2
+        },
+        "SGD": {
+          "prefix": "‏",
+          "suffix": " SGD",
+          "digits": 2
+        },
+        "SHP": {
+          "prefix": "‏",
+          "suffix": " SHP",
+          "digits": 2
+        },
+        "SIT": {
+          "prefix": "‏",
+          "suffix": " SIT",
+          "digits": 2
+        },
+        "SKK": {
+          "prefix": "‏",
+          "suffix": " SKK",
+          "digits": 2
+        },
+        "SLE": {
+          "prefix": "‏",
+          "suffix": " SLE",
+          "digits": 2
+        },
+        "SLL": {
+          "prefix": "‏",
+          "suffix": " SLL",
+          "digits": 0
+        },
+        "SOS": {
+          "prefix": "‏",
+          "suffix": " SOS",
+          "digits": 0
+        },
+        "SRD": {
+          "prefix": "‏",
+          "suffix": " SRD",
+          "digits": 2
+        },
+        "SRG": {
+          "prefix": "‏",
+          "suffix": " SRG",
+          "digits": 2
+        },
+        "SSP": {
+          "prefix": "‏",
+          "suffix": " SSP",
+          "digits": 2
+        },
+        "STD": {
+          "prefix": "‏",
+          "suffix": " STD",
+          "digits": 0
+        },
+        "STN": {
+          "prefix": "‏",
+          "suffix": " STN",
+          "digits": 2
+        },
+        "SUR": {
+          "prefix": "‏",
+          "suffix": " SUR",
+          "digits": 2
+        },
+        "SVC": {
+          "prefix": "‏",
+          "suffix": " SVC",
+          "digits": 2
+        },
+        "SYP": {
+          "prefix": "‏",
+          "suffix": " ل.س.‏",
+          "digits": 0
+        },
+        "SZL": {
+          "prefix": "‏",
+          "suffix": " SZL",
+          "digits": 2
+        },
+        "THB": {
+          "prefix": "‏",
+          "suffix": " ฿",
+          "digits": 2
+        },
+        "TJR": {
+          "prefix": "‏",
+          "suffix": " TJR",
+          "digits": 2
+        },
+        "TJS": {
+          "prefix": "‏",
+          "suffix": " TJS",
+          "digits": 2
+        },
+        "TMM": {
+          "prefix": "‏",
+          "suffix": " TMM",
+          "digits": 0
+        },
+        "TMT": {
+          "prefix": "‏",
+          "suffix": " TMT",
+          "digits": 2
+        },
+        "TND": {
+          "prefix": "‏",
+          "suffix": " د.ت.‏",
+          "digits": 3
+        },
+        "TOP": {
+          "prefix": "‏",
+          "suffix": " TOP",
+          "digits": 2
+        },
+        "TPE": {
+          "prefix": "‏",
+          "suffix": " TPE",
+          "digits": 2
+        },
+        "TRL": {
+          "prefix": "‏",
+          "suffix": " TRL",
+          "digits": 0
+        },
+        "TRY": {
+          "prefix": "‏",
+          "suffix": " TRY",
+          "digits": 2
+        },
+        "TTD": {
+          "prefix": "‏",
+          "suffix": " TTD",
+          "digits": 2
+        },
+        "TWD": {
+          "prefix": "‏",
+          "suffix": " NT$",
+          "digits": 2
+        },
+        "TZS": {
+          "prefix": "‏",
+          "suffix": " TZS",
+          "digits": 2
+        },
+        "UAH": {
+          "prefix": "‏",
+          "suffix": " UAH",
+          "digits": 2
+        },
+        "UGS": {
+          "prefix": "‏",
+          "suffix": " UGS",
+          "digits": 2
+        },
+        "UGX": {
+          "prefix": "‏",
+          "suffix": " UGX",
+          "digits": 0
+        },
+        "USD": {
+          "prefix": "‏",
+          "suffix": " US$",
+          "digits": 2
+        },
+        "USN": {
+          "prefix": "‏",
+          "suffix": " USN",
+          "digits": 2
+        },
+        "USS": {
+          "prefix": "‏",
+          "suffix": " USS",
+          "digits": 2
+        },
+        "UYP": {
+          "prefix": "‏",
+          "suffix": " UYP",
+          "digits": 2
+        },
+        "UYU": {
+          "prefix": "‏",
+          "suffix": " UYU",
+          "digits": 2
+        },
+        "UZS": {
+          "prefix": "‏",
+          "suffix": " UZS",
+          "digits": 2
+        },
+        "VEB": {
+          "prefix": "‏",
+          "suffix": " VEB",
+          "digits": 2
+        },
+        "VEF": {
+          "prefix": "‏",
+          "suffix": " VEF",
+          "digits": 2
+        },
+        "VES": {
+          "prefix": "‏",
+          "suffix": " VES",
+          "digits": 2
+        },
+        "VND": {
+          "prefix": "‏",
+          "suffix": " ₫",
+          "digits": 0
+        },
+        "VUV": {
+          "prefix": "‏",
+          "suffix": " VUV",
+          "digits": 0
+        },
+        "WST": {
+          "prefix": "‏",
+          "suffix": " WST",
+          "digits": 2
+        },
+        "XAF": {
+          "prefix": "‏",
+          "suffix": " FCFA",
+          "digits": 0
+        },
+        "XAG": {
+          "prefix": "‏",
+          "suffix": " XAG",
+          "digits": 2
+        },
+        "XAU": {
+          "prefix": "‏",
+          "suffix": " XAU",
+          "digits": 2
+        },
+        "XBA": {
+          "prefix": "‏",
+          "suffix": " XBA",
+          "digits": 2
+        },
+        "XBB": {
+          "prefix": "‏",
+          "suffix": " XBB",
+          "digits": 2
+        },
+        "XBC": {
+          "prefix": "‏",
+          "suffix": " XBC",
+          "digits": 2
+        },
+        "XBD": {
+          "prefix": "‏",
+          "suffix": " XBD",
+          "digits": 2
+        },
+        "XCD": {
+          "prefix": "‏",
+          "suffix": " EC$",
+          "digits": 2
+        },
+        "XCG": {
+          "prefix": "‏",
+          "suffix": " Cg.",
+          "digits": 2
+        },
+        "XDR": {
+          "prefix": "‏",
+          "suffix": " XDR",
+          "digits": 2
+        },
+        "XEU": {
+          "prefix": "‏",
+          "suffix": " XEU",
+          "digits": 2
+        },
+        "XFO": {
+          "prefix": "‏",
+          "suffix": " XFO",
+          "digits": 2
+        },
+        "XFU": {
+          "prefix": "‏",
+          "suffix": " XFU",
+          "digits": 2
+        },
+        "XOF": {
+          "prefix": "‏",
+          "suffix": " F CFA",
+          "digits": 0
+        },
+        "XPD": {
+          "prefix": "‏",
+          "suffix": " XPD",
+          "digits": 2
+        },
+        "XPF": {
+          "prefix": "‏",
+          "suffix": " CFPF",
+          "digits": 0
+        },
+        "XPT": {
+          "prefix": "‏",
+          "suffix": " XPT",
+          "digits": 2
+        },
+        "XTS": {
+          "prefix": "‏",
+          "suffix": " XTS",
+          "digits": 2
+        },
+        "XXX": {
+          "prefix": "‏",
+          "suffix": " ¤",
+          "digits": 2
+        },
+        "YDD": {
+          "prefix": "‏",
+          "suffix": " YDD",
+          "digits": 2
+        },
+        "YER": {
+          "prefix": "‏",
+          "suffix": " ر.ي.‏",
+          "digits": 0
+        },
+        "YUD": {
+          "prefix": "‏",
+          "suffix": " YUD",
+          "digits": 2
+        },
+        "YUN": {
+          "prefix": "‏",
+          "suffix": " YUN",
+          "digits": 2
+        },
+        "ZAL": {
+          "prefix": "‏",
+          "suffix": " ZAL",
+          "digits": 2
+        },
+        "ZAR": {
+          "prefix": "‏",
+          "suffix": " ZAR",
+          "digits": 2
+        },
+        "ZMK": {
+          "prefix": "‏",
+          "suffix": " ZMK",
+          "digits": 0
+        },
+        "ZMW": {
+          "prefix": "‏",
+          "suffix": " ZMW",
+          "digits": 2
+        },
+        "ZRN": {
+          "prefix": "‏",
+          "suffix": " ZRN",
+          "digits": 2
+        },
+        "ZRZ": {
+          "prefix": "‏",
+          "suffix": " ZRZ",
+          "digits": 2
+        },
+        "ZWD": {
+          "prefix": "‏",
+          "suffix": " ZWD",
+          "digits": 0
+        },
+        "ZWG": {
+          "prefix": "‏",
+          "suffix": " ZWG",
+          "digits": 2
+        },
+        "ZWL": {
+          "prefix": "‏",
+          "suffix": " ZWL",
+          "digits": 2
+        }
+      }
     }
   }
 }

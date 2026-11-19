@@ -9,6 +9,12 @@ namespace Billing.Contracts.Subscriptions;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="AmountDue">The amount due without tax, in the currency's minor unit.</param>
+/// <param name="FailedAt">When the provider's first attempt failed; none in a message of the version before part 10.</param>
+/// <param name="NextAttemptAt">When the provider tries again; none when it does not, or in a message of the version before part 10.</param>
+/// <param name="CardBrand">The brand of the card it tried, as the provider names it (<c>visa</c>); none when it named no card.</param>
+/// <param name="CardLast4">The card's last four digits; none when it named no card.</param>
+/// <param name="TenantClosed">Whether the tenant is closed: its plan is read-only and its subscription ends at its period's end (B8), so
+/// nobody is told to pay.</param>
 [MessageName("payment-failed")]
 public sealed record PaymentFailedEvent(
     Guid EventId,
@@ -17,4 +23,9 @@ public sealed record PaymentFailedEvent(
     string TenantName,
     long AmountDue,
     string Currency,
-    DateTimeOffset RetriesUntil);
+    DateTimeOffset RetriesUntil,
+    DateTimeOffset? FailedAt = null,
+    DateTimeOffset? NextAttemptAt = null,
+    string? CardBrand = null,
+    string? CardLast4 = null,
+    bool TenantClosed = false);

@@ -71,6 +71,7 @@ export const notification = {
     language: Language.En,
     title: "Your role in Northwind Traders changed",
     body: "Grace Hopper changed your role from Member to Admin.",
+    button: "Open Starter",
     link: "https://app.example/",
     footer: "You received this because your role in Northwind Traders changed.",
   },

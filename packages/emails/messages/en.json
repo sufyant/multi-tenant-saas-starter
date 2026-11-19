@@ -196,6 +196,80 @@
     "feature_flags.unused": {
       "title": "{count} off for everyone for 30 days",
       "body": "No organisation uses these flags. Remove them from the code."
+    },
+    "tenant.payment_failed": {
+      "title": "We couldn’t take the payment for {tenantName}",
+      "body": "We’ll try again on {nextAttemptAt}. Update the card in Billing.",
+      "email": {
+        "body": "Stripe tried {cardBrand} ending in {cardLast4} on {failedAt} for {amountDue} excl. VAT. We’ll try again on {nextAttemptAt}. Everything keeps working. Update the card to pay now.",
+        "button": "Update card"
+      },
+      "without": {
+        "cardBrand": {
+          "body": "We’ll try again on {nextAttemptAt}. Update the card in Billing.",
+          "email": {
+            "body": "Stripe tried to take {amountDue} excl. VAT on {failedAt}. We’ll try again on {nextAttemptAt}. Everything keeps working. Update the card to pay now."
+          }
+        }
+      },
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.payment_grace_started": {
+      "title": "{tenantName} moves to {defaultPlanName} on {graceEndsAt} unless you pay",
+      "body": "The payment failed {attempts}.",
+      "email": {
+        "body": "We tried {cardBrand} ending in {cardLast4} {attempts} since {failedAt}. Everything keeps working until {graceEndsAt}. Then {tenantName} moves to {defaultPlanName}. Nothing is deleted.",
+        "button": "Pay now"
+      },
+      "without": {
+        "cardBrand": {
+          "body": "The payment failed {attempts}.",
+          "email": {
+            "body": "We tried the payment {attempts} since {failedAt}. Everything keeps working until {graceEndsAt}. Then {tenantName} moves to {defaultPlanName}. Nothing is deleted."
+          }
+        }
+      },
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.moved_to_default_plan": {
+      "title": "{tenantName} moved to {defaultPlanName}",
+      "body": "We couldn’t take the payment. Nothing was deleted.",
+      "email": {
+        "body": "We couldn’t take the payment for {planName}, so {tenantName} moved to {defaultPlanName} on {movedAt}. Nothing was deleted. Pay the open invoice of {amountDue} excl. VAT to get {planName} back at once.",
+        "button": "Pay now"
+      },
+      "without": {
+        "amountDue": {
+          "body": "We couldn’t take the payment. Nothing was deleted.",
+          "email": {
+            "body": "We couldn’t take the payment for {planName}, so {tenantName} moved to {defaultPlanName} on {movedAt}. Nothing was deleted. Pay for a plan to get {planName} back at once."
+          }
+        }
+      },
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.price_change_announced": {
+      "title": "{planName}’s price changes on {movesAt}",
+      "body": "{perPerson} per person and a base fee of {base} {period} instead of {oldPerPerson} and {oldBase}, excl. VAT.",
+      "email": {
+        "body": "From {movesAt} the {planName} fee per person goes from {oldPerPerson} to {perPerson} {period}, and the base fee from {oldBase} to {base}, excl. VAT. For your {people}: {newTotal} {period} instead of {oldTotal}, excl. VAT. Nothing changes before {movesAt}. You can change or cancel your plan at any time.",
+        "button": "Open Billing"
+      },
+      "without": {
+        "oldBase": {
+          "body": "{perPerson} per person {period} instead of {oldPerPerson}, excl. VAT.",
+          "email": {
+            "body": "From {movesAt} the {planName} fee per person goes from {oldPerPerson} to {perPerson} {period}, excl. VAT. The base fee stays {base}. For your {people}: {newTotal} {period} instead of {oldTotal}, excl. VAT. Nothing changes before {movesAt}. You can change or cancel your plan at any time."
+          }
+        },
+        "oldPerPerson": {
+          "body": "A base fee of {base} {period} instead of {oldBase}, excl. VAT.",
+          "email": {
+            "body": "From {movesAt} the {planName} base fee goes from {oldBase} to {base} {period}, excl. VAT. The fee per person stays {perPerson}. For your {people}: {newTotal} {period} instead of {oldTotal}, excl. VAT. Nothing changes before {movesAt}. You can change or cancel your plan at any time."
+          }
+        }
+      },
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
     }
   },
   "notificationWords": {
@@ -234,6 +308,32 @@
     "featureFlags": {
       "one": "# feature flag",
       "other": "# feature flags"
+    },
+    "attempts": {
+      "one": "once",
+      "other": "# times"
+    },
+    "people": {
+      "one": "# person",
+      "other": "# people"
+    },
+    "period": {
+      "month": "a month",
+      "year": "a year"
+    },
+    "cardBrand": {
+      "amex": "American Express",
+      "cartes_bancaires": "Cartes Bancaires",
+      "diners": "Diners Club",
+      "discover": "Discover",
+      "eftpos_au": "eftpos Australia",
+      "interac": "Interac",
+      "jcb": "JCB",
+      "link": "Link",
+      "mastercard": "Mastercard",
+      "unionpay": "UnionPay",
+      "visa": "Visa",
+      "unknown": "the card"
     }
   }
 }

@@ -30,6 +30,8 @@ public static class EndGraceHandler
         }
 
         await subscriptions.SaveChangesAsync(cancellationToken);
-        return [new PlanEndedEvent(Guid.CreateVersion7(now), now, command.TenantId, customer.CheckoutBy, Unpaid: true)];
+        return [new PlanEndedEvent(
+            Guid.CreateVersion7(now), now, command.TenantId, customer.CheckoutBy, Unpaid: true, subscription.FailedPayment?.AmountDue,
+            subscription.FailedPayment?.Currency)];
     }
 }

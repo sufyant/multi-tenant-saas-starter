@@ -44,6 +44,6 @@ public static class MoveToDefaultPlanHandler
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         return [new TenantPlanChangedEvent(
             Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, ended.EndedBy, oldPlan.Id, oldPlan.Name, defaultPlan.Id, defaultPlan.Name,
-            RetentionShortenings.Between(before, after, now), ByMember: !ended.Unpaid, Unpaid: ended.Unpaid)];
+            RetentionShortenings.Between(before, after, now), ByMember: !ended.Unpaid, Unpaid: ended.Unpaid, ended.AmountDue, ended.Currency)];
     }
 }

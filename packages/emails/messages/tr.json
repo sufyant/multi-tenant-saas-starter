@@ -196,6 +196,80 @@
     "feature_flags.unused": {
       "title": "{count} 30 gündür herkes için kapalı",
       "body": "Bu bayrakları hiçbir kuruluş kullanmıyor. Onları koddan kaldırın."
+    },
+    "tenant.payment_failed": {
+      "title": "{tenantName} için ödemeyi alamadık",
+      "body": "{nextAttemptAt} tarihinde yeniden deneyeceğiz. Kartı Faturalama’da güncelleyin.",
+      "email": {
+        "body": "Stripe, {failedAt} tarihinde {cardLast4} ile biten {cardBrand} kartından KDV hariç {amountDue} tahsil etmeyi denedi. {nextAttemptAt} tarihinde yeniden deneyeceğiz. Her şey çalışmaya devam ediyor. Şimdi ödemek için kartı güncelleyin.",
+        "button": "Kartı güncelle"
+      },
+      "without": {
+        "cardBrand": {
+          "body": "{nextAttemptAt} tarihinde yeniden deneyeceğiz. Kartı Faturalama’da güncelleyin.",
+          "email": {
+            "body": "Stripe, {failedAt} tarihinde KDV hariç {amountDue} tahsil etmeyi denedi. {nextAttemptAt} tarihinde yeniden deneyeceğiz. Her şey çalışmaya devam ediyor. Şimdi ödemek için kartı güncelleyin."
+          }
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.payment_grace_started": {
+      "title": "Ödeme yapmazsanız {tenantName}, {graceEndsAt} tarihinde {defaultPlanName} planına geçer",
+      "body": "Ödeme {attempts} başarısız oldu.",
+      "email": {
+        "body": "{failedAt} tarihinden beri {cardLast4} ile biten {cardBrand} kartını {attempts} denedik. {graceEndsAt} tarihine kadar her şey çalışmaya devam eder. Sonra {tenantName} {defaultPlanName} planına geçer. Hiçbir şey silinmez.",
+        "button": "Şimdi öde"
+      },
+      "without": {
+        "cardBrand": {
+          "body": "Ödeme {attempts} başarısız oldu.",
+          "email": {
+            "body": "{failedAt} tarihinden beri ödemeyi {attempts} denedik. {graceEndsAt} tarihine kadar her şey çalışmaya devam eder. Sonra {tenantName} {defaultPlanName} planına geçer. Hiçbir şey silinmez."
+          }
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.moved_to_default_plan": {
+      "title": "{tenantName} {defaultPlanName} planına geçti",
+      "body": "Ödemeyi alamadık. Hiçbir şey silinmedi.",
+      "email": {
+        "body": "{planName} için ödemeyi alamadığımızdan {tenantName}, {movedAt} tarihinde {defaultPlanName} planına geçti. Hiçbir şey silinmedi. {planName} planını hemen geri almak için KDV hariç {amountDue} tutarındaki açık faturayı ödeyin.",
+        "button": "Şimdi öde"
+      },
+      "without": {
+        "amountDue": {
+          "body": "Ödemeyi alamadık. Hiçbir şey silinmedi.",
+          "email": {
+            "body": "{planName} için ödemeyi alamadığımızdan {tenantName}, {movedAt} tarihinde {defaultPlanName} planına geçti. Hiçbir şey silinmedi. {planName} planını hemen geri almak için bir plana ödeme yapın."
+          }
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.price_change_announced": {
+      "title": "{planName} fiyatı {movesAt} tarihinde değişiyor",
+      "body": "Kişi başı {period} {oldPerPerson} yerine {perPerson}, temel ücret {oldBase} yerine {base}, KDV hariç.",
+      "email": {
+        "body": "{movesAt} tarihinden itibaren {planName} kişi başı ücreti {period} {oldPerPerson} yerine {perPerson}, temel ücreti {oldBase} yerine {base} olur, KDV hariç. {people}niz için: {period} {oldTotal} yerine {newTotal}, KDV hariç. {movesAt} öncesinde hiçbir şey değişmez. Planınızı istediğiniz zaman değiştirebilir veya iptal edebilirsiniz.",
+        "button": "Faturalamayı aç"
+      },
+      "without": {
+        "oldBase": {
+          "body": "Kişi başı {period} {oldPerPerson} yerine {perPerson}, KDV hariç.",
+          "email": {
+            "body": "{movesAt} tarihinden itibaren {planName} kişi başı ücreti {period} {oldPerPerson} yerine {perPerson} olur, KDV hariç. Temel ücret {base} olarak kalır. {people}niz için: {period} {oldTotal} yerine {newTotal}, KDV hariç. {movesAt} öncesinde hiçbir şey değişmez. Planınızı istediğiniz zaman değiştirebilir veya iptal edebilirsiniz."
+          }
+        },
+        "oldPerPerson": {
+          "body": "Temel ücret {period} {oldBase} yerine {base}, KDV hariç.",
+          "email": {
+            "body": "{movesAt} tarihinden itibaren {planName} temel ücreti {period} {oldBase} yerine {base} olur, KDV hariç. Kişi başı ücret {perPerson} olarak kalır. {people}niz için: {period} {oldTotal} yerine {newTotal}, KDV hariç. {movesAt} öncesinde hiçbir şey değişmez. Planınızı istediğiniz zaman değiştirebilir veya iptal edebilirsiniz."
+          }
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
     }
   },
   "notificationWords": {
@@ -234,6 +308,32 @@
     "featureFlags": {
       "one": "# özellik bayrağı",
       "other": "# özellik bayrağı"
+    },
+    "attempts": {
+      "one": "# kez",
+      "other": "# kez"
+    },
+    "people": {
+      "one": "# kişi",
+      "other": "# kişi"
+    },
+    "period": {
+      "month": "ayda",
+      "year": "yılda"
+    },
+    "cardBrand": {
+      "amex": "American Express",
+      "cartes_bancaires": "Cartes Bancaires",
+      "diners": "Diners Club",
+      "discover": "Discover",
+      "eftpos_au": "eftpos Australia",
+      "interac": "Interac",
+      "jcb": "JCB",
+      "link": "Link",
+      "mastercard": "Mastercard",
+      "unionpay": "UnionPay",
+      "visa": "Visa",
+      "unknown": "banka"
     }
   }
 }

@@ -14,4 +14,9 @@ public sealed record NamePaymentFailureCommand(
     Guid TenantId,
     long AmountDue,
     string Currency,
-    DateTimeOffset RetriesUntil);
+    DateTimeOffset RetriesUntil,
+    DateTimeOffset? FailedAt = null,
+    DateTimeOffset? NextAttemptAt = null,
+    string? CardBrand = null,
+    string? CardLast4 = null,
+    bool TenantClosed = false);

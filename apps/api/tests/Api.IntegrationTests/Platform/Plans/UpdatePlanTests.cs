@@ -286,6 +286,21 @@ public sealed class UpdatePlanTests(Database database) : IAsyncLifetime
         plan.GetProperty("meters")[0].GetProperty("key").GetString().ShouldBe("ai.requests");
     }
 
+    // 13.21, 3.17: the notice tells the members who manage the payer's billing, with the fee that changes and the totals of its seats.
+    [Fact]
+    public async Task UpdatePlan_ANewPriceForEveryoneAfterNotice_TellsTheMembersWhoManageBilling()
+    {
+        await using var billing = await PricedPlans.StartAsync(database);
+        var (tenantId, _) = await billing.PayingAsync(billing.Tenants.Team);
+
+        await billing.Api.TrackMessagesAsync(() => billing.ChangeTeamPriceAsync(new { who = "everyone_after_notice" }));
+
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = 'tenant.price_change_announced'")).ShouldBe(2);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(DISTINCT concat_ws('|', \"values\"->>'period', \"values\"->>'people', \"values\"->>'oldPerPerson' IS NOT NULL OR \"values\"->>'oldBase' IS NOT NULL), ',') FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = 'tenant.price_change_announced'")).ShouldBe("month|1|t");
+    }
+
     // 6.14: "Everyone, at their next period after 30 days' notice." Each paying organisation is told today, and its subscription moves to the
     // new Prices in 30 days, with no proration, so it pays the new price from its first period after that day (B13).
     [Fact]

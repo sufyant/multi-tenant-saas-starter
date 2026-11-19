@@ -4,7 +4,7 @@ Starter
 
 {{body}}
 
-Starter uygulamasını aç:
+{{button}}:
 {{link}}
 
 {{footer}}

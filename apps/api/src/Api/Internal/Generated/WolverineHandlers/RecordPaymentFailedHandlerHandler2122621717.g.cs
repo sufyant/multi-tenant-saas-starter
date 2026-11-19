@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: PriceChangeAnnouncedEventHandler1474096392
+    // START: RecordPaymentFailedHandlerHandler2122621717
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class PriceChangeAnnouncedEventHandler1474096392 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class RecordPaymentFailedHandlerHandler2122621717 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public PriceChangeAnnouncedEventHandler1474096392(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public RecordPaymentFailedHandlerHandler2122621717(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -23,7 +23,7 @@ namespace Internal.Generated.WolverineHandlers
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var priceChangeAnnouncedEvent = (Billing.Contracts.PriceChanges.PriceChangeAnnouncedEvent)context.Envelope.Message;
+            var paymentFailedEvent = (Billing.Contracts.Subscriptions.PaymentFailedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -37,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordPriceChangeAnnounced.RecordPriceChangeAnnouncedHandler");
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordPriceChangeAnnounced.RecordPriceChangeAnnouncedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordPaymentFailed.RecordPaymentFailedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordPaymentFailed.RecordPaymentFailedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Plans.RecordPriceChangeAnnounced.RecordPriceChangeAnnouncedHandler.HandleAsync(priceChangeAnnouncedEvent, auditLog, cancellation).ConfigureAwait(false);
+                await Audit.Application.Plans.RecordPaymentFailed.RecordPaymentFailedHandler.HandleAsync(paymentFailedEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -60,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: PriceChangeAnnouncedEventHandler1474096392
+    // END: RecordPaymentFailedHandlerHandler2122621717
     
     
 }

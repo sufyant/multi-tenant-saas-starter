@@ -151,6 +151,10 @@ public sealed class NotificationCatalogTests
             "member.removed your_access actorName",
             "member.joined members memberName",
             "tenant.plan_changed organisation_plan",
+            "tenant.payment_failed organisation_plan",
+            "tenant.payment_grace_started organisation_plan",
+            "tenant.moved_to_default_plan organisation_plan",
+            "tenant.price_change_announced organisation_plan",
             "tenant.entitlement_override_set organisation_plan",
             "tenant.entitlement_override_removed organisation_plan",
             "tenant.owner_joined organisations ownerName",
@@ -217,6 +221,10 @@ public sealed class NotificationCatalogTests
             "member.removed Web Email",
             "member.joined Web",
             "tenant.plan_changed Web Email",
+            "tenant.payment_failed Web Email",
+            "tenant.payment_grace_started Web Email",
+            "tenant.moved_to_default_plan Web Email",
+            "tenant.price_change_announced Web Email",
             "tenant.entitlement_override_set Web",
             "tenant.entitlement_override_removed Web",
             "tenant.owner_joined Web",
@@ -324,9 +332,11 @@ public sealed class NotificationCatalogTests
             return [$"{kind.Type}: no texts in {tag}"];
         }
 
+        // The footer of an email is one of its texts, so a value that only the footer names, such as the organisation of a price change, is used.
         var declared = kind.Values.Select(value => value.Name).ToList();
-        var placeholderGaps = PlaceholderGaps(kind.Type, tag, declared, found.Placeholders(null));
-        var withoutGaps = kind.Values.Where(value => value.Optional && value.With is null).SelectMany(optional => found.Placeholders(optional.Name) is { } used
+        IReadOnlySet<string>? WithFooter(IReadOnlySet<string>? used) => used?.Union(found.FooterPlaceholders, StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal);
+        var placeholderGaps = PlaceholderGaps(kind.Type, tag, declared, WithFooter(found.Placeholders(null)));
+        var withoutGaps = kind.Values.Where(value => value.Optional && value.With is null).SelectMany(optional => WithFooter(found.Placeholders(optional.Name)) is { } used
             ? PlaceholderGaps(
                 $"{kind.Type} without {optional.Name}",
                 tag,
@@ -360,7 +370,7 @@ public sealed class NotificationCatalogTests
     // language.
     private static IEnumerable<string> WordsOf(NotificationValue value, Language language) => value.Kind switch
     {
-        NotificationValueKind.Days => NotificationText.PluralCategoriesOf(language),
+        NotificationValueKind.Days or NotificationValueKind.Attempts or NotificationValueKind.People => NotificationText.PluralCategoriesOf(language),
         NotificationValueKind.Word => value.Words ?? [],
         NotificationValueKind.Entitlement => ["unlimited", "on", "off", "not_set"],
         NotificationValueKind.EntitlementKey => OperationsOf(typeof(Features)).Concat(OperationsOf(typeof(Limits))),
@@ -373,6 +383,8 @@ public sealed class NotificationCatalogTests
         NotificationValueKind.Entitlement => NotificationText.EntitlementWords,
         NotificationValueKind.EntitlementKey => NotificationText.EntitlementKeyWords,
         NotificationValueKind.Days => NotificationText.DaysWords,
+        NotificationValueKind.Attempts => NotificationText.AttemptWords,
+        NotificationValueKind.People => NotificationText.PeopleWords,
         _ => NotificationText.PersonWords,
     };
 

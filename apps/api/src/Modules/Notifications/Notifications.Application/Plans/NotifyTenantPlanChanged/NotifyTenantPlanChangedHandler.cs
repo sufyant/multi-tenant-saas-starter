@@ -12,8 +12,8 @@ namespace Notifications.Application.Plans.NotifyTenantPlanChanged;
 // Owners are read in the tenant's transaction, which the event's envelope declares, so a member who becomes an Owner later sees no older
 // one. A plan's edit tells nobody: the platform's audit log records it. A change that shortens the Activity log period names the new period
 // and the moment the older entries go, the event's own, which starts Audit's hold too (K14). A plan that a member paid for through billing
-// tells nobody here (ByMember, step 40), nor does a move after an unpaid grace (Unpaid, B11): its texts say that the platform acted, and
-// billing's own bells and emails come with their frames (3.17, 3.18, 13.18 to 13.21).
+// tells nobody here (ByMember, step 40): its texts say that the platform acted. A move after an unpaid grace (Unpaid, B11) is
+// tenant.moved_to_default_plan, which tells the members who manage billing (NotifyTenantMovedToDefaultPlanHandler).
 public static class NotifyTenantPlanChangedHandler
 {
     public const string Type = NotificationCatalog.TenantPlanChanged;
