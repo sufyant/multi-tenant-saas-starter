@@ -280,6 +280,66 @@ describe("TenantShell", () => {
     );
   });
 
+  it("TenantShell_BillingOn_ListsBillingForWhomManagesBilling", async () => {
+    route.pathname = "/northwind/settings/billing";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: "Billing" }),
+    ).toHaveAttribute("href", "/northwind/settings/billing");
+  });
+
+  it("TenantShell_BillingOff_ListsNoBilling", async () => {
+    route.pathname = "/northwind/settings/general";
+    let asked = false;
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [
+            Permission.TenantProfileRead,
+            Permission.TenantBillingManage,
+          ],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () => {
+        asked = true;
+        return problem(404, "billing.off");
+      }),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    await vi.waitFor(() => expect(asked).toBe(true));
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Back to Northwind Traders", "General"]);
+  });
+
   it("TenantShell_InSettings_CountsTheMembersAndTheRoles", async () => {
     route.pathname = "/northwind/settings/members";
     server.use(

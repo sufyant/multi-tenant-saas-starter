@@ -53,6 +53,11 @@ export function formatDate(at: Instant, options: DateTimeOptions): string {
   return format(at, options, datePart);
 }
 
+/** The local month's name: `November`, for "the rest of November" (10.04, 10.06). */
+export function formatMonth(at: Instant, options: DateTimeOptions): string {
+  return format(at, options, { month: "long" });
+}
+
 /** The local time: `14:32`. */
 export function formatTime(at: Instant, options: DateTimeOptions): string {
   return format(at, options, timePart);

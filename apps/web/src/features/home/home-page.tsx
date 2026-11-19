@@ -5,6 +5,7 @@ import { ChevronRightIcon, Icon } from "@repo/ui/components/icon";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useBillingShown } from "@/shared/billing";
 import { organisationPages } from "@/shared/organisation-pages";
 import { useCan, useTenant } from "@/shared/tenant-context";
 import { TermsNotice } from "./terms-notice";
@@ -13,6 +14,7 @@ import { TermsNotice } from "./terms-notice";
 const cards = [
   { id: "members", text: "members", title: "members" },
   { id: "roles", text: "roles", title: "roles" },
+  { id: "billing", text: "billing", title: "billing" },
   { id: "activity", text: "activity", title: "activityLog" },
   { id: "general", text: "settings", title: "settings" },
 ] as const;
@@ -24,6 +26,7 @@ const cards = [
 export function HomePage() {
   const t = useTranslations();
   const can = useCan();
+  const billing = useBillingShown();
   const { detail } = useTenant();
   const me = useQuery(getGetMeQueryOptions());
   const name = me.data?.name;
@@ -47,7 +50,10 @@ export function HomePage() {
             ...card,
             page: organisationPages.find((page) => page.id === card.id),
           }))
-          .filter(({ page }) => page && can(page.permission))
+          .filter(
+            ({ id, page }) =>
+              page && can(page.permission) && (id !== "billing" || billing),
+          )
           .map(({ id, text, title, page }) => (
             <li key={id}>
               <Link

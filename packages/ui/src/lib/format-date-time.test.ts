@@ -5,6 +5,7 @@ import {
   dayBefore,
   formatDate,
   formatDateTime,
+  formatMonth,
   formatRelative,
   formatTime,
   formatUtc,
@@ -51,6 +52,11 @@ describe("format-date-time", () => {
 
   it("FormatDate_EnIe_ShowsNoTime", () => {
     expect(formatDate(at, dublin)).toBe("16 Oct 2026");
+  });
+
+  it("FormatMonth_TheLastHourOfAMonthInItsZone_NamesTheZonesMonth", () => {
+    expect(formatMonth("2026-10-31T23:30:00Z", dublin)).toBe("October");
+    expect(formatMonth("2026-10-31T23:30:00Z", istanbul)).toBe("Kasım");
   });
 
   it("FormatTime_EnIe_ShowsHoursAndMinutes", () => {

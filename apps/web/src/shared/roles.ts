@@ -47,3 +47,10 @@ export const nameTaken = (
 /** The role the invite dialog starts with: the built-in Member, the role with the least access. */
 export const firstInviteRole = <T extends Role>(roles: readonly T[]) =>
   roles.find((role) => builtInRoleOf(role) === BuiltInRole.Member);
+
+/**
+ * Whether a role is the built-in Billing manager, whose members take no seat (A2): the Billing page counts them apart from the seats.
+ * A seat is a fact of the plan; it gives no access (F51).
+ */
+export const takesNoSeat = (role: Role) =>
+  builtInRoleOf(role) === BuiltInRole.BillingManager;
