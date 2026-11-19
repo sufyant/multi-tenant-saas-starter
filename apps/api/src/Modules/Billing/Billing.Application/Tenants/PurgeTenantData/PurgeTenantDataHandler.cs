@@ -1,3 +1,4 @@
+using Billing.Application.BillingEmails;
 using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Contracts;
@@ -12,7 +13,7 @@ using Wolverine;
 namespace Billing.Application.Tenants.PurgeTenantData;
 
 // The tenant purge asks Billing to delete the tenant's data, in the tenant's transaction (docs/flows/tenant-purge.md): its subscription's
-// row, its open checkout and its customer in billing's map. The customer, the root of its billing, is locked first (K6a, B7). A
+// row, its open checkout, its billing email and its customer in billing's map. The customer, the root of its billing, is locked first (K6a, B7). A
 // subscription that has not ended ends at the provider at once, and the open checkout's pages are expired, through the outbox in the
 // same transaction (B8). The provider keeps its own records of the payments, which the law asks it to keep. It replies, so the purge goes
 // on; a second copy deletes nothing more (S7).
@@ -28,6 +29,7 @@ public static class PurgeTenantDataHandler
         ICheckoutRepository checkouts,
         IContractRepository contracts,
         IPriceChangeStore payers,
+        IBillingEmailRepository emails,
         CancellationToken cancellationToken)
     {
         OutgoingMessages messages = [];
@@ -45,6 +47,7 @@ public static class PurgeTenantDataHandler
         }
 
         await payers.DeletePayerAsync(cancellationToken);
+        await emails.DeleteAsync(cancellationToken);
         await contracts.DeleteAsync(cancellationToken);
         await checkouts.DeleteAsync(cancellationToken);
         await subscriptions.DeleteAsync(cancellationToken);

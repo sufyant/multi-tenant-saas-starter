@@ -3,8 +3,10 @@ using System.Text;
 using ControlPlane.Contracts.Users;
 using JasperFx;
 using Notifications.Application.Notifications.DeliverNotification;
+using Notifications.Application.Notifications.SendNotificationEmail;
 using Notifications.Domain;
 using Notifications.Domain.Notifications;
+using SharedKernel;
 using Wolverine;
 
 namespace Notifications.Application.Notifications;
@@ -32,16 +34,29 @@ public static class NotificationFanOut
         Guid? actorId,
         IUserDirectory users,
         CancellationToken cancellationToken,
-        int? deliveriesPerSecond = null)
+        int? deliveriesPerSecond = null,
+        EmailRecipient? address = null)
     {
         var told = recipients.Where(recipient => recipient.Active && recipient.UserId != actorId).DistinctBy(recipient => recipient.UserId).ToList();
-        if (told.Count == 0)
+        var mailed = address is { } extra && !told.Any(recipient => string.Equals(recipient.Email, extra.Email, StringComparison.OrdinalIgnoreCase))
+            && NotificationCatalog.Of(type).Channels.Contains(NotificationChannel.Email)
+            ? extra
+            : null;
+        if (told.Count == 0 && mailed is null)
         {
             return [];
         }
 
         var people = await users.FindNamesAsync(PeopleOf(type, values), cancellationToken);
         OutgoingMessages messages = [];
+        if (mailed is not null)
+        {
+            // B14: an address with no account gets the email only, under an id of the event, the type and the address.
+            messages.Add(new SendNotificationEmailCommand(
+                IdOf(eventId, type, mailed.Email.ToUpperInvariant()), type, values, mailed.Email, mailed.Language, mailed.TimeZone, people)
+                .WithDeliveryOptions(WithoutTenant));
+        }
+
         foreach (var (recipient, index) in told.Select((recipient, index) => (recipient, index)))
         {
             messages.Add(new DeliverNotificationCommand(
@@ -78,17 +93,34 @@ public static class NotificationFanOut
     /// <summary>A person as a value stores them: the user id, never a name (K3).</summary>
     public static string PersonOf(Guid userId) => userId.ToString();
 
+    /// <summary>
+    /// The billing email of an event as the fan-out mails it (B14): the address, in the language and time zone of the member who set it,
+    /// or in English and UTC when that member is no user any more; none without an address.
+    /// </summary>
+    public static async Task<EmailRecipient?> AddressOfAsync(string? address, Guid? setBy, IUserDirectory users, CancellationToken cancellationToken)
+    {
+        if (address is null)
+        {
+            return null;
+        }
+
+        var setter = setBy is { } id ? (await users.FindContactsAsync([id], cancellationToken)).SingleOrDefault() : null;
+        return new EmailRecipient(address, setter?.Language ?? Language.En, setter?.TimeZone);
+    }
+
     private static DeliveryOptions DeliveryOf(int index, int? deliveriesPerSecond) =>
         DelayOf(index, deliveriesPerSecond) is { Ticks: > 0 } delay
             ? new DeliveryOptions { TenantId = StorageConstants.DefaultTenantId, ScheduleDelay = delay }
             : WithoutTenant;
 
+    private static Guid IdOf(Guid eventId, string type, Guid userId) => IdOf(eventId, type, userId.ToString("N"));
+
     // The same event, type and recipient always give the same id: the first 16 bytes of a SHA-256, marked as a version 8 UUID (RFC 9562,
     // section 5.8).
-    private static Guid IdOf(Guid eventId, string type, Guid userId)
+    private static Guid IdOf(Guid eventId, string type, string recipient)
     {
         Span<byte> hash = stackalloc byte[32];
-        SHA256.HashData(Encoding.UTF8.GetBytes($"{eventId:N}/{type}/{userId:N}"), hash);
+        SHA256.HashData(Encoding.UTF8.GetBytes($"{eventId:N}/{type}/{recipient}"), hash);
         hash[6] = (byte)((hash[6] & 0x0F) | 0x80);
         hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
         return new Guid(hash[..16], bigEndian: true);

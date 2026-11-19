@@ -1,6 +1,7 @@
 using Audit.Api.Statuses;
 using System.Security.Claims;
 using Audit.Api.Authentication;
+using Audit.Application.BillingEmails;
 using Audit.Application.AuditLogs;
 using Audit.Application.AuditLogs.ExportAuditLog;
 using Audit.Application.AuditLogs.GetAuditEntryNames;
@@ -73,6 +74,7 @@ public static class AuditLogEndpoints
             MetersOf(updated.NewMeters)),
         TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(PlanOf(changed.OldPlan), PlanOf(changed.NewPlan)),
         TenantPaymentFailedDetails failed => new TenantPaymentFailedDetailsResponse(failed.AmountDue, failed.Currency, failed.RetriesUntil),
+        TenantBillingEmailChangedDetails email => new TenantBillingEmailChangedDetailsResponse(email.Removed),
         PlanPriceChangeScheduledDetails scheduled => new PlanPriceChangeScheduledDetailsResponse(
             PricesOf(scheduled.OldPrices)!, PricesOf(scheduled.NewPrices)!, scheduled.Currency, scheduled.MovesAt),
         TenantPriceChangeAnnouncedDetails announced => new TenantPriceChangeAnnouncedDetailsResponse(

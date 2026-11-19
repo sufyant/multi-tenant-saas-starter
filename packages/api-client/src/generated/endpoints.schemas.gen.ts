@@ -521,6 +521,18 @@ export interface TenantPaymentFailedDetailsResponse {
   retriesUntil: string;
 }
 
+export type TenantBillingEmailChangedDetailsResponseOperation = typeof TenantBillingEmailChangedDetailsResponseOperation[keyof typeof TenantBillingEmailChangedDetailsResponseOperation];
+
+
+export const TenantBillingEmailChangedDetailsResponseOperation = {
+  TenantBillingEmailChanged: 'tenant.billing_email_changed',
+} as const;
+
+export interface TenantBillingEmailChangedDetailsResponse {
+  operation: TenantBillingEmailChangedDetailsResponseOperation;
+  removed: boolean;
+}
+
 export type PlanPriceChangeScheduledDetailsResponseOperation = typeof PlanPriceChangeScheduledDetailsResponseOperation[keyof typeof PlanPriceChangeScheduledDetailsResponseOperation];
 
 
@@ -711,7 +723,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantBillingEmailChangedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -743,6 +755,7 @@ export const AuditOperation = {
   RoleUpdated: 'role.updated',
   SystemAdminGranted: 'system_admin.granted',
   SystemAdminRevoked: 'system_admin.revoked',
+  TenantBillingEmailChanged: 'tenant.billing_email_changed',
   TenantClosed: 'tenant.closed',
   TenantContractEnded: 'tenant.contract_ended',
   TenantContractStarted: 'tenant.contract_started',
@@ -972,12 +985,14 @@ export interface SubscriptionResponse {
 }
 
 /**
- * The tenant's billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant's last
- * subscription shows until it ends.
+ * The tenant's billing: how it pays (B12), its subscription, none until it pays by card the first time, and its billing email, none until
+ * a member who manages billing sets one (B14). A Contract tenant's last subscription shows until it ends.
  */
 export interface BillingResponse {
   billedBy: BillingResponseBilledBy;
   subscription: null | SubscriptionResponse;
+  /** @nullable */
+  billingEmail: string | null;
 }
 
 /**
@@ -2502,6 +2517,17 @@ export const SetBilledByRequestBilledBy = {
  */
 export interface SetBilledByRequest {
   billedBy: SetBilledByRequestBilledBy;
+}
+
+/**
+ * The tenant's billing email (10.01): an address, or none, or an empty one, to remove it.
+ */
+export interface SetBillingEmailRequest {
+  /**
+     * @maxLength 254
+     * @nullable
+     */
+  address: string | null;
 }
 
 /**

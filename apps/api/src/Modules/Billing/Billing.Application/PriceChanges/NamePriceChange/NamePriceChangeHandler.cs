@@ -14,7 +14,7 @@ public static class NamePriceChangeHandler
             [
                 new PriceChangeAnnouncedEvent(
                     command.EventId, command.OccurredAt, command.TenantId, tenantName, command.PlanId, command.PlanName, command.Currency, command.Yearly,
-                    command.OldPrices, command.NewPrices, command.MovesAt),
+                    command.OldPrices, command.NewPrices, command.MovesAt, command.BillingEmail, command.BillingEmailSetBy),
             ]
             : [];
 }

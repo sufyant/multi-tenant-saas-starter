@@ -21,6 +21,7 @@ export * from "./platform-termsversions/platform-termsversions.msw.gen";
 export * from "./platform-users/platform-users.msw.gen";
 export * from "./public-termsversions/public-termsversions.msw.gen";
 export * from "./tenant-auditlogs/tenant-auditlogs.msw.gen";
+export * from "./tenant-billingemails/tenant-billingemails.msw.gen";
 export * from "./tenant-checkoutsessions/tenant-checkoutsessions.msw.gen";
 export * from "./tenant-featureflags/tenant-featureflags.msw.gen";
 export * from "./tenant-invitations/tenant-invitations.msw.gen";

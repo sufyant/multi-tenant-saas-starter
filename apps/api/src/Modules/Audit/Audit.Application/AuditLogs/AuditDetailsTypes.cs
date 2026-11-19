@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Audit.Application.BillingEmails;
 using Audit.Application.Invitations;
 using Audit.Application.FeatureFlags;
 using Audit.Application.Members;
@@ -60,6 +61,8 @@ public static class AuditDetailsTypes
 
     public const string TenantPaymentFailed = AuditOperations.TenantPaymentFailed;
 
+    public const string TenantBillingEmailChanged = AuditOperations.TenantBillingEmailChanged;
+
     public const string PlanPriceChangeScheduled = AuditOperations.PlanPriceChangeScheduled;
 
     public const string TenantPriceChangeAnnounced = AuditOperations.TenantPriceChangeAnnounced;
@@ -120,6 +123,7 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantPlanChanged] = typeof(TenantPlanChangedDetails),
         [AuditOperations.TenantPlanCancelled] = typeof(TenantPlanCancelledDetails),
         [AuditOperations.TenantPaymentFailed] = typeof(TenantPaymentFailedDetails),
+        [AuditOperations.TenantBillingEmailChanged] = typeof(TenantBillingEmailChangedDetails),
         [AuditOperations.PlanPriceChangeScheduled] = typeof(PlanPriceChangeScheduledDetails),
         [AuditOperations.TenantPriceChangeAnnounced] = typeof(TenantPriceChangeAnnouncedDetails),
         [AuditOperations.TenantMovedToDefaultPlan] = typeof(TenantMovedToDefaultPlanDetails),

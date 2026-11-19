@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Billing.Api.Authentication;
+using Billing.Application.BillingEmails.GetBillingEmail;
 using Billing.Application.Checkouts.AbandonCheckout;
 using Billing.Application.Checkouts.RecordCheckoutSession;
 using Billing.Application.Checkouts.ReserveCheckout;
@@ -62,8 +63,10 @@ public static class CheckoutSessionEndpoints
             return order.Error;
         }
 
+        // B14: the provider's invoices go to the billing email when the tenant has one, else to the member who pays first.
+        var billingEmail = await bus.InvokeAsync<BillingEmailView?>(new GetBillingEmailQuery(), cancellationToken);
         var customerId = await bus.InvokeAsync<string?>(new GetCustomerQuery(), cancellationToken)
-            ?? await bus.InvokeAsync<string>(new CreateCustomerCommand(tenantId, facts.Value.Email), cancellationToken);
+            ?? await bus.InvokeAsync<string>(new CreateCustomerCommand(tenantId, billingEmail?.Address ?? facts.Value.Email), cancellationToken);
         var kept = await bus.InvokeAsync<string>(new KeepCustomerCommand(facts.Value.PaidBy, customerId), cancellationToken);
         var reservation = await bus.InvokeAsync<Result<CheckoutReservation>>(
             new ReserveCheckoutCommand(

@@ -13,6 +13,7 @@ import {
   MemberRoleChangedDetailsResponseOperation,
   type RoleUpdatedDetailsResponse,
   RoleUpdatedDetailsResponseOperation,
+  TenantBillingEmailChangedDetailsResponseOperation,
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
@@ -107,6 +108,9 @@ export function detailValues<N>(
         amount: words.money(details.amountDue, details.currency),
         date: date(details.retriesUntil),
       };
+    case TenantBillingEmailChangedDetailsResponseOperation.TenantBillingEmailChanged:
+      // The entry keeps no address (B14), only whether it was removed.
+      return { removed: details.removed ? "yes" : "no" };
     case TenantPriceChangeAnnouncedDetailsResponseOperation.TenantPriceChangeAnnounced:
       // 12.12 names the fee per person of the interval the organisation pays.
       return {

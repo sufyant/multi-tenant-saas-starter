@@ -51,6 +51,9 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         return customer.Id;
     }
 
+    async Task IBillingProvider.SetCustomerEmailAsync(string customerId, string email, CancellationToken cancellationToken) =>
+        await new CustomerService(client).UpdateAsync(customerId, new CustomerUpdateOptions { Email = email }, cancellationToken: cancellationToken);
+
     async Task<CheckoutPage> IBillingProvider.OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)
     {
         var lines = new List<SessionLineItemOptions>();

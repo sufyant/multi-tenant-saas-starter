@@ -16,6 +16,9 @@ namespace ControlPlane.Contracts.Plans;
 /// <param name="UnpaidAmountDue">With <paramref name="Unpaid"/>, the open invoice without tax, in the currency's minor unit, which pays the
 /// plan back (13.20); none when billing held no failed payment, or in an event of the version before part 10 of step 40.</param>
 /// <param name="UnpaidCurrency">The open invoice's currency, with <paramref name="UnpaidAmountDue"/>.</param>
+/// <param name="BillingEmail">With <paramref name="Unpaid"/>, the tenant's billing email from billing, which the move's email goes to besides
+/// its members (B14); none without one.</param>
+/// <param name="BillingEmailSetBy">The user id of the member who set the billing email.</param>
 [MessageName("tenant-plan-changed")]
 public sealed record TenantPlanChangedEvent(
     Guid EventId,
@@ -31,4 +34,6 @@ public sealed record TenantPlanChangedEvent(
     bool ByMember = false,
     bool Unpaid = false,
     long? UnpaidAmountDue = null,
-    string? UnpaidCurrency = null);
+    string? UnpaidCurrency = null,
+    string? BillingEmail = null,
+    Guid? BillingEmailSetBy = null);

@@ -1,3 +1,4 @@
+using Billing.Application.BillingEmails;
 using Billing.Application.Checkouts;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.Contracts;
@@ -30,6 +31,7 @@ public static class ApplySubscriptionHandler
         ICheckoutRepository checkouts,
         IContractRepository contracts,
         IPriceChangeStore payers,
+        IBillingEmailRepository emails,
         BillingOptions billing,
         TimeProvider time,
         CancellationToken cancellationToken)
@@ -63,6 +65,7 @@ public static class ApplySubscriptionHandler
         // B12: a Contract tenant is billed outside the app. Its last subscription runs out with no seats, no failed-payment states and no
         // plan of its own: a system admin sets the tenant's plan, and the end that Contract asked for is no member's.
         var contract = await contracts.IsContractAsync(cancellationToken);
+        var email = await emails.ReadAsync(cancellationToken);
         var stopped = customer.ClosedAt is not null || contract;
 
         // Step 40, billing per person: each state of a subscription that has not ended brings the provider's count of seats, which is set
@@ -101,7 +104,8 @@ public static class ApplySubscriptionHandler
             {
                 messages.Add(new NamePaymentFailureCommand(
                     Guid.CreateVersion7(now), now, command.TenantId, failed.AmountDue, failed.Currency, failed.FailedAt + billing.RetryWindow,
-                    failed.FailedAt, failed.NextAttemptAt, failed.CardBrand, failed.CardLast4, customer.ClosedAt is not null));
+                    failed.FailedAt, failed.NextAttemptAt, failed.CardBrand, failed.CardLast4, customer.ClosedAt is not null,
+                    email?.Address, email?.SetBy));
             }
 
             // B11: a subscription that ended leaves its plan for the default plan, by the member who changed it last, or unpaid.
@@ -109,7 +113,8 @@ public static class ApplySubscriptionHandler
             {
                 var open = end == PlanEnd.Unpaid ? subscription.FailedPayment : null;
                 messages.Add(new PlanEndedEvent(
-                    Guid.CreateVersion7(now), now, command.TenantId, command.PaidBy, Unpaid: end == PlanEnd.Unpaid, open?.AmountDue, open?.Currency));
+                    Guid.CreateVersion7(now), now, command.TenantId, command.PaidBy, Unpaid: end == PlanEnd.Unpaid, open?.AmountDue, open?.Currency,
+                    email?.Address, email?.SetBy));
             }
 
             if (scheduleChange is { } change)
@@ -137,7 +142,8 @@ public static class ApplySubscriptionHandler
             {
                 var unpaid = subscription.FailedPayment!;
                 messages.Add(new PaymentGraceStartedEvent(
-                    Guid.CreateVersion7(now), now, command.TenantId, graceEndsAt, unpaid.Attempts, unpaid.FailedAt, unpaid.CardBrand, unpaid.CardLast4));
+                    Guid.CreateVersion7(now), now, command.TenantId, graceEndsAt, unpaid.Attempts, unpaid.FailedAt, unpaid.CardBrand, unpaid.CardLast4,
+                    email?.Address, email?.SetBy));
             }
         }
 

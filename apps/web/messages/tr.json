@@ -382,7 +382,8 @@
         "reactivated": "<actor></actor> bu kuruluşu yeniden etkinleştirdi.",
         "renamed": "<actor></actor> kuruluşun adını <name>{oldName}</name> yerine <name>{newName}</name> olarak değiştirdi.",
         "reopened": "<actor></actor> bu kuruluşu yeniden açtı.",
-        "suspended": "<actor></actor> bu kuruluşu askıya aldı."
+        "suspended": "<actor></actor> bu kuruluşu askıya aldı.",
+        "billing_email_changed": "{removed, select, yes {<actor></actor> fatura e-postasını kaldırdı.} other {<actor></actor> fatura e-postasını ayarladı.}}"
       },
       "terms_version": {
         "cancelled": "<actor></actor> kullanım koşullarının bir sürümünü iptal etti.",

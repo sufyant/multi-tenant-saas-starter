@@ -1,4 +1,5 @@
 using Billing.Api.Statuses;
+using Billing.Application.BillingEmails.GetBillingEmail;
 using Billing.Application.Contracts.GetContract;
 using Billing.Application.PriceChanges.GetTenantPriceChange;
 using Billing.Application.Subscriptions.GetBilling;
@@ -25,8 +26,10 @@ public static class SubscriptionEndpoints
         var contract = await InvokeAsync<bool>(bus, tenantId, new GetContractQuery(), cancellationToken);
         var subscription = await InvokeAsync<SubscriptionView?>(bus, tenantId, new GetBillingQuery(), cancellationToken);
         var priceChange = subscription is null ? null : await InvokeAsync<TenantPriceChangeView?>(bus, tenantId, new GetTenantPriceChangeQuery(), cancellationToken);
+        var email = await InvokeAsync<BillingEmailView?>(bus, tenantId, new GetBillingEmailQuery(), cancellationToken);
         return new BillingResponse(
-            contract ? BillingResponseBilledBy.Contract : BillingResponseBilledBy.Card, subscription is null ? null : ToResponse(subscription, priceChange));
+            contract ? BillingResponseBilledBy.Contract : BillingResponseBilledBy.Card, subscription is null ? null : ToResponse(subscription, priceChange),
+            email?.Address);
     }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the read to it.

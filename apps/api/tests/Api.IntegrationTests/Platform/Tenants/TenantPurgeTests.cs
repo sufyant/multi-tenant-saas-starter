@@ -70,8 +70,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 
         await PurgeAsync(tenant.Id, ClosedAt);
 
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, entries 0, notifications 0, subscriptions 0, customers 0, contracts 0, payers 0");
-        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, payers 1");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, entries 0, notifications 0, subscriptions 0, customers 0, contracts 0, payers 0, billing_emails 0");
+        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, payers 1, billing_emails 1");
         (await TombstoneOfAsync(tenant.Id)).ShouldBe($"Gone Ltd|{tenant.Slug}|Purged|-|-|t|2026-08-01");
         (await PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.closed|User, tenant.purged|Platform|-|Tenant|{tenant.Id}|Gone Ltd");
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
@@ -224,7 +224,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await PurgeAsync(tenant.Id, ClosedAt - TimeSpan.FromDays(3));
 
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, payers 1");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, payers 1, billing_emails 1");
         (await SagaOfAsync(tenant.Id)).ShouldBeNull();
     }
 
@@ -411,6 +411,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             VALUES ('{tenant.Id}', 'cus_{tenant.Id:N}', 'sub_{tenant.Id:N}', gen_random_uuid(), 'Monthly', 'Canceled', '{ClosedAt:O}', false, '{ClosedAt:O}');
             INSERT INTO billing.contracts (tenant_id, started_at, started_by) VALUES ('{tenant.Id}', '{ClosedAt:O}', '{admin}');
             INSERT INTO billing.payers (tenant_id, plan_id, yearly, base_amount, per_person_amount, ends) VALUES ('{tenant.Id}', gen_random_uuid(), false, 0, 1000, false);
+            INSERT INTO billing.billing_emails (tenant_id, address, set_by, set_at) VALUES ('{tenant.Id}', 'accounts@app.test', '{admin}', '{ClosedAt:O}');
             """,
             _databaseName);
         return tenant;
@@ -432,7 +433,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
                 'subscriptions ' || (SELECT count(*) FROM billing.subscriptions WHERE tenant_id = '{tenantId}'),
                 'customers ' || (SELECT count(*) FROM billing.customers WHERE tenant_id = '{tenantId}'),
                 'contracts ' || (SELECT count(*) FROM billing.contracts WHERE tenant_id = '{tenantId}'),
-                'payers ' || (SELECT count(*) FROM billing.payers WHERE tenant_id = '{tenantId}'))
+                'payers ' || (SELECT count(*) FROM billing.payers WHERE tenant_id = '{tenantId}'),
+                'billing_emails ' || (SELECT count(*) FROM billing.billing_emails WHERE tenant_id = '{tenantId}'))
             """,
             _databaseName);
 

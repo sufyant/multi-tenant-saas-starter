@@ -57,6 +57,7 @@ public static class NotifyTenantPriceChangeAnnouncedHandler
             await users.FindContactsAsync(await members.ListBillingManagerIdsAsync(cancellationToken), cancellationToken),
             actorId: null,
             users,
-            cancellationToken);
+            cancellationToken,
+            address: await NotificationFanOut.AddressOfAsync(announced.BillingEmail, announced.BillingEmailSetBy, users, cancellationToken));
     }
 }

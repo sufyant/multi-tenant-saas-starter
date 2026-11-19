@@ -1026,6 +1026,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "SetBillingEmail",
+    "method": "PUT",
+    "path": "/v1/tenants/{tenantId}/billing/email",
+    "tag": "Tenant/BillingEmails",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "SetEntitlementOverride",
     "method": "PUT",
     "path": "/v1/platform/tenants/{tenantId}/entitlement-overrides/{key}",
