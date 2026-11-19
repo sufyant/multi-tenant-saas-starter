@@ -672,7 +672,7 @@
     "rolesUnlimited": "Your plan gives any number.",
     "rolesNone": "{plan} has no custom roles. Your {count} stay as they are; you can’t create new ones.",
     "paymentDetails": "Payment details",
-    "paymentText": "Stripe keeps the card. Changes open Stripe in a new tab.",
+    "paymentText": "Stripe keeps the card, the address, the VAT ID and the invoices. Changes open Stripe in a new tab.",
     "managePayment": "Manage payment details",
     "noCard": "No card yet. You add one when you pay.",
     "portalFailed": "Couldn’t open Stripe",

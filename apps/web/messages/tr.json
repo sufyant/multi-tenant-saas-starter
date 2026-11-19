@@ -672,7 +672,7 @@
     "rolesUnlimited": "Planınız sınırsız veriyor.",
     "rolesNone": "{plan} planında özel rol yok. {count} rolünüz olduğu gibi kalır; yenisini oluşturamazsınız.",
     "paymentDetails": "Ödeme bilgileri",
-    "paymentText": "Kartı Stripe saklar. Değişiklikler Stripe’ı yeni sekmede açar.",
+    "paymentText": "Kartı, adresi, KDV numarasını ve faturaları Stripe saklar. Değişiklikler Stripe’ı yeni sekmede açar.",
     "managePayment": "Ödeme bilgilerini yönet",
     "noCard": "Henüz kart yok. Ödeme yaptığınızda eklersiniz.",
     "portalFailed": "Stripe açılamadı",
