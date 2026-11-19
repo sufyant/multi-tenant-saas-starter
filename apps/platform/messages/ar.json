@@ -212,7 +212,8 @@
     "seatsUsed": "{used} من {limit} مقعدًا",
     "ownerEmailHint": "تصل المالك دعوة بالبريد الإلكتروني.",
     "reopenTextNoDate": "يستطيع أعضاؤها البالغ عددهم {count} فتحها مجددًا فورًا.",
-    "invitedEmail": "مدعوّ: {email}"
+    "invitedEmail": "مدعوّ: {email}",
+    "planTab": "الخطة والفوترة"
   },
   "users": {
     "title": "المستخدمون",

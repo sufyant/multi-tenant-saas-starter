@@ -212,7 +212,8 @@
     "seatsUsed": "{used} of {limit} seats",
     "ownerEmailHint": "The Owner gets an invitation by email.",
     "reopenTextNoDate": "Its {count, plural, one {# member} other {# members}} can open it again at once.",
-    "invitedEmail": "Invited: {email}"
+    "invitedEmail": "Invited: {email}",
+    "planTab": "Plan and billing"
   },
   "users": {
     "title": "Users",

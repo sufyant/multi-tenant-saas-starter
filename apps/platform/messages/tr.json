@@ -212,7 +212,8 @@
     "seatsUsed": "{limit} yerden {used}",
     "ownerEmailHint": "Sahibe e-postayla bir davet gider.",
     "reopenTextNoDate": "{count} üyesi kuruluşu hemen yeniden açabilir.",
-    "invitedEmail": "Davet edildi: {email}"
+    "invitedEmail": "Davet edildi: {email}",
+    "planTab": "Plan ve faturalama"
   },
   "users": {
     "title": "Kullanıcılar",

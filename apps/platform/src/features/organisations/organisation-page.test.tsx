@@ -110,7 +110,7 @@ describe("OrganisationPage", () => {
     ).toBeVisible();
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
       "Overview",
-      "Plan",
+      "Plan and billing",
       "Activity log",
     ]);
   });
@@ -395,7 +395,7 @@ describe("OrganisationPage", () => {
     expect(
       await screen.findByRole("group", { name: "Custom roles limit" }),
     ).toBeVisible();
-    expect(screen.getByRole("tab", { name: "Plan" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Plan and billing" })).toHaveAttribute(
       "aria-selected",
       "true",
     );

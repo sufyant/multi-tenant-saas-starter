@@ -86,13 +86,20 @@ export function BillingCard({
     if (contract || !subscription) return null;
     const money = (minor: number) =>
       formatMoney(minor, payment?.currency ?? "EUR", locale);
-    if (!payment) return <Pill tone="success">{t("paid")}</Pill>;
+    if (!payment)
+      return (
+        <span>
+          <Pill tone="success">{t("paid")}</Pill>
+        </span>
+      );
     if (payment.state === PaymentResponseState.Retrying)
       return (
         <>
-          <Pill tone="warning">
-            {t("retryingSince", { date: date(payment.failedAt) })}
-          </Pill>
+          <span>
+            <Pill tone="warning">
+              {t("retryingSince", { date: date(payment.failedAt) })}
+            </Pill>
+          </span>
           <span className="text-small text-muted-foreground">
             {t("retryingText", {
               amount: money(payment.amountDue),
@@ -104,11 +111,13 @@ export function BillingCard({
     if (payment.state === PaymentResponseState.Grace)
       return (
         <>
-          <Pill tone="destructive">
-            {t("graceUntil", {
-              date: date(payment.graceEndsAt ?? payment.failedAt),
-            })}
-          </Pill>
+          <span>
+            <Pill tone="destructive">
+              {t("graceUntil", {
+                date: date(payment.graceEndsAt ?? payment.failedAt),
+              })}
+            </Pill>
+          </span>
           <span className="text-small text-muted-foreground">
             {t("graceText", {
               count: payment.attempts,
@@ -120,12 +129,14 @@ export function BillingCard({
       );
     return (
       <>
-        <Pill tone="destructive">
-          {t("moved", {
-            default: fallback,
-            date: date(payment.movedAt ?? payment.failedAt),
-          })}
-        </Pill>
+        <span>
+          <Pill tone="destructive">
+            {t("moved", {
+              default: fallback,
+              date: date(payment.movedAt ?? payment.failedAt),
+            })}
+          </Pill>
+        </span>
         <span className="text-small text-muted-foreground">
           {t("movedText", { plan: nameOf(subscription.planId) })}
         </span>
