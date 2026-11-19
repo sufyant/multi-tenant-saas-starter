@@ -18,4 +18,6 @@ public sealed record NamePriceChangeCommand(
     bool Yearly,
     PriceChangePricesRecord OldPrices,
     PriceChangePricesRecord NewPrices,
-    DateTimeOffset MovesAt);
+    DateTimeOffset MovesAt,
+    string? BillingEmail = null,
+    Guid? BillingEmailSetBy = null);

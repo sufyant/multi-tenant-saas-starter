@@ -382,7 +382,8 @@
         "reactivated": "<actor></actor> reactivated this organisation.",
         "renamed": "<actor></actor> renamed the organisation from <name>{oldName}</name> to <name>{newName}</name>.",
         "reopened": "<actor></actor> reopened this organisation.",
-        "suspended": "<actor></actor> suspended this organisation."
+        "suspended": "<actor></actor> suspended this organisation.",
+        "billing_email_changed": "{removed, select, yes {<actor></actor> removed the billing email.} other {<actor></actor> set the billing email.}}"
       },
       "terms_version": {
         "cancelled": "<actor></actor> cancelled a version of the terms of use.",

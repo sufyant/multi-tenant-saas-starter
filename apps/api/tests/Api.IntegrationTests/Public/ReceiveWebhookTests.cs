@@ -158,6 +158,24 @@ public sealed class ReceiveWebhookTests(Database database) : IAsyncLifetime
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.payment_failed'")).ShouldBe(1);
     }
 
+    // 13.18, B14: the failed payment's email goes to the billing email too, in the language of the member who set it, and it writes no bell.
+    [Fact]
+    public async Task ReceiveWebhook_AFailedPaymentWithABillingEmail_MailsItInTheLanguageOfTheMemberWhoSetIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var accounts = PlatformTenants.Email();
+        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: PlatformTenants.Email(), language: "tr"), role: "Owner");
+        await _api.PayAsync(owner, tenant.Id, _planId);
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).SetBillingEmailAsync(tenant.Id, accounts));
+        var failedAt = new DateTimeOffset(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
+        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 1, failedAt.AddDays(3)));
+
+        await _api.PaymentFailedAsync(tenant.Id);
+
+        _api.Email.Sent.Single(sent => sent.To == accounts).Subject.ShouldBe("Acme Ltd için ödemeyi alamadık");
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenant.Id}'")).ShouldBe(1);
+    }
+
     // B11: once Stripe's retries are over, billing's grace runs for a week, and its end is scheduled; the tenant keeps its plan until then.
     [Fact]
     public async Task ReceiveWebhook_RetriesThatEnded_SchedulesTheGracesEnd()

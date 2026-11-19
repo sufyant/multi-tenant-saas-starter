@@ -41,6 +41,7 @@ public static class NotifyTenantPaymentFailedHandler
             await users.FindContactsAsync(await members.ListBillingManagerIdsAsync(cancellationToken), cancellationToken),
             actorId: null,
             users,
-            cancellationToken);
+            cancellationToken,
+            address: await NotificationFanOut.AddressOfAsync(failed.BillingEmail, failed.BillingEmailSetBy, users, cancellationToken));
     }
 }

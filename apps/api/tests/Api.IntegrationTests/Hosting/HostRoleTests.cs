@@ -117,6 +117,10 @@ using Notifications.Application.Plans.NotifyTenantMovedToDefaultPlan;
 using Notifications.Application.PriceChanges.NotifyTenantPriceChangeAnnounced;
 using Notifications.Application.Subscriptions.NotifyTenantPaymentFailed;
 using Notifications.Application.Subscriptions.NotifyTenantPaymentGraceStarted;
+using Audit.Application.BillingEmails.RecordBillingEmailChanged;
+using Billing.Application.BillingEmails.KeepCustomerEmail;
+using Billing.Application.BillingEmails.NameBillingEmailChange;
+using Billing.Application.BillingEmails.NameCustomerEmail;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -561,6 +565,33 @@ public sealed class HostRoleTests(Database database)
         runs.In("web").ShouldNotContain(run => run.Handler == typeof(MoveToDefaultPlanHandler) || run.Handler == typeof(RecordPaymentFailedHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(MoveToDefaultPlanHandler));
         runs.In("worker").ShouldContain(run => run.Handler == typeof(RecordPaymentFailedHandler));
+    }
+
+    // B14: a billing email set on the web host; its entry in the tenant's log and Stripe's customer email run in the worker, once each.
+    [Fact]
+    public async Task SetBillingEmail_OnAWebAndAWorkerHost_RecordsItAndTellsStripeInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var tenant = await testData.AddTenantAsync();
+        var owner = await testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var team = await testData.AddPlanAsync([]);
+        await testData.SetPlanPricesAsync(team, 900, 1000, 9000, 10000);
+        (await web.CreateClient(owner).OpenCheckoutSessionAsync(tenant.Id, team)).EnsureSuccessStatusCode();
+        var accounts = PlatformTenants.Email();
+
+        (await web.CreateClient(owner).SetBillingEmailAsync(tenant.Id, accounts)).EnsureSuccessStatusCode();
+        await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.billing_email_changed") > 0);
+        await Waiting.UntilAsync(() => Task.FromResult(worker.Billing.CustomerEmails.Any(email => email.Email == accounts)));
+
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.billing_email_changed")).ShouldBe(1);
+        Type[] steps = [typeof(NameBillingEmailChangeHandler), typeof(RecordBillingEmailChangedHandler), typeof(NameCustomerEmailHandler), typeof(KeepCustomerEmailHandler)];
+        runs.In("worker").Select(run => run.Handler).Intersect(steps).Count().ShouldBe(4);
+        runs.In("web").ShouldNotContain(run => steps.Contains(run.Handler));
     }
 
     // K14: a worker runs the audit retention at its start, and a web host never does. The tenant's first row holds every entry: a row

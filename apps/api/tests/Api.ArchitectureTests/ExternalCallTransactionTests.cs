@@ -1,3 +1,4 @@
+using Billing.Application.BillingEmails.KeepCustomerEmail;
 using Billing.Application.Checkouts.ExpireCheckoutPages;
 using Billing.Application.CheckoutSessions.OpenCheckoutSession;
 using Billing.Application.Customers.CreateCustomer;
@@ -77,6 +78,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(GetPlanChangePreviewQuery), typeof(ChangePlanNowCommand), typeof(SchedulePlanChangeCommand), typeof(CancelAtPeriodEndCommand),
                 typeof(UndoScheduledChangeCommand), typeof(SetSeatsCommand), typeof(RefundSubscriptionCommand),
                 typeof(MovePricesCommand),
+                typeof(KeepCustomerEmailCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();

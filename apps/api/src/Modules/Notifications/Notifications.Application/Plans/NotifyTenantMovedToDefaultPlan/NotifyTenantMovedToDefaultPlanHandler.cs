@@ -42,6 +42,7 @@ public static class NotifyTenantMovedToDefaultPlanHandler
             await users.FindContactsAsync(await members.ListBillingManagerIdsAsync(cancellationToken), cancellationToken),
             actorId: null,
             users,
-            cancellationToken);
+            cancellationToken,
+            address: await NotificationFanOut.AddressOfAsync(changed.BillingEmail, changed.BillingEmailSetBy, users, cancellationToken));
     }
 }

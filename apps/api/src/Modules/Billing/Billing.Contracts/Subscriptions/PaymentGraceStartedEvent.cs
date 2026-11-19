@@ -13,6 +13,8 @@ namespace Billing.Contracts.Subscriptions;
 /// <param name="FailedAt">When the first attempt failed.</param>
 /// <param name="CardBrand">The brand of the card it tried, as the provider names it (<c>visa</c>); none when it named no card.</param>
 /// <param name="CardLast4">The card's last four digits; none when it named no card.</param>
+/// <param name="BillingEmail">The tenant's billing email, which billing's emails go to besides its members (B14); none without one.</param>
+/// <param name="BillingEmailSetBy">The user id of the member who set the billing email, whose language and time zone its email takes.</param>
 [MessageName("payment-grace-started")]
 public sealed record PaymentGraceStartedEvent(
     Guid EventId,
@@ -22,4 +24,6 @@ public sealed record PaymentGraceStartedEvent(
     int Attempts,
     DateTimeOffset FailedAt,
     string? CardBrand,
-    string? CardLast4);
+    string? CardLast4,
+    string? BillingEmail = null,
+    Guid? BillingEmailSetBy = null);

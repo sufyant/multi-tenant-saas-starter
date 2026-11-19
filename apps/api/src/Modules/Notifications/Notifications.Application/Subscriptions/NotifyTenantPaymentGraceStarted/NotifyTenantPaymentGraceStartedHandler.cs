@@ -52,6 +52,7 @@ public static class NotifyTenantPaymentGraceStartedHandler
             await users.FindContactsAsync(await members.ListBillingManagerIdsAsync(cancellationToken), cancellationToken),
             actorId: null,
             users,
-            cancellationToken);
+            cancellationToken,
+            address: await NotificationFanOut.AddressOfAsync(started.BillingEmail, started.BillingEmailSetBy, users, cancellationToken));
     }
 }

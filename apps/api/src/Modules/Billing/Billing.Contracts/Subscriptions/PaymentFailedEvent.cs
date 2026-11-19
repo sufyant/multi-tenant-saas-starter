@@ -15,6 +15,8 @@ namespace Billing.Contracts.Subscriptions;
 /// <param name="CardLast4">The card's last four digits; none when it named no card.</param>
 /// <param name="TenantClosed">Whether the tenant is closed: its plan is read-only and its subscription ends at its period's end (B8), so
 /// nobody is told to pay.</param>
+/// <param name="BillingEmail">The tenant's billing email, which billing's emails go to besides its members (B14); none without one.</param>
+/// <param name="BillingEmailSetBy">The user id of the member who set the billing email, whose language and time zone its email takes.</param>
 [MessageName("payment-failed")]
 public sealed record PaymentFailedEvent(
     Guid EventId,
@@ -28,4 +30,6 @@ public sealed record PaymentFailedEvent(
     DateTimeOffset? NextAttemptAt = null,
     string? CardBrand = null,
     string? CardLast4 = null,
-    bool TenantClosed = false);
+    bool TenantClosed = false,
+    string? BillingEmail = null,
+    Guid? BillingEmailSetBy = null);

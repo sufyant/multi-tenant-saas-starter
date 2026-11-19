@@ -45,6 +45,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   RoleUpdated: 'role.updated',
   SystemAdminGranted: 'system_admin.granted',
   SystemAdminRevoked: 'system_admin.revoked',
+  TenantBillingEmailChanged: 'tenant.billing_email_changed',
   TenantClosed: 'tenant.closed',
   TenantContractEnded: 'tenant.contract_ended',
   TenantContractStarted: 'tenant.contract_started',
@@ -376,6 +377,11 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "amountDue": zod.int(),
   "currency": zod.string(),
   "retriesUntil": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantBillingEmailChanged: 'tenant.billing_email_changed',
+}),
+  "removed": zod.boolean()
 }),zod.object({
   "operation": zod.enum({
   PlanPriceChangeScheduled: 'plan.price_change_scheduled',

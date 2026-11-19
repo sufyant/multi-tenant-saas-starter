@@ -18,6 +18,7 @@ export * from './platform-termsversions/platform-termsversions.zod.gen';
 export * from './platform-users/platform-users.zod.gen';
 export * from './public-termsversions/public-termsversions.zod.gen';
 export * from './tenant-auditlogs/tenant-auditlogs.zod.gen';
+export * from './tenant-billingemails/tenant-billingemails.zod.gen';
 export * from './tenant-checkoutsessions/tenant-checkoutsessions.zod.gen';
 export * from './tenant-featureflags/tenant-featureflags.zod.gen';
 export * from './tenant-invitations/tenant-invitations.zod.gen';

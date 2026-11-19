@@ -47,6 +47,21 @@ public sealed class OpenCheckoutSessionTests(Database database) : IAsyncLifetime
         (order.SuccessUrl.ToString(), order.CancelUrl.ToString()).ShouldBe(($"{BillingRequests.ReturnUrl}?checkout=success", $"{BillingRequests.ReturnUrl}?checkout=cancelled"));
     }
 
+    // B14: a tenant that set its billing email before its first payment gets a customer with it, so Stripe's invoices go there.
+    [Fact]
+    public async Task OpenCheckoutSession_AfterABillingEmail_CreatesTheCustomerWithIt()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var owner = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        var client = _api.CreateClient(owner);
+        var accounts = PlatformTenants.Email();
+        await client.SetBillingEmailAsync(tenant.Id, accounts);
+
+        (await client.OpenCheckoutSessionAsync(tenant.Id, _planId)).EnsureSuccessStatusCode();
+
+        _api.Billing.CustomerEmails.ShouldBe([(FakeBillingProvider.CustomerOf(tenant.Id), accounts)]);
+    }
+
     [Fact]
     public async Task OpenCheckoutSession_Yearly_OrdersTheYearlyPrices()
     {

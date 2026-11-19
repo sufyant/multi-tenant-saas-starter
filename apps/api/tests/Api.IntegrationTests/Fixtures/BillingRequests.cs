@@ -29,6 +29,9 @@ internal static class BillingRequests
     public static Task<HttpResponseMessage> GetBillingAsync(this HttpClient client, Guid tenantId) =>
         client.GetAsync($"/v1/tenants/{tenantId}/billing", Cancellation);
 
+    public static Task<HttpResponseMessage> SetBillingEmailAsync(this HttpClient client, Guid tenantId, string? address) =>
+        client.PutAsJsonAsync($"/v1/tenants/{tenantId}/billing/email", new { address }, Cancellation);
+
     public static Task<HttpResponseMessage> PreviewPlanChangeAsync(this HttpClient client, Guid tenantId, Guid planId, string interval = "monthly") =>
         client.PostAsJsonAsync($"/v1/tenants/{tenantId}/billing/plan-change/preview", new { planId, interval }, Cancellation);
 

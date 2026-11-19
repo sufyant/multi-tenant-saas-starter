@@ -13,6 +13,8 @@ namespace Billing.Contracts.Subscriptions;
 /// <param name="AmountDue">An unpaid subscription's open invoice without tax, in the currency's minor unit, for the email of the move (13.20);
 /// none when the provider holds no failed payment, or in a message of the version before part 10.</param>
 /// <param name="Currency">The open invoice's currency, with <paramref name="AmountDue"/>.</param>
+/// <param name="BillingEmail">The tenant's billing email, which billing's emails go to besides its members (B14); none without one.</param>
+/// <param name="BillingEmailSetBy">The user id of the member who set the billing email, whose language and time zone its email takes.</param>
 [MessageName("plan-ended")]
 public sealed record PlanEndedEvent(
     Guid EventId,
@@ -21,4 +23,6 @@ public sealed record PlanEndedEvent(
     Guid EndedBy,
     bool Unpaid,
     long? AmountDue = null,
-    string? Currency = null);
+    string? Currency = null,
+    string? BillingEmail = null,
+    Guid? BillingEmailSetBy = null);

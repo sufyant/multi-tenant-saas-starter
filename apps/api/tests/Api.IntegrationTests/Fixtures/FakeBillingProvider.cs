@@ -22,6 +22,9 @@ internal sealed class FakeBillingProvider : IBillingProvider
 
     public ConcurrentQueue<Guid> Customers { get; } = [];
 
+    // Each customer's email as the app gave it: at the customer's creation, then at each change (B14).
+    public ConcurrentQueue<(string CustomerId, string? Email)> CustomerEmails { get; } = [];
+
     public ConcurrentQueue<CheckoutOrder> Checkouts { get; } = [];
 
     // Runs once, while the next checkout's page is being made, as another request that comes between.
@@ -73,7 +76,14 @@ internal sealed class FakeBillingProvider : IBillingProvider
     public Task<string> CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken)
     {
         Customers.Enqueue(tenantId);
+        CustomerEmails.Enqueue((CustomerOf(tenantId), email));
         return Task.FromResult(CustomerOf(tenantId));
+    }
+
+    public Task SetCustomerEmailAsync(string customerId, string email, CancellationToken cancellationToken)
+    {
+        CustomerEmails.Enqueue((customerId, email));
+        return Task.CompletedTask;
     }
 
     public async Task<CheckoutPage> OpenCheckoutAsync(CheckoutOrder order, CancellationToken cancellationToken)

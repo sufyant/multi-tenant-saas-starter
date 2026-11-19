@@ -2,6 +2,7 @@ using System.Reflection;
 using Billing.Api.Platform.PriceChanges;
 using Billing.Api.Platform.Subscriptions;
 using Billing.Api.Public.Webhooks;
+using Billing.Api.Tenant.BillingEmails;
 using Billing.Api.Tenant.CheckoutSessions;
 using Billing.Api.Tenant.PortalSessions;
 using Billing.Api.Tenant.Subscriptions;
@@ -29,6 +30,7 @@ public static class BillingModule
         PlatformSubscriptionEndpoints.Map(platform);
         PriceChangeEndpoints.Map(platform);
         SubscriptionEndpoints.Map(tenant);
+        BillingEmailEndpoints.Map(tenant);
         CheckoutSessionEndpoints.Map(tenant);
         PortalSessionEndpoints.Map(tenant);
         PlanChangeEndpoints.Map(tenant);

@@ -48,7 +48,7 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
         var answer = await _api.CreateClient(owner).GetBillingAsync(tenant.Id);
 
         answer.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await answer.Content.ReadAsStringAsync(Cancellation)).ShouldBe("""{"billedBy":"card","subscription":null}""");
+        (await answer.Content.ReadAsStringAsync(Cancellation)).ShouldBe("""{"billedBy":"card","subscription":null,"billingEmail":null}""");
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class GetBillingTests(Database database) : IAsyncLifetime
 
         var answer = await _api.CreateClient(owner).GetBillingAsync(tenant.Id);
 
-        (await answer.Content.ReadAsStringAsync(Cancellation)).ShouldBe("""{"billedBy":"card","subscription":null}""");
+        (await answer.Content.ReadAsStringAsync(Cancellation)).ShouldBe("""{"billedBy":"card","subscription":null,"billingEmail":null}""");
     }
 
     [Fact]

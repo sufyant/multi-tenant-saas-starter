@@ -1,3 +1,4 @@
+using Billing.Application.BillingEmails;
 using Billing.Application.Contracts;
 using Billing.Application.Customers;
 using Billing.Contracts.Subscriptions;
@@ -16,6 +17,7 @@ public static class EndGraceHandler
         ICustomerStore customers,
         ISubscriptionRepository subscriptions,
         IContractRepository contracts,
+        IBillingEmailRepository emails,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -30,8 +32,9 @@ public static class EndGraceHandler
         }
 
         await subscriptions.SaveChangesAsync(cancellationToken);
+        var email = await emails.ReadAsync(cancellationToken);
         return [new PlanEndedEvent(
             Guid.CreateVersion7(now), now, command.TenantId, customer.CheckoutBy, Unpaid: true, subscription.FailedPayment?.AmountDue,
-            subscription.FailedPayment?.Currency)];
+            subscription.FailedPayment?.Currency, email?.Address, email?.SetBy)];
     }
 }

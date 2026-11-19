@@ -1,3 +1,4 @@
+using Billing.Application.BillingEmails;
 using Billing.Application.Contracts;
 using Billing.Application.PriceChanges.NamePriceChange;
 using Billing.Application.PriceChanges.RecordPriceChange;
@@ -17,6 +18,7 @@ public static class AnnounceTenantPriceChangeHandler
         IPriceChangeStore changes,
         IContractRepository contracts,
         ISubscriptionQueries subscriptions,
+        IBillingEmailRepository emails,
         TimeProvider time,
         CancellationToken cancellationToken)
     {
@@ -32,11 +34,13 @@ public static class AnnounceTenantPriceChangeHandler
         }
 
         var now = time.GetUtcNow();
+        var email = await emails.ReadAsync(cancellationToken);
         return
         [
             new NamePriceChangeCommand(
                 NoticeIdOf(change.Id, payer.TenantId), now, payer.TenantId, change.PlanId, change.PlanName, change.Currency, payer.Yearly,
-                RecordPriceChangeHandler.RecordOf(change.OldPrices), RecordPriceChangeHandler.RecordOf(change.NewPrices), movesAt),
+                RecordPriceChangeHandler.RecordOf(change.OldPrices), RecordPriceChangeHandler.RecordOf(change.NewPrices), movesAt,
+                email?.Address, email?.SetBy),
         ];
     }
 

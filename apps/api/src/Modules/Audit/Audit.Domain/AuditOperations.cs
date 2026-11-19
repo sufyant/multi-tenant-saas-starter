@@ -98,6 +98,9 @@ public static class AuditOperations
     /// <summary>The tenant was told that its plan's price changes (B13); in the tenant's log only.</summary>
     public const string TenantPriceChangeAnnounced = "tenant.price_change_announced";
 
+    /// <summary>A member who manages billing set, changed or removed the tenant's billing email (B14); in the tenant's log only.</summary>
+    public const string TenantBillingEmailChanged = "tenant.billing_email_changed";
+
     /// <summary>A system admin marked the tenant Contract: it is billed outside the app (B12).</summary>
     public const string TenantContractStarted = "tenant.contract_started";
 

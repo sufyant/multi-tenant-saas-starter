@@ -16,6 +16,7 @@ import {
   PlanPriceChangeScheduledDetailsResponseOperation,
   RoleCreatedDetailsResponseOperation,
   RoleUpdatedDetailsResponseOperation,
+  TenantBillingEmailChangedDetailsResponseOperation,
   TenantCreatedDetailsResponseOperation,
   TenantEntitlementOverrideRemovedDetailsResponseOperation,
   TenantEntitlementOverrideSetDetailsResponseOperation,
@@ -178,6 +179,11 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       },
       currency: "EUR",
       movesAt: "2026-12-02T00:00:00Z",
+    },
+    [AuditOperation.TenantBillingEmailChanged]: {
+      operation:
+        TenantBillingEmailChangedDetailsResponseOperation.TenantBillingEmailChanged,
+      removed: false,
     },
     [AuditOperation.TenantPaymentFailed]: {
       operation:

@@ -31,6 +31,7 @@ public sealed class MigratedSchemaTests(Database database)
             audit.entries: forced
             audit.platform_entries: forced
             audit.tenant_retentions: forced
+            billing.billing_emails: forced
             billing.checkouts: forced
             billing.contracts: forced
             billing.subscriptions: forced
@@ -68,6 +69,7 @@ public sealed class MigratedSchemaTests(Database database)
             audit.platform_entries platform_insert: PERMISSIVE INSERT {public} USING - WITH CHECK true
             audit.platform_entries platform_read: PERMISSIVE SELECT {public} USING ((NULLIF(current_setting('app.tenant_id'::text, true), ''::text) IS NULL) AND (NULLIF(current_setting('app.user_id'::text, true), ''::text) IS NULL)) WITH CHECK -
             audit.tenant_retentions tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            billing.billing_emails tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             billing.checkouts tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             billing.contracts tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             billing.subscriptions tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
@@ -147,6 +149,7 @@ public sealed class MigratedSchemaTests(Database database)
             table audit.platform_entries: INSERT, SELECT
             table audit.tenant_retentions: DELETE, INSERT, SELECT, UPDATE
             table billing.__ef_migrations_history: SELECT
+            table billing.billing_emails: DELETE, INSERT, SELECT, UPDATE
             table billing.checkouts: DELETE, INSERT, SELECT, UPDATE
             table billing.contracts: DELETE, INSERT, SELECT
             table billing.customers: DELETE, INSERT, SELECT, UPDATE

@@ -382,7 +382,8 @@
         "reactivated": "<actor></actor> أعاد تفعيل هذه المؤسسة.",
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
         "reopened": "أعادت <actor></actor> فتح هذه المؤسسة.",
-        "suspended": "<actor></actor> أوقف هذه المؤسسة."
+        "suspended": "<actor></actor> أوقف هذه المؤسسة.",
+        "billing_email_changed": "{removed, select, yes {أزال <actor></actor> البريد الإلكتروني للفوترة.} other {عيّن <actor></actor> البريد الإلكتروني للفوترة.}}"
       },
       "terms_version": {
         "cancelled": "<actor></actor> ألغى إصدارًا من شروط الاستخدام.",

@@ -1,4 +1,5 @@
 using Billing.Domain.Checkouts;
+using Billing.Domain.BillingEmails;
 using Billing.Domain.Contracts;
 using Billing.Domain.Customers;
 using Billing.Domain.Payers;
@@ -29,6 +30,8 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
     internal DbSet<Customer> Customers => Set<Customer>();
 
     internal DbSet<Contract> Contracts => Set<Contract>();
+
+    internal DbSet<BillingEmail> BillingEmails => Set<BillingEmail>();
 
     internal DbSet<StripeEvent> StripeEvents => Set<StripeEvent>();
 
@@ -84,6 +87,15 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             checkout.Property(c => c.ReturnUrl).HasMaxLength(2048);
             checkout.Property(c => c.Currency).HasMaxLength(3);
             checkout.Ignore(c => c.Order);
+        });
+
+        // B14: a tenant's billing email, one row for each tenant that has one, keyed by the tenant column.
+        modelBuilder.Entity<BillingEmail>(email =>
+        {
+            email.ToTable("billing_emails");
+            email.Property<Guid>("TenantId");
+            email.HasKey("TenantId");
+            email.Property(e => e.Address).HasMaxLength(BillingEmail.MaxLength);
         });
 
         // B12: a tenant's Contract mark, one row for each tenant that is Contract, keyed by the tenant column.

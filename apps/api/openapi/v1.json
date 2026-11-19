@@ -10007,6 +10007,129 @@
         }
       }
     },
+    "/v1/tenants/{tenantId}/billing/email": {
+      "put": {
+        "tags": [
+          "Tenant/BillingEmails"
+        ],
+        "operationId": "SetBillingEmail",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBillingEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/tenants/{tenantId}/billing/checkout-session": {
       "post": {
         "tags": [
@@ -13552,6 +13675,9 @@
             "$ref": "#/components/schemas/TenantPaymentFailedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantBillingEmailChangedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/PlanPriceChangeScheduledDetailsResponse"
           },
           {
@@ -13613,6 +13739,7 @@
             "tenant.plan_changed": "#/components/schemas/TenantPlanChangedDetailsResponse",
             "tenant.plan_cancelled": "#/components/schemas/TenantPlanCancelledDetailsResponse",
             "tenant.payment_failed": "#/components/schemas/TenantPaymentFailedDetailsResponse",
+            "tenant.billing_email_changed": "#/components/schemas/TenantBillingEmailChangedDetailsResponse",
             "plan.price_change_scheduled": "#/components/schemas/PlanPriceChangeScheduledDetailsResponse",
             "tenant.price_change_announced": "#/components/schemas/TenantPriceChangeAnnouncedDetailsResponse",
             "tenant.moved_to_default_plan": "#/components/schemas/TenantMovedToDefaultPlanDetailsResponse",
@@ -13764,6 +13891,7 @@
           "role.updated",
           "system_admin.granted",
           "system_admin.revoked",
+          "tenant.billing_email_changed",
           "tenant.closed",
           "tenant.contract_ended",
           "tenant.contract_started",
@@ -13826,6 +13954,7 @@
           "RoleUpdated",
           "SystemAdminGranted",
           "SystemAdminRevoked",
+          "TenantBillingEmailChanged",
           "TenantClosed",
           "TenantContractEnded",
           "TenantContractStarted",
@@ -14069,7 +14198,8 @@
       "BillingResponse": {
         "required": [
           "billedBy",
-          "subscription"
+          "subscription",
+          "billingEmail"
         ],
         "type": "object",
         "properties": {
@@ -14085,9 +14215,15 @@
                 "$ref": "#/components/schemas/SubscriptionResponse"
               }
             ]
+          },
+          "billingEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         },
-        "description": "The tenant's billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant's last\nsubscription shows until it ends."
+        "description": "The tenant's billing: how it pays (B12), its subscription, none until it pays by card the first time, and its billing email, none until\na member who manages billing sets one (B14). A Contract tenant's last subscription shows until it ends."
       },
       "BillingResponseBilledBy": {
         "enum": [
@@ -17875,6 +18011,23 @@
           "Contract"
         ]
       },
+      "SetBillingEmailRequest": {
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "maxLength": 254,
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "email"
+          }
+        },
+        "description": "The tenant's billing email (10.01): an address, or none, or an empty one, to remove it."
+      },
       "SetEntitlementOverrideRequest": {
         "required": [
           "value",
@@ -18070,6 +18223,26 @@
           }
         },
         "description": "Why the system admin suspends the user, within the API's limit. The API trims the reason before it counts its length. The user never\nsees it. It is personal data about the user: the user's data export holds it, the deletion erases it, and no audit entry keeps it."
+      },
+      "TenantBillingEmailChangedDetailsResponse": {
+        "required": [
+          "removed",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.billing_email_changed"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantBillingEmailChanged"
+            ]
+          },
+          "removed": {
+            "type": "boolean"
+          }
+        }
       },
       "TenantCreatedDetailsResponse": {
         "required": [
@@ -19994,6 +20167,9 @@
     },
     {
       "name": "Tenant/AuditLogs"
+    },
+    {
+      "name": "Tenant/BillingEmails"
     },
     {
       "name": "Tenant/CheckoutSessions"

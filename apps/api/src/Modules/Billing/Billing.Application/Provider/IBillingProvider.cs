@@ -16,6 +16,9 @@ public interface IBillingProvider
     /// </summary>
     Task<string> CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken);
 
+    /// <summary>Sends the customer's invoices and receipts to this address from now on (B14; Stripe, "Customer emails").</summary>
+    Task SetCustomerEmailAsync(string customerId, string email, CancellationToken cancellationToken);
+
     /// <summary>
     /// A page of the provider where the person pays for the order by card, until the order's expiry. The provider
     /// writes the plan's prices as its own prices when it has none of these amounts yet, as a price never changes there (Stripe, "Change

@@ -9,6 +9,8 @@ namespace Billing.Contracts.PriceChanges;
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
 /// <param name="Yearly">Whether the tenant pays yearly, so its prices are the yearly ones.</param>
+/// <param name="BillingEmail">The tenant's billing email, which billing's emails go to besides its members (B14); none without one.</param>
+/// <param name="BillingEmailSetBy">The user id of the member who set the billing email, whose language and time zone its email takes.</param>
 [MessageName("price-change-announced")]
 public sealed record PriceChangeAnnouncedEvent(
     Guid EventId,
@@ -21,4 +23,6 @@ public sealed record PriceChangeAnnouncedEvent(
     bool Yearly,
     PriceChangePricesRecord OldPrices,
     PriceChangePricesRecord NewPrices,
-    DateTimeOffset MovesAt);
+    DateTimeOffset MovesAt,
+    string? BillingEmail = null,
+    Guid? BillingEmailSetBy = null);

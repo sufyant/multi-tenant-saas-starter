@@ -74,8 +74,9 @@ export const GetBillingResponse = zod.object({
   "perPersonYearly": zod.int()
 }).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.')
 }).describe('A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan\'s new prices; the\nplan\'s prices before and after (B13).')])
-}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.')])
-}).describe('The tenant\'s billing: how it pays (B12), and its subscription, none until it pays by card the first time. A Contract tenant\'s last\nsubscription shows until it ends.')
+}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.')]),
+  "billingEmail": zod.string().nullable()
+}).describe('The tenant\'s billing: how it pays (B12), its subscription, none until it pays by card the first time, and its billing email, none until\na member who manages billing sets one (B14). A Contract tenant\'s last subscription shows until it ends.')
 
 export const PreviewPlanChangeParams = zod.object({
   "tenantId": zod.uuid()
