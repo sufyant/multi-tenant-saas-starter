@@ -11,12 +11,13 @@ import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import { Dialog } from "@repo/ui/components/dialog";
 import { showToast } from "@repo/ui/components/toast";
-import { daysAfter, formatDate } from "@repo/ui/lib/format-date-time";
+import { daysAfter } from "@repo/ui/lib/format-date-time";
 import { formatMoney } from "@repo/ui/lib/format-money";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { useDates } from "@/shared/use-dates";
 
 /** The notice before a payer moves to a new price (the API's B13): 30 days. */
 const noticeDays = 30;
@@ -30,6 +31,7 @@ const noticeDays = 30;
 export function OldPriceBanner({ plan }: { plan: PlanResponse }) {
   const t = useTranslations();
   const locale = useLocale();
+  const dates = useDates();
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const change = useQuery({
@@ -60,7 +62,7 @@ export function OldPriceBanner({ plan }: { plan: PlanResponse }) {
         {t("priceChange.oldText", {
           old: money(old.oldPrices.perPersonMonthly),
           new: newPrice,
-          date: formatDate(old.since, { locale }),
+          date: dates.date(old.since),
         })}
       </Banner>
       {asking && (
@@ -73,7 +75,7 @@ export function OldPriceBanner({ plan }: { plan: PlanResponse }) {
           })}
           description={t("priceChange.moveText", {
             new: newPrice,
-            date: formatDate(daysAfter(new Date(), noticeDays), { locale }),
+            date: dates.date(daysAfter(new Date(), noticeDays)),
             yearly: change.data?.yearlyPayers ?? 0,
             yearlyPrice: money(old.oldPrices.perPersonYearly),
           })}
@@ -88,7 +90,7 @@ export function OldPriceBanner({ plan }: { plan: PlanResponse }) {
                   title: t("priceChange.moved"),
                   description: answer.movesAt
                     ? t("priceChange.scheduled", {
-                        date: formatDate(answer.movesAt, { locale }),
+                        date: dates.date(answer.movesAt),
                       })
                     : undefined,
                 });

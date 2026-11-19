@@ -861,5 +861,43 @@
     "moved": "Customers told of the new price",
     "moveFailed": "Couldn’t move the customers",
     "scheduled": "They move on {date}."
+  },
+  "billingCard": {
+    "title": "Billing",
+    "billedBy": "Billed by",
+    "period": "Period",
+    "payment": "Payment",
+    "cardText": "Pays in the app by card. Stripe keeps the card.",
+    "contractText": "Billed outside the app by invoice. No card, no trial, no failed-payment states.",
+    "toContract": "Switch to Contract",
+    "toCard": "Switch to Card",
+    "interval": {
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "noSubscription": "No card yet.",
+    "paid": "Paid",
+    "retryingText": "The payment of {amount} excl. VAT failed. Stripe tries again on {date}. Everything keeps working.",
+    "graceText": "{count, plural, one {# try failed} other {# tries failed}}. On {date} it moves to {default}. Nothing is deleted.",
+    "moved": "Moved to {default} on {date}",
+    "movedText": "A payment brings {plan} back at once.",
+    "noPayments": "No payments while on {plan}.",
+    "ends": "{plan} ends on {date}. No more payments.",
+    "movesTo": "Moves to {plan} on {date}",
+    "contractTitle": "Mark {organisation} as Contract?",
+    "contractDialogText": "It stops paying by card. Stripe cancels the subscription at the end of the paid period, on {date}, with no refund. From then on you set its plan here, and it is billed outside the app by invoice.",
+    "contractDialogTextNoCard": "It is billed outside the app by invoice, and you set its plan here.",
+    "contractDialogNote": "A Contract organisation has no card, no trial and no failed-payment states. Its billing managers see the plan and limits, and “Request a plan change”.",
+    "markContract": "Mark as Contract",
+    "cardTitle": "Switch {organisation} to card?",
+    "cardDialogText": "Its billing managers pay for a plan by card in the app. Until they do, it stays on its plan.",
+    "switched": "Billing changed",
+    "switchFailed": "Couldn’t change the billing",
+    "loadError": "Couldn’t load the billing",
+    "retryingSince": "Retrying since {date}",
+    "graceUntil": "Grace until {date}",
+    "contractLabel": "Contract",
+    "cardLabel": "Card",
+    "scheduledChange": "Scheduled change"
   }
 }

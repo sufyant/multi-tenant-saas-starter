@@ -861,5 +861,43 @@
     "moved": "Müşterilere yeni fiyat bildirildi",
     "moveFailed": "Müşteriler taşınamadı",
     "scheduled": "{date} tarihinde taşınırlar."
+  },
+  "billingCard": {
+    "title": "Faturalama",
+    "billedBy": "Faturalama yöntemi",
+    "period": "Dönem",
+    "payment": "Ödeme",
+    "cardText": "Uygulamada kartla öder. Kartı Stripe saklar.",
+    "contractText": "Uygulama dışında faturayla faturalanır. Kart, deneme ve başarısız ödeme durumu yok.",
+    "toContract": "Sözleşmeye geç",
+    "toCard": "Karta geç",
+    "interval": {
+      "monthly": "Aylık",
+      "yearly": "Yıllık"
+    },
+    "noSubscription": "Henüz kart yok.",
+    "paid": "Ödendi",
+    "retryingText": "KDV hariç {amount} tutarındaki ödeme başarısız oldu. Stripe {date} tarihinde yeniden dener. Her şey çalışmaya devam ediyor.",
+    "graceText": "{count} deneme başarısız oldu. {date} tarihinde {default} planına geçer. Hiçbir şey silinmez.",
+    "moved": "{date} tarihinde {default} planına geçti",
+    "movedText": "Bir ödeme {plan} planını hemen geri getirir.",
+    "noPayments": "{plan} planındayken ödeme yok.",
+    "ends": "{plan} {date} tarihinde biter. Başka ödeme yok.",
+    "movesTo": "{date} tarihinde {plan} planına geçer",
+    "contractTitle": "{organisation} Sözleşme olarak işaretlensin mi?",
+    "contractDialogText": "Kartla ödemeyi bırakır. Stripe aboneliği ödenen dönemin sonunda, {date} tarihinde, iadesiz iptal eder. O tarihten sonra planını burada siz belirlersiniz ve uygulama dışında faturayla faturalanır.",
+    "contractDialogTextNoCard": "Uygulama dışında faturayla faturalanır ve planını burada siz belirlersiniz.",
+    "contractDialogNote": "Sözleşmeli bir kuruluşun kartı, denemesi ve başarısız ödeme durumu yoktur. Fatura yöneticileri planı ve sınırları ile “Plan değişikliği iste” düğmesini görür.",
+    "markContract": "Sözleşme olarak işaretle",
+    "cardTitle": "{organisation} karta geçirilsin mi?",
+    "cardDialogText": "Fatura yöneticileri uygulamada kartla bir plan için öder. Ödeyene kadar planında kalır.",
+    "switched": "Faturalama değişti",
+    "switchFailed": "Faturalama değiştirilemedi",
+    "loadError": "Faturalama yüklenemedi",
+    "retryingSince": "{date} tarihinden beri yeniden deneniyor",
+    "graceUntil": "{date} tarihine kadar ek süre",
+    "contractLabel": "Sözleşme",
+    "cardLabel": "Kart",
+    "scheduledChange": "Planlanmış değişiklik"
   }
 }

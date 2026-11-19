@@ -10,11 +10,12 @@ import {
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@repo/ui/components/ui/radio-group";
-import { daysAfter, formatDate } from "@repo/ui/lib/format-date-time";
+import { daysAfter } from "@repo/ui/lib/format-date-time";
 import { formatMoney } from "@repo/ui/lib/format-money";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { useId, useState } from "react";
+import { useDates } from "@/shared/use-dates";
 
 /** The notice before a payer moves to a new price (the API's B13): 30 days. */
 const noticeDays = 30;
@@ -42,6 +43,7 @@ export function PriceChangeDialog({
 }) {
   const t = useTranslations();
   const locale = useLocale();
+  const dates = useDates();
   const fieldId = useId();
   const change = useQuery(getGetPriceChangeQueryOptions(plan.id));
   const [who, setWho] = useState<PlanPriceChangeRequestWho>(NewCustomersOnly);
@@ -58,7 +60,7 @@ export function PriceChangeDialog({
       label: t("priceChange.afterNotice"),
       text: t("priceChange.afterNoticeText", {
         new: money(prices.perPersonMonthly),
-        date: formatDate(daysAfter(new Date(), noticeDays), { locale }),
+        date: dates.date(daysAfter(new Date(), noticeDays)),
       }),
     },
     {
