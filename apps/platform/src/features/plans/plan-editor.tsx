@@ -8,6 +8,7 @@ import {
   FieldErrorCode,
   getGetPlanQueryKey,
   getGetPlanQueryOptions,
+  getGetPriceChangeQueryOptions,
   getListPlansQueryOptions,
   getPlanUpdatePreview,
   MeterSettingRequestOverage,
@@ -62,6 +63,7 @@ import { ProblemScreen } from "@/shared/problem-screen";
 import { afterAccountRefusal } from "@/shared/refusal";
 import { ValueField } from "@/shared/value-field";
 import { ImpactDialog } from "./impact-dialog";
+import { OldPriceBanner } from "./old-price-banner";
 import {
   freePrices,
   type MeterDraft,
@@ -72,6 +74,7 @@ import {
   priceKeys,
   priceTextsOf,
 } from "./plan-prices";
+import { PriceChangeDialog } from "./price-change-dialog";
 
 // The generated schema of UpdatePlan, which CreatePlan shares (F11): the API trims the name and needs 1 to 100 characters; the
 // generated schema has the limit only, so the form adds the trim and the minimum. The values are one draft per key of the list,
@@ -211,6 +214,14 @@ const moneyBodyOf = (
 });
 
 /** Whether a save takes something away from the plan's organisations, so the impact preview runs first (the PlanImpact board). */
+/** The save changes a price of the plan (B13). */
+const pricesChange = (plan: PlanResponse, body: UpdatePlanRequest) =>
+  body.prices !== null &&
+  body.prices !== undefined &&
+  (Object.keys(plan.prices) as (keyof PlanResponse["prices"])[]).some(
+    (key) => body.prices?.[key] !== plan.prices[key],
+  );
+
 const takesAway = (plan: PlanResponse, form: Editing) =>
   entitlementKeys.some(({ key, isFeature }, index) => {
     const draft = form.drafts[index];
@@ -282,6 +293,7 @@ export function PlanEditor({ planId }: { planId: string | null }) {
             : t("plans.createText")}
         </p>
       </div>
+      {saved && <OldPriceBanner plan={saved} />}
       {saved && !editing && (
         <Summary plan={saved} onEdit={() => setEditing(true)} />
       )}
@@ -422,6 +434,16 @@ function Form({ plan }: { plan: PlanResponse | null }) {
     }),
   );
   const currency = plan?.currency ?? defaultPlan.data?.currency ?? null;
+  const [priceAsk, setPriceAsk] = useState<{
+    body: UpdatePlanRequest;
+    takes: boolean;
+  } | null>(null);
+  // While billing is off the API answers 404 billing.off: nobody pays, so no save asks (6.14).
+  const priceChange = useQuery({
+    ...getGetPriceChangeQueryOptions(plan?.id ?? ""),
+    enabled: plan !== null,
+    retry: false,
+  });
   const [impact, setImpact] = useState<{
     body: UpdatePlanRequest;
     first: PlanUpdatePreviewPageResponse;
@@ -544,9 +566,19 @@ function Form({ plan }: { plan: PlanResponse | null }) {
     if (wrong.any) return;
     const body = bodyOf(values, currency);
     if (!plan) create.mutate({ body, key });
-    else if (takesAway(plan, values)) preview.mutate({ id: plan.id, body });
-    else update.mutate({ id: plan.id, body });
+    // New prices of a plan that someone pays for ask who pays them, and when (6.14), before the save goes on.
+    else if (pricesChange(plan, body) && (priceChange.data?.payers ?? 0) > 0)
+      setPriceAsk({ body, takes: takesAway(plan, values) });
+    else saveOn(plan, body, takesAway(plan, values));
   });
+  const saveOn = (
+    saving: PlanResponse,
+    body: UpdatePlanRequest,
+    takes: boolean,
+  ) =>
+    takes
+      ? preview.mutate({ id: saving.id, body })
+      : update.mutate({ id: saving.id, body });
 
   const failure = (() => {
     const error = create.error ?? update.error ?? preview.error;
@@ -735,6 +767,19 @@ function Form({ plan }: { plan: PlanResponse | null }) {
           {plan ? t("plans.save") : t("plans.create")}
         </Button>
       </div>
+      {priceAsk && plan && priceAsk.body.prices && (
+        <PriceChangeDialog
+          plan={plan}
+          prices={priceAsk.body.prices}
+          pending={pending}
+          onCancel={() => setPriceAsk(null)}
+          onConfirm={(change) => {
+            const body = { ...priceAsk.body, priceChange: change };
+            setPriceAsk(null);
+            saveOn(plan, body, priceAsk.takes);
+          }}
+        />
+      )}
       {impact && plan && (
         <ImpactDialog
           plan={plan}

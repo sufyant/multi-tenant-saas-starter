@@ -249,7 +249,14 @@ export const viewerAnswers = (
   myTenantAnswer(role, permissions, plan),
   http.get("*/v1/me", () => HttpResponse.json(meOfPerson(person))),
   rolesAnswer(custom),
+  billingOffAnswer,
 ];
+
+/** GetBilling while the deployment's billing is off, as the template ships (the API's B1): 404 `billing.off`. */
+export const billingOffAnswer = http.get(
+  `*/v1/tenants/${northwind.id}/billing`,
+  () => problem(404, "billing.off"),
+);
 
 /** GetMyTenant for a viewer of the role, on the plan. */
 export const myTenantAnswer = (

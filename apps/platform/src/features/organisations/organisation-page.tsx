@@ -206,7 +206,7 @@ function Organisation({
 
   const items = [
     { id: "overview", label: t("organisations.overview") },
-    ...(gone ? [] : [{ id: "plan", label: t("organisations.plan") }]),
+    ...(gone ? [] : [{ id: "plan", label: t("organisations.planTab") }]),
     { id: "activity", label: t("organisations.activity") },
   ];
 

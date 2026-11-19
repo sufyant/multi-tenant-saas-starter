@@ -30,6 +30,7 @@ import {
   plansCommand,
   plansPage,
   previewPage,
+  priceChangeAnswer,
   pro,
 } from "../../../test/plans";
 import { renderWithProviders, sentence } from "../../../test/render";
@@ -486,6 +487,110 @@ describe("PlanEditor", () => {
     expect(updates[0]?.body).toMatchObject({
       prices: { perPersonMonthly: 1250 },
     });
+  });
+
+  it("Save_PriceChangedWhileOrganisationsPay_AsksWhoPaysItAndSendsTheAnswer", async () => {
+    const updates: Call[] = [];
+    const team = {
+      ...pro,
+      prices: { ...pro.prices, perPersonMonthly: 1000 },
+    };
+    server.use(
+      priceChangeAnswer(pro.id, {
+        payers: 5,
+        yearlyPayers: 2,
+        onOldPrice: null,
+        movesAt: null,
+      }),
+      planAnswer(team),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+    const field = await screen.findByRole("textbox", {
+      name: "Per person, monthly",
+    });
+    await userEvent.clear(field);
+    await userEvent.type(field, "12");
+    await save();
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: /per person €10 → €12 a month/,
+    });
+    expect(
+      await within(dialog).findByText("Affects 5 organisations."),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByText(
+        "2 on yearly plans keep their price until renewal.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("radio", { name: /New customers only/ }),
+    ).toBeChecked();
+    await userEvent.click(
+      within(dialog).getByRole("radio", { name: /at their next period/ }),
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Save new price" }),
+    );
+
+    await waitFor(() => expect(updates).toHaveLength(1));
+    expect(updates[0]?.body).toMatchObject({
+      prices: { perPersonMonthly: 1200 },
+      priceChange: { who: "everyone_after_notice", from: null },
+    });
+  });
+
+  it("MoveToNewPrice_Confirm_MovesTheCustomersOnTheOldPrice", async () => {
+    const moves: Call[] = [];
+    const team = {
+      ...pro,
+      prices: { ...pro.prices, perPersonMonthly: 1200 },
+    };
+    server.use(
+      priceChangeAnswer(pro.id, {
+        payers: 5,
+        yearlyPayers: 2,
+        onOldPrice: {
+          count: 5,
+          oldPrices: { ...pro.prices, perPersonMonthly: 1000 },
+          since: "2026-11-02T10:00:00Z",
+        },
+        movesAt: null,
+      }),
+      planAnswer(team),
+      plansCommand(
+        "post",
+        `plans/${pro.id}/price-change/move`,
+        [
+          () =>
+            HttpResponse.json({
+              payers: 5,
+              yearlyPayers: 2,
+              onOldPrice: null,
+              movesAt: "2026-12-19T10:00:00Z",
+            }),
+        ],
+        moves,
+      ),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+
+    expect(
+      await screen.findByText("5 customers on the old price"),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Move to the new price" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Move 5 customers to €12 per person a month?",
+    });
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Move 5 customers" }),
+    );
+
+    await expectVisibleToast("Customers told of the new price");
+    expect(moves).toHaveLength(1);
   });
 
   it("Save_PriceNotAnAmount_SaysSoAndSendsNothing", async () => {

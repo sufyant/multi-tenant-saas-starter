@@ -14,7 +14,9 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { useSeatPrice } from "@/shared/billing";
 import { afterRefusal, refreshMembers, refreshTenant } from "@/shared/refresh";
+import { takesNoSeat } from "@/shared/roles";
 import { useTenant } from "@/shared/tenant-context";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { usePlanReason } from "@/shared/use-plan-reason";
@@ -46,6 +48,20 @@ export function ChangeRoleDialog({
   const planReason = usePlanReason();
   const [roleId, setRoleId] = useState(member.role.id);
   const name = nameOf(member) ?? t("members.deletedUser");
+  const seatPrice = useSeatPrice();
+  // A move to or from the Billing manager changes the seats, so the bill (14.06, 14.07), for whom manages billing.
+  const chosenRole = roles.data?.items.find((role) => role.id === roleId);
+  const bill = (() => {
+    if (!seatPrice || !chosenRole || chosenRole.id === member.role.id)
+      return null;
+    const from = takesNoSeat(member.role);
+    const to = takesNoSeat(chosenRole);
+    if (from === to) return null;
+    return t(to ? "plans.billDown" : "plans.billUp", {
+      name,
+      amount: seatPrice,
+    });
+  })();
   const organisation = tenant.name;
   // The Owner role is the one that holds tenant.owners.manage (K1, F51).
   const owners = roles.data?.items.find((role) =>
@@ -164,6 +180,7 @@ export function ChangeRoleDialog({
         ownerReason={t("members.giveOwner")}
         lockedReason={lastOwner ? t("members.lastOwnerChange") : undefined}
       />
+      {bill && <p className="text-small text-muted-foreground">{bill}</p>}
       {!lastOwner && failure && (
         <Banner tone="destructive" title={failure.title}>
           {failure.text}

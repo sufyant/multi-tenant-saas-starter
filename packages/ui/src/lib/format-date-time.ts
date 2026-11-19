@@ -53,6 +53,11 @@ export function formatDate(at: Instant, options: DateTimeOptions): string {
   return format(at, options, datePart);
 }
 
+/** The local month's name: `November`, for "the rest of November" (10.04, 10.06). */
+export function formatMonth(at: Instant, options: DateTimeOptions): string {
+  return format(at, options, { month: "long" });
+}
+
 /** The local time: `14:32`. */
 export function formatTime(at: Instant, options: DateTimeOptions): string {
   return format(at, options, timePart);
@@ -85,6 +90,11 @@ export function isTimeZone(name: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** The moment a number of whole days after another: the day an older Activity log entry goes after a shorter period (10.06). */
+export function daysAfter(at: Instant, days: number): string {
+  return new Date(toDate(at).getTime() + days * 86_400_000).toISOString();
 }
 
 /** The calendar day before a day of `calendarDay`: `2026-03-01` gives `2026-02-28`. */

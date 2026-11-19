@@ -1,4 +1,5 @@
 import {
+  BillingResponseBilledBy,
   BuiltInRole,
   ErrorCode,
   type MemberResponse,
@@ -945,6 +946,56 @@ describe("MembersPage", () => {
 
     expect(open).toHaveBeenCalledWith(brand.supportUrl, "_self");
     open.mockRestore();
+  });
+
+  it("MembersPage_NoFreeSeatWhileBillingIsOn_OffersChangePlanAndCountsTheBillingManagerApart", async () => {
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: BillingResponseBilledBy.Card,
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/roles`, () =>
+        HttpResponse.json({
+          items: Object.values(BuiltInRole).map((name) => ({
+            ...roleOf[name],
+            permissions: permissionsOf[name],
+            memberCount: Number(name === BuiltInRole.BillingManager),
+            pendingInvitationCount: 0,
+          })),
+          page: 1,
+          pageSize: 100,
+          total: 4,
+        }),
+      ),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 5 }, { "members.max": 5 }),
+      ),
+      membersAnswer(),
+      invitationsAnswer([], 2),
+    );
+
+    renderInTenant(<MembersPage />);
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Invite member" }),
+    );
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "No free seat",
+    });
+
+    expect(
+      await within(dialog).findByText(
+        "Northwind Traders uses 5 of 5 seats: 4 members, 1 of them a billing manager who uses no seat, and 2 pending invitations. Remove a member or cancel an invitation to invite someone, or change the plan.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole("button", { name: "Change plan" }),
+    ).toBeVisible();
   });
 
   it("MembersPage_AtTheLimit_ShowsTheBannerWithNoAction", async () => {

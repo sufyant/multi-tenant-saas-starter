@@ -34,6 +34,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useBillingShown } from "@/shared/billing";
+import { BillingBar } from "@/shared/billing-bar";
 import { rememberOrganisation } from "@/shared/last-organisation";
 import { LocaleSync } from "@/shared/locale-sync";
 import { TenantBell } from "@/shared/notification-bell";
@@ -82,6 +84,9 @@ export function TenantShell({
     ),
   );
   const roles = useTenantRoles();
+  const billing = useBillingShown(
+    pathname.startsWith(`/${tenant.slug}/settings/billing`),
+  );
   // The role changed while a page is open (GetMyTenant read again): the page says so until the person opens another page.
   const shownRole = useRef(detail.role.id);
   const [changed, setChanged] = useState<{ role: string; on: string }>();
@@ -98,6 +103,12 @@ export function TenantShell({
         tenant,
         role,
         can,
+        billing,
+        billingBar: (
+          <BillingBar
+            onBilling={pathname.startsWith(`/${tenant.slug}/settings/billing`)}
+          />
+        ),
         counts: {
           members: members.data?.total,
           roles: inSettings ? roles.data?.total : undefined,
@@ -180,6 +191,10 @@ type Known = {
   can: (permission: Permission) => boolean;
   /** The counts after a page of the settings menu: the members and the roles (F59). */
   counts: Partial<Record<"members" | "roles", number>>;
+  /** Billing is a page of the organisation: the deployment's billing is on (`useBillingShown`). */
+  billing?: boolean;
+  /** The billing bar, after the connection bar (2.32, 2.33). */
+  billingBar?: ReactNode;
 };
 
 /** The AppShell with what is known. Without the tenant, the name waits in place and the settings menu shows no page yet. */
@@ -218,9 +233,12 @@ function TenantFrame({
   const settings = `${base}/settings`;
   const can = known?.can ?? (() => false);
   const myAccount = myAccountPages(t);
-  // Billing and Usage join in step 40, with their permission (the Billing is for billing managers pattern).
+  // Billing joins with its permission while billing is on; Usage joins in step 40c.
   const organisation: NavItem[] = organisationPages
-    .filter((page) => can(page.permission))
+    .filter(
+      (page) =>
+        can(page.permission) && (page.id !== "billing" || known?.billing),
+    )
     .map((page) => ({
       id: page.id,
       label: t(`shell.${page.label}`),
@@ -391,7 +409,12 @@ function TenantFrame({
             : [{ label: name ?? "" }, { label: pageName }]
         }
         commands={commands}
-        bar={<ServerBar />}
+        bar={
+          <>
+            <ServerBar />
+            {known?.billingBar}
+          </>
+        }
         tabTitle={tabTitle(pageName, unread.data?.unread)}
         linkComponent={Link}
         onNavigate={(href) => router.push(href)}

@@ -20,6 +20,7 @@ import {
   vi,
 } from "vitest";
 import { messages } from "@/i18n/messages";
+import { billingAnswers } from "../../../test/billing";
 import {
   ayse,
   billingLead,
@@ -335,6 +336,28 @@ describe("InviteDialog", () => {
 
     expect(within(dialog).getByText("3 seats left.")).toBeVisible();
     expect(dialog).not.toHaveTextContent(/bill/);
+  });
+
+  it("Invite_PayingMonthlyByCard_SaysWhatTheBillGoesUpBy", async () => {
+    server.use(
+      ...billingAnswers(),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+
+    expect(
+      await within(dialog).findByText(
+        "3 seats left. When they accept, your bill goes up by €10 a month, excl. VAT.",
+      ),
+    ).toBeVisible();
   });
 
   // The Billing manager takes no seat: the dialog says so in place of the seats left (14.03).

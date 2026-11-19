@@ -95,8 +95,10 @@ jobs:
     # The tests run in two parts one after the other (scripts/ci/test-api.sh). On 2026-11-04 the test step took 9 to 12.5 minutes on
     # other branches, and 13.5 minutes and more with step 36's tests, which passed a limit of 15 minutes for the whole job. On 2026-11-15
     # the job took 16 to 18 minutes on other branches, and step 40b's Billing tests passed the limit of 20 minutes, in the second part.
-    # 25 minutes keeps a margin; a hang still ends sooner, at the hang dump's 3 minutes (apps/api/docs/ARCHITECTURE.md, section 9, rule 8).
-    timeout-minutes: 25
+    # 25 minutes kept a margin then. On 2026-11-19 the first part took 19 minutes and the job passed 25 minutes in the second part, with
+    # 3943 tests that all passed, on a pull request that changed no API code. 35 minutes keeps a margin again; a hang still ends sooner,
+    # at the hang dump's 3 minutes (apps/api/docs/ARCHITECTURE.md, section 9, rule 8).
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: apps/api

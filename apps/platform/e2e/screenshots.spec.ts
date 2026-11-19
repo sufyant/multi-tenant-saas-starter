@@ -892,6 +892,79 @@ const removeHannah = async (page: Page) => {
   await page.getByRole("alertdialog").waitFor();
 };
 
+/** Team at €10 per person a month (6.13 to 6.16). */
+const teamAtTen = async (page: Page) => {
+  await mockFramePlans(page);
+  await page.route(`**/api/v1/platform/plans/${framePlans.team.id}`, (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({
+          json: {
+            ...framePlans.team,
+            prices: {
+              baseMonthly: 0,
+              baseYearly: 0,
+              perPersonMonthly: 1000,
+              perPersonYearly: 10000,
+            },
+          },
+        })
+      : route.fallback(),
+  );
+};
+
+/** Five customers still pay Team's €10; new customers pay €12 since 2 Nov 2026 (6.15, 6.16). */
+const oldPriceAnswer = {
+  payers: 5,
+  yearlyPayers: 2,
+  onOldPrice: {
+    count: 5,
+    oldPrices: {
+      baseMonthly: 0,
+      baseYearly: 0,
+      perPersonMonthly: 1000,
+      perPersonYearly: 10000,
+    },
+    since: "2026-11-02T10:00:00Z",
+  },
+  movesAt: null,
+};
+
+/** An organisation's billing as the Plan tab's frames draw it (4.27 to 4.36): Team, monthly, paid until 1 Dec 2026. */
+const teamBilling = (more: Record<string, unknown> = {}) => ({
+  billedBy: "card",
+  billingEmail: null,
+  subscription: {
+    planId: framePlans.team.id,
+    interval: "monthly",
+    status: "active",
+    currentPeriodEnd: "2026-12-01T00:00:00Z",
+    cancelAtPeriodEnd: false,
+    scheduledChange: null,
+    payment: null,
+    priceChange: null,
+    ...more,
+  },
+});
+const billingOf = (answer: unknown) => async (page: Page) => {
+  await mockFrameOrganisations(page);
+  await mockFramePlans(page);
+  await page.route("**/api/v1/platform/tenants/*/billing", (route) =>
+    route.fulfill({ json: answer }),
+  );
+};
+const failed = (state: string, more: Record<string, unknown> = {}) => ({
+  state,
+  failedAt: "2026-11-01T10:00:00Z",
+  attempts: 1,
+  nextAttemptAt: "2026-11-05T10:00:00Z",
+  graceEndsAt: null,
+  movedAt: null,
+  amountDue: 10000,
+  currency: "EUR",
+  card: { brand: "visa", last4: "4242" },
+  ...more,
+});
+
 const shellShots: {
   file: string;
   size: keyof typeof frames;
@@ -1353,6 +1426,67 @@ const shellShots: {
       await page.getByText("Today €10. Changed.", { exact: false }).waitFor();
     },
   },
+  // The price change (6.14 to 6.16, 40b): five organisations pay for Team, two of them yearly.
+  {
+    file: "6.14-price-change-who-pays-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: async (page) => {
+      await teamAtTen(page);
+      await page.route(
+        `**/api/v1/platform/plans/${framePlans.team.id}/price-change`,
+        (route) =>
+          route.fulfill({
+            json: {
+              payers: 5,
+              yearlyPayers: 2,
+              onOldPrice: null,
+              movesAt: null,
+            },
+          }),
+      );
+    },
+    open: async (page) => {
+      await page
+        .getByRole("textbox", { name: "Per person, monthly" })
+        .fill("12");
+      await page.getByRole("button", { name: "Save changes" }).click();
+      await page.getByText("Affects 5 organisations.").waitFor();
+    },
+  },
+  {
+    file: "6.15-customers-on-the-old-price-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: async (page) => {
+      await teamAtTen(page);
+      await page.route(
+        `**/api/v1/platform/plans/${framePlans.team.id}/price-change`,
+        (route) =>
+          route.fulfill({
+            json: oldPriceAnswer,
+          }),
+      );
+    },
+    ready: (page) => page.getByText("5 customers on the old price").waitFor(),
+  },
+  {
+    file: "6.16-move-to-the-new-price-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    mock: async (page) => {
+      await teamAtTen(page);
+      await page.route(
+        `**/api/v1/platform/plans/${framePlans.team.id}/price-change`,
+        (route) => route.fulfill({ json: oldPriceAnswer }),
+      );
+    },
+    ready: (page) => page.getByText("5 customers on the old price").waitFor(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Move to the new price" }).click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
   {
     file: "6.24-plan-team-custom-roles-off-en-light-phone",
     size: "phone",
@@ -1587,6 +1721,74 @@ const shellShots: {
     size: "desktop",
     path: `${northwindPath}?tab=plan`,
     mock: (page) => mockFrameOrganisations(page),
+  },
+  // The Plan tab's Billing card (4.27, 4.31 to 4.36, 40b).
+  ...[
+    ["4.27-plan-and-billing-card", teamBilling()],
+    [
+      "4.31-plan-and-billing-payment-retrying",
+      teamBilling({ status: "past_due", payment: failed("retrying") }),
+    ],
+    [
+      "4.32-plan-and-billing-grace",
+      teamBilling({
+        status: "past_due",
+        payment: failed("grace", {
+          attempts: 4,
+          nextAttemptAt: null,
+          graceEndsAt: "2026-11-20T10:00:00Z",
+        }),
+      }),
+    ],
+    [
+      "4.33-plan-and-billing-moved-to-free",
+      teamBilling({
+        status: "past_due",
+        payment: failed("moved_to_default", {
+          attempts: 4,
+          nextAttemptAt: null,
+          graceEndsAt: "2026-11-20T10:00:00Z",
+          movedAt: "2026-11-20T10:00:00Z",
+        }),
+      }),
+    ],
+    [
+      "4.34-plan-and-billing-contract",
+      { billedBy: "contract", billingEmail: null, subscription: null },
+    ],
+    [
+      "4.36-plan-and-billing-scheduled-change",
+      teamBilling({ cancelAtPeriodEnd: true }),
+    ],
+  ].map(([name, answer]) => ({
+    file: `${name}-en-light-desktop`,
+    size: "desktop" as const,
+    path: `${northwindPath}?tab=plan`,
+    fullPage: true,
+    mock: billingOf(answer),
+    ready: (page: Page) => page.getByText("Billed by").waitFor(),
+  })),
+  {
+    file: "4.35-switch-to-contract-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=plan`,
+    fullPage: true,
+    mock: billingOf(teamBilling()),
+    ready: (page) => page.getByText("Billed by").waitFor(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Switch to Contract" }).click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+  {
+    file: "4.45-plan-and-billing-en-light-phone",
+    size: "phone",
+    path: `${northwindPath}?tab=plan`,
+    fullPage: true,
+    mock: billingOf(
+      teamBilling({ status: "past_due", payment: failed("retrying") }),
+    ),
+    ready: (page) => page.getByText("Billed by").waitFor(),
   },
   {
     file: "4.15-change-plan-en-light-desktop",

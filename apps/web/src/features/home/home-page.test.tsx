@@ -2,6 +2,7 @@ import { BuiltInRole } from "@repo/api-client";
 import { screen, within } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { billingAnswers } from "../../../test/billing";
 import { renderInTenant, tenantAnswers } from "../../../test/tenant";
 import { HomePage } from "./home-page";
 
@@ -49,6 +50,20 @@ describe("HomePage", () => {
     expect(screen.getByRole("link", { name: /^Members/ })).toHaveTextContent(
       "People in Northwind Traders and their roles.",
     );
+  });
+
+  it("HomePage_BillingManagerWithBillingOn_OffersBilling", async () => {
+    server.use(
+      ...billingAnswers(),
+      ...tenantAnswers(BuiltInRole.BillingManager),
+    );
+
+    renderInTenant(<HomePage />, { url: "/northwind" });
+
+    expect(
+      await screen.findByRole("link", { name: /^Billing/ }),
+    ).toHaveTextContent("Plan, payment details and invoices.");
+    expect(cards()).toEqual(["Members", "Billing", "Settings"]);
   });
 
   it("HomePage_Member_OffersOnlyThePagesTheRoleCanOpen", async () => {

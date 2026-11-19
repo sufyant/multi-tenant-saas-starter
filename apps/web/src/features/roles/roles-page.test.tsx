@@ -494,6 +494,36 @@ describe("RolesPage", () => {
     },
   );
 
+  it("RolesPage_AtTheLimitWhileBillingIsOn_OffersChangePlan", async () => {
+    server.use(
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [billingLead, reviewer],
+        planWith({ "roles.custom.max": 2 }, { "roles.custom.max": 2 }),
+      ),
+    );
+    renderInTenant(<RolesPage />, { url });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "New role" }),
+    );
+
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "No custom role left",
+    });
+    expect(
+      await within(dialog).findByRole("button", { name: "Change plan" }),
+    ).toBeVisible();
+  });
+
   it("RolesPage_OverTheLimit_ShowsTheBannerAndOpensNoCustomRoleLeft", async () => {
     // A limit lowered after the tenant made its roles: 3 custom roles against a limit of 2.
     server.use(

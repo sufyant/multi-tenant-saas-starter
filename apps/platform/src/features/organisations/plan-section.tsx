@@ -16,7 +16,7 @@ import { Pill } from "@repo/ui/components/pill";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
 import {
   entitlementAreas,
   retentionKey,
@@ -25,6 +25,8 @@ import {
 import { isolated } from "@/shared/isolated";
 import { leaveOf } from "@/shared/problem-screen";
 import { useDates } from "@/shared/use-dates";
+import { BillingCard } from "./billing-card";
+import { Row } from "./card-row";
 import { ChangePlanDialog } from "./change-plan-dialog";
 import { useMembersText } from "./members-text";
 import { waitsInOrganisation } from "./organisation";
@@ -255,6 +257,7 @@ export function PlanSection({
         </Banner>
       )}
       {body}
+      <BillingCard organisation={organisation} />
       {open?.dialog === "override" && plan.data && (
         <OverrideDialog
           organisation={organisation}
@@ -279,37 +282,5 @@ export function PlanSection({
         />
       )}
     </section>
-  );
-}
-
-/** One row of the card (4.14): its name in a column, the value and its details after it, the row's buttons at the end. */
-function Row({
-  label,
-  actions,
-  children,
-}: {
-  label: string;
-  actions?: ReactNode;
-  children: ReactNode;
-}) {
-  const labelId = useId();
-  return (
-    // biome-ignore lint/a11y/useSemanticElements: a fieldset would draw a frame the card does not have; the group names the row.
-    <div
-      role="group"
-      aria-labelledby={labelId}
-      className="flex flex-col gap-2 px-5 py-3 tablet:flex-row tablet:items-center tablet:gap-6"
-    >
-      <span
-        id={labelId}
-        className="text-small text-muted-foreground tablet:w-48 tablet:shrink-0"
-      >
-        {label}
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-body">
-        {children}
-      </div>
-      {actions && <div className="flex shrink-0 gap-2">{actions}</div>}
-    </div>
   );
 }

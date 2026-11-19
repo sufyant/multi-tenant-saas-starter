@@ -37,15 +37,33 @@ export function limitOf(plan: Plan, key: LimitKey): LimitState {
   return { limit, count, left, atLimit, overLimit, full: atLimit || overLimit };
 }
 
-/** The seats of `members.max`, whose count holds the members and the pending invitations. */
-export type Seats = { members: number; invitations: number };
+/**
+ * The seats of `members.max`, whose count holds the members and the pending invitations that take a seat: every member, the
+ * Billing managers among them, who take none (A2), the members who take one, and the pending invitations.
+ */
+export type Seats = {
+  members: number;
+  billing: number;
+  seated: number;
+  invitations: number;
+};
 
 /**
- * The count of `members.max` split by the members that ListMembers counts: the rest are the pending invitations. The two reads
- * can disagree for a moment, so the invitations never go below 0.
+ * The count of `members.max` split by the members that ListMembers counts, less the Billing managers: the rest are the pending
+ * invitations. The reads can disagree for a moment, so no number goes below 0.
  */
-export function seatsOf(state: LimitState, members: number): Seats {
-  return { members, invitations: Math.max(0, state.count - members) };
+export function seatsOf(
+  state: LimitState,
+  members: number,
+  billing = 0,
+): Seats {
+  const seated = Math.max(0, members - billing);
+  return {
+    members,
+    billing,
+    seated,
+    invitations: Math.max(0, state.count - seated),
+  };
 }
 
 /**
@@ -55,17 +73,21 @@ export function seatsOf(state: LimitState, members: number): Seats {
 export function usePlan(): {
   on: (key: FeatureKey) => boolean;
   limit: (key: LimitKey) => LimitState;
-  /** The seats of a limit that counts the members and the pending invitations, from ListMembers' `total`. */
-  seats: (key: LimitKey, members: number) => Seats;
+  /**
+   * The seats of a limit that counts the members and the pending invitations, from ListMembers' `total` and the Billing managers
+   * among them, who take no seat (ListRoles' `memberCount` of the Billing manager, `freeMembersOf`).
+   */
+  seats: (key: LimitKey, members: number, billing?: number) => Seats;
   /** Whether a pending invitation counts in those seats: what "View invitations" waits for. */
-  pending: (key: LimitKey, members: number) => boolean;
+  pending: (key: LimitKey, members: number, billing?: number) => boolean;
 } {
   const { detail } = useTenant();
   return {
     on: (key) => featureOn(detail, key),
     limit: (key) => limitOf(detail, key),
-    seats: (key, members) => seatsOf(limitOf(detail, key), members),
-    pending: (key, members) =>
-      seatsOf(limitOf(detail, key), members).invitations > 0,
+    seats: (key, members, billing = 0) =>
+      seatsOf(limitOf(detail, key), members, billing),
+    pending: (key, members, billing = 0) =>
+      seatsOf(limitOf(detail, key), members, billing).invitations > 0,
   };
 }

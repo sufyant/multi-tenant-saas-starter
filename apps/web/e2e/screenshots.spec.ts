@@ -1,6 +1,7 @@
 import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, type Page, type Route, test } from "@playwright/test";
 import {
+  BillingResponseBilledBy,
   BuiltInRole,
   DataExportResponseStatus,
   ErrorCode,
@@ -8,16 +9,23 @@ import {
   Language,
   MyTenantResponseStatus,
   MyTermsResponseAction,
+  type PaymentResponse,
+  PaymentResponseState,
   type Permission,
   type RoleDetailResponse,
+  type SubscriptionResponse,
+  SubscriptionResponseStatus,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import { activityFileCap } from "../src/features/activity/file-cap";
 import { lastOrganisationCookie } from "../src/shared/last-organisation-cookie";
 import {
+  billing,
   roles as builtInRoles,
+  businessPlan,
   customRoles,
   decemberTerms,
+  freePlan,
   invitationCode,
   manyMembers,
   me,
@@ -25,6 +33,7 @@ import {
   mockActivityFrame,
   mockApi,
   mockAuditLog,
+  mockBilling,
   mockDataExport,
   mockInvitation,
   mockMembers,
@@ -42,6 +51,9 @@ import {
   roleChanged,
   shortenedTo90,
   type Team,
+  team,
+  teamMonthly,
+  teamPlan,
   termsInForce,
   ufukTeam,
 } from "./api";
@@ -1904,6 +1916,8 @@ shellShots.push(
     size: "desktop",
     role: BuiltInRole.BillingManager,
     team: northwindTeam(),
+    mock: (page) => mockBilling(page),
+    ready: (page) => page.getByRole("link", { name: /^Billing/ }).waitFor(),
   },
   {
     file: "14.09-general-billing-manager-en-light-desktop",
@@ -1925,6 +1939,7 @@ shellShots.push(
     role: BuiltInRole.BillingManager,
     path: general,
     team: northwindTeam(),
+    mock: (page) => mockBilling(page),
     open: async (page) => {
       await page.getByRole("button", { name: "Open menu" }).click();
       await page.getByRole("dialog").waitFor();
@@ -2322,6 +2337,272 @@ shellShots.push(
     },
     ready: (page) =>
       page.getByText("Entries older than 90 days go on 1 Dec 2026.").waitFor(),
+  },
+);
+
+// The Billing frames of 40b (10.01 to 10.07, 10.10, 10.12, 10.15 to 10.24, 14.11, 14.14), with the frames' plan, people and dates.
+// 10.05 and 10.11 are toasts after a change and Stripe's return; 10.08, 10.09 and 10.14 are the trial's (40d). The meters' rows
+// come with 40c.
+const billingPage = `${settings}/billing`;
+const plansPage = `${billingPage}/plans`;
+const failedPayment = (
+  state: PaymentResponseState,
+  more: Partial<PaymentResponse> = {},
+): SubscriptionResponse => ({
+  ...teamMonthly,
+  status: SubscriptionResponseStatus.PastDue,
+  payment: {
+    state,
+    failedAt: "2026-11-01T10:00:00Z",
+    attempts: 1,
+    nextAttemptAt: "2026-11-05T10:00:00Z",
+    graceEndsAt: null,
+    movedAt: null,
+    amountDue: 10000,
+    currency: "EUR",
+    card: { brand: "visa", last4: "4242" },
+    ...more,
+  },
+});
+const onBilling = {
+  size: "desktop",
+  path: billingPage,
+  team: northwindTeam(),
+  plan: team,
+  fullPage: true,
+} as const;
+/** Billing has loaded: its last card, and the seats' line, which waits for the members. */
+const billingReady = async (page: Page) => {
+  await page.getByRole("heading", { name: "Billing email" }).waitFor();
+  await page.getByText(/^1\d members/).waitFor();
+};
+shellShots.push(
+  {
+    ...onBilling,
+    file: "10.01-billing-en-light-desktop",
+    mock: (page) => mockBilling(page),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.02-change-plan-monthly-en-light-desktop",
+    path: plansPage,
+    fullPage: false,
+    mock: (page) => mockBilling(page),
+    ready: (page) =>
+      page.getByRole("button", { name: "Upgrade to Business" }).waitFor(),
+  },
+  {
+    ...onBilling,
+    file: "10.03-change-plan-yearly-en-light-desktop",
+    path: plansPage,
+    fullPage: false,
+    mock: (page) => mockBilling(page),
+    ready: (page) =>
+      page.getByRole("button", { name: "Upgrade to Business" }).waitFor(),
+    open: (page) => page.getByRole("radio", { name: /^Yearly/ }).click(),
+  },
+  {
+    ...onBilling,
+    file: "10.04-upgrade-preview-en-light-desktop",
+    path: plansPage,
+    fullPage: false,
+    mock: (page) => mockBilling(page),
+    ready: (page) =>
+      page.getByRole("button", { name: "Upgrade to Business" }).waitFor(),
+    open: async (page) => {
+      await page.getByRole("button", { name: "Upgrade to Business" }).click();
+      await page
+        .getByRole("button", { name: "Upgrade and pay €53.25" })
+        .waitFor();
+    },
+  },
+  {
+    ...onBilling,
+    file: "10.06-cancel-plan-en-light-desktop",
+    mock: (page) => mockBilling(page),
+    ready: billingReady,
+    open: async (page) => {
+      await page.getByRole("button", { name: "Cancel plan" }).click();
+      await page.getByRole("alertdialog").waitFor();
+    },
+  },
+  {
+    ...onBilling,
+    file: "10.07-cancellation-scheduled-en-light-desktop",
+    mock: (page) =>
+      mockBilling(page, billing({ ...teamMonthly, cancelAtPeriodEnd: true })),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.10-opening-stripe-en-light-desktop",
+    path: plansPage,
+    fullPage: false,
+    plan: { ...team, planName: "Free" },
+    mock: async (page) => {
+      await mockBilling(page, billing(null));
+      // Stripe's page never comes, so the button keeps saying so.
+      await page.route(
+        `**/api/v1/tenants/${northwind.id}/billing/checkout-session`,
+        () => {},
+      );
+    },
+    ready: (page) =>
+      page.getByRole("button", { name: "Upgrade to Team" }).waitFor(),
+    open: (page) =>
+      page.getByRole("button", { name: "Upgrade to Team" }).click(),
+  },
+  {
+    ...onBilling,
+    file: "10.12-payment-not-completed-en-light-desktop",
+    path: `${billingPage}?checkout=cancelled`,
+    mock: (page) => mockBilling(page, billing(null)),
+    plan: { ...team, planName: "Free" },
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.15-payment-retrying-en-light-desktop",
+    mock: (page) =>
+      mockBilling(page, billing(failedPayment(PaymentResponseState.Retrying))),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.16-payment-grace-en-light-desktop",
+    mock: (page) =>
+      mockBilling(
+        page,
+        billing(
+          failedPayment(PaymentResponseState.Grace, {
+            attempts: 4,
+            nextAttemptAt: null,
+            graceEndsAt: "2026-11-20T10:00:00Z",
+          }),
+        ),
+      ),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.17-moved-to-free-en-light-desktop",
+    plan: {
+      planName: "Free",
+      entitlements: freePlan.entitlements as Plan["entitlements"],
+      usage: { "members.max": 12, "roles.custom.max": 4 },
+    },
+    mock: (page) =>
+      mockBilling(
+        page,
+        billing(
+          failedPayment(PaymentResponseState.MovedToDefault, {
+            attempts: 4,
+            nextAttemptAt: null,
+            graceEndsAt: "2026-11-20T10:00:00Z",
+            movedAt: "2026-11-20T10:00:00Z",
+            card: null,
+          }),
+        ),
+      ),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.18-price-change-en-light-desktop",
+    mock: (page) =>
+      mockBilling(
+        page,
+        billing({
+          ...teamMonthly,
+          priceChange: {
+            movesAt: "2027-02-01T00:00:00Z",
+            oldPrices: teamPlan.prices,
+            newPrices: { ...teamPlan.prices, perPersonMonthly: 1200 },
+          },
+        }),
+      ),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.19-contract-en-light-desktop",
+    fullPage: false,
+    plan: {
+      planName: "Business",
+      entitlements: businessPlan.entitlements as Plan["entitlements"],
+      usage: { "members.max": 12, "roles.custom.max": 4 },
+    },
+    mock: (page) =>
+      mockBilling(
+        page,
+        billing(null, { billedBy: BillingResponseBilledBy.Contract }),
+      ),
+    ready: (page) =>
+      page.getByText("Your plan is billed by contract.").waitFor(),
+  },
+  {
+    ...onBilling,
+    file: "10.20-billing-loading-en-light-desktop",
+    fullPage: false,
+    mock: async (page) => {
+      await still(page);
+      await mockBilling(page);
+      await page.route(`**/api/v1/tenants/${northwind.id}/billing`, () => {});
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading billing" }).waitFor(),
+  },
+  {
+    ...onBilling,
+    file: "10.21-billing-error-en-light-desktop",
+    fullPage: false,
+    mock: async (page) => {
+      await mockBilling(page);
+      await page.route(`**/api/v1/tenants/${northwind.id}/billing`, (route) =>
+        route.fulfill(serverError),
+      );
+    },
+    ready: (page) => page.getByText("Couldn’t load billing").waitFor(),
+  },
+  {
+    ...onBilling,
+    file: "10.22-billing-en-light-phone",
+    size: "phone",
+    mock: (page) => mockBilling(page),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.23-billing-en-dark-desktop",
+    scheme: "dark",
+    mock: (page) => mockBilling(page),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.24-billing-ar-light-desktop",
+    language: Language.Ar,
+    mock: (page) => mockBilling(page),
+    ready: (page) =>
+      page
+        .getByRole("heading", { name: "البريد الإلكتروني للفوترة" })
+        .waitFor(),
+  },
+  {
+    ...onBilling,
+    file: "14.11-billing-billing-manager-en-light-desktop",
+    role: BuiltInRole.BillingManager,
+    mock: (page) => mockBilling(page),
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "14.14-billing-billing-manager-en-light-phone",
+    size: "phone",
+    role: BuiltInRole.BillingManager,
+    mock: (page) => mockBilling(page),
+    ready: billingReady,
   },
 );
 
