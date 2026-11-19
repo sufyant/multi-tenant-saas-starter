@@ -24,7 +24,7 @@ import { useBillingText, useSeatFacts } from "./use-billing-text";
 /**
  * The Billing page's banners, above the plan (10.07, 10.15 to 10.18): a failed payment, while Stripe retries, in billing's grace, or
  * after the move to the default plan, each with the portal that pays; a cancellation or a move scheduled at the period's end, with
- * Undo; and a price change the organisation was told of, which the viewer can close.
+ * Undo; and a price change the organisation was told of, which the viewer can close while the page is open.
  */
 export function BillingBanners({
   subscription,
@@ -55,14 +55,8 @@ export function BillingBanners({
         refreshTenant(queryClient, tenant.id),
       ]),
   });
-  const closedKey = `billing.priceChange.closed.${tenant.id}`;
-  const [closed, setClosed] = useState(() => {
-    try {
-      return window.localStorage.getItem(closedKey);
-    } catch {
-      return null;
-    }
-  });
+  // Closing the price change hides it while the page is open; it shows again on the next visit, until its day.
+  const [closed, setClosed] = useState<string | null>(null);
 
   const banners = [];
   const payment = subscription.payment;
@@ -185,14 +179,7 @@ export function BillingBanners({
         key="price"
         tone="info"
         closeLabel={t("common.close")}
-        onClose={() => {
-          setClosed(change.movesAt);
-          try {
-            window.localStorage.setItem(closedKey, change.movesAt);
-          } catch {
-            // A private window keeps nothing; the banner shows again next time.
-          }
-        }}
+        onClose={() => setClosed(change.movesAt)}
         title={t(base ? "billing.priceChangeBase" : "billing.priceChange", {
           date: text.date(change.movesAt),
           plan: planName,
