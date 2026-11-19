@@ -64,5 +64,6 @@ public static class SubscriptionEndpoints
                 : null,
             priceChange is null
                 ? null
-                : new SubscriptionPriceChangeResponse(priceChange.MovesAt, PricesResponse.Of(priceChange.OldPrices), PricesResponse.Of(priceChange.NewPrices)));
+                : new SubscriptionPriceChangeResponse(priceChange.MovesAt, PricesResponse.Of(priceChange.OldPrices), PricesResponse.Of(priceChange.NewPrices)),
+            subscription.LastPaidAt);
 }

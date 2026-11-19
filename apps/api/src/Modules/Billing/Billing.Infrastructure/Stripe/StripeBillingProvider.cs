@@ -349,6 +349,12 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
         return new Uri(session.Url);
     }
 
+    // A key of test mode ("sk_test_", "rk_test_") opens the dashboard's test data (Stripe, "API keys", "Test mode").
+    Uri IBillingProvider.CustomerPageOf(string customerId) =>
+        new(settings.Value.SecretKey?.Contains("_test_", StringComparison.Ordinal) == true
+            ? $"https://dashboard.stripe.com/test/customers/{Uri.EscapeDataString(customerId)}"
+            : $"https://dashboard.stripe.com/customers/{Uri.EscapeDataString(customerId)}");
+
     async Task<ProviderSubscription?> IBillingProvider.FindSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
         var subscription = await new SubscriptionService(client).GetAsync(
@@ -383,7 +389,8 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             subscription.Items.Data.FirstOrDefault(seats => IsPerPerson(seats.Price)) is { } perPerson ? (int)perPerson.Quantity : null,
             FailedPaymentOf(subscription),
             subscription.Items.Data.FirstOrDefault(fee => !IsPerPerson(fee.Price))?.Price.UnitAmount ?? 0,
-            subscription.Items.Data.FirstOrDefault(fee => IsPerPerson(fee.Price))?.Price.UnitAmount ?? 0);
+            subscription.Items.Data.FirstOrDefault(fee => IsPerPerson(fee.Price))?.Price.UnitAmount ?? 0,
+            subscription.LatestInvoice is { Status: "paid" } paid ? paid.StatusTransitions?.PaidAt : null);
     }
 
     ProviderEvent? IBillingProvider.ReadEvent(string body, string? signature)

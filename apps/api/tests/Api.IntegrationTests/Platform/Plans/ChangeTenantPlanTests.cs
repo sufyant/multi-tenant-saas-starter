@@ -129,5 +129,44 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
         (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe($$$"""{"newPlan": {"id": "{{{SeedPlans.Free}}}", "name": "Free"}, "oldPlan": {"id": "{{{SeedPlans.Business}}}", "name": "Business"}}""");
     }
 
+    [Fact]
+    public async Task ChangeTenantPlan_ATenantThatPaysByCard_IsRefusedAndKeepsItsPlan()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var response = await admin.ChangeTenantPlanAsync(tenantId, await tenants.DefaultPlanAsync());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await BillingRequests.CodeOfAsync(response)).ShouldBe("tenant.pays_by_card");
+        (await tenants.PlanOfAsync(tenantId)).ShouldBe(tenants.Team);
+    }
+
+    [Fact]
+    public async Task ChangeTenantPlan_AContractTenant_ChangesThePlan()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+        var plan = await tenants.DefaultPlanAsync();
+
+        var response = await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenantId, plan));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await tenants.PlanOfAsync(tenantId)).ShouldBe(plan);
+    }
+
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+    // Step 40b: billing is on for this test alone, with its plans and Stripe's fake.
+    private async Task<PayingTenants> BillingOnAsync()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        return tenants;
+    }
 }

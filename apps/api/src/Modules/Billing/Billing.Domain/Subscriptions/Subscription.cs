@@ -55,6 +55,12 @@ internal sealed class Subscription : ITenantEntity
     /// <summary>When the grace ended and the tenant moved to the default plan (B11); none until then, and again once the subscription pays.</summary>
     public DateTimeOffset? MovedToDefaultAt { get; private set; }
 
+    /// <summary>
+    /// When the subscription's last paid invoice was paid (4.27): a state whose latest invoice is open keeps it. None until the provider
+    /// names a paid invoice, and again for another subscription.
+    /// </summary>
+    public DateTimeOffset? LastPaidAt { get; private set; }
+
     /// <summary>When billing last wrote the row.</summary>
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -238,7 +244,8 @@ internal sealed class Subscription : ITenantEntity
 
         if (state.CustomerId == CustomerId && state.SubscriptionId == SubscriptionId && state.PlanId == PlanId && state.Interval == Interval
             && state.Status == Status && state.CurrentPeriodEnd == CurrentPeriodEnd && state.CancelAtPeriodEnd == CancelAtPeriodEnd
-            && state.ScheduledPlanId == ScheduledPlanId && state.ScheduledInterval == ScheduledInterval && state.Payment == FailedPayment)
+            && state.ScheduledPlanId == ScheduledPlanId && state.ScheduledInterval == ScheduledInterval && state.Payment == FailedPayment
+            && (state.LastPaidAt is null || state.LastPaidAt == LastPaidAt))
         {
             return StateChange.Unchanged;
         }
@@ -247,7 +254,7 @@ internal sealed class Subscription : ITenantEntity
         if (state.SubscriptionId != SubscriptionId)
         {
             ClosureEnd = ClosureEnd.None;
-            (GraceEndsAt, MovedToDefaultAt) = (null, null);
+            (GraceEndsAt, MovedToDefaultAt, LastPaidAt) = (null, null, null);
         }
 
         // B11: a paid invoice ends the grace, and a subscription that pays again takes the tenant back from the default plan.
@@ -265,6 +272,7 @@ internal sealed class Subscription : ITenantEntity
         (CustomerId, SubscriptionId, PlanId, Interval, Status, CurrentPeriodEnd, CancelAtPeriodEnd, UpdatedAt) =
             (state.CustomerId, state.SubscriptionId, state.PlanId, state.Interval, state.Status, state.CurrentPeriodEnd, state.CancelAtPeriodEnd, at);
         (ScheduledPlanId, ScheduledInterval) = (state.ScheduledPlanId, state.ScheduledInterval);
+        LastPaidAt = state.LastPaidAt ?? LastPaidAt;
         return StateChange.Changed;
     }
 }

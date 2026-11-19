@@ -152,6 +152,7 @@ public sealed class MigratedSchemaTests(Database database)
             table billing.billing_emails: DELETE, INSERT, SELECT, UPDATE
             table billing.checkouts: DELETE, INSERT, SELECT, UPDATE
             table billing.contracts: DELETE, INSERT, SELECT
+            table billing.contract_tenants: DELETE, INSERT, SELECT
             table billing.customers: DELETE, INSERT, SELECT, UPDATE
             table billing.payers: DELETE, INSERT, SELECT, UPDATE
             table billing.price_changes: INSERT, SELECT, UPDATE

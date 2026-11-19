@@ -13,6 +13,9 @@ public static class Errors
 
     public static readonly Error TenantNotFound = Error.NotFound(ControlPlaneErrorCodes.TenantNotFound, "The tenant was not found.");
 
+    public static readonly Error TenantPaysByCard =
+        Error.Conflict(ControlPlaneErrorCodes.TenantPaysByCard, "The tenant pays its plan by card: its subscription sets its plan. Switch it to Contract first.");
+
     public static readonly Error UserNotFound = Error.NotFound(ControlPlaneErrorCodes.UserNotFound, "The user was not found.");
 
     public static readonly Error UserEmailTaken = Error.Conflict(ControlPlaneErrorCodes.UserEmailTaken, "Another account uses this address.");

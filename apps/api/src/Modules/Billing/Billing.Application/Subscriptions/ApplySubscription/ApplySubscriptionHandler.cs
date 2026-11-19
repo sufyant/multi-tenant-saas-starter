@@ -44,7 +44,8 @@ public static class ApplySubscriptionHandler
                 ? new FailedPayment(
                     payment.InvoiceId, payment.AmountDue, payment.Currency, payment.FailedAt, payment.Attempts, payment.NextAttemptAt, payment.CardBrand,
                     payment.CardLast4)
-                : null);
+                : null,
+            command.LastPaidAt);
         var now = time.GetUtcNow();
         // A purge that deleted the customer since the route leaves nothing to apply (B5).
         if (await customers.FindForUpdateAsync(cancellationToken) is not { } customer)
@@ -167,7 +168,8 @@ public static class ApplySubscriptionHandler
     }
 
     // An ended subscription pays nothing more; one that ends at its period's end, or a Contract tenant's, pays no next period, so no price
-    // change counts it, tells it or moves it (B12). A message of the version before the price changes keeps the amounts billing knows.
+    // change counts it, tells it or moves it (B12). An open invoice whose payment failed makes it overdue for the platform's filter (4.38),
+    // until a state without it; a Contract tenant has no failed-payment states. A message of the version before the price changes keeps the amounts billing knows.
     private static async Task TakePayerAsync(IPriceChangeStore payers, SubscriptionState state, ApplySubscriptionCommand command, bool contract, CancellationToken cancellationToken)
     {
         if (Subscription.HasEnded(state.Status))
@@ -178,12 +180,13 @@ public static class ApplySubscriptionHandler
 
         var yearly = state.Interval == BillingInterval.Yearly;
         var ends = state.CancelAtPeriodEnd || contract;
+        var overdue = state.Payment is not null && !contract;
         if (await payers.FindPayerAsync(cancellationToken) is { } payer)
         {
-            payer.Take(state.PlanId, yearly, command.BaseAmount ?? payer.BaseAmount, command.PerPersonAmount ?? payer.PerPersonAmount, ends);
+            payer.Take(state.PlanId, yearly, command.BaseAmount ?? payer.BaseAmount, command.PerPersonAmount ?? payer.PerPersonAmount, ends, overdue);
             return;
         }
 
-        payers.AddPayer(new Payer(command.TenantId, state.PlanId, yearly, command.BaseAmount ?? 0, command.PerPersonAmount ?? 0, ends));
+        payers.AddPayer(new Payer(command.TenantId, state.PlanId, yearly, command.BaseAmount ?? 0, command.PerPersonAmount ?? 0, ends, overdue));
     }
 }

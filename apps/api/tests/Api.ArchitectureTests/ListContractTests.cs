@@ -32,6 +32,9 @@ public sealed class ListContractTests : IAsyncLifetime
 
     private static readonly string[] StatusCountedLists = ["ListTenants", "ListUsers"];
 
+    // Step 40b, part 12: the billing filter of the Organisations list (4.38) shows the count of each billing situation.
+    private static readonly string[] BillingCountedLists = ["ListTenants"];
+
     private JsonElement _document;
 
     public ValueTask InitializeAsync()
@@ -165,7 +168,9 @@ public sealed class ListContractTests : IAsyncLifetime
     }
 
     private static string ExpectedAnswerOf(string list) =>
-        StatusCountedLists.Contains(list) ? $"{list}: items, page, pageSize, statusCounts, total" : $"{list}: items, page, pageSize, total";
+        BillingCountedLists.Contains(list) ? $"{list}: billingCounts, items, page, pageSize, statusCounts, total"
+        : StatusCountedLists.Contains(list) ? $"{list}: items, page, pageSize, statusCounts, total"
+        : $"{list}: items, page, pageSize, total";
 
     // An id filter takes one id, which the same field of the response holds (roleId: role.id).
     private static bool IsId(JsonElement schema) =>

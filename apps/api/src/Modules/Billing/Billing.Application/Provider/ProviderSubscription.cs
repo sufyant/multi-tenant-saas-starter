@@ -7,7 +7,8 @@ namespace Billing.Application.Provider;
 /// scheduled (B9). <paramref name="People"/> is how many seated members the fee per person counts; none when the subscription has no fee per
 /// person (step 40, billing per person). <paramref name="Payment"/> is the open invoice whose payment failed; none when nothing is due (B11).
 /// <paramref name="BaseAmount"/> and <paramref name="PerPersonAmount"/> are what its Prices charge, 0 for a part it has no Price for (B13);
-/// none when the adapter did not read them.
+/// none when the adapter did not read them. <paramref name="LastPaidAt"/> is when its latest invoice was paid; none while that invoice is not
+/// paid (4.27).
 /// </summary>
 public sealed record ProviderSubscription(
     string CustomerId,
@@ -22,4 +23,5 @@ public sealed record ProviderSubscription(
     int? People = null,
     ProviderPayment? Payment = null,
     long? BaseAmount = null,
-    long? PerPersonAmount = null);
+    long? PerPersonAmount = null,
+    DateTimeOffset? LastPaidAt = null);

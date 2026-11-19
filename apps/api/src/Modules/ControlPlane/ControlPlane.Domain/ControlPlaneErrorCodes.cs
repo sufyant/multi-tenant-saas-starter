@@ -119,6 +119,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantNotFound = ErrorCode.Declare("tenant.not_found");
 
+    public static readonly ErrorCode TenantPaysByCard = ErrorCode.Declare("tenant.pays_by_card");
+
     public static readonly ErrorCode TenantReopenPeriodEnded = ErrorCode.Declare("tenant.reopen_period_ended");
 
     public static readonly ErrorCode TenantSlugInvalid = ErrorCode.Declare("tenant.slug_invalid");

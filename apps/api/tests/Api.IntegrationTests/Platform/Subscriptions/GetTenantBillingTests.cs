@@ -40,6 +40,48 @@ public sealed class GetTenantBillingTests(Database database) : IAsyncLifetime
         (subscription.GetProperty("planId").GetGuid(), subscription.GetProperty("currentPeriodEnd").GetDateTimeOffset()).ShouldBe((_tenants.Team, PayingTenants.PeriodEnd));
     }
 
+    // 4.27: the platform names the tenant's customer at Stripe and its page in Stripe's dashboard.
+    [Fact]
+    public async Task GetTenantBilling_APayingTenant_AnswersItsCustomerAndItsDashboardPage()
+    {
+        var (tenantId, _) = await _tenants.PayingAsync(_tenants.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var billing = await (await admin.GetTenantBillingAsync(tenantId)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        var customer = billing.GetProperty("customer");
+        $"{customer.GetProperty("id").GetString()}|{customer.GetProperty("dashboardUrl").GetString()}"
+            .ShouldBe($"{FakeBillingProvider.CustomerOf(tenantId)}|https://dashboard.example/customers/{FakeBillingProvider.CustomerOf(tenantId)}");
+    }
+
+    // 4.27: the last payment is when Stripe last named a paid invoice; an open invoice after it keeps it.
+    [Fact]
+    public async Task GetTenantBilling_AnOpenInvoiceAfterAPaidOne_AnswersTheLastPayment()
+    {
+        var (tenantId, _) = await _tenants.PayingAsync(_tenants.Team);
+        var paidAt = new DateTimeOffset(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
+        _api.Billing.Put(BillingRequests.Subscription(tenantId, _tenants.Team) with { LastPaidAt = paidAt });
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.paid", $"sub_{tenantId:N}"));
+        _api.Billing.Put(BillingRequests.Subscription(tenantId, _tenants.Team) with { CurrentPeriodEnd = new DateTimeOffset(2027, 1, 15, 0, 0, 0, TimeSpan.Zero) });
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "customer.subscription.updated", $"sub_{tenantId:N}"));
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var billing = await (await admin.GetTenantBillingAsync(tenantId)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        billing.GetProperty("subscription").GetProperty("lastPaymentAt").GetDateTimeOffset().ShouldBe(paidAt);
+    }
+
+    [Fact]
+    public async Task GetTenantBilling_ATenantThatNeverOpenedACheckout_AnswersNoCustomer()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var billing = await (await admin.GetTenantBillingAsync(tenant.Id)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        billing.GetProperty("customer").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
     [Fact]
     public async Task GetTenantBilling_AnUnknownTenant_IsNotFound()
     {

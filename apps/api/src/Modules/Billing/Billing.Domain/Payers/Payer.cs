@@ -7,7 +7,7 @@ namespace Billing.Domain.Payers;
 /// tenants' summaries are (R12); the tenant's own transaction writes it, with its subscription. The subscription's row stays under row
 /// level security and keeps everything else.
 /// </summary>
-internal sealed class Payer(Guid tenantId, Guid planId, bool yearly, long baseAmount, long perPersonAmount, bool ends)
+internal sealed class Payer(Guid tenantId, Guid planId, bool yearly, long baseAmount, long perPersonAmount, bool ends, bool overdue = false)
 {
     public Guid TenantId { get; private init; } = tenantId;
 
@@ -22,6 +22,9 @@ internal sealed class Payer(Guid tenantId, Guid planId, bool yearly, long baseAm
     /// <summary>Whether the subscription ends at its period's end: it pays no next period, so no price change moves it or tells it.</summary>
     public bool Ends { get; private set; } = ends;
 
-    public void Take(Guid planId, bool yearly, long baseAmount, long perPersonAmount, bool ends) =>
-        (PlanId, Yearly, BaseAmount, PerPersonAmount, Ends) = (planId, yearly, baseAmount, perPersonAmount, ends);
+    /// <summary>Whether an open invoice's payment failed (B11), so the platform's filter lists the tenant as overdue (4.38).</summary>
+    public bool Overdue { get; private set; } = overdue;
+
+    public void Take(Guid planId, bool yearly, long baseAmount, long perPersonAmount, bool ends, bool overdue) =>
+        (PlanId, Yearly, BaseAmount, PerPersonAmount, Ends, Overdue) = (planId, yearly, baseAmount, perPersonAmount, ends, overdue);
 }

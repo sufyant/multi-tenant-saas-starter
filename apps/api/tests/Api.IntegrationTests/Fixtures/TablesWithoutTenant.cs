@@ -11,7 +11,7 @@ internal static class TablesWithoutTenant
     // platform reads across tenants as it reads the tenants (R12), the plans, their values, their meters (step 40) and the default mark, the terms versions
     // and the users' acceptances and dismissals of them, which belong to no tenant (step 38), the feature flags with their listed organisations and their history, which only the platform writes (step 39), the platform's audit log,
     // billing's map of Stripe's customers to their tenants and the Stripe events it received, which the webhook reads before any tenant is
-    // known (step 40), and the host's idempotency keys. Notifications, and the deliveries by email only, belong to a user (U3):
+    // known (step 40), billing's list of the Contract tenants, which the platform filters and counts across tenants (B12), and the host's idempotency keys. Notifications, and the deliveries by email only, belong to a user (U3):
     // their own policy keeps each user to their rows (ExtraPolicies).
     public static readonly IReadOnlySet<string> Tables = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -34,6 +34,7 @@ internal static class TablesWithoutTenant
         "control_plane.feature_flag_changes",
         "api.idempotency_keys",
         "audit.platform_entries",
+        "billing.contract_tenants",
         "billing.customers",
         "billing.payers",
         "billing.price_changes",

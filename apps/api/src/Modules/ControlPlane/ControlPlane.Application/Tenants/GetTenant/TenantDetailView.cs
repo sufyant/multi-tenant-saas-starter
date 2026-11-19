@@ -3,7 +3,7 @@ using ControlPlane.Application.Users;
 namespace ControlPlane.Application.Tenants.GetTenant;
 
 /// <summary>
-/// One tenant for the platform: as in the list, when it was created included, with every Owner in the order they joined in place of the first. The counts and the
+/// One tenant for the platform: as in the list, when it was created included, with every Owner in the order they joined in place of the first. The counts, the free members of a role that takes no seat (A2) among them, and the
 /// Owner invitation come from the tenant's summary (R12), the Owners from the tenant's own rows. Until when it can be reopened and when
 /// its Owners are warned of its purge come from its closure and the settings. Who created, suspended and closed it, as they are named
 /// now, when it was suspended and when its purge started: each null for a seed and for an event before its column (the maintainer's
@@ -15,6 +15,7 @@ public sealed record TenantDetailView(
     DateTimeOffset? ReopenableUntil,
     DateTimeOffset? PurgeWarningAt,
     int MemberCount,
+    int FreeMemberCount,
     int OwnerCount,
     int PendingInvitationCount,
     IReadOnlyList<TenantOwnerView> Owners,

@@ -18,6 +18,7 @@ public sealed class SubscriptionQueries(BillingDbContext billing) : ISubscriptio
                     ? new PaymentView(
                         state.ToString(), failed.FailedAt, failed.Attempts, failed.NextAttemptAt, s.GraceEndsAt, s.MovedToDefaultAt, failed.AmountDue,
                         failed.Currency, failed.CardBrand, failed.CardLast4)
-                    : null)
+                    : null,
+                s.LastPaidAt)
             : null;
 }

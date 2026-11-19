@@ -6,6 +6,7 @@ using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CreateTenant;
+using ControlPlane.Application.Tenants.GetBillingSituations;
 using ControlPlane.Application.Tenants.GetTenant;
 using ControlPlane.Application.Tenants.ListTenants;
 using ControlPlane.Application.Tenants.ReactivateTenant;
@@ -66,6 +67,7 @@ public static class TenantEndpoints
         ListSort<ListTenantsSort>? sort,
         string? q,
         ListFilter<TenantResponseStatus>[]? status,
+        ListFilter<TenantResponseBilling>? billing,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -81,8 +83,16 @@ public static class TenantEndpoints
             return filter.Error;
         }
 
+        var situation = ListFilter.Read(billing, nameof(billing));
+        if (!situation.IsSuccess)
+        {
+            return situation.Error;
+        }
+
+        // 4.38: billing knows the tenants of each billing situation, across tenants (R6), and the list keeps only those.
+        var counts = await bus.InvokeAsync<BillingSituationsView?>(new GetBillingSituationsQuery(situation.Value?.ToString()), cancellationToken);
         var tenants = await bus.InvokeAsync<Result<TenantListView>>(
-            new ListTenantsQuery(list.Value, [.. filter.Value.Select(ResponseStatus.OfTenant)]),
+            new ListTenantsQuery(list.Value, [.. filter.Value.Select(ResponseStatus.OfTenant)], situation.Value is null ? null : counts?.Only ?? []),
             cancellationToken);
         return tenants.Map(found => new TenantListPageResponse(
             [.. found.Page.Items.Select(ToResponse)],
@@ -90,7 +100,8 @@ public static class TenantEndpoints
             found.Page.PageSize,
             found.Page.Total,
             new TenantStatusCountsResponse(
-                found.StatusCounts.Active, found.StatusCounts.Suspended, found.StatusCounts.Closed, found.StatusCounts.Purging, found.StatusCounts.Purged)));
+                found.StatusCounts.Active, found.StatusCounts.Suspended, found.StatusCounts.Closed, found.StatusCounts.Purging, found.StatusCounts.Purged),
+            counts is null ? null : new TenantBillingCountsResponse(counts.PaymentOverdue, counts.Contract)));
     }
 
     // One tenant is read inside the tenant the route names, as suspension does (W3); an id no tenant has is not found.
@@ -169,6 +180,7 @@ public static class TenantEndpoints
         tenant.ReopenableUntil,
         tenant.PurgeWarningAt,
         tenant.MemberCount,
+        tenant.FreeMemberCount,
         tenant.OwnerCount,
         [.. tenant.Owners.Select(ToResponse)],
         tenant.OwnerInvitation is { } invitation ? ToResponse(invitation) : null,
