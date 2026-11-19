@@ -9,8 +9,14 @@ namespace Billing.Infrastructure.Persistence.BillingEmails;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class BillingEmailRepository(BillingDbContext billing) : IBillingEmailRepository
 {
-    Task<BillingEmail?> IBillingEmailRepository.FindForUpdateAsync(CancellationToken cancellationToken) =>
-        billing.BillingEmails.FromSql($"SELECT * FROM billing.billing_emails FOR UPDATE").SingleOrDefaultAsync(cancellationToken);
+    // A missing row locks nothing, and a tenant with no customer has nothing else to lock, so the lock is a transaction-level advisory lock
+    // of the tenant's billing email, as the Contract mark's (B12): two first addresses at once run one after the other.
+    async Task<BillingEmail?> IBillingEmailRepository.FindForUpdateAsync(CancellationToken cancellationToken)
+    {
+        await billing.Database.ExecuteSqlAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended('billing.billing_emails:' || current_setting('app.tenant_id'), 0))", cancellationToken);
+        return await billing.BillingEmails.SingleOrDefaultAsync(cancellationToken);
+    }
 
     async Task<BillingEmailView?> IBillingEmailRepository.ReadAsync(CancellationToken cancellationToken) =>
         await billing.BillingEmails.AsNoTracking().Select(email => new BillingEmailView(email.Address, email.SetBy)).SingleOrDefaultAsync(cancellationToken);

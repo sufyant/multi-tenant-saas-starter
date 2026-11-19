@@ -176,6 +176,29 @@ describe("ActivitySentence", () => {
     ).toBeInTheDocument();
   });
 
+  // B14: the entry keeps no address, only whether the member removed it.
+  it.each([
+    [false, "Ayşe Yılmaz set the billing email."],
+    [true, "Ayşe Yılmaz removed the billing email."],
+  ])(
+    "ActivitySentence_ABillingEmailRemoved%s_SaysWhatTheMemberDid",
+    (removed, sentence) => {
+      renderWithProviders(
+        <ActivitySentence
+          entry={entry({
+            operation: AuditOperation.TenantBillingEmailChanged,
+            details: {
+              ...detailsOf[AuditOperation.TenantBillingEmailChanged],
+              removed,
+            } as AuditDetailsResponse,
+          })}
+        />,
+      );
+
+      expect(shown(sentence)).toBeInTheDocument();
+    },
+  );
+
   it("ActivitySentence_InvitationRevokedWithItsAddress_NamesTheAddress", () => {
     renderWithProviders(
       <ActivitySentence

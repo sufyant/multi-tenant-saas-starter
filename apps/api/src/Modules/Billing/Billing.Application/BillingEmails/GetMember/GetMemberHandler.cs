@@ -6,6 +6,6 @@ namespace Billing.Application.BillingEmails.GetMember;
 public static class GetMemberHandler
 {
     public static async Task<Guid> HandleAsync(GetMemberQuery query, IUserDirectory users, CancellationToken cancellationToken) =>
-        (await users.FindContactAsync(query.ExternalUserId, cancellationToken)
+        (await users.FindContactAsync(query.ActorId, cancellationToken)
             ?? throw new InvalidOperationException("The tenant door proved the member, so they are a user.")).UserId;
 }

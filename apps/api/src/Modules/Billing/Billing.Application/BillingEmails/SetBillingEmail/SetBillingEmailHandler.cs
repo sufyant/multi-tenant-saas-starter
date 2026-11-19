@@ -9,7 +9,7 @@ namespace Billing.Application.BillingEmails.SetBillingEmail;
 
 // B14: the tenant's customer, the root of its billing, is locked first (B7), so two changes run one after the other. A change of the
 // address asks for the provider's customer email, through the outbox in the same transaction: the address, or, once it is removed, the
-// address of the member who paid first. The tenant's Activity log records the change by the member, without the address (12.12). A tenant that has no customer yet gets the address at its first checkout. The same address changes
+// address of the member who opened the last checkout or changed the plan last. The tenant's Activity log records the change by the member, without the address (12.12). A tenant that has no customer yet gets the address at its first checkout. The same address changes
 // nothing (I1).
 public static class SetBillingEmailHandler
 {

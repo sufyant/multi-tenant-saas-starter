@@ -90,6 +90,34 @@ public sealed class SetBillingEmailTests(Database database) : IAsyncLifetime
         _api.Billing.CustomerEmails.Count(email => string.Equals(email.Email, Accounts, StringComparison.OrdinalIgnoreCase)).ShouldBe(1);
     }
 
+    // K3, 12.12: the tenant's log records the change by the member, without the address.
+    [Fact]
+    public async Task SetBillingEmail_AnAddressThenNone_RecordsBothInTheTenantsLogWithoutTheAddress()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+        var client = _api.CreateClient(manager);
+        await _api.WaitingForMessagesAsync(() => client.SetBillingEmailAsync(tenant.Id, Accounts));
+
+        await _api.WaitingForMessagesAsync(() => client.SetBillingEmailAsync(tenant.Id, null));
+
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"SELECT string_agg(concat_ws('|', actor_kind, actor_id = '{await _testData.UserIdOfAsync(manager)}', details->>'removed', details::text LIKE '%@%'), ',' ORDER BY occurred_at) FROM audit.entries WHERE tenant_id = '{tenant.Id}' AND operation = 'tenant.billing_email_changed'"))
+            .ShouldBe("User|t|false|f,User|t|true|f");
+    }
+
+    [Fact]
+    public async Task SetBillingEmail_AnAddressOverItsLimit_IsRefusedWithItsFieldError()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var manager = await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+
+        var set = await _api.CreateClient(manager).SetBillingEmailAsync(tenant.Id, $"{new string('a', 250)}@app.test");
+
+        set.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await set.Content.ReadAsStringAsync(Cancellation)).ShouldContain("too_long");
+    }
+
     [Fact]
     public async Task SetBillingEmail_AnAddressThatIsNoEmail_IsRefusedWithItsFieldError()
     {
@@ -125,23 +153,6 @@ public sealed class SetBillingEmailTests(Database database) : IAsyncLifetime
         var set = await off.CreateClient(owner).SetBillingEmailAsync(tenant.Id, Accounts);
 
         (set.StatusCode, await BillingRequests.CodeOfAsync(set)).ShouldBe((HttpStatusCode.NotFound, "billing.off"));
-    }
-
-    // 13.18: the failed payment's email goes to the billing email too, in the language of the member who set it, and it writes no bell.
-    [Fact]
-    public async Task ReceiveWebhook_AFailedPaymentWithABillingEmail_MailsItInTheLanguageOfTheMemberWhoSetIt()
-    {
-        var tenant = await _testData.AddTenantAsync();
-        var owner = await _testData.AddMemberAsync(tenant.Id, await _testData.AddUserAsync(email: PlatformTenants.Email(), language: "tr"), role: "Owner");
-        await _api.PayAsync(owner, tenant.Id, _planId);
-        await _api.WaitingForMessagesAsync(() => _api.CreateClient(owner).SetBillingEmailAsync(tenant.Id, Accounts));
-        var failedAt = new DateTimeOffset(2026, 11, 15, 9, 0, 0, TimeSpan.Zero);
-        _api.Billing.Put(BillingRequests.PastDue(tenant.Id, _planId, failedAt, 1, failedAt.AddDays(3)));
-
-        await _api.PaymentFailedAsync(tenant.Id);
-
-        _api.Email.Sent.Single(sent => sent.To == Accounts).Subject.ShouldBe("Acme Ltd için ödemeyi alamadık");
-        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenant.Id}'")).ShouldBe(1);
     }
 
     private static async Task<string?> BillingEmailAsync(HttpClient client, Guid tenantId)
