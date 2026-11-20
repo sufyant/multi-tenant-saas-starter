@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json.Nodes;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Api.Platform.Plans;
 using ControlPlane.Api.Statuses;
 using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Application.Plans;
@@ -42,7 +43,8 @@ public static class TenantProfileEndpoints
         tenant.PlanName,
         tenant.Entitlements.ToDictionary(value => value.Key, value => (JsonNode?)ValueOf(value.Value), StringComparer.Ordinal),
         tenant.Usage,
-        billingEnabled);
+        billingEnabled,
+        TrialResponse.Of(tenant.Trial));
 
     // A feature is true or false, a limit is its number, and an unlimited limit is null.
     private static JsonValue? ValueOf(EntitlementValueView value) =>

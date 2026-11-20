@@ -107,7 +107,8 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             tenant.CreatedAt,
             facts.Plan.Name,
             effective.Values.OrderBy(value => value.Key, StringComparer.Ordinal).ToDictionary(value => value.Key, value => EntitlementValueView.Of(value.Value), StringComparer.Ordinal),
-            EntitlementKeys.Limits.ToDictionary(key => key, usage.CountOf, StringComparer.Ordinal));
+            EntitlementKeys.Limits.ToDictionary(key => key, usage.CountOf, StringComparer.Ordinal),
+            await FindTrialAsync(cancellationToken));
     }
 
     // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. Three queries
@@ -218,7 +219,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
                 EntitlementValueView.Of(effective.ValueOf(key.Key)),
                 usage.CountOf(key.Key)))
             .ToList();
-        return new TenantPlanView(found.TenantId, found.Plan, entitlements);
+        return new TenantPlanView(found.TenantId, found.Plan, entitlements, await FindTrialAsync(cancellationToken));
     }
 
     async Task<TenantPlanChangePreviewView?> ITenantQueries.PreviewPlanChangeAsync(
@@ -312,5 +313,26 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             .AsNoTracking()
             .SingleOrDefaultAsync(cancellationToken);
         return found is null ? null : (found.Id, new PlanNames(found.PlanId, found.PlanName), found.Summary);
+    }
+
+    // The active tenant's last trial, with the names of its plan and of the plan it returns to (step 40d). None without a trial.
+    private async Task<TrialView?> FindTrialAsync(CancellationToken cancellationToken)
+    {
+        var found = await (
+                from tenant in controlPlane.Tenants
+                where tenant.Id == controlPlane.ActiveTenant
+                join plan in controlPlane.Plans on tenant.TrialPlanId equals (Guid?)plan.Id
+                join before in controlPlane.Plans on tenant.PlanBeforeTrialId equals (Guid?)before.Id into returns
+                from returnsTo in returns.DefaultIfEmpty()
+                select new
+                {
+                    Plan = new PlanNames(plan.Id, plan.Name),
+                    StartedAt = tenant.TrialStartedAt!.Value,
+                    EndsAt = tenant.TrialEndsAt!.Value,
+                    ReturnsTo = returnsTo == null ? null : new PlanNames(returnsTo.Id, returnsTo.Name),
+                })
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cancellationToken);
+        return found is null ? null : new TrialView(found.Plan, found.StartedAt, found.EndsAt, found.ReturnsTo);
     }
 }

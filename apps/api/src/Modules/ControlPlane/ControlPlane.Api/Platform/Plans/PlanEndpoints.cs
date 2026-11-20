@@ -226,5 +226,5 @@ public static class PlanEndpoints
                     entry.SetAt)
                 : null,
             ToResponse(entitlement.Effective),
-            entitlement.Count))]);
+            entitlement.Count))], TrialResponse.Of(plan.Trial));
 }

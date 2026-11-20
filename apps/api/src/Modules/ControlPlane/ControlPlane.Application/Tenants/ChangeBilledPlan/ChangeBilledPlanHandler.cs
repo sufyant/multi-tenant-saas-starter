@@ -31,13 +31,14 @@ public static class ChangeBilledPlanHandler
         var oldPlan = await plans.FindPlanNameAsync(tenant.PlanId, cancellationToken)
             ?? throw new InvalidOperationException("A tenant is always on a plan.");
         // A closed, purging or purged tenant's plan is read-only (E2), so its subscription changes nothing here.
-        var changed = tenant.ChangePlan(plan.Id);
+        // During a trial, the plan the tenant returns to keeps the trial; another plan ends it (Tenant.PayForPlan).
+        var now = time.GetUtcNow();
+        var changed = tenant.PayForPlan(plan.Id, now);
         if (!changed.IsSuccess || changed.Value == StateChange.Unchanged)
         {
             return [];
         }
 
-        var now = time.GetUtcNow();
         var before = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         await tenants.SaveChangesAsync(cancellationToken);

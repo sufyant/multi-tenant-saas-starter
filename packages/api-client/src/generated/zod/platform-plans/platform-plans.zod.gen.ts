@@ -317,8 +317,20 @@ export const GetTenantPlanResponse = zod.object({
   "unlimited": zod.boolean()
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
   "count": zod.int()
-}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).'))
-}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count.')
+}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).')),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "startedAt": zod.iso.datetime({"offset":true}),
+  "endsAt": zod.iso.datetime({"offset":true}),
+  "returnsTo": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.')])
+}).describe('The tenant\'s last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the\ntenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.')])
+}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count, and its last trial, null when it had\nnone (step 40d).')
 
 export const ChangeTenantPlanParams = zod.object({
   "tenantId": zod.uuid()
@@ -367,8 +379,20 @@ export const ChangeTenantPlanResponse = zod.object({
   "unlimited": zod.boolean()
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
   "count": zod.int()
-}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).'))
-}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count.')
+}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).')),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "startedAt": zod.iso.datetime({"offset":true}),
+  "endsAt": zod.iso.datetime({"offset":true}),
+  "returnsTo": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.')])
+}).describe('The tenant\'s last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the\ntenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.')])
+}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count, and its last trial, null when it had\nnone (step 40d).')
 
 export const GetTenantPlanChangePreviewParams = zod.object({
   "tenantId": zod.uuid()
@@ -455,8 +479,20 @@ export const SetEntitlementOverrideResponse = zod.object({
   "unlimited": zod.boolean()
 }).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
   "count": zod.int()
-}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).'))
-}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count.')
+}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).')),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "startedAt": zod.iso.datetime({"offset":true}),
+  "endsAt": zod.iso.datetime({"offset":true}),
+  "returnsTo": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.')])
+}).describe('The tenant\'s last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the\ntenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.')])
+}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count, and its last trial, null when it had\nnone (step 40d).')
 
 export const RemoveEntitlementOverrideParams = zod.object({
   "tenantId": zod.uuid(),

@@ -690,6 +690,7 @@ export const plans = {
 export const tenantPlan = (tenantId: string): TenantPlanResponse => ({
   tenantId,
   plan: { id: plans.pro.id, name: plans.pro.name },
+  trial: null,
   entitlements: [
     {
       key: FeatureKey.RolesCustom,

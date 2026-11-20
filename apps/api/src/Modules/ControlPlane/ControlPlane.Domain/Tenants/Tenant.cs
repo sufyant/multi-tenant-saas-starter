@@ -60,6 +60,28 @@ internal sealed class Tenant
     /// <summary>The tenant's plan, whose values its entitlements start from (docs/flows/plans-and-entitlements.md). A tenant always has one.</summary>
     public Guid PlanId { get; private set; }
 
+    /// <summary>
+    /// The plan of the tenant's last trial, and when that trial started and ends, or ended (step 40d). A trial is a state of a plan: while
+    /// it runs, the tenant is on its plan. The fields stay after the trial, so the platform shows the trial that the tenant used (4.29).
+    /// None for a tenant that never had a trial.
+    /// </summary>
+    public Guid? TrialPlanId { get; private set; }
+
+    /// <inheritdoc cref="TrialPlanId"/>
+    public DateTimeOffset? TrialStartedAt { get; private set; }
+
+    /// <inheritdoc cref="TrialPlanId"/>
+    public DateTimeOffset? TrialEndsAt { get; private set; }
+
+    /// <summary>
+    /// The plan the tenant returns to when its trial ends: the plan it was on before the trial (the maintainer's decision of 2026-11-20),
+    /// or the default plan when its subscription ended during the trial. None unless the tenant is in a trial.
+    /// </summary>
+    public Guid? PlanBeforeTrialId { get; private set; }
+
+    /// <summary>Whether the tenant's trial runs now.</summary>
+    public bool InTrial => PlanBeforeTrialId is not null;
+
     /// <summary>When a system admin created the tenant.</summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
@@ -213,12 +235,20 @@ internal sealed class Tenant
     /// changes nothing (I1). The plan's values apply at once; nothing is deleted when the tenant is then over a limit
     /// (docs/flows/plans-and-entitlements.md).
     /// </summary>
-    public Result<StateChange> ChangePlan(Guid planId)
+    public Result<StateChange> ChangePlan(Guid planId, DateTimeOffset now)
     {
         var changeable = CheckPlatformChange();
         if (!changeable.IsSuccess)
         {
             return changeable.Error;
+        }
+
+        // A plan that a system admin gives, or that a member pays for, ends the trial at once: the tenant stays on that plan after it.
+        if (InTrial)
+        {
+            EndTrial(now);
+            PlanId = planId;
+            return StateChange.Changed;
         }
 
         if (planId == PlanId)
@@ -228,6 +258,65 @@ internal sealed class Tenant
 
         PlanId = planId;
         return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Puts the tenant on the plan that its subscription pays for (B6), as <see cref="ChangePlan"/> does. During a trial, a payment for the
+    /// plan the tenant returns to keeps the trial: billing sends the plan again at each change of the subscription, and a system admin can
+    /// give a trial to a tenant that pays by card (4.29). A payment for another plan ends the trial (10.08).
+    /// </summary>
+    public Result<StateChange> PayForPlan(Guid planId, DateTimeOffset now) =>
+        InTrial && planId == PlanBeforeTrialId ? StateChange.Unchanged : ChangePlan(planId, now);
+
+    /// <summary>
+    /// Starts a trial of the plan: the tenant is on it from now for the length, and returns to its plan of now when the trial ends. The
+    /// caller decides whether the tenant may have the trial (step 40d).
+    /// </summary>
+    public void StartTrial(Guid planId, DateTimeOffset now, TimeSpan length)
+    {
+        PlanBeforeTrialId = PlanId;
+        PlanId = planId;
+        (TrialPlanId, TrialStartedAt, TrialEndsAt) = (planId, now, now + length);
+    }
+
+    /// <summary>
+    /// Ends the trial: the tenant returns to the plan of <see cref="PlanBeforeTrialId"/>, and the trial's end is now when the trial ends
+    /// before its end. Nothing is deleted when the tenant is then over a limit (E4). A tenant out of a trial, or purged, changes nothing.
+    /// </summary>
+    public StateChange EndTrial(DateTimeOffset now)
+    {
+        if (PlanBeforeTrialId is not { } planBefore || Status == TenantStatus.Purged)
+        {
+            return StateChange.Unchanged;
+        }
+
+        PlanId = planBefore;
+        PlanBeforeTrialId = null;
+        if (now < TrialEndsAt)
+        {
+            TrialEndsAt = now;
+        }
+
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// Whether the tenant's trial runs and still ends at this end, the one a message scheduled for the trial's end carries. PostgreSQL keeps
+    /// a moment to the microsecond and .NET to 100 ns, as for <see cref="IsClosedAt"/>.
+    /// </summary>
+    public bool IsInTrialUntil(DateTimeOffset endsAt) =>
+        InTrial && TrialEndsAt is { } at && (at - endsAt).Duration() < TimeSpan.FromMicroseconds(1);
+
+    /// <summary>
+    /// Makes the plan the one the tenant returns to after its trial: billing moved the tenant to the default plan during the trial (B11),
+    /// and the trial runs to its end. Only during a trial.
+    /// </summary>
+    public void ReturnAfterTrialTo(Guid planId)
+    {
+        if (InTrial)
+        {
+            PlanBeforeTrialId = planId;
+        }
     }
 
     /// <summary>
@@ -376,7 +465,7 @@ internal sealed class Tenant
     /// <summary>
     /// Ends the purge: the tenant row becomes its tombstone, which keeps the id, the name, the slug, the status, the moment of the creation
     /// and the moment of the purge, so the platform still sees that the tenant existed and its slug is never given again. Every other
-    /// value goes: the suspension, the closure, the start of the purge and who created the tenant (K4). The last step of the purge may run twice (S7): a
+    /// value goes: the suspension, the closure, the start of the purge, who created the tenant and a running trial (K4). The last step of the purge may run twice (S7): a
     /// tombstone changes nothing. Only a tenant whose purge has started gets here, so any other is a fault. The caller holds the
     /// tenant's lock.
     /// </summary>
@@ -395,7 +484,7 @@ internal sealed class Tenant
         Status = TenantStatus.Purged;
         PurgedAt = now;
         ForgetSuspension();
-        (ClosedAt, ClosedBy, PurgeStartedAt, CreatedBy) = (null, null, null, null);
+        (ClosedAt, ClosedBy, PurgeStartedAt, CreatedBy, PlanBeforeTrialId) = (null, null, null, null, null);
         return StateChange.Changed;
     }
 

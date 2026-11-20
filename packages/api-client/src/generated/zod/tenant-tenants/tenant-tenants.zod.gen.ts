@@ -74,6 +74,18 @@ export const GetMyTenantResponse = zod.object({
   "planName": zod.string(),
   "entitlements": zod.record(zod.string(), zod.union([zod.boolean().describe('A feature\'s state, a limit\'s number, or null for an unlimited limit.'),zod.int().describe('A feature\'s state, a limit\'s number, or null for an unlimited limit.')]).nullable().describe('A feature\'s state, a limit\'s number, or null for an unlimited limit.')),
   "usage": zod.record(zod.string(), zod.int()),
-  "billingEnabled": zod.boolean()
-}).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the name of the tenant\'s plan; `entitlements`, every key of the list\nwith its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null\nfor an unlimited limit; and `usage`, the tenant\'s count of each limit, so the web adds no list up. Every endpoint still checks\nits feature and its limit itself. `billingEnabled` says whether the deployment\'s billing is on (B1), for every member, as\nGetBilling answers only a member who manages billing.')
+  "billingEnabled": zod.boolean(),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "startedAt": zod.iso.datetime({"offset":true}),
+  "endsAt": zod.iso.datetime({"offset":true}),
+  "returnsTo": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.')])
+}).describe('The tenant\'s last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the\ntenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.')])
+}).describe('The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member\'s role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the name of the tenant\'s plan; `entitlements`, every key of the list\nwith its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null\nfor an unlimited limit; and `usage`, the tenant\'s count of each limit, so the web adds no list up. Every endpoint still checks\nits feature and its limit itself. `billingEnabled` says whether the deployment\'s billing is on (B1), for every member, as\nGetBilling answers only a member who manages billing. `trial` is the tenant\'s last trial, null when it had none (step 40d, 10.08).')
 

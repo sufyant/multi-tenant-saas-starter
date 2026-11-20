@@ -393,7 +393,8 @@
         "reopened": "<actor></actor> reopened this organisation.",
         "suspended": "<actor></actor> suspended this organisation.",
         "billing_email_changed": "{removed, select, yes {<actor></actor> removed the billing email.} other {<actor></actor> set the billing email.}}",
-        "spending_cap_changed": "{change, select, set {<actor></actor> set a spending cap of {new} a month.} removed {<actor></actor> removed the spending cap of {old} a month.} other {<actor></actor> changed the spending cap from {old} to {new} a month.}}"
+        "spending_cap_changed": "{change, select, set {<actor></actor> set a spending cap of {new} a month.} removed {<actor></actor> removed the spending cap of {old} a month.} other {<actor></actor> changed the spending cap from {old} to {new} a month.}}",
+        "trial_ended": "The trial of this organisation ended. It moved back to its plan before the trial."
       },
       "terms_version": {
         "cancelled": "<actor></actor> cancelled a version of the terms of use.",

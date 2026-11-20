@@ -25,6 +25,11 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         // The tenant's plan: a tenant always has one, and a plan a tenant is on cannot be deleted (R16).
         tenant.HasOne<Plan>().WithMany().HasForeignKey(t => t.PlanId).OnDelete(DeleteBehavior.Restrict);
 
+        // The plans of its trial (step 40d): the trial's plan, and the plan it returns to while the trial runs.
+        tenant.HasOne<Plan>().WithMany().HasForeignKey(t => t.TrialPlanId).OnDelete(DeleteBehavior.Restrict);
+        tenant.HasOne<Plan>().WithMany().HasForeignKey(t => t.PlanBeforeTrialId).OnDelete(DeleteBehavior.Restrict);
+        tenant.Ignore(t => t.InTrial);
+
         // The system admins of its events. A user row stays after the user's deletion (A8), so a key never blocks it.
         tenant.HasOne<User>().WithMany().HasForeignKey(t => t.CreatedBy).OnDelete(DeleteBehavior.Restrict);
         tenant.HasOne<User>().WithMany().HasForeignKey(t => t.SuspendedBy).OnDelete(DeleteBehavior.Restrict);
@@ -42,5 +47,9 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             "(suspended_at IS NULL) = (suspended_by IS NULL) AND (suspended_at IS NULL OR suspension_reason IS NOT NULL)"));
         tenant.ToTable(table => table.HasCheckConstraint("ck_tenants_closed_by_with_closure", "closed_by IS NULL OR closed_at IS NOT NULL"));
         tenant.ToTable(table => table.HasCheckConstraint("ck_tenants_purge_started_while_purging", "purge_started_at IS NULL OR status = 'Purging'"));
+        tenant.ToTable(table => table.HasCheckConstraint(
+            "ck_tenants_trial",
+            "(trial_plan_id IS NULL) = (trial_started_at IS NULL) AND (trial_plan_id IS NULL) = (trial_ends_at IS NULL) "
+            + "AND (plan_before_trial_id IS NULL OR trial_plan_id IS NOT NULL)"));
     }
 }

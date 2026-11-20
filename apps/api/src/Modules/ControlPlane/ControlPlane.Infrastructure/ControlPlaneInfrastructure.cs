@@ -161,6 +161,11 @@ public static class ControlPlaneInfrastructure
             .Validate(settings => settings.TenantLimit > 0, $"{SignUpOptions.Section}:TenantLimit must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<SignUpOptions>>().Value);
+        services.AddOptions<TrialOptions>()
+            .BindConfiguration(TrialOptions.Section)
+            .Validate(settings => settings.Days > 0, $"{TrialOptions.Section}:Days must be positive.")
+            .ValidateOnStart();
+        services.AddSingleton(provider => provider.GetRequiredService<IOptions<TrialOptions>>().Value);
         services.AddSingleton<TenantPurgeAlarm>();
 
         // Wolverine's generated code cannot build the identity provider, a typed HTTP client that only the container builds, so it

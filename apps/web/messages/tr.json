@@ -393,7 +393,8 @@
         "reopened": "<actor></actor> bu kuruluşu yeniden açtı.",
         "suspended": "<actor></actor> bu kuruluşu askıya aldı.",
         "billing_email_changed": "{removed, select, yes {<actor></actor> fatura e-postasını kaldırdı.} other {<actor></actor> fatura e-postasını ayarladı.}}",
-        "spending_cap_changed": "{change, select, set {<actor></actor> aylık {new} harcama limiti belirledi.} removed {<actor></actor> aylık {old} harcama limitini kaldırdı.} other {<actor></actor> aylık harcama limitini {old} yerine {new} olarak değiştirdi.}}"
+        "spending_cap_changed": "{change, select, set {<actor></actor> aylık {new} harcama limiti belirledi.} removed {<actor></actor> aylık {old} harcama limitini kaldırdı.} other {<actor></actor> aylık harcama limitini {old} yerine {new} olarak değiştirdi.}}",
+        "trial_ended": "Bu kuruluşun deneme süresi bitti. Denemeden önceki planına döndü."
       },
       "terms_version": {
         "cancelled": "<actor></actor> kullanım koşullarının bir sürümünü iptal etti.",

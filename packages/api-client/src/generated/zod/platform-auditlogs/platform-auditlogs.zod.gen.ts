@@ -69,6 +69,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantReopened: 'tenant.reopened',
   TenantSpendingCapChanged: 'tenant.spending_cap_changed',
   TenantSuspended: 'tenant.suspended',
+  TenantTrialEnded: 'tenant.trial_ended',
   TermsVersionCancelled: 'terms_version.cancelled',
   TermsVersionCreated: 'terms_version.created',
   TermsVersionUpdated: 'terms_version.updated',
