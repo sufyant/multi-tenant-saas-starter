@@ -15,6 +15,7 @@ import {
 } from "./clerk-errors";
 import { CodeStep } from "./code-step";
 import { EmailStep } from "./email-step";
+import { OtherWay } from "./other-way";
 import {
   reasonParameter,
   redirectParameter,
@@ -45,6 +46,8 @@ export type SignInProps = {
   onUnexpectedError?: (error: Error) => void;
   /** The page after sign-in, a path of this app, in place of the address's `redirect_url`: the invitation's page (F44). */
   redirectTo?: string;
+  /** The sign-up page, while the product has sign-up on: the first step then offers "Create an account" (frame 1.24). */
+  signUpHref?: string;
 };
 
 /** The query parameter that `SsoCallback` sets when an SSO sign-in could not finish. */
@@ -60,8 +63,8 @@ export const destination = () =>
 
 /**
  * Our own sign-in, on Clerk's custom-flow hooks (Core 3): an email code, Google or Microsoft, then the second factor when the
- * account has one. Both apps render it; only the app's own words and the Platform label differ. Sign-up is by invitation only, and no step
- * tells whether an address has an account (strict enumeration protection).
+ * account has one. Both apps render it; only the app's own words and the Platform label differ. Sign-up is by invitation, or on the
+ * web's sign-up page while the product has sign-up on. No step tells whether an address has an account (strict enumeration protection).
  */
 export function SignIn({
   title,
@@ -75,6 +78,7 @@ export function SignIn({
   termsUrl,
   onUnexpectedError,
   redirectTo,
+  signUpHref,
 }: SignInProps) {
   const t = useTranslations("signIn");
   const { signIn, fetchStatus } = useSignIn();
@@ -201,6 +205,9 @@ export function SignIn({
           onProvider={(provider) => void sso(provider)}
           pending={pending}
           error={error}
+          footer={
+            signUpHref && <OtherWay message="newHere" href={signUpHref} />
+          }
         />
       )}
       {step === "code" && (

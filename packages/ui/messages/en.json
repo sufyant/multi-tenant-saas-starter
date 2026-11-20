@@ -291,7 +291,8 @@
       "signInAgain": "For your safety, sign out and sign in again, then try once more.",
       "generic": "Sign-in did not work. Try again.",
       "sendFailed": "We could not send the code",
-      "sendFailedText": "Check your connection and try again. Your email is still here."
+      "sendFailedText": "Check your connection and try again. Your email is still here.",
+      "cannotSignUp": "We could not create an account with this address. If you have one, sign in."
     },
     "sessionEndedTitle": "Your session ended",
     "sessionEndedText": "You were signed out on this device. Sign in again to go back to the page you were on.",
@@ -299,7 +300,9 @@
     "backupCodeSignInText": "Each backup code works once. After you sign in, make new codes in Account and security.",
     "finishingTitle": "Signing you in…",
     "finishingText": "Google or Microsoft sent you back. This takes a moment.",
-    "finishingSlow": "This is taking longer than usual."
+    "finishingSlow": "This is taking longer than usual.",
+    "newHere": "New here? <link>Create an account</link>",
+    "haveAccount": "Already have an account? <link>Sign in</link>"
   },
   "confirmIdentity": {
     "title": "Confirm it’s you",

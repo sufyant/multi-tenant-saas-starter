@@ -20,6 +20,8 @@ export type EmailStepProps = {
   error?: SignInErrorKey;
   /** A banner under the text, such as "Your session ended". */
   banner?: ReactNode;
+  /** A line under the form: the way to the other of sign-in and sign-up (frames 1.24 and 1.25). */
+  footer?: ReactNode;
 };
 
 // The browser's own check takes "ayse@northwind"; a sign-in address needs a domain with a dot (frame 1.02).
@@ -34,6 +36,7 @@ export function EmailStep({
   pending,
   error,
   banner,
+  footer,
 }: EmailStepProps) {
   const t = useTranslations("signIn");
   const [email, setEmail] = useState("");
@@ -95,6 +98,7 @@ export function EmailStep({
           {pending ? t("sendingCode") : t("continue")}
         </Button>
       </form>
+      {footer}
     </>
   );
 }

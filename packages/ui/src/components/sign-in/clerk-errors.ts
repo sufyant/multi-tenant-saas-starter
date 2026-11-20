@@ -1,10 +1,12 @@
 import { isClerkAPIResponseError } from "@clerk/nextjs/errors";
 
 /** Where in the flow the error came: the same code means another thing in another step. */
-/** `send` is the call that sends the email code; `email` is the rest of the first step, such as Google or Microsoft. */
+/** `send` is the call that sends the email code; `email` is the rest of the first step, such as Google or Microsoft. `signUp` is
+ * the sign-up's first step: the address, Google or Microsoft. */
 export type SignInStep =
   | "email"
   | "send"
+  | "signUp"
   | "code"
   | "totp"
   | "backupCode"
@@ -16,6 +18,7 @@ export type SignInErrorKey =
   | "emailInvalid"
   | "sendFailed"
   | "cannotSignIn"
+  | "cannotSignUp"
   | "captcha"
   | "tooManyRequests"
   | "oauthDenied"
@@ -61,6 +64,15 @@ const byStep: Record<SignInStep, Record<string, SignInErrorKey>> = {
   send: {
     form_param_nil: "emailRequired",
     form_param_format_invalid: "emailInvalid",
+  },
+  // A taken address and a closed sign-up share one text, which names sign-in: no text tells whether an address has an account.
+  signUp: {
+    form_param_nil: "emailRequired",
+    form_param_format_invalid: "emailInvalid",
+    form_identifier_exists: "cannotSignUp",
+    sign_up_mode_restricted: "cannotSignUp",
+    sign_up_restricted_waitlist: "cannotSignUp",
+    not_allowed_access: "cannotSignUp",
   },
   code: {
     form_code_incorrect: "codeIncorrect",
@@ -123,7 +135,7 @@ export function signInErrorKey(
   // The code could not go out (frame 1.04), and the address stays for another try. A call that got no answer of Clerk's API has no
   // code: the network failed. Offline, Clerk's request gives nothing instead of an error, so the code fails on the step after it.
   if (
-    step === "send" &&
+    (step === "send" || step === "signUp") &&
     error instanceof Error &&
     !isClerkAPIResponseError(error) &&
     (code === undefined || !navigator.onLine)

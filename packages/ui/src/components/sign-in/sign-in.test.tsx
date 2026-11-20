@@ -83,6 +83,7 @@ const languages = { en, ar };
 function renderSignIn(
   locale: keyof typeof languages = "en",
   onUnexpectedError?: (error: Error) => void,
+  signUpHref?: string,
 ) {
   return render(
     <NextIntlClientProvider
@@ -99,6 +100,7 @@ function renderSignIn(
         onLanguageChange={async () => {}}
         privacyUrl="https://starter.example/privacy"
         onUnexpectedError={onUnexpectedError}
+        signUpHref={signUpHref}
       />
     </NextIntlClientProvider>,
   );
@@ -133,6 +135,27 @@ describe("SignIn", () => {
       "href",
       "https://starter.example/privacy",
     );
+  });
+
+  it("SignIn_SignUpOn_OffersCreateAnAccountUnderTheForm", () => {
+    fakeSignIn();
+
+    renderSignIn("en", undefined, "/sign-up");
+
+    expect(screen.getByText(/New here\?/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Create an account" }),
+    ).toHaveAttribute("href", "/sign-up");
+  });
+
+  it("SignIn_SignUpOff_OffersNoAccount", () => {
+    fakeSignIn();
+
+    renderSignIn();
+
+    expect(
+      screen.queryByRole("link", { name: "Create an account" }),
+    ).not.toBeInTheDocument();
   });
 
   it("SignIn_SessionEnded_SaysSoAboveTheFirstStep", async () => {

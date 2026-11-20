@@ -23,22 +23,35 @@ import { roleOf } from "../../../test/tenant";
 import { ChooseOrganisation } from "./choose-organisation";
 
 const replace = vi.fn();
+const push = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace, refresh: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace, refresh: vi.fn(), push }),
 }));
 vi.mock("@clerk/nextjs", () => ({
-  useClerk: () => ({ signOut: vi.fn() }),
+  useClerk: () => ({
+    signOut: vi.fn(),
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: null,
+  }),
   useUser: () => ({
     user: { primaryEmailAddress: { emailAddress: "ali.kaya@gmail.com" } },
   }),
 }));
 vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
 
-const server = setupServer();
+const signUpOf = (enabled: boolean) =>
+  http.get("*/v1/public/sign-up", () =>
+    HttpResponse.json({ enabled, tenantLimit: 3, trial: null }),
+  );
+
+// Sign-up is off unless a test turns it on.
+const server = setupServer(signUpOf(false));
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   replace.mockClear();
+  push.mockClear();
 });
 afterAll(() => server.close());
 
@@ -57,6 +70,15 @@ const page = (items: MyTenantResponse[]) =>
 
 const personalCount = http.get("*/v1/me/notifications/unread-count", () =>
   HttpResponse.json({ unread: 1 }),
+);
+
+const termsId = "0b9b8f1e-6a3c-4a0a-9a51-3f2b7d1c2e10";
+
+const notAUser = http.get("*/v1/me", () =>
+  HttpResponse.json(
+    { status: 404, code: ErrorCode.UserNotFound, traceId: "t" },
+    { status: 404, headers: { "Content-Type": "application/problem+json" } },
+  ),
 );
 
 describe("ChooseOrganisation", () => {
@@ -173,6 +195,61 @@ describe("ChooseOrganisation", () => {
     expect(
       await screen.findByRole("heading", { name: "No access yet" }),
     ).toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_NotAUserYetWithSignUpOn_AsksTheTermsToCreateTheAccount", async () => {
+    server.use(
+      signUpOf(true),
+      notAUser,
+      page([]),
+      http.get("*/v1/public/terms", () =>
+        HttpResponse.json({
+          id: termsId,
+          effectiveDate: "2026-01-01",
+          url: "https://starter.example/terms/2026",
+        }),
+      ),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Accept the Terms of use" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_NoOrganisationWithSignUpOn_OpensCreateYourOrganisation", async () => {
+    server.use(
+      signUpOf(true),
+      getGetMeMockHandler(
+        getGetMeResponseMock({ language: "en", createdTenantCount: 0 }),
+      ),
+      page([]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    await vi.waitFor(() => expect(replace).toHaveBeenCalledWith("/new"));
+    expect(
+      screen.queryByRole("heading", { name: "No access yet" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("ChooseOrganisation_NoOrganisationAtTheCreationLimit_SaysNoAccessYet", async () => {
+    server.use(
+      signUpOf(true),
+      getGetMeMockHandler(
+        getGetMeResponseMock({ language: "en", createdTenantCount: 3 }),
+      ),
+      page([]),
+    );
+
+    renderWithProviders(<ChooseOrganisation />);
+
+    expect(
+      await screen.findByRole("heading", { name: "No access yet" }),
+    ).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it("ChooseOrganisation_SuspendedOrganisation_ShowsItsStatusAndNoLink", async () => {

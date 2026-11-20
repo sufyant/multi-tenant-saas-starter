@@ -36,6 +36,13 @@ describe("signInErrorKey", () => {
     ["form_code_incorrect", "backupCode", "backupCodeIncorrect"],
     ["ticket_invalid_code", "ticket", "invitationLinkInvalid"],
     ["ticket_expired_code", "ticket", "invitationLinkExpired"],
+    ["form_param_nil", "signUp", "emailRequired"],
+    ["form_param_format_invalid", "signUp", "emailInvalid"],
+    ["form_identifier_exists", "signUp", "cannotSignUp"],
+    ["sign_up_mode_restricted", "signUp", "cannotSignUp"],
+    ["sign_up_restricted_waitlist", "signUp", "cannotSignUp"],
+    ["not_allowed_access", "signUp", "cannotSignUp"],
+    ["captcha_invalid", "signUp", "captcha"],
   ])("SignInErrorKey_%s_In_%s_Is_%s", (code, step, key) => {
     expect(signInErrorKey(apiError(code), step)).toBe(key);
   });
@@ -93,6 +100,12 @@ describe("signInErrorKey without a code", () => {
   });
 
   // Offline, Clerk answers no error of the network: its request gives nothing, and the step after it finds no email factor.
+  it("SignInErrorKey_NetworkFailureWhileSigningUp_IsSendFailed", () => {
+    expect(signInErrorKey(new Error("Failed to fetch"), "signUp")).toBe(
+      "sendFailed",
+    );
+  });
+
   it("SignInErrorKey_OfflineWhileSending_IsSendFailed", () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     const noFactor = Object.assign(new Error("Email code factor not found"), {

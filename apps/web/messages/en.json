@@ -904,5 +904,15 @@
     "notInvited": "Couldn’t invite {email}",
     "sendInvitations": "Send invitations",
     "skip": "Skip for now"
+  },
+  "createAccount": {
+    "title": "Accept the Terms of use",
+    "text": "Read the Terms of use, then accept them to create your account.",
+    "textNoTerms": "Accept to create your account.",
+    "notCreated": "Your account was not created"
+  },
+  "signUpPage": {
+    "title": "Create an account",
+    "text": "Use your work email. We send you a 6-digit code to confirm it."
   }
 }

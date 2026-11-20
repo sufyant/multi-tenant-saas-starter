@@ -3052,6 +3052,37 @@ const switcherWithCreate =
   };
 shellShots.push(
   {
+    path: "/",
+    file: "1.27-accept-the-terms-en-light-desktop",
+    size: "desktop",
+    mock: async (page) => {
+      await mockSignUp(page, signUpWithTrial);
+      await page.route("**/api/v1/me", (route) =>
+        route.fulfill({
+          status: 404,
+          json: {
+            status: 404,
+            title: "Not Found",
+            code: ErrorCode.UserNotFound,
+            traceId: "00-e2e",
+          },
+        }),
+      );
+      // A person who is not a user yet has no organisation.
+      await page.route("**/api/v1/me/tenants*", (route) =>
+        route.fulfill({
+          json: { items: [], page: 1, pageSize: 100, total: 0 },
+        }),
+      );
+    },
+    open: (page) =>
+      page
+        .getByRole("checkbox", {
+          name: "I have read and agree to the Terms of use",
+        })
+        .click(),
+  },
+  {
     ...onNew,
     file: "1.28-create-organisation-en-light-desktop",
     size: "desktop",
@@ -3639,6 +3670,9 @@ const typeTheFramesAddress =
     // The page's only field, whose name is in the page's language.
     page.getByRole("textbox").fill(address);
 
+/** GetSignUp answers sign-up on, before sign-in. */
+const signUpOn = (page: Page) => mockSignUp(page, signUpWithTrial);
+
 const toTheCodeStep = async (page: Page) => {
   await page.getByRole("textbox", { name: "Email" }).fill(e2eUserEmail());
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -3790,6 +3824,28 @@ const signInShots: {
       await page.getByRole("button", { name: "Send a new code" }).click();
       await page.getByRole("status").filter({ hasText: "new code" }).waitFor();
     },
+  },
+  // 40d's sign-up while the product has it on (1.24, 1.25, 1.32). The code step of 1.26 has no shot: the CI's Clerk instance keeps
+  // sign-up restricted (.clerk/config.json), so Clerk refuses the sign-up before the code goes out.
+  {
+    file: "1.24-sign-in-sign-up-on-en-light-desktop",
+    size: "desktop",
+    mock: signUpOn,
+    open: typeTheFramesAddress(),
+  },
+  {
+    file: "1.25-create-an-account-en-light-desktop",
+    size: "desktop",
+    path: "/sign-up",
+    mock: signUpOn,
+    open: typeTheFramesAddress("elif@kestrel.example"),
+  },
+  {
+    file: "1.32-phone-create-an-account-en-light-phone",
+    size: "phone",
+    path: "/sign-up",
+    mock: signUpOn,
+    open: typeTheFramesAddress("elif@kestrel.example"),
   },
   // Without Clerk's script the callback never ends, so the card stays as it shows while Clerk works.
   {

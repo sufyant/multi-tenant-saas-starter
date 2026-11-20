@@ -2,10 +2,13 @@
 
 import { useClerk } from "@clerk/nextjs";
 import {
+  ErrorCode,
   getGetMeQueryOptions,
+  getGetSignUpQueryOptions,
   getListMyTenantsQueryOptions,
   type MyTenantResponse,
   MyTenantResponseStatus,
+  ProblemDetailsError,
   schemas,
 } from "@repo/api-client";
 import { AuthHeading, AuthScreen } from "@repo/ui/components/auth-layout";
@@ -24,13 +27,16 @@ import { LocaleSync } from "@/shared/locale-sync";
 import { NoAccess } from "@/shared/no-access";
 import { PersonalBell } from "@/shared/notification-bell";
 import { ProblemScreen } from "@/shared/problem-screen";
+import { newOrganisationPage, useOwnOrganisation } from "@/shared/sign-up";
 import { useRoleName } from "@/shared/use-role-name";
+import { CreateAccount } from "./create-account";
 
 /**
  * "Choose an organisation" at `/` (F30, frame 1.18). One organisation opens at once; none, or a person who is not a user yet, sees
  * "No access yet", with the same text for both. The organisation of the "last used" cookie comes first and says so; a slug that
  * names no organisation the person can open is ignored, and the cookie is deleted. The personal bell shows the notifications about
- * no organisation (F57).
+ * no organisation (F57). While the product has sign-up on, a person who is not a user yet accepts the terms to create the account
+ * (1.27), and a user with no organisation who may create one goes to Create your organisation (1.28).
  */
 export function ChooseOrganisation({
   lastUsed,
@@ -43,6 +49,8 @@ export function ChooseOrganisation({
   const router = useRouter();
   const { signOut } = useClerk();
   const me = useQuery(getGetMeQueryOptions());
+  const signUp = useQuery(getGetSignUpQueryOptions());
+  const own = useOwnOrganisation();
   const tenants = useQuery(
     getListMyTenantsQueryOptions({
       pageSize: schemas.listMyTenantsQueryPageSizeMax,
@@ -56,6 +64,7 @@ export function ChooseOrganisation({
       tenant.status === MyTenantResponseStatus.Active,
   );
   const stale = Boolean(lastUsed && items && !last);
+  const firstOrganisation = tenants.data?.total === 0 && own.state === "open";
 
   useEffect(() => {
     if (only) router.replace(`/${only.slug}`);
@@ -63,10 +72,19 @@ export function ChooseOrganisation({
   useEffect(() => {
     if (stale) void forgetOrganisation();
   }, [stale]);
+  useEffect(() => {
+    if (firstOrganisation) router.replace(newOrganisationPage);
+  }, [firstOrganisation, router]);
 
+  if (notAUserYet(me.error)) {
+    if (signUp.isPending) return <Skeleton label={t("common.loading")} />;
+    if (signUp.data?.enabled) return <CreateAccount />;
+  }
   const error = me.error ?? tenants.error;
   if (error) return <ProblemScreen error={error} />;
-  if (!me.data || !tenants.data || !items || only)
+  const opening =
+    firstOrganisation || (tenants.data?.total === 0 && signUp.isPending);
+  if (!me.data || !tenants.data || !items || only || opening)
     return <Skeleton label={t("common.loading")} />;
   if (tenants.data.total === 0) return <NoAccess />;
   const ordered = last
@@ -169,3 +187,7 @@ function Organisation({
     </Link>
   );
 }
+
+const notAUserYet = (error: Error | null) =>
+  error instanceof ProblemDetailsError &&
+  error.problem?.code === ErrorCode.UserNotFound;
