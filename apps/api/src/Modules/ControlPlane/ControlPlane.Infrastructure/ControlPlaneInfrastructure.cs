@@ -163,7 +163,7 @@ public static class ControlPlaneInfrastructure
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<SignUpOptions>>().Value);
         services.AddOptions<TrialOptions>()
             .BindConfiguration(TrialOptions.Section)
-            .Validate(settings => settings.Days > 0, $"{TrialOptions.Section}:Days must be positive.")
+            .Validate(settings => settings.Length > TimeSpan.Zero, $"{TrialOptions.Section}:Length must be positive.")
             .ValidateOnStart();
         services.AddSingleton(provider => provider.GetRequiredService<IOptions<TrialOptions>>().Value);
         services.AddSingleton<TenantPurgeAlarm>();

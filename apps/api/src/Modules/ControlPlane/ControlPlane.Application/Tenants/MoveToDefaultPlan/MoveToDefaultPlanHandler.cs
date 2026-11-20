@@ -30,14 +30,7 @@ public static class MoveToDefaultPlanHandler
             ?? throw new InvalidOperationException("The default plan always exists.");
         var oldPlan = await plans.FindPlanNameAsync(tenant.PlanId, cancellationToken)
             ?? throw new InvalidOperationException("A tenant is always on a plan.");
-        // During a trial, the tenant keeps its trial plan to the trial's end, and then moves to the default plan (step 40d).
-        if (tenant.InTrial)
-        {
-            tenant.ReturnAfterTrialTo(defaultPlan.Id);
-            await tenants.SaveChangesAsync(cancellationToken);
-            return [];
-        }
-
+        // A subscription that ends during a trial ends the trial too: the tenant moves to the default plan at once (step 40d).
         var now = time.GetUtcNow();
         var changed = tenant.ChangePlan(defaultPlan.Id, now);
         if (!changed.IsSuccess || changed.Value == StateChange.Unchanged)

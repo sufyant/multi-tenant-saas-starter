@@ -78,13 +78,13 @@ public static class CreateMyTenantHandler
                 [new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, plan.Id, plan.Name, ByItsOwner: true)]);
         }
 
-        tenant.StartTrial(trialPlan.Id, now, TimeSpan.FromDays(trial.Days));
+        tenant.StartTrial(trialPlan.Id, now, trial.Length);
         await tenants.SaveChangesAsync(cancellationToken);
         var endsAt = tenant.TrialEndsAt!.Value;
         return (
             MyTenantView.Of(tenant, owner),
             [
-                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, trialPlan.Id, trialPlan.Name, ByItsOwner: true, TrialEndsAt: endsAt),
+                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, trialPlan.Id, trialPlan.Name, ByItsOwner: true),
                 new EndTenantTrialCommand(tenant.Id, endsAt).ScheduledAt(endsAt),
             ]);
     }

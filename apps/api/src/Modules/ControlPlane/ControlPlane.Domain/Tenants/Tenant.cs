@@ -75,7 +75,7 @@ internal sealed class Tenant
 
     /// <summary>
     /// The plan the tenant returns to when its trial ends: the plan it was on before the trial (the maintainer's decision of 2026-11-20),
-    /// or the default plan when its subscription ended during the trial. None unless the tenant is in a trial.
+    /// None unless the tenant is in a trial.
     /// </summary>
     public Guid? PlanBeforeTrialId { get; private set; }
 
@@ -281,11 +281,12 @@ internal sealed class Tenant
 
     /// <summary>
     /// Ends the trial: the tenant returns to the plan of <see cref="PlanBeforeTrialId"/>, and the trial's end is now when the trial ends
-    /// before its end. Nothing is deleted when the tenant is then over a limit (E4). A tenant out of a trial, or purged, changes nothing.
+    /// before its end. Nothing is deleted when the tenant is then over a limit (E4). A tenant out of a trial changes nothing, and so does a
+    /// closed, purging or purged one, whose plan is read-only (E2): its closure ended its trial.
     /// </summary>
     public StateChange EndTrial(DateTimeOffset now)
     {
-        if (PlanBeforeTrialId is not { } planBefore || Status == TenantStatus.Purged)
+        if (PlanBeforeTrialId is not { } planBefore || !CheckPlatformChange().IsSuccess)
         {
             return StateChange.Unchanged;
         }
@@ -306,18 +307,6 @@ internal sealed class Tenant
     /// </summary>
     public bool IsInTrialUntil(DateTimeOffset endsAt) =>
         InTrial && TrialEndsAt is { } at && (at - endsAt).Duration() < TimeSpan.FromMicroseconds(1);
-
-    /// <summary>
-    /// Makes the plan the one the tenant returns to after its trial: billing moved the tenant to the default plan during the trial (B11),
-    /// and the trial runs to its end. Only during a trial.
-    /// </summary>
-    public void ReturnAfterTrialTo(Guid planId)
-    {
-        if (InTrial)
-        {
-            PlanBeforeTrialId = planId;
-        }
-    }
 
     /// <summary>
     /// Gives the key this value for this tenant, over its plan's value, until the expiry, if there is one, with the system admin's reason,
@@ -406,6 +395,8 @@ internal sealed class Tenant
             return NotActive;
         }
 
+        // A closed tenant's plan is read-only (E2), so a running trial ends with the closure, and the tenant keeps the plan it returns to.
+        EndTrial(now);
         Status = TenantStatus.Closed;
         (ClosedAt, ClosedBy) = (now, closedBy);
         foreach (var invitation in pending)

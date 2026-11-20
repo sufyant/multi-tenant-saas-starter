@@ -14,6 +14,6 @@ public sealed class TrialOptions
     /// </summary>
     public Guid PlanId { get; set; } = new("0199c000-0000-7000-8000-000000000940");
 
-    /// <summary>How many days the trial lasts. Positive.</summary>
-    public int Days { get; set; } = 14;
+    /// <summary>How long the trial lasts: 14 days by default (1.28). Positive.</summary>
+    public TimeSpan Length { get; set; } = TimeSpan.FromDays(14);
 }

@@ -44,6 +44,12 @@ public static class ChangeBilledPlanHandler
         await tenants.SaveChangesAsync(cancellationToken);
         var after = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
+        // A payment for the trial's own plan ends the trial and keeps the plan: no change of plan (step 40d).
+        if (plan.Id == oldPlan.Id)
+        {
+            return [];
+        }
+
         return [new TenantPlanChangedEvent(
             Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, paid.PaidBy, oldPlan.Id, oldPlan.Name, plan.Id, plan.Name,
             RetentionShortenings.Between(before, after, now), ByMember: true)];

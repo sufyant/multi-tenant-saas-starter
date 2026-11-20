@@ -46,7 +46,8 @@ public static class ChangeTenantPlanHandler
         await tenants.SaveChangesAsync(cancellationToken);
         var view = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
-        if (changed.Value == StateChange.Unchanged)
+        // The plan the tenant is on announces nothing (I1); the trial it ends is no change of plan (step 40d).
+        if (changed.Value == StateChange.Unchanged || plan.Id == oldPlan.Id)
         {
             return (view, []);
         }
