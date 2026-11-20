@@ -13,6 +13,7 @@ internal static class ResponseStatus
         "TenantSettings" => NotificationLinkResponseKind.TenantSettings,
         "TenantActivityLog" => NotificationLinkResponseKind.TenantActivityLog,
         "TenantBilling" => NotificationLinkResponseKind.TenantBilling,
+        "TenantUsage" => NotificationLinkResponseKind.TenantUsage,
         "PlatformTenant" => NotificationLinkResponseKind.PlatformTenant,
         "AccountSecurity" => NotificationLinkResponseKind.AccountSecurity,
         "PlatformFeatureFlags" => NotificationLinkResponseKind.PlatformFeatureFlags,

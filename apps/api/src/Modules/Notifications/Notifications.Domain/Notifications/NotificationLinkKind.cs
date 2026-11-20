@@ -24,6 +24,9 @@ public enum NotificationLinkKind
     /// <summary>The tenant's Billing, which only a member who manages billing opens.</summary>
     TenantBilling,
 
+    /// <summary>The tenant's Usage, which only a member who manages billing opens.</summary>
+    TenantUsage,
+
     /// <summary>The tenant's page in the platform.</summary>
     PlatformTenant,
 

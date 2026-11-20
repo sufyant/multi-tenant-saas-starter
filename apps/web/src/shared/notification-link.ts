@@ -16,6 +16,8 @@ const tenantPages: Partial<Record<NotificationLinkResponseKind, string>> = {
   [NotificationLinkResponseKind.TenantActivityLog]: "settings/activity",
   // Billing's payment and price notifications (3.17, 3.18); 40b-frontend builds the page.
   [NotificationLinkResponseKind.TenantBilling]: "settings/billing",
+  // A meter's notices (13.22 to 13.24, 13.43).
+  [NotificationLinkResponseKind.TenantUsage]: "settings/usage",
 };
 
 const start = "/";

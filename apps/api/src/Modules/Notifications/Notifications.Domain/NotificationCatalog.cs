@@ -241,32 +241,32 @@ public static class NotificationCatalog
 
         // A meter's use tells the members who manage billing, in the tenant's bell and by email, as the extra costs the organisation money
         // or its use stops (U5; E10). The price is there only for a meter that charges its extra, and goes with its unit. Each leads to
-        // Billing until the web has its Usage page (40c-frontend).
+        // Usage.
         new(
             TenantMeterNearlyUsed,
             NotificationBell.Tenant,
-            NotificationLinkKind.TenantBilling,
+            NotificationLinkKind.TenantUsage,
             OrganisationPlan,
             WebAndEmail(),
             [Tenant(), Meter(), Count("used"), Count("quota"), new("resetsAt", NotificationValueKind.Day), .. UnitPrice()]),
         new(
             TenantMeterUsedUp,
             NotificationBell.Tenant,
-            NotificationLinkKind.TenantBilling,
+            NotificationLinkKind.TenantUsage,
             OrganisationPlan,
             WebAndEmail(),
             [Tenant(), Meter(), Count("quota"), new("resetsAt", NotificationValueKind.Day), .. UnitPrice()]),
         new(
             TenantSpendingCapNearlyReached,
             NotificationBell.Tenant,
-            NotificationLinkKind.TenantBilling,
+            NotificationLinkKind.TenantUsage,
             OrganisationPlan,
             WebAndEmail(),
             [Tenant(), Money("cap"), Money("extraAmount"), new("resetsAt", NotificationValueKind.Day)]),
         new(
             TenantSpendingCapReached,
             NotificationBell.Tenant,
-            NotificationLinkKind.TenantBilling,
+            NotificationLinkKind.TenantUsage,
             OrganisationPlan,
             WebAndEmail(),
             [Tenant(), Meter(), Money("cap"), new("resetsAt", NotificationValueKind.Day)]),
