@@ -57,7 +57,7 @@ export function Meter({
         role="meter"
         aria-label={label}
         aria-valuemin={0}
-        aria-valuemax={quota}
+        aria-valuemax={Math.max(quota, used)}
         aria-valuenow={used}
         className="flex h-1.5 overflow-hidden rounded-full bg-track"
       >

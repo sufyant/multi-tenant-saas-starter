@@ -47,6 +47,8 @@ describe("Meter", () => {
     });
     expect(screen.getByTestId("meter-extra")).toHaveClass("bg-warning");
     expect(screen.getByText("1,400 extra")).toHaveClass("text-warning-text");
+    // The value stays within the range, as ARIA asks: past the quota, the range ends at the use.
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuemax", "11400");
   });
 
   it("Meter_Stopped_FillsTheTrackInDestructive", () => {
