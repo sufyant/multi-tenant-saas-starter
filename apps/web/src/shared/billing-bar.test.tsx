@@ -5,10 +5,19 @@ import {
 } from "@repo/api-client";
 import { screen } from "@testing-library/react";
 import { setupServer } from "msw/node";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   billingAnswers,
   billingOf,
+  businessTrialTenant,
   teamMonthly,
   teamTenant,
 } from "../../test/billing";
@@ -19,13 +28,23 @@ import { useUsage } from "./usage";
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  vi.useRealTimers();
+});
 afterAll(() => server.close());
 
 const answers = (usage: UsageResponse, billing = billingOf()) => [
   ...usageAnswers(usage),
   ...billingAnswers(billing),
   ...tenantAnswers(BuiltInRole.Owner, undefined, [], teamTenant),
+];
+
+/** Northwind in its Business trial, which no payment ended: no subscription yet. */
+const inTrial = (usage: UsageResponse = usageOf({ meters: [] })) => [
+  ...usageAnswers(usage),
+  ...billingAnswers(billingOf(null)),
+  ...tenantAnswers(BuiltInRole.Owner, undefined, [], businessTrialTenant),
 ];
 
 const capReached = usageOf({
@@ -189,6 +208,62 @@ describe("BillingBar", () => {
       ),
     ).toBeVisible();
     expect(screen.queryByText(/stopped: you reached/)).toBeNull();
+  });
+
+  // 1.31: a running trial says its end, with Choose a plan, which opens Change plan.
+  it("BillingBar_InTrial_SaysItsEndWithChooseAPlan", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-26T10:00:00Z"));
+    server.use(...inTrial());
+
+    renderBar();
+
+    expect(
+      await screen.findByText("Your Business trial ends on 5 Nov 2026."),
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Choose a plan" })).toHaveAttribute(
+      "href",
+      "/northwind/settings/billing/plans",
+    );
+  });
+
+  // 2.31: 3 days before its end, the trial says the days left and the plan that comes after it.
+  it("BillingBar_TrialEndsIn3Days_SaysTheDaysAndThePlanAfterIt", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T10:00:00Z"));
+    server.use(...inTrial());
+
+    renderBar();
+
+    expect(
+      await screen.findByText(
+        "Your Business trial ends in 3 days. Then Northwind Traders moves to Free.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("BillingBar_InTrialWithAMeterAt80Percent_ShowsTheTrialFirst", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-26T10:00:00Z"));
+    server.use(...inTrial(usageOf({ meters: [teamMeter({ used: 8000 })] })));
+
+    renderBar();
+
+    expect(
+      await screen.findByText("Your Business trial ends on 5 Nov 2026."),
+    ).toBeVisible();
+    expect(screen.queryByText(/You’ve used 80%/)).toBeNull();
+  });
+
+  it("BillingBar_InTrialOnBilling_ShowsNoTrial", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-26T10:00:00Z"));
+    server.use(...inTrial());
+
+    renderBar({ onBilling: true });
+
+    expect(await screen.findByText("Bar done")).toBeVisible();
+    expect(screen.queryByText(/trial ends/)).toBeNull();
   });
 });
 
