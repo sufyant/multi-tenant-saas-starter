@@ -878,5 +878,31 @@
     "barCharging": "{quota} {meter} kotasının tamamını kullandınız. Fazlası her {size} için {price}, KDV hariç.",
     "barCapReached": "{meter} durdu: {amount} (KDV hariç) harcama sınırınıza ulaştınız. {date} tarihinde sıfırlanır.",
     "viewUsage": "Kullanımı gör"
+  },
+  "createOrganisation": {
+    "title": "Organizasyonunuzu oluşturun",
+    "text": "Organizasyonun Sahibi siz olursunuz.",
+    "textTrial": "Organizasyonun Sahibi siz olursunuz. {days} günlük {plan} denemeniz organizasyonu oluşturduğunuzda başlar. Kart gerekmez.",
+    "name": "Ad",
+    "address": "Adres",
+    "create": "Organizasyon oluştur",
+    "limit": "En fazla {limit} organizasyon oluşturabilirsiniz.",
+    "notCreated": "Organizasyon oluşturulamadı",
+    "nameRequired": "Bir ad girin.",
+    "nameTooLong": "En fazla {max} karakter kullanın.",
+    "addressTaken": "Bu adres alınmış. Başka bir adres deneyin.",
+    "addressInvalid": "Küçük harf, rakam ve tek tire kullanın. Bir harf ya da rakamla başlayıp bitirin.",
+    "startedTitle": "{days} günlük {plan} denemeniz başladı",
+    "startedText": "{organisation}, {date} tarihine kadar her {plan} özelliğine sahip. Kart gerekmez. İstediğiniz zaman Ayarlar › Faturalandırma'dan bir plan seçebilirsiniz.",
+    "inviteTeam": "Ekibinizi davet edin",
+    "invitePlaceholder": "ad@{domain}, ad@{domain}",
+    "inviteHint": "Adresleri virgülle ayırın. Üye olarak katılırlar. Rolleri sonra değiştirebilirsiniz.",
+    "priceBoth": "Deneme süresince ücretsiz. Sonra kişi başı ayda {perPerson}, artı {base} temel ücret, KDV hariç.",
+    "pricePerPerson": "Deneme süresince ücretsiz. Sonra kişi başı ayda {perPerson}, KDV hariç.",
+    "priceBase": "Deneme süresince ücretsiz. Sonra ayda {base}, KDV hariç.",
+    "notAnEmail": "{email} bir e-posta adresi değil.",
+    "notInvited": "{email} davet edilemedi",
+    "sendInvitations": "Davetleri gönder",
+    "skip": "Şimdilik geç"
   }
 }

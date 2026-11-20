@@ -236,8 +236,16 @@ describe("CreateOrganisation", () => {
       expect(push).toHaveBeenCalledWith("/kestrel-analytics"),
     );
     expect(invited).toEqual([
-      { email: "omar@kestrel.example", roleId: roleOf.member.id, language: "en" },
-      { email: "lena@kestrel.example", roleId: roleOf.member.id, language: "en" },
+      {
+        email: "omar@kestrel.example",
+        roleId: roleOf.member.id,
+        language: "en",
+      },
+      {
+        email: "lena@kestrel.example",
+        roleId: roleOf.member.id,
+        language: "en",
+      },
     ]);
   });
 

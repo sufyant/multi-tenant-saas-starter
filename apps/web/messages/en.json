@@ -878,5 +878,31 @@
     "barCharging": "You’ve used all {quota} {meter}. The extra costs {price} per {size}, excl. VAT.",
     "barCapReached": "{meter} stopped: you reached your spending cap of {amount} excl. VAT. They reset on {date}.",
     "viewUsage": "View usage"
+  },
+  "createOrganisation": {
+    "title": "Create your organisation",
+    "text": "You become its Owner.",
+    "textTrial": "You become its Owner. Your {plan} trial of {days, plural, one {# day} other {# days}} starts when you create it. No card needed.",
+    "name": "Name",
+    "address": "Address",
+    "create": "Create organisation",
+    "limit": "You can create up to {limit, plural, one {# organisation} other {# organisations}}.",
+    "notCreated": "Couldn’t create the organisation",
+    "nameRequired": "Enter a name.",
+    "nameTooLong": "Use at most {max} characters.",
+    "addressTaken": "This address is taken. Try another.",
+    "addressInvalid": "Use lower-case letters, digits and single hyphens. Start and end with a letter or digit.",
+    "startedTitle": "Your {plan} trial of {days, plural, one {# day} other {# days}} has started",
+    "startedText": "{organisation} has every {plan} feature until {date}. No card needed. You can choose a plan at any time in Settings › Billing.",
+    "inviteTeam": "Invite your team",
+    "invitePlaceholder": "name@{domain}, name@{domain}",
+    "inviteHint": "Separate addresses with commas. They join as Member. You can change roles later.",
+    "priceBoth": "Free during the trial. Then {perPerson} a month per person, plus the {base} base fee, excl. VAT.",
+    "pricePerPerson": "Free during the trial. Then {perPerson} a month per person, excl. VAT.",
+    "priceBase": "Free during the trial. Then {base} a month, excl. VAT.",
+    "notAnEmail": "{email} is not an email address.",
+    "notInvited": "Couldn’t invite {email}",
+    "sendInvitations": "Send invitations",
+    "skip": "Skip for now"
   }
 }

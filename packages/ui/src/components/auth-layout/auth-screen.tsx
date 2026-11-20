@@ -52,19 +52,25 @@ export function AuthScreen({
   );
 }
 
-/** The title of a step and the sentence under it, centred in the card. */
+/**
+ * The title of a step and the sentence under it, centred in the card; a step with a form of its own starts them at the card's start
+ * (1.28, 1.30).
+ */
 export function AuthHeading({
   title,
   text,
+  align = "center",
 }: {
   title: ReactNode;
   text?: ReactNode;
+  align?: "center" | "start";
 }) {
+  const alignment = align === "center" ? "text-center" : "text-start";
   return (
     <>
-      <h1 className="text-center text-page-title">{title}</h1>
+      <h1 className={`${alignment} text-page-title`}>{title}</h1>
       {text && (
-        <p className="text-center text-body text-muted-foreground">{text}</p>
+        <p className={`${alignment} text-body text-muted-foreground`}>{text}</p>
       )}
     </>
   );
