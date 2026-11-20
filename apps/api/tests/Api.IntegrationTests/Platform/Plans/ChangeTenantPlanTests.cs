@@ -158,6 +158,36 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
         (await tenants.PlanOfAsync(tenantId)).ShouldBe(plan);
     }
 
+    // B12: a tenant that never paid by card has no subscription to set its plan, so it takes the system admin's plan.
+    [Fact]
+    public async Task ChangeTenantPlan_ATenantThatNeverPaidWhileBillingIsOn_ChangesThePlan()
+    {
+        var tenants = await BillingOnAsync();
+        var tenant = await _testData.AddTenantAsync();
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var response = await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, tenants.Team));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await tenants.PlanOfAsync(tenant.Id)).ShouldBe(tenants.Team);
+    }
+
+    // B12: back to card, the subscription sets the plan again.
+    [Fact]
+    public async Task ChangeTenantPlan_AContractTenantBackToCard_IsRefused()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "card"));
+
+        var response = await admin.ChangeTenantPlanAsync(tenantId, await tenants.DefaultPlanAsync());
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await BillingRequests.CodeOfAsync(response)).ShouldBe("tenant.pays_by_card");
+    }
+
     private async Task<HttpClient> AdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     // Step 40b: billing is on for this test alone, with its plans and Stripe's fake.

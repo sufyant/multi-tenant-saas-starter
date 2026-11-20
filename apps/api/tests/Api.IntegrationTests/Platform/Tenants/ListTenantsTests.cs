@@ -498,6 +498,37 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         Ids(page).ShouldNotContain(tenantId);
     }
 
+    // B12: a Contract tenant is billed outside the app, so a payment that failed by card before the switch no longer counts.
+    [Fact]
+    public async Task ListTenants_AnOverdueTenantSwitchedToContract_IsNoLongerOverdue()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        _api.Billing.Put(BillingRequests.PastDue(tenantId, tenants.Team, DateTimeOffset.UtcNow.AddDays(-1), 1, DateTimeOffset.UtcNow.AddDays(2)));
+        await _api.PaymentFailedAsync(tenantId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=payment_overdue", Cancellation);
+
+        Ids(page).ShouldNotContain(tenantId);
+    }
+
+    // B12: back to card, the tenant leaves the Contract filter.
+    [Fact]
+    public async Task ListTenants_AContractTenantBackToCard_LeavesTheContractFilter()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "card"));
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=contract", Cancellation);
+
+        Ids(page).ShouldNotContain(tenantId);
+    }
+
     [Fact]
     public async Task ListTenants_AFilterOfNoSituation_IsRefused()
     {

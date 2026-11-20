@@ -3,6 +3,7 @@ using Api.Persistence;
 using Audit.Infrastructure;
 using Audit.Infrastructure.Persistence;
 using Billing.Infrastructure;
+using Billing.Infrastructure.Persistence;
 using ControlPlane.Infrastructure;
 using ControlPlane.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -206,6 +207,19 @@ public sealed class Database : IAsyncLifetime
         var migrations = notifications.Database.GetMigrations().ToList();
         var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
         await notifications.GetService<IMigrator>().MigrateAsync(before);
+
+        return name;
+    }
+
+    // The same for Billing: a database set up the way a deployment is, then with Billing taken back to the migration before the named one.
+    public async Task<string> CreateDatabaseBeforeBillingMigrationAsync(string migration)
+    {
+        var name = await CreateMigratedDatabaseAsync();
+        await using var billing = new BillingDbContext(
+            TenancyServiceCollectionExtensions.ModuleDbContextOptions<BillingDbContext>(BillingDbContext.Schema, ConnectionStringFor(DatabaseRoles.Owner, name)));
+        var migrations = billing.Database.GetMigrations().ToList();
+        var before = migrations[migrations.FindIndex(id => id.EndsWith($"_{migration}", StringComparison.Ordinal)) - 1];
+        await billing.GetService<IMigrator>().MigrateAsync(before);
 
         return name;
     }
