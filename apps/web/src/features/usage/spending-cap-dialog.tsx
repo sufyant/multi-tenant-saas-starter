@@ -5,6 +5,7 @@ import {
   problemOf,
   setSpendingCap,
 } from "@repo/api-client";
+import { Banner } from "@repo/ui/components/banner";
 import { Dialog } from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
 import { showToast } from "@repo/ui/components/toast";
@@ -13,11 +14,12 @@ import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { afterRefusal } from "@/shared/refresh";
 import { useTenant } from "@/shared/tenant-context";
 
 /**
  * Set or change the spending cap (11.03; the API's E9): an amount a month, excl. VAT, in the deployment's currency. While a cap is set,
- * an empty field removes it. The API checks the range itself (`usage.spending_cap_invalid`).
+ * an empty field removes it. The API checks the range itself (`usage.spending_cap_invalid`); a refusal stays in the dialog (F47).
  */
 export function SpendingCapDialog({
   amount,
@@ -62,12 +64,7 @@ export function SpendingCapDialog({
         });
         onClose();
       },
-      onError: (error) =>
-        showToast({
-          tone: "destructive",
-          title: t("usage.dialog.failed"),
-          description: failureText(problemOf(error)),
-        }),
+      onError: (error) => afterRefusal(queryClient, tenant.id, error),
     });
   };
   return (
@@ -98,6 +95,11 @@ export function SpendingCapDialog({
         )}
         error={invalid ? t("usage.dialog.invalid") : undefined}
       />
+      {save.error && (
+        <Banner tone="destructive" title={t("usage.dialog.failed")}>
+          {failureText(problemOf(save.error))}
+        </Banner>
+      )}
     </Dialog>
   );
 }
