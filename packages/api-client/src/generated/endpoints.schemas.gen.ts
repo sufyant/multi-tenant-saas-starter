@@ -1631,7 +1631,7 @@ export interface ExcessResponse {
 }
 
 /**
- * The trial's new end: its end or later, and at most 365 days after its end.
+ * The trial's new end: its end or later, and at most the most days of a trial after its end.
  */
 export interface ExtendTenantTrialRequest {
   endsAt: string;
@@ -1838,7 +1838,7 @@ export interface GetPlanUpdatePreviewRequest {
 }
 
 /**
- * The trial's plan, and how many days it lasts from now: 1 to 365.
+ * The trial's plan, and how many days it lasts from now, at least one and at most the most days of a trial.
  */
 export interface GiveTenantTrialRequest {
   planId: string;
@@ -3367,6 +3367,15 @@ export const GetPlanUpdatePreviewSort = {
   Name: 'name',
   NameDescending: '-name',
 } as const;
+
+export type GiveTenantTrialHeaders = {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
+};
 
 export type ListTermsVersionPeopleParams = {
   status?: TermsPersonResponseStatus;

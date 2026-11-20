@@ -31,6 +31,7 @@ import type {
   ExtendTenantTrialRequest,
   GetPlanUpdatePreviewParams,
   GetPlanUpdatePreviewRequest,
+  GiveTenantTrialHeaders,
   GiveTenantTrialRequest,
   ListPageOfPlanListItemResponse,
   ListPlansParams,
@@ -618,8 +619,12 @@ export const getGiveTenantTrialUrl = (tenantId: string,) => {
   return `/v1/platform/tenants/${tenantId}/trial`
 }
 
+/**
+ * Answers 201 with the tenant's plan and its trial, without Location: GetTenantPlan reads the trial.
+ */
 export const giveTenantTrial = async (tenantId: string,
-    giveTenantTrialRequest: GiveTenantTrialRequest, options?: Parameters<typeof apiFetch>[1]): Promise<TenantPlanResponse> => {
+    giveTenantTrialRequest: GiveTenantTrialRequest,
+    headers: GiveTenantTrialHeaders, options?: Parameters<typeof apiFetch>[1]): Promise<TenantPlanResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -639,7 +644,7 @@ return apiFetch<TenantPlanResponse>(getGiveTenantTrialUrl(tenantId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: { 'Content-Type': 'application/json',...headers, ...getHeaders(options?.headers) },
     body: JSON.stringify(giveTenantTrialRequest)
   }
 );}

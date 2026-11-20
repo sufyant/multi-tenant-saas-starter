@@ -420,14 +420,27 @@ export const GetTenantPlanChangePreviewResponse = zod.object({
 }).describe('A change that makes the tenant\'s Activity log period shorter: the period before, in days, null for no limit, and the new one. The\nentries older than the new period stay 30 days, then go.')])
 }).describe('What a change of the tenant\'s plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch. A shorter Activity log period, null when the\nnew plan keeps it as long or longer.')
 
+/**
+ * Answers 201 with the tenant's plan and its trial, without Location: GetTenantPlan reads the trial.
+ */
 export const GiveTenantTrialParams = zod.object({
   "tenantId": zod.uuid()
+})
+
+export const giveTenantTrialHeaderIdempotencyKeyMax = 255;
+
+
+export const giveTenantTrialHeaderIdempotencyKeyRegExp = new RegExp('^[!-~]+$');
+
+
+export const GiveTenantTrialHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(giveTenantTrialHeaderIdempotencyKeyMax).regex(giveTenantTrialHeaderIdempotencyKeyRegExp)
 })
 
 export const GiveTenantTrialBody = zod.object({
   "planId": zod.uuid(),
   "days": zod.int()
-}).describe('The trial\'s plan, and how many days it lasts from now: 1 to 365.')
+}).describe('The trial\'s plan, and how many days it lasts from now, at least one and at most the most days of a trial.')
 
 export const GiveTenantTrialResponse = zod.object({
   "tenantId": zod.uuid(),
@@ -489,7 +502,7 @@ export const ExtendTenantTrialParams = zod.object({
 
 export const ExtendTenantTrialBody = zod.object({
   "endsAt": zod.iso.datetime({"offset":true})
-}).describe('The trial\'s new end: its end or later, and at most 365 days after its end.')
+}).describe('The trial\'s new end: its end or later, and at most the most days of a trial after its end.')
 
 export const ExtendTenantTrialResponse = zod.object({
   "tenantId": zod.uuid(),

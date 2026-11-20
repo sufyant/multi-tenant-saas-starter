@@ -1,10 +1,11 @@
 using System.Text.Json;
 using Audit.Application.AuditLogs;
+using Audit.Application.Plans;
 using Audit.Domain;
 using Audit.Domain.AuditEntries;
 using ControlPlane.Contracts.Tenants;
 
-namespace Audit.Application.Plans.RecordTenantTrialGiven;
+namespace Audit.Application.Tenants.RecordTenantTrialGiven;
 
 // The audit entries of a trial that a system admin gave, written when ControlPlane announces it, under that tenant (step 40d). The platform's
 // log names the system admin; the tenant's own log says only that the platform acted (K3). A shorter Activity log period starts the tenant's

@@ -220,7 +220,7 @@ export const getGiveTenantTrialMockHandler = (overrideResponse?: TenantPlanRespo
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getGiveTenantTrialResponseMock(),
-      { status: 200
+      { status: 201
       })
   }, options)
 }

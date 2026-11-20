@@ -619,8 +619,11 @@ export const operations = [
     "method": "POST",
     "path": "/v1/platform/tenants/{tenantId}/trial",
     "tag": "Platform/Plans",
-    "requestHeaders": [],
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
     "responseHeaders": [
+      "Idempotent-Replayed",
       "Retry-After"
     ],
     "anonymous": false

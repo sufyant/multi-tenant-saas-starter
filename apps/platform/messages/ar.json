@@ -413,7 +413,7 @@
         "entitlement_override_removed": "أزال <actor></actor> استثناء <target></target> على {key} ({value}، {expiry, select, none {بلا انتهاء} other {حتى {date}}}).",
         "trial_ended": "انتهت الفترة التجريبية لـ <target></target>. عادت إلى خطتها قبل الفترة التجريبية.",
         "trial_given": "منح <actor></actor> <target></target> فترة تجريبية من <plan></plan> حتى {date}.",
-        "trial_extended": "مدّد <actor></actor> الفترة التجريبية لـ <target></target> حتى {date} (قبل ذلك: {oldDate})."
+        "trial_extended": "مدّد <actor></actor> الفترة التجريبية لـ<target></target> حتى {date} (قبل ذلك: {oldDate})."
       },
       "user": {
         "suspended": "أوقف <actor></actor> المستخدم <target></target>.",

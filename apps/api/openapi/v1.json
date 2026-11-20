@@ -2674,6 +2674,7 @@
         "tags": [
           "Platform/Plans"
         ],
+        "description": "Answers 201 with the tenant's plan and its trial, without Location: GetTenantPlan reads the trial.",
         "operationId": "GiveTenantTrial",
         "parameters": [
           {
@@ -2683,6 +2684,17 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
             }
           }
         ],
@@ -2697,8 +2709,22 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -2729,6 +2755,20 @@
           },
           "403": {
             "description": "Forbidden",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2739,6 +2779,20 @@
           },
           "404": {
             "description": "Not Found",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2749,6 +2803,20 @@
           },
           "409": {
             "description": "Conflict",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2759,6 +2827,20 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2770,6 +2852,18 @@
           "429": {
             "description": "Too Many Requests",
             "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
               "Retry-After": {
                 "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
                 "schema": {
@@ -16087,7 +16181,7 @@
             "format": "date-time"
           }
         },
-        "description": "The trial's new end: its end or later, and at most 365 days after its end."
+        "description": "The trial's new end: its end or later, and at most the most days of a trial after its end."
       },
       "FeatureFlagAddedToCodeDetailsResponse": {
         "required": [
@@ -16667,7 +16761,7 @@
             "format": "int32"
           }
         },
-        "description": "The trial's plan, and how many days it lasts from now: 1 to 365."
+        "description": "The trial's plan, and how many days it lasts from now, at least one and at most the most days of a trial."
       },
       "InvitationPreviewResponse": {
         "required": [

@@ -46,7 +46,11 @@ public static class PlanEndpoints
         platform.MapGet("/tenants/{tenantId:guid}/plan", GetTenantPlan).RequireAuthorization(Permissions.PlatformTenantsRead);
         platform.MapPut("/tenants/{tenantId:guid}/plan", ChangeTenantPlan).RequireAuthorization(Permissions.PlatformTenantsChangePlan);
         platform.MapPost("/tenants/{tenantId:guid}/plan/preview", GetTenantPlanChangePreview).RequireAuthorization(Permissions.PlatformTenantsChangePlan);
-        platform.MapPost("/tenants/{tenantId:guid}/trial", GiveTenantTrial).RequireAuthorization(Permissions.PlatformTenantsChangePlan);
+        platform.MapPost("/tenants/{tenantId:guid}/trial", GiveTenantTrial)
+            .WithMetadata(new IdempotencyKeyRequired())
+            .WithDescription("Answers 201 with the tenant's plan and its trial, without Location: GetTenantPlan reads the trial.")
+            .RequireAuthorization(Permissions.PlatformTenantsChangePlan)
+            .Produces<TenantPlanResponse>(StatusCodes.Status201Created);
         platform.MapPatch("/tenants/{tenantId:guid}/trial", ExtendTenantTrial).RequireAuthorization(Permissions.PlatformTenantsChangePlan);
         platform.MapPut("/tenants/{tenantId:guid}/entitlement-overrides/{key}", SetEntitlementOverride)
             .RequireAuthorization(Permissions.PlatformTenantsOverrideEntitlements);
@@ -155,13 +159,14 @@ public static class PlanEndpoints
     }
 
     // Step 40d: a trial exists only while billing is on, so both answer 404 trial.billing_off while it is off. Billing is read before the
-    // command, as one handler has one DbContext (W1). Each sets a state, so it takes no idempotency key (I1): a second trial is refused
-    // while the first runs, and an extension names the trial's new end, not the days it adds.
+    // command, as one handler has one DbContext (W1). Giving a trial starts a process, the trial and its scheduled end, so it takes an
+    // idempotency key and answers 201 (I1, I5). An extension names the trial's new end, not the days it adds: it sets a state and takes none.
     private static async Task<Result<TenantPlanResponse>> GiveTenantTrial(
         Guid tenantId,
         GiveTenantTrialRequest request,
         ClaimsPrincipal user,
         IMessageBus bus,
+        IIdempotencyExecutor idempotency,
         CancellationToken cancellationToken)
     {
         if (!await bus.InvokeAsync<bool>(new GetBillingEnabledQuery(), cancellationToken))
@@ -169,8 +174,8 @@ public static class PlanEndpoints
             return Errors.TrialBillingOff;
         }
 
-        return (await bus.InvokeForTenantAsync<Result<TenantPlanView>>(
-            tenantId.ToString(), new GiveTenantTrialCommand(user.Id(), request.PlanId, request.Days), cancellationToken)).Map(ToResponse);
+        return (await idempotency.ExecuteAsync<TenantPlanView>(
+            new GiveTenantTrialCommand(user.Id(), request.PlanId, request.Days), tenantId.ToString(), cancellationToken)).Map(ToResponse);
     }
 
     private static async Task<Result<TenantPlanResponse>> ExtendTenantTrial(
