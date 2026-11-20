@@ -440,6 +440,45 @@ public sealed class MigrationStepTests(Database database)
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.roles WHERE tenant_id = '{purged.Id}'", before)).ShouldBe(0);
     }
 
+    // Step 40b: the listing of the Contract tenants holds every tenant marked Contract before, and the overdue mark is on every payer
+    // whose subscription has a failed payment, but never on a Contract tenant. The tables are under row level security and the migration
+    // declares no tenant (R4), so the rows of two tenants prove that it reads them all.
+    [Fact]
+    public async Task Migrate_AddPlatformBillingReads_ListsTheContractTenantsAndMarksTheOverduePayers()
+    {
+        var before = await database.CreateDatabaseBeforeBillingMigrationAsync("AddPlatformBillingReads");
+        Guid[] tenants = [Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7()];
+        var (contract, contractOverdue, overdue, paying) = (tenants[0], tenants[1], tenants[2], tenants[3]);
+        await database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO billing.contracts (tenant_id, started_at, started_by) VALUES
+                ('{contract}', now(), '{Guid.CreateVersion7()}'), ('{contractOverdue}', now(), '{Guid.CreateVersion7()}');
+            INSERT INTO billing.payers (tenant_id, plan_id, yearly, base_amount, per_person_amount, ends)
+                SELECT tenant_id, '{SeedPlans.Business}', false, 0, 0, false FROM unnest(ARRAY['{contractOverdue}', '{overdue}', '{paying}']::uuid[]) AS tenant_id;
+            INSERT INTO billing.subscriptions (tenant_id, customer_id, subscription_id, plan_id, interval, status, current_period_end,
+                cancel_at_period_end, updated_at, closure_end, failed_payment_invoice_id, failed_payment_currency, failed_payment_amount_due,
+                failed_payment_attempts, failed_payment_failed_at)
+                SELECT tenant_id, 'cus_' || tenant_id, 'sub_' || tenant_id, '{SeedPlans.Business}', 'Monthly', 'Active', now(), false, now(), 'None',
+                    CASE WHEN tenant_id = '{paying}' THEN NULL ELSE 'in_' || tenant_id END, 'eur', 100, 1, now()
+                FROM unnest(ARRAY['{contractOverdue}', '{overdue}', '{paying}']::uuid[]) AS tenant_id;
+            """,
+            before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>("SELECT string_agg(tenant_id::text, ',' ORDER BY tenant_id::text COLLATE \"C\") FROM billing.contract_tenants", before))
+            .ShouldBe(string.Join(',', new[] { contract.ToString(), contractOverdue.ToString() }.Order(StringComparer.Ordinal)));
+        (await database.ScalarAsSuperuserAsync<string>("SELECT string_agg(tenant_id::text, ',') FROM billing.payers WHERE overdue", before))
+            .ShouldBe(overdue.ToString());
+        (await database.ScalarAsSuperuserAsync<string>(
+            """
+            SELECT string_agg(relname || ':' || relforcerowsecurity, ',' ORDER BY relname) FROM pg_class
+            WHERE relnamespace = 'billing'::regnamespace AND relname IN ('contracts', 'subscriptions')
+            """,
+            before)).ShouldBe("contracts:true,subscriptions:true");
+    }
+
     // Step 40 (the maintainer's decision of 2026-11-15): Pro becomes Business with 50 seats, Team is added with 15 seats and 5 custom roles,
     // and Free gets 3 seats; every plan's prices are 0. A plan a system admin named Team keeps its name with " (old)" after it. The tenants
     // stay on their plans.

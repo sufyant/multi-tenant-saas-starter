@@ -56,7 +56,8 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         page.GetProperty("page").GetInt32().ShouldBe(1);
         page.GetProperty("pageSize").GetInt32().ShouldBe(50);
         page.GetProperty("total").GetInt32().ShouldBe(4);
-        page.EnumerateObject().Select(field => field.Name).ShouldBe(["items", "page", "pageSize", "total", "statusCounts"], ignoreOrder: true);
+        page.EnumerateObject().Select(field => field.Name).ShouldBe(["items", "page", "pageSize", "total", "statusCounts", "billingCounts"], ignoreOrder: true);
+        page.GetProperty("billingCounts").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     [Fact]
@@ -441,6 +442,104 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         filtered.ShouldBe(all);
     }
 
+    [Fact]
+    public async Task ListTenants_TheContractFilter_ListsTheContractTenantsAndCountsBoth()
+    {
+        var tenants = await BillingOnAsync();
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var before = await CountsAsync(admin);
+        var (contractId, _) = await tenants.PayingAsync(tenants.Team);
+        var (overdueId, _) = await tenants.PayingAsync(tenants.Team);
+        var (payingId, _) = await tenants.PayingAsync(tenants.Team);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(contractId, "contract"));
+        _api.Billing.Put(BillingRequests.PastDue(overdueId, tenants.Team, DateTimeOffset.UtcNow.AddDays(-1), 1, DateTimeOffset.UtcNow.AddDays(2)));
+        await _api.PaymentFailedAsync(overdueId);
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=contract", Cancellation);
+
+        // Other tests share the database, so the page and the counts are read as a change, not as totals.
+        Ids(page).ShouldContain(contractId);
+        Ids(page).ShouldNotContain(overdueId);
+        Ids(page).ShouldNotContain(payingId);
+        var counts = page.GetProperty("billingCounts");
+        (counts.GetProperty("paymentOverdue").GetInt32() - before.PaymentOverdue).ShouldBe(1);
+        (counts.GetProperty("contract").GetInt32() - before.Contract).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ListTenants_ThePaymentOverdueFilter_ListsTheTenantWhosePaymentFailed()
+    {
+        var tenants = await BillingOnAsync();
+        var (overdueId, _) = await tenants.PayingAsync(tenants.Team);
+        var (payingId, _) = await tenants.PayingAsync(tenants.Team);
+        _api.Billing.Put(BillingRequests.PastDue(overdueId, tenants.Team, DateTimeOffset.UtcNow.AddDays(-1), 1, DateTimeOffset.UtcNow.AddDays(2)));
+        await _api.PaymentFailedAsync(overdueId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=payment_overdue", Cancellation);
+
+        Ids(page).ShouldContain(overdueId);
+        Ids(page).ShouldNotContain(payingId);
+    }
+
+    [Fact]
+    public async Task ListTenants_APaymentThatSucceedsAfterItFailed_IsNoLongerOverdue()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        _api.Billing.Put(BillingRequests.PastDue(tenantId, tenants.Team, DateTimeOffset.UtcNow.AddDays(-1), 1, DateTimeOffset.UtcNow.AddDays(2)));
+        await _api.PaymentFailedAsync(tenantId);
+        _api.Billing.Put(BillingRequests.Subscription(tenantId, tenants.Team));
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient().SendWebhookAsync($"evt_{Guid.NewGuid():N}", "invoice.paid", $"sub_{tenantId:N}"));
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=payment_overdue", Cancellation);
+
+        Ids(page).ShouldNotContain(tenantId);
+    }
+
+    // B12: a Contract tenant is billed outside the app, so a payment that failed by card before the switch no longer counts.
+    [Fact]
+    public async Task ListTenants_AnOverdueTenantSwitchedToContract_IsNoLongerOverdue()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        _api.Billing.Put(BillingRequests.PastDue(tenantId, tenants.Team, DateTimeOffset.UtcNow.AddDays(-1), 1, DateTimeOffset.UtcNow.AddDays(2)));
+        await _api.PaymentFailedAsync(tenantId);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=payment_overdue", Cancellation);
+
+        Ids(page).ShouldNotContain(tenantId);
+    }
+
+    // B12: back to card, the tenant leaves the Contract filter.
+    [Fact]
+    public async Task ListTenants_AContractTenantBackToCard_LeavesTheContractFilter()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, _) = await tenants.PayingAsync(tenants.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "contract"));
+        await _api.WaitingForMessagesAsync(() => admin.SetBilledByAsync(tenantId, "card"));
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=contract", Cancellation);
+
+        Ids(page).ShouldNotContain(tenantId);
+    }
+
+    [Fact]
+    public async Task ListTenants_AFilterOfNoSituation_IsRefused()
+    {
+        await BillingOnAsync();
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var response = await admin.GetAsync("/v1/platform/tenants?billing=trial", Cancellation);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
     private static List<(Guid Id, string Name, string Slug, string Status)> Tenants(JsonElement page) =>
     [
         .. page.GetProperty("items").EnumerateArray().Select(item => (
@@ -466,6 +565,15 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
     private static string Email() => $"{Guid.NewGuid():N}@example.com";
 
     private static List<string> Names(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("name").GetString()!)];
+
+    private static async Task<(int PaymentOverdue, int Contract)> CountsAsync(HttpClient admin)
+    {
+        var counts = (await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants", Cancellation)).GetProperty("billingCounts");
+        return (counts.GetProperty("paymentOverdue").GetInt32(), counts.GetProperty("contract").GetInt32());
+    }
+
+    private static List<Guid> Ids(JsonElement page) =>
+        page.GetProperty("items").EnumerateArray().Select(item => item.GetProperty("id").GetGuid()).ToList();
 
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
@@ -496,5 +604,15 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         {
             await _testData.AddTenantAsync(name: $"{_marker} {name}");
         }
+    }
+
+    // Step 40b: billing is on for this test alone, with its plans and Stripe's fake.
+    private async Task<PayingTenants> BillingOnAsync()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        return tenants;
     }
 }

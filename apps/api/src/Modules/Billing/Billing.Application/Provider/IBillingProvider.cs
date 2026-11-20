@@ -79,6 +79,12 @@ public interface IBillingProvider
     /// <summary>The provider's page where the customer manages its card, address, VAT ID and invoices, which works for a short time.</summary>
     Task<Uri> OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The customer's page in the provider's dashboard, for a system admin (4.27): it needs the admin's own sign-in there, so it is no secret.
+    /// It reads no network.
+    /// </summary>
+    Uri CustomerPageOf(string customerId);
+
     /// <summary>The subscription as the provider holds it now; none when it pays for no plan of ours.</summary>
     Task<ProviderSubscription?> FindSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken);
 

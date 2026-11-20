@@ -161,6 +161,7 @@ export const pageOf = (
   pageSize: 20,
   total: items.length,
   statusCounts: { active: 0, suspended: 0, closed: 0, purging: 0, purged: 0 },
+  billingCounts: null,
   ...values,
 });
 
@@ -188,6 +189,7 @@ export const detailOf = (
     suspendedBy: null,
     closedBy: null,
     purgeStartedAt: null,
+    freeMemberCount: 0,
     owners:
       organisation.ownerCount > 0
         ? [

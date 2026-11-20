@@ -16,6 +16,8 @@ namespace Billing.Application.Subscriptions.ApplySubscription;
 /// dunning.</param>
 /// <param name="BaseAmount">What the subscription's Prices charge, with <paramref name="PerPersonAmount"/> (B13); none in a message of the
 /// version before the price changes.</param>
+/// <param name="LastPaidAt">When the latest invoice was paid; none while it is not paid, and in a message of the version before
+/// 40b-backend's part 12.</param>
 /// <param name="PaidBy">The user id of the member who paid for the subscription.</param>
 [MessageName("apply-subscription")]
 public sealed record ApplySubscriptionCommand(
@@ -33,4 +35,5 @@ public sealed record ApplySubscriptionCommand(
     int? People = null,
     ProviderPayment? Payment = null,
     long? BaseAmount = null,
-    long? PerPersonAmount = null);
+    long? PerPersonAmount = null,
+    DateTimeOffset? LastPaidAt = null);

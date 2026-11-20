@@ -45,7 +45,8 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
             .ShouldBe((tenant.Id, "Profile Ltd", tenant.Slug, "active"));
         RoleAnswers.Of(found).ShouldBe(RoleAnswers.BuiltIn(name));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(createdAt);
-        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "planName", "entitlements", "usage"], ignoreOrder: true);
+        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "planName", "entitlements", "usage", "billingEnabled"], ignoreOrder: true);
+        found.GetProperty("billingEnabled").GetBoolean().ShouldBeFalse();
     }
 
     // The tenant web reads the plan's name and the effective value of every key, by key, as it reads the permissions: a feature is true or
@@ -195,5 +196,26 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString().ShouldBe("tenant.suspended");
+    }
+
+    [Fact]
+    public async Task GetMyTenant_WhileBillingIsOn_SaysSo()
+    {
+        var tenants = await BillingOnAsync();
+        var (tenantId, manager) = await tenants.PayingAsync(tenants.Team);
+
+        var found = await _api.CreateClient(manager).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}", Cancellation);
+
+        found.GetProperty("billingEnabled").GetBoolean().ShouldBeTrue();
+    }
+
+    // Step 40b: billing is on for this test alone, with its plans and Stripe's fake.
+    private async Task<PayingTenants> BillingOnAsync()
+    {
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application), settings: BillingRequests.On);
+        var tenants = new PayingTenants(database, _api);
+        await tenants.AddPlansAsync();
+        return tenants;
     }
 }

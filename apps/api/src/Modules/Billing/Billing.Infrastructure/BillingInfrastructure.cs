@@ -7,6 +7,7 @@ using Billing.Application.Provider;
 using Billing.Application.StripeEvents;
 using Billing.Application.Subscriptions;
 using Billing.Application;
+using Billing.Contracts.Tenants;
 using Billing.Infrastructure.Persistence.BillingEmails;
 using Billing.Infrastructure.Persistence.Checkouts;
 using Billing.Infrastructure.Persistence.Contracts;
@@ -14,6 +15,7 @@ using Billing.Infrastructure.Persistence.Customers;
 using Billing.Infrastructure.Persistence.PriceChanges;
 using Billing.Infrastructure.Persistence.StripeEvents;
 using Billing.Infrastructure.Persistence.Subscriptions;
+using Billing.Infrastructure.Persistence.Tenants;
 using Billing.Infrastructure.Persistence;
 using Billing.Infrastructure.Stripe;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +49,7 @@ public static class BillingInfrastructure
         services.AddScoped<IContractRepository, ContractRepository>();
         services.AddScoped<IBillingEmailRepository, BillingEmailRepository>();
         services.AddScoped<IPriceChangeStore, PriceChangeStore>();
+        services.AddScoped<IBillingDirectory, BillingDirectory>();
 
         // Billing is off by default (the maintainer's decision of 2026-11-14). While it is on, the web's root and Stripe's keys are required.
         services.AddOptions<BillingOptions>()

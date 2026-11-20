@@ -57,6 +57,7 @@ using ControlPlane.Application.SystemAdmins.GrantRootSystemAdmin;
 using ControlPlane.Application.Tenants.ChangeTenantPlan;
 using ControlPlane.Application.Tenants.CloseTenant;
 using ControlPlane.Application.Tenants.CompleteTenantPurge;
+using ControlPlane.Application.Tenants.GetPaysByCard;
 using ControlPlane.Application.Tenants.CreateTenant;
 using ControlPlane.Application.Tenants.ReactivateTenant;
 using ControlPlane.Application.Tenants.RenameTenant;
@@ -284,7 +285,12 @@ public sealed class HostRoleTests(Database database)
         await Waiting.UntilAsync(async () => await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed") > 0);
 
         changed.StatusCode.ShouldBe(HttpStatusCode.OK);
-        runs.In("web").ShouldBe([new HandlerRun(typeof(ChangeTenantPlanCommand), typeof(ChangeTenantPlanHandler))]);
+        // B12: the web first asks Billing whether the tenant pays by card (GetPaysByCardQuery, inline), then changes the plan.
+        runs.In("web").ShouldBe(
+        [
+            new HandlerRun(typeof(GetPaysByCardQuery), typeof(GetPaysByCardHandler)),
+            new HandlerRun(typeof(ChangeTenantPlanCommand), typeof(ChangeTenantPlanHandler)),
+        ]);
         runs.WithoutNotificationsIn("worker").ShouldBe([new HandlerRun(typeof(TenantPlanChangedEvent), typeof(RecordTenantPlanChangedHandler))]);
         (await AuditEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.plan_changed")).ShouldBe(1L);

@@ -48,6 +48,7 @@ const monthly: SubscriptionResponse = {
   scheduledChange: null,
   payment: null,
   priceChange: null,
+  lastPaymentAt: null,
 };
 
 const billingAnswer = (answer: BillingResponse, sent: unknown[] = []) => [

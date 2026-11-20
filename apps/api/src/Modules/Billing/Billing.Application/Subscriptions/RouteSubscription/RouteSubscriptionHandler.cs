@@ -19,7 +19,7 @@ public static class RouteSubscriptionHandler
         [
             new ApplySubscriptionCommand(
                     owner.TenantId, owner.CheckoutBy, command.CustomerId, command.SubscriptionId, command.PlanId, command.Interval, command.Status,
-                    command.CurrentPeriodEnd, command.CancelAtPeriodEnd, command.ScheduledPlanId, command.ScheduledInterval, command.People, command.Payment, command.BaseAmount, command.PerPersonAmount)
+                    command.CurrentPeriodEnd, command.CancelAtPeriodEnd, command.ScheduledPlanId, command.ScheduledInterval, command.People, command.Payment, command.BaseAmount, command.PerPersonAmount, command.LastPaidAt)
                 .WithDeliveryOptions(new DeliveryOptions { TenantId = owner.TenantId.ToString() }),
         ];
     }

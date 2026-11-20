@@ -20,9 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  BillingResponse,
   ProblemDetails,
-  SetBilledByRequest
+  SetBilledByRequest,
+  TenantBillingResponse
 } from '../endpoints.schemas.gen';
 
 import { apiFetch } from '../../mutator';
@@ -56,9 +56,9 @@ export const getGetTenantBillingUrl = (tenantId: string,) => {
   return `/v1/platform/tenants/${tenantId}/billing`
 }
 
-export const getTenantBilling = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<BillingResponse> => {
+export const getTenantBilling = async (tenantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<TenantBillingResponse> => {
 
-  return apiFetch<BillingResponse>(getGetTenantBillingUrl(tenantId),
+  return apiFetch<TenantBillingResponse>(getGetTenantBillingUrl(tenantId),
   {
     ...options,
     method: 'GET'
@@ -150,7 +150,7 @@ export const getSetBilledByUrl = (tenantId: string,) => {
 }
 
 export const setBilledBy = async (tenantId: string,
-    setBilledByRequest: SetBilledByRequest, options?: Parameters<typeof apiFetch>[1]): Promise<BillingResponse> => {
+    setBilledByRequest: SetBilledByRequest, options?: Parameters<typeof apiFetch>[1]): Promise<TenantBillingResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -166,7 +166,7 @@ export const setBilledBy = async (tenantId: string,
     }
     return headers;
   };
-return apiFetch<BillingResponse>(getSetBilledByUrl(tenantId),
+return apiFetch<TenantBillingResponse>(getSetBilledByUrl(tenantId),
   {
     ...options,
     method: 'PUT',

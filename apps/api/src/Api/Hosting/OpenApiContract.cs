@@ -250,7 +250,8 @@ internal static partial class OpenApiContract
     // of its enum. Their parameter types bind any text,
     // which ListRequest and ListFilter check, so the document would call them strings. A sort's values are the JSON names the check
     // accepts. A filter takes the enum of its response (N7h), so it refers to that enum's schema, and a client has one type for both (N11e).
-    private static Task DescribeListParameters(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+    // A filter of an enum in its endpoint's folder, which no response holds (`billing` of ListTenants), adds that enum's schema itself.
+    private static async Task DescribeListParameters(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         foreach (var description in context.Description.ParameterDescriptions)
         {
@@ -266,20 +267,30 @@ internal static partial class OpenApiContract
             {
                 var names = (IReadOnlyList<string>)typeof(ListSort).GetMethod(nameof(ListSort.ValuesOf))!.MakeGenericMethod(values).Invoke(null, null)!;
                 parameter.Schema = new OpenApiSchema { Type = JsonSchemaType.String, Enum = [.. names.Select(value => JsonValue.Create(value))] };
+                continue;
             }
-            else if (type.GetGenericTypeDefinition() == typeof(ListFilter<>) && declared.IsArray)
+
+            if (type.GetGenericTypeDefinition() != typeof(ListFilter<>))
+            {
+                continue;
+            }
+
+            if (context.Document?.Components?.Schemas?.ContainsKey(values.Name) != true)
+            {
+                context.Document?.AddComponent(values.Name, await context.GetOrCreateSchemaAsync(values, cancellationToken: cancellationToken));
+            }
+
+            if (declared.IsArray)
             {
                 // Step 37b: a filter of several values, sent as the parameter once for each value: the default of a query parameter
                 // (OpenAPI 3.1, "form" style, exploded).
                 parameter.Schema = new OpenApiSchema { Type = JsonSchemaType.Array, Items = new OpenApiSchemaReference(values.Name, context.Document) };
             }
-            else if (type.GetGenericTypeDefinition() == typeof(ListFilter<>))
+            else
             {
                 parameter.Schema = new OpenApiSchemaReference(values.Name, context.Document);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     // K5: the limits of a list's query, from the constants that PageRequest, CursorRequest and ListRequest check. A parameter is found

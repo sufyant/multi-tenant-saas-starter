@@ -44,7 +44,7 @@ public static class SetBilledByHandler
             // B13: a Contract tenant pays no next period by card, so no price change counts it, tells it or moves it.
             if (await payers.FindPayerAsync(cancellationToken) is { } payer)
             {
-                payer.Take(payer.PlanId, payer.Yearly, payer.BaseAmount, payer.PerPersonAmount, ends: true);
+                payer.Take(payer.PlanId, payer.Yearly, payer.BaseAmount, payer.PerPersonAmount, ends: true, overdue: false);
             }
             if (subscription?.EndForClosure() is { } cancelAtPeriodEnd)
             {

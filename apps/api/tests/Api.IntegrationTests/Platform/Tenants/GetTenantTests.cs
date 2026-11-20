@@ -49,7 +49,7 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
             .ShouldBe((tenant.Id, "Admin View Ltd", tenant.Slug, answered));
         found.EnumerateObject().Select(field => field.Name).ShouldBe(
             [
-                "id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "ownerCount",
+                "id", "name", "slug", "status", "suspensionReason", "closedAt", "purgedAt", "reopenableUntil", "purgeWarningAt", "memberCount", "freeMemberCount", "ownerCount",
                 "owners", "ownerInvitation", "createdAt", "createdBy", "suspendedAt", "suspendedBy", "closedBy", "purgeStartedAt", "pendingInvitationCount",
             ],
             ignoreOrder: true);
@@ -405,6 +405,20 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
         var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
 
         found.GetProperty("pendingInvitationCount").GetInt32().ShouldBe(2);
+    }
+
+    // The Plan and billing tab counts the billed people apart from the free Billing managers (A2, R12; 4.27).
+    [Fact]
+    public async Task GetTenant_ABillingManagerAmongTheMembers_CountsItAsAFreeMember()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        await _testData.AddMemberAsync(tenant.Id, role: "Member");
+        await _testData.AddMemberAsync(tenant.Id, role: "BillingManager");
+        await _testData.SummarizeAsync(tenant.Id);
+
+        var found = await (await SystemAdminAsync()).GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant.Id}", Cancellation);
+
+        $"{found.GetProperty("memberCount").GetInt32()}|{found.GetProperty("freeMemberCount").GetInt32()}".ShouldBe("2|1");
     }
 
     [Fact]

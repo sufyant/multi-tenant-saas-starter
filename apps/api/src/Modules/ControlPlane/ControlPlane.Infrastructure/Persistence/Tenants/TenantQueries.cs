@@ -65,6 +65,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             detail.ReopenableUntil(reopenPeriod),
             detail.PurgeWarningAt(reopenPeriod, purgeWarningLead),
             found.Summary?.MemberCount ?? 0,
+            found.Summary?.FreeMemberCount ?? 0,
             found.Summary?.OwnerCount ?? 0,
             found.Summary?.PendingInvitationsAt(now) ?? 0,
             [.. owners.Select(TenantOwnerView.Of)],
@@ -116,6 +117,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
     async Task<TenantListView> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         IReadOnlyList<TenantStatus> statuses,
+        IReadOnlyList<Guid>? only,
         TimeSpan reopenPeriod,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -135,6 +137,11 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         if (statuses.Count > 0)
         {
             tenants = tenants.Where(tenant => statuses.Contains(tenant.Status));
+        }
+
+        if (only is not null)
+        {
+            tenants = tenants.Where(tenant => only.Contains(tenant.Id));
         }
 
         var total = await tenants.CountAsync(cancellationToken);

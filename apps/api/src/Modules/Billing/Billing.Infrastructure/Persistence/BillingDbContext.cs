@@ -39,6 +39,8 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
 
     internal DbSet<Payer> Payers => Set<Payer>();
 
+    internal DbSet<ContractTenant> ContractTenants => Set<ContractTenant>();
+
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
@@ -145,6 +147,12 @@ public sealed class BillingDbContext(DbContextOptions<BillingDbContext> options,
             payer.ToTable("payers");
             payer.HasKey(p => p.TenantId);
             payer.HasIndex(p => p.PlanId);
+        });
+
+        modelBuilder.Entity<ContractTenant>(listed =>
+        {
+            listed.ToTable("contract_tenants");
+            listed.HasKey(l => l.TenantId);
         });
 
         modelBuilder.Entity<StripeEvent>(stripeEvent =>

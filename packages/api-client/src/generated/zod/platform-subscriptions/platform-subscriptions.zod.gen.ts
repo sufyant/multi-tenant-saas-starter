@@ -73,10 +73,15 @@ export const GetTenantBillingResponse = zod.object({
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
 }).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.')
-}).describe('A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan\'s new prices; the\nplan\'s prices before and after (B13).')])
-}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.')]),
-  "billingEmail": zod.string().nullable()
-}).describe('The tenant\'s billing: how it pays (B12), its subscription, none until it pays by card the first time, and its billing email, none until\na member who manages billing sets one (B14). A Contract tenant\'s last subscription shows until it ends.')
+}).describe('A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan\'s new prices; the\nplan\'s prices before and after (B13).')]),
+  "lastPaymentAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null. `lastPaymentAt` is when the subscription\'s last paid invoice was paid (4.27), or null until\nStripe names one.')]),
+  "billingEmail": zod.string().nullable(),
+  "customer": zod.union([zod.null(),zod.object({
+  "id": zod.string(),
+  "dashboardUrl": zod.url()
+}).describe('The tenant\'s customer at Stripe (B5) and its page in Stripe\'s dashboard, which needs the system admin\'s own sign-in there (4.27).')])
+}).describe('A tenant\'s billing for the system admins (B12, 4.27, 4.31 to 4.36): what the tenant\'s own `GET .../billing` answers, and its customer\nat Stripe, none before its first checkout (B5).')
 
 export const SetBilledByParams = zod.object({
   "tenantId": zod.uuid()
@@ -151,8 +156,13 @@ export const SetBilledByResponse = zod.object({
   "baseYearly": zod.int(),
   "perPersonYearly": zod.int()
 }).describe('A plan\'s four prices in a price change, each a whole number of the minor unit of the deployment\'s currency, without tax.')
-}).describe('A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan\'s new prices; the\nplan\'s prices before and after (B13).')])
-}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.')]),
-  "billingEmail": zod.string().nullable()
-}).describe('The tenant\'s billing: how it pays (B12), its subscription, none until it pays by card the first time, and its billing email, none until\na member who manages billing sets one (B14). A Contract tenant\'s last subscription shows until it ends.')
+}).describe('A price change that the tenant was told of (10.18): from its first period after `movesAt` it pays the plan\'s new prices; the\nplan\'s prices before and after (B13).')]),
+  "lastPaymentAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('The tenant\'s subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member\'s cancellation, which moves the tenant to the default plan then (B9), or a closure\'s\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment\'s dunning (B11), or null when nothing is due. `priceChange` is the plan\'s new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null. `lastPaymentAt` is when the subscription\'s last paid invoice was paid (4.27), or null until\nStripe names one.')]),
+  "billingEmail": zod.string().nullable(),
+  "customer": zod.union([zod.null(),zod.object({
+  "id": zod.string(),
+  "dashboardUrl": zod.url()
+}).describe('The tenant\'s customer at Stripe (B5) and its page in Stripe\'s dashboard, which needs the system admin\'s own sign-in there (4.27).')])
+}).describe('A tenant\'s billing for the system admins (B12, 4.27, 4.31 to 4.36): what the tenant\'s own `GET .../billing` answers, and its customer\nat Stripe, none before its first checkout (B5).')
 

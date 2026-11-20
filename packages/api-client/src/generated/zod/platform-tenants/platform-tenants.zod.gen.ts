@@ -79,7 +79,11 @@ export const ListTenantsQueryParams = zod.object({
   Closed: 'closed',
   Purging: 'purging',
   Purged: 'purged',
-}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).')).optional()
+}).describe('The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).')).optional(),
+  "billing": zod.enum({
+  PaymentOverdue: 'payment_overdue',
+  Contract: 'contract',
+}).optional()
 })
 
 export const ListTenantsResponse = zod.object({
@@ -132,8 +136,12 @@ export const ListTenantsResponse = zod.object({
   "closed": zod.int(),
   "purging": zod.int(),
   "purged": zod.int()
-}).describe('How many tenants are in each status, without the search or the status filter: the tabs of the Organisations list.')
-}).describe('A page of the tenant list (K5), and how many tenants of the whole list are in each status.')
+}).describe('How many tenants are in each status, without the search or the status filter: the tabs of the Organisations list.'),
+  "billingCounts": zod.union([zod.null(),zod.object({
+  "paymentOverdue": zod.int(),
+  "contract": zod.int()
+}).describe('How many tenants are in each billing situation, without the search or the filters: the options of the billing filter (4.38).')])
+}).describe('A page of the tenant list (K5), and how many tenants of the whole list are in each status and, while billing is on, in each billing\nsituation (4.38); null while billing is off (B1).')
 
 export const GetTenantParams = zod.object({
   "tenantId": zod.uuid()
@@ -157,6 +165,7 @@ export const GetTenantResponse = zod.object({
   "reopenableUntil": zod.iso.datetime({"offset":true}).nullable(),
   "purgeWarningAt": zod.iso.datetime({"offset":true}).nullable(),
   "memberCount": zod.int(),
+  "freeMemberCount": zod.int(),
   "ownerCount": zod.int(),
   "owners": zod.array(zod.object({
   "userId": zod.uuid(),
@@ -194,7 +203,7 @@ export const GetTenantResponse = zod.object({
   "deleted": zod.boolean()
 }).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.')]),
   "purgeStartedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise). It counts the pending invitations that have not expired at the moment of the request, and\nnames who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a\nseed, for an event the tenant is not in, and for an event before the API kept it.')
+}).describe('One tenant for the platform\'s detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise). `FreeMemberCount` counts the members of a role that takes no seat, the Billing managers (A2), among\n`MemberCount`. It counts the pending invitations that have not expired at the moment of the request, and\nnames who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a\nseed, for an event the tenant is not in, and for an event before the API kept it.')
 
 export const RenameTenantParams = zod.object({
   "tenantId": zod.uuid()

@@ -10,7 +10,8 @@ namespace ControlPlane.Api.Tenant.Tenants;
 /// endpoint still checks the permission itself. It also holds the name of the tenant's plan; <c>entitlements</c>, every key of the list
 /// with its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null
 /// for an unlimited limit; and <c>usage</c>, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks
-/// its feature and its limit itself.
+/// its feature and its limit itself. <c>billingEnabled</c> says whether the deployment's billing is on (B1), for every member, as
+/// GetBilling answers only a member who manages billing.
 /// </summary>
 public sealed record MyTenantDetailResponse(
     Guid Id,
@@ -22,4 +23,5 @@ public sealed record MyTenantDetailResponse(
     DateTimeOffset CreatedAt,
     string PlanName,
     IReadOnlyDictionary<string, JsonNode?> Entitlements,
-    IReadOnlyDictionary<string, int> Usage);
+    IReadOnlyDictionary<string, int> Usage,
+    bool BillingEnabled);

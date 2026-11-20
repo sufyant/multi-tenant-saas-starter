@@ -5,7 +5,8 @@ namespace Billing.Api.Tenant.Subscriptions;
 /// has paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's
 /// (B8). <c>scheduledChange</c> is the move to another plan or interval that a member scheduled at <c>currentPeriodEnd</c> (10.07), or
 /// null. <c>payment</c> is a failed payment's dunning (B11), or null when nothing is due. <c>priceChange</c> is the plan's new price that the
-/// tenant was told of and that applies from its first period after <c>movesAt</c> (B13, 10.18), or null.
+/// tenant was told of and that applies from its first period after <c>movesAt</c> (B13, 10.18), or null. <c>lastPaymentAt</c> is when the subscription's last paid invoice was paid (4.27), or null until
+/// Stripe names one.
 /// </summary>
 public sealed record SubscriptionResponse(
     Guid PlanId,
@@ -15,4 +16,5 @@ public sealed record SubscriptionResponse(
     bool CancelAtPeriodEnd,
     ScheduledChangeResponse? ScheduledChange,
     PaymentResponse? Payment,
-    SubscriptionPriceChangeResponse? PriceChange);
+    SubscriptionPriceChangeResponse? PriceChange,
+    DateTimeOffset? LastPaymentAt);

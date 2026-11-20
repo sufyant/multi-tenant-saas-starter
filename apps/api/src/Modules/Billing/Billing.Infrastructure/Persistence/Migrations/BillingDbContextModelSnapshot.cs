@@ -138,6 +138,19 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     b.ToTable("contracts", "billing");
                 });
 
+            modelBuilder.Entity("Billing.Domain.Contracts.ContractTenant", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_contract_tenants");
+
+                    b.ToTable("contract_tenants", "billing");
+                });
+
             modelBuilder.Entity("Billing.Domain.Customers.Customer", b =>
                 {
                     b.Property<string>("CustomerId")
@@ -189,6 +202,10 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     b.Property<bool>("Ends")
                         .HasColumnType("boolean")
                         .HasColumnName("ends");
+
+                    b.Property<bool>("Overdue")
+                        .HasColumnType("boolean")
+                        .HasColumnName("overdue");
 
                     b.Property<long>("PerPersonAmount")
                         .HasColumnType("bigint")
@@ -357,6 +374,10 @@ namespace Billing.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("interval");
+
+                    b.Property<DateTimeOffset?>("LastPaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_paid_at");
 
                     b.Property<DateTimeOffset?>("MovedToDefaultAt")
                         .HasColumnType("timestamp with time zone")

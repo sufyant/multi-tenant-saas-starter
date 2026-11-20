@@ -2,9 +2,11 @@ using System.Security.Claims;
 using ControlPlane.Api.Authentication;
 using ControlPlane.Api.Tenant.Invitations;
 using ControlPlane.Api.Statuses;
+using ControlPlane.Application;
 using ControlPlane.Application.Plans;
 using ControlPlane.Application.Plans.CreatePlan;
 using ControlPlane.Application.Plans.GetPlan;
+using ControlPlane.Application.Tenants.GetPaysByCard;
 using ControlPlane.Application.Plans.ListPlans;
 using ControlPlane.Application.Plans.GetPlanUpdatePreview;
 using ControlPlane.Application.Plans.UpdatePlan;
@@ -128,15 +130,24 @@ public static class PlanEndpoints
     private static async Task<Result<TenantPlanResponse>> GetTenantPlan(Guid tenantId, IMessageBus bus, CancellationToken cancellationToken) =>
         (await bus.InvokeForTenantAsync<Result<TenantPlanView>>(tenantId.ToString(), new GetTenantPlanQuery(), cancellationToken)).Map(ToResponse);
 
-    // A change of the tenant's plan sets a state, so it takes no idempotency key (I1).
+    // A change of the tenant's plan sets a state, so it takes no idempotency key (I1). B6: a tenant that pays by card is on the plan its
+    // subscription pays for, so a system admin sets the plan of a Contract tenant only (B12). Billing is read before the command, on its
+    // own DbContext (W1); a first payment that comes between them moves the plan again (B6).
     private static async Task<Result<TenantPlanResponse>> ChangeTenantPlan(
         Guid tenantId,
         ChangeTenantPlanRequest request,
         ClaimsPrincipal user,
         IMessageBus bus,
-        CancellationToken cancellationToken) =>
-        (await bus.InvokeForTenantAsync<Result<TenantPlanView>>(tenantId.ToString(), new ChangeTenantPlanCommand(user.Id(), request.PlanId), cancellationToken))
+        CancellationToken cancellationToken)
+    {
+        if (await bus.InvokeAsync<bool>(new GetPaysByCardQuery(tenantId), cancellationToken))
+        {
+            return Errors.TenantPaysByCard;
+        }
+
+        return (await bus.InvokeForTenantAsync<Result<TenantPlanView>>(tenantId.ToString(), new ChangeTenantPlanCommand(user.Id(), request.PlanId), cancellationToken))
             .Map(ToResponse);
+    }
 
     private static async Task<Result<TenantPlanChangePreviewResponse>> GetTenantPlanChangePreview(
         Guid tenantId,

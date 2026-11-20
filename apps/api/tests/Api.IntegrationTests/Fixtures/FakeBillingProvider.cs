@@ -182,6 +182,8 @@ internal sealed class FakeBillingProvider : IBillingProvider
         return Task.FromResult(PortalLink);
     }
 
+    public Uri CustomerPageOf(string customerId) => new($"https://dashboard.example/customers/{customerId}");
+
     public Task<ProviderSubscription?> FindSubscriptionAsync(string subscriptionId, CancellationToken cancellationToken)
     {
         Reads.Enqueue(subscriptionId);

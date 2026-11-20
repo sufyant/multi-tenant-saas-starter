@@ -14,6 +14,7 @@ public static class ListTenantsHandler
         await tenants.ListTenantsAsync(
             query.List,
             [.. query.Statuses.Select(Enum.Parse<TenantStatus>)],
+            query.Only,
             settings.ReopenPeriod,
             time.GetUtcNow(),
             cancellationToken);

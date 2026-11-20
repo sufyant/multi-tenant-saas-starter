@@ -327,6 +327,44 @@ public sealed class StripeBillingProviderTests
         found!.Payment.ShouldBeNull();
     }
 
+    // 4.27: a test key opens the dashboard's test data, a live key its live data.
+    [Theory]
+    [InlineData("sk_test_unused", "https://dashboard.stripe.com/test/customers/cus_1")]
+    [InlineData("rk_live_unused", "https://dashboard.stripe.com/customers/cus_1")]
+    public void CustomerPageOf_AKeyOfAMode_OpensThatModesDashboard(string key, string page)
+    {
+        IBillingProvider provider = new StripeBillingProvider(new StripeClient(key), Options.Create(new StripeOptions { SecretKey = key, WebhookSecret = Secret }));
+
+        provider.CustomerPageOf("cus_1").ShouldBe(new Uri(page));
+    }
+
+    // 4.27: the last payment is when the latest invoice was paid.
+    [Fact]
+    public async Task FindSubscription_APaidInvoice_NamesWhenItWasPaid()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", WithInvoice("""
+            {"id": "in_1", "object": "invoice", "status": "paid", "attempt_count": 1, "amount_due": 10000, "currency": "eur", "created": 1799900000,
+             "status_transitions": {"paid_at": 1800000100}}
+            """));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        found!.LastPaidAt.ShouldBe(DateTimeOffset.FromUnixTimeSeconds(1_800_000_100));
+    }
+
+    [Fact]
+    public async Task FindSubscription_AnOpenInvoice_NamesNoPayment()
+    {
+        var stripe = new StripeRequests().Answer("GET", "/v1/subscriptions/sub_1", WithInvoice("""
+            {"id": "in_1", "object": "invoice", "status": "open", "attempt_count": 0, "amount_due": 10000, "currency": "eur", "created": 1799900000,
+             "status_transitions": {"paid_at": null}}
+            """));
+
+        var found = await ProviderOf(stripe).FindSubscriptionAsync("sub_1", Cancellation);
+
+        found!.LastPaidAt.ShouldBeNull();
+    }
+
     // B11: an invoice's failed payment, and its payment, ask for the sync of the invoice's subscription.
     [Fact]
     public void ReadEvent_AFailedInvoicePayment_NamesItsSubscription()

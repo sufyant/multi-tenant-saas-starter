@@ -68,6 +68,7 @@ const detail = (
   reopenableUntil: null,
   purgeWarningAt: null,
   memberCount: 0,
+  freeMemberCount: 0,
   ownerCount: 1,
   owners: [],
   ownerInvitation: null,

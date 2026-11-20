@@ -39,11 +39,13 @@ public interface ITenantQueries
 
     /// <summary>
     /// A page of every tenant whose name or slug contains the search, in any of the statuses or, with none, every status, by the sort
-    /// field, then id, and how many tenants that contain the search are in each status. It needs no active tenant.
+    /// field, then id, and how many tenants that contain the search are in each status. With <paramref name="only"/>, only those
+    /// tenants are listed (the billing filter, 4.38). It needs no active tenant.
     /// </summary>
     internal Task<TenantListView> ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         IReadOnlyList<TenantStatus> statuses,
+        IReadOnlyList<Guid>? only,
         TimeSpan reopenPeriod,
         DateTimeOffset now,
         CancellationToken cancellationToken);

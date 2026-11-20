@@ -288,6 +288,13 @@
                 "$ref": "#/components/schemas/TenantResponseStatus"
               }
             }
+          },
+          {
+            "name": "billing",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/TenantResponseBilling"
+            }
           }
         ],
         "responses": {
@@ -6486,7 +6493,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BillingResponse"
+                  "$ref": "#/components/schemas/TenantBillingResponse"
                 }
               }
             }
@@ -6616,7 +6623,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BillingResponse"
+                  "$ref": "#/components/schemas/TenantBillingResponse"
                 }
               }
             }
@@ -14195,6 +14202,23 @@
         },
         "description": "A terms version's values as an entry keeps them: its day, its link, its summary or null, whether it requires acceptance, and whether it emails the users."
       },
+      "BillingCustomerResponse": {
+        "required": [
+          "id",
+          "dashboardUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "dashboardUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "description": "The tenant's customer at Stripe (B5) and its page in Stripe's dashboard, which needs the system admin's own sign-in there (4.27)."
+      },
       "BillingResponse": {
         "required": [
           "billedBy",
@@ -14805,6 +14829,7 @@
           "tenant.not_active",
           "tenant.not_closed",
           "tenant.not_found",
+          "tenant.pays_by_card",
           "tenant.reopen_period_ended",
           "tenant.slug_invalid",
           "tenant.slug_reserved",
@@ -14931,6 +14956,7 @@
           "TenantNotActive",
           "TenantNotClosed",
           "TenantNotFound",
+          "TenantPaysByCard",
           "TenantReopenPeriodEnded",
           "TenantSlugInvalid",
           "TenantSlugReserved",
@@ -16230,7 +16256,8 @@
           "createdAt",
           "planName",
           "entitlements",
-          "usage"
+          "usage",
+          "billingEnabled"
         ],
         "type": "object",
         "properties": {
@@ -16280,9 +16307,12 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "billingEnabled": {
+            "type": "boolean"
           }
         },
-        "description": "The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the name of the tenant's plan; `entitlements`, every key of the list\nwith its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null\nfor an unlimited limit; and `usage`, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks\nits feature and its limit itself."
+        "description": "The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the\npermissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every\nendpoint still checks the permission itself. It also holds the name of the tenant's plan; `entitlements`, every key of the list\nwith its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null\nfor an unlimited limit; and `usage`, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks\nits feature and its limit itself. `billingEnabled` says whether the deployment's billing is on (B1), for every member, as\nGetBilling answers only a member who manages billing."
       },
       "MyTenantResponse": {
         "required": [
@@ -18108,7 +18138,8 @@
           "cancelAtPeriodEnd",
           "scheduledChange",
           "payment",
-          "priceChange"
+          "priceChange",
+          "lastPaymentAt"
         ],
         "type": "object",
         "properties": {
@@ -18158,9 +18189,16 @@
                 "$ref": "#/components/schemas/SubscriptionPriceChangeResponse"
               }
             ]
+          },
+          "lastPaymentAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         },
-        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment's dunning (B11), or null when nothing is due. `priceChange` is the plan's new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null."
+        "description": "The tenant's subscription as billing last read it from the provider: the plan it pays for, how often, its state, the end of the period it\nhas paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's\n(B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or\nnull. `payment` is a failed payment's dunning (B11), or null when nothing is due. `priceChange` is the plan's new price that the\ntenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null. `lastPaymentAt` is when the subscription's last paid invoice was paid (4.27), or null until\nStripe names one."
       },
       "SubscriptionResponseInterval": {
         "enum": [
@@ -18224,6 +18262,24 @@
         },
         "description": "Why the system admin suspends the user, within the API's limit. The API trims the reason before it counts its length. The user never\nsees it. It is personal data about the user: the user's data export holds it, the deletion erases it, and no audit entry keeps it."
       },
+      "TenantBillingCountsResponse": {
+        "required": [
+          "paymentOverdue",
+          "contract"
+        ],
+        "type": "object",
+        "properties": {
+          "paymentOverdue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contract": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "How many tenants are in each billing situation, without the search or the filters: the options of the billing filter (4.38)."
+      },
       "TenantBillingEmailChangedDetailsResponse": {
         "required": [
           "removed",
@@ -18243,6 +18299,47 @@
             "type": "boolean"
           }
         }
+      },
+      "TenantBillingResponse": {
+        "required": [
+          "billedBy",
+          "subscription",
+          "billingEmail",
+          "customer"
+        ],
+        "type": "object",
+        "properties": {
+          "billedBy": {
+            "$ref": "#/components/schemas/BillingResponseBilledBy"
+          },
+          "subscription": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubscriptionResponse"
+              }
+            ]
+          },
+          "billingEmail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/BillingCustomerResponse"
+              }
+            ]
+          }
+        },
+        "description": "A tenant's billing for the system admins (B12, 4.27, 4.31 to 4.36): what the tenant's own `GET .../billing` answers, and its customer\nat Stripe, none before its first checkout (B5)."
       },
       "TenantCreatedDetailsResponse": {
         "required": [
@@ -18277,6 +18374,7 @@
           "reopenableUntil",
           "purgeWarningAt",
           "memberCount",
+          "freeMemberCount",
           "ownerCount",
           "owners",
           "ownerInvitation",
@@ -18341,6 +18439,10 @@
             "format": "date-time"
           },
           "memberCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "freeMemberCount": {
             "type": "integer",
             "format": "int32"
           },
@@ -18413,7 +18515,7 @@
             "format": "date-time"
           }
         },
-        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise). It counts the pending invitations that have not expired at the moment of the request, and\nnames who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a\nseed, for an event the tenant is not in, and for an event before the API kept it."
+        "description": "One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the\nfirst. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or\nwere, warned of the purge (null otherwise). `FreeMemberCount` counts the members of a role that takes no seat, the Billing managers (A2), among\n`MemberCount`. It counts the pending invitations that have not expired at the moment of the request, and\nnames who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a\nseed, for an event the tenant is not in, and for an event before the API kept it."
       },
       "TenantEntitlementOverrideRemovedDetailsResponse": {
         "required": [
@@ -18728,7 +18830,8 @@
           "page",
           "pageSize",
           "total",
-          "statusCounts"
+          "statusCounts",
+          "billingCounts"
         ],
         "type": "object",
         "properties": {
@@ -18752,9 +18855,19 @@
           },
           "statusCounts": {
             "$ref": "#/components/schemas/TenantStatusCountsResponse"
+          },
+          "billingCounts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TenantBillingCountsResponse"
+              }
+            ]
           }
         },
-        "description": "A page of the tenant list (K5), and how many tenants of the whole list are in each status."
+        "description": "A page of the tenant list (K5), and how many tenants of the whole list are in each status and, while billing is on, in each billing\nsituation (4.38); null while billing is off (B1)."
       },
       "TenantMovedToDefaultPlanDetailsResponse": {
         "required": [
@@ -19225,6 +19338,18 @@
           }
         },
         "description": "A tenant and its status, with the reason of its suspension while it is suspended, or closed after a suspension, the moment of its\nclosure while it is closed or purging, and the moment of its purge once it is purged. Only a system admin sees this shape."
+      },
+      "TenantResponseBilling": {
+        "enum": [
+          "payment_overdue",
+          "contract"
+        ],
+        "type": "string",
+        "description": "A billing situation that the Organisations list filters by (4.38): a payment that is overdue, or Contract (B11, B12).",
+        "x-enumNames": [
+          "PaymentOverdue",
+          "Contract"
+        ]
       },
       "TenantResponseStatus": {
         "enum": [

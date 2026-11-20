@@ -103,6 +103,7 @@ const tenant = (
   reopenableUntil: null,
   purgeWarningAt: null,
   memberCount: 0,
+  freeMemberCount: 0,
   ownerCount: 0,
   owners: [],
   ownerInvitation: null,
