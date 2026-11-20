@@ -344,6 +344,67 @@ describe("TenantShell", () => {
     ).toEqual(["Back to Northwind Traders", "Billing", "Usage"]);
   });
 
+  it("TenantShell_UsageLoadsOnItsOwnPage_ListsUsage", async () => {
+    route.pathname = "/northwind/settings/usage";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      // GetUsage never answers.
+      http.get(`*/v1/tenants/${northwind.id}/usage`, () => delay("infinite")),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: "Usage" }),
+    ).toBeVisible();
+  });
+
+  it("TenantShell_UsageFailed_KeepsUsageSoItsPageSaysWhy", async () => {
+    route.pathname = "/northwind/settings/general";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/usage`, () =>
+        HttpResponse.json({}, { status: 500 }),
+      ),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: "Usage" }),
+    ).toBeVisible();
+  });
+
   it("TenantShell_APlanWithoutAMeter_ListsNoUsage", async () => {
     route.pathname = "/northwind/settings/billing";
     server.use(

@@ -141,6 +141,16 @@ describe("BillingBar", () => {
     );
   });
 
+  it("BillingBar_OnBilling_StillShowsTheUsageNotice", async () => {
+    server.use(...answers(capReached));
+
+    renderBar({ onBilling: true });
+
+    expect(
+      await screen.findByText(/stopped: you reached your spending cap/),
+    ).toBeVisible();
+  });
+
   it("BillingBar_OnUsage_ShowsNoUsageNotice", async () => {
     server.use(...answers(capReached));
 
@@ -182,10 +192,16 @@ describe("BillingBar", () => {
   });
 });
 
-function renderBar({ onUsage = false }: { onUsage?: boolean } = {}) {
+function renderBar({
+  onUsage = false,
+  onBilling = false,
+}: {
+  onUsage?: boolean;
+  onBilling?: boolean;
+} = {}) {
   return renderInTenant(
     <>
-      <BillingBar onBilling={false} onUsage={onUsage} />
+      <BillingBar onBilling={onBilling} onUsage={onUsage} />
       <BarDone />
     </>,
     { url: "/northwind/settings/members" },

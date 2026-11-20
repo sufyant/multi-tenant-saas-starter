@@ -1,7 +1,7 @@
 import { AuditOperation, ErrorCode, LimitKey } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -496,6 +496,65 @@ describe("OrganisationPage", () => {
     expect(
       screen.getByText("Stopped on 18 Nov. They reset on 1 Dec."),
     ).toBeVisible();
+  });
+
+  it("OrganisationPage_BeingDeletedWithAMeter_HasNoUsageTab", async () => {
+    const purgeStartedAt = "2026-11-01T02:00:00Z";
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(moyne, { purgeStartedAt })),
+      usageAnswer(),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={moyne.id} />);
+
+    await screen.findByText(`Being deleted since ${dateOf(purgeStartedAt)}`);
+    expect(screen.queryByRole("tab", { name: "Usage" })).toBeNull();
+  });
+
+  it("OrganisationPage_UsageLoading_SaysSoOnItsTab", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      http.get("*/v1/platform/tenants/:tenantId/usage", () =>
+        delay("infinite"),
+      ),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByRole("status", { name: "Loading usage" }),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Usage" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("OrganisationPage_UsageFailed_OffersToTryAgainOnItsTab", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      http.get("*/v1/platform/tenants/:tenantId/usage", () =>
+        HttpResponse.json({}, { status: 500 }),
+      ),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(await screen.findByText("Couldn’t load usage")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
   });
 
   it("OrganisationPage_PlanWithoutAMeter_HasNoUsageTab", async () => {
