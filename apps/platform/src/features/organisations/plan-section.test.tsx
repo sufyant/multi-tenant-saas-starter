@@ -125,6 +125,21 @@ describe("PlanSection", () => {
     expect(screen.queryByText(/is over a limit/)).toBeNull();
   });
 
+  // 4.28: a running trial says so under the plan's name.
+  it("Section_InTrial_SaysTheTrialUnderThePlan", async () => {
+    await renderSection(active, {
+      ...burrenPlan(),
+      trial: {
+        plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+        startedAt: "2026-10-22T10:00:00Z",
+        endsAt: "2026-11-05T10:00:00Z",
+        returnsTo: { id: "0198f0a2-0000-7000-8000-0000000000b1", name: "Free" },
+      },
+    });
+
+    expect(rowOf("Plan").getByText("Pro trial.")).toBeVisible();
+  });
+
   it("Section_Keys_FollowTheAreasOfTheFrames", async () => {
     await renderSection();
 
