@@ -306,4 +306,130 @@ describe("CreateOrganisation", () => {
       expect(push).toHaveBeenCalledWith("/kestrel-analytics"),
     );
   });
+
+  // F58: a reserved address is refused before the request, with the text of a taken one.
+  it("CreateOrganisation_ReservedAddress_SaysTakenAndSendsNothing", async () => {
+    const posted = vi.fn();
+    server.use(
+      ...answers(),
+      http.post("*/v1/me/tenants", () => {
+        posted();
+        return HttpResponse.json(kestrel, { status: 201 });
+      }),
+    );
+
+    renderWithProviders(<CreateOrganisation />);
+    await userEvent.type(await screen.findByLabelText("Name"), "Settings");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create organisation" }),
+    );
+
+    expect(
+      await screen.findByText("This address is taken. Try another."),
+    ).toBeVisible();
+    expect(posted).not.toHaveBeenCalled();
+  });
+
+  it("CreateOrganisation_ApiRefusesTheAddressShape_SaysTheRules", async () => {
+    server.use(
+      ...answers(),
+      http.post("*/v1/me/tenants", () =>
+        HttpResponse.json(
+          {
+            status: 400,
+            title: "Invalid",
+            code: "request.validation_failed",
+            traceId: "00-trace-01",
+            errors: { slug: ["slug_invalid"] },
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<CreateOrganisation />);
+    await create();
+
+    expect(
+      await screen.findByText(
+        "Use lower-case letters, digits and single hyphens. Start and end with a letter or digit.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("CreateOrganisation_ApiRefusesTheName_AsksForAName", async () => {
+    server.use(
+      ...answers(),
+      http.post("*/v1/me/tenants", () => problem(422, "tenant.name_invalid")),
+    );
+
+    renderWithProviders(<CreateOrganisation />);
+    await create();
+
+    expect(await screen.findByText("Enter a name.")).toBeVisible();
+  });
+
+  // F48: the same key for a retry after a network error, a new key after a refusal the API saved.
+  it("CreateOrganisation_RetryAfterANetworkErrorThenARefusal_KeepsThenRenewsTheKey", async () => {
+    const keys: (string | null)[] = [];
+    const replies = [
+      () => HttpResponse.error(),
+      () => problem(409, "tenant.slug_taken"),
+      () => HttpResponse.json(kestrel, { status: 201 }),
+    ];
+    server.use(
+      ...answers({ ...trialOn, trial: null }),
+      http.post("*/v1/me/tenants", ({ request }) => {
+        keys.push(request.headers.get("Idempotency-Key"));
+        const reply = replies[keys.length - 1];
+        return reply ? reply() : HttpResponse.json(kestrel, { status: 201 });
+      }),
+    );
+
+    renderWithProviders(<CreateOrganisation />);
+    await create();
+    const button = screen.getByRole("button", { name: "Create organisation" });
+    await vi.waitFor(() => expect(keys).toHaveLength(1));
+    await vi.waitFor(() => expect(button).toBeEnabled());
+    await userEvent.click(button);
+    await screen.findByText("This address is taken. Try another.");
+    await userEvent.click(button);
+    await vi.waitFor(() => expect(keys).toHaveLength(3));
+
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[1]);
+  });
+
+  it("CreateOrganisation_InvitationRetriedAfterANetworkError_SendsTheSameKey", async () => {
+    const keys: (string | null)[] = [];
+    server.use(
+      ...answers(),
+      created(),
+      http.post(`*/v1/tenants/${kestrel.id}/invitations`, ({ request }) => {
+        keys.push(request.headers.get("Idempotency-Key"));
+        return keys.length === 1
+          ? HttpResponse.error()
+          : HttpResponse.json({}, { status: 201 });
+      }),
+    );
+
+    renderWithProviders(<CreateOrganisation />);
+    await create();
+    await userEvent.type(
+      await screen.findByLabelText("Invite your team"),
+      "omar@kestrel.example",
+    );
+    const send = await screen.findByRole("button", {
+      name: "Send invitations",
+    });
+    await userEvent.click(send);
+    await screen.findByText("Couldn’t invite omar@kestrel.example");
+    await userEvent.click(send);
+
+    await vi.waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/kestrel-analytics"),
+    );
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toBe(keys[0]);
+  });
 });

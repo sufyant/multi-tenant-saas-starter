@@ -19,6 +19,7 @@ import {
   problemOf,
   ReservedSlug,
   type SignUpTrialResponse,
+  savedUnderKey,
   schemas,
 } from "@repo/api-client";
 import { AuthHeading, AuthScreen } from "@repo/ui/components/auth-layout";
@@ -35,7 +36,7 @@ import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { firstInviteRole } from "@/shared/roles";
@@ -128,6 +129,8 @@ function CreationForm({
       onCreated(organisation);
     },
     onError: (error) => {
+      // A refusal the API saved under the key replays for that key: the next request takes a new one (F48).
+      if (savedUnderKey(error)) renew();
       if (!(error instanceof ProblemDetailsError)) return;
       const code = error.problem?.code;
       if (code === ErrorCode.TenantNameInvalid)
@@ -235,7 +238,8 @@ function CreationForm({
 /**
  * The trial has started (1.30, 1.34): its plan, its length and its end, and "Invite your team": addresses separated by commas, each
  * invited as Member in the person's language, one after the other. The hint says what a seat costs after the trial, from the trial
- * plan's monthly prices, and nothing of a plan that costs nothing. Send invitations and Skip for now open the organisation's Home.
+ * plan's monthly prices, and nothing of a plan that costs nothing. Each address passes InviteMember's generated schema (F11) before
+ * any is sent. Send invitations and Skip for now open the organisation's Home.
  */
 function TrialStarted({
   organisation,
@@ -256,6 +260,16 @@ function TrialStarted({
   const [emails, setEmails] = useState("");
   const [invalid, setInvalid] = useState<string>();
   const [failed, setFailed] = useState<{ email: string; error: unknown }>();
+  // One Idempotency-Key per address (F48): a retry after a network error sends the same key, so nobody is invited twice; an answer
+  // the API saved, a success or a refusal, frees it.
+  const keys = useRef(new Map<string, string>());
+  const keyOf = (email: string) => {
+    const known = keys.current.get(email);
+    if (known) return known;
+    const key = crypto.randomUUID();
+    keys.current.set(email, key);
+    return key;
+  };
   const home = `/${organisation.slug}`;
   const locale = all("locale.format");
 
@@ -268,9 +282,11 @@ function TrialStarted({
           await inviteMember(
             organisation.id,
             { email, roleId: member.id, language },
-            { "Idempotency-Key": crypto.randomUUID() },
+            { "Idempotency-Key": keyOf(email) },
           );
+          keys.current.delete(email);
         } catch (error) {
+          if (savedUnderKey(error)) keys.current.delete(email);
           // The addresses already invited leave the field; the one that failed and the rest stay, so a retry sends only them.
           setEmails(addresses.slice(index).join(", "));
           setFailed({ email, error });
@@ -288,9 +304,7 @@ function TrialStarted({
       .map((email) => email.trim())
       .filter((email) => email !== "");
     const wrong = addresses.find(
-      (email) =>
-        email.length > schemas.inviteMemberBodyEmailMax ||
-        !z.email().safeParse(email).success,
+      (email) => !schemas.InviteMemberBody.shape.email.safeParse(email).success,
     );
     setInvalid(wrong);
     setFailed(undefined);

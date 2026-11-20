@@ -184,4 +184,24 @@ describe("OrgSwitcher", () => {
       ),
     ).toBeVisible();
   });
+
+  it("OrgSwitcher_OneOrganisationInTheDrawerWithCreate_OpensTheMenu", async () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind]}
+        title="Your organisations"
+        variant="drawer"
+        create={{ label: "Create organisation", href: "/new" }}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Northwind Traders/ }),
+    );
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Create organisation" }),
+    ).toHaveAttribute("href", "/new");
+  });
 });

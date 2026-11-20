@@ -61,10 +61,10 @@ const ProductMark = ({ name }: { name: string }) => (
 
 /**
  * The organisation switcher at the top of the sidebar (the Switcher screens): the organisation's mark, its name and the person's
- * role. With more than one organisation it opens "Your organisations", each with its role under its name and a status that is not
- * active, and a click opens that organisation. With one organisation it shows no chevron and opens nothing. In the sidebar's place
- * (`rail`) a tablet's icon rail shows the mark alone and the expanded sidebar from bp-desktop the whole row. `create` ends the menu
- * with "Create organisation", and then one organisation opens the menu too.
+ * role. With more than one organisation, or with `create`, it opens "Your organisations", each with its role under its name and a
+ * status that is not active, and a click opens that organisation. With one organisation and no `create` it shows no chevron and opens
+ * nothing. `create` ends the menu with "Create organisation". In the sidebar's place (`rail`) a tablet's icon rail shows the mark alone
+ * and the expanded sidebar from bp-desktop the whole row.
  */
 export function OrgSwitcher({
   current,
