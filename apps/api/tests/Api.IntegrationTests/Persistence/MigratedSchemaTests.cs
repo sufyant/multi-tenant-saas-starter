@@ -314,8 +314,10 @@ public sealed class MigratedSchemaTests(Database database)
             $"UPDATE control_plane.meter_usages SET unit_price = -1 WHERE tenant_id = '{owned.Id}'",
             $"UPDATE control_plane.meter_usages SET period = '2026-11-02' WHERE tenant_id = '{owned.Id}'",
             $"UPDATE control_plane.spending_caps SET amount = 0 WHERE tenant_id = '{owned.Id}'",
-            $"UPDATE control_plane.spending_caps SET reached_period = '2026-11-01' WHERE tenant_id = '{owned.Id}'",
-            $"UPDATE control_plane.spending_caps SET reached_period = '2026-11-02', reached_at = now() WHERE tenant_id = '{owned.Id}'");
+            $"UPDATE control_plane.meter_usages SET quota_reached_at = now() WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.spending_caps SET reached_period = '2026-11-01', nearly_reached_period = '2026-11-01' WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.spending_caps SET nearly_reached_period = '2026-11-02' WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.spending_caps SET reached_period = '2026-11-01', reached_at = now() WHERE tenant_id = '{owned.Id}'");
 
         refusals.ShouldBe(
         [
@@ -357,8 +359,10 @@ public sealed class MigratedSchemaTests(Database database)
             "ck_meter_usages_counts",
             "ck_meter_usages_period",
             "ck_spending_caps_amount",
+            "ck_meter_usages_notices",
             "ck_spending_caps_reached",
-            "ck_spending_caps_reached",
+            "ck_spending_caps_nearly_reached",
+            "ck_spending_caps_nearly_reached",
         ]);
     }
 

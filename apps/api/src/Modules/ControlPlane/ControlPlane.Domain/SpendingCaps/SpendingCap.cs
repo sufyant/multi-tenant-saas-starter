@@ -22,6 +22,9 @@ internal sealed class SpendingCap(long amount) : ITenantEntity
     /// <summary>The moment the cap was reached in <see cref="ReachedPeriod"/>.</summary>
     public DateTimeOffset? ReachedAt { get; private set; }
 
+    /// <summary>The month the extra first reached 80% of the cap in, so its notice goes once (E10); none while it did not since it changed.</summary>
+    public DateOnly? NearlyReachedPeriod { get; private set; }
+
     /// <summary>A cap is 1 to <see cref="Maximum"/> minor units; else 400 <c>usage.spending_cap_invalid</c>.</summary>
     public static Result Check(long amount) =>
         amount is >= 1 and <= Maximum
@@ -36,7 +39,7 @@ internal sealed class SpendingCap(long amount) : ITenantEntity
             return StateChange.Unchanged;
         }
 
-        (Amount, ReachedPeriod, ReachedAt) = (amount, null, null);
+        (Amount, ReachedPeriod, ReachedAt, NearlyReachedPeriod) = (amount, null, null, null);
         return StateChange.Changed;
     }
 
@@ -44,21 +47,29 @@ internal sealed class SpendingCap(long amount) : ITenantEntity
     public DateTimeOffset? ReachedIn(DateOnly period) => ReachedPeriod == period ? ReachedAt : null;
 
     /// <summary>
-    /// Whether a use may take the month's extra to this exact amount, in minor units before rounding. An amount that lands on the cap is
-    /// allowed and reaches it; one over the cap is refused and reaches it too, so every later extra of the month stops.
+    /// Whether a use may take the month's extra to this exact amount, in minor units before rounding, and what it first did to the cap. An
+    /// amount that lands on the cap is allowed and reaches it; one over the cap is refused and reaches it too, so every later extra of the
+    /// month stops. An amount of 80% of the cap or more first nears it.
     /// </summary>
-    public bool Allows(decimal monthExtraAmount, DateOnly period, DateTimeOffset now)
+    public (bool Allowed, CapNotice Notice) Use(decimal monthExtraAmount, DateOnly period, DateTimeOffset now)
     {
         if (ReachedPeriod == period)
         {
-            return false;
+            return (false, CapNotice.None);
         }
 
         if (monthExtraAmount >= Amount)
         {
-            (ReachedPeriod, ReachedAt) = (period, now);
+            (ReachedPeriod, ReachedAt, NearlyReachedPeriod) = (period, now, period);
+            return (monthExtraAmount <= Amount, CapNotice.Reached);
         }
 
-        return monthExtraAmount <= Amount;
+        if (NearlyReachedPeriod != period && monthExtraAmount * 5 >= Amount * 4)
+        {
+            NearlyReachedPeriod = period;
+            return (true, CapNotice.NearlyReached);
+        }
+
+        return (true, CapNotice.None);
     }
 }

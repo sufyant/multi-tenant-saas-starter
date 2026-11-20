@@ -21,6 +21,7 @@ public sealed class ContractsShapeTests
             "ControlPlane.Infrastructure.Persistence.Invitations.InvitationDirectory",
             "ControlPlane.Infrastructure.Persistence.TermsVersions.TermsVersionDirectory",
             "Billing.Infrastructure.Persistence.Tenants.BillingDirectory",
+            "Billing.Infrastructure.Persistence.BillingEmails.BillingEmailDirectory",
         ];
 
     public static TheoryData<string> Modules => [.. Solution.Modules];

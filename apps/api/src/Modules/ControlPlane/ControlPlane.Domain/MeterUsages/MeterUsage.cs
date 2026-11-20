@@ -38,6 +38,9 @@ internal sealed class MeterUsage : ITenantEntity
     /// </summary>
     public DateTimeOffset? QuotaReachedAt { get; private set; }
 
+    /// <summary>The first moment the count reached 80% of the quota in the period; none before. The notice at 80% goes once (E10).</summary>
+    public DateTimeOffset? NearlyUsedAt { get; private set; }
+
     /// <summary>The period of a moment: the first day of its month in UTC.</summary>
     public static DateOnly PeriodOf(DateTimeOffset moment)
     {
@@ -50,24 +53,33 @@ internal sealed class MeterUsage : ITenantEntity
 
     /// <summary>
     /// Counts the use, unless the meter stops at the quota and the use would take the count over it: then it counts nothing and answers
-    /// false. The part of a charge meter's use over the quota is extra.
+    /// <see cref="MeterCount.Stopped"/>. The part of a charge meter's use over the quota is extra. A use that first takes the count to the
+    /// quota answers <see cref="MeterCount.UsedUp"/>, and one that first takes it to 80% of the quota <see cref="MeterCount.NearlyUsed"/>;
+    /// a quota of 0 tells of neither (E10).
     /// </summary>
-    public bool Use(long quantity, MeterSetting setting, DateTimeOffset now)
+    public MeterCount Use(long quantity, MeterSetting setting, DateTimeOffset now)
     {
         var used = Used + quantity;
         if (setting.Stops(used))
         {
-            return false;
+            return MeterCount.Stopped;
         }
 
         Extra = ExtraAfter(quantity, setting);
         Used = used;
         (UnitPrice, UnitSize) = (setting.UnitPrice, setting.UnitSize);
-        QuotaReachedAt ??= used >= setting.Quota ? now : null;
-        return true;
+        var (reached, nearly) = (QuotaReachedAt is null && used >= setting.Quota, NearlyUsedAt is null && used * 5 >= setting.Quota * 4);
+        QuotaReachedAt ??= reached ? now : null;
+        NearlyUsedAt ??= nearly ? now : null;
+        return (setting.Quota, reached, nearly) switch
+        {
+            (0, _, _) => MeterCount.Counted,
+            (_, true, _) => MeterCount.UsedUp,
+            (_, _, true) => MeterCount.NearlyUsed,
+            _ => MeterCount.Counted,
+        };
     }
 
     /// <summary>The extra after a use of this quantity: the part of the count over the quota that this use adds, and what it had.</summary>
     public long ExtraAfter(long quantity, MeterSetting setting) => Extra + Math.Max(0, Used + quantity - Math.Max(Used, setting.Quota));
-
 }

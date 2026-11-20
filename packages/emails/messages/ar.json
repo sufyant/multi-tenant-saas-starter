@@ -270,6 +270,36 @@
         }
       },
       "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.meter_nearly_used": {
+      "title": "استخدمت {tenantName} ‏80% من {meter}",
+      "body": "{used} من {quota} هذا الشهر. يُعاد ضبطها في {resetsAt}. بعد {quota}، تكلفة الزيادة {unitPrice} لكل {unitSize}، دون ضريبة القيمة المضافة.",
+      "without": {
+        "unitPrice": {
+          "body": "{used} من {quota} هذا الشهر. يُعاد ضبطها في {resetsAt}. بعد {quota}، تتوقف حتى ذلك الحين."
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.meter_used_up": {
+      "title": "استخدمت {tenantName} كل {meter}",
+      "body": "{quota} من {quota} هذا الشهر. تكلفة الزيادة الآن {unitPrice} لكل {unitSize}، دون ضريبة القيمة المضافة، حتى يُعاد ضبطها في {resetsAt}.",
+      "without": {
+        "unitPrice": {
+          "body": "{quota} من {quota} هذا الشهر. تتوقف حتى يُعاد ضبطها في {resetsAt}."
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.spending_cap_nearly_reached": {
+      "title": "استخدمت {tenantName} ‏80% من حد الإنفاق",
+      "body": "الزيادة هذا الشهر {extraAmount} من حد {cap}، دون ضريبة القيمة المضافة. عند بلوغ الحد، يتوقف كل استخدام بتكلفة إضافية حتى {resetsAt}.",
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
+    },
+    "tenant.spending_cap_reached": {
+      "title": "توقف {meter} في {tenantName}",
+      "body": "بلغت حد الإنفاق البالغ {cap} دون ضريبة القيمة المضافة. يعود {meter} وكل استخدام آخر بتكلفة إضافية في {resetsAt}، أو عند رفع الحد.",
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
     }
   },
   "notificationWords": {

@@ -270,6 +270,36 @@
         }
       },
       "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.meter_nearly_used": {
+      "title": "{tenantName} used 80% of its {meter}",
+      "body": "{used} of {quota} this month. They reset on {resetsAt}. After {quota}, the extra costs {unitPrice} per {unitSize}, excl. VAT.",
+      "without": {
+        "unitPrice": {
+          "body": "{used} of {quota} this month. They reset on {resetsAt}. After {quota}, they stop until then."
+        }
+      },
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.meter_used_up": {
+      "title": "{tenantName} used all its {meter}",
+      "body": "{quota} of {quota} this month. The extra now costs {unitPrice} per {unitSize}, excl. VAT, until they reset on {resetsAt}.",
+      "without": {
+        "unitPrice": {
+          "body": "{quota} of {quota} this month. They stop until they reset on {resetsAt}."
+        }
+      },
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.spending_cap_nearly_reached": {
+      "title": "{tenantName} used 80% of its spending cap",
+      "body": "The extra this month is {extraAmount} of the {cap} cap, excl. VAT. At the cap, every use that costs extra stops until {resetsAt}.",
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
+    },
+    "tenant.spending_cap_reached": {
+      "title": "{meter} stopped in {tenantName}",
+      "body": "You reached your spending cap of {cap} excl. VAT. {meter} and every other use that costs extra start again on {resetsAt}, or when you raise the cap.",
+      "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
     }
   },
   "notificationWords": {

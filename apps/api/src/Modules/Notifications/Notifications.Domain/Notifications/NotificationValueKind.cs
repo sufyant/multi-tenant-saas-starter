@@ -58,4 +58,13 @@ public enum NotificationValueKind
     /// language, as <see cref="Days"/> is.
     /// </summary>
     People,
+
+    /// <summary>
+    /// A meter of the code, stored by its key, written by its word under <c>notificationWords.meter</c> in the language; a key without a word
+    /// reads as the key, as the template ships no meter (step 40c).
+    /// </summary>
+    Meter,
+
+    /// <summary>A count of a meter's units, stored as digits, written grouped by three in the language, as an amount's whole part is.</summary>
+    Count,
 }

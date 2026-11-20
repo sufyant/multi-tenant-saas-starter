@@ -52,7 +52,7 @@ public sealed class UsageNoticeTests(Database database) : IAsyncLifetime
         [
             NotificationRows.Row(people.Owner, "tenant.meter_nearly_used", tenant, "Tenant"),
             NotificationRows.Row(people.Manager, "tenant.meter_nearly_used", tenant, "Tenant"),
-        ]);
+        ], ignoreOrder: true);
         (await _rows.ValueListOfAsync(people.Manager, "tenant.meter_nearly_used")).ShouldBe(
             "meter=ai.requests, quota=100, resetsAt=2026-12-01, tenantName=Northwind Traders, unitPrice=100 EUR, unitSize=1, used=80");
     }

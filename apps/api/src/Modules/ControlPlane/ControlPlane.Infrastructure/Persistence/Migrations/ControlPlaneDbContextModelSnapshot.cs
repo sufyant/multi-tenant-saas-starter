@@ -275,6 +275,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("extra");
 
+                    b.Property<DateTimeOffset?>("NearlyUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("nearly_used_at");
+
                     b.Property<DateTimeOffset?>("QuotaReachedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("quota_reached_at");
@@ -297,6 +301,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("meter_usages", "control_plane", t =>
                         {
                             t.HasCheckConstraint("ck_meter_usages_counts", "used >= 0 AND extra BETWEEN 0 AND used AND unit_price BETWEEN 0 AND 10000000000 AND unit_size BETWEEN 1 AND 1000000000000");
+
+                            t.HasCheckConstraint("ck_meter_usages_notices", "quota_reached_at IS NULL OR nearly_used_at IS NOT NULL AND nearly_used_at <= quota_reached_at");
 
                             t.HasCheckConstraint("ck_meter_usages_period", "extract(day FROM period) = 1");
                         });
@@ -541,6 +547,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("amount");
 
+                    b.Property<DateOnly?>("NearlyReachedPeriod")
+                        .HasColumnType("date")
+                        .HasColumnName("nearly_reached_period");
+
                     b.Property<DateTimeOffset?>("ReachedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("reached_at");
@@ -555,6 +565,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("spending_caps", "control_plane", t =>
                         {
                             t.HasCheckConstraint("ck_spending_caps_amount", "amount BETWEEN 1 AND 10000000000");
+
+                            t.HasCheckConstraint("ck_spending_caps_nearly_reached", "(nearly_reached_period IS NULL OR extract(day FROM nearly_reached_period) = 1) AND (reached_period IS NULL OR nearly_reached_period IS NOT DISTINCT FROM reached_period)");
 
                             t.HasCheckConstraint("ck_spending_caps_reached", "(reached_period IS NULL) = (reached_at IS NULL) AND (reached_period IS NULL OR extract(day FROM reached_period) = 1)");
                         });
