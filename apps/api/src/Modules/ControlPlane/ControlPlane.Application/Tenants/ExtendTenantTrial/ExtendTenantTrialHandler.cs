@@ -1,4 +1,3 @@
-using ControlPlane.Application.Tenants.EndTenantTrial;
 using ControlPlane.Application.Tenants.GetTenantPlan;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
@@ -8,8 +7,8 @@ using Wolverine;
 namespace ControlPlane.Application.Tenants.ExtendTenantTrial;
 
 // K6a: the tenant row is locked first, so the trial's end runs before or after it: a trial that ended is not extended. Rejections come
-// first (W7). The command sets a state (I1): the end the trial has announces nothing. The new end is scheduled in the same transaction; the
-// message of the old end stays and does nothing (K4). The plan does not change, so the Activity log period does not either.
+// first (W7). The command sets a state (I1): the end the trial has announces nothing. The new end and its reminder are scheduled in the same
+// transaction; the messages of the old end stay and do nothing (K4). The plan does not change, so the Activity log period does not either.
 public static class ExtendTenantTrialHandler
 {
     public static async Task<(Result<TenantPlanView>, OutgoingMessages)> HandleAsync(
@@ -46,7 +45,7 @@ public static class ExtendTenantTrialHandler
         var newEndsAt = tenant.TrialEndsAt!.Value;
         return (view, [
             new TenantTrialExtendedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor, oldEndsAt!.Value, newEndsAt),
-            new EndTenantTrialCommand(tenant.Id, newEndsAt).ScheduledAt(newEndsAt),
+            .. TrialMessages.Of(tenant.Id, newEndsAt, now),
         ]);
     }
 }

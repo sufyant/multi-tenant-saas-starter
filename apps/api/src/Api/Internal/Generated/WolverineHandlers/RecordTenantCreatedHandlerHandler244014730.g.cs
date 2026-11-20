@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 namespace Internal.Generated.WolverineHandlers
 {
-    // START: TenantTrialEndedEventHandler1205860563
+    // START: RecordTenantCreatedHandlerHandler244014730
     [global::System.CodeDom.Compiler.GeneratedCode("JasperFx", "1.0.0")]
-    public sealed class TenantTrialEndedEventHandler1205860563 : Wolverine.Runtime.Handlers.MessageHandler
+    public sealed class RecordTenantCreatedHandlerHandler244014730 : Wolverine.Runtime.Handlers.MessageHandler
     {
         private readonly Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> _dbContextOptionsOfAuditDbContext;
         private readonly System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> _domainEventScraperIEnumerable;
 
-        public TenantTrialEndedEventHandler1205860563(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
+        public RecordTenantCreatedHandlerHandler244014730(Microsoft.EntityFrameworkCore.DbContextOptions<Audit.Infrastructure.Persistence.AuditDbContext> dbContextOptionsOfAuditDbContext, System.Collections.Generic.IEnumerable<Wolverine.EntityFrameworkCore.IDomainEventScraper> domainEventScraperIEnumerable)
         {
             _dbContextOptionsOfAuditDbContext = dbContextOptionsOfAuditDbContext;
             _domainEventScraperIEnumerable = domainEventScraperIEnumerable;
@@ -21,10 +21,9 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var auditDbContext = new Audit.Infrastructure.Persistence.AuditDbContext(_dbContextOptionsOfAuditDbContext, context);
-            var retentionStore = new Audit.Infrastructure.Persistence.AuditLogs.RetentionStore(auditDbContext);
             var auditLog = new Audit.Infrastructure.Persistence.AuditLogs.AuditLog(auditDbContext);
             // The actual message body
-            var tenantTrialEndedEvent = (ControlPlane.Contracts.Tenants.TenantTrialEndedEvent)context.Envelope.Message;
+            var tenantCreatedEvent = (ControlPlane.Contracts.Tenants.TenantCreatedEvent)context.Envelope.Message;
 
             
             // Enroll the DbContext & IMessagingContext in the outgoing Wolverine outbox transaction
@@ -38,11 +37,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantTrialEnded.RecordTenantTrialEndedHandler");
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantTrialEnded.RecordTenantTrialEndedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantCreated.RecordTenantCreatedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantCreated.RecordTenantCreatedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Tenants.RecordTenantTrialEnded.RecordTenantTrialEndedHandler.HandleAsync(tenantTrialEndedEvent, auditLog, retentionStore, cancellation).ConfigureAwait(false);
+                await Audit.Application.Tenants.RecordTenantCreated.RecordTenantCreatedHandler.HandleAsync(tenantCreatedEvent, auditLog, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware
@@ -61,7 +60,7 @@ namespace Internal.Generated.WolverineHandlers
         }
     }
 
-    // END: TenantTrialEndedEventHandler1205860563
+    // END: RecordTenantCreatedHandlerHandler244014730
     
     
 }

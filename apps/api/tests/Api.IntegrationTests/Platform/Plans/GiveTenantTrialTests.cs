@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ControlPlane.Application.Tenants.EndTenantTrial;
+using ControlPlane.Application.Tenants.WarnTenantTrialEnding;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -52,12 +53,26 @@ public sealed class GiveTenantTrialTests(Database database) : IAsyncLifetime
         (plan.GetProperty("plan").GetProperty("id").GetGuid(), Trials.Of(plan.GetProperty("trial")))
             .ShouldBe((SeedPlans.Business, $"{SeedPlans.Business}|{_time.GetUtcNow():O}|{endsAt:O}|{SeedPlans.Team}"));
         session.Scheduled.Envelopes().Select(envelope => (envelope.Message, envelope.ScheduledTime))
-            .ShouldBe([(new EndTenantTrialCommand(tenant.Id, endsAt), endsAt)]);
+            .ShouldBe([(new EndTenantTrialCommand(tenant.Id, endsAt), endsAt), (new WarnTenantTrialEndingCommand(tenant.Id, endsAt), endsAt - TimeSpan.FromDays(3))]);
         (await _audit.PlatformLogAsync(tenant.Id))
             .ShouldBe($"tenant.trial_given|User|{await _testData.UserIdOfAsync(adminId)}|Tenant|{tenant.Id}|Northwind Traders");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.trial_given|Platform|-|Tenant|{tenant.Id}|Northwind Traders");
         (await _audit.TenantDetailsAsync(tenant.Id)).ShouldBe(
             $$"""{"plan": {"id": "{{SeedPlans.Business}}", "name": "Business"}, "endsAt": "{{endsAt:yyyy-MM-ddTHH:mm:ssK}}"}""");
+    }
+
+    // 13.16: a trial of 3 days or less has no moment for its reminder, so only its end is scheduled.
+    [Fact]
+    public async Task GiveTenantTrial_ThreeDays_SchedulesTheEndOnly()
+    {
+        var tenant = await _testData.AddTenantAsync(planId: SeedPlans.Team);
+        var admin = await AdminAsync();
+        var endsAt = _time.GetUtcNow() + TimeSpan.FromDays(3);
+
+        var session = await _api.TrackMessagesAsync(async () => (await GiveAsync(admin, tenant.Id, SeedPlans.Business, 3)).EnsureSuccessStatusCode());
+
+        session.Scheduled.Envelopes().Select(envelope => (envelope.Message, envelope.ScheduledTime))
+            .ShouldBe([(new EndTenantTrialCommand(tenant.Id, endsAt), endsAt)]);
     }
 
     // 4.47: a tenant that used a trial gets another one from a system admin.

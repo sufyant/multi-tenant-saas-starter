@@ -271,6 +271,41 @@
       },
       "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
     },
+    "tenant.trial_ending": {
+      "title": "{tenantName} için {planName} denemeniz {days} sonra bitiyor",
+      "body": "Sonra {defaultPlanName} planına geçer. Faturalama’dan bir plan seçin.",
+      "email": {
+        "body": "{endsAt} tarihinde {tenantName} {defaultPlanName} planına geçer. {planName} planında kalmak için bir plan seçin. Ödeme yapana kadar kart gerekmez.",
+        "button": "Plan seçin"
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz için aldınız."
+    },
+    "tenant.trial_ended": {
+      "title": "{tenantName} {defaultPlanName} planına geçti",
+      "body": "{planName} denemeniz bitti. Hiçbir şey silinmedi.",
+      "email": {
+        "body": "{planName} denemeniz {endedAt} tarihinde bitti. Hiçbir şey silinmedi. {planName} planını hemen geri almak için bir plana ödeme yapın.",
+        "button": "Plan seçin"
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz için aldınız."
+    },
+    "tenant.created": {
+      "title": "{productName} uygulamasına hoş geldiniz",
+      "body": "{tenantName} hazır. {trialDays} sürecek {planName} denemeniz başladı.",
+      "email": {
+        "body": "{tenantName} hazır ve {trialDays} sürecek {planName} denemesi başladı. {endsAt} tarihinde biter. Bir plan seçene kadar kart gerekmez.",
+        "button": "{tenantName} kuruluşunu aç"
+      },
+      "without": {
+        "planName": {
+          "body": "{tenantName} hazır.",
+          "email": {
+            "body": "{tenantName} hazır."
+          }
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunu oluşturduğunuz için aldınız."
+    },
     "tenant.meter_nearly_used": {
       "title": "{tenantName}, {meter} kotasının %80’ini kullandı",
       "body": "Bu ay {quota} içinden {used}. {resetsAt} tarihinde sıfırlanır. {quota} sonrasında fazlası KDV hariç {unitSize} başına {unitPrice} tutar.",

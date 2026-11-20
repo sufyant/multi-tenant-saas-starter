@@ -1,5 +1,4 @@
 using ControlPlane.Application.Plans;
-using ControlPlane.Application.Tenants.EndTenantTrial;
 using ControlPlane.Application.Tenants.GetTenantPlan;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
@@ -11,7 +10,7 @@ using Wolverine;
 namespace ControlPlane.Application.Tenants.GiveTenantTrial;
 
 // K6a: the tenant row is locked first, so the trial's end, a payment or a plan change runs before or after it. Rejections come first (W7).
-// The trial's end is scheduled in the same transaction (K4); the event names a shorter Activity log period from the effective values
+// The trial's end and its reminder are scheduled in the same transaction (K4); the event names a shorter Activity log period from the effective values
 // before and after the trial's plan (K14).
 public static class GiveTenantTrialHandler
 {
@@ -58,7 +57,7 @@ public static class GiveTenantTrialHandler
         return (view, [
             new TenantTrialGivenEvent(
                 Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, actor, plan.Id, plan.Name, endsAt, RetentionShortenings.Between(before, view, now)),
-            new EndTenantTrialCommand(tenant.Id, endsAt).ScheduledAt(endsAt),
+            .. TrialMessages.Of(tenant.Id, endsAt, now),
         ]);
     }
 }

@@ -179,6 +179,28 @@ public sealed class NotificationTextTests
         sent.Button.ShouldBe("Open Usage");
     }
 
+    // 13.25: the welcome's button names the organisation, filled with the type's values as its body is, and the trial's length is a number
+    // of days in the plural form of its number (U2).
+    [Theory]
+    [InlineData(Language.En, "7", "Kestrel Analytics is ready, and its Business trial of 7 days has started.", "Open Kestrel Analytics")]
+    [InlineData(Language.Ar, "7", "Kestrel Analytics جاهزة، وبدأت تجربتها لـBusiness لمدة 7 أيام.", "فتح Kestrel Analytics")]
+    [InlineData(Language.Ar, "14", "Kestrel Analytics جاهزة، وبدأت تجربتها لـBusiness لمدة 14 يومًا.", "فتح Kestrel Analytics")]
+    public void RenderEmail_TheWelcomeWithATrial_FillsTheButtonAndWritesTheDays(Language language, string days, string opening, string button)
+    {
+        var values = new Dictionary<string, string>
+        {
+            ["tenantName"] = "Kestrel Analytics",
+            ["productName"] = "Starter",
+            ["planName"] = "Business",
+            ["trialDays"] = days,
+            ["endsAt"] = "2026-12-04T12:00:00.0000000+00:00",
+        };
+
+        var sent = NotificationText.RenderEmail(NotificationCatalog.TenantCreated, values, People, language, null);
+
+        (sent.Body.StartsWith(opening, StringComparison.Ordinal), sent.Button).ShouldBe((true, button));
+    }
+
     [Fact]
     public void RenderEmail_AYearlyPriceChangeOfTheBaseFee_SaysTheFeePerPersonStays()
     {

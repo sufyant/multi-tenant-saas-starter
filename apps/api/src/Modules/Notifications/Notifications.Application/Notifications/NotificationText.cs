@@ -122,7 +122,8 @@ public sealed partial record NotificationText(string Title, string Body)
 
     /// <summary>
     /// The notification as its email writes it: its title, the body of its email, which says more than the bell's where the type has one,
-    /// and the label of its one button, the type's own or the generic "Open {brandName}".
+    /// and the label of its one button: the type's own, with its values, such as "Open {tenantName}", or the generic "Open {brandName}", which
+    /// the email's template fills.
     /// </summary>
     public static NotificationEmailText RenderEmail(
         string type,
@@ -133,7 +134,7 @@ public sealed partial record NotificationText(string Title, string Body)
     {
         var (texts, text) = Chosen(type, values, language);
         var written = Written(NotificationCatalog.Of(type), values, people, texts, language, timeZone);
-        var button = texts.Types[type].Email?.Button ?? texts.Button;
+        var button = texts.Types[type].Email?.Button is { } own ? Fill(own, written) : texts.Button;
         return new(Fill(text.Title!, written), Fill(text.Email?.Body ?? text.Body, written), button);
     }
 

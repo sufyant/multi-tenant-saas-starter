@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ControlPlane.Application.Tenants.EndTenantTrial;
+using ControlPlane.Application.Tenants.WarnTenantTrialEnding;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -53,7 +54,7 @@ public sealed class ExtendTenantTrialTests(Database database) : IAsyncLifetime
         Trials.Of((await extended.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("trial"))
             .ShouldBe($"{SeedPlans.Business}|{Trials.StartedAt:O}|{newEnd:O}|{SeedPlans.Team}");
         session.Scheduled.Envelopes().Select(envelope => (envelope.Message, envelope.ScheduledTime))
-            .ShouldBe([(new EndTenantTrialCommand(tenant.Id, newEnd), newEnd)]);
+            .ShouldBe([(new EndTenantTrialCommand(tenant.Id, newEnd), newEnd), (new WarnTenantTrialEndingCommand(tenant.Id, newEnd), newEnd - TimeSpan.FromDays(3))]);
         (await _audit.PlatformLogAsync(tenant.Id))
             .ShouldBe($"tenant.trial_extended|User|{await _testData.UserIdOfAsync(adminId)}|Tenant|{tenant.Id}|Northwind Traders");
         (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.trial_extended|Platform|-|Tenant|{tenant.Id}|Northwind Traders");

@@ -1,7 +1,9 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ControlPlane.Application.Tenants.EndTenantTrial;
+using ControlPlane.Application.Tenants.WarnTenantTrialEnding;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Time.Testing;
 using Npgsql;
@@ -68,6 +70,42 @@ public sealed class CreateMyTenantTests(Database database) : IAsyncLifetime
         var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
         (await _audit.TenantLogAsync(tenantId)).ShouldBe($"{tenantId}:tenant.created|User|{userId}|Tenant|{tenantId}|Kestrel Analytics");
         (await _audit.PlatformLogAsync(tenantId)).ShouldBe($"tenant.created|User|{userId}|Tenant|{tenantId}|Kestrel Analytics");
+    }
+
+    // 13.25, 3.19: the person who created the organisation gets the welcome in its bell and by email, with the trial that started.
+    [Fact]
+    public async Task CreateMyTenant_BillingOn_WelcomesTheCreatorWithTheTrial()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
+        await using var billing = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            time: time,
+            settings: new Dictionary<string, string?>(SignUpSettings.On.Concat(BillingRequests.On)));
+        var person = await _testData.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
+        var userId = await _testData.UserIdOfAsync(person);
+        var endsAt = (time.GetUtcNow() + TimeSpan.FromDays(14)).ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+
+        var created = await billing.WaitingForMessagesAsync(() => CreateAsync(billing, person, NewSlug()));
+
+        var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+        var notifications = new NotificationRows(database);
+        (await notifications.AboutAsync(tenantId, userId)).ShouldBe([NotificationRows.Row(userId, "tenant.created", tenantId, "Tenant")]);
+        (await notifications.ValueListOfAsync(userId, "tenant.created", tenantId)).ShouldBe(
+            $"endsAt={endsAt}, planName=Business, productName=Starter, tenantName=Kestrel Analytics, trialDays=14");
+    }
+
+    // 13.25, 3.19: while billing is off, the welcome names no trial.
+    [Fact]
+    public async Task CreateMyTenant_BillingOff_WelcomesTheCreatorWithoutATrial()
+    {
+        var person = await _testData.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
+        var userId = await _testData.UserIdOfAsync(person);
+
+        var created = await _api.WaitingForMessagesAsync(() => CreateAsync(_api, person, NewSlug()));
+
+        var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+        (await new NotificationRows(database).ValueListOfAsync(userId, "tenant.created", tenantId))
+            .ShouldBe("productName=Starter, tenantName=Kestrel Analytics");
     }
 
     // 2.39: the limit counts the tenants the person created; the next one is refused and nothing is created.
@@ -145,7 +183,7 @@ public sealed class CreateMyTenantTests(Database database) : IAsyncLifetime
     }
 
     // Step 40d: while billing is on, the tenant starts a 14-day trial of Business at once, keeps the default plan as the plan it returns
-    // to, and schedules the trial's end (1.28, 10.08).
+    // to, and schedules the trial's end and its reminder 3 days before (1.28, 10.08, 13.16).
     [Fact]
     public async Task CreateMyTenant_BillingOn_StartsATrialOfBusinessAndSchedulesItsEnd()
     {
@@ -168,7 +206,7 @@ public sealed class CreateMyTenantTests(Database database) : IAsyncLifetime
             FROM control_plane.tenants WHERE id = '{tenantId}'
             """)).ShouldBe($"{SeedPlans.Business}|{SeedPlans.Business}|t|t|t");
         session.Scheduled.Envelopes().Select(envelope => (envelope.Message, envelope.ScheduledTime))
-            .ShouldBe([(new EndTenantTrialCommand(tenantId, endsAt), endsAt)]);
+            .ShouldBe([(new EndTenantTrialCommand(tenantId, endsAt), endsAt), (new WarnTenantTrialEndingCommand(tenantId, endsAt), endsAt - TimeSpan.FromDays(3))]);
     }
 
     [Fact]

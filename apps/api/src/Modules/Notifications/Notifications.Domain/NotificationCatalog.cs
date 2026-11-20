@@ -44,6 +44,18 @@ public static class NotificationCatalog
 
     public const string TenantPriceChangeAnnounced = "tenant.price_change_announced";
 
+    /// <summary>
+    /// An exception of U9: a trial ends in a few days (13.16, 3.19). A scheduled reminder tells of it; no command does, and the
+    /// Activity log has no entry of it.
+    /// </summary>
+    public const string TenantTrialEnding = "tenant.trial_ending";
+
+    /// <summary>A trial reached its end, and the tenant returned to its plan before (13.17, 3.20).</summary>
+    public const string TenantTrialEnded = "tenant.trial_ended";
+
+    /// <summary>A person created an organisation of their own: the welcome (13.25, 3.19).</summary>
+    public const string TenantCreated = "tenant.created";
+
     /// <summary>The words of <c>period</c> of <see cref="TenantPriceChangeAnnounced"/>: the tenant pays monthly or yearly.</summary>
     public const string Month = "month";
 
@@ -111,6 +123,7 @@ public static class NotificationCatalog
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
         [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
         [TenantPaymentGraceStarted] = "Billing's grace starts when the provider's retries are over; no command does, and the Activity log has no entry of it.",
+        [TenantTrialEnding] = "A scheduled reminder tells that a trial ends soon; no command does, and the Activity log has no entry of it.",
         [FeatureFlagsReadyToRemove] = FlagsApart,
         [FeatureFlagsUnused] = FlagsApart,
         [TenantSuspendedForOwners] = OwnersApart,
@@ -237,6 +250,50 @@ public static class NotificationCatalog
                 new("people", NotificationValueKind.People),
                 Money("newTotal"),
                 Money("oldTotal"),
+            ]),
+
+        // A trial tells the members who manage billing, in the tenant's bell and by email, as the organisation's plan changes at its end
+        // (U5). Each leads to Billing, where a plan is chosen.
+        new(
+            TenantTrialEnding,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [
+                Tenant(),
+                new("planName", NotificationValueKind.Text),
+                new("defaultPlanName", NotificationValueKind.Text),
+                new("endsAt", NotificationValueKind.Date),
+                new("days", NotificationValueKind.Days),
+            ]),
+        new(
+            TenantTrialEnded,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [
+                Tenant(),
+                new("planName", NotificationValueKind.Text),
+                new("defaultPlanName", NotificationValueKind.Text),
+                new("endedAt", NotificationValueKind.Date),
+            ]),
+
+        // The welcome tells the person who created an organisation of their own, in its bell and by email, as they became its Owner (U5).
+        // It leads into the organisation. The trial is there only while billing is on: its plan, its length and its end go together.
+        new(
+            TenantCreated,
+            NotificationBell.Tenant,
+            NotificationLinkKind.Start,
+            YourAccess,
+            WebAndEmail(),
+            [
+                Tenant(),
+                new("productName", NotificationValueKind.Text),
+                new("planName", NotificationValueKind.Text, Optional: true),
+                new("trialDays", NotificationValueKind.Days, Optional: true, With: "planName"),
+                new("endsAt", NotificationValueKind.Date, Optional: true, With: "planName"),
             ]),
 
         // A meter's use tells the members who manage billing, in the tenant's bell and by email, as the extra costs the organisation money

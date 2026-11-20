@@ -271,6 +271,41 @@
       },
       "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
     },
+    "tenant.trial_ending": {
+      "title": "Your {planName} trial for {tenantName} ends in {days}",
+      "body": "Then it moves to {defaultPlanName}. Choose a plan in Billing.",
+      "email": {
+        "body": "On {endsAt} {tenantName} moves to {defaultPlanName}. Choose a plan to keep {planName}. No card is needed until you pay.",
+        "button": "Choose a plan"
+      },
+      "footer": "You received this because you manage billing for {tenantName}."
+    },
+    "tenant.trial_ended": {
+      "title": "{tenantName} moved to {defaultPlanName}",
+      "body": "Your {planName} trial ended. Nothing was deleted.",
+      "email": {
+        "body": "Your {planName} trial ended on {endedAt}. Nothing was deleted. Pay for a plan to get {planName} back at once.",
+        "button": "Choose a plan"
+      },
+      "footer": "You received this because you manage billing for {tenantName}."
+    },
+    "tenant.created": {
+      "title": "Welcome to {productName}",
+      "body": "{tenantName} is ready. Your {planName} trial of {trialDays} has started.",
+      "email": {
+        "body": "{tenantName} is ready, and its {planName} trial of {trialDays} has started. It ends on {endsAt}. No card is needed until you choose a plan.",
+        "button": "Open {tenantName}"
+      },
+      "without": {
+        "planName": {
+          "body": "{tenantName} is ready.",
+          "email": {
+            "body": "{tenantName} is ready."
+          }
+        }
+      },
+      "footer": "You received this because you created {tenantName}."
+    },
     "tenant.meter_nearly_used": {
       "title": "{tenantName} used 80% of its {meter}",
       "body": "{used} of {quota} this month. They reset on {resetsAt}. After {quota}, the extra costs {unitPrice} per {unitSize}, excl. VAT.",
