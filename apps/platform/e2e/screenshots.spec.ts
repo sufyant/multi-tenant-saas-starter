@@ -959,6 +959,45 @@ const teamBilling = (more: Record<string, unknown> = {}) => ({
  * The Billing card's frames: Northwind with 11 members, 1 of them a billing manager (4.27), and Team at €10 a person a month.
  * Later routes win, so these answer over the frames' own.
  */
+/** A meter of the Usage frames (4.37, 4.42): "ai.requests", whose extra costs €1 per 1,000 when it charges. */
+const frameMeter = (
+  overage: "charge" | "stop",
+  quota: number,
+  used: number,
+  quotaReachedAt: string | null,
+) => ({
+  key: "ai.requests",
+  quota,
+  overage,
+  unitPrice: overage === "charge" ? 100 : 0,
+  unitSize: overage === "charge" ? 1000 : 1,
+  used,
+  extra: 0,
+  extraAmount: 0,
+  quotaReachedAt,
+});
+/** October, September and August 2026, each as [used, extra, its amount]. */
+const framePast = (...months: [number, number, number][]) =>
+  months.map(([used, extra, extraAmount], index) => ({
+    periodStart: `2026-${String(10 - index).padStart(2, "0")}-01`,
+    meters: [{ key: "ai.requests", used, extra, extraAmount }],
+  }));
+/** The frames' organisations, and GetTenantUsage of one of them in November 2026. */
+const usageOfFrame =
+  (tenantId: string, usage: Record<string, unknown>) => async (page: Page) => {
+    await mockFrameOrganisations(page);
+    await page.route(`**/api/v1/platform/tenants/${tenantId}/usage`, (route) =>
+      route.fulfill({
+        json: {
+          periodStart: "2026-11-01",
+          periodEnd: "2026-11-30",
+          currency: "EUR",
+          spendingCap: null,
+          ...usage,
+        },
+      }),
+    );
+  };
 const billingOf = (answer: unknown) => async (page: Page) => {
   await mockFrameOrganisations(page);
   await mockFramePlans(page);
@@ -1853,6 +1892,31 @@ const shellShots: {
       teamBilling({ status: "past_due", payment: failed("retrying") }),
     ),
     ready: (page) => page.getByText("Billed by").waitFor(),
+  },
+  // The Usage tab (4.37, 4.42, 40c): Team gives 10,000 of "ai.requests" and charges the extra; Free gives 100 and stops.
+  {
+    file: "4.37-organisation-usage-en-light-desktop",
+    size: "desktop",
+    path: `${northwindPath}?tab=usage`,
+    mock: usageOfFrame(frameNorthwind.id, {
+      planName: "Team",
+      meters: [frameMeter("charge", 10000, 7200, null)],
+      pastPeriods: framePast([9100, 0, 0], [10600, 600, 60], [8300, 0, 0]),
+      spendingCapOffered: true,
+    }),
+    ready: (page) => page.getByRole("meter").waitFor(),
+  },
+  {
+    file: "4.42-organisation-usage-free-used-up-en-light-desktop",
+    size: "desktop",
+    path: `${pathOf(frameOrganisations.copperleaf)}?tab=usage`,
+    mock: usageOfFrame(frameOrganisations.copperleaf.id, {
+      planName: "Free",
+      meters: [frameMeter("stop", 100, 100, "2026-11-18T10:00:00Z")],
+      pastPeriods: framePast([100, 0, 0], [100, 0, 0], [72, 0, 0]),
+      spendingCapOffered: false,
+    }),
+    ready: (page) => page.getByRole("meter").waitFor(),
   },
   {
     file: "4.15-change-plan-en-light-desktop",
