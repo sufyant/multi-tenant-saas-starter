@@ -32,15 +32,21 @@ public sealed class UsageQueries(ControlPlaneDbContext controlPlane) : IUsageQue
         var uses = await controlPlane.MeterUsages.AsNoTracking().Where(use => use.Period >= first).ToListAsync(cancellationToken);
         var useOf = uses.ToDictionary(use => (use.MeterKey, use.Period));
 
+        // A line with a use answers the price of the last use, which its amount was counted at; the next use takes the plan's price.
         var current = meters.Select(meter => useOf.GetValueOrDefault((meter.Key, period)) is { } use
-            ? new MeterUsageView(meter.Key, meter.Quota, meter.Overage.ToString(), meter.UnitPrice, meter.UnitSize, use.Used, use.Extra, AmountOf(use), use.QuotaReachedAt)
+            ? new MeterUsageView(meter.Key, meter.Quota, meter.Overage.ToString(), use.UnitPrice, use.UnitSize, use.Used, use.Extra, AmountOf(use), use.QuotaReachedAt)
             : new MeterUsageView(meter.Key, meter.Quota, meter.Overage.ToString(), meter.UnitPrice, meter.UnitSize, 0, 0, 0, null));
+
+        // A past month lists the plan's meters and every meter it has a use of, so a meter that a plan change took away keeps its months.
         var past = Enumerable.Range(1, pastMonths)
             .Select(months => period.AddMonths(-months))
             .Where(month => month >= first)
-            .Select(month => new PastUsageView(month, [.. meters.Select(meter => useOf.GetValueOrDefault((meter.Key, month)) is { } use
-                ? new PastMeterUsageView(meter.Key, use.Used, use.Extra, AmountOf(use))
-                : new PastMeterUsageView(meter.Key, 0, 0, 0))]));
+            .Select(month => new PastUsageView(month, [.. meters.Select(meter => meter.Key)
+                .Union(uses.Where(use => use.Period == month).Select(use => use.MeterKey))
+                .Order(StringComparer.Ordinal)
+                .Select(key => useOf.GetValueOrDefault((key, month)) is { } use
+                    ? new PastMeterUsageView(key, use.Used, use.Extra, AmountOf(use))
+                    : new PastMeterUsageView(key, 0, 0, 0))]));
 
         return new UsageView(period, period.AddMonths(1).AddDays(-1), tenant.PlanName, [.. current], [.. past]);
     }

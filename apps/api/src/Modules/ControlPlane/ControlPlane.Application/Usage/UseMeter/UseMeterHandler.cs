@@ -3,9 +3,9 @@ using ControlPlane.Domain.MeterUsages;
 
 namespace ControlPlane.Application.Usage.UseMeter;
 
-// The meter's setting comes from the tenant's plan, read in this transaction, never from the cache (E-rules: a limit is checked from the
-// database). The use's row is locked, so of two uses at once the second sees the first's count, and a stop meter stops exactly at its
-// quota. A stopped use changes nothing (W7).
+// The meter's setting comes from the tenant's plan, read under the tenant row's share lock in this transaction, never from the cache, as
+// a limit is (E6, E8). Then the use's row is locked, so of two uses at once the second sees the first's count, and a stop meter stops
+// exactly at its quota (K6q). A stopped use changes nothing (W7).
 public static class UseMeterHandler
 {
     public static async Task<MeterUse> HandleAsync(
@@ -16,8 +16,10 @@ public static class UseMeterHandler
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(command.Quantity, 1);
 
-        var setting = await usages.FindSettingAsync(command.MeterKey, cancellationToken);
-        if (setting is null)
+        // A first use of the period counts from nothing, so a use that alone goes over a stop meter's quota is stopped before its row is
+        // written (W7).
+        var setting = await usages.FindSettingForShareAsync(command.MeterKey, cancellationToken);
+        if (setting is null || setting.Stops(command.Quantity))
         {
             return MeterUse.Stopped;
         }

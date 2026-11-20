@@ -29,7 +29,7 @@ export const GetUsageResponse = zod.object({
   "extra": zod.int(),
   "extraAmount": zod.int(),
   "quotaReachedAt": zod.iso.datetime({"offset":true}).nullable()
-}).describe('One meter of the plan this month: the plan\'s setting of it (the quota, what happens at the quota, and `unitPrice` minor units for\neach `unitSize` units of extra), the units used, the extra over the quota of a charge meter and its price in minor units, rounded\nhalf away from zero, and when the use reached the quota, null before.')),
+}).describe('One meter of the plan this month: the plan\'s quota and what happens at it, the price of the extra (`unitPrice` minor units for each\n`unitSize` units) at the month\'s last use, the plan\'s before any, the units used, the extra over the quota of a charge meter and its\nprice in minor units at that price, rounded half away from zero, and the first moment the use reached the quota, null before.')),
   "pastPeriods": zod.array(zod.object({
   "periodStart": zod.iso.date(),
   "meters": zod.array(zod.object({
@@ -38,6 +38,6 @@ export const GetUsageResponse = zod.object({
   "extra": zod.int(),
   "extraAmount": zod.int()
 }).describe('A meter\'s use in a past month, its extra and the extra\'s price at the month\'s last use, in minor units.'))
-}).describe('A month before this one, named by its first day: each meter of the plan, 0 for one without a use.'))
+}).describe('A month before this one, named by its first day: each meter of the plan, 0 for one without a use, and each meter it has a use of that the plan no longer sets.'))
 }).describe('The tenant\'s use of the meters of its plan (step 40c; 11.01, 4.37): this calendar month of UTC, from `periodStart` to\n`periodEnd`, its plan\'s name, the deployment\'s currency, an ISO 4217 code, each meter of the plan, and up to three months before\nthis one, from the month the tenant was created, the latest first. A plan with no meter answers none.')
 

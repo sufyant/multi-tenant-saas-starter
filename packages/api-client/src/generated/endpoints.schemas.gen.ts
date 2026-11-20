@@ -2025,9 +2025,9 @@ export interface MeterSettingResponse {
 }
 
 /**
- * One meter of the plan this month: the plan's setting of it (the quota, what happens at the quota, and `unitPrice` minor units for
- * each `unitSize` units of extra), the units used, the extra over the quota of a charge meter and its price in minor units, rounded
- * half away from zero, and when the use reached the quota, null before.
+ * One meter of the plan this month: the plan's quota and what happens at it, the price of the extra (`unitPrice` minor units for each
+ * `unitSize` units) at the month's last use, the plan's before any, the units used, the extra over the quota of a charge meter and its
+ * price in minor units at that price, rounded half away from zero, and the first moment the use reached the quota, null before.
  */
 export interface MeterUsageResponse {
   key: string;
@@ -2175,7 +2175,7 @@ export interface PastMeterUsageResponse {
 }
 
 /**
- * A month before this one, named by its first day: each meter of the plan, 0 for one without a use.
+ * A month before this one, named by its first day: each meter of the plan, 0 for one without a use, and each meter it has a use of that the plan no longer sets.
  */
 export interface PastUsageResponse {
   periodStart: string;

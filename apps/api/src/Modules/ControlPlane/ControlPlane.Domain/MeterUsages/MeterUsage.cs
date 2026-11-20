@@ -32,7 +32,10 @@ internal sealed class MeterUsage : ITenantEntity
 
     public long UnitSize { get; private set; } = 1;
 
-    /// <summary>When the count reached the quota in the period; none before.</summary>
+    /// <summary>
+    /// The first moment the count reached the quota in the period; none before. It stays when a plan change raises the quota later, as the
+    /// notice at 100% goes once in each period.
+    /// </summary>
     public DateTimeOffset? QuotaReachedAt { get; private set; }
 
     /// <summary>The period of a moment: the first day of its month in UTC.</summary>
@@ -49,7 +52,7 @@ internal sealed class MeterUsage : ITenantEntity
     public bool Use(long quantity, MeterSetting setting, DateTimeOffset now)
     {
         var used = Used + quantity;
-        if (setting.Overage == MeterOverage.Stop && used > setting.Quota)
+        if (setting.Stops(used))
         {
             return false;
         }

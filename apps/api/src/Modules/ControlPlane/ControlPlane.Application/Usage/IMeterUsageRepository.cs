@@ -7,8 +7,12 @@ namespace ControlPlane.Application.Usage;
 /// <remarks>Public because a public handler takes it (W9); its members speak domain types, so they are internal to the module.</remarks>
 public interface IMeterUsageRepository
 {
-    /// <summary>The setting of the meter on the plan of the transaction's tenant; none when the plan has no setting for it.</summary>
-    internal Task<MeterSetting?> FindSettingAsync(string meterKey, CancellationToken cancellationToken);
+    /// <summary>
+    /// The setting of the meter on the plan of the transaction's tenant, with the tenant row held <c>FOR SHARE</c> for the rest of the
+    /// transaction, so a plan change, a closure and the purge wait for the use (K6q); none when the tenant is not active, or its plan has
+    /// no setting for the meter.
+    /// </summary>
+    internal Task<MeterSetting?> FindSettingForShareAsync(string meterKey, CancellationToken cancellationToken);
 
     /// <summary>
     /// The tenant's use of the meter in the period, locked for the rest of the transaction, so two uses count one after the other. A

@@ -12,11 +12,12 @@ namespace ControlPlane.Infrastructure.Persistence.Usage;
 /// <remarks>Public because Wolverine's generated code builds it (W1, W9).</remarks>
 public sealed class MeterUsageRepository(ControlPlaneDbContext controlPlane) : IMeterUsageRepository
 {
-    async Task<MeterSetting?> IMeterUsageRepository.FindSettingAsync(string meterKey, CancellationToken cancellationToken)
+    // Only an active tenant uses its meters: a suspended one is locked out of the tenant door, and a closed one waits for its purge.
+    async Task<MeterSetting?> IMeterUsageRepository.FindSettingForShareAsync(string meterKey, CancellationToken cancellationToken)
     {
         var tenantId = controlPlane.MessageTenantId ?? throw new InvalidOperationException("A meter is used in a tenant's transaction (R4).");
         var meter = await controlPlane.Tenants
-            .Where(tenant => tenant.Id == tenantId)
+            .FromSql($"SELECT * FROM control_plane.tenants WHERE id = {tenantId} AND status = 'Active' FOR SHARE")
             .Join(controlPlane.PlanMeters, tenant => tenant.PlanId, planMeter => planMeter.PlanId, (_, planMeter) => planMeter)
             .Where(planMeter => planMeter.Key == meterKey)
             .AsNoTracking()
