@@ -34,7 +34,7 @@ public sealed class UsageQueries(ControlPlaneDbContext controlPlane) : IUsageQue
 
         // A line with a use answers the price of the last use, which its amount was counted at; the next use takes the plan's price.
         var current = meters.Select(meter => useOf.GetValueOrDefault((meter.Key, period)) is { } use
-            ? new MeterUsageView(meter.Key, meter.Quota, meter.Overage.ToString(), use.UnitPrice, use.UnitSize, use.Used, use.Extra, AmountOf(use), use.QuotaReachedAt)
+            ? new MeterUsageView(meter.Key, meter.Quota, meter.Overage.ToString(), use.UnitPrice, use.UnitSize, use.Used, use.Extra, use.ExtraAmount, use.QuotaReachedAt)
             : new MeterUsageView(meter.Key, meter.Quota, meter.Overage.ToString(), meter.UnitPrice, meter.UnitSize, 0, 0, 0, null));
 
         // A past month lists the plan's meters and every meter it has a use of, so a meter that a plan change took away keeps its months.
@@ -45,18 +45,14 @@ public sealed class UsageQueries(ControlPlaneDbContext controlPlane) : IUsageQue
                 .Union(uses.Where(use => use.Period == month).Select(use => use.MeterKey))
                 .Order(StringComparer.Ordinal)
                 .Select(key => useOf.GetValueOrDefault((key, month)) is { } use
-                    ? new PastMeterUsageView(key, use.Used, use.Extra, AmountOf(use))
+                    ? new PastMeterUsageView(key, use.Used, use.Extra, use.ExtraAmount)
                     : new PastMeterUsageView(key, 0, 0, 0))]));
 
         var cap = await controlPlane.SpendingCaps.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
         var spendingCap = cap is null
             ? null
-            : new SpendingCapView(cap.Amount, uses.Where(use => use.Period == period).Sum(AmountOf), cap.ReachedIn(period));
+            : new SpendingCapView(cap.Amount, uses.Where(use => use.Period == period).Sum(use => use.ExtraAmount), cap.ReachedIn(period));
 
         return new UsageView(period, period.AddMonths(1).AddDays(-1), tenant.PlanName, [.. current], [.. past], spendingCap, SpendingCapOffered: false);
     }
-
-    // The extra's price in minor units, rounded half away from zero: 600 requests at 100 for each 1000 cost 60.
-    private static long AmountOf(MeterUsage use) =>
-        (long)Math.Round((decimal)use.Extra * use.UnitPrice / use.UnitSize, MidpointRounding.AwayFromZero);
 }

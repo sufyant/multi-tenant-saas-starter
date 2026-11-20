@@ -41,12 +41,18 @@ internal sealed class MeterUsage : ITenantEntity
     /// <summary>The first moment the count reached 80% of the quota in the period; none before. The notice at 80% goes once (E10).</summary>
     public DateTimeOffset? NearlyUsedAt { get; private set; }
 
+    /// <summary>What the extra costs at the price of its last use, in minor units, rounded half away from zero: 600 units at 100 for each 1000 cost 60.</summary>
+    public long ExtraAmount => (long)Math.Round((decimal)Extra * UnitPrice / UnitSize, MidpointRounding.AwayFromZero);
+
     /// <summary>The period of a moment: the first day of its month in UTC.</summary>
     public static DateOnly PeriodOf(DateTimeOffset moment)
     {
         var utc = moment.UtcDateTime;
         return new DateOnly(utc.Year, utc.Month, 1);
     }
+
+    /// <summary>The moment a period ends: the first moment of the next month in UTC.</summary>
+    public static DateTimeOffset EndOf(DateOnly period) => new(period.AddMonths(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 
     /// <summary>What an extra costs at the setting's price, in minor units before rounding.</summary>
     public static decimal AmountOf(long extra, MeterSetting setting) => (decimal)extra * setting.UnitPrice / setting.UnitSize;

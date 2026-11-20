@@ -1,3 +1,4 @@
+using System.Globalization;
 using Billing.Application.Provider;
 using Billing.Domain.Subscriptions;
 using Microsoft.Extensions.Options;
@@ -19,6 +20,8 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
     private const string PlanKey = "plan_id";
 
     private const string CheckoutKey = "checkout_key";
+
+    private const string MeterKey = "meter_key";
 
     private const string AlreadyExists = "resource_already_exists";
 
@@ -340,6 +343,29 @@ internal sealed class StripeBillingProvider(IStripeClient client, IOptions<Strip
             }
         }
     }
+
+    // E11: one pending invoice item of the month's amount, which Stripe adds to the subscription's next invoice (Stripe, "Invoice items"),
+    // with the month as its period. Our app keeps the meter's price, so Stripe holds no metered Price and no usage (section 8 of the
+    // roadmap): a subscription's items stay its plan's fees.
+    async Task IBillingProvider.AddExtraAsync(ExtraCharge charge, CancellationToken cancellationToken) =>
+        await new InvoiceItemService(client).CreateAsync(
+            new InvoiceItemCreateOptions
+            {
+                Customer = charge.CustomerId,
+                Subscription = charge.SubscriptionId,
+                Amount = charge.Amount,
+                Currency = charge.Currency.ToLowerInvariant(),
+                Description = string.Create(
+                    CultureInfo.InvariantCulture, $"{charge.MeterKey}, {charge.Period.ToString("MMMM yyyy", CultureInfo.InvariantCulture)}: {charge.Extra:N0} over the quota"),
+                Period = new InvoiceItemPeriodOptions
+                {
+                    Start = charge.Period.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+                    End = charge.Period.AddMonths(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+                },
+                Metadata = new() { [TenantKey] = charge.TenantId.ToString(), [MeterKey] = charge.MeterKey },
+            },
+            new RequestOptions { IdempotencyKey = $"extra-{charge.TenantId:N}-{charge.MeterKey}-{charge.Period:yyyy-MM}" },
+            cancellationToken);
 
     async Task<Uri> IBillingProvider.OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken)
     {

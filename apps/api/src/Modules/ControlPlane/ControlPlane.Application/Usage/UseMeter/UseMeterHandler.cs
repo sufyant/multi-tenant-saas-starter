@@ -1,4 +1,5 @@
 using ControlPlane.Application.Plans;
+using ControlPlane.Application.Usage.CloseMeterMonth;
 using ControlPlane.Contracts.Usage;
 using ControlPlane.Domain.MeterUsages;
 using ControlPlane.Domain.Plans;
@@ -12,7 +13,8 @@ namespace ControlPlane.Application.Usage.UseMeter;
 // row, so of two uses at once the second sees the first's count and extra, and a stop meter and the cap stop exactly (K6q). The month's
 // extra is every other meter's at the price of its last use, and this meter's at the plan's price now, before rounding. A stopped use
 // changes no count (W7); a use stopped by the cap marks the cap reached for the month (E9). The first use of the month that takes the count
-// to 80% or to all of the quota, or the extra to 80% or to all of the cap, publishes its notice's event once (E10).
+// to 80% or to all of the quota, or the extra to 80% or to all of the cap, publishes its notice's event once (E10). The first use of the month
+// that costs extra schedules the month's close at its end, which tells Billing what the extra costs (E11).
 public static class UseMeterHandler
 {
     public static async Task<(MeterUse, OutgoingMessages)> HandleAsync(
@@ -52,6 +54,7 @@ public static class UseMeterHandler
             }
         }
 
+        var firstExtra = usage.Extra == 0 && extra > 0;
         var count = usage.Use(command.Quantity, setting, now);
         if (count == MeterCount.Stopped)
         {
@@ -59,6 +62,11 @@ public static class UseMeterHandler
         }
 
         messages.AddRange(notices.Of(count));
+        if (firstExtra)
+        {
+            messages.Add(new CloseMeterMonthCommand(usage.TenantId, usage.MeterKey, period).ScheduledAt(MeterUsage.EndOf(period)));
+        }
+
         await usages.SaveChangesAsync(cancellationToken);
         return (MeterUse.Used, messages);
     }
