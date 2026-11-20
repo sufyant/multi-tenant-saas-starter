@@ -17,6 +17,7 @@ import {
   billingAnswers,
   billingOf,
   businessPlan,
+  businessTrialTenant,
   freePlan,
   teamMonthly,
   teamPlan,
@@ -287,5 +288,42 @@ describe("ChangePlanPage", () => {
       },
     ]);
     vi.unstubAllGlobals();
+  });
+
+  // 10.09: in a trial, the trial's plan is marked with its days left and can be paid; the plan after the trial waits for its end.
+  it("ChangePlanPage_InTrial_MarksTheTrialAndPaysAnyPaidPlan", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T10:00:00Z"));
+    server.use(
+      ...billingAnswers(billingOf(null)),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        permissionsOf.owner,
+        [],
+        businessTrialTenant,
+      ),
+    );
+
+    renderInTenant(<ChangePlanPage />, { url });
+
+    const business = await card("Business");
+    expect(business.getByText("Your trial · 3 days left")).toBeVisible();
+    expect(
+      business.getByRole("button", { name: "Continue to payment" }),
+    ).toBeEnabled();
+    expect(
+      (await card("Team")).getByRole("button", {
+        name: "Continue to payment",
+      }),
+    ).toBeEnabled();
+    expect(
+      (await card("Free")).getByRole("button", { name: "After the trial" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        /^You pay on Stripe’s secure payment page, then come back here\. Paying ends the trial\. When the trial ends without a payment, Northwind Traders moves to Free\./,
+      ),
+    ).toBeVisible();
+    vi.useRealTimers();
   });
 });

@@ -14,10 +14,6 @@ export const trialDays = (typed: string) => {
   return days >= 1 && days <= mostDays ? days : null;
 };
 
-/** The whole days from now until a moment, at least 0: the days left of a trial (4.28). */
-export const daysUntil = (at: string, now = Date.now()) =>
-  Math.max(0, Math.ceil((new Date(at).getTime() - now) / 86_400_000));
-
 /** A trial's dates: "22 Oct to 5 Nov 2026", with the first year only when the two years differ. */
 export function useTrialDates() {
   const t = useTranslations();

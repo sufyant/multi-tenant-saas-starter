@@ -193,7 +193,8 @@ export const maxCustomRoles = 20;
 export type Plan = Pick<
   MyTenantDetailResponse,
   "planName" | "entitlements" | "usage"
->;
+> &
+  Partial<Pick<MyTenantDetailResponse, "trial">>;
 
 /** Pro, Northwind's plan: custom roles on, 20 of them, members without a limit. */
 export const pro: Plan = {

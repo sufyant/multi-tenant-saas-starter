@@ -25,6 +25,7 @@ import { Label } from "@repo/ui/components/label";
 import { Pill } from "@repo/ui/components/pill";
 import { showToast } from "@repo/ui/components/toast";
 import { buttonVariants } from "@repo/ui/components/ui/button";
+import { daysLeft } from "@repo/ui/lib/days-left";
 import { formatMoney } from "@repo/ui/lib/format-money";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,7 +36,7 @@ import { useDates } from "@/shared/use-dates";
 import { Row } from "./card-row";
 import { ExtendTrialDialog } from "./extend-trial-dialog";
 import { GiveTrialDialog } from "./give-trial-dialog";
-import { daysUntil, useTrialDates } from "./trial";
+import { useTrialDates } from "./trial";
 
 const live = (subscription: SubscriptionResponse | null) =>
   subscription !== null &&
@@ -133,7 +134,7 @@ export function BillingCard({
             {t("trialPeriodText", {
               plan: trial.plan.name,
               date: date(trial.endsAt),
-              count: daysUntil(trial.endsAt),
+              count: daysLeft(trial.endsAt),
               next: returnsTo.name,
             })}
           </span>

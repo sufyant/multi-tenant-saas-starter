@@ -11,10 +11,12 @@ import {
   SubscriptionResponseInterval,
 } from "@repo/api-client";
 import { brand } from "@repo/brand";
+import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
 import { Label } from "@repo/ui/components/label";
 import { ListError } from "@repo/ui/components/list-error";
 import { Skeleton } from "@repo/ui/components/skeleton";
+import { daysLeft } from "@repo/ui/lib/days-left";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -119,6 +121,7 @@ export function BillingPage() {
           paid={planOf(plans, state.subscription.planId)}
         />
       )}
+      {state.kind === "notPaying" && <SeatsOverBanner />}
       <PlanCard
         state={state}
         plans={plans}
@@ -212,19 +215,58 @@ function PlanCard({
       };
     }
     if (state.kind === "notPaying") {
+      const trial = detail.trial;
+      // 10.08: a running trial needs no card; Pay now opens Change plan, where a payment ends it.
+      if (trial?.returnsTo)
+        return {
+          name: t("billing.trialTitle", {
+            plan: trial.plan.name,
+            count: daysLeft(trial.endsAt),
+          }),
+          lines: [
+            t("billing.trialEnds", {
+              date: text.date(trial.endsAt),
+              organisation: detail.name,
+              plan: trial.returnsTo.name,
+            }),
+          ],
+          hints: [t("billing.trialNoCard")],
+          actions: (
+            <Button
+              variant="primary"
+              render={<Link href={`/${tenant.slug}/settings/billing/plans`} />}
+              nativeButton={false}
+            >
+              {t("billing.payNow")}
+            </Button>
+          ),
+        };
       const plan = current ?? fallback;
+      const price =
+        plan && seats
+          ? text.price(
+              feesOf(plan.prices, SubscriptionResponseInterval.Monthly),
+              seats.people,
+              SubscriptionResponseInterval.Monthly,
+            )
+          : null;
+      // 10.14: after a trial that no payment ended, the plan says when it ended and what a payment brings back.
+      if (trial && price !== null)
+        return {
+          name: detail.planName,
+          lines: [
+            t("billing.trialEnded", {
+              price,
+              plan: trial.plan.name,
+              date: text.date(trial.endsAt),
+            }),
+          ],
+          hints: [t("billing.trialEndedPay")],
+          actions: changePlan("primary"),
+        };
       return {
         name: detail.planName,
-        lines:
-          plan && seats
-            ? [
-                text.price(
-                  feesOf(plan.prices, SubscriptionResponseInterval.Monthly),
-                  seats.people,
-                  SubscriptionResponseInterval.Monthly,
-                ),
-              ]
-            : [],
+        lines: price === null ? [] : [price],
         hints: [],
         actions: changePlan("primary"),
       };
@@ -388,6 +430,59 @@ function LimitRows({ planName }: { planName: string }) {
         hintClass="text-muted-foreground"
       />
     </dl>
+  );
+}
+
+/**
+ * 10.14: the seats over the plan's limit, above the plan, as on Members (8.43): what still works, with the members and the pending
+ * invitations to open.
+ */
+function SeatsOverBanner() {
+  const t = useTranslations();
+  const { tenant, detail } = useTenant();
+  const can = useCan();
+  const plan = usePlan();
+  const seats = useSeatFacts();
+  const members = plan.limit(LimitKey.MembersMax);
+  if (!members.overLimit || members.limit === null || members.limit === 0)
+    return null;
+  const page = `/${tenant.slug}/settings/members`;
+  return (
+    <Banner
+      tone="warning"
+      title={t("billing.seatsOver", {
+        plan: detail.planName,
+        limit: members.limit,
+        count: members.count,
+      })}
+      action={
+        <>
+          {/* F56: the invitations only for a viewer who may read them, and only while one is pending. */}
+          {can(Permission.TenantInvitationsRead) &&
+            seats &&
+            seats.invitations > 0 && (
+              <Button
+                render={<Link href={`${page}?tab=invitations`} />}
+                nativeButton={false}
+              >
+                {t("plans.viewInvitations")}
+              </Button>
+            )}
+          {can(Permission.TenantMembersRead) && (
+            <Button render={<Link href={page} />} nativeButton={false}>
+              {t("billing.manageMembers")}
+            </Button>
+          )}
+        </>
+      }
+    >
+      {seats &&
+        t("plans.membersOverText", {
+          members: seats.people,
+          invitations: seats.invitations,
+          limit: members.limit,
+        })}
+    </Banner>
   );
 }
 

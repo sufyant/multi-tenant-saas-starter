@@ -761,7 +761,11 @@
       "opening": "جارٍ فتح Stripe…",
       "openingText": "ننقلك إلى صفحة الدفع الآمنة في Stripe. تعود إلى هنا بعد الدفع، أو إذا توقفت.",
       "checkoutFailed": "تعذّر فتح صفحة الدفع",
-      "contract": "تُفوتَر خطتك بموجب عقد. لتغييرها، أرسل طلبًا."
+      "contract": "تُفوتَر خطتك بموجب عقد. لتغييرها، أرسل طلبًا.",
+      "yourTrial": "تجربتك · {count, plural, zero {لم يبقَ أي يوم} one {بقي يوم واحد} two {بقي يومان} few {بقيت # أيام} many {بقي # يومًا} other {بقي # يوم}}",
+      "continueToPayment": "المتابعة إلى الدفع",
+      "afterTrial": "بعد التجربة",
+      "footerTrial": "تدفع في صفحة الدفع الآمنة لدى Stripe، ثم تعود إلى هنا. الدفع ينهي التجربة. إذا انتهت التجربة دون دفع، تنتقل {organisation} إلى {plan}."
     },
     "change": {
       "title": "{old} ← {new}",
@@ -801,7 +805,14 @@
       "notCompletedText": "غادرت صفحة الدفع قبل الدفع."
     },
     "undoFailed": "تعذّر التراجع عن التغيير",
-    "contractLabel": "عقد"
+    "contractLabel": "عقد",
+    "trialTitle": "تجربة {plan} · {count, plural, zero {لم يبقَ أي يوم} one {بقي يوم واحد} two {بقي يومان} few {بقيت # أيام} many {بقي # يومًا} other {بقي # يوم}}",
+    "trialEnds": "تنتهي تجربتك في {date}. بعدها تنتقل {organisation} إلى {plan}.",
+    "trialNoCard": "لا حاجة إلى بطاقة حتى تدفع. الدفع ينهي التجربة.",
+    "trialEnded": "{price}. انتهت تجربة {plan} في {date}.",
+    "trialEndedPay": "ادفع لخطة لتستعيد مقاعدها وحدودها فورًا.",
+    "seatsOver": "تعطي {plan} {limit, plural, zero {لا مقاعد} one {مقعدًا واحدًا} two {مقعدين} few {# مقاعد} many {# مقعدًا} other {# مقعد}}. تستخدم {count}.",
+    "manageMembers": "إدارة الأعضاء"
   },
   "usage": {
     "title": "الاستخدام",

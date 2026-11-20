@@ -201,7 +201,8 @@ export const me = (language: Language): MeResponse => ({
 export type Plan = Pick<
   MyTenantDetailResponse,
   "planName" | "entitlements" | "usage"
->;
+> &
+  Partial<Pick<MyTenantDetailResponse, "trial">>;
 
 /** Pro, Northwind's plan: custom roles on, 20 of them, members without a limit; the counts are Northwind's custom roles. */
 export const pro: Plan = {

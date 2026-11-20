@@ -21,10 +21,12 @@ import {
 import {
   billingAnswers,
   billingOf,
+  businessTrialTenant,
   freePlan,
   teamMonthly,
   teamPlan,
   teamTenant,
+  trialEndedTenant,
 } from "../../../test/billing";
 import {
   northwind,
@@ -345,6 +347,109 @@ describe("BillingPage", () => {
     expect(screen.getByRole("button", { name: "Change plan" })).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "Manage payment details" }),
+    ).not.toBeInTheDocument();
+  });
+
+  // 10.08: a trial needs no card; its end and the plan after it show with Pay now, which opens Change plan.
+  it("BillingPage_InTrial_SaysItsDaysItsEndAndPayNow", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T10:00:00Z"));
+    server.use(
+      ...billingAnswers(billingOf(null)),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        permissionsOf.owner,
+        [],
+        businessTrialTenant,
+      ),
+    );
+
+    renderInTenant(<BillingPage />, { url });
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 2,
+        name: "Business trial · 3 days left",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Your trial ends on 5 Nov 2026. Then Northwind Traders moves to Free.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText("No card needed until you pay. Paying ends the trial."),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Pay now" })).toHaveAttribute(
+      "href",
+      "/northwind/settings/billing/plans",
+    );
+    expect(valueBeside("Seats")).toHaveTextContent("12 of 50");
+    expect(
+      screen.getByText("No card yet. You add one when you pay."),
+    ).toBeVisible();
+    vi.useRealTimers();
+  });
+
+  // 10.14: after the trial the plan says when it ended, and the seats over the plan's limit show above it.
+  it("BillingPage_TrialEnded_SaysItEndedAndTheSeatsOverTheLimit", async () => {
+    server.use(
+      ...billingAnswers(billingOf(null)),
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        permissionsOf.owner,
+        [],
+        trialEndedTenant,
+      ),
+    );
+
+    renderInTenant(<BillingPage />, { url });
+
+    expect(
+      await screen.findByText("€0. Your Business trial ended on 5 Nov 2026."),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Pay for a plan to get its seats and limits back at once.",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("Free gives 3 seats. You use 12.")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Manage members" }),
+    ).toHaveAttribute("href", "/northwind/settings/members");
+    expect(
+      screen.getByRole("button", { name: "View invitations" }),
+    ).toHaveAttribute("href", "/northwind/settings/members?tab=invitations");
+    expect(screen.getByRole("button", { name: "Change plan" })).toBeVisible();
+  });
+
+  // F56: the banner offers the invitations only to a viewer who may read them; a Billing manager may not.
+  it("BillingPage_TrialEndedBillingManager_OffersNoInvitations", async () => {
+    server.use(
+      ...billingAnswers(billingOf(null)),
+      ...tenantAnswers(
+        BuiltInRole.BillingManager,
+        permissionsOf.billing_manager,
+        [],
+        trialEndedTenant,
+      ),
+    );
+
+    renderInTenant(<BillingPage />, { url });
+
+    expect(
+      await screen.findByText("Free gives 3 seats. You use 12."),
+    ).toBeVisible();
+    await vi.waitFor(() =>
+      expect(
+        screen.getAllByText(/^10 members and 2 pending invitations\./),
+      ).toHaveLength(2),
+    );
+    expect(
+      screen.getByRole("button", { name: "Manage members" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "View invitations" }),
     ).not.toBeInTheDocument();
   });
 

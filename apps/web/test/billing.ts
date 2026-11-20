@@ -108,6 +108,37 @@ export const teamTenant = {
   usage: { "members.max": 12, "roles.custom.max": 4 },
 };
 
+/** Northwind in a Business trial from 22 Oct to 5 Nov 2026, which returns it to Free (10.08, 10.09): 12 of 50 seats. */
+export const businessTrialTenant = {
+  planName: businessPlan.name,
+  entitlements: {
+    "members.max": 50,
+    "roles.custom": true,
+    "roles.custom.max": 20,
+    "audit.retention.days": 365,
+  },
+  usage: { "members.max": 12, "roles.custom.max": 4 },
+  trial: {
+    plan: { id: businessPlan.id, name: businessPlan.name },
+    startedAt: "2026-10-22T10:00:00Z",
+    endsAt: "2026-11-05T10:00:00Z",
+    returnsTo: { id: freePlan.id, name: freePlan.name },
+  },
+};
+
+/** Northwind after that trial, on Free again (10.14): 12 seats of 3, 4 custom roles that Free does not give. */
+export const trialEndedTenant = {
+  planName: freePlan.name,
+  entitlements: {
+    "members.max": 3,
+    "roles.custom": false,
+    "roles.custom.max": 0,
+    "audit.retention.days": 90,
+  },
+  usage: { "members.max": 12, "roles.custom.max": 4 },
+  trial: { ...businessTrialTenant.trial, returnsTo: null },
+};
+
 /**
  * GetBilling, GetPlanChoices and ListMembers: eleven members, Grace among them, the Billing manager, whom ListMembers answers
  * with her role's filter.
