@@ -70,8 +70,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
 
         await PurgeAsync(tenant.Id, ClosedAt);
 
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, meter_usages 0, entries 0, notifications 0, subscriptions 0, customers 0, contracts 0, contract_tenants 0, payers 0, billing_emails 0");
-        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, meter_usages 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, contract_tenants 1, payers 1, billing_emails 1");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 0, invitations 0, roles 0, role_permissions 0, tenant_summaries 0, entitlement_overrides 0, meter_usages 0, spending_caps 0, entries 0, notifications 0, subscriptions 0, customers 0, contracts 0, contract_tenants 0, payers 0, billing_emails 0");
+        (await RowsOfAsync(kept.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, meter_usages 1, spending_caps 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, contract_tenants 1, payers 1, billing_emails 1");
         (await TombstoneOfAsync(tenant.Id)).ShouldBe($"Gone Ltd|{tenant.Slug}|Purged|-|-|t|2026-08-01");
         (await PlatformLogAsync(tenant.Id)).ShouldBe($"tenant.closed|User, tenant.purged|Platform|-|Tenant|{tenant.Id}|Gone Ltd");
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
@@ -224,7 +224,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         await PurgeAsync(tenant.Id, ClosedAt - TimeSpan.FromDays(3));
 
         (await _testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Closed");
-        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, meter_usages 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, contract_tenants 1, payers 1, billing_emails 1");
+        (await RowsOfAsync(tenant.Id)).ShouldBe("memberships 2, invitations 1, roles 5, role_permissions 2, tenant_summaries 1, entitlement_overrides 1, meter_usages 1, spending_caps 1, entries 1, notifications 2, subscriptions 1, customers 1, contracts 1, contract_tenants 1, payers 1, billing_emails 1");
         (await SagaOfAsync(tenant.Id)).ShouldBeNull();
     }
 
@@ -414,6 +414,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             INSERT INTO billing.payers (tenant_id, plan_id, yearly, base_amount, per_person_amount, ends) VALUES ('{tenant.Id}', gen_random_uuid(), false, 0, 1000, false);
             INSERT INTO billing.billing_emails (tenant_id, address, set_by, set_at) VALUES ('{tenant.Id}', 'accounts@app.test', '{admin}', '{ClosedAt:O}');
             INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra, unit_price, unit_size) VALUES ('{tenant.Id}', 'ai.requests', '2026-07-01', 10, 0, 0, 1);
+            INSERT INTO control_plane.spending_caps (tenant_id, amount) VALUES ('{tenant.Id}', 5000);
             """,
             _databaseName);
         return tenant;
@@ -431,6 +432,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
                 'tenant_summaries ' || (SELECT count(*) FROM control_plane.tenant_summaries WHERE tenant_id = '{tenantId}'),
                 'entitlement_overrides ' || (SELECT count(*) FROM control_plane.entitlement_overrides WHERE tenant_id = '{tenantId}'),
                 'meter_usages ' || (SELECT count(*) FROM control_plane.meter_usages WHERE tenant_id = '{tenantId}'),
+                'spending_caps ' || (SELECT count(*) FROM control_plane.spending_caps WHERE tenant_id = '{tenantId}'),
                 'entries ' || (SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}'),
                 'notifications ' || (SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}'),
                 'subscriptions ' || (SELECT count(*) FROM billing.subscriptions WHERE tenant_id = '{tenantId}'),
