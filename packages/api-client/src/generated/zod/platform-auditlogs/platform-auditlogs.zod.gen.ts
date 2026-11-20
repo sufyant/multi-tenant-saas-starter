@@ -70,6 +70,8 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantSpendingCapChanged: 'tenant.spending_cap_changed',
   TenantSuspended: 'tenant.suspended',
   TenantTrialEnded: 'tenant.trial_ended',
+  TenantTrialExtended: 'tenant.trial_extended',
+  TenantTrialGiven: 'tenant.trial_given',
   TermsVersionCancelled: 'terms_version.cancelled',
   TermsVersionCreated: 'terms_version.created',
   TermsVersionUpdated: 'terms_version.updated',
@@ -474,6 +476,21 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string()
 }).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.')
+}),zod.object({
+  "operation": zod.enum({
+  TenantTrialGiven: 'tenant.trial_given',
+}),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan in the details of an audit entry, as the entry keeps it from that moment: its id and its name. The plan may be renamed since,\nso the entry is its own record of it, and Audit answers it in a shape of its own, as AuditRoleResponse.'),
+  "endsAt": zod.iso.datetime({"offset":true})
+}),zod.object({
+  "operation": zod.enum({
+  TenantTrialExtended: 'tenant.trial_extended',
+}),
+  "oldEndsAt": zod.iso.datetime({"offset":true}),
+  "newEndsAt": zod.iso.datetime({"offset":true})
 }),zod.object({
   "operation": zod.enum({
   TenantPurgeWarned: 'tenant.purge_warned',

@@ -263,6 +263,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "ExtendTenantTrial",
+    "method": "PATCH",
+    "path": "/v1/platform/tenants/{tenantId}/trial",
+    "tag": "Platform/Plans",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "GetAuditRetention",
     "method": "GET",
     "path": "/v1/tenants/{tenantId}/audit-log/retention",
@@ -597,6 +608,17 @@ export const operations = [
     "method": "GET",
     "path": "/v1/platform/users/{userId}",
     "tag": "Platform/Users",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GiveTenantTrial",
+    "method": "POST",
+    "path": "/v1/platform/tenants/{tenantId}/trial",
+    "tag": "Platform/Plans",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

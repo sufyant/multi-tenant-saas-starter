@@ -420,6 +420,131 @@ export const GetTenantPlanChangePreviewResponse = zod.object({
 }).describe('A change that makes the tenant\'s Activity log period shorter: the period before, in days, null for no limit, and the new one. The\nentries older than the new period stay 30 days, then go.')])
 }).describe('What a change of the tenant\'s plan would put it over: each key with the count and the new value, empty when it stays within every\nkey, and the keys an override of the tenant still holds, which the change does not touch. A shorter Activity log period, null when the\nnew plan keeps it as long or longer.')
 
+export const GiveTenantTrialParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const GiveTenantTrialBody = zod.object({
+  "planId": zod.uuid(),
+  "days": zod.int()
+}).describe('The trial\'s plan, and how many days it lasts from now: 1 to 365.')
+
+export const GiveTenantTrialResponse = zod.object({
+  "tenantId": zod.uuid(),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "entitlements": zod.array(zod.object({
+  "key": zod.string(),
+  "isFeature": zod.boolean(),
+  "planValue": zod.union([zod.null(),zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.')]),
+  "override": zod.union([zod.null(),zod.object({
+  "value": zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
+  "expiresAt": zod.iso.datetime({"offset":true}).nullable(),
+  "state": zod.enum({
+  Active: 'active',
+  Expired: 'expired',
+}).describe('The state of an override at the moment of the request: active, or expired, when its expiry has passed. An expired override applies no\nmore, and stays until a system admin removes it.'),
+  "reason": zod.string(),
+  "setById": zod.uuid(),
+  "setBy": zod.object({
+  "name": zod.string().nullable(),
+  "deleted": zod.boolean()
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
+  "setAt": zod.iso.datetime({"offset":true})
+}).describe('A tenant\'s override of one key: its value, its expiry (null for one that never expires), its state, the system admin\'s reason, the\nsystem admin who set it, by id and by name, and when.')]),
+  "effective": zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
+  "count": zod.int()
+}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).')),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "startedAt": zod.iso.datetime({"offset":true}),
+  "endsAt": zod.iso.datetime({"offset":true}),
+  "returnsTo": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.')])
+}).describe('The tenant\'s last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the\ntenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.')])
+}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count, and its last trial, null when it had\nnone (step 40d).')
+
+export const ExtendTenantTrialParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const ExtendTenantTrialBody = zod.object({
+  "endsAt": zod.iso.datetime({"offset":true})
+}).describe('The trial\'s new end: its end or later, and at most 365 days after its end.')
+
+export const ExtendTenantTrialResponse = zod.object({
+  "tenantId": zod.uuid(),
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "entitlements": zod.array(zod.object({
+  "key": zod.string(),
+  "isFeature": zod.boolean(),
+  "planValue": zod.union([zod.null(),zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.')]),
+  "override": zod.union([zod.null(),zod.object({
+  "value": zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
+  "expiresAt": zod.iso.datetime({"offset":true}).nullable(),
+  "state": zod.enum({
+  Active: 'active',
+  Expired: 'expired',
+}).describe('The state of an override at the moment of the request: active, or expired, when its expiry has passed. An expired override applies no\nmore, and stays until a system admin removes it.'),
+  "reason": zod.string(),
+  "setById": zod.uuid(),
+  "setBy": zod.object({
+  "name": zod.string().nullable(),
+  "deleted": zod.boolean()
+}).describe('A user\'s name as it is stored now, resolved on read, as the audit names are (K3). A user a system admin deleted has no name and\n`deleted`, and the screen shows "Deleted user". It holds no email address.'),
+  "setAt": zod.iso.datetime({"offset":true})
+}).describe('A tenant\'s override of one key: its value, its expiry (null for one that never expires), its state, the system admin\'s reason, the\nsystem admin who set it, by id and by name, and when.')]),
+  "effective": zod.object({
+  "enabled": zod.boolean().nullable(),
+  "maximum": zod.int().nullable(),
+  "unlimited": zod.boolean()
+}).describe('One key\'s value: a feature\'s state in `enabled`, or a limit\'s number in `maximum`, or an unlimited limit with\n`unlimited` true. The fields of the other kind are null.'),
+  "count": zod.int()
+}).describe('One key of a tenant\'s entitlements: whether it is a feature, the plan\'s value (null when the plan has none: the key is then closed),\nthe tenant\'s override (null when it has none), the effective value at the moment of the request, and what the tenant has that the key\ncounts (`count`).')),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "startedAt": zod.iso.datetime({"offset":true}),
+  "endsAt": zod.iso.datetime({"offset":true}),
+  "returnsTo": zod.union([zod.null(),zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.')])
+}).describe('The tenant\'s last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the\ntenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.')])
+}).describe('A tenant\'s plan and every key of the list with its plan value, override, effective value and count, and its last trial, null when it had\nnone (step 40d).')
+
 export const SetEntitlementOverrideParams = zod.object({
   "tenantId": zod.uuid(),
   "key": zod.string()

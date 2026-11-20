@@ -17,6 +17,9 @@ internal sealed class Tenant
 
     public const int SuspensionReasonMaxLength = 500;
 
+    /// <summary>The most days that a system admin gives or adds to a trial at once (step 40d).</summary>
+    public const int TrialDaysMax = 365;
+
     /// <summary>The window of a tenant's daily limit of invitations (K2): the invitations it sent in the 24 hours before now.</summary>
     public static readonly TimeSpan InvitationLimitWindow = TimeSpan.FromHours(24);
 
@@ -31,6 +34,17 @@ internal sealed class Tenant
 
     private static readonly Error NotActive =
         Error.Conflict(ControlPlaneErrorCodes.TenantNotActive, "Only an active or a suspended tenant can be suspended, reactivated, renamed, closed or given a plan or an override.");
+
+    private static readonly Error InTrialAlready =
+        Error.Conflict(ControlPlaneErrorCodes.TenantInTrial, "The tenant is in a trial. Extend it, or wait until it ends.");
+
+    private static readonly Error NotInTrial = Error.Conflict(ControlPlaneErrorCodes.TenantNotInTrial, "The tenant is not in a trial.");
+
+    private static readonly Error TrialDaysInvalid =
+        Error.Validation(ControlPlaneErrorCodes.TrialDaysInvalid, $"A trial is given or extended by 1 to {TrialDaysMax} days.");
+
+    private static readonly Error TrialEndInvalid = Error.Validation(
+        ControlPlaneErrorCodes.TrialEndInvalid, $"A trial's new end is its end or later, and at most {TrialDaysMax} days after its end.");
 
     private static readonly Error LastOwner = Error.Conflict(ControlPlaneErrorCodes.MemberLastOwner, "A tenant always has at least one Owner.");
 
@@ -166,6 +180,9 @@ internal sealed class Tenant
             ? Error.Conflict(ControlPlaneErrorCodes.UserLastOwner, "The user is the last Owner of a tenant.")
             : Result.Success();
 
+    /// <summary>The length of a trial that a system admin gives or adds: 1 to <see cref="TrialDaysMax"/> days.</summary>
+    public static Result<TimeSpan> TrialLengthOf(int days) => days is >= 1 and <= TrialDaysMax ? TimeSpan.FromDays(days) : TrialDaysInvalid;
+
     /// <summary>
     /// When the Owners of a tenant closed at this moment are warned of its purge: the purge's moment, the closure plus the reopen period,
     /// less the warning's lead (docs/flows/tenant-purge.md). The warning's message is scheduled for it, and its audit entries carry it.
@@ -277,6 +294,58 @@ internal sealed class Tenant
         PlanBeforeTrialId = PlanId;
         PlanId = planId;
         (TrialPlanId, TrialStartedAt, TrialEndsAt) = (planId, now, now + length);
+    }
+
+    /// <summary>
+    /// A system admin gives an active or a suspended tenant a trial of the plan, from now for the length, as <see cref="StartTrial"/>. A
+    /// tenant that used a trial gets another one this way (4.47); a tenant in a trial is extended, not given a second one.
+    /// </summary>
+    public Result<StateChange> GiveTrial(Guid planId, DateTimeOffset now, TimeSpan length)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        if (InTrial)
+        {
+            return InTrialAlready;
+        }
+
+        StartTrial(planId, now, length);
+        return StateChange.Changed;
+    }
+
+    /// <summary>
+    /// A system admin moves the end of the running trial of an active or a suspended tenant on, by at most <see cref="TrialDaysMax"/> days
+    /// (4.30). The end it has changes nothing (I1); an earlier end is refused, as the trial's end or a plan ends a trial earlier.
+    /// </summary>
+    public Result<StateChange> ExtendTrial(DateTimeOffset endsAt)
+    {
+        var changeable = CheckPlatformChange();
+        if (!changeable.IsSuccess)
+        {
+            return changeable.Error;
+        }
+
+        if (!InTrial || TrialEndsAt is not { } end)
+        {
+            return NotInTrial;
+        }
+
+        if (endsAt < end || endsAt > end.AddDays(TrialDaysMax))
+        {
+            return TrialEndInvalid;
+        }
+
+        if (endsAt == end)
+        {
+            return StateChange.Unchanged;
+        }
+
+        TrialEndsAt = endsAt;
+        return StateChange.Changed;
     }
 
     /// <summary>

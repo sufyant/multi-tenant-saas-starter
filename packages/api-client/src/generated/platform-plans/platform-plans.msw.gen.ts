@@ -27,7 +27,9 @@ import type {
   CreatePlanRequest,
   EntitlementOverrideResponse,
   EntitlementValueResponse,
+  ExtendTenantTrialRequest,
   GetPlanUpdatePreviewRequest,
+  GiveTenantTrialRequest,
   ListPageOfPlanListItemResponse,
   PlanNameResponse,
   PlanResponse,
@@ -83,6 +85,26 @@ export const getChangeTenantPlanResponseMock = (overrideResponse: Partial<Extrac
 export const getGetTenantPlanChangePreviewResponseRetentionShortenedResponseMock = (overrideResponse: Partial<RetentionShortenedResponse> = {}): RetentionShortenedResponse => ({...{fromDays: faker.helpers.arrayElement([faker.number.int(), null]), toDays: faker.number.int()}, ...overrideResponse});
 
 export const getGetTenantPlanChangePreviewResponseMock = (overrideResponse: Partial<Extract<TenantPlanChangePreviewResponse, object>> = {}): TenantPlanChangePreviewResponse => ({excesses: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), count: faker.number.int(), newValue: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, amount: faker.number.int()})), overriddenKeys: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => (faker.string.alpha({length: {min: 10, max: 20}}))), retentionShortened: faker.helpers.arrayElement([null,{...getGetTenantPlanChangePreviewResponseRetentionShortenedResponseMock()},]), ...overrideResponse})
+
+export const getGiveTenantTrialResponseEntitlementValueResponseMock = (overrideResponse: Partial<EntitlementValueResponse> = {}): EntitlementValueResponse => ({...{enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, ...overrideResponse});
+
+export const getGiveTenantTrialResponseEntitlementOverrideResponseMock = (overrideResponse: Partial<EntitlementOverrideResponse> = {}): EntitlementOverrideResponse => ({...{value: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, expiresAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), state: faker.helpers.arrayElement(Object.values(EntitlementOverrideResponseState)), reason: faker.string.alpha({length: {min: 10, max: 20}}), setById: faker.string.uuid(), setBy: {name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, setAt: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse});
+
+export const getGiveTenantTrialResponsePlanNameResponseMock = (overrideResponse: Partial<PlanNameResponse> = {}): PlanNameResponse => ({...{id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse});
+
+export const getGiveTenantTrialResponseTrialResponseMock = (overrideResponse: Partial<TrialResponse> = {}): TrialResponse => ({...{plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, startedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', endsAt: faker.date.past().toISOString().slice(0, 19) + 'Z', returnsTo: faker.helpers.arrayElement([null,{...getGiveTenantTrialResponsePlanNameResponseMock()},])}, ...overrideResponse});
+
+export const getGiveTenantTrialResponseMock = (overrideResponse: Partial<Extract<TenantPlanResponse, object>> = {}): TenantPlanResponse => ({tenantId: faker.string.uuid(), plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, entitlements: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), isFeature: faker.datatype.boolean(), planValue: faker.helpers.arrayElement([null,{...getGiveTenantTrialResponseEntitlementValueResponseMock()},]), override: faker.helpers.arrayElement([null,{...getGiveTenantTrialResponseEntitlementOverrideResponseMock()},]), effective: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, count: faker.number.int()})), trial: faker.helpers.arrayElement([null,{...getGiveTenantTrialResponseTrialResponseMock()},]), ...overrideResponse})
+
+export const getExtendTenantTrialResponseEntitlementValueResponseMock = (overrideResponse: Partial<EntitlementValueResponse> = {}): EntitlementValueResponse => ({...{enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, ...overrideResponse});
+
+export const getExtendTenantTrialResponseEntitlementOverrideResponseMock = (overrideResponse: Partial<EntitlementOverrideResponse> = {}): EntitlementOverrideResponse => ({...{value: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, expiresAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), state: faker.helpers.arrayElement(Object.values(EntitlementOverrideResponseState)), reason: faker.string.alpha({length: {min: 10, max: 20}}), setById: faker.string.uuid(), setBy: {name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), deleted: faker.datatype.boolean()}, setAt: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse});
+
+export const getExtendTenantTrialResponsePlanNameResponseMock = (overrideResponse: Partial<PlanNameResponse> = {}): PlanNameResponse => ({...{id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse});
+
+export const getExtendTenantTrialResponseTrialResponseMock = (overrideResponse: Partial<TrialResponse> = {}): TrialResponse => ({...{plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, startedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', endsAt: faker.date.past().toISOString().slice(0, 19) + 'Z', returnsTo: faker.helpers.arrayElement([null,{...getExtendTenantTrialResponsePlanNameResponseMock()},])}, ...overrideResponse});
+
+export const getExtendTenantTrialResponseMock = (overrideResponse: Partial<Extract<TenantPlanResponse, object>> = {}): TenantPlanResponse => ({tenantId: faker.string.uuid(), plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, entitlements: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), isFeature: faker.datatype.boolean(), planValue: faker.helpers.arrayElement([null,{...getExtendTenantTrialResponseEntitlementValueResponseMock()},]), override: faker.helpers.arrayElement([null,{...getExtendTenantTrialResponseEntitlementOverrideResponseMock()},]), effective: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, count: faker.number.int()})), trial: faker.helpers.arrayElement([null,{...getExtendTenantTrialResponseTrialResponseMock()},]), ...overrideResponse})
 
 export const getSetEntitlementOverrideResponseEntitlementValueResponseMock = (overrideResponse: Partial<EntitlementValueResponse> = {}): EntitlementValueResponse => ({...{enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}, ...overrideResponse});
 
@@ -191,6 +213,30 @@ export const getGetTenantPlanChangePreviewMockHandler = (overrideResponse?: Tena
   }, options)
 }
 
+export const getGiveTenantTrialMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, GiveTenantTrialRequest>>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
+  return http.post<{ tenantId: string }, GiveTenantTrialRequest>('*/v1/platform/tenants/:tenantId/trial', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, GiveTenantTrialRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGiveTenantTrialResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getExtendTenantTrialMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }, ExtendTenantTrialRequest>>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
+  return http.patch<{ tenantId: string }, ExtendTenantTrialRequest>('*/v1/platform/tenants/:tenantId/trial', async (info: Parameters<HttpResponseResolver<{ tenantId: string }, ExtendTenantTrialRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getExtendTenantTrialResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getSetEntitlementOverrideMockHandler = (overrideResponse?: TenantPlanResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string; key: string }, SetEntitlementOverrideRequest>>[0]) => Promise<TenantPlanResponse> | TenantPlanResponse), options?: RequestHandlerOptions) => {
   return http.put<{ tenantId: string; key: string }, SetEntitlementOverrideRequest>('*/v1/platform/tenants/:tenantId/entitlement-overrides/:key', async (info: Parameters<HttpResponseResolver<{ tenantId: string; key: string }, SetEntitlementOverrideRequest>>[0]) => {
 
@@ -221,6 +267,8 @@ export const getPlatformPlansMock = () => [
   getGetTenantPlanMockHandler(),
   getChangeTenantPlanMockHandler(),
   getGetTenantPlanChangePreviewMockHandler(),
+  getGiveTenantTrialMockHandler(),
+  getExtendTenantTrialMockHandler(),
   getSetEntitlementOverrideMockHandler(),
   getRemoveEntitlementOverrideMockHandler()
 ]

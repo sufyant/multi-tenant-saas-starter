@@ -28,8 +28,10 @@ import type {
   ChangeTenantPlanRequest,
   CreatePlanHeaders,
   CreatePlanRequest,
+  ExtendTenantTrialRequest,
   GetPlanUpdatePreviewParams,
   GetPlanUpdatePreviewRequest,
+  GiveTenantTrialRequest,
   ListPageOfPlanListItemResponse,
   ListPlansParams,
   PlanResponse,
@@ -603,6 +605,78 @@ return apiFetch<TenantPlanChangePreviewResponse>(getGetTenantPlanChangePreviewUr
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(changeTenantPlanRequest)
+  }
+);}
+
+
+
+export const getGiveTenantTrialUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/platform/tenants/${tenantId}/trial`
+}
+
+export const giveTenantTrial = async (tenantId: string,
+    giveTenantTrialRequest: GiveTenantTrialRequest, options?: Parameters<typeof apiFetch>[1]): Promise<TenantPlanResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<TenantPlanResponse>(getGiveTenantTrialUrl(tenantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(giveTenantTrialRequest)
+  }
+);}
+
+
+
+export const getExtendTenantTrialUrl = (tenantId: string,) => {
+
+
+
+
+  return `/v1/platform/tenants/${tenantId}/trial`
+}
+
+export const extendTenantTrial = async (tenantId: string,
+    extendTenantTrialRequest: ExtendTenantTrialRequest, options?: Parameters<typeof apiFetch>[1]): Promise<TenantPlanResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return apiFetch<TenantPlanResponse>(getExtendTenantTrialUrl(tenantId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(extendTenantTrialRequest)
   }
 );}
 

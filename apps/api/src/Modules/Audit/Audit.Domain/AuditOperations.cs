@@ -95,6 +95,12 @@ public static class AuditOperations
     /// <summary>The tenant's trial ended at its end, and the tenant returned to its plan before the trial (step 40d). Nobody acted.</summary>
     public const string TenantTrialEnded = "tenant.trial_ended";
 
+    /// <summary>A system admin gave the tenant a trial of a plan until its end (step 40d).</summary>
+    public const string TenantTrialGiven = "tenant.trial_given";
+
+    /// <summary>A system admin added days to the tenant's running trial (step 40d).</summary>
+    public const string TenantTrialExtended = "tenant.trial_extended";
+
     /// <summary>A system admin scheduled the move of a plan's payers to its new prices (B13); in the platform's log only.</summary>
     public const string PlanPriceChangeScheduled = "plan.price_change_scheduled";
 

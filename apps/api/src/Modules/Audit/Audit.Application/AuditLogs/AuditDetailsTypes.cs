@@ -72,6 +72,10 @@ public static class AuditDetailsTypes
 
     public const string TenantMovedToDefaultPlan = AuditOperations.TenantMovedToDefaultPlan;
 
+    public const string TenantTrialGiven = AuditOperations.TenantTrialGiven;
+
+    public const string TenantTrialExtended = AuditOperations.TenantTrialExtended;
+
     public const string TenantPlanCancellationUndone = AuditOperations.TenantPlanCancellationUndone;
 
     public const string TenantPlanChangeScheduled = AuditOperations.TenantPlanChangeScheduled;
@@ -132,6 +136,8 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantPriceChangeAnnounced] = typeof(TenantPriceChangeAnnouncedDetails),
         [AuditOperations.TenantMovedToDefaultPlan] = typeof(TenantMovedToDefaultPlanDetails),
         [AuditOperations.TenantTrialEnded] = null,
+        [AuditOperations.TenantTrialGiven] = typeof(TenantTrialGivenDetails),
+        [AuditOperations.TenantTrialExtended] = typeof(TenantTrialExtendedDetails),
         [AuditOperations.TenantPlanCancellationUndone] = typeof(TenantPlanCancellationUndoneDetails),
         [AuditOperations.TenantPlanChangeScheduled] = typeof(TenantPlanChangeScheduledDetails),
         [AuditOperations.TenantPlanChangeUndone] = typeof(TenantPlanChangeUndoneDetails),

@@ -394,7 +394,9 @@
         "suspended": "<actor></actor> أوقف هذه المؤسسة.",
         "billing_email_changed": "{removed, select, yes {أزال <actor></actor> البريد الإلكتروني للفوترة.} other {عيّن <actor></actor> البريد الإلكتروني للفوترة.}}",
         "spending_cap_changed": "{change, select, set {عيّن <actor></actor> حدًا للإنفاق قدره {new} شهريًا.} removed {أزال <actor></actor> حد الإنفاق البالغ {old} شهريًا.} other {غيّر <actor></actor> حد الإنفاق الشهري من {old} إلى {new}.}}",
-        "trial_ended": "انتهت الفترة التجريبية لهذه المؤسسة. عادت إلى خطتها قبل الفترة التجريبية."
+        "trial_ended": "انتهت الفترة التجريبية لهذه المؤسسة. عادت إلى خطتها قبل الفترة التجريبية.",
+        "trial_given": "منح <actor></actor> هذه المؤسسة فترة تجريبية من <plan></plan> حتى {date}.",
+        "trial_extended": "مدّد <actor></actor> الفترة التجريبية حتى {date} (قبل ذلك: {oldDate})."
       },
       "terms_version": {
         "cancelled": "<actor></actor> ألغى إصدارًا من شروط الاستخدام.",

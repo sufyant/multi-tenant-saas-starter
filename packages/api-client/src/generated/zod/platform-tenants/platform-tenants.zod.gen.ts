@@ -83,6 +83,7 @@ export const ListTenantsQueryParams = zod.object({
   "billing": zod.enum({
   PaymentOverdue: 'payment_overdue',
   Contract: 'contract',
+  InTrial: 'in_trial',
 }).optional()
 })
 
@@ -139,7 +140,8 @@ export const ListTenantsResponse = zod.object({
 }).describe('How many tenants are in each status, without the search or the status filter: the tabs of the Organisations list.'),
   "billingCounts": zod.union([zod.null(),zod.object({
   "paymentOverdue": zod.int(),
-  "contract": zod.int()
+  "contract": zod.int(),
+  "inTrial": zod.int()
 }).describe('How many tenants are in each billing situation, without the search or the filters: the options of the billing filter (4.38).')])
 }).describe('A page of the tenant list (K5), and how many tenants of the whole list are in each status and, while billing is on, in each billing\nsituation (4.38); null while billing is off (B1).')
 

@@ -89,11 +89,14 @@ public static class TenantEndpoints
             return situation.Error;
         }
 
-        // 4.38: billing knows the tenants of each billing situation, across tenants (R6), and the list keeps only those.
-        var counts = await bus.InvokeAsync<BillingSituationsView?>(new GetBillingSituationsQuery(situation.Value?.ToString()), cancellationToken);
+        // 4.38: billing knows the tenants of each billing situation, across tenants (R6), and the list keeps only those. A trial is
+        // ControlPlane's own state (4.39): the list keeps the tenants in a trial itself, and only while billing is on, as a trial exists then only.
+        var inTrial = situation.Value == TenantResponseBilling.InTrial;
+        var counts = await bus.InvokeAsync<BillingSituationsView?>(
+            new GetBillingSituationsQuery(inTrial ? null : situation.Value?.ToString()), cancellationToken);
+        var only = situation.Value is null || (inTrial && counts is not null) ? null : counts?.Only ?? [];
         var tenants = await bus.InvokeAsync<Result<TenantListView>>(
-            new ListTenantsQuery(list.Value, [.. filter.Value.Select(ResponseStatus.OfTenant)], situation.Value is null ? null : counts?.Only ?? []),
-            cancellationToken);
+            new ListTenantsQuery(list.Value, [.. filter.Value.Select(ResponseStatus.OfTenant)], only, inTrial), cancellationToken);
         return tenants.Map(found => new TenantListPageResponse(
             [.. found.Page.Items.Select(ToResponse)],
             found.Page.Page,
@@ -101,7 +104,7 @@ public static class TenantEndpoints
             found.Page.Total,
             new TenantStatusCountsResponse(
                 found.StatusCounts.Active, found.StatusCounts.Suspended, found.StatusCounts.Closed, found.StatusCounts.Purging, found.StatusCounts.Purged),
-            counts is null ? null : new TenantBillingCountsResponse(counts.PaymentOverdue, counts.Contract)));
+            counts is null ? null : new TenantBillingCountsResponse(counts.PaymentOverdue, counts.Contract, found.InTrialCount)));
     }
 
     // One tenant is read inside the tenant the route names, as suspension does (W3); an id no tenant has is not found.

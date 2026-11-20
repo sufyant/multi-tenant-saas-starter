@@ -195,10 +195,12 @@
       "closed": "This organisation is closed.",
       "creation_limit_reached": "You have created as many organisations as one person can.",
       "has_owner": "This organisation already has an Owner.",
+      "in_trial": "The organisation is in a trial. Extend it, or wait until it ends.",
       "name_invalid": "Enter a name for the organisation.",
       "not_active": "This organisation is not active.",
       "not_closed": "This organisation is not closed.",
       "not_found": "This organisation does not exist, or you are not a member of it.",
+      "not_in_trial": "The organisation is not in a trial.",
       "pays_by_card": "This organisation pays by card, so its subscription sets its plan. Switch it to Contract first.",
       "reopen_period_ended": "The time to reopen this organisation has ended.",
       "slug_invalid": "Use lowercase letters, digits and single hyphens.",
@@ -216,6 +218,11 @@
       "not_scheduled": "Only a scheduled version can change. A version in force never changes.",
       "scheduled_exists": "A version is already scheduled. Edit or cancel it first.",
       "url_invalid": "Enter a link that starts with https://."
+    },
+    "trial": {
+      "billing_off": "Billing is off in this deployment, so an organisation has no trial.",
+      "days_invalid": "A trial lasts 1 to 365 days.",
+      "end_invalid": "The new end is the trial's end or later, and at most 365 days after it."
     },
     "usage": {
       "spending_cap_invalid": "The cap must be an amount between 0.01 and 100,000,000.",

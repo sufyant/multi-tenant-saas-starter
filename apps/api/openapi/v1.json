@@ -2669,6 +2669,264 @@
         }
       }
     },
+    "/v1/platform/tenants/{tenantId}/trial": {
+      "post": {
+        "tags": [
+          "Platform/Plans"
+        ],
+        "operationId": "GiveTenantTrial",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveTenantTrialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Platform/Plans"
+        ],
+        "operationId": "ExtendTenantTrial",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendTenantTrialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/tenants/{tenantId}/entitlement-overrides/{key}": {
       "put": {
         "tags": [
@@ -14451,6 +14709,12 @@
             "$ref": "#/components/schemas/TenantPlanChangeUndoneDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantTrialGivenDetailsResponse"
+          },
+          {
+            "$ref": "#/components/schemas/TenantTrialExtendedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/TenantPurgeWarnedDetailsResponse"
           },
           {
@@ -14502,6 +14766,8 @@
             "tenant.plan_cancellation_undone": "#/components/schemas/TenantPlanCancellationUndoneDetailsResponse",
             "tenant.plan_change_scheduled": "#/components/schemas/TenantPlanChangeScheduledDetailsResponse",
             "tenant.plan_change_undone": "#/components/schemas/TenantPlanChangeUndoneDetailsResponse",
+            "tenant.trial_given": "#/components/schemas/TenantTrialGivenDetailsResponse",
+            "tenant.trial_extended": "#/components/schemas/TenantTrialExtendedDetailsResponse",
             "tenant.purge_warned": "#/components/schemas/TenantPurgeWarnedDetailsResponse",
             "tenant.renamed": "#/components/schemas/TenantRenamedDetailsResponse",
             "tenant.suspended": "#/components/schemas/TenantSuspendedDetailsResponse",
@@ -14672,6 +14938,8 @@
           "tenant.spending_cap_changed",
           "tenant.suspended",
           "tenant.trial_ended",
+          "tenant.trial_extended",
+          "tenant.trial_given",
           "terms_version.cancelled",
           "terms_version.created",
           "terms_version.updated",
@@ -14738,6 +15006,8 @@
           "TenantSpendingCapChanged",
           "TenantSuspended",
           "TenantTrialEnded",
+          "TenantTrialExtended",
+          "TenantTrialGiven",
           "TermsVersionCancelled",
           "TermsVersionCreated",
           "TermsVersionUpdated",
@@ -15602,10 +15872,12 @@
           "tenant.closed",
           "tenant.creation_limit_reached",
           "tenant.has_owner",
+          "tenant.in_trial",
           "tenant.name_invalid",
           "tenant.not_active",
           "tenant.not_closed",
           "tenant.not_found",
+          "tenant.not_in_trial",
           "tenant.pays_by_card",
           "tenant.reopen_period_ended",
           "tenant.slug_invalid",
@@ -15621,6 +15893,9 @@
           "terms_version.not_scheduled",
           "terms_version.scheduled_exists",
           "terms_version.url_invalid",
+          "trial.billing_off",
+          "trial.days_invalid",
+          "trial.end_invalid",
           "usage.spending_cap_invalid",
           "usage.spending_cap_unavailable",
           "user.deleted",
@@ -15734,10 +16009,12 @@
           "TenantClosed",
           "TenantCreationLimitReached",
           "TenantHasOwner",
+          "TenantInTrial",
           "TenantNameInvalid",
           "TenantNotActive",
           "TenantNotClosed",
           "TenantNotFound",
+          "TenantNotInTrial",
           "TenantPaysByCard",
           "TenantReopenPeriodEnded",
           "TenantSlugInvalid",
@@ -15753,6 +16030,9 @@
           "TermsVersionNotScheduled",
           "TermsVersionScheduledExists",
           "TermsVersionUrlInvalid",
+          "TrialBillingOff",
+          "TrialDaysInvalid",
+          "TrialEndInvalid",
           "UsageSpendingCapInvalid",
           "UsageSpendingCapUnavailable",
           "UserDeleted",
@@ -15795,6 +16075,19 @@
           }
         },
         "description": "One key a change would put a tenant over: what the tenant has that the key counts (`count`), the new effective value, and how far\nover it goes (`amount`): the count less a limit, or the whole count for a feature that turns off while the tenant uses it."
+      },
+      "ExtendTenantTrialRequest": {
+        "required": [
+          "endsAt"
+        ],
+        "type": "object",
+        "properties": {
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The trial's new end: its end or later, and at most 365 days after its end."
       },
       "FeatureFlagAddedToCodeDetailsResponse": {
         "required": [
@@ -16357,6 +16650,24 @@
           }
         },
         "description": "The values a plan edit would give the plan, exactly as UpdatePlanRequest gives them."
+      },
+      "GiveTenantTrialRequest": {
+        "required": [
+          "planId",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The trial's plan, and how many days it lasts from now: 1 to 365."
       },
       "InvitationPreviewResponse": {
         "required": [
@@ -19255,7 +19566,8 @@
       "TenantBillingCountsResponse": {
         "required": [
           "paymentOverdue",
-          "contract"
+          "contract",
+          "inTrial"
         ],
         "type": "object",
         "properties": {
@@ -19264,6 +19576,10 @@
             "format": "int32"
           },
           "contract": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inTrial": {
             "type": "integer",
             "format": "int32"
           }
@@ -20343,13 +20659,15 @@
       "TenantResponseBilling": {
         "enum": [
           "payment_overdue",
-          "contract"
+          "contract",
+          "in_trial"
         ],
         "type": "string",
-        "description": "A billing situation that the Organisations list filters by (4.38): a payment that is overdue, or Contract (B11, B12).",
+        "description": "A billing situation that the Organisations list filters by (4.38): a payment that is overdue, Contract (B11, B12), or a running trial\n(4.39, step 40d).",
         "x-enumNames": [
           "PaymentOverdue",
-          "Contract"
+          "Contract",
+          "InTrial"
         ]
       },
       "TenantResponseStatus": {
@@ -20459,6 +20777,57 @@
           }
         },
         "description": "The details of `tenant.suspended`: the system admin's reason. Only the platform's log holds it."
+      },
+      "TenantTrialExtendedDetailsResponse": {
+        "required": [
+          "oldEndsAt",
+          "newEndsAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.trial_extended"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantTrialExtended"
+            ]
+          },
+          "oldEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "newEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TenantTrialGivenDetailsResponse": {
+        "required": [
+          "plan",
+          "endsAt",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.trial_given"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantTrialGiven"
+            ]
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AuditPlanResponse"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "TermsInForceResponse": {
         "required": [

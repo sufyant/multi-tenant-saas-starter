@@ -411,7 +411,9 @@
         "plan_change_undone": "<actor></actor>, <target></target> kuruluşunun planlanan değişikliğini geri aldı. <plan></plan> planında kalır.",
         "entitlement_override_set": "<actor></actor>, <target></target> kuruluşunun {key} değerini {expiry, select, none {süresiz olarak} other {{date} tarihine kadar}} {value} yaptı (önceki: {previous}).{hasReason, select, yes { Neden: <name>{reason}</name>.} ended { Neden: <name>{reason}</name>} other {}}",
         "entitlement_override_removed": "<actor></actor>, <target></target> kuruluşunun {key} istisnasını kaldırdı ({value}, {expiry, select, none {süresiz} other {{date} tarihine kadar}}).",
-        "trial_ended": "<target></target> kuruluşunun deneme süresi bitti. Denemeden önceki planına döndü."
+        "trial_ended": "<target></target> kuruluşunun deneme süresi bitti. Denemeden önceki planına döndü.",
+        "trial_given": "<actor></actor>, <target></target> kuruluşuna {date} tarihine kadar <plan></plan> denemesi verdi.",
+        "trial_extended": "<actor></actor>, <target></target> kuruluşunun denemesini {date} tarihine uzattı (önce: {oldDate})."
       },
       "user": {
         "suspended": "<actor></actor>, <target></target> kullanıcısını askıya aldı.",
