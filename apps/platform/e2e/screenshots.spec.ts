@@ -1985,7 +1985,6 @@ const shellShots: {
     file: `${name}-en-light-${size}`,
     size,
     path: `${path}?tab=plan`,
-    fullPage: size === "desktop",
     mock: trialOf(path === ufuqPath ? inTrialBilling : teamBilling()),
     ready: (page: Page) => page.getByText("Billed by").waitFor(),
     open: async (page: Page) => {

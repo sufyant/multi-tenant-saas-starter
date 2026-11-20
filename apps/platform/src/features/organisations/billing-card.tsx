@@ -331,7 +331,11 @@ export function BillingCard({
           <Label>{contract ? t("contractLabel") : t("cardLabel")}</Label>
         </span>
         <span className="text-small text-muted-foreground">
-          {contract ? t("contractText") : t("cardText")}
+          {contract
+            ? t("contractText")
+            : !subscription && returnsTo
+              ? t("noSubscription")
+              : t("cardText")}
         </span>
       </Row>
       {!contract && <Row label={t("period")}>{periodRow}</Row>}
