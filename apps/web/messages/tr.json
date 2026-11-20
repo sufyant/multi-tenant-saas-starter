@@ -904,5 +904,15 @@
     "notInvited": "{email} davet edilemedi",
     "sendInvitations": "Davetleri gönder",
     "skip": "Şimdilik geç"
+  },
+  "createAccount": {
+    "title": "Kullanım Koşullarını kabul edin",
+    "text": "Kullanım Koşullarını okuyun, sonra hesabınızı oluşturmak için kabul edin.",
+    "textNoTerms": "Hesabınızı oluşturmak için kabul edin.",
+    "notCreated": "Hesabınız oluşturulmadı"
+  },
+  "signUpPage": {
+    "title": "Hesap oluşturun",
+    "text": "İş e-postanızı kullanın. Onaylamanız için 6 haneli bir kod göndeririz."
   }
 }

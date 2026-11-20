@@ -3,13 +3,14 @@ import { isNavigation } from "@repo/ui/lib/navigation";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
-// Every page needs a session but sign-in, its SSO callback, the invitation's accept page and the health check (F46). The BFF under /api checks the
+// Every page needs a session but sign-in, sign-up, their SSO callback, the invitation's accept page and the health check (F46). The BFF under /api checks the
 // session itself and answers 401 without one (F6), so a screen can send the user to sign-in (F4); Clerk's protect() would answer
 // such a call with 404. The accept page signs a new person up with Clerk's ticket, or sends a signed-out person to sign-in and
 // back (F44).
 // Each open route matches its whole first segments: `/sign-in` and `/sign-in/...`, never `/sign-inn`, which may be a tenant's slug (F58).
 const isOpen = createRouteMatcher([
   "/sign-in(/.*)?",
+  "/sign-up(/.*)?",
   "/sso-callback(/.*)?",
   "/invitations/accept(/.*)?",
   "/account/deleted",

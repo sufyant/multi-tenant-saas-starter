@@ -53,6 +53,8 @@ describe("proxy", () => {
   it.each([
     "/sign-in",
     "/sign-in/factor-one",
+    "/sign-up",
+    "/sign-up/x",
     "/sso-callback",
     "/sso-callback/x",
     "/invitations/accept",
@@ -68,6 +70,7 @@ describe("proxy", () => {
   it.each([
     "/sign-inn",
     "/sign-inn/settings",
+    "/sign-ups",
     "/sso-callbacks",
     "/sso-callbacks/settings",
     "/invitations/acceptx",
