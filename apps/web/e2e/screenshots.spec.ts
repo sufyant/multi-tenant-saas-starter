@@ -2727,7 +2727,7 @@ shellShots.push(
     size: "desktop",
     mock: (page) =>
       mockNotifications(page, {
-        unread: 2,
+        unread: 1,
         items: [
           { ...trialBell, createdAt: ago(60) },
           {
@@ -2737,6 +2737,8 @@ shellShots.push(
             title: "Welcome to Starter",
             body: "Northwind Traders is ready. Your Business trial of 14 days has started.",
             createdAt: ago(11 * 24 * 60),
+            readAt: ago(10 * 24 * 60),
+            unread: false,
           },
         ],
       }),
@@ -2747,7 +2749,7 @@ shellShots.push(
     size: "desktop",
     mock: (page) =>
       mockNotifications(page, {
-        unread: 2,
+        unread: 1,
         items: [
           {
             ...trialBell,
@@ -2757,7 +2759,12 @@ shellShots.push(
             body: "Your Business trial ended. Nothing was deleted.",
             createdAt: ago(60),
           },
-          { ...trialBell, createdAt: ago(3 * 24 * 60) },
+          {
+            ...trialBell,
+            createdAt: ago(3 * 24 * 60),
+            readAt: ago(2 * 24 * 60),
+            unread: false,
+          },
         ],
       }),
     open: openBell,
