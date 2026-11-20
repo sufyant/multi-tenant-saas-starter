@@ -96,14 +96,14 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 
 ## 5b. The use of a meter (step 40c)
 
-1. A product's module asks ControlPlane before a use: `IUsageMeter.UseAsync(tenantId, meterKey, quantity)`, a quantity of at least 1. It invokes `UseMeterCommand` inline in the tenant, in a short transaction of its own (ARCHITECTURE.md, E8).
-2. The handler reads the meter's setting from the tenant's plan, in its transaction, from the database. A meter the plan does not set answers `Stopped`: it is not on the plan.
+1. A product's module asks ControlPlane before a use: `IUsageMeter.UseAsync(tenantId, meterKey, quantity)`, a quantity of at least 1. It invokes `UseMeterCommand` inline in the tenant, in a short transaction of its own (ARCHITECTURE.md, E8, K6q).
+2. The handler holds the tenant row `FOR SHARE` and reads the meter's setting from the tenant's plan, from the database. A tenant that is not active answers `Stopped`, and so does a meter the plan does not set: it is not on the plan. A stop meter's use that alone goes over the quota answers `Stopped` before any row is written.
 3. It inserts the row of the tenant, the meter and this calendar month of UTC when it is missing, and locks it. Of two uses at once, the second waits and sees the first's count.
 4. A stop meter: a use that would take the count over the quota answers `Stopped` and counts nothing. A use up to the quota is counted.
-5. A charge meter: every use is counted, and the part over the quota is the extra. The row keeps the unit price and the unit size of the use, and the moment the count reached the quota.
+5. A charge meter: every use is counted, and the part over the quota is the extra. The row keeps the unit price and the unit size of the use, and the first moment the count reached the quota.
 6. The answer is `Used`. A new month starts from a new row, so the count starts again from nothing.
 
-`GetUsage` (Usage, 11.01) and the platform's `GetTenantUsage` (4.37) read the same: this month for each meter of the plan, with the plan's setting, and up to three months before this one, from the month the tenant was created, the latest first. A month without a use answers 0. A past month's extra keeps the price of its last use. The tenant's purge deletes the counts (`tenant-purge.md`).
+`GetUsage` (Usage, 11.01) and the platform's `GetTenantUsage` (4.37) read the same: this month for each meter of the plan, with the plan's setting, and up to three months before this one, from the month the tenant was created, the latest first. A month without a use answers 0. Each month's extra keeps the price of its last use, this month's too. A past month also lists a meter that the plan no longer sets but that it has a use of. The tenant's purge deletes the counts (`tenant-purge.md`).
 
 Not in this part: the spending cap and the notifications at 80% and 100% (40c, part 2), and the extra at Stripe (40c, part 3).
 
