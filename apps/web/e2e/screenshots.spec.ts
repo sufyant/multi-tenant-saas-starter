@@ -9,6 +9,8 @@ import {
   Language,
   MyTenantResponseStatus,
   MyTermsResponseAction,
+  NotificationLinkResponseKind,
+  NotificationType,
   type PaymentResponse,
   PaymentResponseState,
   type Permission,
@@ -2642,6 +2644,120 @@ shellShots.push(
     role: BuiltInRole.BillingManager,
     mock: (page) => mockBilling(page),
     ready: billingReady,
+  },
+);
+
+// The trial's frames of 40d (10.08, 10.09, 10.14) on 2 Nov 2026: Northwind in a Business trial from 22 Oct to 5 Nov 2026, which
+// returns it to Free, with no card; then on Free after it, with 12 of Free's 3 seats.
+const businessTrial = {
+  plan: { id: businessPlan.id, name: businessPlan.name },
+  startedAt: "2026-10-22T10:00:00Z",
+  endsAt: "2026-11-05T10:00:00Z",
+  returnsTo: { id: freePlan.id, name: freePlan.name },
+};
+const inTrial: Plan = {
+  planName: businessPlan.name,
+  entitlements: businessPlan.entitlements as Plan["entitlements"],
+  usage: team.usage,
+  trial: businessTrial,
+};
+const afterTrial: Plan = {
+  planName: freePlan.name,
+  entitlements: freePlan.entitlements as Plan["entitlements"],
+  usage: team.usage,
+  trial: { ...businessTrial, returnsTo: null },
+};
+const onTrialDay = (page: Page) =>
+  page.clock.setFixedTime("2026-11-02T10:00:00Z");
+shellShots.push(
+  {
+    ...onBilling,
+    file: "10.08-billing-in-trial-en-light-desktop",
+    plan: inTrial,
+    mock: async (page) => {
+      await onTrialDay(page);
+      await mockBilling(page, billing(null));
+    },
+    ready: billingReady,
+  },
+  {
+    ...onBilling,
+    file: "10.09-change-plan-in-trial-en-light-desktop",
+    path: plansPage,
+    fullPage: false,
+    plan: inTrial,
+    mock: async (page) => {
+      await onTrialDay(page);
+      await mockBilling(page, billing(null));
+    },
+    ready: (page) =>
+      page.getByRole("button", { name: "After the trial" }).waitFor(),
+  },
+  {
+    ...onBilling,
+    file: "10.14-billing-after-trial-en-light-desktop",
+    plan: afterTrial,
+    mock: async (page) => {
+      await page.clock.setFixedTime("2026-11-06T10:00:00Z");
+      await mockBilling(page, billing(null));
+    },
+    ready: billingReady,
+  },
+);
+
+// The trial's bells of 40d (3.19, 3.20): the reminder 3 days before the end with the welcome under it, then the move after the end.
+const trialBell = {
+  ...roleChanged,
+  type: NotificationType.TenantTrialEnding,
+  title: "Your Business trial for Northwind Traders ends in 3 days",
+  body: "Then it moves to Free. Choose a plan in Billing.",
+  area: "Billing",
+  actorName: null,
+  link: {
+    kind: NotificationLinkResponseKind.TenantBilling,
+    tenantId: northwind.id,
+  },
+};
+shellShots.push(
+  {
+    file: "3.19-notifications-trial-ending-en-light-desktop",
+    size: "desktop",
+    mock: (page) =>
+      mockNotifications(page, {
+        unread: 2,
+        items: [
+          { ...trialBell, createdAt: ago(60) },
+          {
+            ...trialBell,
+            id: "0198f0a2-0000-7000-8000-0000000000a6",
+            type: NotificationType.TenantCreated,
+            title: "Welcome to Starter",
+            body: "Northwind Traders is ready. Your Business trial of 14 days has started.",
+            createdAt: ago(11 * 24 * 60),
+          },
+        ],
+      }),
+    open: openBell,
+  },
+  {
+    file: "3.20-notifications-trial-ended-en-light-desktop",
+    size: "desktop",
+    mock: (page) =>
+      mockNotifications(page, {
+        unread: 2,
+        items: [
+          {
+            ...trialBell,
+            id: "0198f0a2-0000-7000-8000-0000000000a7",
+            type: NotificationType.TenantTrialEnded,
+            title: "Northwind Traders moved to Free",
+            body: "Your Business trial ended. Nothing was deleted.",
+            createdAt: ago(60),
+          },
+          { ...trialBell, createdAt: ago(3 * 24 * 60) },
+        ],
+      }),
+    open: openBell,
   },
 );
 

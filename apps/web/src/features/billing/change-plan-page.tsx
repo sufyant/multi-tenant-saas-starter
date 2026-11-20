@@ -18,6 +18,7 @@ import { Pill } from "@repo/ui/components/pill";
 import { SegmentedControl } from "@repo/ui/components/segmented-control";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { showToast } from "@repo/ui/components/toast";
+import { daysLeft } from "@repo/ui/lib/days-left";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -43,8 +44,11 @@ import { useBillingText, useSeatFacts } from "./use-billing-text";
 
 const { Monthly, Yearly } = SubscriptionResponseInterval;
 
-/** What a plan's button does: nothing for the plan it pays, the checkout, or a move at once or at the period's end (B9). */
-type Move = "current" | "checkout" | "upgrade" | "lower";
+/**
+ * What a plan's button does: nothing for the plan it pays, the checkout, a move at once or at the period's end (B9), or, during a
+ * trial, nothing for the plan the trial returns to (10.09).
+ */
+type Move = "current" | "checkout" | "upgrade" | "lower" | "afterTrial";
 
 /**
  * Change plan (10.02, 10.03, 10.10): every plan, the cheapest first, with its price for the interval and for the organisation's
@@ -180,7 +184,11 @@ export function ChangePlanPage() {
       ? first
       : 0;
   })();
+  // A running trial that no payment ended: every paid plan, the trial's too, goes to Stripe's page (10.09).
+  const trial = !subscription && detail.trial?.returnsTo ? detail.trial : null;
   const moveOf = (plan: PlanChoiceResponse): Move => {
+    if (trial)
+      return plan.id === trial.returnsTo?.id ? "afterTrial" : "checkout";
     if (!subscription) return plan.id === onNow?.id ? "current" : "checkout";
     if (plan.id === subscription.planId && interval === subscription.interval)
       return "current";
@@ -194,6 +202,8 @@ export function ChangePlanPage() {
   };
   const labelOf = (plan: PlanChoiceResponse, move: Move) => {
     if (move === "current") return t("billing.plans.current");
+    if (move === "afterTrial") return t("billing.plans.afterTrial");
+    if (trial) return t("billing.plans.continueToPayment");
     if (subscription && plan.id === subscription.planId)
       return interval === Yearly
         ? t("billing.plans.switchToYearly")
@@ -240,6 +250,7 @@ export function ChangePlanPage() {
         {plans.map((plan) => {
           const move = moveOf(plan);
           const current = move === "current";
+          const trialPlan = trial?.plan.id === plan.id;
           const fees = feesOf(plan.prices, interval);
           const total = totalOf(fees, people);
           const opening =
@@ -248,7 +259,9 @@ export function ChangePlanPage() {
             <li
               key={plan.id}
               className={`flex flex-col gap-4 rounded-lg border bg-card p-5 ${
-                current ? "border-2 border-primary" : "border-border"
+                current || trialPlan
+                  ? "border-2 border-primary"
+                  : "border-border"
               }`}
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -266,6 +279,13 @@ export function ChangePlanPage() {
                 )}
                 {!subscription && current && (
                   <Pill tone="info">{t("billing.plans.current")}</Pill>
+                )}
+                {trial && trialPlan && (
+                  <Pill tone="info">
+                    {t("billing.plans.yourTrial", {
+                      count: daysLeft(trial.endsAt),
+                    })}
+                  </Pill>
                 )}
               </div>
               <Price fees={fees} interval={interval} money={text.money} />
@@ -309,7 +329,9 @@ export function ChangePlanPage() {
                     ? "primary"
                     : "secondary"
                 }
-                disabled={current || checkout.isPending}
+                disabled={
+                  current || move === "afterTrial" || checkout.isPending
+                }
                 onClick={() => {
                   if (move === "checkout") checkout.mutate(plan);
                   else if (move === "upgrade" || move === "lower")
@@ -331,7 +353,12 @@ export function ChangePlanPage() {
                     amount: text.money(costOf(paid, Yearly)),
                     people,
                   })
-                : t("billing.plans.footer"),
+                : trial?.returnsTo
+                  ? t("billing.plans.footerTrial", {
+                      organisation: detail.name,
+                      plan: trial.returnsTo.name,
+                    })
+                  : t("billing.plans.footer"),
               shorter
                 ? t("billing.plans.shorterLog", {
                     plan: shorter.name,

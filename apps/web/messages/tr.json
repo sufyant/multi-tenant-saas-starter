@@ -761,7 +761,11 @@
       "opening": "Stripe açılıyor…",
       "openingText": "Stripe’ın güvenli ödeme sayfasına yönlendiriliyorsunuz. Ödemeden sonra ya da vazgeçerseniz buraya dönersiniz.",
       "checkoutFailed": "Ödeme sayfası açılamadı",
-      "contract": "Planınız sözleşmeyle faturalanır. Değiştirmek için bir istek gönderin."
+      "contract": "Planınız sözleşmeyle faturalanır. Değiştirmek için bir istek gönderin.",
+      "yourTrial": "Denemeniz · {count, plural, one {# gün kaldı} other {# gün kaldı}}",
+      "continueToPayment": "Ödemeye devam et",
+      "afterTrial": "Denemeden sonra",
+      "footerTrial": "Stripe’ın güvenli ödeme sayfasında ödersiniz, sonra buraya dönersiniz. Ödeme denemeyi bitirir. Deneme ödemesiz biterse {organisation} {plan} planına geçer."
     },
     "change": {
       "title": "{old} → {new}",
@@ -801,7 +805,14 @@
       "notCompletedText": "Ödemeden önce ödeme sayfasından ayrıldınız."
     },
     "undoFailed": "Değişiklik geri alınamadı",
-    "contractLabel": "Sözleşme"
+    "contractLabel": "Sözleşme",
+    "trialTitle": "{plan} denemesi · {count, plural, one {# gün kaldı} other {# gün kaldı}}",
+    "trialEnds": "Denemeniz {date} tarihinde bitiyor. Sonra {organisation} {plan} planına geçiyor.",
+    "trialNoCard": "Ödeme yapana kadar kart gerekmez. Ödeme denemeyi bitirir.",
+    "trialEnded": "{price}. {plan} denemeniz {date} tarihinde bitti.",
+    "trialEndedPay": "Koltuklarını ve limitlerini hemen geri almak için bir plana ödeme yapın.",
+    "seatsOver": "{plan} {limit, plural, one {# koltuk} other {# koltuk}} veriyor. {count} kullanıyorsunuz.",
+    "manageMembers": "Üyeleri yönet"
   },
   "usage": {
     "title": "Kullanım",
