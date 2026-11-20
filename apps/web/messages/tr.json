@@ -199,6 +199,9 @@
       "billing_manager": "Faturalama, Kullanım ve faturalar. Ürünü kullanamaz. Ücretsiz: koltuk kullanmaz.",
       "member": "Ürünü kullanır. Üye listesini görür, Etkinlik kaydını ve Davetler'i görmez."
     },
+    "roleDescriptionsOff": {
+      "billing_manager": "Plan ve limitleri. Ürünü kullanamaz. Ücretsiz: koltuk kullanmaz."
+    },
     "changeRoleTitle": "{name} adlı kişinin rolünü değiştirin",
     "changeRoleText": "{name}, {organisation} kuruluşunda {role, select, owner {Sahip} admin {Yönetici} billing_manager {Fatura yöneticisi} member {Üye} other {{roleName}}} rolünde. Değişiklik hemen geçerli olur.",
     "roleChanged": "Rol değiştirildi",
@@ -243,6 +246,9 @@
     "inviteLanguage": "E-posta dili",
     "inviteNotes": {
       "billing_manager": "Fatura yöneticileri ücretsizdir ve koltuk kullanmaz. Faturalama ve Kullanım’ı görürler, ürünü kullanamazlar."
+    },
+    "inviteNotesOff": {
+      "billing_manager": "Fatura yöneticileri ücretsizdir ve koltuk kullanmaz. Planı ve limitlerini görürler, ürünü kullanamazlar."
     },
     "inviteLanguageHint": "Davet e-postası ve ilk ekranlar bu dilde olur. Kişi daha sonra değiştirebilir.",
     "languageSearch": "Dil ara",
@@ -554,6 +560,9 @@
     "summaryWithNote": "{type} · {permissions} · {users} · {note}",
     "builtInNotes": {
       "billing_manager": "Yalnızca Faturalama, Kullanım ve faturalar. Ürünü kullanamaz: ürün modülleri izinlerini Fatura yöneticisine değil, Üyeye ekler."
+    },
+    "builtInNotesOff": {
+      "billing_manager": "Yalnızca plan ve limitleri. Ürünü kullanamaz: ürün modülleri izinlerini Fatura yöneticisine değil, Üyeye ekler."
     },
     "seatNotes": {
       "billing_manager": "ücretsiz, koltuk kullanmaz"

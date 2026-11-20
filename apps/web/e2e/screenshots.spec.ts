@@ -1868,16 +1868,58 @@ const shellShots: {
 ];
 
 // The Billing manager (14.01 to 14.10, 14.13) and No custom role left without billing (9.21) of step 40a. Billing and Usage, and the bill's
-// sentences of 14.02 and 14.04 to 14.07, come with 40b and 40c.
+// sentences of 14.02 and 14.04 to 14.07, come with 40b and 40c. The
+// frames 14.01 to 14.07 draw billing on; their "off" texts are 14.16 to 14.18.
 shellShots.push(
   {
     file: "14.01-role-billing-manager-en-light-desktop",
     size: "desktop",
     path: `${roles}/${builtInRoles.billing_manager.id}`,
-    team: northwindTeam(),
+    team: { ...northwindTeam(), billingEnabled: true },
   },
   {
     file: "14.03-invite-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: members,
+    plan: seats(15, 12),
+    team: { ...northwindTeam(), billingEnabled: true },
+    open: async (page) => {
+      await openInvite()(page);
+      await inviteEmail(page).fill("finance@northwind.example");
+      await page
+        .getByRole("alertdialog")
+        .getByRole("radio", { name: "Billing manager" })
+        .click();
+    },
+  },
+  {
+    file: "14.06-change-role-to-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: { ...northwindTeam(), billingEnabled: true },
+    open: async (page) => {
+      await rowDialog("Omar Haddad", "Change role")(page);
+      await page
+        .getByRole("alertdialog")
+        .getByRole("radio", { name: "Billing manager" })
+        .click();
+    },
+  },
+  {
+    file: "14.07-change-role-from-billing-manager-en-light-desktop",
+    size: "desktop",
+    path: members,
+    team: { ...northwindTeam(), billingEnabled: true },
+    open: rowDialog("Grace Okafor", "Change role"),
+  },
+  {
+    file: "14.16-role-billing-manager-billing-off-en-light-desktop",
+    size: "desktop",
+    path: `${roles}/${builtInRoles.billing_manager.id}`,
+    team: northwindTeam(),
+  },
+  {
+    file: "14.17-invite-billing-manager-billing-off-en-light-desktop",
     size: "desktop",
     path: members,
     plan: seats(15, 12),
@@ -1892,7 +1934,7 @@ shellShots.push(
     },
   },
   {
-    file: "14.06-change-role-to-billing-manager-en-light-desktop",
+    file: "14.18-change-role-to-billing-manager-billing-off-en-light-desktop",
     size: "desktop",
     path: members,
     team: northwindTeam(),
@@ -1903,13 +1945,6 @@ shellShots.push(
         .getByRole("radio", { name: "Billing manager" })
         .click();
     },
-  },
-  {
-    file: "14.07-change-role-from-billing-manager-en-light-desktop",
-    size: "desktop",
-    path: members,
-    team: northwindTeam(),
-    open: rowDialog("Grace Okafor", "Change role"),
   },
   {
     file: "14.08-home-billing-manager-en-light-desktop",

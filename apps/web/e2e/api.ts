@@ -262,6 +262,7 @@ export async function mockApi(
         createdAt: "2026-01-05T09:00:00Z",
         ...pro,
         permissions: tenantPermissions,
+        billingEnabled: false,
       },
     }),
   );
@@ -473,6 +474,7 @@ export async function mockMembers(
         createdAt: "2026-01-05T09:00:00Z",
         ...plan,
         permissions: roles[role].permissions,
+        billingEnabled: false,
       },
     }),
   );
@@ -531,6 +533,8 @@ export type Team = {
   members: MemberResponse[];
   invitations: InvitationResponse[];
   customRoles: RoleDetailResponse[];
+  /** GetMyTenant's `billingEnabled`: off, as the template ships (B1), unless a frame draws billing on. */
+  billingEnabled?: boolean;
 };
 
 const teamCustom = (n: number, name: string, permissions: Permission[]) =>
@@ -913,6 +917,7 @@ async function mockTeam(
         createdAt: team.createdAt,
         ...plan,
         permissions: roles[role].permissions,
+        billingEnabled: team.billingEnabled ?? false,
       },
     }),
   );

@@ -258,11 +258,12 @@ export const billingOffAnswer = http.get(
   () => problem(404, "billing.off"),
 );
 
-/** GetMyTenant for a viewer of the role, on the plan. */
+/** GetMyTenant for a viewer of the role, on the plan, with the deployment's billing off as the template ships it (B1) or on. */
 export const myTenantAnswer = (
   role: RoleResponse,
   permissions: Permission[],
   plan: Plan = pro,
+  billingEnabled = false,
 ) =>
   http.get(`*/v1/tenants/${northwind.id}`, () =>
     HttpResponse.json({
@@ -271,6 +272,7 @@ export const myTenantAnswer = (
       createdAt: "2026-01-05T09:00:00Z",
       permissions,
       ...plan,
+      billingEnabled,
     }),
   );
 
