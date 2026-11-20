@@ -213,7 +213,15 @@
     "ownerEmailHint": "Sahibe e-postayla bir davet gider.",
     "reopenTextNoDate": "{count} üyesi kuruluşu hemen yeniden açabilir.",
     "invitedEmail": "Davet edildi: {email}",
-    "planTab": "Plan ve faturalama"
+    "planTab": "Plan ve faturalama",
+    "membersWithFree": "{members}, {count, plural, one {biri yer kullanmayan bir fatura yöneticisi} other {# tanesi yer kullanmayan fatura yöneticisi}}",
+    "membersFreeAndPending": "{members} ve {count, plural, one {# bekleyen davet} other {# bekleyen davet}}",
+    "billingFilter": "Faturalamaya göre filtrele",
+    "billingFilterPhone": "Faturalama",
+    "billingAll": "Faturalama: Tümü",
+    "billingOverdue": "Ödeme gecikmiş · {count}",
+    "billingContract": "Sözleşme · {count}",
+    "noMatchBilling": "Bu faturalama durumunda kuruluş yok"
   },
   "users": {
     "title": "Kullanıcılar",
@@ -899,6 +907,16 @@
     "graceUntil": "{date} tarihine kadar ek süre",
     "contractLabel": "Sözleşme",
     "cardLabel": "Kart",
-    "scheduledChange": "Planlanmış değişiklik"
+    "scheduledChange": "Planlanmış değişiklik",
+    "price": {
+      "perPerson": "{people} faturalanan kişi × {perPerson} = {total}",
+      "baseAndPerPerson": "{base} + {people} faturalanan kişi × {perPerson} = {total}",
+      "base": "{total}"
+    },
+    "freeManagers": "{count} fatura yöneticisi, ücretsiz",
+    "next": "Sonraki ödeme {date}: KDV hariç {amount}.",
+    "lastPayment": "Son ödeme {date}.",
+    "stripe": "Stripe",
+    "openInStripe": "Stripe’da aç"
   }
 }

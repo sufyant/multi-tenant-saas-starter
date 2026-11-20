@@ -3,6 +3,7 @@
 import {
   ListTenantsSort,
   type TenantResponseStatus as Status,
+  TenantResponseBilling,
   TenantResponseStatus,
   type TenantStatusCountsResponse,
 } from "@repo/api-client";
@@ -42,13 +43,14 @@ export const countOf = (counts: TenantStatusCountsResponse, tab: Tab | null) =>
   statusesOf(tab).reduce((sum, status) => sum + counts[status], 0);
 
 /**
- * The list's state in the URL (F8, F9): `?status=…&q=…&sort=…`, never the page; the list grows with Load more. Each change pushes a
+ * The list's state in the URL (F8, F9): `?status=…&q=…&sort=…&billing=…`, never the page; the list grows with Load more. Each change pushes a
  * history entry, so back and forward restore it. A value the contract does not have reads as absent.
  */
 const parsers = {
   status: parseAsStringLiteral(tabs),
   q: parseAsString.withDefault(""),
   sort: parseAsStringLiteral(Object.values(ListTenantsSort)),
+  billing: parseAsStringLiteral(Object.values(TenantResponseBilling)),
 };
 
 export function useListParams() {

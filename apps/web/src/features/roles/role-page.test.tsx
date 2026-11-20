@@ -15,6 +15,9 @@ import {
   customRole,
   free,
   mehmet,
+  myTenantAnswer,
+  permissionsOf,
+  pro,
   renderInTenant,
   roleOf,
   tenantAnswers,
@@ -47,7 +50,11 @@ const states = () =>
       box.disabled,
     ]);
 
-const open = (roleId: string, role: BuiltInRole = BuiltInRole.Owner) => {
+const open = (
+  roleId: string,
+  role: BuiltInRole = BuiltInRole.Owner,
+  billingEnabled = false,
+) => {
   server.use(
     ...tenantAnswers(role, undefined, [
       customRole("0198f0a2-0000-7000-8000-0000000000c3", "Reviewer", [
@@ -55,6 +62,10 @@ const open = (roleId: string, role: BuiltInRole = BuiltInRole.Owner) => {
         Permission.TenantMembersRead,
       ]),
     ]),
+  );
+  // Billing on: a later server.use wins over tenantAnswers' own GetMyTenant.
+  server.use(
+    myTenantAnswer(roleOf[role], permissionsOf[role], pro, billingEnabled),
   );
   renderInTenant(<RolePage roleId={roleId} />, {
     url: `/northwind/settings/roles/${roleId}`,
@@ -95,9 +106,21 @@ describe("RolePage", () => {
     );
   });
 
+  // While the deployment's billing is off, the Billing manager names no Billing and no Usage (14.16).
+  it("RolePage_BuiltInBillingManagerWhileBillingIsOff_SaysItSeesThePlan", async () => {
+    open(roleOf.billing_manager.id);
+
+    await screen.findByRole("heading", { name: "Billing manager" });
+    expect(
+      screen.getByText(
+        "The plan and its limits only. It can’t use the product: product modules add their permissions to Member, never to Billing manager.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   // The Billing manager says what it is for and that it takes no seat (14.01).
   it("RolePage_BuiltInBillingManager_SaysItIsFreeAndForBillingOnly", async () => {
-    open(roleOf.billing_manager.id);
+    open(roleOf.billing_manager.id, BuiltInRole.Owner, true);
 
     await screen.findByRole("heading", { name: "Billing manager" });
     expect(

@@ -28,6 +28,7 @@ import {
   mehmet,
   membersAnswer,
   meOf,
+  myTenantAnswer,
   northwind,
   permissionsOf,
   planProblem,
@@ -371,6 +372,15 @@ describe("InviteDialog", () => {
       ),
       membersAnswer(),
     );
+    // Billing on: a later server.use wins over tenantAnswers' own GetMyTenant.
+    server.use(
+      myTenantAnswer(
+        roleOf.owner,
+        permissionsOf.owner,
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+        true,
+      ),
+    );
 
     renderInTenant(<MembersPage />);
     const dialog = await openInvite();
@@ -381,6 +391,32 @@ describe("InviteDialog", () => {
     expect(
       within(dialog).getByText(
         "Billing managers are free and use no seat. They see Billing and Usage, and can’t use the product.",
+      ),
+    ).toBeVisible();
+    expect(within(dialog).queryByText("3 seats left.")).not.toBeInTheDocument();
+  });
+
+  // While the deployment's billing is off, the note names the plan, not Billing and Usage (14.17).
+  it("Invite_BillingManagerChosenWhileBillingIsOff_SaysItSeesThePlan", async () => {
+    server.use(
+      ...tenantAnswers(
+        BuiltInRole.Owner,
+        undefined,
+        [],
+        planWith({ "members.max": 15 }, { "members.max": 12 }),
+      ),
+      membersAnswer(),
+    );
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openInvite();
+    await userEvent.click(
+      await within(dialog).findByRole("radio", { name: "Billing manager" }),
+    );
+
+    expect(
+      within(dialog).getByText(
+        "Billing managers are free and use no seat. They see the plan and its limits, and can’t use the product.",
       ),
     ).toBeVisible();
     expect(within(dialog).queryByText("3 seats left.")).not.toBeInTheDocument();

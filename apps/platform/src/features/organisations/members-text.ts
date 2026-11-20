@@ -19,25 +19,34 @@ export function seatsOf(plan: TenantPlanResponse | undefined) {
 }
 
 /**
- * The members of an organisation as the Overview and the Plan tab say them (4.09, 4.14): "11 members and 2 pending invitations: 12
- * of 15 seats." The API counts each number (`memberCount`, `pendingInvitationCount`, the seats' `count`); the screen adds nothing.
- * Without a seat limit the sentence names only the counts. The billing manager clause is step 40a.
+ * The members of an organisation as the Overview and the Plan tab say them (4.09, 4.14, 4.27): "11 members, 1 of them a billing
+ * manager who uses no seat, and 2 pending invitations: 12 of 15 seats." The API counts each number (`memberCount`,
+ * `freeMemberCount`, `pendingInvitationCount`, the seats' `count`); the screen adds nothing. Without a seat limit the sentence names
+ * only the counts.
  */
 export function useMembersText() {
   const t = useTranslations("organisations");
   return (
     organisation: Pick<
       TenantDetailResponse,
-      "memberCount" | "pendingInvitationCount"
+      "memberCount" | "freeMemberCount" | "pendingInvitationCount"
     >,
     plan: TenantPlanResponse | undefined,
   ) => {
-    const members = t("memberCount", { count: organisation.memberCount });
+    const count = t("memberCount", { count: organisation.memberCount });
+    const free = organisation.freeMemberCount > 0;
+    const members = free
+      ? t("membersWithFree", {
+          members: count,
+          count: organisation.freeMemberCount,
+        })
+      : count;
+    const pending = organisation.pendingInvitationCount;
     const counts =
-      organisation.pendingInvitationCount > 0
-        ? t("membersAndPending", {
+      pending > 0
+        ? t(free ? "membersFreeAndPending" : "membersAndPending", {
             members,
-            count: organisation.pendingInvitationCount,
+            count: pending,
           })
         : members;
     const seats = seatsOf(plan);

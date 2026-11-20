@@ -5,6 +5,7 @@ import {
   ListTenantsSort,
   problemOf,
   schemas,
+  TenantResponseBilling,
   TenantResponseStatus,
 } from "@repo/api-client";
 import { brand } from "@repo/brand";
@@ -13,6 +14,7 @@ import { EmptyState } from "@repo/ui/components/empty-state";
 import { Icon, PlusIcon } from "@repo/ui/components/icon";
 import { ListError } from "@repo/ui/components/list-error";
 import { LoadMore } from "@repo/ui/components/load-more";
+import { RoleFilter } from "@repo/ui/components/role-filter";
 import { Search } from "@repo/ui/components/search";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { nextPage, pageSize } from "@repo/ui/lib/pages";
@@ -53,8 +55,9 @@ const noMatchLabels = {
 
 /**
  * Organisations, the platform's start page (4.01 to 4.06, 4.43): the title with its description and no Freshness (F59), Create
- * organisation, the status tabs with the counts of `ListTenants`, the search, the table, and Load more (F9). The tabs, the search and
- * the sort are in the URL, never the page. On a phone the top bar names the page, so its title stays for screen readers; Create spans
+ * organisation, the status tabs with the counts of `ListTenants`, the search, the billing filter while the deployment's billing is
+ * on (4.38: `billingCounts` is null while it is off), the table, and Load more (F9). The tabs, the search, the filter and the sort
+ * are in the URL, never the page. On a phone the top bar names the page, so its title stays for screen readers; Create spans
  * the width, and the tabs are one choice.
  */
 export function OrganisationsPage() {
@@ -62,7 +65,7 @@ export function OrganisationsPage() {
   const [params, setParams] = useListParams();
   const [creating, setCreating] = useState(false);
   const actions = useOrganisationActions();
-  const { status, q, sort } = params;
+  const { status, q, sort, billing } = params;
   const onSearch = useCallback(
     (next: string) => void setParams({ q: next || null }),
     [setParams],
@@ -74,6 +77,7 @@ export function OrganisationsPage() {
         q: q || undefined,
         status: statusesOf(status),
         sort: sort ?? undefined,
+        billing: billing ?? undefined,
         pageSize,
       },
       {
@@ -90,6 +94,7 @@ export function OrganisationsPage() {
     failed: t("organisations.moreError"),
   });
   const counts = list.data?.pages[0]?.statusCounts;
+  const billingCounts = list.data?.pages[0]?.billingCounts;
 
   const create = (
     <Button
@@ -125,6 +130,18 @@ export function OrganisationsPage() {
           action={
             <Button onClick={() => void setParams({ q: null })}>
               {t("organisations.clearSearch")}
+            </Button>
+          }
+        />
+      );
+    if (rows.length === 0 && billing)
+      return (
+        <EmptyState
+          kind="no-results"
+          title={t("organisations.noMatchBilling")}
+          action={
+            <Button onClick={() => void setParams({ billing: null })}>
+              {t("organisations.clearFilters")}
             </Button>
           }
         />
@@ -187,6 +204,7 @@ export function OrganisationsPage() {
   const firstRun =
     !q &&
     !status &&
+    !billing &&
     list.data?.pages[0]?.items.length === 0 &&
     counts &&
     countOf(counts, null) === 0;
@@ -226,12 +244,44 @@ export function OrganisationsPage() {
               })
             }
           />
-          <Search
-            value={q}
-            label={t("organisations.search")}
-            maxLength={schemas.listTenantsQueryQMax}
-            onSearch={onSearch}
-          />
+          <div className="flex flex-col gap-2 tablet:flex-row tablet:items-center">
+            <Search
+              value={q}
+              label={t("organisations.search")}
+              maxLength={schemas.listTenantsQueryQMax}
+              onSearch={onSearch}
+            />
+            {billingCounts && (
+              <RoleFilter
+                label={t("organisations.billingFilter")}
+                phoneLabel={t("organisations.billingFilterPhone")}
+                value={billing ?? all}
+                options={[
+                  { id: all, label: t("organisations.billingAll") },
+                  {
+                    id: TenantResponseBilling.PaymentOverdue,
+                    label: t("organisations.billingOverdue", {
+                      count: billingCounts.paymentOverdue,
+                    }),
+                  },
+                  {
+                    id: TenantResponseBilling.Contract,
+                    label: t("organisations.billingContract", {
+                      count: billingCounts.contract,
+                    }),
+                  },
+                ]}
+                onValueChange={(next) =>
+                  void setParams({
+                    billing:
+                      Object.values(TenantResponseBilling).find(
+                        (value) => value === next,
+                      ) ?? null,
+                  })
+                }
+              />
+            )}
+          </div>
         </div>
       )}
       {body}

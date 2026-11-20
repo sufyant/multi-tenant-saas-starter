@@ -199,6 +199,9 @@
       "billing_manager": "Billing, Usage and invoices. Can’t use the product. Free: uses no seat.",
       "member": "Uses the product. Sees the member list, not the Activity log or Invitations."
     },
+    "roleDescriptionsOff": {
+      "billing_manager": "The plan and its limits. Can’t use the product. Free: uses no seat."
+    },
     "changeRoleTitle": "Change {name}’s role",
     "changeRoleText": "{name} is {role, select, owner {an Owner} admin {an Admin} billing_manager {a Billing manager} member {a Member} other {{roleName}}} in {organisation}. The change applies at once.",
     "roleChanged": "Role changed",
@@ -243,6 +246,9 @@
     "inviteLanguage": "Email language",
     "inviteNotes": {
       "billing_manager": "Billing managers are free and use no seat. They see Billing and Usage, and can’t use the product."
+    },
+    "inviteNotesOff": {
+      "billing_manager": "Billing managers are free and use no seat. They see the plan and its limits, and can’t use the product."
     },
     "inviteLanguageHint": "The invitation email and their first screens use this language. They can change it later.",
     "languageSearch": "Search languages",
@@ -554,6 +560,9 @@
     "summaryWithNote": "{type} · {permissions} · {users} · {note}",
     "builtInNotes": {
       "billing_manager": "Billing, Usage and invoices only. It can’t use the product: product modules add their permissions to Member, never to Billing manager."
+    },
+    "builtInNotesOff": {
+      "billing_manager": "The plan and its limits only. It can’t use the product: product modules add their permissions to Member, never to Billing manager."
     },
     "seatNotes": {
       "billing_manager": "free, uses no seat"

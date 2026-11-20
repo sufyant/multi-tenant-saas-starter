@@ -19,6 +19,7 @@ import {
   john,
   mehmet,
   membersAnswer,
+  myTenantAnswer,
   northwind,
   people,
   permissionsOf,
@@ -185,6 +186,8 @@ describe("ChangeRoleDialog", () => {
 
   it("ChangeRole_Owner_OffersEveryRoleWithItsDescription", async () => {
     server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+    // Billing on: a later server.use wins over tenantAnswers' own GetMyTenant.
+    server.use(myTenantAnswer(roleOf.owner, permissionsOf.owner, pro, true));
 
     renderInTenant(<MembersPage />);
     const dialog = await openChangeRole();
@@ -212,6 +215,20 @@ describe("ChangeRoleDialog", () => {
       "Uses the product. Sees the member list, not the Activity log or Invitations.",
     );
     expect(within(dialog).getByRole("radio", { name: "Member" })).toBeChecked();
+  });
+
+  // While the deployment's billing is off, the Billing manager's description names the plan, not Billing and Usage (14.18).
+  it("ChangeRole_OwnerWhileBillingIsOff_DescribesTheBillingManagerWithThePlan", async () => {
+    server.use(...tenantAnswers(BuiltInRole.Owner), membersAnswer());
+
+    renderInTenant(<MembersPage />);
+    const dialog = await openChangeRole();
+
+    expect(
+      within(dialog).getByRole("radio", { name: "Billing manager" }),
+    ).toHaveAccessibleDescription(
+      "The plan and its limits. Can’t use the product. Free: uses no seat.",
+    );
   });
 
   it("ChangeRole_OwnerInArabic_DescribesEachRoleAsTheBoardDoes", async () => {

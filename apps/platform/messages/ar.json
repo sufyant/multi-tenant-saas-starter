@@ -213,7 +213,15 @@
     "ownerEmailHint": "تصل المالك دعوة بالبريد الإلكتروني.",
     "reopenTextNoDate": "يستطيع أعضاؤها البالغ عددهم {count} فتحها مجددًا فورًا.",
     "invitedEmail": "مدعوّ: {email}",
-    "planTab": "الخطة والفوترة"
+    "planTab": "الخطة والفوترة",
+    "membersWithFree": "{members}، {count, plural, one {منهم مدير فوترة واحد لا يستخدم مقعدًا} two {منهم مديرا فوترة لا يستخدمان مقعدًا} few {منهم # مديري فوترة لا يستخدمون مقاعد} many {منهم # مدير فوترة لا يستخدمون مقاعد} other {منهم # مدير فوترة لا يستخدمون مقاعد}}",
+    "membersFreeAndPending": "{members}، و{count} من الدعوات المعلّقة",
+    "billingFilter": "التصفية حسب الفوترة",
+    "billingFilterPhone": "الفوترة",
+    "billingAll": "الفوترة: الكل",
+    "billingOverdue": "دفعة متأخرة · {count}",
+    "billingContract": "عقد · {count}",
+    "noMatchBilling": "لا توجد مؤسسة في حالة الفوترة هذه"
   },
   "users": {
     "title": "المستخدمون",
@@ -899,6 +907,16 @@
     "graceUntil": "فترة سماح حتى {date}",
     "contractLabel": "عقد",
     "cardLabel": "البطاقة",
-    "scheduledChange": "تغيير مجدول"
+    "scheduledChange": "تغيير مجدول",
+    "price": {
+      "perPerson": "{people, plural, one {شخص واحد مُفوتر} two {شخصان مُفوتران} few {# أشخاص مُفوترين} many {# شخصًا مُفوترًا} other {# شخص مُفوتر}} × {perPerson} = {total}",
+      "baseAndPerPerson": "{base} + {people, plural, one {شخص واحد مُفوتر} two {شخصان مُفوتران} few {# أشخاص مُفوترين} many {# شخصًا مُفوترًا} other {# شخص مُفوتر}} × {perPerson} = {total}",
+      "base": "{total}"
+    },
+    "freeManagers": "{count, plural, one {مدير فوترة واحد، مجانًا} two {مديرا فوترة، مجانًا} few {# مديري فوترة، مجانًا} many {# مدير فوترة، مجانًا} other {# مدير فوترة، مجانًا}}",
+    "next": "الدفعة التالية في {date}: {amount} دون ضريبة القيمة المضافة.",
+    "lastPayment": "آخر دفعة في {date}.",
+    "stripe": "Stripe",
+    "openInStripe": "فتح في Stripe"
   }
 }

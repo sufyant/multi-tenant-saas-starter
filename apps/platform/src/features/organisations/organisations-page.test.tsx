@@ -1,4 +1,8 @@
-import { ErrorCode, TenantResponseStatus } from "@repo/api-client";
+import {
+  ErrorCode,
+  TenantResponseBilling,
+  TenantResponseStatus,
+} from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -227,6 +231,81 @@ describe("OrganisationsPage", () => {
         "Deleted 1",
       ]),
     );
+  });
+
+  // 4.38: while the deployment's billing is on, the list filters by billing, with ListTenants' billingCounts.
+  it("OrganisationsPage_BillingOn_FiltersByBillingWithItsCounts", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(
+        pageOf([kestrel, moyne], {
+          billingCounts: { paymentOverdue: 2, contract: 1 },
+        }),
+        requests,
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Filter by billing: Billing: All",
+      }),
+    );
+
+    expect(
+      (await screen.findAllByRole("menuitemradio")).map(
+        (item) => item.textContent,
+      ),
+    ).toEqual(["Billing: All", "Payment overdue · 2", "Contract · 1"]);
+    await userEvent.click(
+      screen.getByRole("menuitemradio", { name: "Contract · 1" }),
+    );
+    expect(
+      await screen.findByRole("button", {
+        name: "Filter by billing: Contract · 1",
+      }),
+    ).toBeVisible();
+    expect(requests.at(-1)?.get("billing")).toBe(
+      TenantResponseBilling.Contract,
+    );
+  });
+
+  it("OrganisationsPage_BillingFilterFindsNone_SaysSoAndClearsOnlyTheFilter", async () => {
+    window.history.replaceState(null, "", "/?billing=contract&status=active");
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(
+        pageOf([], { billingCounts: { paymentOverdue: 0, contract: 0 } }),
+        requests,
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    expect(
+      await screen.findByText("No organisation in this billing state"),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Clear filters" }),
+    );
+
+    await waitFor(() => expect(requests.at(-1)?.get("billing")).toBeNull());
+    expect(requests.at(-1)?.getAll("status")).toEqual([
+      TenantResponseStatus.Active,
+    ]);
+  });
+
+  // While billing is off, ListTenants answers no billingCounts and the list has no billing filter.
+  it("OrganisationsPage_BillingOff_HasNoBillingFilter", async () => {
+    server.use(meAnswer(), listAnswer(pageOf([kestrel, moyne])));
+
+    renderWithProviders(<OrganisationsPage />);
+
+    expect(await rowOf("Moyne Gallery")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: /^Filter by billing/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("OrganisationsPage_AllTab_AsksEveryStatusButDeleted", async () => {
