@@ -121,7 +121,7 @@ export function BillingPage() {
           paid={planOf(plans, state.subscription.planId)}
         />
       )}
-      <SeatsOverBanner />
+      {state.kind === "notPaying" && <SeatsOverBanner />}
       <PlanCard
         state={state}
         plans={plans}

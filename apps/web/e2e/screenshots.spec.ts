@@ -2415,7 +2415,10 @@ const onBilling = {
 /** Billing has loaded: its last card, and the seats' line, which waits for the members. */
 const billingReady = async (page: Page) => {
   await page.getByRole("heading", { name: "Billing email" }).waitFor();
-  await page.getByText(/^1\d members/).waitFor();
+  await page
+    .locator("dl")
+    .getByText(/^1\d members/)
+    .waitFor();
 };
 shellShots.push(
   {
