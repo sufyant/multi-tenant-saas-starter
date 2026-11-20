@@ -2157,7 +2157,7 @@ public sealed class TenantTests
         var tenant = InStatus(status);
         var other = Guid.NewGuid();
 
-        var changed = tenant.ChangePlan(other);
+        var changed = tenant.ChangePlan(other, Now);
 
         (changed.Value, tenant.PlanId).ShouldBe((StateChange.Changed, other));
     }
@@ -2170,13 +2170,96 @@ public sealed class TenantTests
     {
         var tenant = InStatus(status);
 
-        var changed = tenant.ChangePlan(Guid.NewGuid());
+        var changed = tenant.ChangePlan(Guid.NewGuid(), Now);
 
         (changed.Error.Code, tenant.PlanId).ShouldBe((ControlPlaneErrorCodes.TenantNotActive, PlanId));
     }
 
     [Fact]
-    public void ChangePlan_ThePlanItHas_ChangesNothing() => Active().ChangePlan(PlanId).Value.ShouldBe(StateChange.Unchanged);
+    public void ChangePlan_ThePlanItHas_ChangesNothing() => Active().ChangePlan(PlanId, Now).Value.ShouldBe(StateChange.Unchanged);
+
+    [Fact]
+    public void StartTrial_AnActiveTenant_PutsItOnTheTrialPlanAndKeepsItsPlan()
+    {
+        var tenant = Active();
+        var trialPlan = Guid.NewGuid();
+
+        tenant.StartTrial(trialPlan, Now, TimeSpan.FromDays(14));
+
+        (tenant.PlanId, tenant.TrialPlanId, tenant.TrialStartedAt, tenant.TrialEndsAt, tenant.PlanBeforeTrialId, tenant.InTrial)
+            .ShouldBe((trialPlan, trialPlan, Now, Now.AddDays(14), PlanId, true));
+    }
+
+    [Fact]
+    public void EndTrial_InTrial_ReturnsToThePlanBeforeAndKeepsTheTrial()
+    {
+        var tenant = InTrial(out var trialPlan);
+
+        var ended = tenant.EndTrial(Now.AddDays(14));
+
+        (ended, tenant.PlanId, tenant.TrialPlanId, tenant.TrialEndsAt, tenant.PlanBeforeTrialId, tenant.InTrial)
+            .ShouldBe((StateChange.Changed, PlanId, trialPlan, Now.AddDays(14), null, false));
+    }
+
+    // A payment or a system admin's plan ends the trial before its end: the trial's end is then that moment.
+    [Fact]
+    public void EndTrial_BeforeItsEnd_EndsItThen()
+    {
+        var tenant = InTrial(out _);
+
+        tenant.EndTrial(Now.AddDays(3));
+
+        tenant.TrialEndsAt.ShouldBe(Now.AddDays(3));
+    }
+
+    [Fact]
+    public void EndTrial_NoTrial_ChangesNothing() => Active().EndTrial(Now).ShouldBe(StateChange.Unchanged);
+
+    [Fact]
+    public void ChangePlan_InTrial_EndsTheTrialAndPutsTheTenantOnThePlan()
+    {
+        var tenant = InTrial(out var trialPlan);
+
+        var changed = tenant.ChangePlan(trialPlan, Now.AddDays(2));
+
+        (changed.Value, tenant.PlanId, tenant.InTrial, tenant.TrialEndsAt).ShouldBe((StateChange.Changed, trialPlan, false, Now.AddDays(2)));
+    }
+
+    // A subscription that pays for the plan it had before the trial keeps the trial: Stripe sends it again at each change (4.29).
+    [Fact]
+    public void PayForPlan_ThePlanBeforeTheTrial_KeepsTheTrial()
+    {
+        var tenant = InTrial(out var trialPlan);
+
+        var paid = tenant.PayForPlan(PlanId, Now.AddDays(2));
+
+        (paid.Value, tenant.PlanId, tenant.InTrial).ShouldBe((StateChange.Unchanged, trialPlan, true));
+    }
+
+    // The first payment for another plan ends the trial (10.08: "Paying ends the trial.").
+    [Fact]
+    public void PayForPlan_AnotherPlan_EndsTheTrial()
+    {
+        var tenant = InTrial(out _);
+        var paidPlan = Guid.NewGuid();
+
+        var paid = tenant.PayForPlan(paidPlan, Now.AddDays(2));
+
+        (paid.Value, tenant.PlanId, tenant.InTrial).ShouldBe((StateChange.Changed, paidPlan, false));
+    }
+
+    [Fact]
+    public void ReturnAfterTrialTo_InTrial_KeepsTheTrialAndChangesThePlanAfterIt()
+    {
+        var tenant = InTrial(out var trialPlan);
+        var defaultPlan = Guid.NewGuid();
+
+        tenant.ReturnAfterTrialTo(defaultPlan);
+        tenant.EndTrial(Now.AddDays(14));
+
+        tenant.PlanId.ShouldBe(defaultPlan);
+        trialPlan.ShouldNotBe(defaultPlan);
+    }
 
     [Fact]
     public void SetOverride_ANewKey_AddsItWithItsReasonAndWhoSetIt()
@@ -2262,6 +2345,14 @@ public sealed class TenantTests
     }
 
     private static Tenant Active() => Tenant.Create(Id, "Acme Ltd", "acme", PlanId, CreatedAt, CreatorId).Value;
+
+    private static Tenant InTrial(out Guid trialPlan)
+    {
+        var tenant = Active();
+        trialPlan = Guid.NewGuid();
+        tenant.StartTrial(trialPlan, Now, TimeSpan.FromDays(14));
+        return tenant;
+    }
 
     private static Tenant Suspended()
     {
