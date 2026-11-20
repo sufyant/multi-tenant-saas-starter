@@ -94,6 +94,19 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 - `plan.created` and `plan.updated` keep the prices and the meters in their details (an entry from before step 40 has none). An edit of only the prices or the meters writes `plan.updated`.
 - Not in this step: the prices in Stripe and a price change (40b), the meters' counts and the Usage page (40c).
 
+## 5b. The use of a meter (step 40c)
+
+1. A product's module asks ControlPlane before a use: `IUsageMeter.UseAsync(tenantId, meterKey, quantity)`, a quantity of at least 1. It invokes `UseMeterCommand` inline in the tenant, in a short transaction of its own (ARCHITECTURE.md, E8).
+2. The handler reads the meter's setting from the tenant's plan, in its transaction, from the database. A meter the plan does not set answers `Stopped`: it is not on the plan.
+3. It inserts the row of the tenant, the meter and this calendar month of UTC when it is missing, and locks it. Of two uses at once, the second waits and sees the first's count.
+4. A stop meter: a use that would take the count over the quota answers `Stopped` and counts nothing. A use up to the quota is counted.
+5. A charge meter: every use is counted, and the part over the quota is the extra. The row keeps the unit price and the unit size of the use, and the moment the count reached the quota.
+6. The answer is `Used`. A new month starts from a new row, so the count starts again from nothing.
+
+`GetUsage` (Usage, 11.01) and the platform's `GetTenantUsage` (4.37) read the same: this month for each meter of the plan, with the plan's setting, and up to three months before this one, from the month the tenant was created, the latest first. A month without a use answers 0. A past month's extra keeps the price of its last use. The tenant's purge deletes the counts (`tenant-purge.md`).
+
+Not in this part: the spending cap and the notifications at 80% and 100% (40c, part 2), and the extra at Stripe (40c, part 3).
+
 ## 6. The previews
 
 A preview reads and changes nothing, and never blocks the change. It lists:
