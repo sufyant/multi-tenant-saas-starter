@@ -105,7 +105,17 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 
 `GetUsage` (Usage, 11.01) and the platform's `GetTenantUsage` (4.37) read the same: this month for each meter of the plan, with the plan's setting, and up to three months before this one, from the month the tenant was created, the latest first. A month without a use answers 0. Each month's extra keeps the price of its last use, this month's too. A past month also lists a meter that the plan no longer sets but that it has a use of. The tenant's purge deletes the counts (`tenant-purge.md`).
 
-Not in this part: the spending cap and the notifications at 80% and 100% (40c, part 2), and the extra at Stripe (40c, part 3).
+## 5c. The spending cap (step 40c)
+
+1. A member who manages billing sets the cap, an amount in minor units a month, or removes it with none: `PUT /v1/tenants/{tenantId}/usage/spending-cap`, body `{ "amount" }` (ARCHITECTURE.md, E9).
+2. The endpoint asks Billing first whether the tenant pays by card. A tenant that does not answers 409 `usage.spending_cap_unavailable`.
+3. The handler checks the amount, locks the tenant row, then the cap's row, and adds, changes or removes it. The amount it already has changes nothing. A change clears the cap's marks.
+4. It publishes `SpendingCapChangedEvent`, and Audit records `tenant.spending_cap_changed` in the tenant's log.
+5. A use of a charge meter while the tenant pays by card locks the cap after the tenant row and before the month's row (K6q). When the use adds extra, it adds this month's extra amount of every charge meter. A use that lands on the cap is used and marks it reached. A use that goes over is stopped, counts nothing and marks it reached.
+
+`GetUsage` answers the cap, this month's extra amount and the moment the cap was reached this month, and `spendingCapOffered`, whether the tenant pays by card. The tenant's purge deletes the cap.
+
+Not in this part: the notifications at 80% and 100% of a quota and at the cap (40c, part 2b), and the extra at Stripe (40c, part 3).
 
 ## 6. The previews
 
@@ -128,6 +138,7 @@ The preview of a plan edit is a page in the list contract (K5), `PlanUpdatePrevi
 | `ChangeTenantPlan` | `TenantPlanChangedEvent`, only for another plan | `RecordTenantPlanChangedHandler` | platform and tenant | `tenant.plan_changed`; details: the old and the new plan |
 | `SetEntitlementOverride` | `EntitlementOverrideSetEvent`, only when something changed | `RecordTenantEntitlementOverrideSetHandler` | platform and tenant | `tenant.entitlement_override_set`; details: the key, the old and the new value and expiry; the reason in the platform's entry only |
 | `RemoveEntitlementOverride` | `EntitlementOverrideRemovedEvent` | `RecordTenantEntitlementOverrideRemovedHandler` | platform and tenant | `tenant.entitlement_override_removed`; details: the key and the value and expiry it had |
+| `SetSpendingCap` | `SpendingCapChangedEvent`, only when the amount changed | `RecordSpendingCapChangedHandler` | tenant | `tenant.spending_cap_changed`, by the member; details: the old and the new amount, null for none, and the currency |
 
 - A plan in the details is Audit's own `AuditPlanResponse`, `{ id, name }`, the plan as it was at that moment.
 - `TenantPlanChangedEvent`, `EntitlementOverrideSetEvent` and `EntitlementOverrideRemovedEvent` carry the optional `retentionShortened`, `{ fromDays, toDays, goesAt }`, when the change makes the tenant's Activity log period shorter. ControlPlane reads the effective values before and after the change, in the tenant's transaction under its lock. `fromDays` is null for no limit, and `goesAt` is the event's moment plus 30 days. Audit's handler starts the tenant's hold at the event's moment, in the transaction that writes the entry (K14).
