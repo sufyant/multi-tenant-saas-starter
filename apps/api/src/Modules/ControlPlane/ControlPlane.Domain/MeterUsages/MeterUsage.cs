@@ -1,11 +1,12 @@
 using ControlPlane.Domain.Plans;
 using SharedKernel;
 
-namespace ControlPlane.Domain.Usage;
+namespace ControlPlane.Domain.MeterUsages;
 
 /// <summary>
 /// A tenant's use of one meter in one period, a calendar month of UTC that <see cref="Period"/> names by its first day (step 40c). It
-/// counts every unit used, and the extra: the units used over the plan's quota of a charge meter.
+/// counts every unit used, and the extra: the units used over the plan's quota of a charge meter. It keeps the price of the extra at its
+/// last use, so a past month says what its extra cost after the plan's price changes, and the moment the count reached the quota.
 /// </summary>
 internal sealed class MeterUsage : ITenantEntity
 {
@@ -26,6 +27,14 @@ internal sealed class MeterUsage : ITenantEntity
 
     public long Extra { get; private set; }
 
+    /// <summary>The price of the extra at the last use: <see cref="UnitPrice"/> minor units for each <see cref="UnitSize"/> units.</summary>
+    public long UnitPrice { get; private set; }
+
+    public long UnitSize { get; private set; } = 1;
+
+    /// <summary>When the count reached the quota in the period; none before.</summary>
+    public DateTimeOffset? QuotaReachedAt { get; private set; }
+
     /// <summary>The period of a moment: the first day of its month in UTC.</summary>
     public static DateOnly PeriodOf(DateTimeOffset moment)
     {
@@ -37,7 +46,7 @@ internal sealed class MeterUsage : ITenantEntity
     /// Counts the use, unless the meter stops at the quota and the use would take the count over it: then it counts nothing and answers
     /// false. The part of a charge meter's use over the quota is extra.
     /// </summary>
-    public bool Use(long quantity, MeterSetting setting)
+    public bool Use(long quantity, MeterSetting setting, DateTimeOffset now)
     {
         var used = Used + quantity;
         if (setting.Overage == MeterOverage.Stop && used > setting.Quota)
@@ -47,6 +56,8 @@ internal sealed class MeterUsage : ITenantEntity
 
         Extra += Math.Max(0, used - Math.Max(Used, setting.Quota));
         Used = used;
+        (UnitPrice, UnitSize) = (setting.UnitPrice, setting.UnitSize);
+        QuotaReachedAt ??= used >= setting.Quota ? now : null;
         return true;
     }
 }

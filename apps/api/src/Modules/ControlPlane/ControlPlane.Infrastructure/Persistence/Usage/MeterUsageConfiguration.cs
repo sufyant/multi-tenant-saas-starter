@@ -1,5 +1,5 @@
 using ControlPlane.Domain.Plans;
-using ControlPlane.Domain.Usage;
+using ControlPlane.Domain.MeterUsages;
 using ControlPlane.Domain.Tenants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -17,7 +17,9 @@ internal sealed class MeterUsageConfiguration : IEntityTypeConfiguration<MeterUs
         usage.HasKey(u => new { u.TenantId, u.MeterKey, u.Period });
         usage.Property(u => u.MeterKey).HasMaxLength(100);
         usage.HasOne<Tenant>().WithMany().HasForeignKey(u => u.TenantId).OnDelete(DeleteBehavior.Restrict);
-        usage.ToTable(table => table.HasCheckConstraint("ck_meter_usages_counts", "used >= 0 AND extra BETWEEN 0 AND used"));
+        usage.ToTable(table => table.HasCheckConstraint(
+            "ck_meter_usages_counts",
+            $"used >= 0 AND extra BETWEEN 0 AND used AND unit_price BETWEEN 0 AND {PlanPrices.Maximum} AND unit_size BETWEEN 1 AND {PlanMeter.Maximum}"));
         usage.ToTable(table => table.HasCheckConstraint("ck_meter_usages_period", "extract(day FROM period) = 1"));
     }
 }

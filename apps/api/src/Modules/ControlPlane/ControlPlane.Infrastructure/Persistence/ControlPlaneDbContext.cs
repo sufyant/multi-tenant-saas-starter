@@ -3,7 +3,7 @@ using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Domain.FeatureFlags;
 using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Plans;
-using ControlPlane.Domain.Usage;
+using ControlPlane.Domain.MeterUsages;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.TermsVersions;

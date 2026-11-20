@@ -502,6 +502,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "GetTenantUsage",
+    "method": "GET",
+    "path": "/v1/platform/tenants/{tenantId}/usage",
+    "tag": "Platform/Usage",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "GetTermsInForce",
     "method": "GET",
     "path": "/v1/public/terms",
@@ -539,6 +550,17 @@ export const operations = [
     "method": "GET",
     "path": "/v1/tenants/{tenantId}/notifications/unread-count",
     "tag": "Tenant/Notifications",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "GetUsage",
+    "method": "GET",
+    "path": "/v1/tenants/{tenantId}/usage",
+    "tag": "Tenant/Usage",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

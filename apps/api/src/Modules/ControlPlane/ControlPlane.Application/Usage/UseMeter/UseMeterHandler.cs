@@ -1,5 +1,5 @@
 using ControlPlane.Contracts.Usage;
-using ControlPlane.Domain.Usage;
+using ControlPlane.Domain.MeterUsages;
 
 namespace ControlPlane.Application.Usage.UseMeter;
 
@@ -22,8 +22,9 @@ public static class UseMeterHandler
             return MeterUse.Stopped;
         }
 
-        var usage = await usages.FindForUpdateAsync(command.MeterKey, MeterUsage.PeriodOf(time.GetUtcNow()), cancellationToken);
-        if (!usage.Use(command.Quantity, setting))
+        var now = time.GetUtcNow();
+        var usage = await usages.FindForUpdateAsync(command.MeterKey, MeterUsage.PeriodOf(now), cancellationToken);
+        if (!usage.Use(command.Quantity, setting, now))
         {
             return MeterUse.Stopped;
         }

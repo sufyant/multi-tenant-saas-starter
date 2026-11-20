@@ -1,6 +1,6 @@
 using ControlPlane.Application.Usage;
 using ControlPlane.Domain.Plans;
-using ControlPlane.Domain.Usage;
+using ControlPlane.Domain.MeterUsages;
 using Microsoft.EntityFrameworkCore;
 
 namespace ControlPlane.Infrastructure.Persistence.Usage;
@@ -28,7 +28,7 @@ public sealed class MeterUsageRepository(ControlPlaneDbContext controlPlane) : I
     async Task<MeterUsage> IMeterUsageRepository.FindForUpdateAsync(string meterKey, DateOnly period, CancellationToken cancellationToken)
     {
         await controlPlane.Database.ExecuteSqlAsync(
-            $"INSERT INTO control_plane.meter_usages (meter_key, period, used, extra) VALUES ({meterKey}, {period}, 0, 0) ON CONFLICT DO NOTHING",
+            $"INSERT INTO control_plane.meter_usages (meter_key, period, used, extra, unit_price, unit_size) VALUES ({meterKey}, {period}, 0, 0, 0, 1) ON CONFLICT DO NOTHING",
             cancellationToken);
         return await controlPlane.MeterUsages
             .FromSql($"SELECT * FROM control_plane.meter_usages WHERE meter_key = {meterKey} AND period = {period} FOR UPDATE")

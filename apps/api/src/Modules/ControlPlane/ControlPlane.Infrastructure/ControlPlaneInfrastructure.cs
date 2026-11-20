@@ -19,6 +19,7 @@ using ControlPlane.Contracts.Plans;
 using ControlPlane.Contracts.SystemAdmins;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Contracts.TermsVersions;
+using ControlPlane.Contracts.Usage;
 using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Infrastructure.Clerk;
@@ -35,6 +36,7 @@ using ControlPlane.Infrastructure.Persistence.Tenants;
 using ControlPlane.Infrastructure.Persistence.TermsVersions;
 using ControlPlane.Infrastructure.Persistence.Usage;
 using ControlPlane.Infrastructure.Persistence.Users;
+using ControlPlane.Infrastructure.Usage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SharedKernel;
@@ -58,6 +60,7 @@ public static class ControlPlaneInfrastructure
         services.AddModuleMigrations<ControlPlaneDbContext>(ControlPlaneDbContext.Schema);
         services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<IEntitlementDirectory, EntitlementDirectory>();
+        services.AddScoped<IUsageMeter, UsageMeter>();
 
         // Registered by type, so Wolverine builds it in Audit's handler that names a page of an audit log, on this module's
         // DbContext and in its transaction (W1).
@@ -89,6 +92,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<IMeterUsageRepository, MeterUsageRepository>();
+        services.AddScoped<IUsageQueries, UsageQueries>();
         services.AddScoped<ITenantQueries, TenantQueries>();
         services.AddScoped<IMemberQueries, MemberQueries>();
         services.AddScoped<IInvitationQueries, InvitationQueries>();

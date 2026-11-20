@@ -1,5 +1,5 @@
 using ControlPlane.Domain.Plans;
-using ControlPlane.Domain.Usage;
+using ControlPlane.Domain.MeterUsages;
 
 namespace ControlPlane.Application.Usage;
 

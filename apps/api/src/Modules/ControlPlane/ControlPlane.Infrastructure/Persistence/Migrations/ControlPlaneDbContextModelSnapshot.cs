@@ -1102,7 +1102,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Usage.MeterUsage", b =>
+            modelBuilder.Entity("ControlPlane.Domain.MeterUsages.MeterUsage", b =>
                 {
                     b.Property<Guid>("TenantId")
                         .ValueGeneratedOnAdd()
@@ -1123,6 +1123,18 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("extra");
 
+                    b.Property<DateTimeOffset?>("QuotaReachedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("quota_reached_at");
+
+                    b.Property<long>("UnitPrice")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_price");
+
+                    b.Property<long>("UnitSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_size");
+
                     b.Property<long>("Used")
                         .HasColumnType("bigint")
                         .HasColumnName("used");
@@ -1132,7 +1144,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.ToTable("meter_usages", "control_plane", t =>
                         {
-                            t.HasCheckConstraint("ck_meter_usages_counts", "used >= 0 AND extra BETWEEN 0 AND used");
+                            t.HasCheckConstraint("ck_meter_usages_counts", "used >= 0 AND extra BETWEEN 0 AND used AND unit_price BETWEEN 0 AND 10000000000 AND unit_size BETWEEN 1 AND 1000000000000");
 
                             t.HasCheckConstraint("ck_meter_usages_period", "extract(day FROM period) = 1");
                         });
@@ -1595,7 +1607,7 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_terms_versions_users_created_by");
                 });
 
-            modelBuilder.Entity("ControlPlane.Domain.Usage.MeterUsage", b =>
+            modelBuilder.Entity("ControlPlane.Domain.MeterUsages.MeterUsage", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
                         .WithMany()

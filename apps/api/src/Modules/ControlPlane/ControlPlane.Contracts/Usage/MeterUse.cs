@@ -1,6 +1,6 @@
 namespace ControlPlane.Contracts.Usage;
 
-/// <summary>The answer to <see cref="UseMeterCommand"/>.</summary>
+/// <summary>The answer of <see cref="IUsageMeter.UseAsync"/>.</summary>
 public enum MeterUse
 {
     /// <summary>The tenant may use the meter, and the use is counted.</summary>

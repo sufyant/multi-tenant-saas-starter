@@ -2024,6 +2024,24 @@ export interface MeterSettingResponse {
   unitSize: number;
 }
 
+/**
+ * One meter of the plan this month: the plan's setting of it (the quota, what happens at the quota, and `unitPrice` minor units for
+ * each `unitSize` units of extra), the units used, the extra over the quota of a charge meter and its price in minor units, rounded
+ * half away from zero, and when the use reached the quota, null before.
+ */
+export interface MeterUsageResponse {
+  key: string;
+  quota: number;
+  overage: MeterSettingResponseOverage;
+  unitPrice: number;
+  unitSize: number;
+  used: number;
+  extra: number;
+  extraAmount: number;
+  /** @nullable */
+  quotaReachedAt: string | null;
+}
+
 export type MyFeatureFlagsResponseFlags = {[key: string]: boolean};
 
 /**
@@ -2144,6 +2162,24 @@ export interface OwnerInvitationResponse {
   language: Language;
   /** @nullable */
   sentAt: string | null;
+}
+
+/**
+ * A meter's use in a past month, its extra and the extra's price at the month's last use, in minor units.
+ */
+export interface PastMeterUsageResponse {
+  key: string;
+  used: number;
+  extra: number;
+  extraAmount: number;
+}
+
+/**
+ * A month before this one, named by its first day: each meter of the plan, 0 for one without a use.
+ */
+export interface PastUsageResponse {
+  periodStart: string;
+  meters: PastMeterUsageResponse[];
 }
 
 /**
@@ -2924,6 +2960,20 @@ export interface UpdateTermsVersionRequest {
   summary: string | null;
   requiresAcceptance: boolean;
   sendsEmail: boolean;
+}
+
+/**
+ * The tenant's use of the meters of its plan (step 40c; 11.01, 4.37): this calendar month of UTC, from `periodStart` to
+ * `periodEnd`, its plan's name, the deployment's currency, an ISO 4217 code, each meter of the plan, and up to three months before
+ * this one, from the month the tenant was created, the latest first. A plan with no meter answers none.
+ */
+export interface UsageResponse {
+  periodStart: string;
+  periodEnd: string;
+  planName: string;
+  currency: string;
+  meters: MeterUsageResponse[];
+  pastPeriods: PastUsageResponse[];
 }
 
 /**
