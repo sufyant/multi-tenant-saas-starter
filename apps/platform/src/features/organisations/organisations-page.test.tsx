@@ -271,6 +271,31 @@ describe("OrganisationsPage", () => {
     );
   });
 
+  it("OrganisationsPage_BillingFilterFindsNone_SaysSoAndClearsOnlyTheFilter", async () => {
+    window.history.replaceState(null, "", "/?billing=contract&status=active");
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(
+        pageOf([], { billingCounts: { paymentOverdue: 0, contract: 0 } }),
+        requests,
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    expect(
+      await screen.findByText("No organisation in this billing state"),
+    ).toBeVisible();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Clear filters" }),
+    );
+
+    await waitFor(() => expect(requests.at(-1)?.get("billing")).toBeNull());
+    expect(requests.at(-1)?.getAll("status")).toEqual([
+      TenantResponseStatus.Active,
+    ]);
+  });
+
   // While billing is off, ListTenants answers no billingCounts and the list has no billing filter.
   it("OrganisationsPage_BillingOff_HasNoBillingFilter", async () => {
     server.use(meAnswer(), listAnswer(pageOf([kestrel, moyne])));

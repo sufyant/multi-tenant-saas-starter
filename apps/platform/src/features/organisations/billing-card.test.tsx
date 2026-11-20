@@ -121,6 +121,60 @@ describe("BillingCard", () => {
     ).toBeVisible();
   });
 
+  it("BillingCard_YearlyWithABaseFee_PricesTheBaseAndThePeople", async () => {
+    const team = {
+      ...pro,
+      prices: { ...pro.prices, baseYearly: 5000, perPersonYearly: 10000 },
+    };
+    server.use(
+      ...billingAnswer(
+        card({
+          ...monthly,
+          planId: team.id,
+          interval: SubscriptionResponseInterval.Yearly,
+        }),
+      ),
+      planAnswer(team),
+    );
+
+    renderWithProviders(
+      <BillingCard organisation={{ ...active, memberCount: 3 }} />,
+    );
+
+    expect(
+      await screen.findByText("Yearly · €50 + 3 billed people × €100 = €350"),
+    ).toBeVisible();
+  });
+
+  it("BillingCard_AFreePlan_PricesItAtZero", async () => {
+    server.use(
+      ...billingAnswer(card({ ...monthly, planId: pro.id })),
+      planAnswer(pro),
+    );
+
+    renderWithProviders(<BillingCard organisation={active} />);
+
+    expect(await screen.findByText("Monthly · €0")).toBeVisible();
+    expect(
+      screen.getByText("Next payment on 1 Dec 2026: €0 excl. VAT."),
+    ).toBeVisible();
+  });
+
+  // A scheduled end or move has its own row, so the period says no next payment then.
+  it("BillingCard_ACancellationScheduled_SaysNoNextPayment", async () => {
+    server.use(
+      ...billingAnswer(
+        card({ ...monthly, planId: pro.id, cancelAtPeriodEnd: true }),
+      ),
+      planAnswer(pro),
+    );
+
+    renderWithProviders(<BillingCard organisation={active} />);
+
+    expect(await screen.findByText("Monthly · €0")).toBeVisible();
+    expect(screen.queryByText(/^Next payment/)).not.toBeInTheDocument();
+  });
+
   it("BillingCard_Paid_SaysTheLastPayment", async () => {
     server.use(
       ...billingAnswer(
