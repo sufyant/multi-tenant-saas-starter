@@ -3,6 +3,7 @@ using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Domain.FeatureFlags;
 using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Plans;
+using ControlPlane.Domain.Usage;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.TermsVersions;
@@ -18,6 +19,7 @@ using ControlPlane.Infrastructure.Persistence.Roles;
 using ControlPlane.Infrastructure.Persistence.SystemAdmins;
 using ControlPlane.Infrastructure.Persistence.TermsVersions;
 using ControlPlane.Infrastructure.Persistence.Tenants;
+using ControlPlane.Infrastructure.Persistence.Usage;
 using ControlPlane.Infrastructure.Persistence.Users;
 using ControlPlane.Infrastructure.Persistence.VerificationCodes;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +78,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     internal DbSet<PlanEntitlement> PlanEntitlements => Set<PlanEntitlement>();
 
     internal DbSet<PlanMeter> PlanMeters => Set<PlanMeter>();
+
+    internal DbSet<MeterUsage> MeterUsages => Set<MeterUsage>();
 
     internal DbSet<DefaultPlan> DefaultPlans => Set<DefaultPlan>();
 
@@ -188,6 +192,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new PlanConfiguration());
         modelBuilder.ApplyConfiguration(new PlanEntitlementConfiguration());
         modelBuilder.ApplyConfiguration(new PlanMeterConfiguration());
+        modelBuilder.ApplyConfiguration(new MeterUsageConfiguration());
         modelBuilder.ApplyConfiguration(new DefaultPlanConfiguration());
         modelBuilder.ApplyConfiguration(new EntitlementOverrideConfiguration());
         modelBuilder.ApplyConfiguration(new StoredFileConfiguration());

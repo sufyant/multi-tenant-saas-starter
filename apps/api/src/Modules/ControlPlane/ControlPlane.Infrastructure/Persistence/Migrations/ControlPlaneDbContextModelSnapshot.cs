@@ -1102,6 +1102,42 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.Usage.MeterUsage", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<string>("MeterKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("meter_key");
+
+                    b.Property<DateOnly>("Period")
+                        .HasColumnType("date")
+                        .HasColumnName("period");
+
+                    b.Property<long>("Extra")
+                        .HasColumnType("bigint")
+                        .HasColumnName("extra");
+
+                    b.Property<long>("Used")
+                        .HasColumnType("bigint")
+                        .HasColumnName("used");
+
+                    b.HasKey("TenantId", "MeterKey", "Period")
+                        .HasName("pk_meter_usages");
+
+                    b.ToTable("meter_usages", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_meter_usages_counts", "used >= 0 AND extra BETWEEN 0 AND used");
+
+                            t.HasCheckConstraint("ck_meter_usages_period", "extract(day FROM period) = 1");
+                        });
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1557,6 +1593,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_terms_versions_users_created_by");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.Usage.MeterUsage", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_meter_usages_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Users.User", b =>
