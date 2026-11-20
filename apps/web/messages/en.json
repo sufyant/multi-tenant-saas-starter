@@ -10,6 +10,8 @@
     "home": "Home",
     "settings": "Settings",
     "yourOrganisations": "Your organisations",
+    "createOrganisation": "Create organisation",
+    "creationLimit": "You can create up to {limit, plural, one {# organisation} other {# organisations}}. You have created {count}.",
     "backTo": "Back to {organisation}",
     "backToMyOrganisations": "Back to my organisations",
     "myAccount": "My account",

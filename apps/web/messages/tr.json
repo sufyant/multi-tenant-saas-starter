@@ -10,6 +10,8 @@
     "home": "Ana sayfa",
     "settings": "Ayarlar",
     "yourOrganisations": "Kuruluşlarınız",
+    "createOrganisation": "Organizasyon oluştur",
+    "creationLimit": "En fazla {limit} organizasyon oluşturabilirsiniz. {count} organizasyon oluşturdunuz.",
     "backTo": "{organisation} kuruluşuna dön",
     "backToMyOrganisations": "Kuruluşlarıma dön",
     "myAccount": "Hesabım",

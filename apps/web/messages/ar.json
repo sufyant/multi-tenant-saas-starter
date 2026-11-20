@@ -10,6 +10,8 @@
     "home": "الرئيسية",
     "settings": "الإعدادات",
     "yourOrganisations": "مؤسساتك",
+    "createOrganisation": "إنشاء مؤسسة",
+    "creationLimit": "يمكنك إنشاء {limit, plural, zero {# مؤسسة} one {مؤسسة واحدة} two {مؤسستين} few {# مؤسسات} many {# مؤسسة} other {# مؤسسة}} كحد أقصى. أنشأت {count}.",
     "backTo": "العودة إلى {organisation}",
     "backToMyOrganisations": "العودة إلى مؤسساتي",
     "myAccount": "حسابي",
