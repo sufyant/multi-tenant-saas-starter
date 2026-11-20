@@ -347,6 +347,11 @@ describe("BillingCard", () => {
     expect(screen.getByText("In trial")).toBeVisible();
     expect(screen.getByText("Pro, 22 Oct to 5 Nov 2026.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Extend trial" })).toBeVisible();
+    // 4.28: a trial needs no card, so Billed by says that none is there yet.
+    expect(screen.getByText("No card yet.")).toBeVisible();
+    expect(
+      screen.queryByText("Pays in the app by card. Stripe keeps the card."),
+    ).not.toBeInTheDocument();
   });
 
   // 4.29: an organisation that used its trial shows it, and a system admin can give another.
