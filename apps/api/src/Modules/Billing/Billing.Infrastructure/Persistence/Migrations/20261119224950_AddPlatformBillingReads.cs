@@ -38,15 +38,20 @@ namespace Billing.Infrastructure.Persistence.Migrations
                     table.PrimaryKey("pk_contract_tenants", x => x.tenant_id);
                 });
 
-            // R6: the listing belongs to no tenant, as the payers do. The migration fills it and the overdue mark from the rows it derives
-            // from (R4's exception for derived data).
+            // R6: the listing belongs to no tenant, as the payers do. The migration fills it and the overdue mark from the rows they derive
+            // from. Billing keeps no list of the tenants to declare in turn, and row level security, forced, binds the owner too, so this
+            // transaction lifts the force of the two tenant tables it reads for these statements and sets it again (R4).
             migrationBuilder.Sql("""
                 GRANT SELECT, INSERT, DELETE ON billing.contract_tenants TO api_application;
+                ALTER TABLE billing.contracts NO FORCE ROW LEVEL SECURITY;
+                ALTER TABLE billing.subscriptions NO FORCE ROW LEVEL SECURITY;
                 INSERT INTO billing.contract_tenants (tenant_id) SELECT tenant_id FROM billing.contracts ON CONFLICT DO NOTHING;
                 UPDATE billing.payers AS payer SET overdue = true
                 FROM billing.subscriptions AS subscription
                 WHERE subscription.tenant_id = payer.tenant_id AND subscription.failed_payment_invoice_id IS NOT NULL
                     AND NOT EXISTS (SELECT 1 FROM billing.contracts AS contract WHERE contract.tenant_id = payer.tenant_id);
+                ALTER TABLE billing.contracts FORCE ROW LEVEL SECURITY;
+                ALTER TABLE billing.subscriptions FORCE ROW LEVEL SECURITY;
                 """);
         }
 
