@@ -271,6 +271,41 @@
       },
       "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
     },
+    "tenant.trial_ending": {
+      "title": "تنتهي تجربتك لـ{planName} في {tenantName} خلال {days}",
+      "body": "بعدها تنتقل إلى {defaultPlanName}. اختر خطة في الفوترة.",
+      "email": {
+        "body": "في {endsAt} تنتقل {tenantName} إلى {defaultPlanName}. اختر خطة للإبقاء على {planName}. لا حاجة إلى بطاقة حتى تدفع.",
+        "button": "اختر خطة"
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}."
+    },
+    "tenant.trial_ended": {
+      "title": "انتقلت {tenantName} إلى {defaultPlanName}",
+      "body": "انتهت تجربتك لـ{planName}. لم يُحذف شيء.",
+      "email": {
+        "body": "انتهت تجربتك لـ{planName} في {endedAt}. لم يُحذف شيء. ادفع مقابل خطة لاستعادة {planName} فورًا.",
+        "button": "اختر خطة"
+      },
+      "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{tenantName}."
+    },
+    "tenant.created": {
+      "title": "مرحبًا بك في {productName}",
+      "body": "{tenantName} جاهزة. بدأت تجربتك لـ{planName} لمدة {trialDays}.",
+      "email": {
+        "body": "{tenantName} جاهزة، وبدأت تجربتها لـ{planName} لمدة {trialDays}. تنتهي في {endsAt}. لا حاجة إلى بطاقة حتى تختار خطة.",
+        "button": "فتح {tenantName}"
+      },
+      "without": {
+        "planName": {
+          "body": "{tenantName} جاهزة.",
+          "email": {
+            "body": "{tenantName} جاهزة."
+          }
+        }
+      },
+      "footer": "وصلتك هذه الرسالة لأنك أنشأت {tenantName}."
+    },
     "tenant.meter_nearly_used": {
       "title": "استخدمت {tenantName} ‏80% من {meter}",
       "body": "{used} من {quota} هذا الشهر. يُعاد ضبطها في {resetsAt}. بعد {quota}، تكلفة الزيادة {unitPrice} لكل {unitSize}، دون ضريبة القيمة المضافة.",

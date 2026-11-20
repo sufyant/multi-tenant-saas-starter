@@ -1263,6 +1263,7 @@ export const NotificationType = {
   MemberRoleChanged: 'member.role_changed',
   TenantClosed: 'tenant.closed',
   TenantClosedForOwners: 'tenant.closed_for_owners',
+  TenantCreated: 'tenant.created',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
   TenantMeterNearlyUsed: 'tenant.meter_nearly_used',
@@ -1283,6 +1284,8 @@ export const NotificationType = {
   TenantSpendingCapReached: 'tenant.spending_cap_reached',
   TenantSuspended: 'tenant.suspended',
   TenantSuspendedForOwners: 'tenant.suspended_for_owners',
+  TenantTrialEnded: 'tenant.trial_ended',
+  TenantTrialEnding: 'tenant.trial_ending',
   TermsVersionCreated: 'terms_version.created',
   UserDataExportReady: 'user.data_export_ready',
 } as const;

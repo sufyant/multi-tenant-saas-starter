@@ -17820,6 +17820,7 @@
           "member.role_changed",
           "tenant.closed",
           "tenant.closed_for_owners",
+          "tenant.created",
           "tenant.entitlement_override_removed",
           "tenant.entitlement_override_set",
           "tenant.meter_nearly_used",
@@ -17840,6 +17841,8 @@
           "tenant.spending_cap_reached",
           "tenant.suspended",
           "tenant.suspended_for_owners",
+          "tenant.trial_ended",
+          "tenant.trial_ending",
           "terms_version.created",
           "user.data_export_ready"
         ],
@@ -17853,6 +17856,7 @@
           "MemberRoleChanged",
           "TenantClosed",
           "TenantClosedForOwners",
+          "TenantCreated",
           "TenantEntitlementOverrideRemoved",
           "TenantEntitlementOverrideSet",
           "TenantMeterNearlyUsed",
@@ -17873,6 +17877,8 @@
           "TenantSpendingCapReached",
           "TenantSuspended",
           "TenantSuspendedForOwners",
+          "TenantTrialEnded",
+          "TenantTrialEnding",
           "TermsVersionCreated",
           "UserDataExportReady"
         ]

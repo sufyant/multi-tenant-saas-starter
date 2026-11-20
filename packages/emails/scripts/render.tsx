@@ -148,7 +148,7 @@ const apiTexts = (texts: NotificationTexts): NotificationTexts => ({
           body: apiPlaceholders(texts.email.body),
           ...(texts.email.button === undefined
             ? {}
-            : { button: texts.email.button }),
+            : { button: apiPlaceholders(texts.email.button) }),
         },
       }),
   ...(texts.footer === undefined

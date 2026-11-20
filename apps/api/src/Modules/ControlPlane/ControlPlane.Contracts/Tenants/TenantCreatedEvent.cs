@@ -14,6 +14,8 @@ namespace ControlPlane.Contracts.Tenants;
 /// <param name="PlanName">The plan's name at that moment.</param>
 /// <param name="ByItsOwner">The user created the tenant for themselves and is its Owner (step 40d); false for a system admin's creation, and
 /// in an event of the version before step 40d.</param>
+/// <param name="TrialEndsAt">The end of the trial the tenant started at its creation, of the plan the event names (step 40d); none without a
+/// trial, and in an event of the version before.</param>
 [MessageName("tenant-created")]
 public sealed record TenantCreatedEvent(
     Guid EventId,
@@ -23,4 +25,5 @@ public sealed record TenantCreatedEvent(
     Guid CreatedBy,
     Guid? PlanId = null,
     string? PlanName = null,
-    bool ByItsOwner = false);
+    bool ByItsOwner = false,
+    DateTimeOffset? TrialEndsAt = null);

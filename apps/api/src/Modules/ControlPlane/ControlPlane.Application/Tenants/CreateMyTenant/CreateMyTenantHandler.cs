@@ -1,5 +1,4 @@
 using ControlPlane.Application.Plans;
-using ControlPlane.Application.Tenants.EndTenantTrial;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
@@ -15,7 +14,7 @@ namespace ControlPlane.Application.Tenants.CreateMyTenant;
 // section 2). The user row is locked first, so two creations of one person run one after the other and the limit counts each (K6f); the
 // tenant is new, so no other transaction waits for its row. The host saves the command result in this transaction (I4). Rejections come
 // first (W7); a taken slug is found by the insert itself, which writes nothing then. While billing is on, the tenant starts its trial of the
-// trial plan at once, and its end is scheduled (step 40d); while billing is off, it stays on the default plan.
+// trial plan at once, and its end and its reminder are scheduled (step 40d); while billing is off, it stays on the default plan.
 public static class CreateMyTenantHandler
 {
     public static async Task<(Result<MyTenantView>, OutgoingMessages)> HandleAsync(
@@ -84,8 +83,8 @@ public static class CreateMyTenantHandler
         return (
             MyTenantView.Of(tenant, owner),
             [
-                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, trialPlan.Id, trialPlan.Name, ByItsOwner: true),
-                new EndTenantTrialCommand(tenant.Id, endsAt).ScheduledAt(endsAt),
+                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, trialPlan.Id, trialPlan.Name, ByItsOwner: true, TrialEndsAt: endsAt),
+                .. TrialMessages.Of(tenant.Id, endsAt, now),
             ]);
     }
 }

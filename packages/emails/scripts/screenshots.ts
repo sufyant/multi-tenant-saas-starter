@@ -104,6 +104,12 @@ const euros = (language: Language, amount: number) => {
 };
 const word = (language: Language, list: string, name: string) =>
   notificationTexts[language].words[list]?.[name] ?? "";
+// A number of days with its noun in the form of the number's plural category, as the API writes a Days value (U2).
+const days = (language: Language, count: number) =>
+  word(language, "days", new Intl.PluralRules(language).select(count)).replace(
+    "#",
+    String(count),
+  );
 
 // A notification email as SendNotificationEmailHandler writes it: the type's title, the body of its email and its footer with its values,
 // and its button to the web app, or to the platform app for the platform's notifications. Without a value, the type's text without it.
@@ -125,7 +131,9 @@ const notification = (
   return {
     title: fill(texts.title ?? all.title, values),
     body: fill(texts.email?.body ?? texts.body, values),
-    button: all.email?.button ?? notificationTexts[language].button,
+    button: all.email?.button
+      ? fill(all.email.button, values)
+      : notificationTexts[language].button,
     link,
     footer: fill(all.footer, values),
   };
@@ -244,6 +252,41 @@ const shots: Shot[] = [
         { tenantName: "Greyfield Books" },
         platformApp,
       ),
+  },
+  {
+    frame: "13.16-trial-ends-in-3-days",
+    email: "notification",
+    values: (language) =>
+      notification(language, "tenant.trial_ending", {
+        tenantName: "Kestrel Analytics",
+        planName: "Business",
+        defaultPlanName: "Free",
+        endsAt: day(language, 16, 10),
+        days: days(language, 3),
+      }),
+  },
+  {
+    frame: "13.17-trial-ended",
+    email: "notification",
+    values: (language) =>
+      notification(language, "tenant.trial_ended", {
+        tenantName: "Kestrel Analytics",
+        planName: "Business",
+        defaultPlanName: "Free",
+        endedAt: day(language, 16, 10),
+      }),
+  },
+  {
+    frame: "13.25-welcome",
+    email: "notification",
+    values: (language) =>
+      notification(language, "tenant.created", {
+        tenantName: "Kestrel Analytics",
+        productName: "Starter",
+        planName: "Business",
+        trialDays: days(language, 14),
+        endsAt: day(language, 16, 10),
+      }),
   },
   {
     frame: "13.18-payment-failed",

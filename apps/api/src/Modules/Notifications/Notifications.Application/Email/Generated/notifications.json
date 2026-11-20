@@ -194,6 +194,41 @@
           }
         }
       },
+      "tenant.trial_ending": {
+        "title": "Your {{planName}} trial for {{tenantName}} ends in {{days}}",
+        "body": "Then it moves to {{defaultPlanName}}. Choose a plan in Billing.",
+        "email": {
+          "body": "On {{endsAt}} {{tenantName}} moves to {{defaultPlanName}}. Choose a plan to keep {{planName}}. No card is needed until you pay.",
+          "button": "Choose a plan"
+        },
+        "footer": "You received this because you manage billing for {{tenantName}}."
+      },
+      "tenant.trial_ended": {
+        "title": "{{tenantName}} moved to {{defaultPlanName}}",
+        "body": "Your {{planName}} trial ended. Nothing was deleted.",
+        "email": {
+          "body": "Your {{planName}} trial ended on {{endedAt}}. Nothing was deleted. Pay for a plan to get {{planName}} back at once.",
+          "button": "Choose a plan"
+        },
+        "footer": "You received this because you manage billing for {{tenantName}}."
+      },
+      "tenant.created": {
+        "title": "Welcome to {{productName}}",
+        "body": "{{tenantName}} is ready. Your {{planName}} trial of {{trialDays}} has started.",
+        "email": {
+          "body": "{{tenantName}} is ready, and its {{planName}} trial of {{trialDays}} has started. It ends on {{endsAt}}. No card is needed until you choose a plan.",
+          "button": "Open {{tenantName}}"
+        },
+        "footer": "You received this because you created {{tenantName}}.",
+        "without": {
+          "planName": {
+            "body": "{{tenantName}} is ready.",
+            "email": {
+              "body": "{{tenantName}} is ready."
+            }
+          }
+        }
+      },
       "tenant.meter_nearly_used": {
         "title": "{{tenantName}} used 80% of its {{meter}}",
         "body": "{{used}} of {{quota}} this month. They reset on {{resetsAt}}. After {{quota}}, the extra costs {{unitPrice}} per {{unitSize}}, excl. VAT.",
@@ -502,6 +537,41 @@
           }
         }
       },
+      "tenant.trial_ending": {
+        "title": "{{tenantName}} için {{planName}} denemeniz {{days}} sonra bitiyor",
+        "body": "Sonra {{defaultPlanName}} planına geçer. Faturalama’dan bir plan seçin.",
+        "email": {
+          "body": "{{endsAt}} tarihinde {{tenantName}} {{defaultPlanName}} planına geçer. {{planName}} planında kalmak için bir plan seçin. Ödeme yapana kadar kart gerekmez.",
+          "button": "Plan seçin"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz için aldınız."
+      },
+      "tenant.trial_ended": {
+        "title": "{{tenantName}} {{defaultPlanName}} planına geçti",
+        "body": "{{planName}} denemeniz bitti. Hiçbir şey silinmedi.",
+        "email": {
+          "body": "{{planName}} denemeniz {{endedAt}} tarihinde bitti. Hiçbir şey silinmedi. {{planName}} planını hemen geri almak için bir plana ödeme yapın.",
+          "button": "Plan seçin"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz için aldınız."
+      },
+      "tenant.created": {
+        "title": "{{productName}} uygulamasına hoş geldiniz",
+        "body": "{{tenantName}} hazır. {{trialDays}} sürecek {{planName}} denemeniz başladı.",
+        "email": {
+          "body": "{{tenantName}} hazır ve {{trialDays}} sürecek {{planName}} denemesi başladı. {{endsAt}} tarihinde biter. Bir plan seçene kadar kart gerekmez.",
+          "button": "{{tenantName}} kuruluşunu aç"
+        },
+        "footer": "Bunu, {{tenantName}} kuruluşunu oluşturduğunuz için aldınız.",
+        "without": {
+          "planName": {
+            "body": "{{tenantName}} hazır.",
+            "email": {
+              "body": "{{tenantName}} hazır."
+            }
+          }
+        }
+      },
       "tenant.meter_nearly_used": {
         "title": "{{tenantName}}, {{meter}} kotasının %80’ini kullandı",
         "body": "Bu ay {{quota}} içinden {{used}}. {{resetsAt}} tarihinde sıfırlanır. {{quota}} sonrasında fazlası KDV hariç {{unitSize}} başına {{unitPrice}} tutar.",
@@ -806,6 +876,41 @@
             "body": "رسم أساسي {{base}} {{period}} بدلًا من {{oldBase}}، دون ضريبة القيمة المضافة.",
             "email": {
               "body": "اعتبارًا من {{movesAt}} يتغير الرسم الأساسي لـ{{planName}} من {{oldBase}} إلى {{base}} {{period}}، دون ضريبة القيمة المضافة. يبقى الرسم لكل شخص {{perPerson}}. لأشخاصك الـ{{people}}: {{newTotal}} {{period}} بدلًا من {{oldTotal}}، دون ضريبة القيمة المضافة. لا يتغير شيء قبل {{movesAt}}. يمكنك تغيير خطتك أو إلغاؤها في أي وقت."
+            }
+          }
+        }
+      },
+      "tenant.trial_ending": {
+        "title": "تنتهي تجربتك لـ{{planName}} في {{tenantName}} خلال {{days}}",
+        "body": "بعدها تنتقل إلى {{defaultPlanName}}. اختر خطة في الفوترة.",
+        "email": {
+          "body": "في {{endsAt}} تنتقل {{tenantName}} إلى {{defaultPlanName}}. اختر خطة للإبقاء على {{planName}}. لا حاجة إلى بطاقة حتى تدفع.",
+          "button": "اختر خطة"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}."
+      },
+      "tenant.trial_ended": {
+        "title": "انتقلت {{tenantName}} إلى {{defaultPlanName}}",
+        "body": "انتهت تجربتك لـ{{planName}}. لم يُحذف شيء.",
+        "email": {
+          "body": "انتهت تجربتك لـ{{planName}} في {{endedAt}}. لم يُحذف شيء. ادفع مقابل خطة لاستعادة {{planName}} فورًا.",
+          "button": "اختر خطة"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}."
+      },
+      "tenant.created": {
+        "title": "مرحبًا بك في {{productName}}",
+        "body": "{{tenantName}} جاهزة. بدأت تجربتك لـ{{planName}} لمدة {{trialDays}}.",
+        "email": {
+          "body": "{{tenantName}} جاهزة، وبدأت تجربتها لـ{{planName}} لمدة {{trialDays}}. تنتهي في {{endsAt}}. لا حاجة إلى بطاقة حتى تختار خطة.",
+          "button": "فتح {{tenantName}}"
+        },
+        "footer": "وصلتك هذه الرسالة لأنك أنشأت {{tenantName}}.",
+        "without": {
+          "planName": {
+            "body": "{{tenantName}} جاهزة.",
+            "email": {
+              "body": "{{tenantName}} جاهزة."
             }
           }
         }
