@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Billing.UnitTests.Stripe;
 
-// Stripe's API for the adapter's tests, as a handler of HttpClient: each request is kept, method, path and form body, and answered with the
+// Stripe's API for the adapter's tests, as a handler of HttpClient: each request is kept, method, path, form body and idempotency key, and answered with the
 // first canned answer whose method and path start match, else 404. No call leaves the process.
 internal sealed class StripeRequests : HttpMessageHandler
 {
@@ -11,7 +11,7 @@ internal sealed class StripeRequests : HttpMessageHandler
 
     private readonly List<Canned> _answers = [];
 
-    public List<(string Method, string Path, string Body)> Sent { get; } = [];
+    public List<(string Method, string Path, string Body, string? IdempotencyKey)> Sent { get; } = [];
 
     public StripeRequests Answer(string method, string path, string json, HttpStatusCode status = HttpStatusCode.OK)
     {
@@ -23,7 +23,7 @@ internal sealed class StripeRequests : HttpMessageHandler
     {
         var body = request.Content is null ? string.Empty : WebUtility.UrlDecode(await request.Content.ReadAsStringAsync(cancellationToken));
         var path = request.RequestUri!.PathAndQuery;
-        Sent.Add((request.Method.Method, path, body));
+        Sent.Add((request.Method.Method, path, body, request.Headers.TryGetValues("Idempotency-Key", out var keys) ? keys.Single() : null));
         var answer = _answers.FirstOrDefault(canned => canned.Method == request.Method.Method && path.StartsWith(canned.Path, StringComparison.Ordinal)) ?? NotCanned;
         return new HttpResponseMessage(answer.Status) { Content = new StringContent(answer.Json, Encoding.UTF8, "application/json") };
     }

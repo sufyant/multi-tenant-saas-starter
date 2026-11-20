@@ -16,6 +16,7 @@ using Billing.Application.Subscriptions.SetCancelAtPeriodEnd;
 using Billing.Application.Subscriptions.SetSeats;
 using Billing.Application.Subscriptions.SyncSubscription;
 using Billing.Application.Webhooks.GetWebhookPayload;
+using Billing.Application.Usage.ChargeExtra;
 using ControlPlane.Application.DataExports.DeleteStoredFile;
 using ControlPlane.Application.DataExports.GetDownloadLink;
 using ControlPlane.Application.DataExports.PrepareDataExport;
@@ -79,6 +80,7 @@ public sealed class ExternalCallTransactionTests : IAsyncLifetime
                 typeof(UndoScheduledChangeCommand), typeof(SetSeatsCommand), typeof(RefundSubscriptionCommand),
                 typeof(MovePricesCommand),
                 typeof(KeepCustomerEmailCommand),
+                typeof(ChargeExtraCommand),
             ],
             ignoreOrder: true);
         withTransaction.ShouldBeEmpty();
