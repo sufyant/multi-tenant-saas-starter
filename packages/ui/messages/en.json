@@ -198,6 +198,7 @@
       "not_active": "This organisation is not active.",
       "not_closed": "This organisation is not closed.",
       "not_found": "This organisation does not exist, or you are not a member of it.",
+      "pays_by_card": "This organisation pays by card, so its subscription sets its plan. Switch it to Contract first.",
       "reopen_period_ended": "The time to reopen this organisation has ended.",
       "slug_invalid": "Use lowercase letters, digits and single hyphens.",
       "slug_reserved": "This slug is reserved. Choose another one.",

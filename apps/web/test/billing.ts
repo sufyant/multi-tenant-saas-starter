@@ -80,6 +80,7 @@ export const teamMonthly: SubscriptionResponse = {
   status: SubscriptionResponseStatus.Active,
   currentPeriodEnd: "2026-12-01T00:00:00Z",
   cancelAtPeriodEnd: false,
+  lastPaymentAt: null,
   scheduledChange: null,
   payment: null,
   priceChange: null,

@@ -859,6 +859,14 @@ export interface AuditRetentionResponse {
 }
 
 /**
+ * The tenant's customer at Stripe (B5) and its page in Stripe's dashboard, which needs the system admin's own sign-in there (4.27).
+ */
+export interface BillingCustomerResponse {
+  id: string;
+  dashboardUrl: string;
+}
+
+/**
  * How the tenant pays (B12): by card in the app, or by Contract, invoiced outside the app, as a system admin set it.
  */
 export type BillingResponseBilledBy = typeof BillingResponseBilledBy[keyof typeof BillingResponseBilledBy];
@@ -971,7 +979,8 @@ export interface SubscriptionPriceChangeResponse {
  * has paid for, and whether it ends then: a member's cancellation, which moves the tenant to the default plan then (B9), or a closure's
  * (B8). `scheduledChange` is the move to another plan or interval that a member scheduled at `currentPeriodEnd` (10.07), or
  * null. `payment` is a failed payment's dunning (B11), or null when nothing is due. `priceChange` is the plan's new price that the
- * tenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null.
+ * tenant was told of and that applies from its first period after `movesAt` (B13, 10.18), or null. `lastPaymentAt` is when the subscription's last paid invoice was paid (4.27), or null until
+ * Stripe names one.
  */
 export interface SubscriptionResponse {
   planId: string;
@@ -982,6 +991,8 @@ export interface SubscriptionResponse {
   scheduledChange: null | ScheduledChangeResponse;
   payment: null | PaymentResponse;
   priceChange: null | SubscriptionPriceChangeResponse;
+  /** @nullable */
+  lastPaymentAt: string | null;
 }
 
 /**
@@ -1503,6 +1514,7 @@ export const ErrorCode = {
   TenantNotActive: 'tenant.not_active',
   TenantNotClosed: 'tenant.not_closed',
   TenantNotFound: 'tenant.not_found',
+  TenantPaysByCard: 'tenant.pays_by_card',
   TenantReopenPeriodEnded: 'tenant.reopen_period_ended',
   TenantSlugInvalid: 'tenant.slug_invalid',
   TenantSlugReserved: 'tenant.slug_reserved',
@@ -2031,7 +2043,8 @@ export type MyTenantDetailResponseUsage = {[key: string]: number};
  * endpoint still checks the permission itself. It also holds the name of the tenant's plan; `entitlements`, every key of the list
  * with its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null
  * for an unlimited limit; and `usage`, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks
- * its feature and its limit itself.
+ * its feature and its limit itself. `billingEnabled` says whether the deployment's billing is on (B1), for every member, as
+ * GetBilling answers only a member who manages billing.
  */
 export interface MyTenantDetailResponse {
   id: string;
@@ -2044,6 +2057,7 @@ export interface MyTenantDetailResponse {
   planName: string;
   entitlements: MyTenantDetailResponseEntitlements;
   usage: MyTenantDetailResponseUsage;
+  billingEnabled: boolean;
 }
 
 /**
@@ -2576,6 +2590,26 @@ export interface SuspendUserRequest {
 }
 
 /**
+ * How many tenants are in each billing situation, without the search or the filters: the options of the billing filter (4.38).
+ */
+export interface TenantBillingCountsResponse {
+  paymentOverdue: number;
+  contract: number;
+}
+
+/**
+ * A tenant's billing for the system admins (B12, 4.27, 4.31 to 4.36): what the tenant's own `GET .../billing` answers, and its customer
+ * at Stripe, none before its first checkout (B5).
+ */
+export interface TenantBillingResponse {
+  billedBy: BillingResponseBilledBy;
+  subscription: null | SubscriptionResponse;
+  /** @nullable */
+  billingEmail: string | null;
+  customer: null | BillingCustomerResponse;
+}
+
+/**
  * The status of a tenant: active from its creation, suspended, closed, purging once its purge has started, or purged (K4).
  */
 export type TenantResponseStatus = typeof TenantResponseStatus[keyof typeof TenantResponseStatus];
@@ -2603,7 +2637,8 @@ export interface TenantOwnerResponse {
 /**
  * One tenant for the platform's detail screen: as an item of the list, with every Owner, in the order they joined, in place of the
  * first. A closed tenant says until when it can be reopened; a closed tenant, or one whose purge has begun, says when its Owners are, or
- * were, warned of the purge (null otherwise). It counts the pending invitations that have not expired at the moment of the request, and
+ * were, warned of the purge (null otherwise). `FreeMemberCount` counts the members of a role that takes no seat, the Billing managers (A2), among
+ * `MemberCount`. It counts the pending invitations that have not expired at the moment of the request, and
  * names who created, suspended and closed it, as they are named now, when it was suspended and when its purge started: each null for a
  * seed, for an event the tenant is not in, and for an event before the API kept it.
  */
@@ -2624,6 +2659,7 @@ export interface TenantDetailResponse {
   /** @nullable */
   purgeWarningAt: string | null;
   memberCount: number;
+  freeMemberCount: number;
   ownerCount: number;
   owners: TenantOwnerResponse[];
   ownerInvitation: null | OwnerInvitationResponse;
@@ -2713,7 +2749,8 @@ export interface TenantStatusCountsResponse {
 }
 
 /**
- * A page of the tenant list (K5), and how many tenants of the whole list are in each status.
+ * A page of the tenant list (K5), and how many tenants of the whole list are in each status and, while billing is on, in each billing
+ * situation (4.38); null while billing is off (B1).
  */
 export interface TenantListPageResponse {
   items: TenantListItemResponse[];
@@ -2721,6 +2758,7 @@ export interface TenantListPageResponse {
   pageSize: number;
   total: number;
   statusCounts: TenantStatusCountsResponse;
+  billingCounts: null | TenantBillingCountsResponse;
 }
 
 /**
@@ -2759,6 +2797,17 @@ export interface TenantResponse {
   /** @nullable */
   purgedAt: string | null;
 }
+
+/**
+ * A billing situation that the Organisations list filters by (4.38): a payment that is overdue, or Contract (B11, B12).
+ */
+export type TenantResponseBilling = typeof TenantResponseBilling[keyof typeof TenantResponseBilling];
+
+
+export const TenantResponseBilling = {
+  PaymentOverdue: 'payment_overdue',
+  Contract: 'contract',
+} as const;
 
 /**
  * The terms version in force: its id, the day it took effect, from 00:00 UTC, and the link to its text.
@@ -3037,6 +3086,7 @@ export type ListTenantsParams = {
    */
   q?: string;
   status?: TenantResponseStatus[];
+  billing?: TenantResponseBilling;
 };
 
 export type ListTenantsSort = typeof ListTenantsSort[keyof typeof ListTenantsSort];

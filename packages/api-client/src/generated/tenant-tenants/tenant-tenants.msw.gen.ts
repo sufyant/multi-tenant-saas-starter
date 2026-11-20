@@ -30,7 +30,7 @@ export const getGetMyTenantResponseMock = (overrideResponse: Partial<Extract<MyT
         [faker.string.alphanumeric(5)]: faker.helpers.arrayElement([null,faker.datatype.boolean(),faker.number.int(),])
       }, usage: {
         [faker.string.alphanumeric(5)]: faker.number.int()
-      }, ...overrideResponse})
+      }, billingEnabled: faker.datatype.boolean(), ...overrideResponse})
 
 
 export const getGetMyTenantMockHandler = (overrideResponse?: MyTenantDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<MyTenantDetailResponse> | MyTenantDetailResponse), options?: RequestHandlerOptions) => {

@@ -198,6 +198,7 @@
       "not_active": "Bu kuruluş etkin değil.",
       "not_closed": "Bu kuruluş kapalı değil.",
       "not_found": "Bu kuruluş yok ya da üyesi değilsiniz.",
+      "pays_by_card": "Bu kuruluş kartla ödüyor, bu yüzden planını aboneliği belirler. Önce Sözleşmeye geçirin.",
       "reopen_period_ended": "Bu kuruluşu yeniden açma süresi doldu.",
       "slug_invalid": "Küçük harf, rakam ve tek kısa çizgi kullanın.",
       "slug_reserved": "Bu kısa ad ayrılmış. Başka bir ad seçin.",
