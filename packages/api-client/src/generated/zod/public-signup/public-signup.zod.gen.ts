@@ -9,6 +9,13 @@ import * as zod from 'zod';
 
 export const GetSignUpResponse = zod.object({
   "enabled": zod.boolean(),
-  "tenantLimit": zod.int()
-}).describe('Whether the product has sign-up on, and how many tenants that were not purged one person may create.')
+  "tenantLimit": zod.int(),
+  "trial": zod.union([zod.null(),zod.object({
+  "plan": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string()
+}).describe('A plan as another resource names it: its id and its name.'),
+  "days": zod.int()
+}).describe('The trial\'s plan and how many days it lasts (1.28, 4.29).')])
+}).describe('Whether the product has sign-up on, how many tenants that were not purged one person may create, and the trial a user\'s own new tenant\nstarts: null while billing is off (step 40d).')
 

@@ -169,6 +169,12 @@ export function PlanSection({
         <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card">
           <Row label={t("planSection.title")}>
             <bdi>{current.name}</bdi>
+            {/* A running trial names the plan it returns to (4.28). */}
+            {plan.data.trial?.returnsTo && (
+              <span className="text-small text-muted-foreground">
+                {t("planSection.inTrial", { plan: plan.data.trial.plan.name })}
+              </span>
+            )}
           </Row>
           {rows.map((row) => (
             <Row

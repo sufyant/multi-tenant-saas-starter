@@ -221,6 +221,7 @@
     "billingAll": "Billing: All",
     "billingOverdue": "Payment overdue · {count}",
     "billingContract": "Contract · {count}",
+    "billingInTrial": "In trial · {count}",
     "noMatchBilling": "No organisation in this billing state"
   },
   "users": {
@@ -589,6 +590,7 @@
   },
   "planSection": {
     "title": "Plan",
+    "inTrial": "{plan} trial.",
     "changePlan": "Change plan",
     "addOverride": "Add override",
     "key": "Feature or limit",
@@ -921,7 +923,31 @@
     "next": "Next payment on {date}: {amount} excl. VAT.",
     "lastPayment": "Last payment on {date}.",
     "stripe": "Stripe",
-    "openInStripe": "Open in Stripe"
+    "openInStripe": "Open in Stripe",
+    "trial": "Trial",
+    "trialPeriod": "Trial",
+    "trialPeriodText": "{plan} trial ends on {date}. {count, plural, one {# day left} other {# days left}}. Then it moves to {next}.",
+    "inTrial": "In trial",
+    "trialUsed": "Trial used",
+    "trialDates": "{plan}, {range}.",
+    "trialRange": "{from} to {to}",
+    "giveTrial": "Give trial",
+    "extendTrial": "Extend trial",
+    "giveTitle": "Give trial to <bdi>{organisation}</bdi>",
+    "giveText": "It starts today and needs no card.",
+    "giveTextUsed": "<bdi>{organisation}</bdi> used a trial from {range}. Only a system admin can give another. It starts today and needs no card.",
+    "trialPlan": "Plan",
+    "days": "Days",
+    "giveEnds": "Ends on {date}. Then it moves back to {plan}.",
+    "giveEndsPaid": "Ends on {date}. Then it moves back to {plan}, {interval, select, yearly {yearly} other {monthly}}.",
+    "given": "Trial given",
+    "giveFailed": "Couldn’t give the trial",
+    "extendTitle": "Extend the trial",
+    "extendText": "<bdi>{organisation}</bdi> is on a {plan} trial until {date}.",
+    "extraDays": "Extra days",
+    "newEnd": "New end date: {date}.",
+    "extended": "Trial extended",
+    "extendFailed": "Couldn’t extend the trial"
   },
   "usage": {
     "tab": "Usage",

@@ -6,6 +6,7 @@ import {
   getGetPlanQueryOptions,
   getGetTenantBillingQueryKey,
   getGetTenantBillingQueryOptions,
+  getGetTenantPlanQueryOptions,
   getListPlansQueryOptions,
   PaymentResponseState,
   type PlanPricesResponse,
@@ -32,6 +33,9 @@ import { type ReactNode, useState } from "react";
 import { plansQuery } from "@/shared/plans";
 import { useDates } from "@/shared/use-dates";
 import { Row } from "./card-row";
+import { ExtendTrialDialog } from "./extend-trial-dialog";
+import { GiveTrialDialog } from "./give-trial-dialog";
+import { daysUntil, useTrialDates } from "./trial";
 
 const live = (subscription: SubscriptionResponse | null) =>
   subscription !== null &&
@@ -57,7 +61,8 @@ const shapeOf = ({ base, perPerson }: { base: number; perPerson: number }) => {
  * The Plan and billing tab's Billing card (4.27, 4.31 to 4.36; B11, B12): how the organisation pays, with Switch to Contract and
  * Switch to Card; the period it pays for, with the billed people (the members who take a seat, GetTenant's `memberCount` less its
  * `freeMemberCount`), the plan's fees (GetPlan) and the next payment; where a failed payment stands, or the last payment; a
- * scheduled cancellation or move; and the Stripe customer with its page in Stripe's dashboard. From GetTenantBilling, which answers
+ * scheduled cancellation or move; the last trial (GetTenantPlan's `trial`, 4.28 to 4.30): while it runs, it is the period, with its days
+ * left and the plan it returns to, and Extend trial; after it, Give trial; and the Stripe customer with its page in Stripe's dashboard. From GetTenantBilling, which answers
  * 404 `billing.off` while the deployment's billing is off: then the card does not show. A closed or purging organisation's billing
  * is read-only.
  */
@@ -85,7 +90,12 @@ export function BillingCard({
     ...getGetPlanQueryOptions(paying?.planId ?? ""),
     enabled: paying !== null,
   });
+  const tenantPlan = useQuery(getGetTenantPlanQueryOptions(organisation.id));
+  const range = useTrialDates();
   const [asking, setAsking] = useState<SetBilledByRequestBilledBy | null>(null);
+  const [trialDialog, setTrialDialog] = useState<"give" | "extend" | null>(
+    null,
+  );
   const switchTo = useMutation({
     mutationFn: (billedBy: SetBilledByRequestBilledBy) =>
       setBilledBy(organisation.id, { billedBy }),
@@ -110,8 +120,25 @@ export function BillingCard({
     organisation.status !== TenantResponseStatus.Closed &&
     organisation.status !== TenantResponseStatus.Purging;
   const payment = subscription?.payment ?? null;
+  const trial = tenantPlan.data?.trial ?? null;
+  // A running trial names the plan it returns to; an ended one names none (TrialResponse).
+  const returnsTo = trial?.returnsTo ?? null;
 
   const periodRow: ReactNode = (() => {
+    if (!subscription && trial && returnsTo)
+      return (
+        <>
+          <span>{t("trialPeriod")}</span>
+          <span className="text-small text-muted-foreground">
+            {t("trialPeriodText", {
+              plan: trial.plan.name,
+              date: date(trial.endsAt),
+              count: daysUntil(trial.endsAt),
+              next: returnsTo.name,
+            })}
+          </span>
+        </>
+      );
     if (!subscription)
       return (
         <span className="text-muted-foreground">{t("noSubscription")}</span>
@@ -160,7 +187,9 @@ export function BillingCard({
   })();
 
   const paymentRow: ReactNode = (() => {
-    if (contract || !subscription) return null;
+    if (contract) return null;
+    // In a trial nothing is paid yet: the row says so (4.28).
+    if (!subscription) return returnsTo ? "—" : null;
     const money = (minor: number) =>
       formatMoney(minor, payment?.currency ?? "EUR", locale);
     if (!payment)
@@ -307,6 +336,40 @@ export function BillingCard({
       </Row>
       {!contract && <Row label={t("period")}>{periodRow}</Row>}
       {paymentRow && <Row label={t("payment")}>{paymentRow}</Row>}
+      {!contract && tenantPlan.data && (
+        <Row
+          label={t("trial")}
+          actions={
+            editable && (
+              <Button
+                onClick={() => setTrialDialog(returnsTo ? "extend" : "give")}
+              >
+                {returnsTo ? t("extendTrial") : t("giveTrial")}
+              </Button>
+            )
+          }
+        >
+          {trial ? (
+            <>
+              <span>
+                {returnsTo ? (
+                  <Pill tone="info">{t("inTrial")}</Pill>
+                ) : (
+                  t("trialUsed")
+                )}
+              </span>
+              <span className="text-small text-muted-foreground">
+                {t("trialDates", {
+                  plan: trial.plan.name,
+                  range: range(trial.startedAt, trial.endsAt),
+                })}
+              </span>
+            </>
+          ) : (
+            "—"
+          )}
+        </Row>
+      )}
       {!contract && <Row label={t("scheduledChange")}>{scheduled}</Row>}
       {data.customer && (
         <Row
@@ -324,6 +387,21 @@ export function BillingCard({
         >
           <span>{data.customer.id}</span>
         </Row>
+      )}
+      {trialDialog === "give" && tenantPlan.data && (
+        <GiveTrialDialog
+          organisation={organisation}
+          plan={tenantPlan.data}
+          interval={subscription?.interval ?? null}
+          onClose={() => setTrialDialog(null)}
+        />
+      )}
+      {trialDialog === "extend" && trial && (
+        <ExtendTrialDialog
+          organisation={organisation}
+          trial={trial}
+          onClose={() => setTrialDialog(null)}
+        />
       )}
       {asking && (
         <Dialog

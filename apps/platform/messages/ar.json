@@ -221,6 +221,7 @@
     "billingAll": "الفوترة: الكل",
     "billingOverdue": "دفعة متأخرة · {count}",
     "billingContract": "عقد · {count}",
+    "billingInTrial": "في تجربة · {count}",
     "noMatchBilling": "لا توجد مؤسسة في حالة الفوترة هذه"
   },
   "users": {
@@ -589,6 +590,7 @@
   },
   "planSection": {
     "title": "الخطة",
+    "inTrial": "تجربة {plan}.",
     "changePlan": "تغيير الخطة",
     "addOverride": "إضافة استثناء",
     "key": "الميزة أو الحد",
@@ -921,7 +923,31 @@
     "next": "الدفعة التالية في {date}: {amount} دون ضريبة القيمة المضافة.",
     "lastPayment": "آخر دفعة في {date}.",
     "stripe": "Stripe",
-    "openInStripe": "فتح في Stripe"
+    "openInStripe": "فتح في Stripe",
+    "trial": "التجربة",
+    "trialPeriod": "تجربة",
+    "trialPeriodText": "تنتهي تجربة {plan} في {date}. {count, plural, zero {لم يبقَ أي يوم} one {بقي يوم واحد} two {بقي يومان} few {بقيت # أيام} many {بقي # يومًا} other {بقي # يوم}}. بعدها تنتقل إلى {next}.",
+    "inTrial": "في تجربة",
+    "trialUsed": "استُخدمت التجربة",
+    "trialDates": "{plan}، {range}.",
+    "trialRange": "من {from} إلى {to}",
+    "giveTrial": "منح تجربة",
+    "extendTrial": "تمديد التجربة",
+    "giveTitle": "منح تجربة لـ<bdi>{organisation}</bdi>",
+    "giveText": "تبدأ اليوم ولا تحتاج إلى بطاقة.",
+    "giveTextUsed": "استخدمت <bdi>{organisation}</bdi> تجربة {range}. لا يمنح تجربة أخرى إلا مسؤول النظام. تبدأ اليوم ولا تحتاج إلى بطاقة.",
+    "trialPlan": "الخطة",
+    "days": "الأيام",
+    "giveEnds": "تنتهي في {date}. بعدها تعود إلى {plan}.",
+    "giveEndsPaid": "تنتهي في {date}. بعدها تعود إلى {plan}، {interval, select, yearly {سنويًا} other {شهريًا}}.",
+    "given": "مُنحت التجربة",
+    "giveFailed": "تعذّر منح التجربة",
+    "extendTitle": "تمديد التجربة",
+    "extendText": "<bdi>{organisation}</bdi> في تجربة {plan} حتى {date}.",
+    "extraDays": "أيام إضافية",
+    "newEnd": "تاريخ الانتهاء الجديد: {date}.",
+    "extended": "مُددت التجربة",
+    "extendFailed": "تعذّر تمديد التجربة"
   },
   "usage": {
     "tab": "الاستخدام",

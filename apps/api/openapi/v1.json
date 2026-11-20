@@ -19469,7 +19469,8 @@
       "SignUpResponse": {
         "required": [
           "enabled",
-          "tenantLimit"
+          "tenantLimit",
+          "trial"
         ],
         "type": "object",
         "properties": {
@@ -19479,9 +19480,36 @@
           "tenantLimit": {
             "type": "integer",
             "format": "int32"
+          },
+          "trial": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SignUpTrialResponse"
+              }
+            ]
           }
         },
-        "description": "Whether the product has sign-up on, and how many tenants that were not purged one person may create."
+        "description": "Whether the product has sign-up on, how many tenants that were not purged one person may create, and the trial a user's own new tenant\nstarts: null while billing is off (step 40d)."
+      },
+      "SignUpTrialResponse": {
+        "required": [
+          "plan",
+          "days"
+        ],
+        "type": "object",
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/PlanNameResponse"
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "The trial's plan and how many days it lasts (1.28, 4.29)."
       },
       "SpendingCapResponse": {
         "required": [

@@ -2734,11 +2734,21 @@ export interface SignUpRequest {
 }
 
 /**
- * Whether the product has sign-up on, and how many tenants that were not purged one person may create.
+ * The trial's plan and how many days it lasts (1.28, 4.29).
+ */
+export interface SignUpTrialResponse {
+  plan: PlanNameResponse;
+  days: number;
+}
+
+/**
+ * Whether the product has sign-up on, how many tenants that were not purged one person may create, and the trial a user's own new tenant
+ * starts: null while billing is off (step 40d).
  */
 export interface SignUpResponse {
   enabled: boolean;
   tenantLimit: number;
+  trial: null | SignUpTrialResponse;
 }
 
 /**
