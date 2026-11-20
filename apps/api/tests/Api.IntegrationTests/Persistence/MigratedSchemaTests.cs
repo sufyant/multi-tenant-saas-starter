@@ -264,6 +264,8 @@ public sealed class MigratedSchemaTests(Database database)
             VALUES ('{file}', '{ownerId}', 'control_plane', 'DataExport', 'exports/users/{ownerId}/{file}.zip', 'application/zip', 'Preparing', now());
             INSERT INTO control_plane.verification_codes (id, user_id, purpose, code_hash, new_email, created_at, expires_at, attempts)
             VALUES ('{code}', '{ownerId}', 'EmailChange', '\x00', 'ada@new.example', now(), now() + interval '10 minutes', 0);
+            INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra, unit_price, unit_size)
+            VALUES ('{owned.Id}', 'ai.requests', '2026-11-01', 10, 2, 100, 1000);
             """,
             migrated);
 
@@ -301,7 +303,12 @@ public sealed class MigratedSchemaTests(Database database)
             $"UPDATE control_plane.stored_files SET status = 'Ready' WHERE id = '{file}'",
             $"UPDATE control_plane.verification_codes SET purpose = 'SignIn', new_email = NULL WHERE id = '{code}'",
             $"UPDATE control_plane.verification_codes SET new_email = NULL WHERE id = '{code}'",
-            $"UPDATE control_plane.verification_codes SET attempts = -1 WHERE id = '{code}'");
+            $"UPDATE control_plane.verification_codes SET attempts = -1 WHERE id = '{code}'",
+            $"UPDATE control_plane.meter_usages SET extra = used + 1 WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.meter_usages SET used = -1, extra = 0 WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.meter_usages SET unit_size = 0 WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.meter_usages SET unit_price = -1 WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.meter_usages SET period = '2026-11-02' WHERE tenant_id = '{owned.Id}'");
 
         refusals.ShouldBe(
         [
@@ -337,6 +344,11 @@ public sealed class MigratedSchemaTests(Database database)
             "ck_verification_codes_purpose",
             "ck_verification_codes_new_email",
             "ck_verification_codes_attempts",
+            "ck_meter_usages_counts",
+            "ck_meter_usages_counts",
+            "ck_meter_usages_counts",
+            "ck_meter_usages_counts",
+            "ck_meter_usages_period",
         ]);
     }
 

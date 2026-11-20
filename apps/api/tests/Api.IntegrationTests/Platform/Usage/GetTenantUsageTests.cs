@@ -44,6 +44,17 @@ public sealed class GetTenantUsageTests(Database database) : IAsyncLifetime
         (meter.GetProperty("used").GetInt64(), meter.GetProperty("extra").GetInt64()).ShouldBe((7_200L, 0L));
     }
 
+    [Fact]
+    public async Task GetTenantUsage_OfATenantThatDoesNotExist_IsNotFound()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var answer = await admin.GetAsync($"/v1/platform/tenants/{Guid.CreateVersion7()}/usage", Cancellation);
+
+        (answer.StatusCode, (await answer.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("code").GetString())
+            .ShouldBe((HttpStatusCode.NotFound, "tenant.not_found"));
+    }
+
     private async Task<Guid> TenantWithMeterAsync()
     {
         var planId = await _testData.AddPlanAsync(new());

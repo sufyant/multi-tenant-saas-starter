@@ -86,6 +86,36 @@ public sealed class GetUsageTests(Database database) : IAsyncLifetime
             .ShouldBe(["2026-10-01 ai.requests:9100:0:0", "2026-09-01 ai.requests:0:0:0", "2026-08-01 ai.requests:10600:600:120"]);
     }
 
+    // A meter that the plan no longer sets keeps its past months: their extra was charged then.
+    [Fact]
+    public async Task GetUsage_APastMonthOfAMeterOffThePlan_StillAnswersIt()
+    {
+        var (tenant, _) = await TenantWithMeterAsync(new DateTimeOffset(2026, 3, 3, 9, 0, 0, TimeSpan.Zero));
+        await database.ScalarAsSuperuserAsync<object>(
+            $"INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra, unit_price, unit_size) VALUES ('{tenant}', 'storage.gb', '2026-10-01', 12, 2, 500, 1)");
+        var owner = await _testData.AddMemberAsync(tenant, role: "Owner");
+
+        var usage = await (await _api.CreateClient(owner).GetAsync($"/v1/tenants/{tenant}/usage", Cancellation)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        string.Join(",", usage.GetProperty("pastPeriods")[0].GetProperty("meters").EnumerateArray().Select(m => $"{m.GetProperty("key")}:{m.GetProperty("extraAmount")}"))
+            .ShouldBe("ai.requests:0,storage.gb:1000");
+    }
+
+    // This month's line says the price its amount was counted at, the price of the last use, until the next use takes the plan's new one.
+    [Fact]
+    public async Task GetUsage_AfterAPriceEditWithoutAUseSince_AnswersThePriceOfTheAmount()
+    {
+        var (tenant, _) = await TenantWithMeterAsync(new DateTimeOffset(2026, 3, 3, 9, 0, 0, TimeSpan.Zero));
+        await UseAsync(tenant, 11_000);
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.plan_meters SET unit_price = 300 WHERE plan_id = (SELECT plan_id FROM control_plane.tenants WHERE id = '{tenant}')");
+        var owner = await _testData.AddMemberAsync(tenant, role: "Owner");
+
+        var usage = await (await _api.CreateClient(owner).GetAsync($"/v1/tenants/{tenant}/usage", Cancellation)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
+        var meter = usage.GetProperty("meters").EnumerateArray().Single();
+        $"{meter.GetProperty("unitPrice")}|{meter.GetProperty("extraAmount")}".ShouldBe("100|100");
+    }
+
     [Fact]
     public async Task GetUsage_ByAMember_IsForbidden()
     {

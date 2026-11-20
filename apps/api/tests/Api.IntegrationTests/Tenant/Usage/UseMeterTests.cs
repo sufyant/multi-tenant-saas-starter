@@ -82,6 +82,33 @@ public sealed class UseMeterTests(Database database) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UseMeter_AStopMetersFirstUseOverItsQuota_IsStoppedAndLeavesNoRow()
+    {
+        var tenant = await TenantWithMeterAsync(quota: 10, overage: "Stop");
+
+        var use = await UseAsync(tenant, 11);
+
+        use.ShouldBe(MeterUse.Stopped);
+        (await UsedAsync(tenant, "2026-11-01")).ShouldBeNull();
+    }
+
+    // Only an active organisation uses its meters: a suspended one is locked out, and a closed one waits for its purge, which deletes the counts.
+    [Theory]
+    [InlineData("status = 'Suspended', suspension_reason = 'Unpaid invoices'")]
+    [InlineData("status = 'Closed', closed_at = now()")]
+    [InlineData("status = 'Purging'")]
+    public async Task UseMeter_ATenantThatIsNotActive_IsStoppedAndCountsNothing(string state)
+    {
+        var tenant = await TenantWithMeterAsync(quota: 100, overage: "Charge");
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET {state} WHERE id = '{tenant}'");
+
+        var use = await UseAsync(tenant, 1);
+
+        use.ShouldBe(MeterUse.Stopped);
+        (await UsedAsync(tenant, "2026-11-01")).ShouldBeNull();
+    }
+
+    [Fact]
     public async Task UseMeter_AMeterThePlanHasNot_IsStopped()
     {
         var tenant = (await _testData.AddTenantAsync(planId: await _testData.AddPlanAsync(new()))).Id;
