@@ -83,19 +83,23 @@ internal sealed class OwnFlags : IAsyncDisposable
         return new OwnFlags(database, name, api, data, api.CreateClient(adminId, secondFactor: true));
     }
 
-    // A flag as a deploy's sync stores it, with its rules and its first line of history at this moment, or days before it.
-    public static Task AddFlagAsync(Database database, string name, string key, string type = "Release", bool everyoneElse = false, int daysAgo = 0, bool removed = false) =>
-        database.ScalarAsSuperuserAsync<object>(
+    // A flag as a deploy's sync stores it, with its rules and its first line of history at this moment, or days before it. A test on a fixed
+    // clock passes its moment as `at`, so the flag's age does not grow with the real date.
+    public static Task AddFlagAsync(Database database, string name, string key, string type = "Release", bool everyoneElse = false, int daysAgo = 0, bool removed = false, DateTimeOffset? at = null)
+    {
+        var now = at is null ? "now()" : $"'{at.Value:O}'::timestamptz";
+        return database.ScalarAsSuperuserAsync<object>(
             $"""
             WITH flag AS (
               INSERT INTO control_plane.feature_flags (id, key, type, default_value, description, added_at, added_revision, removed_at, removed_revision, listed_count, percentage, everyone_else, state_since, last_changed_at)
-              VALUES (gen_random_uuid(), '{key}', '{type}', {(type == "KillSwitch" ? "true" : "false")}, 'A test flag.', now() - interval '{daysAgo} days', '7c41d09',
-                {(removed ? "now()" : "NULL")}, {(removed ? "'abc1234'" : "NULL")}, 0, 0, {(everyoneElse ? "true" : "false")}, now() - interval '{daysAgo} days', now() - interval '{daysAgo} days')
+              VALUES (gen_random_uuid(), '{key}', '{type}', {(type == "KillSwitch" ? "true" : "false")}, 'A test flag.', {now} - interval '{daysAgo} days', '7c41d09',
+                {(removed ? now : "NULL")}, {(removed ? "'abc1234'" : "NULL")}, 0, 0, {(everyoneElse ? "true" : "false")}, {now} - interval '{daysAgo} days', {now} - interval '{daysAgo} days')
               RETURNING id, added_at
             )
             INSERT INTO control_plane.feature_flag_changes (id, flag_id, kind, at, revision) SELECT gen_random_uuid(), id, 'AddedToCode', added_at, '7c41d09' FROM flag
             """,
             name);
+    }
 
     public Task AddFlagAsync(string key, string type = "Release", bool everyoneElse = false, int daysAgo = 0, bool removed = false) =>
         AddFlagAsync(Database, Name, key, type, everyoneElse, daysAgo, removed);
