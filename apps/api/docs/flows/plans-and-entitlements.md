@@ -117,7 +117,13 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 
 The first use of a month that takes a meter's count to 80% or to all of its quota, or the extra to 80% or to all of the cap, tells the members who manage billing and the billing email once (ARCHITECTURE.md, E10; `notifications.md`).
 
-Not in this part: the extra at Stripe (40c, part 3).
+## 5d. The extra at Stripe (step 40c)
+
+1. The first use of a month that costs extra schedules the month's close for the first moment of the next month in UTC (ARCHITECTURE.md, E11).
+2. At that moment the close locks the month's row and publishes `MeterMonthClosedEvent`: the month's extra and what it costs at the price of its last use, rounded, as Usage shows it. An amount of 0 publishes nothing.
+3. Billing hears it in the tenant. A Contract tenant, a tenant that never paid by card and one whose subscription has ended are charged nothing: a system admin invoices a Contract's extra from 4.37.
+4. Billing asks Stripe for one invoice item of the amount on the subscription, with the month as its period and "{meter}, {month}: {extra} over the quota" as its line. Stripe adds it to the subscription's next invoice. The tenant, the meter and the month are the call's idempotency key.
+5. A yearly payer's extra goes on the subscription's next invoice too, which can be the next year's.
 
 ## 6. The previews
 
