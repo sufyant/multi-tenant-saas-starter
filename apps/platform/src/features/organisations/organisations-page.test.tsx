@@ -240,7 +240,7 @@ describe("OrganisationsPage", () => {
       meAnswer(),
       listAnswer(
         pageOf([kestrel, moyne], {
-          billingCounts: { paymentOverdue: 2, contract: 1, inTrial: 0 },
+          billingCounts: { paymentOverdue: 2, contract: 1, inTrial: 3 },
         }),
         requests,
       ),
@@ -257,7 +257,12 @@ describe("OrganisationsPage", () => {
       (await screen.findAllByRole("menuitemradio")).map(
         (item) => item.textContent,
       ),
-    ).toEqual(["Billing: All", "Payment overdue · 2", "Contract · 1"]);
+    ).toEqual([
+      "Billing: All",
+      "Payment overdue · 2",
+      "Contract · 1",
+      "In trial · 3",
+    ]);
     await userEvent.click(
       screen.getByRole("menuitemradio", { name: "Contract · 1" }),
     );
@@ -268,6 +273,36 @@ describe("OrganisationsPage", () => {
     ).toBeVisible();
     expect(requests.at(-1)?.get("billing")).toBe(
       TenantResponseBilling.Contract,
+    );
+  });
+
+  // 4.39: the organisations in a trial, with their count.
+  it("OrganisationsPage_InTrialChosen_ListsTheOrganisationsInATrial", async () => {
+    const requests: URLSearchParams[] = [];
+    server.use(
+      meAnswer(),
+      listAnswer(
+        pageOf([kestrel], {
+          billingCounts: { paymentOverdue: 0, contract: 0, inTrial: 1 },
+        }),
+        requests,
+      ),
+    );
+
+    renderWithProviders(<OrganisationsPage />);
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Filter by billing: Billing: All",
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole("menuitemradio", { name: "In trial · 1" }),
+    );
+
+    await waitFor(() =>
+      expect(requests.at(-1)?.get("billing")).toBe(
+        TenantResponseBilling.InTrial,
+      ),
     );
   });
 

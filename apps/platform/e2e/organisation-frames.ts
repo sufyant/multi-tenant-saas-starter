@@ -225,6 +225,8 @@ type FrameOverrides = {
   customRolesOff?: boolean;
   /** The override of the custom roles limit; 4.51 draws the limit without it. */
   limitOverride?: boolean;
+  /** The last trial of each organisation by its id (4.28 to 4.30); none by default. */
+  trials?: Record<string, TenantPlanResponse["trial"]>;
 };
 
 /**
@@ -237,6 +239,7 @@ const planOf = (
     retentionOverride = false,
     customRolesOff = false,
     limitOverride = true,
+    trials = {},
   }: FrameOverrides,
 ): TenantPlanResponse => {
   const northwind = organisation.id === frameNorthwind.id;
@@ -246,7 +249,7 @@ const planOf = (
   return {
     tenantId: organisation.id,
     plan: organisation.plan,
-    trial: null,
+    trial: trials[organisation.id] ?? null,
     entitlements: [
       key(
         FeatureKey.RolesCustom,

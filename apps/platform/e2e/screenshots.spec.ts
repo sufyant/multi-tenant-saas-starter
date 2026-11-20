@@ -27,6 +27,7 @@ import {
   TermsVersionCancelledDetailsResponseOperation,
   TermsVersionCreatedDetailsResponseOperation,
   TermsVersionUpdatedDetailsResponseOperation,
+  type TrialResponse,
 } from "@repo/api-client";
 import { localeCookie } from "@repo/ui/lib/locale";
 import {
@@ -998,35 +999,84 @@ const usageOfFrame =
       }),
     );
   };
-const billingOf = (answer: unknown) => async (page: Page) => {
-  await mockFrameOrganisations(page);
-  await mockFramePlans(page);
-  await page.route(
-    `**/api/v1/platform/tenants/${frameNorthwind.id}`,
-    (route) =>
-      route.request().method() === "GET"
-        ? route.fulfill({
-            json: {
-              ...frameNorthwind,
-              plan: undefined,
-              memberCount: 11,
-              freeMemberCount: 1,
-            },
-          })
-        : route.fallback(),
-  );
-  await page.route(`**/api/v1/platform/plans/${framePlans.team.id}`, (route) =>
-    route.request().method() === "GET"
-      ? route.fulfill({
-          json: {
-            ...framePlans.team,
-            prices: { ...framePlans.team.prices, perPersonMonthly: 1000 },
-          },
-        })
-      : route.fallback(),
-  );
-  await page.route("**/api/v1/platform/tenants/*/billing", (route) =>
-    route.fulfill({ json: answer }),
+const billingOf =
+  (answer: unknown, trials: Record<string, TrialResponse> = {}) =>
+  async (page: Page) => {
+    await mockFrameOrganisations(page, undefined, { trials });
+    await mockFramePlans(page);
+    await page.route(
+      `**/api/v1/platform/tenants/${frameNorthwind.id}`,
+      (route) =>
+        route.request().method() === "GET"
+          ? route.fulfill({
+              json: {
+                ...frameNorthwind,
+                plan: undefined,
+                memberCount: 11,
+                freeMemberCount: 1,
+              },
+            })
+          : route.fallback(),
+    );
+    await page.route(
+      `**/api/v1/platform/plans/${framePlans.team.id}`,
+      (route) =>
+        route.request().method() === "GET"
+          ? route.fulfill({
+              json: {
+                ...framePlans.team,
+                prices: { ...framePlans.team.prices, perPersonMonthly: 1000 },
+              },
+            })
+          : route.fallback(),
+    );
+    await page.route("**/api/v1/platform/tenants/*/billing", (route) =>
+      route.fulfill({ json: answer }),
+    );
+  };
+/**
+ * The trial frames (4.28 to 4.30, 4.47, 4.48) on 2 Nov 2026: شركة الأفق للتجارة in a Business trial from 22 Oct to 5 Nov 2026, with no card
+ * yet, and Northwind after its trial of 15 to 29 Oct 2026. A new organisation's trial is 14 days of Business (GetSignUp).
+ */
+const ufuq = frameOrganisations.ufuq;
+const ufuqPath = pathOf(ufuq);
+const trialFrames = {
+  [ufuq.id]: {
+    plan: { id: framePlans.business.id, name: "Business" },
+    startedAt: "2026-10-22T10:00:00Z",
+    endsAt: "2026-11-05T10:00:00Z",
+    returnsTo: { id: framePlans.free.id, name: "Free" },
+  },
+  [frameNorthwind.id]: {
+    plan: { id: framePlans.business.id, name: "Business" },
+    startedAt: "2026-10-15T10:00:00Z",
+    endsAt: "2026-10-29T10:00:00Z",
+    returnsTo: null,
+  },
+};
+const inTrialBilling = {
+  billedBy: "card",
+  billingEmail: null,
+  customer: {
+    id: "cus_R4mT8pQ2vZ06",
+    dashboardUrl: "https://dashboard.stripe.com/customers/cus_R4mT8pQ2vZ06",
+  },
+  subscription: null,
+};
+const trialOf = (answer: unknown) => async (page: Page) => {
+  await page.clock.setFixedTime(new Date("2026-11-02T10:00:00Z"));
+  await billingOf(answer, trialFrames)(page);
+  await page.route("**/api/v1/public/sign-up", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        tenantLimit: 3,
+        trial: {
+          plan: { id: framePlans.business.id, name: "Business" },
+          days: 14,
+        },
+      },
+    }),
   );
 };
 const failed = (state: string, more: Record<string, unknown> = {}) => ({
@@ -1729,6 +1779,28 @@ const shellShots: {
     },
   },
   {
+    // 4.39: the organisations in a trial, chosen in the billing filter.
+    file: "4.39-organisations-in-trial-en-light-desktop",
+    size: "desktop",
+    path: "/?billing=in_trial",
+    mock: async (page) => {
+      await mockFrameOrganisations(page);
+      await page.route("**/api/v1/platform/tenants?*", (route) =>
+        route.request().method() === "GET"
+          ? route.fulfill({
+              json: {
+                ...tenantsPage(
+                  [listItemOf(frameOrganisations.ufuq)],
+                  new URL(route.request().url()).searchParams,
+                ),
+                billingCounts: { paymentOverdue: 2, contract: 1, inTrial: 1 },
+              },
+            })
+          : route.fallback(),
+      );
+    },
+  },
+  {
     file: "4.02-organisations-suspended-en-light-desktop",
     size: "desktop",
     path: "/?status=suspended",
@@ -1893,6 +1965,37 @@ const shellShots: {
     ),
     ready: (page) => page.getByText("Billed by").waitFor(),
   },
+  // The trial (4.28 to 4.30, 4.47, 4.48, 40d).
+  {
+    file: "4.28-plan-and-billing-in-trial-en-light-desktop",
+    size: "desktop",
+    path: `${ufuqPath}?tab=plan`,
+    fullPage: true,
+    mock: trialOf(inTrialBilling),
+    ready: (page) => page.getByText("Billed by").waitFor(),
+  },
+  ...(
+    [
+      ["4.29-give-trial", "desktop", northwindPath, "Give trial"],
+      ["4.30-extend-trial", "desktop", ufuqPath, "Extend trial"],
+      ["4.47-give-trial", "phone", northwindPath, "Give trial"],
+      ["4.48-extend-trial", "phone", ufuqPath, "Extend trial"],
+    ] as const
+  ).map(([name, size, path, action]) => ({
+    file: `${name}-en-light-${size}`,
+    size,
+    path: `${path}?tab=plan`,
+    mock: trialOf(path === ufuqPath ? inTrialBilling : teamBilling()),
+    ready: (page: Page) => page.getByText("Billed by").waitFor(),
+    open: async (page: Page) => {
+      await page.getByRole("button", { name: action }).click();
+      const dialog = page.getByRole("alertdialog");
+      await dialog.waitFor();
+      // 4.30 and 4.48 draw 7 extra days typed.
+      if (action === "Extend trial")
+        await dialog.getByLabel("Extra days").fill("7");
+    },
+  })),
   // The Usage tab (4.37, 4.42, 40c): Team gives 10,000 of "ai.requests" and charges the extra; Free gives 100 and stops.
   {
     file: "4.37-organisation-usage-en-light-desktop",

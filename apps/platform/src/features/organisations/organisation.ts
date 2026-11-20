@@ -135,6 +135,8 @@ const changedMeanwhile = new Set<string>([
   ErrorCode.TenantHasOwner,
   ErrorCode.TenantNotFound,
   ErrorCode.PlanOverrideNotFound,
+  ErrorCode.TenantInTrial,
+  ErrorCode.TenantNotInTrial,
 ]);
 
 /**

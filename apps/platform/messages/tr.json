@@ -221,6 +221,7 @@
     "billingAll": "Faturalama: Tümü",
     "billingOverdue": "Ödeme gecikmiş · {count}",
     "billingContract": "Sözleşme · {count}",
+    "billingInTrial": "Denemede · {count}",
     "noMatchBilling": "Bu faturalama durumunda kuruluş yok"
   },
   "users": {
@@ -589,6 +590,7 @@
   },
   "planSection": {
     "title": "Plan",
+    "inTrial": "{plan} denemesi.",
     "changePlan": "Planı değiştir",
     "addOverride": "İstisna ekle",
     "key": "Özellik veya sınır",
@@ -921,7 +923,31 @@
     "next": "Sonraki ödeme {date}: KDV hariç {amount}.",
     "lastPayment": "Son ödeme {date}.",
     "stripe": "Stripe",
-    "openInStripe": "Stripe’da aç"
+    "openInStripe": "Stripe’da aç",
+    "trial": "Deneme",
+    "trialPeriod": "Deneme",
+    "trialPeriodText": "{plan} denemesi {date} tarihinde bitiyor. {count, plural, one {# gün kaldı} other {# gün kaldı}}. Sonra {next} planına geçer.",
+    "inTrial": "Denemede",
+    "trialUsed": "Deneme kullanıldı",
+    "trialDates": "{plan}, {range}.",
+    "trialRange": "{from} - {to}",
+    "giveTrial": "Deneme ver",
+    "extendTrial": "Denemeyi uzat",
+    "giveTitle": "<bdi>{organisation}</bdi> kuruluşuna deneme ver",
+    "giveText": "Bugün başlar ve kart gerekmez.",
+    "giveTextUsed": "<bdi>{organisation}</bdi> {range} tarihleri arasında bir deneme kullandı. Yenisini yalnızca bir sistem yöneticisi verebilir. Bugün başlar ve kart gerekmez.",
+    "trialPlan": "Plan",
+    "days": "Gün",
+    "giveEnds": "{date} tarihinde biter. Sonra {plan} planına geri döner.",
+    "giveEndsPaid": "{date} tarihinde biter. Sonra {interval, select, yearly {yıllık} other {aylık}} {plan} planına geri döner.",
+    "given": "Deneme verildi",
+    "giveFailed": "Deneme verilemedi",
+    "extendTitle": "Denemeyi uzat",
+    "extendText": "<bdi>{organisation}</bdi>, {date} tarihine kadar {plan} denemesinde.",
+    "extraDays": "Ek gün",
+    "newEnd": "Yeni bitiş tarihi: {date}.",
+    "extended": "Deneme uzatıldı",
+    "extendFailed": "Deneme uzatılamadı"
   },
   "usage": {
     "tab": "Kullanım",

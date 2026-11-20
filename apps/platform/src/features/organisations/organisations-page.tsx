@@ -56,7 +56,7 @@ const noMatchLabels = {
 /**
  * Organisations, the platform's start page (4.01 to 4.06, 4.43): the title with its description and no Freshness (F59), Create
  * organisation, the status tabs with the counts of `ListTenants`, the search, the billing filter while the deployment's billing is
- * on (4.38: `billingCounts` is null while it is off), the table, and Load more (F9). The tabs, the search, the filter and the sort
+ * on (4.38, 4.39: `billingCounts` is null while it is off), the table, and Load more (F9). The tabs, the search, the filter and the sort
  * are in the URL, never the page. On a phone the top bar names the page, so its title stays for screen readers; Create spans
  * the width, and the tabs are one choice.
  */
@@ -268,6 +268,12 @@ export function OrganisationsPage() {
                     id: TenantResponseBilling.Contract,
                     label: t("organisations.billingContract", {
                       count: billingCounts.contract,
+                    }),
+                  },
+                  {
+                    id: TenantResponseBilling.InTrial,
+                    label: t("organisations.billingInTrial", {
+                      count: billingCounts.inTrial,
                     }),
                   },
                 ]}

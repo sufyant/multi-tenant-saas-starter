@@ -18,11 +18,14 @@ import type {
 } from 'msw';
 
 import type {
-  SignUpResponse
+  SignUpResponse,
+  SignUpTrialResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getGetSignUpResponseMock = (overrideResponse: Partial<Extract<SignUpResponse, object>> = {}): SignUpResponse => ({enabled: faker.datatype.boolean(), tenantLimit: faker.number.int(), ...overrideResponse})
+export const getGetSignUpResponseSignUpTrialResponseMock = (overrideResponse: Partial<SignUpTrialResponse> = {}): SignUpTrialResponse => ({...{plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, days: faker.number.int()}, ...overrideResponse});
+
+export const getGetSignUpResponseMock = (overrideResponse: Partial<Extract<SignUpResponse, object>> = {}): SignUpResponse => ({enabled: faker.datatype.boolean(), tenantLimit: faker.number.int(), trial: faker.helpers.arrayElement([null,{...getGetSignUpResponseSignUpTrialResponseMock()},]), ...overrideResponse})
 
 
 export const getGetSignUpMockHandler = (overrideResponse?: SignUpResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<SignUpResponse> | SignUpResponse), options?: RequestHandlerOptions) => {
