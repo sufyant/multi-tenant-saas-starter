@@ -2663,6 +2663,21 @@ const freeUse = (used: number) => ({
   extra: 0,
   extraAmount: 0,
 });
+const capReached = usage({
+  meters: [
+    teamMeter({
+      used: 60000,
+      extra: 50000,
+      extraAmount: 5000,
+      quotaReachedAt: "2026-11-12T10:00:00Z",
+    }),
+  ],
+  spendingCap: {
+    amount: 5000,
+    extraAmount: 5000,
+    reachedAt: "2026-11-24T10:00:00Z",
+  },
+});
 const overQuota = usage({
   meters: [
     teamMeter({
@@ -2702,25 +2717,7 @@ shellShots.push(
   {
     ...onUsage,
     file: "11.04-usage-cap-reached-en-light-desktop",
-    mock: (page) =>
-      mockUsage(
-        page,
-        usage({
-          meters: [
-            teamMeter({
-              used: 60000,
-              extra: 50000,
-              extraAmount: 5000,
-              quotaReachedAt: "2026-11-12T10:00:00Z",
-            }),
-          ],
-          spendingCap: {
-            amount: 5000,
-            extraAmount: 5000,
-            reachedAt: "2026-11-24T10:00:00Z",
-          },
-        }),
-      ),
+    mock: (page) => mockUsage(page, capReached),
     ready: usageReady,
   },
   {
@@ -2814,6 +2811,66 @@ shellShots.push(
     role: BuiltInRole.BillingManager,
     mock: (page) => mockUsage(page),
     ready: usageReady,
+  },
+);
+
+// The billing bar's usage notices of 40c (2.34 to 2.37), above Members, as the frames draw them.
+const onUsageBar = {
+  size: "desktop",
+  path: members,
+  team: northwindTeam(),
+  plan: team,
+} as const;
+const barReady = (text: RegExp) => async (page: Page) => {
+  await loaded(page);
+  await page.getByText(text).waitFor();
+};
+shellShots.push(
+  {
+    ...onUsageBar,
+    file: "2.34-billing-bar-meter-80-en-light-desktop",
+    mock: (page) =>
+      mockUsage(page, usage({ meters: [teamMeter({ used: 8000 })] })),
+    ready: barReady(/^You’ve used 80%/),
+  },
+  {
+    ...onUsageBar,
+    file: "2.35-billing-bar-meter-used-up-en-light-desktop",
+    mock: (page) =>
+      mockUsage(
+        page,
+        usage({
+          meters: [
+            teamMeter({
+              used: 10000,
+              quotaReachedAt: "2026-11-12T10:00:00Z",
+            }),
+          ],
+        }),
+      ),
+    ready: barReady(/^You’ve used all 10,000/),
+  },
+  {
+    ...onUsageBar,
+    file: "2.36-billing-bar-free-used-up-en-light-desktop",
+    plan: { ...team, planName: "Free" },
+    mock: (page) =>
+      mockUsage(
+        page,
+        usage({
+          planName: "Free",
+          meters: [freeMeter],
+          spendingCapOffered: false,
+        }),
+        billing(null),
+      ),
+    ready: barReady(/^You’ve used all 100/),
+  },
+  {
+    ...onUsageBar,
+    file: "2.37-billing-bar-cap-reached-en-light-desktop",
+    mock: (page) => mockUsage(page, capReached),
+    ready: barReady(/stopped: you reached your spending cap/),
   },
 );
 
