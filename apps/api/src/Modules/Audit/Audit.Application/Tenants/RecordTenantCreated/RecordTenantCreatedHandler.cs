@@ -8,7 +8,8 @@ using ControlPlane.Contracts.Tenants;
 namespace Audit.Application.Tenants.RecordTenantCreated;
 
 // The audit entries of a tenant's creation, written when ControlPlane announces it, under that tenant. The system admin
-// who created the tenant acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3). Both
+// who created the tenant acted: the platform's log names them, and the tenant's own log says only that the platform acted (K3). A user
+// who created a tenant of their own is its Owner, so both logs name them (step 40d). Both
 // entries are written in one transaction, with the plan the tenant got; an event of the version before step 32 names none.
 public static class RecordTenantCreatedHandler
 {
@@ -20,7 +21,13 @@ public static class RecordTenantCreatedHandler
             : null;
         return log.RecordAsync(
             new PlatformAuditEntry(created.EventId, created.OccurredAt, AuditActor.User(created.CreatedBy), AuditOperations.TenantCreated, tenant, details),
-            new TenantAuditEntry(created.EventId, created.OccurredAt, AuditActor.Platform, AuditOperations.TenantCreated, tenant, details),
+            new TenantAuditEntry(
+                created.EventId,
+                created.OccurredAt,
+                created.ByItsOwner ? AuditActor.User(created.CreatedBy) : AuditActor.Platform,
+                AuditOperations.TenantCreated,
+                tenant,
+                details),
             cancellationToken);
     }
 }

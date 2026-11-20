@@ -29,19 +29,22 @@ import type {
   PreferencesResponse,
   RenameMeRequest,
   RequestEmailChangeRequest,
+  SignUpRequest,
   VerificationCodeResponse
 } from '../endpoints.schemas.gen';
 
 
-export const getGetMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+export const getGetMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdTenantCount: faker.number.int(), ...overrideResponse})
 
-export const getRenameMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+export const getRenameMeResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdTenantCount: faker.number.int(), ...overrideResponse})
+
+export const getSignUpResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdTenantCount: faker.number.int(), ...overrideResponse})
 
 export const getChangePreferencesResponseMock = (overrideResponse: Partial<Extract<PreferencesResponse, object>> = {}): PreferencesResponse => ({language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
 
 export const getRequestEmailChangeResponseMock = (overrideResponse: Partial<Extract<VerificationCodeResponse, object>> = {}): VerificationCodeResponse => ({expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getChangeEmailResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), ...overrideResponse})
+export const getChangeEmailResponseMock = (overrideResponse: Partial<Extract<MeResponse, object>> = {}): MeResponse => ({id: faker.string.uuid(), email: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), name: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), isSystemAdmin: faker.datatype.boolean(), language: faker.helpers.arrayElement(Object.values(Language)), timeZone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), createdTenantCount: faker.number.int(), ...overrideResponse})
 
 export const getRequestAccountDeletionResponseMock = (overrideResponse: Partial<Extract<VerificationCodeResponse, object>> = {}): VerificationCodeResponse => ({expiresAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
@@ -65,6 +68,18 @@ export const getRenameMeMockHandler = (overrideResponse?: MeResponse | ((info: P
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getRenameMeResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getSignUpMockHandler = (overrideResponse?: MeResponse | ((info: Parameters<HttpResponseResolver<PathParams, SignUpRequest>>[0]) => Promise<MeResponse> | MeResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, SignUpRequest>('*/v1/me/sign-up', async (info: Parameters<HttpResponseResolver<PathParams, SignUpRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSignUpResponseMock(),
       { status: 200
       })
   }, options)
@@ -130,6 +145,7 @@ export const getConfirmAccountDeletionMockHandler = (overrideResponse?: void | (
 export const getMeUsersMock = () => [
   getGetMeMockHandler(),
   getRenameMeMockHandler(),
+  getSignUpMockHandler(),
   getChangePreferencesMockHandler(),
   getRequestEmailChangeMockHandler(),
   getChangeEmailMockHandler(),

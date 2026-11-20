@@ -48,7 +48,14 @@ public sealed class UserQueries(ControlPlaneDbContext controlPlane, SystemAdminO
             return null;
         }
 
-        return new MeView(user.Id, user.Email, user.Name, await IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
+        return new MeView(
+            user.Id,
+            user.Email,
+            user.Name,
+            await IsSystemAdminAsync(user.Id, cancellationToken),
+            user.Language,
+            user.TimeZone,
+            await controlPlane.Tenants.CountAsync(tenant => tenant.CreatedBy == user.Id, cancellationToken));
     }
 
     // The user, the system admin who suspended them, the grant of system admin with the names of who granted it, and their memberships: the

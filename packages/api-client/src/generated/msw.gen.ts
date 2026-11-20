@@ -20,6 +20,7 @@ export * from "./platform-tenants/platform-tenants.msw.gen";
 export * from "./platform-termsversions/platform-termsversions.msw.gen";
 export * from "./platform-usage/platform-usage.msw.gen";
 export * from "./platform-users/platform-users.msw.gen";
+export * from "./public-signup/public-signup.msw.gen";
 export * from "./public-termsversions/public-termsversions.msw.gen";
 export * from "./tenant-auditlogs/tenant-auditlogs.msw.gen";
 export * from "./tenant-billingemails/tenant-billingemails.msw.gen";

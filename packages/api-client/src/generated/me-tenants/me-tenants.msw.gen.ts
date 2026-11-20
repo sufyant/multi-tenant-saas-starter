@@ -14,6 +14,7 @@ import {
 } from 'msw';
 import type {
   HttpResponseResolver,
+  PathParams,
   RequestHandlerOptions
 } from 'msw';
 
@@ -21,11 +22,15 @@ import {
   MyTenantResponseStatus
 } from '../endpoints.schemas.gen';
 import type {
-  ListPageOfMyTenantResponse
+  CreateMyTenantRequest,
+  ListPageOfMyTenantResponse,
+  MyTenantResponse
 } from '../endpoints.schemas.gen';
 
 
 export const getListMyTenantsResponseMock = (overrideResponse: Partial<Extract<ListPageOfMyTenantResponse, object>> = {}): ListPageOfMyTenantResponse => ({items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}})), page: faker.number.int(), pageSize: faker.number.int(), total: faker.number.int(), ...overrideResponse})
+
+export const getCreateMyTenantResponseMock = (overrideResponse: Partial<Extract<MyTenantResponse, object>> = {}): MyTenantResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, ...overrideResponse})
 
 
 export const getListMyTenantsMockHandler = (overrideResponse?: ListPageOfMyTenantResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<ListPageOfMyTenantResponse> | ListPageOfMyTenantResponse), options?: RequestHandlerOptions) => {
@@ -39,6 +44,19 @@ export const getListMyTenantsMockHandler = (overrideResponse?: ListPageOfMyTenan
       })
   }, options)
 }
+
+export const getCreateMyTenantMockHandler = (overrideResponse?: MyTenantResponse | ((info: Parameters<HttpResponseResolver<PathParams, CreateMyTenantRequest>>[0]) => Promise<MyTenantResponse> | MyTenantResponse), options?: RequestHandlerOptions) => {
+  return http.post<PathParams, CreateMyTenantRequest>('*/v1/me/tenants', async (info: Parameters<HttpResponseResolver<PathParams, CreateMyTenantRequest>>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateMyTenantResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
 export const getMeTenantsMock = () => [
-  getListMyTenantsMockHandler()
+  getListMyTenantsMockHandler(),
+  getCreateMyTenantMockHandler()
 ]

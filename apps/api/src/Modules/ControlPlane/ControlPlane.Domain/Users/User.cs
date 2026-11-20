@@ -69,7 +69,7 @@ internal sealed class User(Guid id, string externalId)
     public string? SuspensionReason { get; private set; }
 
     /// <summary>
-    /// When the person became a user: when they accepted their first invitation, or when the system door let them in as a root system admin.
+    /// When the person became a user: when they accepted their first invitation, when they signed up, or when the system door let them in as a root system admin.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private init; }
 
@@ -104,6 +104,19 @@ internal sealed class User(Guid id, string externalId)
         {
             Email = email.Value,
             Name = name.Trim(),
+            Language = language,
+            CreatedAt = now,
+        };
+
+    /// <summary>
+    /// A person who signed up at the identity provider becomes a user, while the product has sign-up on (step 40d), at this moment: the
+    /// address the identity provider verified, no name, as the sign-up asks none and the identity provider keeps none, and the language they
+    /// chose on the sign-up page. They name themselves in their profile (A7). They have no membership yet.
+    /// </summary>
+    public static User SignUp(Guid id, string externalId, EmailAddress email, Language language, DateTimeOffset now) =>
+        new(id, externalId)
+        {
+            Email = email.Value,
             Language = language,
             CreatedAt = now,
         };

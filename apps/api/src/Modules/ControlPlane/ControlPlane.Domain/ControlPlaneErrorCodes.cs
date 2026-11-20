@@ -97,6 +97,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode RoleRolesReadRequired = ErrorCode.Declare("role.roles_read_required");
 
+    public static readonly ErrorCode SignUpDisabled = ErrorCode.Declare("sign_up.disabled");
+
     public static readonly ErrorCode SystemAdminCannotRevokeSelf = ErrorCode.Declare("system_admin.cannot_revoke_self");
 
     public static readonly ErrorCode SystemAdminExists = ErrorCode.Declare("system_admin.exists");
@@ -108,6 +110,8 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode SystemAdminRoot = ErrorCode.Declare("system_admin.root");
 
     public static readonly ErrorCode TenantClosed = ErrorCode.Declare("tenant.closed");
+
+    public static readonly ErrorCode TenantCreationLimitReached = ErrorCode.Declare("tenant.creation_limit_reached");
 
     public static readonly ErrorCode TenantHasOwner = ErrorCode.Declare("tenant.has_owner");
 
@@ -158,6 +162,8 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode UserEmailTaken = ErrorCode.Declare("user.email_taken");
 
     public static readonly ErrorCode UserEmailUnchanged = ErrorCode.Declare("user.email_unchanged");
+
+    public static readonly ErrorCode UserEmailUnverified = ErrorCode.Declare("user.email_unverified");
 
     public static readonly ErrorCode UserHasMemberships = ErrorCode.Declare("user.has_memberships");
 

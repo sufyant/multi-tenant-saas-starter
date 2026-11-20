@@ -51,6 +51,12 @@ public interface IUserRepository
     /// <summary>Whether the user is on the system admin list. The system admin list belongs to no tenant.</summary>
     internal Task<bool> IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// How many tenants the user created that were not purged: a purge clears the creator (<c>Tenant.Purge</c>). The tenants table is not
+    /// under row level security (R6), so it counts across tenants. Sign-up's limit counts it under the user's lock (step 40d).
+    /// </summary>
+    internal Task<int> CountCreatedTenantsAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>When the user's grant on the system admin list was made; null when the user is not on it.</summary>
     internal Task<DateTimeOffset?> FindSystemAdminGrantedAtAsync(Guid userId, CancellationToken cancellationToken);
 

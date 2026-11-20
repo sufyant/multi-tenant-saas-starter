@@ -84,6 +84,9 @@ public sealed class UserRepository(ControlPlaneDbContext controlPlane) : IUserRe
     Task<bool> IUserRepository.IsSystemAdminAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.AnyAsync(admin => admin.UserId == userId, cancellationToken);
 
+    Task<int> IUserRepository.CountCreatedTenantsAsync(Guid userId, CancellationToken cancellationToken) =>
+        controlPlane.Tenants.CountAsync(tenant => tenant.CreatedBy == userId, cancellationToken);
+
     Task<DateTimeOffset?> IUserRepository.FindSystemAdminGrantedAtAsync(Guid userId, CancellationToken cancellationToken) =>
         controlPlane.SystemAdmins.Where(admin => admin.UserId == userId).Select(admin => (DateTimeOffset?)admin.GrantedAt).SingleOrDefaultAsync(cancellationToken);
 

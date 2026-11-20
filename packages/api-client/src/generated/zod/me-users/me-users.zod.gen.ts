@@ -17,8 +17,9 @@ export const GetMeResponse = zod.object({
   Tr: 'tr',
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.'),
-  "timeZone": zod.string().nullable()
-}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.')
+  "timeZone": zod.string().nullable(),
+  "createdTenantCount": zod.int()
+}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.\n`CreatedTenantCount` is how many tenants the user created that were not purged, which the limit of sign-up counts (2.39).')
 
 export const renameMeBodyNameMax = 100;
 
@@ -38,8 +39,32 @@ export const RenameMeResponse = zod.object({
   Tr: 'tr',
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.'),
-  "timeZone": zod.string().nullable()
-}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.')
+  "timeZone": zod.string().nullable(),
+  "createdTenantCount": zod.int()
+}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.\n`CreatedTenantCount` is how many tenants the user created that were not purged, which the limit of sign-up counts (2.39).')
+
+export const SignUpBody = zod.object({
+  "language": zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.'),
+  "termsVersionId": zod.uuid().nullish()
+}).describe('The language the person chose on the sign-up page, one of the list, required; and the id of the terms version in force that the person\naccepts with the sign-up, or null. Another version answers 409 `terms_version.changed`, and an id no version has 404\n`terms_version.not_found`.')
+
+export const SignUpResponse = zod.object({
+  "id": zod.uuid(),
+  "email": zod.string().nullable(),
+  "name": zod.string().nullable(),
+  "isSystemAdmin": zod.boolean(),
+  "language": zod.enum({
+  En: 'en',
+  Tr: 'tr',
+  Ar: 'ar',
+}).describe('A language the web speaks, by its BCP 47 language tag.'),
+  "timeZone": zod.string().nullable(),
+  "createdTenantCount": zod.int()
+}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.\n`CreatedTenantCount` is how many tenants the user created that were not purged, which the limit of sign-up counts (2.39).')
 
 export const changePreferencesBodyTimeZoneMax = 64;
 
@@ -102,8 +127,9 @@ export const ChangeEmailResponse = zod.object({
   Tr: 'tr',
   Ar: 'ar',
 }).describe('A language the web speaks, by its BCP 47 language tag.'),
-  "timeZone": zod.string().nullable()
-}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.')
+  "timeZone": zod.string().nullable(),
+  "createdTenantCount": zod.int()
+}).describe('The signed-in user: our user id, not the identity provider\'s, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.\n`CreatedTenantCount` is how many tenants the user created that were not purged, which the limit of sign-up counts (2.39).')
 
 /**
  * Answers 201 with the code's expiry and without Location: a code is never read back, so the request's target URI identifies it (RFC 9110, section 15.3.2).
