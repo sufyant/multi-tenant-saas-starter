@@ -70,6 +70,18 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
         _api.Email.Sent.ShouldContain(sent => sent.To == owner);
     }
 
+    // 13.25: the welcome is for a person who creates an organisation of their own; a system admin's creation welcomes nobody.
+    [Fact]
+    public async Task CreateTenant_Valid_WelcomesNobody()
+    {
+        var admin = await _testData.AddSystemAdminAsync();
+
+        var tenantId = await IdOfCreatedAsync(await _api.WaitingForMessagesAsync(() => CreateTenantAsync(admin, Slug(), Email())));
+
+        (await CountAsync($"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenantId}' AND type = 'tenant.created'"))
+            .ShouldBe(0);
+    }
+
     // The creation sends the identity provider's sign-up and the audit event itself, through the outbox, as InviteOwner does.
     [Fact]
     public async Task CreateTenant_Valid_SendsTheSignUpAndTheAuditEventFromTheCreation()
@@ -86,7 +98,8 @@ public sealed class CreateTenantTests(Database database) : IAsyncLifetime
             signUp => signUp.TenantId.ShouldBe(tenantId),
             signUp => signUp.InvitationId.ShouldBe(invitationId),
             signUp => signUp.Email.ShouldBe(owner));
-        messages.Sent.SingleMessage<TenantCreatedEvent>().TenantId.ShouldBe(tenantId);
+        // The event goes once to each of its handlers, Audit's and Notifications' (W4).
+        messages.Sent.MessagesOf<TenantCreatedEvent>().Select(each => each.TenantId).Distinct().ShouldBe([tenantId]);
     }
 
     // Settings › General shows when the tenant was created: the moment of the request, by the module's clock.

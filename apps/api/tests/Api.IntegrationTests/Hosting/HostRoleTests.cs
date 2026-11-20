@@ -129,6 +129,10 @@ using Audit.Application.Tenants.RecordTenantTrialGiven;
 using Audit.Application.Tenants.RecordTenantTrialExtended;
 using ControlPlane.Application.Tenants.GiveTenantTrial;
 using ControlPlane.Application.Tenants.ExtendTenantTrial;
+using Notifications.Application.Tenants.NotifyTenantCreated;
+using ControlPlane.Application.Tenants.WarnTenantTrialEnding;
+using Notifications.Application.Tenants.NotifyTenantTrialEnded;
+using Notifications.Application.Tenants.NotifyTenantTrialEnding;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -142,6 +146,7 @@ public sealed class HostRoleTests(Database database)
     private static readonly HandlerRun[] HandlersAfterTheCreation =
     [
         new(typeof(TenantCreatedEvent), typeof(RecordTenantCreatedHandler)),
+        new(typeof(TenantCreatedEvent), typeof(NotifyTenantCreatedHandler)),
         new(typeof(OpenSignUpCommand), typeof(OpenSignUpHandler)),
         new(typeof(RecordSignUpCommand), typeof(RecordSignUpHandler)),
         new(typeof(InvitationReadyEvent), typeof(SendInvitationEmailHandler)),
@@ -194,6 +199,12 @@ public sealed class HostRoleTests(Database database)
     private static readonly Dictionary<string, string?> ShortTrial = new(SignUpSettings.On.Concat(BillingRequests.On))
     {
         ["ControlPlane:Trial:Length"] = "00:00:02",
+    };
+
+    // A trial of three days and two seconds, so its reminder comes two seconds after the start.
+    private static readonly Dictionary<string, string?> TrialWithAReminder = new(SignUpSettings.On.Concat(BillingRequests.On))
+    {
+        ["ControlPlane:Trial:Length"] = "3.00:00:02",
     };
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -810,13 +821,41 @@ public sealed class HostRoleTests(Database database)
         var created = await web.CreateClient(person).SendAsync(request, Cancellation);
         var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
         await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, tenantId, "tenant.trial_ended") > 0);
+        await Waiting.UntilAsync(async () => await NotificationsAsync(name, tenantId, "tenant.trial_ended") > 0);
 
         created.StatusCode.ShouldBe(HttpStatusCode.Created);
         runs.In("web").ShouldContain(new HandlerRun(typeof(CreateMyTenantCommand), typeof(CreateMyTenantHandler)));
         runs.In("web").ShouldNotContain(new HandlerRun(typeof(EndTenantTrialCommand), typeof(EndTenantTrialHandler)));
         runs.In("worker").ShouldContain(new HandlerRun(typeof(EndTenantTrialCommand), typeof(EndTenantTrialHandler)));
         runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialEndedEvent), typeof(RecordTenantTrialEndedHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialEndedEvent), typeof(NotifyTenantTrialEndedHandler)));
         (await AuditEntriesAsync(name, tenantId, "tenant.trial_ended")).ShouldBe(1L);
+    }
+
+    // Step 40d, 13.16: the web host schedules the trial's reminder through the outbox; a worker sends it, and tells the Owner.
+    [Fact]
+    public async Task CreateMyTenant_TheTrialEndNearsOnAWebAndAWorkerHost_TellsTheOwnerInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: TrialWithAReminder);
+        await using var worker = Host(name, "worker", runs, settings: TrialWithAReminder);
+        _ = worker.Services;
+        var person = await new TestData(database, name).AddUserAsync(email: "kestrel@example.com");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/me/tenants")
+        {
+            Content = JsonContent.Create(new { name = "Kestrel Analytics", slug = "kestrel" }),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        var created = await web.CreateClient(person).SendAsync(request, Cancellation);
+        var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+        await Waiting.UntilAsync(async () => await NotificationsAsync(name, tenantId, "tenant.trial_ending") > 0);
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        runs.In("web").ShouldNotContain(new HandlerRun(typeof(WarnTenantTrialEndingCommand), typeof(WarnTenantTrialEndingHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(WarnTenantTrialEndingCommand), typeof(WarnTenantTrialEndingHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialEndNearedEvent), typeof(NotifyTenantTrialEndingHandler)));
     }
 
     // Step 40d: the web host gives and extends a trial; a worker records both, each in the two logs.

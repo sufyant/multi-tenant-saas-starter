@@ -1,7 +1,9 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Billing.Contracts.Subscriptions;
 using ControlPlane.Application.Tenants.EndTenantTrial;
+using ControlPlane.Application.Tenants.WarnTenantTrialEnding;
 using ControlPlane.Contracts.Plans;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -21,6 +23,8 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
     private readonly TestData _testData = new(database);
 
     private readonly AuditEntries _audit = new(database);
+
+    private readonly NotificationRows _notifications = new(database);
 
     // The clock starts at the real now: the trial's end is scheduled 14 days after it, by Wolverine's clock, so it never comes during a run
     // on the shared database (section 9, rule 10).
@@ -48,11 +52,67 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
         var (tenantId, scheduled) = await CreateTrackedAsync(await NewUserAsync());
         _time.Advance(TrialLength);
 
-        await DeliverAsync(tenantId, scheduled.Single().Message);
+        await DeliverAsync(tenantId, scheduled.Single(each => each.Message is EndTenantTrialCommand).Message);
 
         (await PlanOfAsync(tenantId), await InTrialAsync(tenantId)).ShouldBe((await DefaultPlanAsync(), false));
         (await _audit.TenantLogAsync(tenantId))!.ShouldEndWith($"{tenantId}:tenant.trial_ended|Platform|-|Tenant|{tenantId}|Kestrel Analytics");
         (await _audit.PlatformLogAsync(tenantId))!.ShouldEndWith($"tenant.trial_ended|Platform|-|Tenant|{tenantId}|Kestrel Analytics");
+    }
+
+    // 13.16, 3.19: 3 days before the end, the members who manage billing hear that the trial ends, and which plan comes then.
+    [Fact]
+    public async Task WarnTenantTrialEnding_ThreeDaysBefore_TellsTheMembersWhoManageBilling()
+    {
+        var person = await NewUserAsync();
+        var (tenantId, scheduled) = await CreateTrackedAsync(person);
+        var (warning, at) = scheduled.Single(each => each.Message is WarnTenantTrialEndingCommand);
+        _time.Advance(at!.Value - _time.GetUtcNow());
+
+        await DeliverAsync(tenantId, warning);
+
+        var userId = await _testData.UserIdOfAsync(person);
+        (await _notifications.ValueListOfAsync(userId, "tenant.trial_ending", tenantId)).ShouldBe(
+            $"days=3, defaultPlanName={await DefaultPlanNameAsync()}, endsAt={Moment(at.Value + TimeSpan.FromDays(3))}, planName=Business, tenantName=Kestrel Analytics");
+    }
+
+    // O4: a copy of the reminder, as a retry delivers, tells each member once.
+    [Fact]
+    public async Task WarnTenantTrialEnding_Twice_TellsTheMembersOnce()
+    {
+        var (tenantId, scheduled) = await CreateTrackedAsync(await NewUserAsync());
+        var (warning, at) = scheduled.Single(each => each.Message is WarnTenantTrialEndingCommand);
+        _time.Advance(at!.Value - _time.GetUtcNow());
+
+        await DeliverAsync(tenantId, warning);
+        await DeliverAsync(tenantId, warning);
+
+        (await _notifications.CountAboutAsync(tenantId, "tenant.trial_ending")).ShouldBe(1);
+    }
+
+    // K4: a reminder of an end the trial no longer has, as an extension leaves behind, tells nobody.
+    [Fact]
+    public async Task WarnTenantTrialEnding_OfAnotherEnd_TellsNobody()
+    {
+        var (tenantId, _) = await CreateTrackedAsync(await NewUserAsync());
+
+        await DeliverAsync(tenantId, new WarnTenantTrialEndingCommand(tenantId, _time.GetUtcNow() + TimeSpan.FromDays(5)));
+
+        (await _notifications.CountAboutAsync(tenantId, "tenant.trial_ending")).ShouldBe(0);
+    }
+
+    // 13.17, 3.20: at the end, the members who manage billing hear that the tenant moved back, and that nothing was deleted.
+    [Fact]
+    public async Task EndTenantTrial_AtItsEnd_TellsTheMembersWhoManageBilling()
+    {
+        var person = await NewUserAsync();
+        var (tenantId, scheduled) = await CreateTrackedAsync(person);
+        _time.Advance(TrialLength);
+
+        await DeliverAsync(tenantId, scheduled.Single(each => each.Message is EndTenantTrialCommand).Message);
+
+        var userId = await _testData.UserIdOfAsync(person);
+        (await _notifications.ValueListOfAsync(userId, "tenant.trial_ended", tenantId)).ShouldBe(
+            $"defaultPlanName={await DefaultPlanNameAsync()}, endedAt={Moment(_time.GetUtcNow())}, planName=Business, tenantName=Kestrel Analytics");
     }
 
     // K4's pattern: nothing cancels a scheduled message, so a message of another end, as an extension leaves behind, does nothing.
@@ -111,6 +171,9 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
         (await _audit.TenantLogAsync(tenant.Id))!.ShouldEndWith($"{tenant.Id}:tenant.moved_to_default_plan|Platform|-|Tenant|{tenant.Id}|Trial Ltd");
     }
 
+    // A moment as a Date value of a notification stores it.
+    private static string Moment(DateTimeOffset at) => at.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+
     private Task<string> NewUserAsync() => _testData.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
 
     // POST /v1/me/tenants, with the messages it scheduled and their moments.
@@ -139,6 +202,9 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
             await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), message, Cancellation);
             return tenantId;
         });
+
+    private Task<string?> DefaultPlanNameAsync() =>
+        database.ScalarAsSuperuserAsync<string>("SELECT name FROM control_plane.plans WHERE id = (SELECT plan_id FROM control_plane.default_plans)");
 
     private Task<Guid> DefaultPlanAsync() => database.ScalarAsSuperuserAsync<Guid>("SELECT plan_id FROM control_plane.default_plans");
 
