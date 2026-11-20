@@ -44,6 +44,7 @@ import { myAccountPages, personalPages } from "@/shared/personal-pages";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
 import { TenantProvider, useTenant } from "@/shared/tenant-context";
+import { useUsageShown } from "@/shared/usage";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
 
@@ -87,6 +88,9 @@ export function TenantShell({
   const billing = useBillingShown(
     pathname.startsWith(`/${tenant.slug}/settings/billing`),
   );
+  const usage = useUsageShown(
+    pathname.startsWith(`/${tenant.slug}/settings/usage`),
+  );
   // The role changed while a page is open (GetMyTenant read again): the page says so until the person opens another page.
   const shownRole = useRef(detail.role.id);
   const [changed, setChanged] = useState<{ role: string; on: string }>();
@@ -104,6 +108,7 @@ export function TenantShell({
         role,
         can,
         billing,
+        usage,
         billingBar: (
           <BillingBar
             onBilling={pathname.startsWith(`/${tenant.slug}/settings/billing`)}
@@ -193,6 +198,8 @@ type Known = {
   counts: Partial<Record<"members" | "roles", number>>;
   /** Billing is a page of the organisation: the deployment's billing is on (`useBillingShown`). */
   billing?: boolean;
+  /** Usage is a page of the organisation: Billing is, and the plan has a meter (`useUsageShown`). */
+  usage?: boolean;
   /** The billing bar, after the connection bar (2.32, 2.33). */
   billingBar?: ReactNode;
 };
@@ -233,11 +240,13 @@ function TenantFrame({
   const settings = `${base}/settings`;
   const can = known?.can ?? (() => false);
   const myAccount = myAccountPages(t);
-  // Billing joins with its permission while billing is on; Usage joins in step 40c.
+  // Billing joins with its permission while billing is on, and Usage while the plan has a meter too (F66).
   const organisation: NavItem[] = organisationPages
     .filter(
       (page) =>
-        can(page.permission) && (page.id !== "billing" || known?.billing),
+        can(page.permission) &&
+        (page.id !== "billing" || known?.billing) &&
+        (page.id !== "usage" || known?.usage),
     )
     .map((page) => ({
       id: page.id,
