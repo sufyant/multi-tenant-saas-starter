@@ -14683,6 +14683,7 @@
           "user.preferences_changed",
           "user.reactivated",
           "user.renamed",
+          "user.signed_up",
           "user.suspended"
         ],
         "type": "string",
@@ -14747,6 +14748,7 @@
           "UserPreferencesChanged",
           "UserReactivated",
           "UserRenamed",
+          "UserSignedUp",
           "UserSuspended"
         ]
       },

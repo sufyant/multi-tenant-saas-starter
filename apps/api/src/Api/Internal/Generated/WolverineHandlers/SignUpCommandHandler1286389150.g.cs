@@ -53,11 +53,15 @@ namespace Internal.Generated.WolverineHandlers
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.GetMe.MeView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.BeforeAsync(context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Users.SignUp.SignUpHandler.HandleAsync(signUpCommand, _signUpOptions, userRepository, userQueries, termsVersionRepository, _timeProvider, cancellation).ConfigureAwait(false);
+                (var outgoing1, var outgoing2) = await ControlPlane.Application.Users.SignUp.SignUpHandler.HandleAsync(signUpCommand, _signUpOptions, userRepository, userQueries, termsVersionRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message
                 await context.EnqueueCascadingAsync(outgoing1).ConfigureAwait(false);
+
+                
+                // Outgoing, cascaded message
+                await context.EnqueueCascadingAsync(outgoing2).ConfigureAwait(false);
 
                 await Api.Idempotency.IdempotencyResultMiddleware<ControlPlane.Application.Users.GetMe.MeView, ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext>.AfterAsync(outgoing1, context.Envelope, controlPlaneDbContext, cancellation).ConfigureAwait(false);
                 

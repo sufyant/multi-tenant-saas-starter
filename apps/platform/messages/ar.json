@@ -418,7 +418,8 @@
         "renamed": "{self, select, yes {غيّر <actor></actor> اسمه.} other {غيّر <actor></actor> اسم المستخدم <target></target>.}}",
         "deleted": "{actorKind, select, platform {حُذف مستخدم.} other {حذف <actor></actor> مستخدمًا.}}",
         "email_preferences_changed": "غيّر <actor></actor> تفضيلاته.",
-        "preferences_changed": "غيّر <actor></actor> تفضيلاته."
+        "preferences_changed": "غيّر <actor></actor> تفضيلاته.",
+        "signed_up": "أنشأ <actor></actor> حسابه."
       },
       "system_admin": {
         "granted": "جعل <actor></actor> <target></target> مسؤول نظام.",

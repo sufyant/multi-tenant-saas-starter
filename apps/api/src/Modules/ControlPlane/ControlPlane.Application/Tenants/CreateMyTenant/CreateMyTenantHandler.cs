@@ -35,6 +35,12 @@ public static class CreateMyTenantHandler
             return (Errors.UserNotFound, []);
         }
 
+        // A8: a deletion that committed after the door let the user in is refused under the lock, so a deleted user never becomes an Owner.
+        if (user.DeletedAt is not null)
+        {
+            return (Error.Forbidden(ControlPlaneErrorCodes.UserDeleted, "Your account is deleted."), []);
+        }
+
         if (await users.CountCreatedTenantsAsync(user.Id, cancellationToken) >= signUp.TenantLimit)
         {
             return (Error.Conflict(ControlPlaneErrorCodes.TenantCreationLimitReached, "The person created as many tenants as one person may."), []);

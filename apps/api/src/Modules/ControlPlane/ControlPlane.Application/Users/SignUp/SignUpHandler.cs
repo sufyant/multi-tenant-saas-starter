@@ -1,9 +1,11 @@
 using ControlPlane.Application.TermsVersions;
 using ControlPlane.Application.Users.GetMe;
+using ControlPlane.Contracts.Users;
 using ControlPlane.Domain.EmailAddresses;
 using ControlPlane.Domain.TermsVersions;
 using ControlPlane.Domain.Users;
 using SharedKernel;
+using Wolverine;
 
 namespace ControlPlane.Application.Users.SignUp;
 
@@ -12,7 +14,7 @@ namespace ControlPlane.Application.Users.SignUp;
 // ticked are the version in force. Rejections come first (W7).
 public static class SignUpHandler
 {
-    public static async Task<Result<MeView>> HandleAsync(
+    public static async Task<(Result<MeView>, OutgoingMessages)> HandleAsync(
         SignUpCommand command,
         SignUpOptions signUp,
         IUserRepository users,
@@ -23,24 +25,24 @@ public static class SignUpHandler
     {
         if (!signUp.Enabled)
         {
-            return Errors.SignUpDisabled;
+            return (Errors.SignUpDisabled, []);
         }
 
         if (await users.FindUserForNoKeyUpdateAsync(command.ActorId, cancellationToken) is not null)
         {
-            return await queries.FindMeAsync(command.ActorId, cancellationToken) ?? throw new InvalidOperationException("The user was found under its lock.");
+            return (await queries.FindMeAsync(command.ActorId, cancellationToken) ?? throw new InvalidOperationException("The user was found under its lock."), []);
         }
 
         // The identity provider's addresses enter here, in their one form (EmailAddress). The identity provider verifies the address at
         // sign-up (.clerk/config.json), so a new account has one.
         if (EmailAddress.AllOf(command.VerifiedEmails) is not [var email, ..])
         {
-            return Errors.UserEmailUnverified;
+            return (Errors.UserEmailUnverified, []);
         }
 
         if (await users.IsEmailTakenAsync(email, Guid.Empty, cancellationToken))
         {
-            return Errors.UserEmailTaken;
+            return (Errors.UserEmailTaken, []);
         }
 
         var now = time.GetUtcNow();
@@ -49,7 +51,7 @@ public static class SignUpHandler
             : null;
         if (termsVersion is { IsSuccess: false })
         {
-            return termsVersion.Error;
+            return (termsVersion.Error, []);
         }
 
         var user = User.SignUp(Guid.CreateVersion7(now), command.ActorId, email, command.Language, now);
@@ -63,6 +65,8 @@ public static class SignUpHandler
             await terms.AcceptAsync(new TermsAcceptance(accepting.Id, user.Id, now), cancellationToken);
         }
 
-        return new MeView(user.Id, user.Email, user.Name, IsSystemAdmin: false, user.Language, user.TimeZone, CreatedTenantCount: 0);
+        return (
+            new MeView(user.Id, user.Email, user.Name, IsSystemAdmin: false, user.Language, user.TimeZone, CreatedTenantCount: 0),
+            [new UserSignedUpEvent(Guid.CreateVersion7(now), now, user.Id)]);
     }
 }

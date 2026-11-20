@@ -807,6 +807,7 @@ export const AuditOperation = {
   UserPreferencesChanged: 'user.preferences_changed',
   UserReactivated: 'user.reactivated',
   UserRenamed: 'user.renamed',
+  UserSignedUp: 'user.signed_up',
   UserSuspended: 'user.suspended',
 } as const;
 

@@ -32,7 +32,7 @@ public static class MyProfileEndpoints
     public static void Map(RouteGroupBuilder me)
     {
         me.MapGet(string.Empty, GetMe).WithMetadata(new TermsGateExempt());
-        me.MapPost("/sign-up", SignUp).WithMetadata(new TermsGateExempt()).RequireRateLimiting(MyInvitationEndpoints.AcceptRateLimit);
+        me.MapPost("/sign-up", SignUp).RequireRateLimiting(MyInvitationEndpoints.AcceptRateLimit);
         me.MapPatch(string.Empty, RenameMe).WithMetadata(new TermsGateExempt());
         me.MapPatch("/preferences", ChangePreferences).WithMetadata(new TermsGateExempt());
         me.MapPost("/email-change", RequestEmailChange).WithMetadata(new TermsGateExempt())

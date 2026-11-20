@@ -84,6 +84,7 @@ export const ListAuditEntriesResponse = zod.object({
   UserPreferencesChanged: 'user.preferences_changed',
   UserReactivated: 'user.reactivated',
   UserRenamed: 'user.renamed',
+  UserSignedUp: 'user.signed_up',
   UserSuspended: 'user.suspended',
 }).describe('The operation of an audit entry, area.action.'),
   "details": zod.union([zod.null(),zod.union([zod.object({
