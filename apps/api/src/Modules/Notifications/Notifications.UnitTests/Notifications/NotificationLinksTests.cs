@@ -20,13 +20,18 @@ public sealed class NotificationLinksTests
         NotificationLinks.Of(NotificationCatalog.Of(NotificationCatalog.TenantEntitlementOverrideSet), values).ShouldBe(link);
     }
 
-    // The boards' Link rows: a role change and a plan change lead to Settings › General, a removal to the start page.
+    // The boards' Link rows: a role change and a plan change lead to Settings › General, a removal to the start page, a meter's notice to
+    // Usage (40c-frontend).
     [Theory]
     [InlineData(NotificationCatalog.MemberRoleChanged, NotificationLinkKind.TenantSettings)]
     [InlineData(NotificationCatalog.MemberRemoved, NotificationLinkKind.Start)]
     [InlineData(NotificationCatalog.MemberJoined, NotificationLinkKind.TenantMembers)]
     [InlineData(NotificationCatalog.TenantPlanChanged, NotificationLinkKind.TenantSettings)]
     [InlineData(NotificationCatalog.TenantSuspended, NotificationLinkKind.PlatformTenant)]
+    [InlineData(NotificationCatalog.TenantMeterNearlyUsed, NotificationLinkKind.TenantUsage)]
+    [InlineData(NotificationCatalog.TenantMeterUsedUp, NotificationLinkKind.TenantUsage)]
+    [InlineData(NotificationCatalog.TenantSpendingCapNearlyReached, NotificationLinkKind.TenantUsage)]
+    [InlineData(NotificationCatalog.TenantSpendingCapReached, NotificationLinkKind.TenantUsage)]
     public void Of_ATypeWithoutAKey_LeadsToItsOwnLinkKind(string type, NotificationLinkKind link)
     {
         NotificationLinks.Of(NotificationCatalog.Of(type), new Dictionary<string, string>()).ShouldBe(link);
