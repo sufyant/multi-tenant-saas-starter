@@ -29,6 +29,8 @@ import {
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSpendingCapChangedDetailsResponseOperation,
+  TenantTrialExtendedDetailsResponseOperation,
+  TenantTrialGivenDetailsResponseOperation,
 } from "@repo/api-client";
 
 // The words of the log's sentences, for the screen (`activity-sentence.tsx`) and for the CSV file (`activity-text.ts`) alike.
@@ -166,6 +168,16 @@ export function detailValues<N>(
     case TenantPlanCancellationUndoneDetailsResponseOperation.TenantPlanCancellationUndone:
     case TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone:
       return { plan: words.plan(details.plan.name) };
+    case TenantTrialGivenDetailsResponseOperation.TenantTrialGiven:
+      return {
+        plan: words.plan(details.plan.name),
+        date: date(details.endsAt),
+      };
+    case TenantTrialExtendedDetailsResponseOperation.TenantTrialExtended:
+      return {
+        date: date(details.newEndsAt),
+        oldDate: date(details.oldEndsAt),
+      };
     case TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet:
       return {
         key: words.key(details.key),

@@ -632,6 +632,32 @@ export interface TenantPlanChangeUndoneDetailsResponse {
   plan: AuditPlanResponse;
 }
 
+export type TenantTrialGivenDetailsResponseOperation = typeof TenantTrialGivenDetailsResponseOperation[keyof typeof TenantTrialGivenDetailsResponseOperation];
+
+
+export const TenantTrialGivenDetailsResponseOperation = {
+  TenantTrialGiven: 'tenant.trial_given',
+} as const;
+
+export interface TenantTrialGivenDetailsResponse {
+  operation: TenantTrialGivenDetailsResponseOperation;
+  plan: AuditPlanResponse;
+  endsAt: string;
+}
+
+export type TenantTrialExtendedDetailsResponseOperation = typeof TenantTrialExtendedDetailsResponseOperation[keyof typeof TenantTrialExtendedDetailsResponseOperation];
+
+
+export const TenantTrialExtendedDetailsResponseOperation = {
+  TenantTrialExtended: 'tenant.trial_extended',
+} as const;
+
+export interface TenantTrialExtendedDetailsResponse {
+  operation: TenantTrialExtendedDetailsResponseOperation;
+  oldEndsAt: string;
+  newEndsAt: string;
+}
+
 export type TenantPurgeWarnedDetailsResponseOperation = typeof TenantPurgeWarnedDetailsResponseOperation[keyof typeof TenantPurgeWarnedDetailsResponseOperation];
 
 
@@ -739,7 +765,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantBillingEmailChangedDetailsResponse | TenantSpendingCapChangedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantBillingEmailChangedDetailsResponse | TenantSpendingCapChangedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantTrialGivenDetailsResponse | TenantTrialExtendedDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -796,6 +822,8 @@ export const AuditOperation = {
   TenantSpendingCapChanged: 'tenant.spending_cap_changed',
   TenantSuspended: 'tenant.suspended',
   TenantTrialEnded: 'tenant.trial_ended',
+  TenantTrialExtended: 'tenant.trial_extended',
+  TenantTrialGiven: 'tenant.trial_given',
   TermsVersionCancelled: 'terms_version.cancelled',
   TermsVersionCreated: 'terms_version.created',
   TermsVersionUpdated: 'terms_version.updated',
@@ -1550,10 +1578,12 @@ export const ErrorCode = {
   TenantClosed: 'tenant.closed',
   TenantCreationLimitReached: 'tenant.creation_limit_reached',
   TenantHasOwner: 'tenant.has_owner',
+  TenantInTrial: 'tenant.in_trial',
   TenantNameInvalid: 'tenant.name_invalid',
   TenantNotActive: 'tenant.not_active',
   TenantNotClosed: 'tenant.not_closed',
   TenantNotFound: 'tenant.not_found',
+  TenantNotInTrial: 'tenant.not_in_trial',
   TenantPaysByCard: 'tenant.pays_by_card',
   TenantReopenPeriodEnded: 'tenant.reopen_period_ended',
   TenantSlugInvalid: 'tenant.slug_invalid',
@@ -1569,6 +1599,9 @@ export const ErrorCode = {
   TermsVersionNotScheduled: 'terms_version.not_scheduled',
   TermsVersionScheduledExists: 'terms_version.scheduled_exists',
   TermsVersionUrlInvalid: 'terms_version.url_invalid',
+  TrialBillingOff: 'trial.billing_off',
+  TrialDaysInvalid: 'trial.days_invalid',
+  TrialEndInvalid: 'trial.end_invalid',
   UsageSpendingCapInvalid: 'usage.spending_cap_invalid',
   UsageSpendingCapUnavailable: 'usage.spending_cap_unavailable',
   UserDeleted: 'user.deleted',
@@ -1595,6 +1628,13 @@ export interface ExcessResponse {
   count: number;
   newValue: EntitlementValueResponse;
   amount: number;
+}
+
+/**
+ * The trial's new end: its end or later, and at most the most days of a trial after its end.
+ */
+export interface ExtendTenantTrialRequest {
+  endsAt: string;
 }
 
 /**
@@ -1795,6 +1835,14 @@ export type GetPlanUpdatePreviewRequestEntitlements = {[key: string]: Entitlemen
  */
 export interface GetPlanUpdatePreviewRequest {
   entitlements: GetPlanUpdatePreviewRequestEntitlements;
+}
+
+/**
+ * The trial's plan, and how many days it lasts from now, at least one and at most the most days of a trial.
+ */
+export interface GiveTenantTrialRequest {
+  planId: string;
+  days: number;
 }
 
 /**
@@ -2726,6 +2774,7 @@ export interface SuspendUserRequest {
 export interface TenantBillingCountsResponse {
   paymentOverdue: number;
   contract: number;
+  inTrial: number;
 }
 
 /**
@@ -2932,7 +2981,8 @@ export interface TenantResponse {
 }
 
 /**
- * A billing situation that the Organisations list filters by (4.38): a payment that is overdue, or Contract (B11, B12).
+ * A billing situation that the Organisations list filters by (4.38): a payment that is overdue, Contract (B11, B12), or a running trial
+ * (4.39, step 40d).
  */
 export type TenantResponseBilling = typeof TenantResponseBilling[keyof typeof TenantResponseBilling];
 
@@ -2940,6 +2990,7 @@ export type TenantResponseBilling = typeof TenantResponseBilling[keyof typeof Te
 export const TenantResponseBilling = {
   PaymentOverdue: 'payment_overdue',
   Contract: 'contract',
+  InTrial: 'in_trial',
 } as const;
 
 /**
@@ -3316,6 +3367,15 @@ export const GetPlanUpdatePreviewSort = {
   Name: 'name',
   NameDescending: '-name',
 } as const;
+
+export type GiveTenantTrialHeaders = {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
+};
 
 export type ListTermsVersionPeopleParams = {
   status?: TermsPersonResponseStatus;

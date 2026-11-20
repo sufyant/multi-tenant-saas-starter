@@ -3,7 +3,7 @@ using Audit.Domain;
 using Audit.Domain.AuditEntries;
 using ControlPlane.Contracts.Tenants;
 
-namespace Audit.Application.Plans.RecordTenantTrialEnded;
+namespace Audit.Application.Tenants.RecordTenantTrialEnded;
 
 // The audit entries of the end of a tenant's trial, written when ControlPlane announces it, under that tenant (step 40d). Nobody acted: both
 // logs name the platform (K3). A shorter Activity log period starts the tenant's hold, after the entry, in the same transaction (K14).

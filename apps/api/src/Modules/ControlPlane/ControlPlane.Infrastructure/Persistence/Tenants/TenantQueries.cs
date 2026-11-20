@@ -111,14 +111,15 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             await FindTrialAsync(cancellationToken));
     }
 
-    // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. Three queries
+    // The tenants table and their summaries belong to no tenant, so the list needs no active tenant and sees every tenant. Four queries
     // (K5): the count of each status, of every tenant, without the search or the status filter (the maintainer's decision of 2026-11-10);
-    // the total of what the filters keep; then the page, which joins each tenant's plan and summary (R12), with no query for each tenant. A purged tenant has no summary, so the summary is joined where it exists, and
+    // the count of the tenants in a trial, as the billing counts are of every tenant (4.39); the total of what the filters keep; then the page, which joins each tenant's plan and summary (R12), with no query for each tenant. A purged tenant has no summary, so the summary is joined where it exists, and
     // a tombstone counts nothing (K4).
     async Task<TenantListView> ITenantQueries.ListTenantsAsync(
         ListRequest<ListTenantsSort> list,
         IReadOnlyList<TenantStatus> statuses,
         IReadOnlyList<Guid>? only,
+        bool inTrial,
         TimeSpan reopenPeriod,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -127,6 +128,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             .GroupBy(tenant => tenant.Status)
             .Select(group => new { Status = group.Key, Count = group.Count() })
             .ToDictionaryAsync(group => group.Status, group => group.Count, cancellationToken);
+        var inTrialCount = await controlPlane.Tenants.CountAsync(tenant => tenant.PlanBeforeTrialId != null, cancellationToken);
         var tenants = controlPlane.Tenants.AsQueryable();
         if (list.Search is { } search)
         {
@@ -143,6 +145,11 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
         if (only is not null)
         {
             tenants = tenants.Where(tenant => only.Contains(tenant.Id));
+        }
+
+        if (inTrial)
+        {
+            tenants = tenants.Where(tenant => tenant.PlanBeforeTrialId != null);
         }
 
         var total = await tenants.CountAsync(cancellationToken);
@@ -179,7 +186,7 @@ public sealed class TenantQueries(ControlPlaneDbContext controlPlane) : ITenantQ
             ],
             list.Paging,
             total);
-        return new TenantListView(items, TenantStatusCountsView.Of(counts));
+        return new TenantListView(items, TenantStatusCountsView.Of(counts), inTrialCount);
     }
 
     // The tenant row, its plan, its overrides with the user who set each one, and its summary: the tables belong to no tenant (R6).

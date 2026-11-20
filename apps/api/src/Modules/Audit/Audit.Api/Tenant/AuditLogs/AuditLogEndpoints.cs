@@ -86,6 +86,8 @@ public static class AuditLogEndpoints
         TenantPlanCancellationUndoneDetails undone => new TenantPlanCancellationUndoneDetailsResponse(PlanOf(undone.Plan)),
         TenantPlanChangeScheduledDetails scheduled => new TenantPlanChangeScheduledDetailsResponse(PlanOf(scheduled.OldPlan), PlanOf(scheduled.NewPlan), scheduled.AppliesAt),
         TenantPlanChangeUndoneDetails undone => new TenantPlanChangeUndoneDetailsResponse(PlanOf(undone.Plan)),
+        TenantTrialGivenDetails given => new TenantTrialGivenDetailsResponse(PlanOf(given.Plan), given.EndsAt),
+        TenantTrialExtendedDetails extended => new TenantTrialExtendedDetailsResponse(extended.OldEndsAt, extended.NewEndsAt),
         TenantCreatedDetails created => new TenantCreatedDetailsResponse(PlanOf(created.Plan)),
         TenantEntitlementOverrideSetDetails set => new TenantEntitlementOverrideSetDetailsResponse(
             set.Key, set.OldValue is { } old ? ValueOf(old) : null, set.OldExpiresAt, ValueOf(set.NewValue), set.NewExpiresAt, set.Reason),

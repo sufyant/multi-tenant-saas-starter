@@ -115,6 +115,8 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TenantHasOwner = ErrorCode.Declare("tenant.has_owner");
 
+    public static readonly ErrorCode TenantInTrial = ErrorCode.Declare("tenant.in_trial");
+
     public static readonly ErrorCode TenantNameInvalid = ErrorCode.Declare("tenant.name_invalid");
 
     public static readonly ErrorCode TenantNotActive = ErrorCode.Declare("tenant.not_active");
@@ -122,6 +124,8 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode TenantNotClosed = ErrorCode.Declare("tenant.not_closed");
 
     public static readonly ErrorCode TenantNotFound = ErrorCode.Declare("tenant.not_found");
+
+    public static readonly ErrorCode TenantNotInTrial = ErrorCode.Declare("tenant.not_in_trial");
 
     public static readonly ErrorCode TenantPaysByCard = ErrorCode.Declare("tenant.pays_by_card");
 
@@ -152,6 +156,12 @@ public static class ControlPlaneErrorCodes
     public static readonly ErrorCode TermsVersionScheduledExists = ErrorCode.Declare("terms_version.scheduled_exists");
 
     public static readonly ErrorCode TermsVersionUrlInvalid = ErrorCode.Declare("terms_version.url_invalid");
+
+    public static readonly ErrorCode TrialBillingOff = ErrorCode.Declare("trial.billing_off");
+
+    public static readonly ErrorCode TrialDaysInvalid = ErrorCode.Declare("trial.days_invalid");
+
+    public static readonly ErrorCode TrialEndInvalid = ErrorCode.Declare("trial.end_invalid");
 
     public static readonly ErrorCode UsageSpendingCapInvalid = ErrorCode.Declare("usage.spending_cap_invalid");
 

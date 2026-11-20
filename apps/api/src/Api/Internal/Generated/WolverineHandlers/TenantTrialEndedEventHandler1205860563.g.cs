@@ -38,11 +38,11 @@ namespace Internal.Generated.WolverineHandlers
 
             try
             {
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Plans.RecordTenantTrialEnded.RecordTenantTrialEndedHandler");
-                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Plans.RecordTenantTrialEnded.RecordTenantTrialEndedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("message.handler", "Audit.Application.Tenants.RecordTenantTrialEnded.RecordTenantTrialEndedHandler");
+                Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "Audit.Application.Tenants.RecordTenantTrialEnded.RecordTenantTrialEndedHandler");
                 
                 // The actual message execution
-                await Audit.Application.Plans.RecordTenantTrialEnded.RecordTenantTrialEndedHandler.HandleAsync(tenantTrialEndedEvent, auditLog, retentionStore, cancellation).ConfigureAwait(false);
+                await Audit.Application.Tenants.RecordTenantTrialEnded.RecordTenantTrialEndedHandler.HandleAsync(tenantTrialEndedEvent, auditLog, retentionStore, cancellation).ConfigureAwait(false);
 
                 
                 // Added by EF Core Transaction Middleware

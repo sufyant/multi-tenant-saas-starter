@@ -195,10 +195,12 @@
       "closed": "Bu kuruluş kapatıldı.",
       "creation_limit_reached": "Bir kişinin oluşturabileceği kadar organizasyon oluşturdunuz.",
       "has_owner": "Bu kuruluşun zaten bir Sahibi var.",
+      "in_trial": "Organizasyon bir deneme süresinde. Denemeyi uzatın ya da bitmesini bekleyin.",
       "name_invalid": "Kuruluş için bir ad girin.",
       "not_active": "Bu kuruluş etkin değil.",
       "not_closed": "Bu kuruluş kapalı değil.",
       "not_found": "Bu kuruluş yok ya da üyesi değilsiniz.",
+      "not_in_trial": "Organizasyon bir deneme süresinde değil.",
       "pays_by_card": "Bu kuruluş kartla ödüyor, bu yüzden planını aboneliği belirler. Önce Sözleşmeye geçirin.",
       "reopen_period_ended": "Bu kuruluşu yeniden açma süresi doldu.",
       "slug_invalid": "Küçük harf, rakam ve tek kısa çizgi kullanın.",
@@ -216,6 +218,11 @@
       "not_scheduled": "Yalnızca planlanmış bir sürüm değişebilir. Yürürlükteki bir sürüm hiç değişmez.",
       "scheduled_exists": "Zaten planlanmış bir sürüm var. Önce onu düzenleyin veya iptal edin.",
       "url_invalid": "https:// ile başlayan bir bağlantı girin."
+    },
+    "trial": {
+      "billing_off": "Bu kurulumda faturalama kapalı, bu yüzden organizasyonların deneme süresi yok.",
+      "days_invalid": "Bir deneme 1 ile 365 gün sürer.",
+      "end_invalid": "Yeni bitiş, denemenin bitişi ya da sonrası olmalı ve en fazla 365 gün sonra olabilir."
     },
     "usage": {
       "spending_cap_invalid": "Limit 0,01 ile 100.000.000 arasında bir tutar olmalı.",

@@ -15,6 +15,7 @@ public static class ListTenantsHandler
             query.List,
             [.. query.Statuses.Select(Enum.Parse<TenantStatus>)],
             query.Only,
+            query.InTrial,
             settings.ReopenPeriod,
             time.GetUtcNow(),
             cancellationToken);

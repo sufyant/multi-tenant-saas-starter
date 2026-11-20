@@ -19,6 +19,8 @@ public static class Errors
     public static readonly Error TenantPaysByCard =
         Error.Conflict(ControlPlaneErrorCodes.TenantPaysByCard, "The tenant pays its plan by card: its subscription sets its plan. Switch it to Contract first.");
 
+    public static readonly Error TrialBillingOff = Error.NotFound(ControlPlaneErrorCodes.TrialBillingOff, "Billing is off in this deployment: a tenant has no trial.");
+
     public static readonly Error UserNotFound = Error.NotFound(ControlPlaneErrorCodes.UserNotFound, "The user was not found.");
 
     public static readonly Error SignUpDisabled = Error.Forbidden(ControlPlaneErrorCodes.SignUpDisabled, "The product has sign-up off: only an invitation makes a user.");

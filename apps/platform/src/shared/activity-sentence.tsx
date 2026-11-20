@@ -30,6 +30,8 @@ import {
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
+  TenantTrialExtendedDetailsResponseOperation,
+  TenantTrialGivenDetailsResponseOperation,
   TermsVersionCancelledDetailsResponseOperation,
   TermsVersionCreatedDetailsResponseOperation,
   TermsVersionUpdatedDetailsResponseOperation,
@@ -171,6 +173,13 @@ function detailValues(
     case TenantPlanCancellationUndoneDetailsResponseOperation.TenantPlanCancellationUndone:
     case TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone:
       return { plan: planLink(details.plan) };
+    case TenantTrialGivenDetailsResponseOperation.TenantTrialGiven:
+      return { plan: planLink(details.plan), date: date(details.endsAt) };
+    case TenantTrialExtendedDetailsResponseOperation.TenantTrialExtended:
+      return {
+        date: date(details.newEndsAt),
+        oldDate: date(details.oldEndsAt),
+      };
     case TenantEntitlementOverrideSetDetailsResponseOperation.TenantEntitlementOverrideSet:
       return {
         key: text.name(details.key),

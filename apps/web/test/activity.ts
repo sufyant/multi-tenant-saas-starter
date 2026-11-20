@@ -33,6 +33,8 @@ import {
   TenantRenamedDetailsResponseOperation,
   TenantSpendingCapChangedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
+  TenantTrialExtendedDetailsResponseOperation,
+  TenantTrialGivenDetailsResponseOperation,
 } from "@repo/api-client";
 import {
   getGetAuditRetentionMockHandler,
@@ -229,6 +231,17 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation:
         TenantPlanChangeUndoneDetailsResponseOperation.TenantPlanChangeUndone,
       plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Pro" },
+    },
+    [AuditOperation.TenantTrialGiven]: {
+      operation: TenantTrialGivenDetailsResponseOperation.TenantTrialGiven,
+      plan: { id: "0198f0a2-0000-7000-8000-0000000000b2", name: "Business" },
+      endsAt: "2026-11-16T09:00:00Z",
+    },
+    [AuditOperation.TenantTrialExtended]: {
+      operation:
+        TenantTrialExtendedDetailsResponseOperation.TenantTrialExtended,
+      oldEndsAt: "2026-11-05T09:00:00Z",
+      newEndsAt: "2026-11-12T09:00:00Z",
     },
     [AuditOperation.TenantEntitlementOverrideSet]: {
       operation:
