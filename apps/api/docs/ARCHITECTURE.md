@@ -563,6 +563,7 @@ K3 keeps the id it has in api-catalog. Its Audit column, the operation list, is 
 | Command | Event | Audit handler | Log | Operation | Actor |
 | --- | --- | --- | --- | --- | --- |
 | `CreateTenant` | `TenantCreatedEvent` | `RecordTenantCreatedHandler` | platform and tenant | `tenant.created`; details `TenantCreatedDetails` in both logs: the plan the tenant got, the default plan when the request named none, an `AuditPlanResponse` (step 32; an entry written before it has no details) | the system admin; `Platform` in the tenant's log |
+| `CreateMyTenant` (step 40d) | `TenantCreatedEvent` with `ByItsOwner` | `RecordTenantCreatedHandler` | platform and tenant | `tenant.created`; details as `CreateTenant` | the user who created it, in both logs |
 | `RenameTenant` | `TenantRenamedEvent`, only when the name changed | `RecordTenantRenamedHandler` | platform and tenant | `tenant.renamed`; the target keeps the new name; details `TenantRenamedDetails` in both logs | as above |
 | `SuspendTenant` | `TenantSuspendedEvent` | `RecordTenantSuspendedHandler` | platform and tenant | `tenant.suspended`; details `TenantSuspendedDetails` in the platform's log only | as above |
 | `ReactivateTenant` | `TenantReactivatedEvent` | `RecordTenantReactivatedHandler` | platform and tenant | `tenant.reactivated` | as above |
@@ -585,6 +586,7 @@ K3 keeps the id it has in api-catalog. Its Audit column, the operation list, is 
 | `RequestDataExport` | `DataExportRequestedEvent` | `RecordDataExportRequestedHandler` | platform | `user.data_export_requested`; the target is the user, by id | the user, for themselves |
 | `DownloadDataExport` | `DataExportDownloadedEvent`, for each download link | `RecordDataExportDownloadedHandler` | platform | `user.data_export_downloaded`; the target is the user, by id | the user, for themselves |
 | `ChangePreferences` | `UserPreferencesChangedEvent`, only when a value changed | `RecordUserPreferencesChangedHandler` | platform | `user.preferences_changed`; the target is the user, by id; no details: the entry holds no value | the user, for themselves |
+| `SignUp` (step 40d) | `UserSignedUpEvent`, only for a new user | `RecordUserSignedUpHandler` | platform | `user.signed_up`; the target is the user, by id | the user, for themselves |
 | `AcceptInvitation` | `MemberJoinedEvent` | `RecordMemberJoinedHandler` | tenant | `member.joined` | the user who joined |
 | `InviteMember` | `MemberInvitedEvent` | `RecordMemberInvitedHandler` | tenant | `member.invited`; the target is the invitation, by id; details `MemberInvitedDetails` | the member who invited |
 | `RevokeInvitation` | `InvitationRevokedEvent`, only for a pending invitation | `RecordInvitationRevokedHandler` | tenant | `invitation.revoked`; the target is the invitation, by id | the member who revoked it |
