@@ -121,41 +121,43 @@ export function SignUp({
   };
 
   return (
-    <AuthScreen
-      brand={brand}
-      footer={
-        <AuthFooter
-          onLanguageChange={onLanguageChange}
-          privacyUrl={privacyUrl}
-          termsUrl={termsUrl}
-        />
-      }
-    >
-      {step === "email" && (
-        <EmailStep
-          title={title}
-          text={text}
-          onSubmit={(address) => void sendCode(address)}
-          onProvider={(provider) => void sso(provider)}
-          pending={pending}
-          error={error}
-          footer={<OtherWay message="haveAccount" href={signInHref} />}
-        />
-      )}
-      {step === "code" && (
-        <CodeStep
-          email={email}
-          onSubmit={(code) => void verifyCode(code)}
-          onResend={() => void resend()}
-          onUseAnotherEmail={() => void startOver()}
-          pending={pending}
-          error={error}
-          resent={resent}
-          submitLabel={t("continue")}
-        />
-      )}
-      {/* Clerk's bot protection draws its check here (Clerk, "Custom sign-up flow"). */}
+    <>
+      <AuthScreen
+        brand={brand}
+        footer={
+          <AuthFooter
+            onLanguageChange={onLanguageChange}
+            privacyUrl={privacyUrl}
+            termsUrl={termsUrl}
+          />
+        }
+      >
+        {step === "email" && (
+          <EmailStep
+            title={title}
+            text={text}
+            onSubmit={(address) => void sendCode(address)}
+            onProvider={(provider) => void sso(provider)}
+            pending={pending}
+            error={error}
+            footer={<OtherWay message="haveAccount" href={signInHref} />}
+          />
+        )}
+        {step === "code" && (
+          <CodeStep
+            email={email}
+            onSubmit={(code) => void verifyCode(code)}
+            onResend={() => void resend()}
+            onUseAnotherEmail={() => void startOver()}
+            pending={pending}
+            error={error}
+            resent={resent}
+            submitLabel={t("continue")}
+          />
+        )}
+      </AuthScreen>
+      {/* Clerk's bot protection draws its check here (Clerk, "Custom sign-up flow"), out of the card and its gaps (1.25). */}
       <div id="clerk-captcha" />
-    </AuthScreen>
+    </>
   );
 }
