@@ -529,13 +529,34 @@ public sealed class ListTenantsTests(Database database) : IAsyncLifetime
         Ids(page).ShouldNotContain(tenantId);
     }
 
+    // 4.39: "In trial" lists the tenants whose trial runs, not one that used its trial, and the counts say how many run (step 40d).
+    [Fact]
+    public async Task ListTenants_TheInTrialFilter_ListsTheTenantsInATrialAndCountsThem()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        _testData = new TestData(database, name);
+        await _api.DisposeAsync();
+        _api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, name), settings: BillingRequests.On);
+        var inTrial = await _testData.AddTenantAsync(name: "Alpha Ltd", planId: SeedPlans.Team);
+        var used = await _testData.AddTenantAsync(name: "Bravo Ltd", planId: SeedPlans.Team);
+        await _testData.AddTenantAsync(name: "Charlie Ltd", planId: SeedPlans.Team);
+        await Trials.StartAsync(database, inTrial.Id, SeedPlans.Team, databaseName: name);
+        await Trials.UsedAsync(database, used.Id, name);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var page = await admin.GetFromJsonAsync<JsonElement>("/v1/platform/tenants?billing=in_trial", Cancellation);
+
+        Names(page).ShouldBe(["Alpha Ltd"]);
+        (page.GetProperty("total").GetInt32(), page.GetProperty("billingCounts").GetProperty("inTrial").GetInt32()).ShouldBe((1, 1));
+    }
+
     [Fact]
     public async Task ListTenants_AFilterOfNoSituation_IsRefused()
     {
         await BillingOnAsync();
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
-        var response = await admin.GetAsync("/v1/platform/tenants?billing=trial", Cancellation);
+        var response = await admin.GetAsync("/v1/platform/tenants?billing=card", Cancellation);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }

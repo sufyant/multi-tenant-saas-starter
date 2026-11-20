@@ -240,7 +240,7 @@ describe("OrganisationsPage", () => {
       meAnswer(),
       listAnswer(
         pageOf([kestrel, moyne], {
-          billingCounts: { paymentOverdue: 2, contract: 1 },
+          billingCounts: { paymentOverdue: 2, contract: 1, inTrial: 0 },
         }),
         requests,
       ),
@@ -277,7 +277,9 @@ describe("OrganisationsPage", () => {
     server.use(
       meAnswer(),
       listAnswer(
-        pageOf([], { billingCounts: { paymentOverdue: 0, contract: 0 } }),
+        pageOf([], {
+          billingCounts: { paymentOverdue: 0, contract: 0, inTrial: 0 },
+        }),
         requests,
       ),
     );

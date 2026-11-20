@@ -9,14 +9,24 @@ internal static class Trials
 
     public static readonly DateTimeOffset EndsAt = new(2026, 11, 5, 9, 0, 0, TimeSpan.Zero);
 
-    // Puts the tenant in a trial of Business from StartedAt to EndsAt that returns it to the plan.
-    public static Task StartAsync(Database database, Guid tenantId, Guid planBefore) =>
+    // Puts the tenant in a trial of Business from StartedAt to EndsAt, or to the end given, that returns it to the plan.
+    public static Task StartAsync(Database database, Guid tenantId, Guid planBefore, DateTimeOffset? endsAt = null, string databaseName = Database.MainDatabase) =>
         database.ScalarAsSuperuserAsync<object>(
             $"""
             UPDATE control_plane.tenants SET plan_id = '{SeedPlans.Business}', trial_plan_id = '{SeedPlans.Business}', plan_before_trial_id = '{planBefore}',
-                trial_started_at = '{StartedAt:O}', trial_ends_at = '{EndsAt:O}'
+                trial_started_at = '{StartedAt:O}', trial_ends_at = '{endsAt ?? EndsAt:O}'
             WHERE id = '{tenantId}'
-            """);
+            """,
+            databaseName);
+
+    // Leaves the tenant on its plan with a trial of Business from StartedAt to EndsAt that it used before (4.47).
+    public static Task UsedAsync(Database database, Guid tenantId, string databaseName = Database.MainDatabase) =>
+        database.ScalarAsSuperuserAsync<object>(
+            $"""
+            UPDATE control_plane.tenants SET trial_plan_id = '{SeedPlans.Business}', trial_started_at = '{StartedAt:O}', trial_ends_at = '{EndsAt:O}'
+            WHERE id = '{tenantId}'
+            """,
+            databaseName);
 
     public static Task<bool> InTrialAsync(Database database, Guid tenantId) =>
         database.ScalarAsSuperuserAsync<bool>($"SELECT plan_before_trial_id IS NOT NULL FROM control_plane.tenants WHERE id = '{tenantId}'");

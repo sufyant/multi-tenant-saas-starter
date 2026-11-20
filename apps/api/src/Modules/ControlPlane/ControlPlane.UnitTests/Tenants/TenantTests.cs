@@ -2190,6 +2190,92 @@ public sealed class TenantTests
             .ShouldBe((trialPlan, trialPlan, Now, Now.AddDays(14), PlanId, true));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(365)]
+    public void TrialLengthOf_OneToAYearOfDays_IsThatManyDays(int days) => Tenant.TrialLengthOf(days).Value.ShouldBe(TimeSpan.FromDays(days));
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(366)]
+    public void TrialLengthOf_OtherDays_IsInvalid(int days) => Tenant.TrialLengthOf(days).Error.Code.ShouldBe(ControlPlaneErrorCodes.TrialDaysInvalid);
+
+    // 4.47: a system admin gives a second trial; it starts now and returns the tenant to its plan of now.
+    [Fact]
+    public void GiveTrial_ATenantThatUsedATrial_StartsANewOne()
+    {
+        var tenant = Active();
+        var trialPlan = Guid.NewGuid();
+        tenant.StartTrial(Guid.NewGuid(), Now.AddDays(-30), TimeSpan.FromDays(14));
+        tenant.EndTrial(Now.AddDays(-16));
+
+        var given = tenant.GiveTrial(trialPlan, Now, TimeSpan.FromDays(10));
+
+        (given.Value, tenant.PlanId, tenant.TrialPlanId, tenant.TrialStartedAt, tenant.TrialEndsAt, tenant.PlanBeforeTrialId)
+            .ShouldBe((StateChange.Changed, trialPlan, trialPlan, Now, Now.AddDays(10), PlanId));
+    }
+
+    [Fact]
+    public void GiveTrial_InTrial_IsAConflictAndKeepsTheTrial()
+    {
+        var tenant = InTrial(out var trialPlan);
+
+        var given = tenant.GiveTrial(Guid.NewGuid(), Now.AddDays(1), TimeSpan.FromDays(10));
+
+        (given.Error.Code, tenant.PlanId, tenant.TrialEndsAt).ShouldBe((ControlPlaneErrorCodes.TenantInTrial, trialPlan, Now.AddDays(14)));
+    }
+
+    [Theory]
+    [InlineData("Closed")]
+    [InlineData("Purging")]
+    [InlineData("Purged")]
+    public void GiveTrial_ClosedOrPurged_IsAConflictAndKeepsThePlan(string status)
+    {
+        var tenant = InStatus(status);
+
+        var given = tenant.GiveTrial(Guid.NewGuid(), Now, TimeSpan.FromDays(10));
+
+        (given.Error.Code, tenant.PlanId, tenant.InTrial).ShouldBe((ControlPlaneErrorCodes.TenantNotActive, PlanId, false));
+    }
+
+    [Fact]
+    public void ExtendTrial_InTrial_MovesTheEnd()
+    {
+        var tenant = InTrial(out var trialPlan);
+
+        var extended = tenant.ExtendTrial(Now.AddDays(21));
+
+        (extended.Value, tenant.PlanId, tenant.TrialEndsAt, tenant.InTrial).ShouldBe((StateChange.Changed, trialPlan, Now.AddDays(21), true));
+    }
+
+    [Fact]
+    public void ExtendTrial_TheEndItHas_ChangesNothing() => InTrial(out _).ExtendTrial(Now.AddDays(14)).Value.ShouldBe(StateChange.Unchanged);
+
+    [Theory]
+    [InlineData(13)]
+    [InlineData(14 + 366)]
+    public void ExtendTrial_AnEarlierOrAFarEnd_IsInvalidAndKeepsTheEnd(int days)
+    {
+        var tenant = InTrial(out _);
+
+        var extended = tenant.ExtendTrial(Now.AddDays(days));
+
+        (extended.Error.Code, tenant.TrialEndsAt).ShouldBe((ControlPlaneErrorCodes.TrialEndInvalid, Now.AddDays(14)));
+    }
+
+    [Fact]
+    public void ExtendTrial_NoTrial_IsAConflict() => Active().ExtendTrial(Now.AddDays(7)).Error.Code.ShouldBe(ControlPlaneErrorCodes.TenantNotInTrial);
+
+    [Fact]
+    public void ExtendTrial_Suspended_MovesTheEnd()
+    {
+        var tenant = InTrial(out _);
+        tenant.Suspend(Reason, SuspenderId, Now);
+
+        tenant.ExtendTrial(Now.AddDays(21)).Value.ShouldBe(StateChange.Changed);
+    }
+
     [Fact]
     public void EndTrial_InTrial_ReturnsToThePlanBeforeAndKeepsTheTrial()
     {

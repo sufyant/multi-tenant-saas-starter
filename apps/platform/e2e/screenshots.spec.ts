@@ -1717,7 +1717,7 @@ const shellShots: {
                   Object.values(frameOrganisations).map(listItemOf),
                   new URL(route.request().url()).searchParams,
                 ),
-                billingCounts: { paymentOverdue: 2, contract: 1 },
+                billingCounts: { paymentOverdue: 2, contract: 1, inTrial: 0 },
               },
             })
           : route.fallback(),
