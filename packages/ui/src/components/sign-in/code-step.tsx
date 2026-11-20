@@ -16,6 +16,8 @@ export type CodeStepProps = {
   error?: SignInErrorKey;
   /** A new code went out. */
   resent?: boolean;
+  /** The button's words: "Sign in" by default, "Continue" in the sign-up. */
+  submitLabel?: string;
 };
 
 /**
@@ -30,6 +32,7 @@ export function CodeStep({
   pending,
   error,
   resent,
+  submitLabel,
 }: CodeStepProps) {
   const t = useTranslations("signIn");
   const [code, setCode] = useState("");
@@ -61,7 +64,7 @@ export function CodeStep({
           className="w-full"
           disabled={pending}
         >
-          {t("signIn")}
+          {submitLabel ?? t("signIn")}
         </Button>
       </form>
       <div className="flex flex-col items-center gap-4">
