@@ -43,6 +43,7 @@ import { organisationPages } from "@/shared/organisation-pages";
 import { myAccountPages, personalPages } from "@/shared/personal-pages";
 import { ProblemScreen } from "@/shared/problem-screen";
 import { ServerBar } from "@/shared/server-bar";
+import { newOrganisationPage, useOwnOrganisation } from "@/shared/sign-up";
 import { TenantProvider, useTenant } from "@/shared/tenant-context";
 import { useUsageShown } from "@/shared/usage";
 import { useTenantRoles } from "@/shared/use-can-act-on";
@@ -235,6 +236,7 @@ function TenantFrame({
   });
   const roleName = useRoleName();
   const tabTitle = useTabTitleText(t("meta.title"));
+  const own = useOwnOrganisation();
   if (me.error) return <ProblemScreen error={me.error} />;
 
   const base = `/${slug}`;
@@ -347,8 +349,24 @@ function TenantFrame({
                 role: known.role,
                 href: base,
               }}
-              organisations={several ? others : []}
+              organisations={several || own.state !== "off" ? others : []}
               title={t("shell.yourOrganisations")}
+              create={
+                own.state === "off"
+                  ? undefined
+                  : {
+                      label: t("shell.createOrganisation"),
+                      href:
+                        own.state === "open" ? newOrganisationPage : undefined,
+                      note:
+                        own.state === "reached"
+                          ? t("shell.creationLimit", {
+                              limit: own.limit,
+                              count: own.created,
+                            })
+                          : undefined,
+                    }
+              }
               // The drawer passes "row": the organisation's name heads its menu (the phone's drawer).
               variant={place === "rail" ? "rail" : "drawer"}
               linkComponent={Link}

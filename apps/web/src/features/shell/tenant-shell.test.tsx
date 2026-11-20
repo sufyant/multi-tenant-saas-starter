@@ -87,8 +87,14 @@ const tenantsOf = (total: number) =>
     }),
   );
 
-const answers = (total: number) => [
+const signUpOf = (enabled: boolean) =>
+  http.get("*/v1/public/sign-up", () =>
+    HttpResponse.json({ enabled, tenantLimit: 3, trial: null }),
+  );
+
+const answers = (total: number, createdTenantCount = 1) => [
   tenantsOf(total),
+  signUpOf(false),
   http.get(`*/v1/tenants/${northwind.id}/notifications/unread-count`, () =>
     HttpResponse.json({ unread: 4 }),
   ),
@@ -103,6 +109,7 @@ const answers = (total: number) => [
       name: "Ayşe Yılmaz",
       language: "en",
       timeZone: "Europe/Dublin",
+      createdTenantCount,
     }),
   ),
 ];
@@ -693,6 +700,40 @@ describe("TenantShell", () => {
     expect(item).toHaveAttribute("href", "/blue-harbour");
     expect(within(item).getByText("Suspended")).toBeInTheDocument();
     expect(within(item).getByText("Member")).toBeInTheDocument();
+  });
+
+  // 2.38: while sign-up is on, the switcher ends with Create organisation, for one organisation too.
+  it("TenantShell_SignUpOn_OffersCreateOrganisationInTheSwitcher", async () => {
+    server.use(signUpOf(true), ...answers(1));
+
+    renderWithProviders(shell());
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Northwind Traders/ }),
+    );
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Create organisation" }),
+    ).toHaveAttribute("href", "/new");
+  });
+
+  // 2.39: at the limit, Create organisation is disabled and says why.
+  it("TenantShell_CreationLimitReached_DisablesCreateOrganisation", async () => {
+    server.use(signUpOf(true), ...answers(2, 3));
+
+    renderWithProviders(shell());
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Northwind Traders/ }),
+    );
+
+    const item = await screen.findByRole("menuitem", {
+      name: /Create organisation/,
+    });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveTextContent(
+      "You can create up to 3 organisations. You have created 3.",
+    );
   });
 
   it.each([

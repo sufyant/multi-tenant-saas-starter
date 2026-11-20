@@ -46,4 +46,20 @@ describe("AuthScreen", () => {
       screen.getByText("Signed in as deniz@platform.example"),
     );
   });
+
+  // 1.28, 1.30: a step with a form of its own starts its title and text at the card's start.
+  it("AuthHeading_AlignStart_StartsTheTitleAndText", () => {
+    render(
+      <AuthHeading
+        align="start"
+        title="Create your organisation"
+        text="You become its Owner."
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Create your organisation" }),
+    ).toHaveClass("text-start");
+    expect(screen.getByText("You become its Owner.")).toHaveClass("text-start");
+  });
 });

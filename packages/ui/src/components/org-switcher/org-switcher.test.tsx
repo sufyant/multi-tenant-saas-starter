@@ -132,4 +132,76 @@ describe("OrgSwitcher", () => {
     );
     expect(screen.getByText("S")).not.toHaveClass("bg-info-subtle");
   });
+
+  // 2.38: Create organisation ends the menu, and opens it for one organisation too.
+  it("OrgSwitcher_CreateOffered_EndsTheMenuWithCreateOrganisation", async () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind]}
+        title="Your organisations"
+        create={{ label: "Create organisation", href: "/new" }}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Northwind Traders/ }),
+    );
+    const menu = await screen.findByRole("menu");
+
+    expect(
+      within(menu).getByRole("menuitem", { name: "Create organisation" }),
+    ).toHaveAttribute("href", "/new");
+  });
+
+  // 2.39: at the limit, Create organisation is disabled and says why.
+  it("OrgSwitcher_CreationLimitReached_DisablesCreateAndSaysWhy", async () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind, harbour]}
+        title="Your organisations"
+        create={{
+          label: "Create organisation",
+          note: "You can create up to 3 organisations. You have created 3.",
+        }}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Northwind Traders/ }),
+    );
+    const menu = await screen.findByRole("menu");
+
+    const item = within(menu).getByRole("menuitem", {
+      name: /Create organisation/,
+    });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).not.toHaveAttribute("href");
+    expect(
+      within(item).getByText(
+        "You can create up to 3 organisations. You have created 3.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("OrgSwitcher_OneOrganisationInTheDrawerWithCreate_OpensTheMenu", async () => {
+    render(
+      <OrgSwitcher
+        current={northwind}
+        organisations={[northwind]}
+        title="Your organisations"
+        variant="drawer"
+        create={{ label: "Create organisation", href: "/new" }}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Northwind Traders/ }),
+    );
+
+    expect(
+      await screen.findByRole("menuitem", { name: "Create organisation" }),
+    ).toHaveAttribute("href", "/new");
+  });
 });

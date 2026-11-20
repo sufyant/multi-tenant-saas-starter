@@ -43,6 +43,7 @@ import {
   type RoleDetailResponse,
   type RoleResponse,
   RoleUpdatedDetailsResponseOperation,
+  type SignUpResponse,
   type SubscriptionResponse,
   SubscriptionResponseInterval,
   SubscriptionResponseStatus,
@@ -236,6 +237,19 @@ export const decemberTerms: MyTermsVersionResponse = {
 export const mockMyTerms = (page: Page, answer: MyTermsResponse) =>
   page.route("**/api/v1/me/terms", (route) => route.fulfill({ json: answer }));
 
+/** Sign-up off, as the template ships it; a sign-up frame mocks its own. */
+export const signUpOff: SignUpResponse = {
+  enabled: false,
+  tenantLimit: 3,
+  trial: null,
+};
+
+/** GetSignUp, before sign-in and after it. */
+export const mockSignUp = (page: Page, answer: SignUpResponse) =>
+  page.route("**/api/v1/public/sign-up", (route) =>
+    route.fulfill({ json: answer }),
+  );
+
 export async function mockApi(
   page: Page,
   language: Language = Language.En,
@@ -250,6 +264,7 @@ export async function mockApi(
   await page.route("**/api/v1/public/terms", (route) =>
     route.fulfill({ json: termsInForce }),
   );
+  await mockSignUp(page, signUpOff);
   await mockDataExport(page);
   // The personal bell of the pages without an organisation (F57).
   await page.route("**/api/v1/me/notifications/unread-count", (route) =>
@@ -1586,6 +1601,13 @@ export const billing = (
 });
 
 /** GetBilling, GetPlanChoices and the preview of an upgrade to Business (10.04): €53.25 today. */
+/** Sign-up on with the trial of 1.28: a Business trial of 14 days, while billing is on. */
+export const signUpWithTrial: SignUpResponse = {
+  enabled: true,
+  tenantLimit: 3,
+  trial: { plan: { id: businessPlan.id, name: businessPlan.name }, days: 14 },
+};
+
 export async function mockBilling(
   page: Page,
   answer: BillingResponse = billing(),

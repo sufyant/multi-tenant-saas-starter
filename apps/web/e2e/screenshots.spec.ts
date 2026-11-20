@@ -45,6 +45,7 @@ import {
   mockNotifications,
   mockRename,
   mockRetention,
+  mockSignUp,
   mockTenantStatus,
   mockUsage,
   northwind,
@@ -54,6 +55,7 @@ import {
   pro,
   roleChanged,
   shortenedTo90,
+  signUpWithTrial,
   type Team,
   team,
   teamMeter,
@@ -2997,6 +2999,139 @@ shellShots.push(
     file: "2.37-billing-bar-cap-reached-en-light-desktop",
     mock: (page) => mockUsage(page, capReached),
     ready: barReady(/stopped: you reached your spending cap/),
+  },
+);
+
+// 40d's own organisation (1.28 to 1.30, 1.33, 1.34) with sign-up on and the trial of 14 days, which started on 22 Oct 2026 and ends on
+// 5 Nov; the trial's bar on Home (1.31) and 3 days before its end (2.31); the switcher's Create organisation (2.38) and its limit (2.39).
+const kestrel = {
+  ...northwind,
+  name: "Kestrel Analytics",
+  slug: "kestrel-analytics",
+};
+const onNew = { path: "/new", plan: inTrial } as const;
+/** Sign-up on, the trial's plan prices, and CreateMyTenant's answer: Kestrel Analytics, or a problem. */
+const mockCreation =
+  (
+    answer: { status: number; json: unknown } = { status: 201, json: kestrel },
+  ) =>
+  async (page: Page) => {
+    await page.clock.setFixedTime("2026-10-22T10:00:00Z");
+    await mockSignUp(page, signUpWithTrial);
+    await mockBilling(page, billing(null));
+    await page.route("**/api/v1/me/tenants", (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill(answer)
+        : route.fallback(),
+    );
+  };
+const typeTheName = (page: Page) =>
+  page.getByLabel("Name", { exact: true }).fill("Kestrel Analytics");
+const createKestrel = async (page: Page) => {
+  await typeTheName(page);
+  await page.getByRole("button", { name: "Create organisation" }).click();
+  await page.getByText(/^Separate addresses .* excl\. VAT\.$/).waitFor();
+  await page.getByText(/until 5 Nov 2026/).waitFor();
+};
+const switcherWithCreate =
+  (createdTenantCount: number) => async (page: Page) => {
+    await mockSignUp(page, signUpWithTrial);
+    await page.route("**/api/v1/me", (route) =>
+      route.fulfill({ json: { ...me(Language.En), createdTenantCount } }),
+    );
+    await page.route("**/api/v1/me/tenants*", (route) =>
+      route.fulfill({
+        json: {
+          items: [northwind, blueHarbour],
+          page: 1,
+          pageSize: 100,
+          total: 2,
+        },
+      }),
+    );
+  };
+shellShots.push(
+  {
+    ...onNew,
+    file: "1.28-create-organisation-en-light-desktop",
+    size: "desktop",
+    mock: mockCreation(),
+    open: typeTheName,
+  },
+  {
+    ...onNew,
+    file: "1.29-create-organisation-address-taken-en-light-desktop",
+    size: "desktop",
+    mock: mockCreation({
+      status: 409,
+      json: {
+        status: 409,
+        title: "Conflict",
+        code: ErrorCode.TenantSlugTaken,
+        traceId: "00-e2e",
+      },
+    }),
+    open: async (page) => {
+      await typeTheName(page);
+      await page.getByLabel("Address").fill("kestrel");
+      await page.getByRole("button", { name: "Create organisation" }).click();
+      await page.getByText("This address is taken. Try another.").waitFor();
+    },
+  },
+  {
+    ...onNew,
+    file: "1.30-trial-started-en-light-desktop",
+    size: "desktop",
+    mock: mockCreation(),
+    open: createKestrel,
+  },
+  {
+    file: "1.31-home-trial-started-en-light-desktop",
+    size: "desktop",
+    plan: inTrial,
+    mock: async (page) => {
+      await page.clock.setFixedTime("2026-10-23T10:00:00Z");
+      await mockBilling(page, billing(null));
+    },
+    ready: barReady(/^Your Business trial ends on 5 Nov 2026\.$/),
+  },
+  {
+    ...onNew,
+    file: "1.33-create-organisation-en-light-phone",
+    size: "phone",
+    mock: mockCreation(),
+    open: typeTheName,
+  },
+  {
+    ...onNew,
+    file: "1.34-trial-started-en-light-phone",
+    size: "phone",
+    mock: mockCreation(),
+    open: createKestrel,
+  },
+  {
+    ...onUsageBar,
+    file: "2.31-billing-bar-trial-ends-en-light-desktop",
+    plan: inTrial,
+    mock: async (page) => {
+      await onTrialDay(page);
+      await mockBilling(page, billing(null));
+    },
+    ready: barReady(/^Your Business trial ends in 3 days/),
+  },
+  {
+    file: "2.38-switcher-create-organisation-en-light-desktop",
+    size: "desktop",
+    mock: switcherWithCreate(1),
+    open: (page) =>
+      page.getByRole("button", { name: /Northwind Traders/ }).click(),
+  },
+  {
+    file: "2.39-switcher-creation-limit-en-light-desktop",
+    size: "desktop",
+    mock: switcherWithCreate(3),
+    open: (page) =>
+      page.getByRole("button", { name: /Northwind Traders/ }).click(),
   },
 );
 

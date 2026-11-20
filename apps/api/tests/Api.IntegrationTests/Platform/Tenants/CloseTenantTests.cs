@@ -322,7 +322,9 @@ public sealed class CloseTenantTests(Database database) : IAsyncLifetime
     private async Task<List<(object Message, DateTimeOffset? At)>> ScheduledByTheClosureAsync(Guid tenantId, HttpClient admin)
     {
         var session = await _api.TrackMessagesAsync(() => admin.CloseTenantAsync(tenantId));
-        return [.. session.Scheduled.Envelopes().Select(envelope => (envelope.Message!, envelope.ScheduledTime))];
+
+        // Only the closure's commands: the session can also catch a Wolverine Acknowledgement of an earlier call.
+        return [.. session.Scheduled.Envelopes().Where(envelope => envelope.Message is WarnTenantPurgeCommand or StartTenantPurgeCommand).Select(envelope => (envelope.Message!, envelope.ScheduledTime))];
     }
 
     // Delivers the messages now, in the tenant, as Wolverine delivers a scheduled message when its moment comes.
