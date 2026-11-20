@@ -34,6 +34,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, refresh: vi.fn() }),
 }));
 
+vi.mock("@clerk/nextjs", () => ({
+  useClerk: () => ({
+    on: (_: string, handler: (status: string) => void) => handler("ready"),
+    off: vi.fn(),
+    session: null,
+  }),
+}));
+
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {

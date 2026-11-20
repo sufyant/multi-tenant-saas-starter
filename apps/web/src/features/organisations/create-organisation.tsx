@@ -30,6 +30,7 @@ import { formatDate } from "@repo/ui/lib/format-date-time";
 import { formatMoney } from "@repo/ui/lib/format-money";
 import { useOrganisationAddress } from "@repo/ui/lib/organisation-address";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
+import { useFreshRouter } from "@repo/ui/lib/use-fresh-router";
 import { useIntentKey } from "@repo/ui/lib/use-intent-key";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -67,7 +68,7 @@ export const slugOf = (name: string) =>
  * start follows (1.30, 1.34). While billing is off Home opens at once. With sign-up off the page leads to "Choose an organisation".
  */
 export function CreateOrganisation() {
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const t = useTranslations();
   const signUp = useQuery(getGetSignUpQueryOptions());
   const [created, setCreated] = useState<MyTenantResponse>();
@@ -245,7 +246,7 @@ function TrialStarted({
 }) {
   const t = useTranslations("createOrganisation");
   const all = useTranslations();
-  const router = useRouter();
+  const router = useFreshRouter(useRouter());
   const failureText = useFailureText();
   const me = useQuery(getGetMeQueryOptions());
   const detail = useQuery(getGetMyTenantQueryOptions(organisation.id));
