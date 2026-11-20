@@ -19,6 +19,7 @@ Read `docs/frontend/AGENTS.md` first. It holds the rules of both apps. This file
 - What the user may do comes from `GetMyTenant.permissions` (F5).
 - Settings opens General, the organisation's page every member can open. Inside Settings the sidebar shows the settings menu: only Organisation (General, Members, Roles, Billing, Usage, Activity log), each page only with its read permission (F5, F59); Billing only while the deployment's billing is on, and Usage only while Billing is and the plan has a meter (F66).
 - Profile and Account and security open from the account menu, without an organisation, at `/settings/profile` and `/settings/account`, in the shell of `features/shell/personal-shell.tsx`. The old addresses under the slug lead there (F59).
+- `/sign-up` is open in the proxy: the sign-up while the product has sign-up on, which leads to `/sign-in` while it is off. After it, `/` asks a person who is not a user yet to accept the terms (1.27), then opens `/new` (F41, F30).
 - `/account/deleted` is open in the proxy: the page after Delete my account, which names the address from the tab's storage (F62).
 - `/invitations/accept?code=...` is open in the proxy: it signs a new person up with Clerk's ticket, or signs a signed-out person in on the page itself (F44).
 - `/` names the organisation of the cookie `last-organisation` "last used" and lists it first; the shell writes the cookie once Clerk has loaded (F30, F13).
