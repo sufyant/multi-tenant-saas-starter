@@ -69,7 +69,7 @@ using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Tenants.WarnTenantPurge;
 using ControlPlane.Application.Tenants.CreateMyTenant;
 using ControlPlane.Application.Tenants.EndTenantTrial;
-using Audit.Application.Plans.RecordTenantTrialEnded;
+using Audit.Application.Tenants.RecordTenantTrialEnded;
 using ControlPlane.Application.Users.ChangePreferences;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
@@ -125,6 +125,10 @@ using Audit.Application.BillingEmails.RecordBillingEmailChanged;
 using Billing.Application.BillingEmails.KeepCustomerEmail;
 using Billing.Application.BillingEmails.NameBillingEmailChange;
 using Billing.Application.BillingEmails.NameCustomerEmail;
+using Audit.Application.Tenants.RecordTenantTrialGiven;
+using Audit.Application.Tenants.RecordTenantTrialExtended;
+using ControlPlane.Application.Tenants.GiveTenantTrial;
+using ControlPlane.Application.Tenants.ExtendTenantTrial;
 
 namespace Api.IntegrationTests.Hosting;
 
@@ -813,6 +817,37 @@ public sealed class HostRoleTests(Database database)
         runs.In("worker").ShouldContain(new HandlerRun(typeof(EndTenantTrialCommand), typeof(EndTenantTrialHandler)));
         runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialEndedEvent), typeof(RecordTenantTrialEndedHandler)));
         (await AuditEntriesAsync(name, tenantId, "tenant.trial_ended")).ShouldBe(1L);
+    }
+
+    // Step 40d: the web host gives and extends a trial; a worker records both, each in the two logs.
+    [Fact]
+    public async Task GiveTenantTrial_ThenExtendTenantTrialOnAWebAndAWorkerHost_RecordsBothInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: BillingRequests.On);
+        await using var worker = Host(name, "worker", runs, settings: BillingRequests.On);
+        _ = worker.Services;
+        var tenant = await new TestData(database, name).AddTenantAsync(planId: SeedPlans.Team);
+        var admin = web.CreateClient(await AddSystemAdminAsync(name), secondFactor: true);
+        using var give = new HttpRequestMessage(HttpMethod.Post, $"/v1/platform/tenants/{tenant.Id}/trial")
+        {
+            Content = JsonContent.Create(new { planId = SeedPlans.Business, days = 14 }),
+        };
+        give.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+        var given = await admin.SendAsync(give, Cancellation);
+        var endsAt = (await given.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("trial").GetProperty("endsAt").GetDateTimeOffset();
+
+        var extended = await admin.PatchAsJsonAsync($"/v1/platform/tenants/{tenant.Id}/trial", new { endsAt = endsAt.AddDays(7) }, Cancellation);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, tenant.Id, "tenant.trial_extended") > 0);
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, tenant.Id, "tenant.trial_given") > 0);
+
+        (given.StatusCode, extended.StatusCode).ShouldBe((HttpStatusCode.Created, HttpStatusCode.OK));
+        runs.In("web").ShouldContain(new HandlerRun(typeof(GiveTenantTrialCommand), typeof(GiveTenantTrialHandler)));
+        runs.In("web").ShouldContain(new HandlerRun(typeof(ExtendTenantTrialCommand), typeof(ExtendTenantTrialHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialGivenEvent), typeof(RecordTenantTrialGivenHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialExtendedEvent), typeof(RecordTenantTrialExtendedHandler)));
+        (await AuditEntriesAsync(name, tenant.Id, "tenant.trial_given"), await AuditEntriesAsync(name, tenant.Id, "tenant.trial_extended")).ShouldBe((1L, 1L));
     }
 
     // The web host takes the request; the worker prepares the file with every module's exporter, which it takes from the message's scope,

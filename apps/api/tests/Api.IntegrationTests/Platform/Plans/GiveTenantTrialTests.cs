@@ -11,6 +11,7 @@ namespace Api.IntegrationTests.Platform.Plans;
 
 // POST /v1/platform/tenants/{tenantId}/trial: while billing is on, a system admin gives a tenant a trial of a plan for some days. It starts
 // now, needs no card, and returns the tenant to its plan of now at its end (step 40d; 4.29, 4.47). Only a system admin gives a second trial.
+// It starts a process, the trial and its scheduled end, so it takes an idempotency key and answers 201 (I1).
 public sealed class GiveTenantTrialTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
@@ -46,7 +47,7 @@ public sealed class GiveTenantTrialTests(Database database) : IAsyncLifetime
 
         var session = await _api.TrackMessagesAsync(async () => given = await GiveAsync(admin, tenant.Id, SeedPlans.Business, 10));
 
-        given!.StatusCode.ShouldBe(HttpStatusCode.OK);
+        given!.StatusCode.ShouldBe(HttpStatusCode.Created);
         var plan = await given.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (plan.GetProperty("plan").GetProperty("id").GetGuid(), Trials.Of(plan.GetProperty("trial")))
             .ShouldBe((SeedPlans.Business, $"{SeedPlans.Business}|{_time.GetUtcNow():O}|{endsAt:O}|{SeedPlans.Team}"));
@@ -68,8 +69,35 @@ public sealed class GiveTenantTrialTests(Database database) : IAsyncLifetime
 
         var given = await _api.WaitingForMessagesAsync(async () => await GiveAsync(await AdminAsync(), tenant.Id, SeedPlans.Business, 14));
 
-        given.StatusCode.ShouldBe(HttpStatusCode.OK);
+        given.StatusCode.ShouldBe(HttpStatusCode.Created);
         (await Trials.InTrialAsync(database, tenant.Id)).ShouldBeTrue();
+    }
+
+    // A retry with the same key answers the first answer again, and gives one trial (I1).
+    [Fact]
+    public async Task GiveTenantTrial_TheSameKeyTwice_ReplaysTheFirstAnswerAndRecordsOnce()
+    {
+        var tenant = await _testData.AddTenantAsync(planId: SeedPlans.Team);
+        var admin = await AdminAsync();
+        var key = Guid.NewGuid().ToString();
+        (await _api.WaitingForMessagesAsync(() => GiveAsync(admin, tenant.Id, SeedPlans.Business, 14, key))).EnsureSuccessStatusCode();
+
+        var replayed = await _api.WaitingForMessagesAsync(() => GiveAsync(admin, tenant.Id, SeedPlans.Business, 14, key));
+
+        (replayed.StatusCode, replayed.Headers.Contains("Idempotent-Replayed")).ShouldBe((HttpStatusCode.Created, true));
+        (await _audit.TenantLogAsync(tenant.Id)).ShouldBe($"{tenant.Id}:tenant.trial_given|Platform|-|Tenant|{tenant.Id}|Acme Ltd");
+    }
+
+    // A trial of a plan with a shorter Activity log period starts the tenant's hold, as a plan change does (K14).
+    [Fact]
+    public async Task GiveTenantTrial_APlanOfAShorterPeriod_StartsTheHold()
+    {
+        var tenant = await _testData.AddTenantAsync(planId: SeedPlans.Team);
+        var plan = await _testData.AddPlanAsync(new() { ["audit.retention.days"] = 90 });
+
+        (await _api.WaitingForMessagesAsync(async () => await GiveAsync(await AdminAsync(), tenant.Id, plan, 14))).EnsureSuccessStatusCode();
+
+        (await _audit.RetentionHoldAsync(tenant.Id, "tenant.trial_given")).ShouldBe("90|t|t");
     }
 
     [Fact]
@@ -134,8 +162,13 @@ public sealed class GiveTenantTrialTests(Database database) : IAsyncLifetime
         (await Trials.InTrialAsync(database, tenant.Id)).ShouldBeFalse();
     }
 
-    private static Task<HttpResponseMessage> GiveAsync(HttpClient admin, Guid tenantId, Guid planId, int days) =>
-        admin.PostAsJsonAsync($"/v1/platform/tenants/{tenantId}/trial", new { planId, days }, Cancellation);
+    // A trial with an idempotency key (I1): the given one, or a new one.
+    private static Task<HttpResponseMessage> GiveAsync(HttpClient admin, Guid tenantId, Guid planId, int days, string? key = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/v1/platform/tenants/{tenantId}/trial") { Content = JsonContent.Create(new { planId, days }) };
+        request.Headers.Add("Idempotency-Key", key ?? Guid.NewGuid().ToString());
+        return admin.SendAsync(request, Cancellation);
+    }
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();

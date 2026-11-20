@@ -29,6 +29,8 @@ import {
   TenantPlanChangedDetailsResponseOperation,
   TenantPlanChangeScheduledDetailsResponseOperation,
   TenantPlanChangeUndoneDetailsResponseOperation,
+  TenantTrialExtendedDetailsResponseOperation,
+  TenantTrialGivenDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
@@ -109,6 +111,9 @@ const platformOperations = [
   AuditOperation.TenantPlanChangeUndone,
   AuditOperation.TenantEntitlementOverrideSet,
   AuditOperation.TenantEntitlementOverrideRemoved,
+  AuditOperation.TenantTrialEnded,
+  AuditOperation.TenantTrialGiven,
+  AuditOperation.TenantTrialExtended,
   AuditOperation.TermsVersionCreated,
   AuditOperation.TermsVersionUpdated,
   AuditOperation.TermsVersionCancelled,
@@ -1099,6 +1104,43 @@ const planCases: PlanCase[] = [
       en: "Ciara Byrne undid the scheduled change of Shannon Studio. It stays on Pro.",
       tr: "Ciara Byrne, Shannon Studio kuruluşunun planlanan değişikliğini geri aldı. Pro planında kalır.",
       ar: "تراجع Ciara Byrne عن التغيير المجدول لـShannon Studio. تبقى على Pro.",
+    },
+  ],
+  [
+    "TenantTrialGiven",
+    AuditOperation.TenantTrialGiven,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation: TenantTrialGivenDetailsResponseOperation.TenantTrialGiven,
+      plan: { id: pro.id, name: "Business" },
+      endsAt: "2026-11-16T12:00:00Z",
+    },
+    {
+      en: "Ciara Byrne gave Shannon Studio a trial of Business until 16 Nov 2026.",
+      tr: "Ciara Byrne, Shannon Studio kuruluşuna 16 Kas 2026 tarihine kadar Business denemesi verdi.",
+      ar: "منح Ciara Byrne Shannon Studio فترة تجريبية من Business حتى 16 نوفمبر 2026.",
+    },
+  ],
+  [
+    "TenantTrialExtended",
+    AuditOperation.TenantTrialExtended,
+    tenantTarget({
+      id: "0198f0a2-0000-7000-8000-000000000003",
+      name: "Shannon Studio",
+    }),
+    {
+      operation:
+        TenantTrialExtendedDetailsResponseOperation.TenantTrialExtended,
+      oldEndsAt: "2026-11-05T12:00:00Z",
+      newEndsAt: "2026-11-12T12:00:00Z",
+    },
+    {
+      en: "Ciara Byrne extended the trial of Shannon Studio to 12 Nov 2026 (before: 5 Nov 2026).",
+      tr: "Ciara Byrne, Shannon Studio kuruluşunun denemesini 12 Kas 2026 tarihine uzattı (önce: 5 Kas 2026).",
+      ar: "مدّد Ciara Byrne الفترة التجريبية لـShannon Studio حتى 12 نوفمبر 2026 (قبل ذلك: 5 نوفمبر 2026).",
     },
   ],
   [
