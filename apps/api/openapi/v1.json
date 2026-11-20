@@ -11359,6 +11359,125 @@
         }
       }
     },
+    "/v1/me/sign-up": {
+      "post": {
+        "tags": [
+          "Me/Users"
+        ],
+        "operationId": "SignUp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me/preferences": {
       "patch": {
         "tags": [
@@ -12715,6 +12834,219 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Me/Tenants"
+        ],
+        "description": "Answers 201 with the tenant and without Location: the API reads the user's tenants as a list, so the request's target URI identifies it (RFC 9110, section 15.3.2).",
+        "operationId": "CreateMyTenant",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[!-~]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMyTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyTenantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "true when the answer replays the saved answer of an earlier request with the same key; absent otherwise.",
+                "schema": {
+                  "enum": [
+                    "true"
+                  ],
+                  "type": "string",
+                  "x-enumNames": [
+                    "True"
+                  ]
+                }
+              },
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/me/invitations/accept": {
@@ -13887,6 +14219,56 @@
         },
         "security": [ ]
       }
+    },
+    "/v1/public/sign-up": {
+      "get": {
+        "tags": [
+          "Public/SignUp"
+        ],
+        "operationId": "GetSignUp",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignUpResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [ ]
+      }
     }
   },
   "components": {
@@ -14301,6 +14683,7 @@
           "user.preferences_changed",
           "user.reactivated",
           "user.renamed",
+          "user.signed_up",
           "user.suspended"
         ],
         "type": "string",
@@ -14365,6 +14748,7 @@
           "UserPreferencesChanged",
           "UserReactivated",
           "UserRenamed",
+          "UserSignedUp",
           "UserSuspended"
         ]
       },
@@ -14712,6 +15096,26 @@
           }
         },
         "description": "The six digits that went to the person's address."
+      },
+      "CreateMyTenantRequest": {
+        "required": [
+          "name",
+          "slug"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 63,
+            "minLength": 3,
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(?![\\s\\S])",
+            "type": "string"
+          }
+        },
+        "description": "A new tenant of the signed-in user: its name and its slug, with the rules of a tenant a system admin creates. The API trims the name before it counts its length."
       },
       "CreatePlanRequest": {
         "required": [
@@ -15187,12 +15591,14 @@
           "route.method_not_allowed",
           "route.not_found",
           "server.error",
+          "sign_up.disabled",
           "system_admin.cannot_revoke_self",
           "system_admin.exists",
           "system_admin.not_found",
           "system_admin.reverification_required",
           "system_admin.root",
           "tenant.closed",
+          "tenant.creation_limit_reached",
           "tenant.has_owner",
           "tenant.name_invalid",
           "tenant.not_active",
@@ -15218,6 +15624,7 @@
           "user.deleted",
           "user.email_taken",
           "user.email_unchanged",
+          "user.email_unverified",
           "user.has_memberships",
           "user.is_system_admin",
           "user.last_owner",
@@ -15316,12 +15723,14 @@
           "RouteMethodNotAllowed",
           "RouteNotFound",
           "ServerError",
+          "SignUpDisabled",
           "SystemAdminCannotRevokeSelf",
           "SystemAdminExists",
           "SystemAdminNotFound",
           "SystemAdminReverificationRequired",
           "SystemAdminRoot",
           "TenantClosed",
+          "TenantCreationLimitReached",
           "TenantHasOwner",
           "TenantNameInvalid",
           "TenantNotActive",
@@ -15347,6 +15756,7 @@
           "UserDeleted",
           "UserEmailTaken",
           "UserEmailUnchanged",
+          "UserEmailUnverified",
           "UserHasMemberships",
           "UserIsSystemAdmin",
           "UserLastOwner",
@@ -16482,7 +16892,8 @@
           "name",
           "isSystemAdmin",
           "language",
-          "timeZone"
+          "timeZone",
+          "createdTenantCount"
         ],
         "type": "object",
         "properties": {
@@ -16513,9 +16924,13 @@
               "null",
               "string"
             ]
+          },
+          "createdTenantCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
-        "description": "The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in."
+        "description": "The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and\ntheir preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.\n`CreatedTenantCount` is how many tenants the user created that were not purged, which the limit of sign-up counts (2.39)."
       },
       "MeterSettingRequest": {
         "required": [
@@ -18607,6 +19022,42 @@
           }
         },
         "description": "The tenant's spending cap (11.03): 1 to 10 000 000 000 minor units excl. VAT a month, or null to remove it."
+      },
+      "SignUpRequest": {
+        "required": [
+          "language"
+        ],
+        "type": "object",
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "termsVersionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        },
+        "description": "The language the person chose on the sign-up page, one of the list, required; and the id of the terms version in force that the person\naccepts with the sign-up, or null. Another version answers 409 `terms_version.changed`, and an id no version has 404\n`terms_version.not_found`."
+      },
+      "SignUpResponse": {
+        "required": [
+          "enabled",
+          "tenantLimit"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "tenantLimit": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Whether the product has sign-up on, and how many tenants that were not purged one person may create."
       },
       "SpendingCapResponse": {
         "required": [
@@ -20906,6 +21357,9 @@
     },
     {
       "name": "Platform/Users"
+    },
+    {
+      "name": "Public/SignUp"
     },
     {
       "name": "Public/TermsVersions"

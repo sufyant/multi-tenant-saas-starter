@@ -46,3 +46,47 @@ export const ListMyTenantsResponse = zod.object({
   "total": zod.int()
 })
 
+/**
+ * Answers 201 with the tenant and without Location: the API reads the user's tenants as a list, so the request's target URI identifies it (RFC 9110, section 15.3.2).
+ */
+export const createMyTenantHeaderIdempotencyKeyMax = 255;
+
+
+export const createMyTenantHeaderIdempotencyKeyRegExp = new RegExp('^[!-~]+$');
+
+
+export const CreateMyTenantHeader = zod.object({
+  "Idempotency-Key": zod.string().min(1).max(createMyTenantHeaderIdempotencyKeyMax).regex(createMyTenantHeaderIdempotencyKeyRegExp)
+})
+
+export const createMyTenantBodyNameMax = 100;
+
+export const createMyTenantBodySlugMin = 3;
+export const createMyTenantBodySlugMax = 63;
+
+
+export const createMyTenantBodySlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*(?![\\s\\S])');
+
+
+export const CreateMyTenantBody = zod.object({
+  "name": zod.string().max(createMyTenantBodyNameMax),
+  "slug": zod.string().min(createMyTenantBodySlugMin).max(createMyTenantBodySlugMax).regex(createMyTenantBodySlugRegExp)
+}).describe('A new tenant of the signed-in user: its name and its slug, with the rules of a tenant a system admin creates. The API trims the name before it counts its length.')
+
+export const CreateMyTenantResponse = zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum({
+  Active: 'active',
+  Suspended: 'suspended',
+  Closed: 'closed',
+  Purging: 'purging',
+}).describe('The status of a tenant as its members see it: active, or suspended, closed or purging when they cannot enter it. A purged tenant has no member.'),
+  "role": zod.object({
+  "id": zod.uuid(),
+  "name": zod.string(),
+  "builtIn": zod.boolean()
+}).describe('A role as a member, an invitation or a tenant of the signed-in user holds it: its id, its name and whether it is built in. A built-in\nrole answers its stored name, `owner`, `admin` or `member`; a custom role answers the name the tenant gave it (A2, A3).\nA request gives a role by its id.')
+}).describe('A tenant the signed-in user belongs to: an item of their tenant list, and the tenant an invitation made them join. Its status is\nactive, or suspended, closed or purging when its members cannot enter it. The role is the user\'s there.')
+

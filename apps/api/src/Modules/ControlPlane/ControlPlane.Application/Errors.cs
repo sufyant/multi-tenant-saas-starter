@@ -21,6 +21,10 @@ public static class Errors
 
     public static readonly Error UserNotFound = Error.NotFound(ControlPlaneErrorCodes.UserNotFound, "The user was not found.");
 
+    public static readonly Error SignUpDisabled = Error.Forbidden(ControlPlaneErrorCodes.SignUpDisabled, "The product has sign-up off: only an invitation makes a user.");
+
+    public static readonly Error UserEmailUnverified = Error.Forbidden(ControlPlaneErrorCodes.UserEmailUnverified, "The account has no verified email address.");
+
     public static readonly Error UserEmailTaken = Error.Conflict(ControlPlaneErrorCodes.UserEmailTaken, "Another account uses this address.");
 
     public static readonly Error UserIsSystemAdmin = Error.Conflict(ControlPlaneErrorCodes.UserIsSystemAdmin, "A system admin cannot be suspended or deleted.");

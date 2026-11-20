@@ -48,7 +48,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
     private const string NotificationTypeSchema = "#/components/schemas/NotificationType";
 
     // A5: the operations of /v1 that anyone may call without signing in. A new one is added here on purpose, as in EndpointAccessTests.
-    private static readonly string[] PublicOperations = ["get /v1/public/terms"];
+    private static readonly string[] PublicOperations = ["get /v1/public/terms", "get /v1/public/sign-up"];
 
     private static readonly string[] EnumsOfStrings = [PermissionSchema, AuditOperationSchema, NotificationTypeSchema];
 
@@ -513,7 +513,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         anonymous.ShouldBe(PublicOperations);
         overriding.ShouldBe(PublicOperations);
         Operations().Where(operation => PublicOperations.Contains($"{operation.Method} {operation.Path}"))
-            .Select(operation => operation.Value.GetProperty("security").GetArrayLength()).ShouldBe([0]);
+            .Select(operation => operation.Value.GetProperty("security").GetArrayLength()).ShouldAllBe(length => length == 0);
     }
 
     // An operation can answer statuses it does not list, such as 405, 408, 413, 415 or 500. Each is Problem Details too (K5).
@@ -692,6 +692,7 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
             "AcceptInvitationRequest.name PredicateValidator",
             "ChangePreferencesRequest.timeZone RegularExpressionValidator",
             "CreateTenantRequest.slug PredicateValidator",
+            "CreateMyTenantRequest.slug PredicateValidator",
             "RenameMeRequest.name PredicateValidator",
             "RenameUserRequest.name PredicateValidator",
             "SuspendTenantRequest.reason PredicateValidator",

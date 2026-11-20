@@ -3,13 +3,24 @@ using SharedKernel;
 namespace ControlPlane.Contracts.Tenants;
 
 /// <summary>
-/// A system admin created a tenant, which is active from its creation. Published through the outbox in the creation's transaction; a
+/// A system admin created a tenant, or a user created one of their own while the product has sign-up on (step 40d). The tenant is active
+/// from its creation. Published through the outbox in the creation's transaction; a
 /// subscriber handles it in the tenant's transaction, as the tenant's id travels in the message's envelope.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
-/// <param name="CreatedBy">The user id of the system admin who created the tenant.</param>
+/// <param name="CreatedBy">The user id of the system admin, or of the user, who created the tenant.</param>
 /// <param name="PlanId">The plan the tenant got: the one its creation named, else the default plan. None in an event of the version before
 /// step 32, which the new fields follow so that both versions read each other's events.</param>
 /// <param name="PlanName">The plan's name at that moment.</param>
+/// <param name="ByItsOwner">The user created the tenant for themselves and is its Owner (step 40d); false for a system admin's creation, and
+/// in an event of the version before step 40d.</param>
 [MessageName("tenant-created")]
-public sealed record TenantCreatedEvent(Guid EventId, DateTimeOffset OccurredAt, Guid TenantId, string Name, Guid CreatedBy, Guid? PlanId = null, string? PlanName = null);
+public sealed record TenantCreatedEvent(
+    Guid EventId,
+    DateTimeOffset OccurredAt,
+    Guid TenantId,
+    string Name,
+    Guid CreatedBy,
+    Guid? PlanId = null,
+    string? PlanName = null,
+    bool ByItsOwner = false);

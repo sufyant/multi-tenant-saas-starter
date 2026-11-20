@@ -11,6 +11,7 @@ using ControlPlane.Api.Platform.Plans;
 using ControlPlane.Api.Platform.SystemAdmins;
 using ControlPlane.Api.Platform.Tenants;
 using ControlPlane.Api.Platform.TermsVersions;
+using ControlPlane.Api.Public.SignUp;
 using ControlPlane.Api.Public.TermsVersions;
 using ControlPlane.Api.Platform.Users;
 using ControlPlane.Api.Tenant.FeatureFlags;
@@ -64,5 +65,6 @@ public static class ControlPlaneModule
         RoleEndpoints.Map(tenant);
         TenantFeatureFlagEndpoints.Map(tenant);
         PublicTermsVersionEndpoints.Map(publicRoutes);
+        PublicSignUpEndpoints.Map(publicRoutes);
     }
 }

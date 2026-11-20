@@ -1,6 +1,8 @@
 # Tenant creation process
 
-This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`.
+This file is a flow of `ARCHITECTURE.md`, section 6. It says what happens, step by step. The rules it cites by id are in `ARCHITECTURE.md` and `api-catalog.md`. A system admin creates a tenant and invites its first Owner (section 1), or a user creates a tenant of their own while the product has sign-up on (section 2).
+
+## 1. A system admin's tenant
 
 Tenant creation is one transaction, not a saga (S1). Its first write and its pivot are both writes in ControlPlane's own database, so one transaction does both and rolls both back on a failure; the steps after it only retry. So it meets neither half of S2: it needs no compensation of its own, and no timeout. It takes the path of `InviteOwner` (`invitations.md`, section 3, "Owner invitation"), the same rule and the same messages (the maintainer's decision D1 in step r3). The template's reference use of a saga is the tenant purge, which comes in step r7. Source: Richardson, Chapter 4 (compensatable steps, pivot, retryable steps).
 
@@ -30,3 +32,13 @@ Tenant creation messages (N1):
 - The root system admins come from email addresses in configuration (`system-admins.md`).
 
 Source: Golding, Chapter 4. Richardson, Chapter 4.
+
+## 2. A user's own tenant
+
+Step 40d. While the product has sign-up on (`ControlPlane:SignUp:Enabled`, off by default), a person who signed up at the identity provider becomes a user, then creates a tenant of their own. Each is one transaction, with no message to the identity provider.
+
+1. The person signs up at the identity provider, which asks a captcha and verifies the address (`.clerk/config.json`). They are signed in, and not a user yet: `GetMe` answers 404 `user.not_found`.
+2. `SignUp` (`POST /v1/me/sign-up`) reads the person's verified addresses from the identity provider, outside the transaction. Then, in one transaction, it takes the lock of the identity provider id (K6f), checks the address under its own lock (A7), and adds the user with the first verified address, no name and the language the person chose. It sends `UserSignedUpEvent` through the outbox: Audit writes `user.signed_up` in the platform's log, by the user. When the person ticked the terms in force (1.27), the same transaction records the acceptance. A known user is answered as they are.
+3. `CreateMyTenant` (`POST /v1/me/tenants`) runs inside the tenant it creates, whose id the server chose. It locks the user row first, so two creations of one person run one after the other and a deletion runs before or after it (A8: a deleted user is refused), and counts the tenants the user created that were not purged: at `ControlPlane:SignUp:TenantLimit` it answers 409 `tenant.creation_limit_reached`. Then it writes the active tenant on the default plan, its summary, its built-in roles and the user's Owner membership, which counts on the user row (R13), in one transaction. No invitation is made. It sends `TenantCreatedEvent` with `ByItsOwner` through the outbox: Audit writes `tenant.created` in both logs, by the user.
+
+A purge clears the tenant's creator (`Tenant.Purge`), so a purged tenant leaves the count. The tenant's trial and the welcome email come with 40d-backend's next part.

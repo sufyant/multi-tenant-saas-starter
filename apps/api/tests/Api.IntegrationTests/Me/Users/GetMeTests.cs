@@ -24,6 +24,21 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // Step 40d: GetMe answers how many tenants the user created that were not purged, so 2.39 says it before the user tries. A purge clears
+    // the creator (Tenant.Purge), so the count reads the creator only.
+    [Fact]
+    public async Task GetMe_AUserWhoCreatedATenant_CountsIt()
+    {
+        var user = await _testData.AddUserAsync(email: TestEmails.Of("ada@example.com"));
+        var userId = await _testData.UserIdOfAsync(user);
+        var (created, _) = await _testData.AddTenantAsync();
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET created_by = '{userId}' WHERE id = '{created}'");
+
+        var me = await _api.CreateClient(user).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
+
+        me.GetProperty("createdTenantCount").GetInt32().ShouldBe(1);
+    }
+
     [Fact]
     public async Task GetMe_AUser_ReturnsTheirUserIdProfileAndThatTheyAreNoSystemAdmin()
     {
@@ -35,7 +50,7 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
         var me = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Me(me).ShouldBe((await _testData.UserIdOfAsync(user), TestEmails.Of("ada@example.com"), "Ada Lovelace", false));
         me.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "name", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
+            ["id", "email", "name", "isSystemAdmin", "language", "timeZone", "createdTenantCount"], ignoreOrder: true);
     }
 
     // The preferences follow the user to every tenant and device. A user who set no time zone has none: the web uses the browser's.

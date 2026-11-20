@@ -418,7 +418,8 @@
         "renamed": "{self, select, yes {<actor></actor> adını değiştirdi.} other {<actor></actor>, <target></target> kullanıcısını yeniden adlandırdı.}}",
         "deleted": "{actorKind, select, platform {Bir kullanıcı silindi.} other {<actor></actor> bir kullanıcıyı sildi.}}",
         "email_preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
-        "preferences_changed": "<actor></actor> tercihlerini değiştirdi."
+        "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
+        "signed_up": "<actor></actor> kaydoldu."
       },
       "system_admin": {
         "granted": "<actor></actor>, <target></target> kullanıcısını sistem yöneticisi yaptı.",

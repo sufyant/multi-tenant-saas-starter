@@ -152,6 +152,7 @@ public static class AuditDetailsTypes
         [AuditOperations.UserPreferencesChanged] = null,
         [AuditOperations.UserReactivated] = null,
         [AuditOperations.UserRenamed] = null,
+        [AuditOperations.UserSignedUp] = null,
         [AuditOperations.UserSuspended] = null,
     };
 

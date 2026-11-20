@@ -807,6 +807,7 @@ export const AuditOperation = {
   UserPreferencesChanged: 'user.preferences_changed',
   UserReactivated: 'user.reactivated',
   UserRenamed: 'user.renamed',
+  UserSignedUp: 'user.signed_up',
   UserSuspended: 'user.suspended',
 } as const;
 
@@ -1083,6 +1084,20 @@ export interface CheckoutSessionResponse {
  */
 export interface ConfirmAccountDeletionRequest {
   code: string;
+}
+
+/**
+ * A new tenant of the signed-in user: its name and its slug, with the rules of a tenant a system admin creates. The API trims the name before it counts its length.
+ */
+export interface CreateMyTenantRequest {
+  /** @maxLength 100 */
+  name: string;
+  /**
+     * @minLength 3
+     * @maxLength 63
+     * @pattern ^[a-z0-9]+(-[a-z0-9]+)*(?![\s\S])
+     */
+  slug: string;
 }
 
 /**
@@ -1525,12 +1540,14 @@ export const ErrorCode = {
   RouteMethodNotAllowed: 'route.method_not_allowed',
   RouteNotFound: 'route.not_found',
   ServerError: 'server.error',
+  SignUpDisabled: 'sign_up.disabled',
   SystemAdminCannotRevokeSelf: 'system_admin.cannot_revoke_self',
   SystemAdminExists: 'system_admin.exists',
   SystemAdminNotFound: 'system_admin.not_found',
   SystemAdminReverificationRequired: 'system_admin.reverification_required',
   SystemAdminRoot: 'system_admin.root',
   TenantClosed: 'tenant.closed',
+  TenantCreationLimitReached: 'tenant.creation_limit_reached',
   TenantHasOwner: 'tenant.has_owner',
   TenantNameInvalid: 'tenant.name_invalid',
   TenantNotActive: 'tenant.not_active',
@@ -1556,6 +1573,7 @@ export const ErrorCode = {
   UserDeleted: 'user.deleted',
   UserEmailTaken: 'user.email_taken',
   UserEmailUnchanged: 'user.email_unchanged',
+  UserEmailUnverified: 'user.email_unverified',
   UserHasMemberships: 'user.has_memberships',
   UserIsSystemAdmin: 'user.is_system_admin',
   UserLastOwner: 'user.last_owner',
@@ -2012,6 +2030,7 @@ export interface MakeOwnerRequest {
 /**
  * The signed-in user: our user id, not the identity provider's, the copy of their profile, whether they are a system admin, and
  * their preferences. It has no status: a suspended user is refused on every me endpoint (A9), and a deleted user cannot sign in.
+ * `CreatedTenantCount` is how many tenants the user created that were not purged, which the limit of sign-up counts (2.39).
  */
 export interface MeResponse {
   id: string;
@@ -2023,6 +2042,7 @@ export interface MeResponse {
   language: Language;
   /** @nullable */
   timeZone: string | null;
+  createdTenantCount: number;
 }
 
 /**
@@ -2636,6 +2656,25 @@ export interface SetFeatureFlagPercentageRequest {
 export interface SetSpendingCapRequest {
   /** @nullable */
   amount: number | null;
+}
+
+/**
+ * The language the person chose on the sign-up page, one of the list, required; and the id of the terms version in force that the person
+ * accepts with the sign-up, or null. Another version answers 409 `terms_version.changed`, and an id no version has 404
+ * `terms_version.not_found`.
+ */
+export interface SignUpRequest {
+  language: Language;
+  /** @nullable */
+  termsVersionId?: string | null;
+}
+
+/**
+ * Whether the product has sign-up on, and how many tenants that were not purged one person may create.
+ */
+export interface SignUpResponse {
+  enabled: boolean;
+  tenantLimit: number;
 }
 
 /**
@@ -3508,6 +3547,15 @@ export const ListMyTenantsSort = {
   Name: 'name',
   NameDescending: '-name',
 } as const;
+
+export type CreateMyTenantHeaders = {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[!-~]+$
+   */
+  'Idempotency-Key': string;
+};
 
 export type ListMyNotificationsParams = {
   unread?: boolean;

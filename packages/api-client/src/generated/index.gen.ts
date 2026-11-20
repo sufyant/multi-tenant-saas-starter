@@ -17,6 +17,7 @@ export * from './platform-tenants/platform-tenants.gen';
 export * from './platform-termsversions/platform-termsversions.gen';
 export * from './platform-usage/platform-usage.gen';
 export * from './platform-users/platform-users.gen';
+export * from './public-signup/public-signup.gen';
 export * from './public-termsversions/public-termsversions.gen';
 export * from './tenant-auditlogs/tenant-auditlogs.gen';
 export * from './tenant-billingemails/tenant-billingemails.gen';

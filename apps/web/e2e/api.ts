@@ -194,6 +194,7 @@ export const me = (language: Language): MeResponse => ({
   isSystemAdmin: false,
   language,
   timeZone: "Europe/Dublin",
+  createdTenantCount: 0,
 });
 
 /** A tenant's plan as GetMyTenant answers it: the plan's name, the effective value of each key and the count of each limit. */

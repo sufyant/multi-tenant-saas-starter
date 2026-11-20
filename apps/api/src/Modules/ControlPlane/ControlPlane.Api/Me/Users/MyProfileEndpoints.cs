@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using ControlPlane.Api.Authentication;
+using ControlPlane.Api.Me.Invitations;
+using ControlPlane.Application.Identity;
 using ControlPlane.Api.Platform.Users;
 using ControlPlane.Application;
 using ControlPlane.Application.Users;
@@ -12,6 +14,7 @@ using ControlPlane.Application.Users.GetPendingEmailChange;
 using ControlPlane.Application.Users.RenameMe;
 using ControlPlane.Application.Users.RequestAccountDeletion;
 using ControlPlane.Application.Users.RequestEmailChange;
+using ControlPlane.Application.Users.SignUp;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -29,6 +32,7 @@ public static class MyProfileEndpoints
     public static void Map(RouteGroupBuilder me)
     {
         me.MapGet(string.Empty, GetMe).WithMetadata(new TermsGateExempt());
+        me.MapPost("/sign-up", SignUp).RequireRateLimiting(MyInvitationEndpoints.AcceptRateLimit);
         me.MapPatch(string.Empty, RenameMe).WithMetadata(new TermsGateExempt());
         me.MapPatch("/preferences", ChangePreferences).WithMetadata(new TermsGateExempt());
         me.MapPost("/email-change", RequestEmailChange).WithMetadata(new TermsGateExempt())
@@ -47,6 +51,21 @@ public static class MyProfileEndpoints
     // Read without a tenant. A signed-in person who is not a user yet is not found: the web shows "no access yet".
     private static async Task<Result<MeResponse>> GetMe(ClaimsPrincipal user, IMessageBus bus, CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<MeView>>(new GetMeQuery(user.Id()), cancellationToken)).Map(ToResponse);
+
+    // Step 40d: a person who signed up at the identity provider becomes a user (1.27). It sets a state, so it takes no idempotency key (I1):
+    // a known user is answered as they are. The identity provider gives the verified addresses first, outside the command's transaction, as
+    // for an invitation's acceptance, so the endpoint shares its stricter rate limit (API4).
+    private static async Task<Result<MeResponse>> SignUp(
+        SignUpRequest request,
+        ClaimsPrincipal user,
+        IIdentityProvider identity,
+        IMessageBus bus,
+        CancellationToken cancellationToken)
+    {
+        var verifiedEmails = await identity.FindVerifiedEmailsAsync(user.Id(), cancellationToken);
+        return (await bus.InvokeAsync<Result<MeView>>(new SignUpCommand(user.Id(), verifiedEmails, request.Language, request.TermsVersionId), cancellationToken))
+            .Map(ToResponse);
+    }
 
     // Renaming sets a state, so it takes no idempotency key (I1): the name the user has answers 200 again. The token names the user, so a
     // user changes only their own name. It answers the user as GetMe reads them.
@@ -155,7 +174,7 @@ public static class MyProfileEndpoints
 
     private static VerificationCodeResponse ToResponse(VerificationCodeView code) => new(code.ExpiresAt);
 
-    private static MeResponse ToResponse(MeView me) => new(me.Id, me.Email, me.Name, me.IsSystemAdmin, me.Language, me.TimeZone);
+    private static MeResponse ToResponse(MeView me) => new(me.Id, me.Email, me.Name, me.IsSystemAdmin, me.Language, me.TimeZone, me.CreatedTenantCount);
 
     private static PreferencesResponse ToResponse(PreferencesView preferences) => new(preferences.Language, preferences.TimeZone);
 }

@@ -124,6 +124,20 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "CreateMyTenant",
+    "method": "POST",
+    "path": "/v1/me/tenants",
+    "tag": "Me/Tenants",
+    "requestHeaders": [
+      "Idempotency-Key"
+    ],
+    "responseHeaders": [
+      "Idempotent-Replayed",
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "CreatePlan",
     "method": "POST",
     "path": "/v1/platform/plans",
@@ -445,6 +459,17 @@ export const operations = [
       "Retry-After"
     ],
     "anonymous": false
+  },
+  {
+    "operationId": "GetSignUp",
+    "method": "GET",
+    "path": "/v1/public/sign-up",
+    "tag": "Public/SignUp",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": true
   },
   {
     "operationId": "GetTenant",
@@ -1096,6 +1121,17 @@ export const operations = [
     "method": "PUT",
     "path": "/v1/tenants/{tenantId}/usage/spending-cap",
     "tag": "Tenant/Usage",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
+    "operationId": "SignUp",
+    "method": "POST",
+    "path": "/v1/me/sign-up",
+    "tag": "Me/Users",
     "requestHeaders": [],
     "responseHeaders": [
       "Retry-After"

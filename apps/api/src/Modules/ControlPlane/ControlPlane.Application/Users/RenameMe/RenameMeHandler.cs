@@ -28,7 +28,14 @@ public static class RenameMeHandler
             return (renamed.Error, []);
         }
 
-        var me = new MeView(user.Id, user.Email, user.Name, await users.IsSystemAdminAsync(user.Id, cancellationToken), user.Language, user.TimeZone);
+        var me = new MeView(
+            user.Id,
+            user.Email,
+            user.Name,
+            await users.IsSystemAdminAsync(user.Id, cancellationToken),
+            user.Language,
+            user.TimeZone,
+            await users.CountCreatedTenantsAsync(user.Id, cancellationToken));
         if (renamed.Value == StateChange.Unchanged)
         {
             return (me, []);

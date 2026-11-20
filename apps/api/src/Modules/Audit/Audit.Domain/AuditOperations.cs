@@ -148,5 +148,7 @@ public static class AuditOperations
 
     public const string UserRenamed = "user.renamed";
 
+    public const string UserSignedUp = "user.signed_up";
+
     public const string UserSuspended = "user.suspended";
 }
