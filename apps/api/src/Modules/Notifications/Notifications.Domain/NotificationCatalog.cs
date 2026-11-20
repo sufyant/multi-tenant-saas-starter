@@ -53,6 +53,18 @@ public static class NotificationCatalog
 
     public const string TenantPurged = "tenant.purged";
 
+    /// <summary>The fourth exception of U9: a use first took a meter's count to 80% of its quota (13.22). A use is a count, not a command.</summary>
+    public const string TenantMeterNearlyUsed = "tenant.meter_nearly_used";
+
+    /// <summary>A use first took a meter's count to its quota (13.23).</summary>
+    public const string TenantMeterUsedUp = "tenant.meter_used_up";
+
+    /// <summary>A use first took the month's extra to 80% of the spending cap (13.43, 13.44).</summary>
+    public const string TenantSpendingCapNearlyReached = "tenant.spending_cap_nearly_reached";
+
+    /// <summary>A use reached the spending cap (13.24).</summary>
+    public const string TenantSpendingCapReached = "tenant.spending_cap_reached";
+
     public const string TenantPurgedForOwners = "tenant.purged_for_owners";
 
     public const string TenantReactivated = "tenant.reactivated";
@@ -106,6 +118,10 @@ public static class NotificationCatalog
         [TenantClosedForOwners] = OwnersApart,
         [TenantReopenedForOwners] = OwnersApart,
         [TenantPurgedForOwners] = OwnersApart,
+        [TenantMeterNearlyUsed] = UsageApart,
+        [TenantMeterUsedUp] = UsageApart,
+        [TenantSpendingCapNearlyReached] = UsageApart,
+        [TenantSpendingCapReached] = UsageApart,
     };
 
     /// <summary>Every type, by its name.</summary>
@@ -223,6 +239,38 @@ public static class NotificationCatalog
                 Money("oldTotal"),
             ]),
 
+        // A meter's use tells the members who manage billing, in the tenant's bell and by email, as the extra costs the organisation money
+        // or its use stops (U5; E10). The price is there only for a meter that charges its extra, and goes with its unit. Each leads to
+        // Billing until the web has its Usage page (40c-frontend).
+        new(
+            TenantMeterNearlyUsed,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [Tenant(), Meter(), Count("used"), Count("quota"), new("resetsAt", NotificationValueKind.Day), .. UnitPrice()]),
+        new(
+            TenantMeterUsedUp,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [Tenant(), Meter(), Count("quota"), new("resetsAt", NotificationValueKind.Day), .. UnitPrice()]),
+        new(
+            TenantSpendingCapNearlyReached,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [Tenant(), Money("cap"), Money("extraAmount"), new("resetsAt", NotificationValueKind.Day)]),
+        new(
+            TenantSpendingCapReached,
+            NotificationBell.Tenant,
+            NotificationLinkKind.TenantBilling,
+            OrganisationPlan,
+            WebAndEmail(),
+            [Tenant(), Meter(), Money("cap"), new("resetsAt", NotificationValueKind.Day)]),
+
         // An override without an end has no expiry. An override leads to the page of its key (NotificationLinks).
         new(
             TenantEntitlementOverrideSet,
@@ -324,6 +372,8 @@ public static class NotificationCatalog
     // The status types of the Owners share the event of the platform's type, which tells the system admins with other texts.
     private const string OwnersApart = "The same event tells the system admins in the platform's bell; the organisation's Owners hear of it with texts of their own.";
 
+    private const string UsageApart = "A use of a meter is a count, not a command, so no audit operation records it (E8).";
+
     /// <summary>The entry of a stored or a sent type. A type the catalog does not know is a mistake of ours.</summary>
     public static NotificationKind Of(string type) =>
         Kinds.TryGetValue(type, out var kind) ? kind : throw new InvalidOperationException($"The notification catalog has no type {type}.");
@@ -368,6 +418,17 @@ public static class NotificationCatalog
     [
         new("cardBrand", NotificationValueKind.Word, Words: CardBrands, Optional: true),
         new("cardLast4", NotificationValueKind.Text, Optional: true, With: "cardBrand"),
+    ];
+
+    private static NotificationValue Meter() => new("meter", NotificationValueKind.Meter);
+
+    private static NotificationValue Count(string name) => new(name, NotificationValueKind.Count);
+
+    // The price of a charge meter's extra: its amount for each unit size, there together or not at all.
+    private static NotificationValue[] UnitPrice() =>
+    [
+        Money("unitPrice", optional: true),
+        new("unitSize", NotificationValueKind.Count, Optional: true, With: "unitPrice"),
     ];
 
     private static NotificationValue Key() => new(NotificationKind.KeyValue, NotificationValueKind.EntitlementKey);

@@ -287,6 +287,8 @@ public sealed class TenantRepository(ControlPlaneDbContext controlPlane) : ITena
         await controlPlane.TenantRoles.ExecuteDeleteAsync(cancellationToken);
         await controlPlane.TenantSummaries.Where(summary => summary.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
         await controlPlane.EntitlementOverrides.Where(entry => entry.TenantId == purged.Id).ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.MeterUsages.ExecuteDeleteAsync(cancellationToken);
+        await controlPlane.SpendingCaps.ExecuteDeleteAsync(cancellationToken);
         await ForgetInFeatureFlagsAsync(purged, cancellationToken);
         await controlPlane.SaveChangesAsync(cancellationToken);
 

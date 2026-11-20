@@ -94,6 +94,37 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 - `plan.created` and `plan.updated` keep the prices and the meters in their details (an entry from before step 40 has none). An edit of only the prices or the meters writes `plan.updated`.
 - Not in this step: the prices in Stripe and a price change (40b), the meters' counts and the Usage page (40c).
 
+## 5b. The use of a meter (step 40c)
+
+1. A product's module asks ControlPlane before a use: `IUsageMeter.UseAsync(tenantId, meterKey, quantity)`, a quantity of at least 1. It invokes `UseMeterCommand` inline in the tenant, in a short transaction of its own (ARCHITECTURE.md, E8, K6q).
+2. The handler holds the tenant row `FOR SHARE` and reads the meter's setting from the tenant's plan, from the database. A tenant that is not active answers `Stopped`, and so does a meter the plan does not set: it is not on the plan. A stop meter's use that alone goes over the quota answers `Stopped` before any row is written.
+3. It inserts the row of the tenant, the meter and this calendar month of UTC when it is missing, and locks it. Of two uses at once, the second waits and sees the first's count.
+4. A stop meter: a use that would take the count over the quota answers `Stopped` and counts nothing. A use up to the quota is counted.
+5. A charge meter: every use is counted, and the part over the quota is the extra. The row keeps the unit price and the unit size of the use, and the first moment the count reached the quota.
+6. The answer is `Used`. A new month starts from a new row, so the count starts again from nothing.
+
+`GetUsage` (Usage, 11.01) and the platform's `GetTenantUsage` (4.37) read the same: this month for each meter of the plan, with the plan's setting, and up to three months before this one, from the month the tenant was created, the latest first. A month without a use answers 0. Each month's extra keeps the price of its last use, this month's too. A past month also lists a meter that the plan no longer sets but that it has a use of. The tenant's purge deletes the counts (`tenant-purge.md`).
+
+## 5c. The spending cap (step 40c)
+
+1. A member who manages billing sets the cap, an amount in minor units a month, or removes it with none: `PUT /v1/tenants/{tenantId}/usage/spending-cap`, body `{ "amount" }` (ARCHITECTURE.md, E9).
+2. The endpoint asks Billing first whether the tenant pays by card. A tenant that does not answers 409 `usage.spending_cap_unavailable`.
+3. The handler checks the amount, locks the tenant row, then the cap's row, and adds, changes or removes it. The amount it already has changes nothing. A change clears the cap's marks.
+4. It publishes `SpendingCapChangedEvent`, and Audit records `tenant.spending_cap_changed` in the tenant's log.
+5. A use of a charge meter while the tenant pays by card locks the cap after the tenant row and before the month's row (K6q). When the use adds extra, it adds this month's extra amount of every charge meter. A use that lands on the cap is used and marks it reached. A use that goes over is stopped, counts nothing and marks it reached.
+
+`GetUsage` answers the cap, this month's extra amount and the moment the cap was reached this month, and `spendingCapOffered`, whether the tenant pays by card. The tenant's purge deletes the cap.
+
+The first use of a month that takes a meter's count to 80% or to all of its quota, or the extra to 80% or to all of the cap, tells the members who manage billing and the billing email once (ARCHITECTURE.md, E10; `notifications.md`).
+
+## 5d. The extra at Stripe (step 40c)
+
+1. The first use of a month that costs extra schedules the month's close for the first moment of the next month in UTC (ARCHITECTURE.md, E11).
+2. At that moment the close locks the month's row and publishes `MeterMonthClosedEvent`: the month's extra and what it costs at the price of its last use, rounded, as Usage shows it. An amount of 0 publishes nothing.
+3. Billing hears it in the tenant. A Contract tenant, a tenant that never paid by card and one whose subscription has ended are charged nothing: a system admin invoices a Contract's extra from 4.37.
+4. Billing asks Stripe for one invoice item of the amount on the subscription, with the month as its period and "{meter}, {month}: {extra} over the quota" as its line. Stripe adds it to the subscription's next invoice. The tenant, the meter and the month are the call's idempotency key.
+5. A yearly payer's extra goes on the subscription's next invoice too, which can be the next year's.
+
 ## 6. The previews
 
 A preview reads and changes nothing, and never blocks the change. It lists:
@@ -115,6 +146,7 @@ The preview of a plan edit is a page in the list contract (K5), `PlanUpdatePrevi
 | `ChangeTenantPlan` | `TenantPlanChangedEvent`, only for another plan | `RecordTenantPlanChangedHandler` | platform and tenant | `tenant.plan_changed`; details: the old and the new plan |
 | `SetEntitlementOverride` | `EntitlementOverrideSetEvent`, only when something changed | `RecordTenantEntitlementOverrideSetHandler` | platform and tenant | `tenant.entitlement_override_set`; details: the key, the old and the new value and expiry; the reason in the platform's entry only |
 | `RemoveEntitlementOverride` | `EntitlementOverrideRemovedEvent` | `RecordTenantEntitlementOverrideRemovedHandler` | platform and tenant | `tenant.entitlement_override_removed`; details: the key and the value and expiry it had |
+| `SetSpendingCap` | `SpendingCapChangedEvent`, only when the amount changed | `RecordSpendingCapChangedHandler` | tenant | `tenant.spending_cap_changed`, by the member; details: the old and the new amount, null for none, and the currency |
 
 - A plan in the details is Audit's own `AuditPlanResponse`, `{ id, name }`, the plan as it was at that moment.
 - `TenantPlanChangedEvent`, `EntitlementOverrideSetEvent` and `EntitlementOverrideRemovedEvent` carry the optional `retentionShortened`, `{ fromDays, toDays, goesAt }`, when the change makes the tenant's Activity log period shorter. ControlPlane reads the effective values before and after the change, in the tenant's transaction under its lock. `fromDays` is null for no limit, and `goesAt` is the event's moment plus 30 days. Audit's handler starts the tenant's hold at the event's moment, in the transaction that writes the entry (K14).

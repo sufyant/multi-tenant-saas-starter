@@ -26,6 +26,9 @@ internal sealed record EmailMoney(string Group, string Decimal, IReadOnlyDiction
         return $"{(minor < 0 ? "-" : "")}{found.Prefix}{number}{found.Suffix}";
     }
 
+    /// <summary>A whole number of at least 0, written in the language as an amount's whole part is: grouped by three.</summary>
+    public string Number(long whole) => Grouped(whole.ToString(CultureInfo.InvariantCulture));
+
     private string Grouped(string digits) =>
         digits.Length <= 3 ? digits : $"{Grouped(digits[..^3])}{Group}{digits[^3..]}";
 }

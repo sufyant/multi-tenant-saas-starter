@@ -270,6 +270,52 @@
         }
       },
       "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.meter_nearly_used": {
+      "title": "{tenantName}, {meter} kotasının %80’ini kullandı",
+      "body": "Bu ay {quota} içinden {used}. {resetsAt} tarihinde sıfırlanır. {quota} sonrasında fazlası KDV hariç {unitSize} başına {unitPrice} tutar.",
+      "email": {
+        "body": "Bu ay {quota} içinden {used}. {resetsAt} tarihinde sıfırlanır. {quota} sonrasında fazlası KDV hariç {unitSize} başına {unitPrice} tutar.",
+        "button": "Faturalamayı aç"
+      },
+      "without": {
+        "unitPrice": {
+          "body": "Bu ay {quota} içinden {used}. {resetsAt} tarihinde sıfırlanır. {quota} sonrasında o tarihe kadar durur."
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.meter_used_up": {
+      "title": "{tenantName}, {meter} kotasının tamamını kullandı",
+      "body": "Bu ay {quota} içinden {quota}. Fazlası, {resetsAt} tarihinde sıfırlanana kadar KDV hariç {unitSize} başına {unitPrice} tutar.",
+      "email": {
+        "body": "Bu ay {quota} içinden {quota}. Fazlası, {resetsAt} tarihinde sıfırlanana kadar KDV hariç {unitSize} başına {unitPrice} tutar.",
+        "button": "Faturalamayı aç"
+      },
+      "without": {
+        "unitPrice": {
+          "body": "Bu ay {quota} içinden {quota}. {resetsAt} tarihinde sıfırlanana kadar durur."
+        }
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.spending_cap_nearly_reached": {
+      "title": "{tenantName}, harcama limitinin %80’ini kullandı",
+      "body": "Bu ayın fazlası, KDV hariç {cap} limitin {extraAmount} kadarı. Limite ulaşınca fazlası ücretli her kullanım {resetsAt} tarihine kadar durur.",
+      "email": {
+        "body": "Bu ayın fazlası, KDV hariç {cap} limitin {extraAmount} kadarı. Limite ulaşınca fazlası ücretli her kullanım {resetsAt} tarihine kadar durur.",
+        "button": "Faturalamayı aç"
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
+    },
+    "tenant.spending_cap_reached": {
+      "title": "{tenantName} içinde {meter} durdu",
+      "body": "KDV hariç {cap} harcama limitinize ulaştınız. {meter} ve fazlası ücretli diğer her kullanım {resetsAt} tarihinde ya da limiti yükselttiğinizde yeniden başlar.",
+      "email": {
+        "body": "KDV hariç {cap} harcama limitinize ulaştınız. {meter} ve fazlası ücretli diğer her kullanım {resetsAt} tarihinde ya da limiti yükselttiğinizde yeniden başlar.",
+        "button": "Faturalamayı aç"
+      },
+      "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
     }
   },
   "notificationWords": {

@@ -391,7 +391,8 @@
         "renamed": "<actor></actor> غيّر اسم المؤسسة من <name>{oldName}</name> إلى <name>{newName}</name>.",
         "reopened": "أعادت <actor></actor> فتح هذه المؤسسة.",
         "suspended": "<actor></actor> أوقف هذه المؤسسة.",
-        "billing_email_changed": "{removed, select, yes {أزال <actor></actor> البريد الإلكتروني للفوترة.} other {عيّن <actor></actor> البريد الإلكتروني للفوترة.}}"
+        "billing_email_changed": "{removed, select, yes {أزال <actor></actor> البريد الإلكتروني للفوترة.} other {عيّن <actor></actor> البريد الإلكتروني للفوترة.}}",
+        "spending_cap_changed": "{change, select, set {عيّن <actor></actor> حدًا للإنفاق قدره {new} شهريًا.} removed {أزال <actor></actor> حد الإنفاق البالغ {old} شهريًا.} other {غيّر <actor></actor> حد الإنفاق الشهري من {old} إلى {new}.}}"
       },
       "terms_version": {
         "cancelled": "<actor></actor> ألغى إصدارًا من شروط الاستخدام.",

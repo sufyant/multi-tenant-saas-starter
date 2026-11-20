@@ -2926,6 +2926,126 @@
         }
       }
     },
+    "/v1/platform/tenants/{tenantId}/usage": {
+      "get": {
+        "tags": [
+          "Platform/Usage"
+        ],
+        "operationId": "GetTenantUsage",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/platform/terms": {
       "get": {
         "tags": [
@@ -7107,6 +7227,249 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/usage": {
+      "get": {
+        "tags": [
+          "Tenant/Usage"
+        ],
+        "operationId": "GetUsage",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "The seconds to wait before the next request, when the rate limiter refused this one.",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Any other error answer.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenantId}/usage/spending-cap": {
+      "put": {
+        "tags": [
+          "Tenant/Usage"
+        ],
+        "operationId": "SetSpendingCap",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSpendingCapRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
           },
           "400": {
             "description": "Bad Request",
@@ -13685,6 +14048,9 @@
             "$ref": "#/components/schemas/TenantBillingEmailChangedDetailsResponse"
           },
           {
+            "$ref": "#/components/schemas/TenantSpendingCapChangedDetailsResponse"
+          },
+          {
             "$ref": "#/components/schemas/PlanPriceChangeScheduledDetailsResponse"
           },
           {
@@ -13747,6 +14113,7 @@
             "tenant.plan_cancelled": "#/components/schemas/TenantPlanCancelledDetailsResponse",
             "tenant.payment_failed": "#/components/schemas/TenantPaymentFailedDetailsResponse",
             "tenant.billing_email_changed": "#/components/schemas/TenantBillingEmailChangedDetailsResponse",
+            "tenant.spending_cap_changed": "#/components/schemas/TenantSpendingCapChangedDetailsResponse",
             "plan.price_change_scheduled": "#/components/schemas/PlanPriceChangeScheduledDetailsResponse",
             "tenant.price_change_announced": "#/components/schemas/TenantPriceChangeAnnouncedDetailsResponse",
             "tenant.moved_to_default_plan": "#/components/schemas/TenantMovedToDefaultPlanDetailsResponse",
@@ -13920,6 +14287,7 @@
           "tenant.reactivated",
           "tenant.renamed",
           "tenant.reopened",
+          "tenant.spending_cap_changed",
           "tenant.suspended",
           "terms_version.cancelled",
           "terms_version.created",
@@ -13983,6 +14351,7 @@
           "TenantReactivated",
           "TenantRenamed",
           "TenantReopened",
+          "TenantSpendingCapChanged",
           "TenantSuspended",
           "TermsVersionCancelled",
           "TermsVersionCreated",
@@ -14844,6 +15213,8 @@
           "terms_version.not_scheduled",
           "terms_version.scheduled_exists",
           "terms_version.url_invalid",
+          "usage.spending_cap_invalid",
+          "usage.spending_cap_unavailable",
           "user.deleted",
           "user.email_taken",
           "user.email_unchanged",
@@ -14971,6 +15342,8 @@
           "TermsVersionNotScheduled",
           "TermsVersionScheduledExists",
           "TermsVersionUrlInvalid",
+          "UsageSpendingCapInvalid",
+          "UsageSpendingCapUnavailable",
           "UserDeleted",
           "UserEmailTaken",
           "UserEmailUnchanged",
@@ -16230,6 +16603,60 @@
           "Charge"
         ]
       },
+      "MeterUsageResponse": {
+        "required": [
+          "key",
+          "quota",
+          "overage",
+          "unitPrice",
+          "unitSize",
+          "used",
+          "extra",
+          "extraAmount",
+          "quotaReachedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "quota": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overage": {
+            "$ref": "#/components/schemas/MeterSettingResponseOverage"
+          },
+          "unitPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unitSize": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "extra": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "extraAmount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quotaReachedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "One meter of the plan this month: the plan's quota and what happens at it, the price of the extra (`unitPrice` minor units for each\n`unitSize` units) at the month's last use, the plan's before any, the units used, the extra over the quota of a charge meter and its\nprice in minor units at that price, rounded half away from zero, and the first moment the use reached the quota, null before."
+      },
       "MyFeatureFlagsResponse": {
         "required": [
           "flags"
@@ -16560,6 +16987,8 @@
           "tenant.closed_for_owners",
           "tenant.entitlement_override_removed",
           "tenant.entitlement_override_set",
+          "tenant.meter_nearly_used",
+          "tenant.meter_used_up",
           "tenant.moved_to_default_plan",
           "tenant.owner_joined",
           "tenant.payment_failed",
@@ -16572,6 +17001,8 @@
           "tenant.reactivated_for_owners",
           "tenant.reopened",
           "tenant.reopened_for_owners",
+          "tenant.spending_cap_nearly_reached",
+          "tenant.spending_cap_reached",
           "tenant.suspended",
           "tenant.suspended_for_owners",
           "terms_version.created",
@@ -16589,6 +17020,8 @@
           "TenantClosedForOwners",
           "TenantEntitlementOverrideRemoved",
           "TenantEntitlementOverrideSet",
+          "TenantMeterNearlyUsed",
+          "TenantMeterUsedUp",
           "TenantMovedToDefaultPlan",
           "TenantOwnerJoined",
           "TenantPaymentFailed",
@@ -16601,6 +17034,8 @@
           "TenantReactivatedForOwners",
           "TenantReopened",
           "TenantReopenedForOwners",
+          "TenantSpendingCapNearlyReached",
+          "TenantSpendingCapReached",
           "TenantSuspended",
           "TenantSuspendedForOwners",
           "TermsVersionCreated",
@@ -16708,6 +17143,53 @@
           }
         },
         "description": "The latest Owner invitation of a tenant that has no Owner: its address, its expiry, and its state at the moment of the request:\n`pending`, `expired` once its expiry has passed, or `cancelled`. It is never `accepted`, because it is shown only\nwhile the tenant has no Owner. It carries the language the invitation keeps for its email (K8), so a client that invites the Owner\nagain can send it back, and when it was sent, null for an invitation the API summarised before it kept the moment."
+      },
+      "PastMeterUsageResponse": {
+        "required": [
+          "key",
+          "used",
+          "extra",
+          "extraAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "extra": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "extraAmount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "A meter's use in a past month, its extra and the extra's price at the month's last use, in minor units."
+      },
+      "PastUsageResponse": {
+        "required": [
+          "periodStart",
+          "meters"
+        ],
+        "type": "object",
+        "properties": {
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "meters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PastMeterUsageResponse"
+            }
+          }
+        },
+        "description": "A month before this one, named by its first day: each meter of the plan, 0 for one without a use, and each meter it has a use of that the plan no longer sets."
       },
       "PaymentCardResponse": {
         "required": [
@@ -18108,6 +18590,48 @@
         },
         "description": "The percentage of the flag's second rule: a whole percentage of the organisations; none turns the rule off."
       },
+      "SetSpendingCapRequest": {
+        "required": [
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        },
+        "description": "The tenant's spending cap (11.03): 1 to 10 000 000 000 minor units excl. VAT a month, or null to remove it."
+      },
+      "SpendingCapResponse": {
+        "required": [
+          "amount",
+          "extraAmount",
+          "reachedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "extraAmount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reachedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "description": "The tenant's spending cap (11.02, 11.04): its amount and this month's extra so far, in minor units excl. VAT, and when this month reached\nit, null before."
+      },
       "SubscriptionPriceChangeResponse": {
         "required": [
           "movesAt",
@@ -19369,6 +19893,42 @@
           "Purged"
         ]
       },
+      "TenantSpendingCapChangedDetailsResponse": {
+        "required": [
+          "oldAmount",
+          "newAmount",
+          "currency",
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "tenant.spending_cap_changed"
+            ],
+            "type": "string",
+            "x-enumNames": [
+              "TenantSpendingCapChanged"
+            ]
+          },
+          "oldAmount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "newAmount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
       "TenantStatusCountsResponse": {
         "required": [
           "active",
@@ -19838,6 +20398,61 @@
         },
         "description": "The values of the scheduled terms version, as CreateTermsVersionRequest. Once someone accepted it, its link and\n`requiresAcceptance` stay as they are: another value answers 409 `terms_version.locked`. `sendsEmail` is required: off\nmay turn on, and the email then goes to every user who may accept; once on, it stays on, and off answers 409\n`terms_version.email_sent`."
       },
+      "UsageResponse": {
+        "required": [
+          "periodStart",
+          "periodEnd",
+          "planName",
+          "currency",
+          "meters",
+          "pastPeriods",
+          "spendingCap",
+          "spendingCapOffered"
+        ],
+        "type": "object",
+        "properties": {
+          "periodStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date"
+          },
+          "planName": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "meters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeterUsageResponse"
+            }
+          },
+          "pastPeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PastUsageResponse"
+            }
+          },
+          "spendingCap": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SpendingCapResponse"
+              }
+            ]
+          },
+          "spendingCapOffered": {
+            "type": "boolean"
+          }
+        },
+        "description": "The tenant's use of the meters of its plan (step 40c; 11.01, 4.37): this calendar month of UTC, from `periodStart` to\n`periodEnd`, its plan's name, the deployment's currency, an ISO 4217 code, each meter of the plan, and up to three months before\nthis one, from the month the tenant was created, the latest first. A plan with no meter answers none. `spendingCap` is the\ntenant's cap, null without one; `spendingCapOffered` says whether the tenant may have one: only a tenant that pays by card (E9)."
+      },
       "UserDetailResponse": {
         "required": [
           "id",
@@ -20285,6 +20900,9 @@
       "name": "Platform/TermsVersions"
     },
     {
+      "name": "Platform/Usage"
+    },
+    {
       "name": "Platform/Users"
     },
     {
@@ -20325,6 +20943,9 @@
     },
     {
       "name": "Tenant/Tenants"
+    },
+    {
+      "name": "Tenant/Usage"
     }
   ]
 }

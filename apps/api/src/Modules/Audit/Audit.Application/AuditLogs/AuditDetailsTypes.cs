@@ -7,6 +7,7 @@ using Audit.Application.Plans;
 using Audit.Application.Roles;
 using Audit.Application.Tenants;
 using Audit.Application.TermsVersions;
+using Audit.Application.Usage;
 using Audit.Domain;
 
 namespace Audit.Application.AuditLogs;
@@ -62,6 +63,8 @@ public static class AuditDetailsTypes
     public const string TenantPaymentFailed = AuditOperations.TenantPaymentFailed;
 
     public const string TenantBillingEmailChanged = AuditOperations.TenantBillingEmailChanged;
+
+    public const string TenantSpendingCapChanged = AuditOperations.TenantSpendingCapChanged;
 
     public const string PlanPriceChangeScheduled = AuditOperations.PlanPriceChangeScheduled;
 
@@ -124,6 +127,7 @@ public static class AuditDetailsTypes
         [AuditOperations.TenantPlanCancelled] = typeof(TenantPlanCancelledDetails),
         [AuditOperations.TenantPaymentFailed] = typeof(TenantPaymentFailedDetails),
         [AuditOperations.TenantBillingEmailChanged] = typeof(TenantBillingEmailChangedDetails),
+        [AuditOperations.TenantSpendingCapChanged] = typeof(TenantSpendingCapChangedDetails),
         [AuditOperations.PlanPriceChangeScheduled] = typeof(PlanPriceChangeScheduledDetails),
         [AuditOperations.TenantPriceChangeAnnounced] = typeof(TenantPriceChangeAnnouncedDetails),
         [AuditOperations.TenantMovedToDefaultPlan] = typeof(TenantMovedToDefaultPlanDetails),

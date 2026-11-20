@@ -149,6 +149,10 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode TermsVersionUrlInvalid = ErrorCode.Declare("terms_version.url_invalid");
 
+    public static readonly ErrorCode UsageSpendingCapInvalid = ErrorCode.Declare("usage.spending_cap_invalid");
+
+    public static readonly ErrorCode UsageSpendingCapUnavailable = ErrorCode.Declare("usage.spending_cap_unavailable");
+
     public static readonly ErrorCode UserDeleted = ErrorCode.Declare("user.deleted");
 
     public static readonly ErrorCode UserEmailTaken = ErrorCode.Declare("user.email_taken");

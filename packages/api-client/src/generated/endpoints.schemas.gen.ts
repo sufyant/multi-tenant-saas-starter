@@ -533,6 +533,22 @@ export interface TenantBillingEmailChangedDetailsResponse {
   removed: boolean;
 }
 
+export type TenantSpendingCapChangedDetailsResponseOperation = typeof TenantSpendingCapChangedDetailsResponseOperation[keyof typeof TenantSpendingCapChangedDetailsResponseOperation];
+
+
+export const TenantSpendingCapChangedDetailsResponseOperation = {
+  TenantSpendingCapChanged: 'tenant.spending_cap_changed',
+} as const;
+
+export interface TenantSpendingCapChangedDetailsResponse {
+  operation: TenantSpendingCapChangedDetailsResponseOperation;
+  /** @nullable */
+  oldAmount: number | null;
+  /** @nullable */
+  newAmount: number | null;
+  currency: string;
+}
+
 export type PlanPriceChangeScheduledDetailsResponseOperation = typeof PlanPriceChangeScheduledDetailsResponseOperation[keyof typeof PlanPriceChangeScheduledDetailsResponseOperation];
 
 
@@ -723,7 +739,7 @@ export interface TermsVersionUpdatedDetailsResponse {
  * The details of an audit entry: one shape for each operation that keeps some. `operation` names the shape, so a client narrows
  * `details` by it. It is the entry's own operation.
  */
-export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantBillingEmailChangedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
+export type AuditDetailsResponse = MemberInvitedDetailsResponse | MemberLeftDetailsResponse | MemberRemovedDetailsResponse | MemberRoleChangedDetailsResponse | FeatureFlagAddedToCodeDetailsResponse | FeatureFlagPercentageSetDetailsResponse | FeatureFlagRemovedFromCodeDetailsResponse | FeatureFlagTenantListedDetailsResponse | FeatureFlagTenantUnlistedDetailsResponse | PlanCreatedDetailsResponse | PlanUpdatedDetailsResponse | RoleCreatedDetailsResponse | RoleUpdatedDetailsResponse | TenantCreatedDetailsResponse | TenantEntitlementOverrideRemovedDetailsResponse | TenantEntitlementOverrideSetDetailsResponse | TenantOwnerInvitedDetailsResponse | TenantOwnerMadeDetailsResponse | TenantPlanChangedDetailsResponse | TenantPlanCancelledDetailsResponse | TenantPaymentFailedDetailsResponse | TenantBillingEmailChangedDetailsResponse | TenantSpendingCapChangedDetailsResponse | PlanPriceChangeScheduledDetailsResponse | TenantPriceChangeAnnouncedDetailsResponse | TenantMovedToDefaultPlanDetailsResponse | TenantPlanCancellationUndoneDetailsResponse | TenantPlanChangeScheduledDetailsResponse | TenantPlanChangeUndoneDetailsResponse | TenantPurgeWarnedDetailsResponse | TenantRenamedDetailsResponse | TenantSuspendedDetailsResponse | TermsVersionCancelledDetailsResponse | TermsVersionCreatedDetailsResponse | TermsVersionUpdatedDetailsResponse;
 
 /**
  * The operation of an audit entry, area.action.
@@ -777,6 +793,7 @@ export const AuditOperation = {
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
+  TenantSpendingCapChanged: 'tenant.spending_cap_changed',
   TenantSuspended: 'tenant.suspended',
   TermsVersionCancelled: 'terms_version.cancelled',
   TermsVersionCreated: 'terms_version.created',
@@ -1204,6 +1221,8 @@ export const NotificationType = {
   TenantClosedForOwners: 'tenant.closed_for_owners',
   TenantEntitlementOverrideRemoved: 'tenant.entitlement_override_removed',
   TenantEntitlementOverrideSet: 'tenant.entitlement_override_set',
+  TenantMeterNearlyUsed: 'tenant.meter_nearly_used',
+  TenantMeterUsedUp: 'tenant.meter_used_up',
   TenantMovedToDefaultPlan: 'tenant.moved_to_default_plan',
   TenantOwnerJoined: 'tenant.owner_joined',
   TenantPaymentFailed: 'tenant.payment_failed',
@@ -1216,6 +1235,8 @@ export const NotificationType = {
   TenantReactivatedForOwners: 'tenant.reactivated_for_owners',
   TenantReopened: 'tenant.reopened',
   TenantReopenedForOwners: 'tenant.reopened_for_owners',
+  TenantSpendingCapNearlyReached: 'tenant.spending_cap_nearly_reached',
+  TenantSpendingCapReached: 'tenant.spending_cap_reached',
   TenantSuspended: 'tenant.suspended',
   TenantSuspendedForOwners: 'tenant.suspended_for_owners',
   TermsVersionCreated: 'terms_version.created',
@@ -1529,6 +1550,8 @@ export const ErrorCode = {
   TermsVersionNotScheduled: 'terms_version.not_scheduled',
   TermsVersionScheduledExists: 'terms_version.scheduled_exists',
   TermsVersionUrlInvalid: 'terms_version.url_invalid',
+  UsageSpendingCapInvalid: 'usage.spending_cap_invalid',
+  UsageSpendingCapUnavailable: 'usage.spending_cap_unavailable',
   UserDeleted: 'user.deleted',
   UserEmailTaken: 'user.email_taken',
   UserEmailUnchanged: 'user.email_unchanged',
@@ -2024,6 +2047,24 @@ export interface MeterSettingResponse {
   unitSize: number;
 }
 
+/**
+ * One meter of the plan this month: the plan's quota and what happens at it, the price of the extra (`unitPrice` minor units for each
+ * `unitSize` units) at the month's last use, the plan's before any, the units used, the extra over the quota of a charge meter and its
+ * price in minor units at that price, rounded half away from zero, and the first moment the use reached the quota, null before.
+ */
+export interface MeterUsageResponse {
+  key: string;
+  quota: number;
+  overage: MeterSettingResponseOverage;
+  unitPrice: number;
+  unitSize: number;
+  used: number;
+  extra: number;
+  extraAmount: number;
+  /** @nullable */
+  quotaReachedAt: string | null;
+}
+
 export type MyFeatureFlagsResponseFlags = {[key: string]: boolean};
 
 /**
@@ -2144,6 +2185,24 @@ export interface OwnerInvitationResponse {
   language: Language;
   /** @nullable */
   sentAt: string | null;
+}
+
+/**
+ * A meter's use in a past month, its extra and the extra's price at the month's last use, in minor units.
+ */
+export interface PastMeterUsageResponse {
+  key: string;
+  used: number;
+  extra: number;
+  extraAmount: number;
+}
+
+/**
+ * A month before this one, named by its first day: each meter of the plan, 0 for one without a use, and each meter it has a use of that the plan no longer sets.
+ */
+export interface PastUsageResponse {
+  periodStart: string;
+  meters: PastMeterUsageResponse[];
 }
 
 /**
@@ -2571,6 +2630,25 @@ export interface SetFeatureFlagPercentageRequest {
 }
 
 /**
+ * The tenant's spending cap (11.03): 1 to 10 000 000 000 minor units excl. VAT a month, or null to remove it.
+ */
+export interface SetSpendingCapRequest {
+  /** @nullable */
+  amount: number | null;
+}
+
+/**
+ * The tenant's spending cap (11.02, 11.04): its amount and this month's extra so far, in minor units excl. VAT, and when this month reached
+ * it, null before.
+ */
+export interface SpendingCapResponse {
+  amount: number;
+  extraAmount: number;
+  /** @nullable */
+  reachedAt: string | null;
+}
+
+/**
  * Why the system admin suspends the tenant, within the API's limit. The API trims the reason before it counts its length. A member
  * never sees it. It holds no personal data, such as a person's name or email address: the platform's audit log keeps it after the
  * tenant's purge (A8).
@@ -2924,6 +3002,23 @@ export interface UpdateTermsVersionRequest {
   summary: string | null;
   requiresAcceptance: boolean;
   sendsEmail: boolean;
+}
+
+/**
+ * The tenant's use of the meters of its plan (step 40c; 11.01, 4.37): this calendar month of UTC, from `periodStart` to
+ * `periodEnd`, its plan's name, the deployment's currency, an ISO 4217 code, each meter of the plan, and up to three months before
+ * this one, from the month the tenant was created, the latest first. A plan with no meter answers none. `spendingCap` is the
+ * tenant's cap, null without one; `spendingCapOffered` says whether the tenant may have one: only a tenant that pays by card (E9).
+ */
+export interface UsageResponse {
+  periodStart: string;
+  periodEnd: string;
+  planName: string;
+  currency: string;
+  meters: MeterUsageResponse[];
+  pastPeriods: PastUsageResponse[];
+  spendingCap: null | SpendingCapResponse;
+  spendingCapOffered: boolean;
 }
 
 /**

@@ -76,6 +76,12 @@ public interface IBillingProvider
     /// </summary>
     Task EndAndRefundAsync(string subscriptionId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Adds a meter's extra of a month to the subscription's next invoice, as one line of its amount (E11). The tenant, the meter and the
+    /// month are the call's idempotency key, so two calls within the provider's window add one line (Stripe, "Idempotent requests").
+    /// </summary>
+    Task AddExtraAsync(ExtraCharge charge, CancellationToken cancellationToken);
+
     /// <summary>The provider's page where the customer manages its card, address, VAT ID and invoices, which works for a short time.</summary>
     Task<Uri> OpenPortalAsync(string customerId, Uri returnUrl, CancellationToken cancellationToken);
 

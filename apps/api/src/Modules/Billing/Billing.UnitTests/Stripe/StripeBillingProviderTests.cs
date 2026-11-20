@@ -397,6 +397,31 @@ public sealed class StripeBillingProviderTests
         stripe.Sent.ShouldContain(request => request.Path.StartsWith("/v1/invoice_payments?invoice=in_1", StringComparison.Ordinal) && request.Path.Contains("status=paid", StringComparison.Ordinal));
     }
 
+    // E11: a month's extra is one line of its amount on the subscription's next invoice, for the month of UTC that it was used in, with the
+    // tenant, the meter and the month as its idempotency key.
+    [Fact]
+    public async Task AddExtra_AMonthsExtra_AddsOneLineToTheSubscriptionsNextInvoice()
+    {
+        var stripe = new StripeRequests().Answer("POST", "/v1/invoiceitems", """{"id": "ii_1", "object": "invoiceitem"}""");
+
+        await ProviderOf(stripe).AddExtraAsync(new ExtraCharge("cus_1", "sub_1", Team, "ai.requests", new DateOnly(2026, 11, 1), 1234, 12340, "EUR"), Cancellation);
+
+        var sent = stripe.Sent.Single();
+        sent.Body.Split('&').ShouldBe(
+        [
+            "customer=cus_1",
+            "subscription=sub_1",
+            "amount=12340",
+            "currency=eur",
+            "description=ai.requests, November 2026: 1,234 over the quota",
+            "period[start]=1793491200",
+            "period[end]=1796083200",
+            $"metadata[tenant_id]={Team}",
+            "metadata[meter_key]=ai.requests",
+        ], ignoreOrder: true);
+        sent.IdempotencyKey.ShouldBe($"extra-{Team:N}-ai.requests-2026-11");
+    }
+
     private static string EventBody(string id, string type, string dataObject) =>
         $$$"""{"id": "{{{id}}}", "object": "event", "type": "{{{type}}}", "api_version": "{{{StripeConfiguration.ApiVersion}}}", "created": 1, "data": {"object": {{{dataObject}}} }}""";
 

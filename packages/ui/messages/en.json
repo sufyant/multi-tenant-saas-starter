@@ -216,6 +216,10 @@
       "scheduled_exists": "A version is already scheduled. Edit or cancel it first.",
       "url_invalid": "Enter a link that starts with https://."
     },
+    "usage": {
+      "spending_cap_invalid": "The cap must be an amount between 0.01 and 100,000,000.",
+      "spending_cap_unavailable": "A spending cap is only for an organisation that pays by card."
+    },
     "user": {
       "deleted": "This account was deleted.",
       "email_taken": "Another account uses this email address.",

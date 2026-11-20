@@ -463,6 +463,17 @@ public sealed class NotificationTextTests
 
     // A value of each kind, in the names the catalog gives them: Ada for a person, a built-in role, the first word of a closed list, a key,
     // a number for an entitlement, a moment for a date, 30 for a number of days, and a name otherwise. Every optional value is there.
+    // A count is grouped by three as an amount's whole part is; a meter without a word reads as its key (E10).
+    [Theory]
+    [InlineData(Language.En, "Acme used all its ai.requests", "10,000 of 10,000 this month. They stop until they reset on 1 Dec 2026.")]
+    [InlineData(Language.Tr, "Acme, ai.requests kotasının tamamını kullandı", "Bu ay 10.000 içinden 10.000. 1 Ara 2026 tarihinde sıfırlanana kadar durur.")]
+    public void Render_AStopMeterUsedUp_WritesTheCountsAndTheMeter(Language language, string title, string body)
+    {
+        var values = new Dictionary<string, string> { ["tenantName"] = "Acme", ["meter"] = "ai.requests", ["quota"] = "10000", ["resetsAt"] = "2026-12-01" };
+
+        NotificationText.Render(NotificationCatalog.TenantMeterUsedUp, values, People, language, null).ShouldBe(new NotificationText(title, body));
+    }
+
     internal static Dictionary<string, string> SampleValues(string type) =>
         NotificationCatalog.Of(type).Values
             .SelectMany(value => value.Kind switch
@@ -479,6 +490,8 @@ public sealed class NotificationTextTests
                 NotificationValueKind.Attempts => [(value.Name, "4")],
                 NotificationValueKind.People => [(value.Name, "10")],
                 NotificationValueKind.Money => [(value.Name, "10000 EUR")],
+                NotificationValueKind.Count => [(value.Name, "10000")],
+                NotificationValueKind.Meter => [(value.Name, "ai.requests")],
                 _ => [(value.Name, value.Name == "tenantName" ? "Acme" : "Pro")],
             })
             .ToDictionary(pair => pair.Item1, pair => pair.Item2);

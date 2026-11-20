@@ -254,6 +254,60 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.ToTable("feature_flag_tenants", "control_plane");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.MeterUsages.MeterUsage", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<string>("MeterKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("meter_key");
+
+                    b.Property<DateOnly>("Period")
+                        .HasColumnType("date")
+                        .HasColumnName("period");
+
+                    b.Property<long>("Extra")
+                        .HasColumnType("bigint")
+                        .HasColumnName("extra");
+
+                    b.Property<DateTimeOffset?>("NearlyUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("nearly_used_at");
+
+                    b.Property<DateTimeOffset?>("QuotaReachedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("quota_reached_at");
+
+                    b.Property<long>("UnitPrice")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_price");
+
+                    b.Property<long>("UnitSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_size");
+
+                    b.Property<long>("Used")
+                        .HasColumnType("bigint")
+                        .HasColumnName("used");
+
+                    b.HasKey("TenantId", "MeterKey", "Period")
+                        .HasName("pk_meter_usages");
+
+                    b.ToTable("meter_usages", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_meter_usages_counts", "used >= 0 AND extra BETWEEN 0 AND used AND unit_price BETWEEN 0 AND 10000000000 AND unit_size BETWEEN 1 AND 1000000000000");
+
+                            t.HasCheckConstraint("ck_meter_usages_notices", "quota_reached_at IS NULL OR nearly_used_at IS NOT NULL AND nearly_used_at <= quota_reached_at");
+
+                            t.HasCheckConstraint("ck_meter_usages_period", "extract(day FROM period) = 1");
+                        });
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.Property<bool>("Id")
@@ -479,6 +533,43 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasName("pk_role_permissions");
 
                     b.ToTable("role_permissions", "control_plane");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.SpendingCaps.SpendingCap", b =>
+                {
+                    b.Property<Guid>("TenantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id")
+                        .HasDefaultValueSql("NULLIF(current_setting('app.tenant_id', true), '')::uuid");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount");
+
+                    b.Property<DateOnly?>("NearlyReachedPeriod")
+                        .HasColumnType("date")
+                        .HasColumnName("nearly_reached_period");
+
+                    b.Property<DateTimeOffset?>("ReachedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reached_at");
+
+                    b.Property<DateOnly?>("ReachedPeriod")
+                        .HasColumnType("date")
+                        .HasColumnName("reached_period");
+
+                    b.HasKey("TenantId")
+                        .HasName("pk_spending_caps");
+
+                    b.ToTable("spending_caps", "control_plane", t =>
+                        {
+                            t.HasCheckConstraint("ck_spending_caps_amount", "amount BETWEEN 1 AND 10000000000");
+
+                            t.HasCheckConstraint("ck_spending_caps_nearly_reached", "(nearly_reached_period IS NULL OR extract(day FROM nearly_reached_period) = 1) AND (reached_period IS NULL OR nearly_reached_period IS NOT DISTINCT FROM reached_period)");
+
+                            t.HasCheckConstraint("ck_spending_caps_reached", "(reached_period IS NULL) = (reached_at IS NULL) AND (reached_period IS NULL OR extract(day FROM reached_period) = 1)");
+                        });
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>
@@ -1322,6 +1413,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_feature_flag_tenants_tenants_tenant_id");
                 });
 
+            modelBuilder.Entity("ControlPlane.Domain.MeterUsages.MeterUsage", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_meter_usages_tenants_tenant_id");
+                });
+
             modelBuilder.Entity("ControlPlane.Domain.Plans.DefaultPlan", b =>
                 {
                     b.HasOne("ControlPlane.Domain.Plans.Plan", null)
@@ -1371,6 +1472,16 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_role_permissions_roles_tenant_id_role_id");
+                });
+
+            modelBuilder.Entity("ControlPlane.Domain.SpendingCaps.SpendingCap", b =>
+                {
+                    b.HasOne("ControlPlane.Domain.Tenants.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_spending_caps_tenants_tenant_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.StoredFiles.StoredFile", b =>

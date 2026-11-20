@@ -101,6 +101,9 @@ public static class AuditOperations
     /// <summary>A member who manages billing set, changed or removed the tenant's billing email (B14); in the tenant's log only.</summary>
     public const string TenantBillingEmailChanged = "tenant.billing_email_changed";
 
+    /// <summary>A member who manages billing set, changed or removed the tenant's spending cap (step 40c); in the tenant's log only.</summary>
+    public const string TenantSpendingCapChanged = "tenant.spending_cap_changed";
+
     /// <summary>A system admin marked the tenant Contract: it is billed outside the app (B12).</summary>
     public const string TenantContractStarted = "tenant.contract_started";
 

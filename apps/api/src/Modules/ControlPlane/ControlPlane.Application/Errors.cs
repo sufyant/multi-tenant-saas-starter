@@ -13,6 +13,9 @@ public static class Errors
 
     public static readonly Error TenantNotFound = Error.NotFound(ControlPlaneErrorCodes.TenantNotFound, "The tenant was not found.");
 
+    public static readonly Error SpendingCapUnavailable = Error.Conflict(
+        ControlPlaneErrorCodes.UsageSpendingCapUnavailable, "Only a tenant that pays by card has a spending cap: no other is charged the extra in the app.");
+
     public static readonly Error TenantPaysByCard =
         Error.Conflict(ControlPlaneErrorCodes.TenantPaysByCard, "The tenant pays its plan by card: its subscription sets its plan. Switch it to Contract first.");
 

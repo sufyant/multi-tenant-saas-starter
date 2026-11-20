@@ -67,6 +67,7 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantReactivated: 'tenant.reactivated',
   TenantRenamed: 'tenant.renamed',
   TenantReopened: 'tenant.reopened',
+  TenantSpendingCapChanged: 'tenant.spending_cap_changed',
   TenantSuspended: 'tenant.suspended',
   TermsVersionCancelled: 'terms_version.cancelled',
   TermsVersionCreated: 'terms_version.created',
@@ -382,6 +383,13 @@ export const ListPlatformAuditEntriesResponse = zod.object({
   TenantBillingEmailChanged: 'tenant.billing_email_changed',
 }),
   "removed": zod.boolean()
+}),zod.object({
+  "operation": zod.enum({
+  TenantSpendingCapChanged: 'tenant.spending_cap_changed',
+}),
+  "oldAmount": zod.int().nullable(),
+  "newAmount": zod.int().nullable(),
+  "currency": zod.string()
 }),zod.object({
   "operation": zod.enum({
   PlanPriceChangeScheduled: 'plan.price_change_scheduled',

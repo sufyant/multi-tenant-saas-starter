@@ -57,6 +57,9 @@ internal sealed class FakeBillingProvider : IBillingProvider
     // Each move of a subscription to the Prices of a plan's new amounts, its base fee and its fee per person (B13).
     public ConcurrentQueue<(string SubscriptionId, long BaseAmount, long PerPersonAmount)> PriceMoves { get; } = [];
 
+    // Each month's extra of a meter that the next invoice charges (E11).
+    public ConcurrentQueue<ExtraCharge> Extras { get; } = [];
+
     // The prorated amount of a preview, and whether the card pays a move at once.
     public long PreviewAmount { get; set; } = 5325;
 
@@ -72,6 +75,12 @@ internal sealed class FakeBillingProvider : IBillingProvider
         JsonSerializer.Serialize(new { id = eventId, type, subscriptionId }, JsonSerializerOptions.Web);
 
     public void Put(ProviderSubscription subscription) => _subscriptions[subscription.SubscriptionId] = subscription;
+
+    public Task AddExtraAsync(ExtraCharge charge, CancellationToken cancellationToken)
+    {
+        Extras.Enqueue(charge);
+        return Task.CompletedTask;
+    }
 
     public Task<string> CreateCustomerAsync(Guid tenantId, string? email, CancellationToken cancellationToken)
     {

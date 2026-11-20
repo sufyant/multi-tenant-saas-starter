@@ -216,6 +216,10 @@
       "scheduled_exists": "Zaten planlanmış bir sürüm var. Önce onu düzenleyin veya iptal edin.",
       "url_invalid": "https:// ile başlayan bir bağlantı girin."
     },
+    "usage": {
+      "spending_cap_invalid": "Limit 0,01 ile 100.000.000 arasında bir tutar olmalı.",
+      "spending_cap_unavailable": "Harcama limiti yalnızca kartla ödeyen bir kuruluş içindir."
+    },
     "user": {
       "deleted": "Bu hesap silindi.",
       "email_taken": "Bu e-posta adresini başka bir hesap kullanıyor.",

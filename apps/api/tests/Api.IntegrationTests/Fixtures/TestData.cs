@@ -91,6 +91,15 @@ internal sealed class TestData(Database database, string databaseName = Database
             $"UPDATE control_plane.plans SET base_monthly = {baseMonthly}, per_person_monthly = {perPersonMonthly}, base_yearly = {baseYearly}, per_person_yearly = {perPersonYearly} WHERE id = '{planId}'",
             databaseName);
 
+    // Sets the plan's setting of the meter, or adds it, with plain SQL, as UpdatePlan writes it (step 40a).
+    public Task SetPlanMeterAsync(Guid planId, string key, long quota, string overage, long unitPrice, long unitSize) =>
+        database.ScalarAsSuperuserAsync<object>(
+            $"""
+            INSERT INTO control_plane.plan_meters (plan_id, key, quota, overage, unit_price, unit_size) VALUES ('{planId}', '{key}', {quota}, '{overage}', {unitPrice}, {unitSize})
+            ON CONFLICT (plan_id, key) DO UPDATE SET quota = excluded.quota, overage = excluded.overage, unit_price = excluded.unit_price, unit_size = excluded.unit_size
+            """,
+            databaseName);
+
     // Puts the tenant on the plan, with plain SQL.
     public Task SetTenantPlanAsync(Guid tenantId, Guid planId) =>
         database.ScalarAsSuperuserAsync<object>($"UPDATE control_plane.tenants SET plan_id = '{planId}' WHERE id = '{tenantId}'", databaseName);

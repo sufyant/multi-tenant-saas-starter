@@ -15,7 +15,8 @@ namespace Notifications.Application.Notifications;
 /// here, so a text is written once. A person is named from <c>people</c>, which the caller reads now by user id: a deleted user, or one
 /// the directory does not know, reads as "Deleted user", and a user without a name as "Unnamed user", in the language. A built-in role, a
 /// word of a closed list and an entitlement's word are written in the language, a date in the language and the reader's time zone, a number
-/// of days with its noun in the form of its plural category in the language, and any other value as stored. A type whose optional value is missing takes its text without that value, or without the value it goes with. A type, a word or a value the texts do
+/// of days with its noun in the form of its plural category in the language, a meter by its word or its key, a count grouped by three, and
+/// any other value as stored. A type whose optional value is missing takes its text without that value, or without the value it goes with. A type, a word or a value the texts do
 /// not have is a mistake of ours, as in an email.
 /// </summary>
 public sealed partial record NotificationText(string Title, string Body)
@@ -28,6 +29,9 @@ public sealed partial record NotificationText(string Title, string Body)
 
     /// <summary>The name of each entitlement key, under <c>notificationWords</c>.</summary>
     public const string EntitlementKeyWords = "entitlementKey";
+
+    /// <summary>The name of each meter of the code, under <c>notificationWords</c>.</summary>
+    public const string MeterWords = "meter";
 
     /// <summary>The name of each area of the list, under <c>notificationWords</c>.</summary>
     public const string AreaWords = "area";
@@ -204,6 +208,8 @@ public sealed partial record NotificationText(string Title, string Body)
             NotificationValueKind.Attempts => Counted(texts, language, AttemptWords, stored),
             NotificationValueKind.People => Counted(texts, language, PeopleWords, stored),
             NotificationValueKind.Money => MoneyOf(stored, language),
+            NotificationValueKind.Meter => texts.Words.GetValueOrDefault(MeterWords)?.GetValueOrDefault(stored) ?? stored,
+            NotificationValueKind.Count => EmailLanguage.Of(language).Money.Number(long.Parse(stored, NumberStyles.None, CultureInfo.InvariantCulture)),
             _ => stored,
         };
     }
