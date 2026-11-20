@@ -91,6 +91,22 @@ describe("Table", () => {
     );
   });
 
+  it("Table_InACard_DrawsNoBoxOfItsOwnAndKeepsTheCardsPadding", () => {
+    render(<Table {...props} inCard />);
+
+    // TableBase wraps the table in its scroll container; the box is around that.
+    const box = screen.getByRole("table", { name: "Members" }).parentElement
+      ?.parentElement;
+    expect(box).toHaveClass("border-t");
+    expect(box).not.toHaveClass("rounded-lg");
+    const headers = screen.getAllByRole("columnheader");
+    expect(headers[0]).toHaveClass("ps-5");
+    expect(headers.at(-1)).toHaveClass("pe-5");
+    const cards = screen.getByRole("list", { name: "Members" });
+    expect(cards).toHaveClass("border-t");
+    expect(cards).not.toHaveClass("rounded-lg");
+  });
+
   it("Table_WideColumn_ShowsOnlyInAContainerFromTheTableWideToken", () => {
     render(
       <Table
