@@ -44,6 +44,10 @@ internal static class TenantTables
                     INSERT INTO control_plane.roles (id, tenant_id, name) VALUES (gen_random_uuid(), '{tenant}', 'Isolation granted') RETURNING id)
                 INSERT INTO control_plane.role_permissions (tenant_id, role_id, permission) SELECT '{tenant}', role.id, 'tenant.members.read' FROM role
                 """),
+        ["control_plane.meter_usages"] = new(
+            ApplicationMayUpdate: true,
+            tenant => $"INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra) VALUES ('{tenant}', 'isolation.meter', '2026-11-01', 0, 0)",
+            OwnRows: "meter_key = 'isolation.meter'"),
         ["control_plane.roles"] = new(
             ApplicationMayUpdate: true,
             tenant => $"INSERT INTO control_plane.roles (id, tenant_id, name) VALUES (gen_random_uuid(), '{tenant}', 'Isolation')",
