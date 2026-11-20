@@ -166,7 +166,7 @@ export function OrgSwitcher({
               <Icon
                 icon={PlusIcon}
                 size={16}
-                className="mx-0.5 self-start mt-0.5 text-muted-foreground"
+                className={cn("mx-0.5", create.note && "mt-0.5 self-start")}
               />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="text-small">{create.label}</span>
