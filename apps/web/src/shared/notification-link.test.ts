@@ -32,6 +32,7 @@ describe("notificationHref", () => {
     ],
     // Billing's payment and price notifications (3.17, 3.18).
     [NotificationLinkResponseKind.TenantBilling, "/northwind/settings/billing"],
+    [NotificationLinkResponseKind.TenantUsage, "/northwind/settings/usage"],
   ])("NotificationHref_%s_LeadsToThatTenantsPageBySlug", (kind, href) => {
     expect(notificationHref(about(kind), tenants)).toBe(href);
     expect(reportError).not.toHaveBeenCalled();
@@ -55,7 +56,7 @@ describe("notificationHref", () => {
 
   it("NotificationHref_AKindTheWebDoesNotKnow_LeadsToTheStartPageAndIsReportedOnce", () => {
     const unknown = {
-      kind: "tenant_usage",
+      kind: "tenant_reports",
       tenantId: northwind.id,
     } as unknown as NotificationLinkResponse;
 
@@ -103,7 +104,7 @@ describe("notificationHref", () => {
 
   it("NotificationHref_AKindTheWebDoesNotKnowInsideAnOrganisation_LeadsToThatOrganisationsHome", () => {
     const unknown = {
-      kind: "tenant_usage",
+      kind: "tenant_reports",
       tenantId: northwind.id,
     } as unknown as NotificationLinkResponse;
 

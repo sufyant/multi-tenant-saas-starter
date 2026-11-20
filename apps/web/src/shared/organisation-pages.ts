@@ -2,6 +2,7 @@ import { Permission } from "@repo/api-client";
 import {
   ActivityIcon,
   CreditCardIcon,
+  GaugeIcon,
   type LucideIcon,
   SettingsIcon,
   ShieldIcon,
@@ -11,11 +12,11 @@ import {
 /**
  * The organisation's pages of Settings, in the order of the settings menu, each with its read permission (F5, F59): the settings
  * menu and the command menu list them, and Home offers them as cards. `label` is the key under `shell`. Billing is shown only while
- * the deployment's billing is on (`useBillingShown`).
+ * the deployment's billing is on (`useBillingShown`), and Usage only while the plan has a meter too (`useUsageShown`).
  */
 export const organisationPages: readonly {
-  id: "general" | "members" | "roles" | "billing" | "activity";
-  label: "general" | "members" | "roles" | "billing" | "activityLog";
+  id: "general" | "members" | "roles" | "billing" | "usage" | "activity";
+  label: "general" | "members" | "roles" | "billing" | "usage" | "activityLog";
   icon: LucideIcon;
   permission: Permission;
 }[] = [
@@ -41,6 +42,12 @@ export const organisationPages: readonly {
     id: "billing",
     label: "billing",
     icon: CreditCardIcon,
+    permission: Permission.TenantBillingManage,
+  },
+  {
+    id: "usage",
+    label: "usage",
+    icon: GaugeIcon,
     permission: Permission.TenantBillingManage,
   },
   {

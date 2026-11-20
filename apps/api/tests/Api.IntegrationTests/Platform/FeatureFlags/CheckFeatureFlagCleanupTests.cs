@@ -34,7 +34,7 @@ public sealed class CheckFeatureFlagCleanupTests(Database database)
     public async Task CheckFeatureFlagCleanup_EveryDayOfTwoWeeks_TellsOnceAWeek()
     {
         var time = new FakeTimeProvider(Monday);
-        await using var own = await OwnFlags.CreateAsync(database, AddFlagsAsync, time);
+        await using var own = await OwnFlags.CreateAsync(database, AddFlagsOnMondayAsync, time);
         await Waiting.UntilAsync(async () => await CountAsync(own) == 2);
 
         await own.Api.TrackMessagesAsync(() => AdvanceAsync(time, TimeSpan.FromDays(1)), until: new CleanupChecked());
@@ -53,7 +53,7 @@ public sealed class CheckFeatureFlagCleanupTests(Database database)
     public async Task CheckFeatureFlagCleanup_AWorkerStartsAgainInTheSameWeek_TellsNobodyTwice()
     {
         var time = new FakeTimeProvider(Monday);
-        await using var own = await OwnFlags.CreateAsync(database, AddFlagsAsync, time);
+        await using var own = await OwnFlags.CreateAsync(database, AddFlagsOnMondayAsync, time);
         await Waiting.UntilAsync(async () => await CountAsync(own) == 2);
         await own.Api.DisposeAsync();
         time.Advance(TimeSpan.FromDays(3));
@@ -90,6 +90,15 @@ public sealed class CheckFeatureFlagCleanupTests(Database database)
         await OwnFlags.AddFlagAsync(database, name, "roles.bulk_edit", everyoneElse: true, daysAgo: 40);
         await OwnFlags.AddFlagAsync(database, name, "reports.beta", daysAgo: 34);
         await OwnFlags.AddFlagAsync(database, name, "search.old", daysAgo: 31);
+    }
+
+    // The same flags, their ages counted from the fixed Monday, not from the real date: from 20 November 2026 "search.old" was 27 days old
+    // on the Monday, under the 30 days of an unused flag, and the two tests on the fixed clock failed.
+    private async Task AddFlagsOnMondayAsync(string name)
+    {
+        await OwnFlags.AddFlagAsync(database, name, "roles.bulk_edit", everyoneElse: true, daysAgo: 40, at: Monday);
+        await OwnFlags.AddFlagAsync(database, name, "reports.beta", daysAgo: 34, at: Monday);
+        await OwnFlags.AddFlagAsync(database, name, "search.old", daysAgo: 31, at: Monday);
     }
 
     // The session ends once the job's ask has run and every message it caused has been handled.

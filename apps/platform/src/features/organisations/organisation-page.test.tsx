@@ -1,7 +1,7 @@
 import { AuditOperation, ErrorCode, LimitKey } from "@repo/api-client";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import {
   afterAll,
@@ -37,6 +37,12 @@ import {
   tenantPlanAnswer,
 } from "../../../test/plans";
 import { renderWithProviders } from "../../../test/render";
+import {
+  freeMeter,
+  noMeterAnswer,
+  usageAnswer,
+  usageOf,
+} from "../../../test/usage";
 import { OrganisationPage } from "./organisation-page";
 
 vi.mock("next/navigation", () => ({
@@ -47,7 +53,7 @@ const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 beforeEach(() => {
   window.history.replaceState(null, "", `/organisations/${northwind.id}`);
-  server.use(anyTenantPlanAnswer(), plansAnswer());
+  server.use(anyTenantPlanAnswer(), plansAnswer(), noMeterAnswer());
 });
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
@@ -400,6 +406,164 @@ describe("OrganisationPage", () => {
     ).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: "Change plan" })).toBeVisible();
     expect(screen.queryByRole("term")).toBeNull();
+  });
+
+  it("OrganisationPage_UsageTab_ShowsThePeriodTheMeterAndTheLastMonths", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(meAnswer(), detailAnswer(detailOf(northwind)), usageAnswer());
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "This period: 1 Nov to 30 Nov 2026",
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Usage" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByText(
+        "Team: 10,000 ai.requests a month, then €1 per 1,000. Spending cap: off.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("meter", { name: "7,200 of 10,000 ai.requests" }),
+    ).toHaveAttribute("aria-valuenow", "7200");
+    expect(screen.getByText("Resets on 1 Dec")).toBeVisible();
+    const table = within(screen.getByRole("table", { name: "Last months" }));
+    expect(
+      table.getByRole("row", {
+        name: /September 2026 10,600 600 · €0.60 excl. VAT/,
+      }),
+    ).toBeVisible();
+  });
+
+  it("OrganisationPage_UsageWithACap_SaysTheCap", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      usageAnswer(
+        usageOf({
+          spendingCap: { amount: 5000, extraAmount: 0, reachedAt: null },
+        }),
+      ),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByText(
+        "Team: 10,000 ai.requests a month, then €1 per 1,000. Spending cap: €50 a month.",
+      ),
+    ).toBeVisible();
+  });
+
+  it("OrganisationPage_FreeQuotaUsed_SaysTheMeterStoppedAndWhen", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      usageAnswer(
+        usageOf({
+          planName: "Free",
+          meters: [freeMeter],
+          spendingCapOffered: false,
+        }),
+      ),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByText("Free: 100 ai.requests a month, then they stop."),
+    ).toBeVisible();
+    expect(screen.getByText("Stopped")).toBeVisible();
+    expect(
+      screen.getByText("Stopped on 18 Nov. They reset on 1 Dec."),
+    ).toBeVisible();
+  });
+
+  it("OrganisationPage_BeingDeletedWithAMeter_HasNoUsageTab", async () => {
+    const purgeStartedAt = "2026-11-01T02:00:00Z";
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(moyne, { purgeStartedAt })),
+      usageAnswer(),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={moyne.id} />);
+
+    await screen.findByText(`Being deleted since ${dateOf(purgeStartedAt)}`);
+    expect(screen.queryByRole("tab", { name: "Usage" })).toBeNull();
+  });
+
+  it("OrganisationPage_UsageLoading_SaysSoOnItsTab", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      http.get("*/v1/platform/tenants/:tenantId/usage", () =>
+        delay("infinite"),
+      ),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(
+      await screen.findByRole("status", { name: "Loading usage" }),
+    ).toBeVisible();
+    expect(screen.getByRole("tab", { name: "Usage" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("OrganisationPage_UsageFailed_OffersToTryAgainOnItsTab", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      `/organisations/${northwind.id}?tab=usage`,
+    );
+    server.use(
+      meAnswer(),
+      detailAnswer(detailOf(northwind)),
+      http.get("*/v1/platform/tenants/:tenantId/usage", () =>
+        HttpResponse.json({}, { status: 500 }),
+      ),
+    );
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    expect(await screen.findByText("Couldn’t load usage")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
+  it("OrganisationPage_PlanWithoutAMeter_HasNoUsageTab", async () => {
+    server.use(meAnswer(), detailAnswer(detailOf(northwind)));
+
+    renderWithProviders(<OrganisationPage tenantId={northwind.id} />);
+
+    await screen.findByRole("tab", { name: "Plan and billing" });
+    expect(screen.queryByRole("tab", { name: "Usage" })).toBeNull();
   });
 
   it("OrganisationPage_UnknownTenant_ShowsOrganisationNotFound", async () => {

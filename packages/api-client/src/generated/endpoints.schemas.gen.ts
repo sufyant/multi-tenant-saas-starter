@@ -1256,6 +1256,7 @@ export const NotificationLinkResponseKind = {
   TenantSettings: 'tenant_settings',
   TenantActivityLog: 'tenant_activity_log',
   TenantBilling: 'tenant_billing',
+  TenantUsage: 'tenant_usage',
   PlatformTenant: 'platform_tenant',
   AccountSecurity: 'account_security',
   PlatformFeatureFlags: 'platform_feature_flags',

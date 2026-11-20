@@ -276,7 +276,7 @@
       "body": "Bu ay {quota} içinden {used}. {resetsAt} tarihinde sıfırlanır. {quota} sonrasında fazlası KDV hariç {unitSize} başına {unitPrice} tutar.",
       "email": {
         "body": "Bu ay {quota} içinden {used}. {resetsAt} tarihinde sıfırlanır. {quota} sonrasında fazlası KDV hariç {unitSize} başına {unitPrice} tutar.",
-        "button": "Faturalamayı aç"
+        "button": "Kullanımı aç"
       },
       "without": {
         "unitPrice": {
@@ -290,7 +290,7 @@
       "body": "Bu ay {quota} içinden {quota}. Fazlası, {resetsAt} tarihinde sıfırlanana kadar KDV hariç {unitSize} başına {unitPrice} tutar.",
       "email": {
         "body": "Bu ay {quota} içinden {quota}. Fazlası, {resetsAt} tarihinde sıfırlanana kadar KDV hariç {unitSize} başına {unitPrice} tutar.",
-        "button": "Faturalamayı aç"
+        "button": "Kullanımı aç"
       },
       "without": {
         "unitPrice": {
@@ -304,7 +304,7 @@
       "body": "Bu ayın fazlası, KDV hariç {cap} limitin {extraAmount} kadarı. Limite ulaşınca fazlası ücretli her kullanım {resetsAt} tarihine kadar durur.",
       "email": {
         "body": "Bu ayın fazlası, KDV hariç {cap} limitin {extraAmount} kadarı. Limite ulaşınca fazlası ücretli her kullanım {resetsAt} tarihine kadar durur.",
-        "button": "Faturalamayı aç"
+        "button": "Kullanımı aç"
       },
       "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
     },
@@ -313,7 +313,7 @@
       "body": "KDV hariç {cap} harcama limitinize ulaştınız. {meter} ve fazlası ücretli diğer her kullanım {resetsAt} tarihinde ya da limiti yükselttiğinizde yeniden başlar.",
       "email": {
         "body": "KDV hariç {cap} harcama limitinize ulaştınız. {meter} ve fazlası ücretli diğer her kullanım {resetsAt} tarihinde ya da limiti yükselttiğinizde yeniden başlar.",
-        "button": "Faturalamayı aç"
+        "button": "Kullanımı aç"
       },
       "footer": "Bunu, {tenantName} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
     }

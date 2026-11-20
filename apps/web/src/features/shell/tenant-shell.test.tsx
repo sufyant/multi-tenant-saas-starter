@@ -29,6 +29,7 @@ import { TenantProvider } from "@/shared/tenant-context";
 import { cookieStore } from "../../../test/cookies";
 import { renderWithProviders } from "../../../test/render";
 import { problem, roleOf } from "../../../test/tenant";
+import { usageAnswers, usageOf } from "../../../test/usage";
 import {
   OrganisationShell,
   PendingTenantShell,
@@ -307,6 +308,129 @@ describe("TenantShell", () => {
     expect(
       await within(menu).findByRole("link", { name: "Billing" }),
     ).toHaveAttribute("href", "/northwind/settings/billing");
+  });
+
+  it("TenantShell_BillingOnAndAPlanWithAMeter_ListsUsageAfterBilling", async () => {
+    route.pathname = "/northwind/settings/billing";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      ...usageAnswers(),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: "Usage" }),
+    ).toHaveAttribute("href", "/northwind/settings/usage");
+    expect(
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Back to Northwind Traders", "Billing", "Usage"]);
+  });
+
+  it("TenantShell_UsageLoadsOnItsOwnPage_ListsUsage", async () => {
+    route.pathname = "/northwind/settings/usage";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      // GetUsage never answers.
+      http.get(`*/v1/tenants/${northwind.id}/usage`, () => delay("infinite")),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: "Usage" }),
+    ).toBeVisible();
+  });
+
+  it("TenantShell_UsageFailed_KeepsUsageSoItsPageSaysWhy", async () => {
+    route.pathname = "/northwind/settings/general";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/usage`, () =>
+        HttpResponse.json({}, { status: 500 }),
+      ),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    expect(
+      await within(menu).findByRole("link", { name: "Usage" }),
+    ).toBeVisible();
+  });
+
+  it("TenantShell_APlanWithoutAMeter_ListsNoUsage", async () => {
+    route.pathname = "/northwind/settings/billing";
+    server.use(
+      getGetMyTenantMockHandler(
+        getGetMyTenantResponseMock({
+          ...northwind,
+          permissions: [Permission.TenantBillingManage],
+        }),
+      ),
+      http.get(`*/v1/tenants/${northwind.id}/billing`, () =>
+        HttpResponse.json({
+          billedBy: "card",
+          subscription: null,
+          billingEmail: null,
+        }),
+      ),
+      ...usageAnswers(usageOf({ meters: [], pastPeriods: [] })),
+      ...answers(1),
+    );
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Settings menu" });
+    await within(menu).findByRole("link", { name: "Billing" });
+    expect(within(menu).queryByRole("link", { name: "Usage" })).toBeNull();
   });
 
   it("TenantShell_PaymentRetrying_ShowsTheBillingBarWithUpdateCard", async () => {

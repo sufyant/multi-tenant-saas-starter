@@ -25,6 +25,7 @@ import {
   businessPlan,
   customRoles,
   decemberTerms,
+  freeMeter,
   freePlan,
   invitationCode,
   manyMembers,
@@ -43,6 +44,7 @@ import {
   mockRename,
   mockRetention,
   mockTenantStatus,
+  mockUsage,
   northwind,
   northwindTeam,
   type Plan,
@@ -52,10 +54,12 @@ import {
   shortenedTo90,
   type Team,
   team,
+  teamMeter,
   teamMonthly,
   teamPlan,
   termsInForce,
   ufukTeam,
+  usage,
 } from "./api";
 import { mockIdentity } from "./identity";
 import { e2eUserEmail } from "./sign-in";
@@ -2638,6 +2642,235 @@ shellShots.push(
     role: BuiltInRole.BillingManager,
     mock: (page) => mockBilling(page),
     ready: billingReady,
+  },
+);
+
+// The Usage frames of 40c (11.01 to 11.11, 14.12, 14.15), with the frames' plan, meter and dates. Usage is a page while billing is on
+// and the plan has a meter (F66).
+const usagePage = `${settings}/usage`;
+const onUsage = {
+  size: "desktop",
+  path: usagePage,
+  team: northwindTeam(),
+  plan: team,
+  fullPage: true,
+} as const;
+/** Usage has loaded: the meter of the month and the past months. */
+const usageReady = (page: Page) => page.getByRole("meter").first().waitFor();
+const freeUse = (used: number) => ({
+  key: freeMeter.key,
+  used,
+  extra: 0,
+  extraAmount: 0,
+});
+const capReached = usage({
+  meters: [
+    teamMeter({
+      used: 60000,
+      extra: 50000,
+      extraAmount: 5000,
+      quotaReachedAt: "2026-11-12T10:00:00Z",
+    }),
+  ],
+  spendingCap: {
+    amount: 5000,
+    extraAmount: 5000,
+    reachedAt: "2026-11-24T10:00:00Z",
+  },
+});
+const overQuota = usage({
+  meters: [
+    teamMeter({
+      used: 11400,
+      extra: 1400,
+      extraAmount: 140,
+      quotaReachedAt: "2026-11-12T10:00:00Z",
+    }),
+  ],
+  spendingCap: { amount: 5000, extraAmount: 140, reachedAt: null },
+});
+shellShots.push(
+  {
+    ...onUsage,
+    file: "11.01-usage-en-light-desktop",
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "11.02-usage-over-quota-en-light-desktop",
+    mock: (page) => mockUsage(page, overQuota),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "11.03-spending-cap-dialog-en-light-desktop",
+    fullPage: false,
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+    open: async (page) => {
+      await page.getByRole("button", { name: "Set a cap" }).click();
+      await page.getByRole("alertdialog").waitFor();
+      await page.getByLabel("Extra a month, excl. VAT").fill("50");
+    },
+  },
+  {
+    ...onUsage,
+    file: "11.04-usage-cap-reached-en-light-desktop",
+    mock: (page) => mockUsage(page, capReached),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "11.05-usage-free-used-up-en-light-desktop",
+    plan: { ...team, planName: "Free" },
+    mock: (page) =>
+      mockUsage(
+        page,
+        usage({
+          planName: "Free",
+          meters: [freeMeter],
+          spendingCapOffered: false,
+          pastPeriods: [
+            { periodStart: "2026-10-01", meters: [freeUse(100)] },
+            { periodStart: "2026-09-01", meters: [freeUse(100)] },
+            { periodStart: "2026-08-01", meters: [freeUse(64)] },
+          ],
+        }),
+        billing(null),
+      ),
+    ready: (page) =>
+      page.getByText(/^Change the plan to get more now/).waitFor(),
+  },
+  {
+    ...onUsage,
+    file: "11.06-usage-nothing-used-en-light-desktop",
+    mock: (page) =>
+      mockUsage(
+        page,
+        usage({ meters: [teamMeter({ used: 0 })], pastPeriods: [] }),
+      ),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "11.07-usage-loading-en-light-desktop",
+    fullPage: false,
+    mock: async (page) => {
+      await still(page);
+      await mockUsage(page);
+      await page.route(`**/api/v1/tenants/${northwind.id}/usage`, () => {});
+    },
+    ready: (page) =>
+      page.getByRole("status", { name: "Loading usage" }).waitFor(),
+  },
+  {
+    ...onUsage,
+    file: "11.08-usage-error-en-light-desktop",
+    fullPage: false,
+    mock: async (page) => {
+      await mockUsage(page);
+      await page.route(`**/api/v1/tenants/${northwind.id}/usage`, (route) =>
+        route.fulfill(serverError),
+      );
+    },
+    ready: (page) => page.getByText("Couldn’t load usage").waitFor(),
+  },
+  {
+    ...onUsage,
+    file: "11.09-usage-en-light-phone",
+    size: "phone",
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "11.10-usage-en-dark-desktop",
+    scheme: "dark",
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "11.11-usage-ar-light-desktop",
+    language: Language.Ar,
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "14.12-usage-billing-manager-en-light-desktop",
+    role: BuiltInRole.BillingManager,
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+  },
+  {
+    ...onUsage,
+    file: "14.15-usage-billing-manager-en-light-phone",
+    size: "phone",
+    role: BuiltInRole.BillingManager,
+    mock: (page) => mockUsage(page),
+    ready: usageReady,
+  },
+);
+
+// The billing bar's usage notices of 40c (2.34 to 2.37), above Members, as the frames draw them.
+const onUsageBar = {
+  size: "desktop",
+  path: members,
+  team: northwindTeam(),
+  plan: team,
+} as const;
+const barReady = (text: RegExp) => async (page: Page) => {
+  await loaded(page);
+  await page.getByText(text).waitFor();
+};
+shellShots.push(
+  {
+    ...onUsageBar,
+    file: "2.34-billing-bar-meter-80-en-light-desktop",
+    mock: (page) =>
+      mockUsage(page, usage({ meters: [teamMeter({ used: 8000 })] })),
+    ready: barReady(/^You’ve used 80%/),
+  },
+  {
+    ...onUsageBar,
+    file: "2.35-billing-bar-meter-used-up-en-light-desktop",
+    mock: (page) =>
+      mockUsage(
+        page,
+        usage({
+          meters: [
+            teamMeter({
+              used: 10000,
+              quotaReachedAt: "2026-11-12T10:00:00Z",
+            }),
+          ],
+        }),
+      ),
+    ready: barReady(/^You’ve used all 10,000/),
+  },
+  {
+    ...onUsageBar,
+    file: "2.36-billing-bar-free-used-up-en-light-desktop",
+    plan: { ...team, planName: "Free" },
+    mock: (page) =>
+      mockUsage(
+        page,
+        usage({
+          planName: "Free",
+          meters: [freeMeter],
+          spendingCapOffered: false,
+        }),
+        billing(null),
+      ),
+    ready: barReady(/^You’ve used all 100/),
+  },
+  {
+    ...onUsageBar,
+    file: "2.37-billing-bar-cap-reached-en-light-desktop",
+    mock: (page) => mockUsage(page, capReached),
+    ready: barReady(/stopped: you reached your spending cap/),
   },
 );
 

@@ -16884,6 +16884,7 @@
           "tenant_settings",
           "tenant_activity_log",
           "tenant_billing",
+          "tenant_usage",
           "platform_tenant",
           "account_security",
           "platform_feature_flags"
@@ -16897,6 +16898,7 @@
           "TenantSettings",
           "TenantActivityLog",
           "TenantBilling",
+          "TenantUsage",
           "PlatformTenant",
           "AccountSecurity",
           "PlatformFeatureFlags"

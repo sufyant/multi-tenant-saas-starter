@@ -41,6 +41,7 @@ import {
 import { Input } from "./input";
 import { Label } from "./label";
 import { ListError } from "./list-error";
+import { Meter } from "./meter";
 import { OrgSwitcher } from "./org-switcher";
 import { Pill } from "./pill";
 import { PreferencesForm } from "./preferences-form";
@@ -614,6 +615,42 @@ const groups: { name: string; render: (context: GroupContext) => ReactNode }[] =
             </Banner>
           </div>
         </>
+      ),
+    },
+    {
+      name: "Meter",
+      render: () => (
+        <div className="flex w-full max-w-xl flex-col gap-6">
+          <Meter
+            label="7,200 of 10,000 AI requests"
+            aside="72%"
+            meta="Resets on 1 Dec"
+            used={7200}
+            quota={10000}
+          />
+          <Meter
+            label="8,000 of 10,000 AI requests"
+            aside="80%"
+            meta="Resets on 1 Dec"
+            used={8000}
+            quota={10000}
+          />
+          <Meter
+            label="11,400 of 10,000 AI requests"
+            aside="1,400 extra · €1.40 excl. VAT"
+            meta="Resets on 1 Dec"
+            used={11400}
+            quota={10000}
+          />
+          <Meter
+            label="100 of 100 AI requests"
+            aside="Stopped"
+            meta="They reset on 1 Dec."
+            used={100}
+            quota={100}
+            stopped
+          />
+        </div>
       ),
     },
     {

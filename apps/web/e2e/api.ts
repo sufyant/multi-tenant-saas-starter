@@ -25,6 +25,8 @@ import {
   type MemberResponse,
   MemberRoleChangedDetailsResponseOperation,
   type MeResponse,
+  MeterSettingResponseOverage,
+  type MeterUsageResponse,
   type MyTenantDetailResponse,
   type MyTenantResponse,
   type MyTenantResponseStatus,
@@ -46,6 +48,7 @@ import {
   SubscriptionResponseStatus,
   TenantEntitlementOverrideSetDetailsResponseOperation,
   type TermsInForceResponse,
+  type UsageResponse,
 } from "@repo/api-client";
 
 // The API at the browser's door: the page's calls to /api/v1 get these answers, so a page test needs no API and no database.
@@ -270,6 +273,10 @@ export async function mockApi(
   // The deployment's billing is off, as the template ships it (B1): no Billing page; a billing frame mocks its own.
   await page.route(`**/api/v1/tenants/${northwind.id}/billing`, (route) =>
     route.fulfill(problem(404, ErrorCode.BillingOff)),
+  );
+  // The plan has no meter, as the template ships it: no Usage page; a usage frame mocks its own.
+  await page.route(`**/api/v1/tenants/${northwind.id}/usage`, (route) =>
+    route.fulfill({ json: usage({ meters: [], pastPeriods: [] }) }),
   );
   await page.route(`**/api/v1/tenants/${northwind.id}/roles*`, (route) => {
     const items = [...Object.values(roles), ...customRoles];
@@ -1600,5 +1607,108 @@ export async function mockBilling(
           proratedAt: "2026-11-15T10:00:00Z",
         },
       }),
+  );
+}
+
+// Northwind's usage as the Usage frames draw it (11.01 to 11.11): Team gives 10,000 of "ai.requests" a month, and the extra costs
+// €1 per 1,000. The template ships no word for a meter, so the screens name it by its key.
+
+/** The meter of Team in November: 7,200 of 10,000 (11.01). */
+export const teamMeter = (
+  more: Partial<MeterUsageResponse> = {},
+): MeterUsageResponse => ({
+  key: "ai.requests",
+  quota: 10000,
+  overage: MeterSettingResponseOverage.Charge,
+  unitPrice: 100,
+  unitSize: 1000,
+  used: 7200,
+  extra: 0,
+  extraAmount: 0,
+  quotaReachedAt: null,
+  ...more,
+});
+
+/** The meter of Free in November, a meter that stops: all 100 used (11.05). */
+export const freeMeter: MeterUsageResponse = {
+  key: "ai.requests",
+  quota: 100,
+  overage: MeterSettingResponseOverage.Stop,
+  unitPrice: 0,
+  unitSize: 1,
+  used: 100,
+  extra: 0,
+  extraAmount: 0,
+  quotaReachedAt: "2026-11-20T10:00:00Z",
+};
+
+/** November 2026 on Team, with the three months before it (11.01). */
+export const usage = (more: Partial<UsageResponse> = {}): UsageResponse => ({
+  periodStart: "2026-11-01",
+  periodEnd: "2026-11-30",
+  planName: "Team",
+  currency: "EUR",
+  meters: [teamMeter()],
+  pastPeriods: [
+    {
+      periodStart: "2026-10-01",
+      meters: [{ key: "ai.requests", used: 9100, extra: 0, extraAmount: 0 }],
+    },
+    {
+      periodStart: "2026-09-01",
+      meters: [
+        { key: "ai.requests", used: 10600, extra: 600, extraAmount: 60 },
+      ],
+    },
+    {
+      periodStart: "2026-08-01",
+      meters: [{ key: "ai.requests", used: 8300, extra: 0, extraAmount: 0 }],
+    },
+  ],
+  spendingCap: null,
+  spendingCapOffered: true,
+  ...more,
+});
+
+/** The plans with their meters: Free stops at 100, Team gives 10,000 and Business 50,000, and both charge the extra. */
+const meteredPlans: PlanChoiceResponse[] = [
+  {
+    plan: freePlan,
+    quota: 100,
+    overage: MeterSettingResponseOverage.Stop,
+    unitPrice: 0,
+    unitSize: 1,
+  },
+  {
+    plan: teamPlan,
+    quota: 10000,
+    overage: MeterSettingResponseOverage.Charge,
+    unitPrice: 100,
+    unitSize: 1000,
+  },
+  {
+    plan: businessPlan,
+    quota: 50000,
+    overage: MeterSettingResponseOverage.Charge,
+    unitPrice: 80,
+    unitSize: 1000,
+  },
+].map(({ plan, ...meter }) => ({
+  ...plan,
+  meters: [{ key: "ai.requests", ...meter }],
+}));
+
+/** GetBilling, GetUsage and GetPlanChoices with the plans' meters, after mockBilling so that its plans give way. */
+export async function mockUsage(
+  page: Page,
+  answer: UsageResponse = usage(),
+  billingAnswer: BillingResponse = billing(),
+): Promise<void> {
+  await mockBilling(page, billingAnswer);
+  await page.route(`**/api/v1/tenants/${northwind.id}/usage`, (route) =>
+    route.fulfill({ json: answer }),
+  );
+  await page.route(`**/api/v1/tenants/${northwind.id}/plans`, (route) =>
+    route.fulfill({ json: { plans: meteredPlans } }),
   );
 }

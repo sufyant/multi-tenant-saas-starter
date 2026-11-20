@@ -75,6 +75,11 @@ export type TableProps<Row extends RowData> = {
     next: string;
     page: (page: number, pageCount: number) => string;
   };
+  /**
+   * The table sits inside a card under its header (Card · Past periods, 11.01): no box of its own, a line above it and the card's
+   * 20 px padding at both ends.
+   */
+  inCard?: boolean;
   className?: string;
 };
 
@@ -92,8 +97,17 @@ const cellText = <Row extends RowData>(
     : String((row as Record<string, unknown>)[column.key] ?? "");
 
 /** The cells' padding (Table row, 424:2472): 10 at the start of the row, 14 between cells, 8 at the end. */
-const cellPadding = (index: number, last: boolean) =>
-  cn(index === 0 ? "ps-2.5" : "ps-3.5", last ? "pe-2" : "pe-0");
+const cellPadding = (index: number, last: boolean, inCard = false) =>
+  cn(
+    index === 0 ? (inCard ? "ps-5" : "ps-2.5") : "ps-3.5",
+    last ? (inCard ? "pe-5" : "pe-2") : "pe-0",
+  );
+
+/** The table's box, and the cards' box under 640px: its own border and radius, or in a card only a line above it. */
+const boxOf = (inCard: boolean) =>
+  inCard
+    ? "overflow-hidden border-t border-border"
+    : "overflow-hidden rounded-lg border border-border";
 
 /**
  * A list of records (the Table README and the Table component, 424:2473) on TanStack Table in manual mode: the API pages and
@@ -116,6 +130,7 @@ export function Table<Row extends RowData>({
   sort,
   onSortChange,
   pager,
+  inCard = false,
   className,
 }: TableProps<Row>) {
   const sorting: SortingState = sort ? [{ id: sort.key, desc: sort.desc }] : [];
@@ -149,7 +164,7 @@ export function Table<Row extends RowData>({
   const lastColumn = columns.length - 1;
   return (
     <div className={cn("@container flex flex-col gap-3", className)}>
-      <div className="hidden overflow-hidden rounded-lg border border-border bg-card @min-[640px]:block">
+      <div className={cn("hidden bg-card @min-[640px]:block", boxOf(inCard))}>
         <TableBase
           aria-label={label}
           className="hidden table-fixed text-body tabular-nums @min-[640px]:table"
@@ -171,7 +186,11 @@ export function Table<Row extends RowData>({
                     }
                     className={cn(
                       "h-row-header text-status text-muted-foreground",
-                      cellPadding(index, !actions && index === lastColumn),
+                      cellPadding(
+                        index,
+                        !actions && index === lastColumn,
+                        inCard,
+                      ),
                       column.width,
                       column.align === "end" && "text-end",
                       column.show === "wide" && "hidden @table-wide:table-cell",
@@ -219,7 +238,11 @@ export function Table<Row extends RowData>({
                     key={column.key}
                     className={cn(
                       "py-0",
-                      cellPadding(index, !actions && index === lastColumn),
+                      cellPadding(
+                        index,
+                        !actions && index === lastColumn,
+                        inCard,
+                      ),
                       column.align === "end" && "text-end",
                       column.secondary && "text-small text-muted-foreground",
                       column.show === "wide" && "hidden @table-wide:table-cell",
@@ -246,7 +269,10 @@ export function Table<Row extends RowData>({
       {/* The cards sit in one box, as the table does (8.34): a border and the large radius around them. */}
       <ul
         aria-label={label}
-        className="flex flex-col overflow-hidden rounded-lg border border-border empty:hidden @min-[640px]:hidden"
+        className={cn(
+          "flex flex-col empty:hidden @min-[640px]:hidden",
+          boxOf(inCard),
+        )}
       >
         {rows.map((row) => {
           const card = (place: string) =>

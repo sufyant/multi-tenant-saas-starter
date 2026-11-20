@@ -918,5 +918,32 @@
     "lastPayment": "آخر دفعة في {date}.",
     "stripe": "Stripe",
     "openInStripe": "فتح في Stripe"
+  },
+  "usage": {
+    "tab": "الاستخدام",
+    "loading": "جارٍ تحميل الاستخدام",
+    "loadError": "تعذّر تحميل الاستخدام",
+    "period": "هذه الفترة: من {start} إلى {end}",
+    "chargeTerms": "{plan}: {quota} من {meter} شهريًا، ثم {price} لكل {size}.",
+    "stopTerms": "{plan}: {quota} من {meter} شهريًا، ثم تتوقف.",
+    "capOff": "حد الإنفاق: متوقف.",
+    "capOn": "حد الإنفاق: {amount} شهريًا.",
+    "count": "{used} من {quota} {meter}",
+    "share": "{share}%",
+    "extra": "{extra} إضافية · {amount} دون ضريبة القيمة المضافة",
+    "stopped": "متوقفة",
+    "stoppedAtCap": "توقفت عند الحد · {amount} دون ضريبة القيمة المضافة",
+    "stoppedOn": "توقفت في {day}. يُعاد ضبطها في {date}.",
+    "stopReset": "يُعاد ضبطها في {date}.",
+    "resets": "يُعاد الضبط في {date}",
+    "resetsExtra": "يُعاد الضبط في {date}. الزيادة في الفاتورة التالية.",
+    "lastMonths": "الأشهر الأخيرة",
+    "month": "الفترة",
+    "extraColumn": "الزيادة",
+    "pastExtra": "{extra} · {amount} دون ضريبة القيمة المضافة",
+    "pastAmount": "{amount} دون ضريبة القيمة المضافة",
+    "pastUsed": "{used} {meter}",
+    "noExtra": "لا زيادة",
+    "noPast": "تظهر الأشهر الأخيرة هنا بعد الشهر الأول."
   }
 }

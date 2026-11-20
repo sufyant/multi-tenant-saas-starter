@@ -276,7 +276,7 @@
       "body": "{used} of {quota} this month. They reset on {resetsAt}. After {quota}, the extra costs {unitPrice} per {unitSize}, excl. VAT.",
       "email": {
         "body": "{used} of {quota} this month. They reset on {resetsAt}. After {quota}, the extra costs {unitPrice} per {unitSize}, excl. VAT.",
-        "button": "Open Billing"
+        "button": "Open Usage"
       },
       "without": {
         "unitPrice": {
@@ -290,7 +290,7 @@
       "body": "{quota} of {quota} this month. The extra now costs {unitPrice} per {unitSize}, excl. VAT, until they reset on {resetsAt}.",
       "email": {
         "body": "{quota} of {quota} this month. The extra now costs {unitPrice} per {unitSize}, excl. VAT, until they reset on {resetsAt}.",
-        "button": "Open Billing"
+        "button": "Open Usage"
       },
       "without": {
         "unitPrice": {
@@ -304,7 +304,7 @@
       "body": "The extra this month is {extraAmount} of the {cap} cap, excl. VAT. At the cap, every use that costs extra stops until {resetsAt}.",
       "email": {
         "body": "The extra this month is {extraAmount} of the {cap} cap, excl. VAT. At the cap, every use that costs extra stops until {resetsAt}.",
-        "button": "Open Billing"
+        "button": "Open Usage"
       },
       "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
     },
@@ -313,7 +313,7 @@
       "body": "You reached your spending cap of {cap} excl. VAT. {meter} and every other use that costs extra start again on {resetsAt}, or when you raise the cap.",
       "email": {
         "body": "You reached your spending cap of {cap} excl. VAT. {meter} and every other use that costs extra start again on {resetsAt}, or when you raise the cap.",
-        "button": "Open Billing"
+        "button": "Open Usage"
       },
       "footer": "You received this because you manage billing for {tenantName}, or this is its billing email."
     }

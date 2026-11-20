@@ -58,6 +58,16 @@ export function formatMonth(at: Instant, options: DateTimeOptions): string {
   return format(at, options, { month: "long" });
 }
 
+/** The local day and month: `1 Dec`, for a day of this year (11.01). */
+export function formatDayMonth(at: Instant, options: DateTimeOptions): string {
+  return format(at, options, { day: "numeric", month: "short" });
+}
+
+/** The local month and year: `October 2026`, for a past month (11.01). */
+export function formatMonthYear(at: Instant, options: DateTimeOptions): string {
+  return format(at, options, { month: "long", year: "numeric" });
+}
+
 /** The local time: `14:32`. */
 export function formatTime(at: Instant, options: DateTimeOptions): string {
   return format(at, options, timePart);

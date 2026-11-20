@@ -21,6 +21,7 @@ const names = [
   "Icon",
   "Input",
   "ListError",
+  "Meter",
   "OrgSwitcher",
   "Patterns",
   "PreferencesForm",

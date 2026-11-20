@@ -162,6 +162,23 @@ public sealed class NotificationTextTests
         sent.Button.ShouldBe("Open Billing");
     }
 
+    // 13.24: a meter's notice leads to Usage, so its email's button opens Usage (40c-frontend).
+    [Fact]
+    public void RenderEmail_TheSpendingCapReached_OpensUsage()
+    {
+        var values = new Dictionary<string, string>
+        {
+            ["tenantName"] = "Acme",
+            ["meter"] = "ai.requests",
+            ["cap"] = NotificationText.MoneyValue(5000, "EUR"),
+            ["resetsAt"] = "2026-12-01",
+        };
+
+        var sent = NotificationText.RenderEmail(NotificationCatalog.TenantSpendingCapReached, values, People, Language.En, null);
+
+        sent.Button.ShouldBe("Open Usage");
+    }
+
     [Fact]
     public void RenderEmail_AYearlyPriceChangeOfTheBaseFee_SaysTheFeePerPersonStays()
     {

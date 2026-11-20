@@ -19,6 +19,7 @@ export {
   FileTextIcon,
   FlagIcon,
   FlaskConicalIcon,
+  GaugeIcon,
   GlobeIcon,
   HistoryIcon,
   HouseIcon as HomeIcon,
