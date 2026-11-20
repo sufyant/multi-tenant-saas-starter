@@ -47,6 +47,7 @@ export const me = (language: Language): MeResponse => ({
   isSystemAdmin: true,
   language,
   timeZone: "Europe/Dublin",
+  createdTenantCount: 0,
 });
 
 export async function mockApi(

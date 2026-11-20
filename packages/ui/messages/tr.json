@@ -193,6 +193,7 @@
     },
     "tenant": {
       "closed": "Bu kuruluş kapatıldı.",
+      "creation_limit_reached": "Bir kişinin oluşturabileceği kadar organizasyon oluşturdunuz.",
       "has_owner": "Bu kuruluşun zaten bir Sahibi var.",
       "name_invalid": "Kuruluş için bir ad girin.",
       "not_active": "Bu kuruluş etkin değil.",
@@ -224,6 +225,7 @@
       "deleted": "Bu hesap silindi.",
       "email_taken": "Bu e-posta adresini başka bir hesap kullanıyor.",
       "email_unchanged": "Bu zaten sizin e-posta adresiniz.",
+      "email_unverified": "Hesabınızın doğrulanmış bir e-posta adresi yok. E-postanızla yeniden kaydolun.",
       "has_memberships": "Bu kullanıcı hâlâ bir kuruluşun üyesi.",
       "is_system_admin": "Sistem yöneticisi silinemez.",
       "last_owner": "Bu kullanıcı bir kuruluşun son Sahibi. Önce başka bir üyeyi Sahip yapın.",
@@ -235,6 +237,9 @@
       "invalid": "Bu kod doğru değil. E-postayı kontrol edip yeniden deneyin.",
       "too_many_attempts": "Kod çok kez denendi. Yeni bir kod gönderin.",
       "too_many_sends": "Çok fazla kod gönderildi. Bir saat sonra yeniden deneyin."
+    },
+    "sign_up": {
+      "disabled": "Bu ürün kayıt almıyor. Bir davet isteyin."
     }
   },
   "signIn": {

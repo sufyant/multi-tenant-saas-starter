@@ -410,6 +410,7 @@
         "preferences_changed": "<actor></actor> غيّر تفضيلاته.",
         "reactivated": "<actor></actor> أعاد تفعيل حساب <target></target>.",
         "renamed": "<actor></actor> غيّر اسم <target></target>.",
+        "signed_up": "أنشأ <actor></actor> حسابه.",
         "suspended": "<actor></actor> أوقف حساب <target></target>."
       }
     },

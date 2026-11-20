@@ -180,6 +180,7 @@ const meOfPerson = (person: MemberResponse): MeResponse => ({
   isSystemAdmin: false,
   language: "en",
   timeZone: "Europe/Dublin",
+  createdTenantCount: 0,
 });
 
 export const meOf = (role: BuiltInRole): MeResponse =>

@@ -193,6 +193,7 @@
     },
     "tenant": {
       "closed": "This organisation is closed.",
+      "creation_limit_reached": "You have created as many organisations as one person can.",
       "has_owner": "This organisation already has an Owner.",
       "name_invalid": "Enter a name for the organisation.",
       "not_active": "This organisation is not active.",
@@ -224,6 +225,7 @@
       "deleted": "This account was deleted.",
       "email_taken": "Another account uses this email address.",
       "email_unchanged": "This is your email address already.",
+      "email_unverified": "Your account has no verified email address. Sign up again with your email.",
       "has_memberships": "This user is still a member of an organisation.",
       "is_system_admin": "A system admin cannot be deleted.",
       "last_owner": "This user is the last Owner of an organisation. Make another member an Owner first.",
@@ -235,6 +237,9 @@
       "invalid": "That code is not right. Check the email and try again.",
       "too_many_attempts": "The code was tried too often. Send a new code.",
       "too_many_sends": "Too many codes were sent. Try again in an hour."
+    },
+    "sign_up": {
+      "disabled": "This product does not take sign-ups. Ask for an invitation."
     }
   },
   "signIn": {

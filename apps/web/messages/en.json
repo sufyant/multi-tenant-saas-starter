@@ -410,6 +410,7 @@
         "preferences_changed": "<actor></actor> changed their preferences.",
         "reactivated": "<actor></actor> reactivated the account of <target></target>.",
         "renamed": "<actor></actor> changed the name of <target></target>.",
+        "signed_up": "<actor></actor> signed up.",
         "suspended": "<actor></actor> suspended the account of <target></target>."
       }
     },

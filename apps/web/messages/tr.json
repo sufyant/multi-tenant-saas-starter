@@ -410,6 +410,7 @@
         "preferences_changed": "<actor></actor> tercihlerini değiştirdi.",
         "reactivated": "<actor></actor>, <target></target> adlı kullanıcının hesabını yeniden etkinleştirdi.",
         "renamed": "<actor></actor>, <target></target> adlı kullanıcının adını değiştirdi.",
+        "signed_up": "<actor></actor> kaydoldu.",
         "suspended": "<actor></actor>, <target></target> adlı kullanıcının hesabını askıya aldı."
       }
     },
