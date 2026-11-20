@@ -51,8 +51,16 @@ Step 40d. A trial is a state of the tenant's plan. While it runs, the tenant is 
 
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
-| `EndTenantTrialCommand` | `CreateMyTenantHandler`, scheduled for the trial's end | ControlPlane, `EndTenantTrialHandler`: locks the tenant (K6a), and acts only for a trial that still ends at the message's end (K4's pattern) | Yes, the tenant's |
+| `EndTenantTrialCommand` | `CreateMyTenantHandler`, `GiveTenantTrialHandler` and `ExtendTenantTrialHandler`, scheduled for the trial's end | ControlPlane, `EndTenantTrialHandler`: locks the tenant (K6a), and acts only for a trial that still ends at the message's end (K4's pattern) | Yes, the tenant's |
 | `TenantTrialEndedEvent` | `EndTenantTrialHandler` | Audit, `RecordTenantTrialEndedHandler` (`tenant.trial_ended` in both logs, by the platform, and the hold of a shorter Activity log period, K14) | Yes, the tenant's |
+| `TenantTrialGivenEvent` | `GiveTenantTrialHandler` | Audit, `RecordTenantTrialGivenHandler` (`tenant.trial_given`: the platform's log names the system admin, the tenant's log the platform, K3; and the hold of a shorter Activity log period, K14) | Yes, the tenant's |
+| `TenantTrialExtendedEvent` | `ExtendTenantTrialHandler` | Audit, `RecordTenantTrialExtendedHandler` (`tenant.trial_extended`, with the same actors) | Yes, the tenant's |
+
+While billing is on, a system admin gives a trial and extends it (4.28 to 4.30, 4.47; `docs/api-catalog.md`). While billing is off, both answer 404 `trial.billing_off`.
+
+- `GiveTenantTrial` gives an active or a suspended tenant a trial of any plan for 1 to 365 days, from now. A tenant that used a trial gets another one this way, as only a system admin gives a second trial (4.47). A tenant in a trial is refused (409 `tenant.in_trial`): its trial is extended instead. A tenant that pays by card gets one too, and its subscription keeps billing the plan it returns to (4.29).
+- `ExtendTenantTrial` sets a running trial's new end: the end it has or later, and at most 365 days after it. The end it has changes nothing (I1). The new end is scheduled; the message of the old end then finds another end and does nothing (K4).
+- The Organisations list filters by `billing=in_trial` and counts the tenants whose trial runs in `billingCounts.inTrial` (4.39).
 
 - At its end, the tenant returns to the plan it had before the trial. Nothing is deleted when the tenant is then over a limit (E4).
 - A plan that the tenant's subscription pays for ends the trial at that moment, and the tenant stays on the paid plan (10.08: "Paying ends the trial."). A payment for the plan the tenant returns to keeps the trial: billing sends the paid plan again at each change of the subscription (`Tenant.PayForPlan`).
