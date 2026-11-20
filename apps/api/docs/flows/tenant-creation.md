@@ -16,7 +16,7 @@ Tenant creation messages (N1):
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
 | `CreateTenantCommand` | `POST /v1/platform/tenants` | ControlPlane, `CreateTenantHandler` | Yes |
-| `TenantCreatedEvent` | `CreateTenantHandler` | Audit, `RecordTenantCreatedHandler` (`tenant.created`, both logs) | Yes |
+| `TenantCreatedEvent` | `CreateTenantHandler` | Audit, `RecordTenantCreatedHandler` (`tenant.created`, both logs); Notifications, `NotifyTenantCreatedHandler`, which welcomes only a user's own tenant (section 2) | Yes |
 | `OpenSignUpCommand` | `CreateTenantHandler` | ControlPlane, `OpenSignUpHandler` (calls the identity provider) | No |
 | `RecordSignUpCommand` | `OpenSignUpHandler` | ControlPlane, `RecordSignUpHandler` (records the identity provider's invitation) | Yes |
 | `InvitationReadyEvent` | `RecordSignUpHandler` | Notifications, `SendInvitationEmailHandler` (calls the email service) | No |
@@ -41,9 +41,9 @@ Step 40d. While the product has sign-up on (`ControlPlane:SignUp:Enabled`, off b
 2. `SignUp` (`POST /v1/me/sign-up`) reads the person's verified addresses from the identity provider, outside the transaction. Then, in one transaction, it takes the lock of the identity provider id (K6f), checks the address under its own lock (A7), and adds the user with the first verified address, no name and the language the person chose. It sends `UserSignedUpEvent` through the outbox: Audit writes `user.signed_up` in the platform's log, by the user. When the person ticked the terms in force (1.27), the same transaction records the acceptance. A known user is answered as they are.
 3. `CreateMyTenant` (`POST /v1/me/tenants`) runs inside the tenant it creates, whose id the server chose. It locks the user row first, so two creations of one person run one after the other and a deletion runs before or after it (A8: a deleted user is refused), and counts the tenants the user created that were not purged: at `ControlPlane:SignUp:TenantLimit` it answers 409 `tenant.creation_limit_reached`. Then it writes the active tenant on the default plan, its summary, its built-in roles and the user's Owner membership, which counts on the user row (R13), in one transaction. No invitation is made. It sends `TenantCreatedEvent` with `ByItsOwner` through the outbox: Audit writes `tenant.created` in both logs, by the user.
 
-4. While the deployment's billing is on, which the endpoint reads from billing (B1), the same transaction starts the tenant's trial: the tenant goes on the trial's plan (`ControlPlane:Trial:PlanId`, Business) for `ControlPlane:Trial:Length` (14 days), and keeps the default plan as the plan it returns to. `TenantCreatedEvent` names the trial's plan, and `EndTenantTrialCommand` is scheduled for the trial's end. While billing is off, the tenant stays on the default plan with no trial (the maintainer's decision of 2026-11-20).
+4. While the deployment's billing is on, which the endpoint reads from billing (B1), the same transaction starts the tenant's trial: the tenant goes on the trial's plan (`ControlPlane:Trial:PlanId`, Business) for `ControlPlane:Trial:Length` (14 days), and keeps the default plan as the plan it returns to. `TenantCreatedEvent` names the trial's plan and its end, and `EndTenantTrialCommand` is scheduled for the trial's end, and `WarnTenantTrialEndingCommand` 3 days before it. While billing is off, the tenant stays on the default plan with no trial (the maintainer's decision of 2026-11-20).
 
-A purge clears the tenant's creator (`Tenant.Purge`), so a purged tenant leaves the count. The welcome email comes with 40d-backend's next part.
+A purge clears the tenant's creator (`Tenant.Purge`), so a purged tenant leaves the count. Notifications welcomes the user who created the tenant (`tenant.created`, 13.25, 3.19), in the tenant's bell and by email, with the trial while billing is on (`flows/notifications.md`). A system admin's creation welcomes nobody: its Owner hears of the tenant through the invitation.
 
 ## 3. The trial
 
@@ -51,15 +51,17 @@ Step 40d. A trial is a state of the tenant's plan. While it runs, the tenant is 
 
 | Message | Sent by | Handled by | Handler has a transaction |
 | --- | --- | --- | --- |
-| `EndTenantTrialCommand` | `CreateMyTenantHandler`, `GiveTenantTrialHandler` and `ExtendTenantTrialHandler`, scheduled for the trial's end | ControlPlane, `EndTenantTrialHandler`: locks the tenant (K6a), and acts only for a trial that still ends at the message's end (K4's pattern) | Yes, the tenant's |
-| `TenantTrialEndedEvent` | `EndTenantTrialHandler` | Audit, `RecordTenantTrialEndedHandler` (`tenant.trial_ended` in both logs, by the platform, and the hold of a shorter Activity log period, K14) | Yes, the tenant's |
+| `EndTenantTrialCommand` | `CreateMyTenantHandler`, `GiveTenantTrialHandler` and `ExtendTenantTrialHandler` (`TrialMessages`), scheduled for the trial's end | ControlPlane, `EndTenantTrialHandler`: locks the tenant (K6a), and acts only for a trial that still ends at the message's end (K4's pattern) | Yes, the tenant's |
+| `WarnTenantTrialEndingCommand` | The same handlers, scheduled 3 days before the trial's end, when that moment comes after now | ControlPlane, `WarnTenantTrialEndingHandler`: locks the tenant (K6a), and tells only of a trial that still ends at the message's end (K4's pattern) | Yes, the tenant's |
+| `TenantTrialEndNearedEvent` | `WarnTenantTrialEndingHandler`, with an id of the tenant and the end, so a copy tells nobody twice | Notifications, `NotifyTenantTrialEndingHandler` (`tenant.trial_ending`, 13.16, 3.19, to the members who manage billing) | Yes, the tenant's |
+| `TenantTrialEndedEvent` | `EndTenantTrialHandler` | Audit, `RecordTenantTrialEndedHandler` (`tenant.trial_ended` in both logs, by the platform, and the hold of a shorter Activity log period, K14); Notifications, `NotifyTenantTrialEndedHandler` (`tenant.trial_ended`, 13.17, 3.20, to the members who manage billing) | Yes, the tenant's |
 | `TenantTrialGivenEvent` | `GiveTenantTrialHandler` | Audit, `RecordTenantTrialGivenHandler` (`tenant.trial_given`: the platform's log names the system admin, the tenant's log the platform, K3; and the hold of a shorter Activity log period, K14) | Yes, the tenant's |
 | `TenantTrialExtendedEvent` | `ExtendTenantTrialHandler` | Audit, `RecordTenantTrialExtendedHandler` (`tenant.trial_extended`, with the same actors) | Yes, the tenant's |
 
 While billing is on, a system admin gives a trial and extends it (4.28 to 4.30, 4.47; `docs/api-catalog.md`). While billing is off, both answer 404 `trial.billing_off`.
 
 - `GiveTenantTrial` gives an active or a suspended tenant a trial of any plan for 1 to 365 days, from now. A tenant that used a trial gets another one this way, as only a system admin gives a second trial (4.47). A tenant in a trial is refused (409 `tenant.in_trial`): its trial is extended instead. A tenant that pays by card gets one too, and its subscription keeps billing the plan it returns to (4.29).
-- `ExtendTenantTrial` sets a running trial's new end: the end it has or later, and at most 365 days after it. The end it has changes nothing (I1). The new end is scheduled; the message of the old end then finds another end and does nothing (K4).
+- `ExtendTenantTrial` sets a running trial's new end: the end it has or later, and at most 365 days after it. The end it has changes nothing (I1). The new end and its reminder are scheduled; the messages of the old end then find another end and do nothing (K4).
 - The Organisations list filters by `billing=in_trial` and counts the tenants whose trial runs in `billingCounts.inTrial` (4.39).
 
 - At its end, the tenant returns to the plan it had before the trial. Nothing is deleted when the tenant is then over a limit (E4).
