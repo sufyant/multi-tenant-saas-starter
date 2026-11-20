@@ -21,10 +21,10 @@ import { usePortal } from "./use-portal";
 import { useUsageText } from "./use-usage-text";
 
 /**
- * The billing bar above every page but Billing's own, for a viewer who manages billing (the Billing bar priority pattern; 2.32,
+ * The billing bar, for a viewer who manages billing (the Billing bar priority pattern). Above every page but Billing's own (2.32,
  * 2.33): a failed payment while Stripe retries, with "Update card", and the last warning in billing's grace, with "Pay now"; both
  * open Stripe's portal. The connection bar comes first (F59), so this one gives way while the server does not answer. Without a
- * payment's notice it tells of the meters (`UsageNotice`, 2.34 to 2.37). The trial's bar (2.31) comes with step 40d.
+ * payment's notice it tells of the meters above every page but Usage's, Billing's too (`UsageNotice`, 2.34 to 2.37). The trial's bar (2.31) comes with step 40d.
  */
 export function BillingBar({
   onBilling,
