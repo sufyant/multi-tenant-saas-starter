@@ -6,7 +6,9 @@ import {
   daysAfter,
   formatDate,
   formatDateTime,
+  formatDayMonth,
   formatMonth,
+  formatMonthYear,
   formatRelative,
   formatTime,
   formatUtc,
@@ -58,6 +60,24 @@ describe("format-date-time", () => {
   it("FormatMonth_TheLastHourOfAMonthInItsZone_NamesTheZonesMonth", () => {
     expect(formatMonth("2026-10-31T23:30:00Z", dublin)).toBe("October");
     expect(formatMonth("2026-10-31T23:30:00Z", istanbul)).toBe("Kasım");
+  });
+
+  it("FormatDayMonth_ACalendarDayInUtc_NamesTheDayAndTheMonth", () => {
+    expect(
+      formatDayMonth("2026-12-01", { locale: "en-IE", timeZone: "UTC" }),
+    ).toBe("1 Dec");
+    expect(
+      formatDayMonth("2026-12-01", { locale: "tr-TR", timeZone: "UTC" }),
+    ).toBe("1 Ara");
+  });
+
+  it("FormatMonthYear_ACalendarMonthInUtc_NamesTheMonthAndTheYear", () => {
+    expect(
+      formatMonthYear("2026-10-01", { locale: "en-IE", timeZone: "UTC" }),
+    ).toBe("October 2026");
+    expect(
+      formatMonthYear("2026-10-01", { locale: "tr-TR", timeZone: "UTC" }),
+    ).toBe("Ekim 2026");
   });
 
   it("DaysAfter_ThirtyDays_IsTheSameTimeThirtyDaysLater", () => {
