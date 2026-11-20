@@ -41,7 +41,7 @@ public sealed class RenameMeTests(Database database) : IAsyncLifetime
         renamed.StatusCode.ShouldBe(HttpStatusCode.OK);
         var me = await renamed.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         me.EnumerateObject().Select(field => field.Name)
-            .ShouldBe(["id", "email", "name", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
+            .ShouldBe(["id", "email", "name", "isSystemAdmin", "language", "timeZone", "createdTenantCount"], ignoreOrder: true);
         (me.GetProperty("id").GetGuid(), me.GetProperty("name").GetString()).ShouldBe((await _testData.UserIdOfAsync(user), "Ada Lovelace"));
         (me.GetProperty("isSystemAdmin").GetBoolean(), me.GetProperty("language").GetString()).ShouldBe((false, "tr"));
         (await _testData.UserOfAsync(user)).ShouldBe(new StoredUser(TestEmails.Of("ada@example.com"), "Ada Lovelace", Deleted: false, "tr"));

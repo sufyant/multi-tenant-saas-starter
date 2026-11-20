@@ -35,7 +35,7 @@ public sealed class GetMeTests(Database database) : IAsyncLifetime
         var me = await response.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         Me(me).ShouldBe((await _testData.UserIdOfAsync(user), TestEmails.Of("ada@example.com"), "Ada Lovelace", false));
         me.EnumerateObject().Select(field => field.Name).ShouldBe(
-            ["id", "email", "name", "isSystemAdmin", "language", "timeZone"], ignoreOrder: true);
+            ["id", "email", "name", "isSystemAdmin", "language", "timeZone", "createdTenantCount"], ignoreOrder: true);
     }
 
     // The preferences follow the user to every tenant and device. A user who set no time zone has none: the web uses the browser's.
