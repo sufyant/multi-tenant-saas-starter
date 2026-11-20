@@ -3,13 +3,16 @@
 import {
   BillingResponseBilledBy,
   ErrorCode,
+  getGetPlanQueryOptions,
   getGetTenantBillingQueryKey,
   getGetTenantBillingQueryOptions,
   getListPlansQueryOptions,
   PaymentResponseState,
+  type PlanPricesResponse,
   problemOf,
   SetBilledByRequestBilledBy,
   type SubscriptionResponse,
+  SubscriptionResponseInterval,
   SubscriptionResponseStatus,
   setBilledBy,
   type TenantDetailResponse,
@@ -20,6 +23,7 @@ import { Dialog } from "@repo/ui/components/dialog";
 import { Label } from "@repo/ui/components/label";
 import { Pill } from "@repo/ui/components/pill";
 import { showToast } from "@repo/ui/components/toast";
+import { buttonVariants } from "@repo/ui/components/ui/button";
 import { formatMoney } from "@repo/ui/lib/format-money";
 import { useFailureText } from "@repo/ui/lib/use-failure-text";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,11 +38,28 @@ const live = (subscription: SubscriptionResponse | null) =>
   subscription.status !== SubscriptionResponseStatus.Canceled &&
   subscription.status !== SubscriptionResponseStatus.IncompleteExpired;
 
+/** A plan's two fees for the subscription's interval, in the minor unit of the plan's currency (B2). */
+const feesOf = (
+  prices: PlanPricesResponse,
+  interval: SubscriptionResponseInterval,
+) =>
+  interval === SubscriptionResponseInterval.Yearly
+    ? { base: prices.baseYearly, perPerson: prices.perPersonYearly }
+    : { base: prices.baseMonthly, perPerson: prices.perPersonMonthly };
+
+/** Which sentence writes the price: the fee per person alone, the base fee and the fee per person, or the base fee alone. */
+const shapeOf = ({ base, perPerson }: { base: number; perPerson: number }) => {
+  if (perPerson === 0) return "base" as const;
+  return base === 0 ? ("perPerson" as const) : ("baseAndPerPerson" as const);
+};
+
 /**
  * The Plan and billing tab's Billing card (4.27, 4.31 to 4.36; B11, B12): how the organisation pays, with Switch to Contract and
- * Switch to Card; the period it pays for; where a failed payment stands; and a scheduled cancellation or move. From
- * GetTenantBilling, which answers 404 `billing.off` while the deployment's billing is off: then the card does not show. A closed or
- * purging organisation's billing is read-only.
+ * Switch to Card; the period it pays for, with the billed people (the members who take a seat, GetTenant's `memberCount` less its
+ * `freeMemberCount`), the plan's fees (GetPlan) and the next payment; where a failed payment stands, or the last payment; a
+ * scheduled cancellation or move; and the Stripe customer with its page in Stripe's dashboard. From GetTenantBilling, which answers
+ * 404 `billing.off` while the deployment's billing is off: then the card does not show. A closed or purging organisation's billing
+ * is read-only.
  */
 export function BillingCard({
   organisation,
@@ -56,6 +77,14 @@ export function BillingCard({
     retry: false,
   });
   const plans = useQuery(getListPlansQueryOptions(plansQuery));
+  const paying =
+    billing.data && live(billing.data.subscription)
+      ? billing.data.subscription
+      : null;
+  const plan = useQuery({
+    ...getGetPlanQueryOptions(paying?.planId ?? ""),
+    enabled: paying !== null,
+  });
   const [asking, setAsking] = useState<SetBilledByRequestBilledBy | null>(null);
   const switchTo = useMutation({
     mutationFn: (billedBy: SetBilledByRequestBilledBy) =>
@@ -82,15 +111,70 @@ export function BillingCard({
     organisation.status !== TenantResponseStatus.Purging;
   const payment = subscription?.payment ?? null;
 
+  const periodRow: ReactNode = (() => {
+    if (!subscription)
+      return (
+        <span className="text-muted-foreground">{t("noSubscription")}</span>
+      );
+    const people = Math.max(
+      0,
+      organisation.memberCount - organisation.freeMemberCount,
+    );
+    const fees = plan.data && feesOf(plan.data.prices, subscription.interval);
+    const money = (minor: number) =>
+      formatMoney(minor, plan.data?.currency ?? "EUR", locale);
+    const total = fees ? fees.base + fees.perPerson * people : 0;
+    const line = [
+      t(`interval.${subscription.interval}`),
+      fees &&
+        (total === 0
+          ? money(0)
+          : t(`price.${shapeOf(fees)}`, {
+              base: money(fees.base),
+              perPerson: money(fees.perPerson),
+              people,
+              total: money(total),
+            })),
+      organisation.freeMemberCount > 0 &&
+        t("freeManagers", { count: organisation.freeMemberCount }),
+    ].filter(Boolean);
+    // A scheduled change or end has its own row; the next payment is the plan's while nothing changes it.
+    const next =
+      fees &&
+      !payment &&
+      !subscription.cancelAtPeriodEnd &&
+      !subscription.scheduledChange;
+    return (
+      <>
+        <span>{line.join(" · ")}</span>
+        {next && (
+          <span className="text-small text-muted-foreground">
+            {t("next", {
+              date: date(subscription.currentPeriodEnd),
+              amount: money(total),
+            })}
+          </span>
+        )}
+      </>
+    );
+  })();
+
   const paymentRow: ReactNode = (() => {
     if (contract || !subscription) return null;
     const money = (minor: number) =>
       formatMoney(minor, payment?.currency ?? "EUR", locale);
     if (!payment)
       return (
-        <span>
-          <Pill tone="success">{t("paid")}</Pill>
-        </span>
+        <>
+          <span>
+            <Pill tone="success">{t("paid")}</Pill>
+          </span>
+          {subscription.lastPaymentAt && (
+            <span className="text-small text-muted-foreground">
+              {t("lastPayment", { date: date(subscription.lastPaymentAt) })}
+            </span>
+          )}
+        </>
       );
     if (payment.state === PaymentResponseState.Retrying)
       return (
@@ -221,17 +305,26 @@ export function BillingCard({
           {contract ? t("contractText") : t("cardText")}
         </span>
       </Row>
-      {!contract && (
-        <Row label={t("period")}>
-          {subscription ? (
-            <span>{t(`interval.${subscription.interval}`)}</span>
-          ) : (
-            <span className="text-muted-foreground">{t("noSubscription")}</span>
-          )}
-        </Row>
-      )}
+      {!contract && <Row label={t("period")}>{periodRow}</Row>}
       {paymentRow && <Row label={t("payment")}>{paymentRow}</Row>}
       {!contract && <Row label={t("scheduledChange")}>{scheduled}</Row>}
+      {data.customer && (
+        <Row
+          label={t("stripe")}
+          actions={
+            <a
+              href={data.customer.dashboardUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonVariants({ variant: "ghost" })}
+            >
+              {t("openInStripe")}
+            </a>
+          }
+        >
+          <span>{data.customer.id}</span>
+        </Row>
+      )}
       {asking && (
         <Dialog
           open

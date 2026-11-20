@@ -164,7 +164,7 @@ export const frameOrganisations = {
 
 export const frameNorthwind = frameOrganisations.northwind;
 
-const listItemOf = ({
+export const listItemOf = ({
   owners: _,
   purgeWarningAt: __,
   createdBy: ___,

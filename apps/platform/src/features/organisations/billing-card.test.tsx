@@ -1,10 +1,10 @@
 import {
-  type BillingResponse,
   BillingResponseBilledBy,
   PaymentResponseState,
   type SubscriptionResponse,
   SubscriptionResponseInterval,
   SubscriptionResponseStatus,
+  type TenantBillingResponse,
   TenantResponseStatus,
 } from "@repo/api-client";
 import { expectVisibleToast } from "@repo/ui/test/toast";
@@ -27,7 +27,7 @@ import {
   meAnswer,
   problem,
 } from "../../../test/organisations";
-import { plansAnswer } from "../../../test/plans";
+import { planAnswer, plansAnswer, pro } from "../../../test/plans";
 import { renderWithProviders } from "../../../test/render";
 import { BillingCard } from "./billing-card";
 
@@ -51,7 +51,7 @@ const monthly: SubscriptionResponse = {
   lastPaymentAt: null,
 };
 
-const billingAnswer = (answer: BillingResponse, sent: unknown[] = []) => [
+const billingAnswer = (answer: TenantBillingResponse, sent: unknown[] = []) => [
   http.get(`*/v1/platform/tenants/${active.id}/billing`, () =>
     HttpResponse.json(answer),
   ),
@@ -67,10 +67,13 @@ const billingAnswer = (answer: BillingResponse, sent: unknown[] = []) => [
   ),
 ];
 
-const card = (subscription: SubscriptionResponse | null = monthly) => ({
+const card = (
+  subscription: SubscriptionResponse | null = monthly,
+): TenantBillingResponse => ({
   billedBy: BillingResponseBilledBy.Card,
   subscription,
   billingEmail: null,
+  customer: null,
 });
 
 describe("BillingCard", () => {
@@ -89,6 +92,71 @@ describe("BillingCard", () => {
     expect(
       screen.getByRole("button", { name: "Switch to Contract" }),
     ).toBeVisible();
+  });
+
+  // 4.27: the billed people are the members who take a seat; the billing managers are free; the plan's fee per person prices them.
+  it("BillingCard_PaysByCard_ShowsTheBilledPeopleThePriceAndTheNextPayment", async () => {
+    const team = {
+      ...pro,
+      prices: { ...pro.prices, perPersonMonthly: 1000 },
+    };
+    server.use(
+      ...billingAnswer(card({ ...monthly, planId: team.id })),
+      planAnswer(team),
+    );
+
+    renderWithProviders(
+      <BillingCard
+        organisation={{ ...active, memberCount: 11, freeMemberCount: 1 }}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        "Monthly · 10 billed people × €10 = €100 · 1 billing manager, free",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Next payment on 1 Dec 2026: €100 excl. VAT."),
+    ).toBeVisible();
+  });
+
+  it("BillingCard_Paid_SaysTheLastPayment", async () => {
+    server.use(
+      ...billingAnswer(
+        card({ ...monthly, lastPaymentAt: "2026-11-01T10:00:00Z" }),
+      ),
+    );
+
+    renderWithProviders(<BillingCard organisation={active} />);
+
+    expect(
+      await screen.findByText("Last payment on 1 Nov 2026."),
+    ).toBeVisible();
+  });
+
+  // 4.27: the Stripe customer, with its page in Stripe's dashboard in a new tab.
+  it("BillingCard_AStripeCustomer_ShowsItsIdAndOpensItInStripe", async () => {
+    server.use(
+      ...billingAnswer({
+        ...card(),
+        customer: {
+          id: "cus_Q7xN2kL9aB31",
+          dashboardUrl:
+            "https://dashboard.stripe.com/customers/cus_Q7xN2kL9aB31",
+        },
+      }),
+    );
+
+    renderWithProviders(<BillingCard organisation={active} />);
+
+    expect(await screen.findByText("cus_Q7xN2kL9aB31")).toBeVisible();
+    const link = screen.getByRole("link", { name: "Open in Stripe" });
+    expect(link).toHaveAttribute(
+      "href",
+      "https://dashboard.stripe.com/customers/cus_Q7xN2kL9aB31",
+    );
+    expect(link).toHaveAttribute("target", "_blank");
   });
 
   it("BillingCard_PaymentRetrying_SaysWhenStripeTriesAgain", async () => {

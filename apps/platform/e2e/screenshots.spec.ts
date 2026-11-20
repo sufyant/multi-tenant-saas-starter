@@ -37,6 +37,7 @@ import {
   plans,
   problem,
   shannonSuspended,
+  tenantsPage,
   users,
 } from "./api";
 import { createUser, deleteUser } from "./clerk-users";
@@ -61,6 +62,7 @@ import {
   frameNorthwind,
   frameOrganisations,
   freePreview,
+  listItemOf,
   mockFrameOrganisations,
 } from "./organisation-frames";
 import {
@@ -929,10 +931,17 @@ const oldPriceAnswer = {
   movesAt: null,
 };
 
-/** An organisation's billing as the Plan tab's frames draw it (4.27 to 4.36): Team, monthly, paid until 1 Dec 2026. */
+/**
+ * An organisation's billing as the Plan tab's frames draw it (4.27 to 4.36): Team, monthly, paid until 1 Dec 2026, last paid on
+ * 1 Nov 2026, with its Stripe customer.
+ */
 const teamBilling = (more: Record<string, unknown> = {}) => ({
   billedBy: "card",
   billingEmail: null,
+  customer: {
+    id: "cus_Q7xN2kL9aB31",
+    dashboardUrl: "https://dashboard.stripe.com/customers/cus_Q7xN2kL9aB31",
+  },
   subscription: {
     planId: framePlans.team.id,
     interval: "monthly",
@@ -942,12 +951,41 @@ const teamBilling = (more: Record<string, unknown> = {}) => ({
     scheduledChange: null,
     payment: null,
     priceChange: null,
+    lastPaymentAt: "2026-11-01T10:00:00Z",
     ...more,
   },
 });
+/**
+ * The Billing card's frames: Northwind with 11 members, 1 of them a billing manager (4.27), and Team at €10 a person a month.
+ * Later routes win, so these answer over the frames' own.
+ */
 const billingOf = (answer: unknown) => async (page: Page) => {
   await mockFrameOrganisations(page);
   await mockFramePlans(page);
+  await page.route(
+    `**/api/v1/platform/tenants/${frameNorthwind.id}`,
+    (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({
+            json: {
+              ...frameNorthwind,
+              plan: undefined,
+              memberCount: 11,
+              freeMemberCount: 1,
+            },
+          })
+        : route.fallback(),
+  );
+  await page.route(`**/api/v1/platform/plans/${framePlans.team.id}`, (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({
+          json: {
+            ...framePlans.team,
+            prices: { ...framePlans.team.prices, perPersonMonthly: 1000 },
+          },
+        })
+      : route.fallback(),
+  );
   await page.route("**/api/v1/platform/tenants/*/billing", (route) =>
     route.fulfill({ json: answer }),
   );
@@ -1625,6 +1663,32 @@ const shellShots: {
       fullPage: name.startsWith("4.09"),
     })),
   ),
+  {
+    // 4.38: the billing filter, open, with ListTenants' billingCounts while billing is on. "In trial" is 40d's.
+    file: "4.38-organisations-billing-filter-en-light-desktop",
+    size: "desktop",
+    path: "/",
+    mock: async (page) => {
+      await mockFrameOrganisations(page);
+      await page.route("**/api/v1/platform/tenants?*", (route) =>
+        route.request().method() === "GET"
+          ? route.fulfill({
+              json: {
+                ...tenantsPage(
+                  Object.values(frameOrganisations).map(listItemOf),
+                  new URL(route.request().url()).searchParams,
+                ),
+                billingCounts: { paymentOverdue: 2, contract: 1 },
+              },
+            })
+          : route.fallback(),
+      );
+    },
+    open: async (page) => {
+      await page.getByRole("button", { name: /^Filter by billing/ }).click();
+      await page.getByRole("menu").waitFor();
+    },
+  },
   {
     file: "4.02-organisations-suspended-en-light-desktop",
     size: "desktop",

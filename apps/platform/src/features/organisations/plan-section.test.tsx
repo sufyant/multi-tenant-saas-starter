@@ -175,6 +175,31 @@ describe("PlanSection", () => {
     ).toBeVisible();
   });
 
+  // A billing manager is a member who uses no seat (4.27): the sentence says so, from GetTenant's freeMemberCount.
+  it("Section_ABillingManager_SaysItUsesNoSeat", async () => {
+    await renderSection(
+      detailOf(burren, {
+        status: TenantResponseStatus.Active,
+        memberCount: 11,
+        freeMemberCount: 1,
+        pendingInvitationCount: 2,
+      }),
+      burrenPlan({
+        [LimitKey.MembersMax]: {
+          planValue: max(15),
+          effective: max(15),
+          count: 12,
+        },
+      }),
+    );
+
+    expect(
+      rowOf("Seats").getByText(
+        "11 members, 1 of them a billing manager who uses no seat, and 2 pending invitations: 12 of 15 seats.",
+      ),
+    ).toBeVisible();
+  });
+
   it("Section_NoExpiry_SaysNoDate", async () => {
     await renderSection(
       active,
@@ -707,6 +732,33 @@ describe("PlanSection", () => {
     ).toBeVisible();
     await waitFor(() => expect(plansRequests.length).toBeGreaterThan(0));
   });
+  // B12: while billing is on, an organisation that pays by card takes its plan from its subscription: the dialog says to switch first.
+  it("ChangePlan_PaysByCard_SaysToSwitchToContractFirst", async () => {
+    await renderSection();
+    server.use(
+      plansCommand("post", `tenants/${burren.id}/plan/preview`, [
+        () => HttpResponse.json({ excesses: [], overriddenKeys: [] }),
+      ]),
+      plansCommand("put", `tenants/${burren.id}/plan`, [
+        () => problem(409, ErrorCode.TenantPaysByCard),
+      ]),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Change plan" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await userEvent.click(dialog.getByRole("combobox", { name: "New plan" }));
+    await userEvent.click(await screen.findByRole("option", { name: /Free/ }));
+    await userEvent.click(
+      await dialog.findByRole("button", { name: "Change to Free" }),
+    );
+
+    expect(
+      await dialog.findByText(
+        /^This organisation pays by card, so its subscription sets its plan\. Switch it to Contract first\. Ref /,
+      ),
+    ).toBeVisible();
+  });
+
   /** Opens Add override on the Activity log and types a value, and a day when one is given. */
   const overrideActivityLog = async (value: string, until?: string) => {
     await userEvent.click(screen.getByRole("button", { name: "Add override" }));

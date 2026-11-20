@@ -213,7 +213,15 @@
     "ownerEmailHint": "The Owner gets an invitation by email.",
     "reopenTextNoDate": "Its {count, plural, one {# member} other {# members}} can open it again at once.",
     "invitedEmail": "Invited: {email}",
-    "planTab": "Plan and billing"
+    "planTab": "Plan and billing",
+    "membersWithFree": "{members}, {count, plural, one {# of them a billing manager who uses no seat} other {# of them billing managers who use no seat}}",
+    "membersFreeAndPending": "{members}, and {count, plural, one {# pending invitation} other {# pending invitations}}",
+    "billingFilter": "Filter by billing",
+    "billingFilterPhone": "Billing",
+    "billingAll": "Billing: All",
+    "billingOverdue": "Payment overdue · {count}",
+    "billingContract": "Contract · {count}",
+    "noMatchBilling": "No organisation in this billing state"
   },
   "users": {
     "title": "Users",
@@ -899,6 +907,16 @@
     "graceUntil": "Grace until {date}",
     "contractLabel": "Contract",
     "cardLabel": "Card",
-    "scheduledChange": "Scheduled change"
+    "scheduledChange": "Scheduled change",
+    "price": {
+      "perPerson": "{people, plural, one {# billed person} other {# billed people}} × {perPerson} = {total}",
+      "baseAndPerPerson": "{base} + {people, plural, one {# billed person} other {# billed people}} × {perPerson} = {total}",
+      "base": "{total}"
+    },
+    "freeManagers": "{count, plural, one {# billing manager, free} other {# billing managers, free}}",
+    "next": "Next payment on {date}: {amount} excl. VAT.",
+    "lastPayment": "Last payment on {date}.",
+    "stripe": "Stripe",
+    "openInStripe": "Open in Stripe"
   }
 }
