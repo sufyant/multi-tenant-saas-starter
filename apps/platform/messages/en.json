@@ -918,5 +918,32 @@
     "lastPayment": "Last payment on {date}.",
     "stripe": "Stripe",
     "openInStripe": "Open in Stripe"
+  },
+  "usage": {
+    "tab": "Usage",
+    "loading": "Loading usage",
+    "loadError": "Couldn’t load usage",
+    "period": "This period: {start} to {end}",
+    "chargeTerms": "{plan}: {quota} {meter} a month, then {price} per {size}.",
+    "stopTerms": "{plan}: {quota} {meter} a month, then they stop.",
+    "capOff": "Spending cap: off.",
+    "capOn": "Spending cap: {amount} a month.",
+    "count": "{used} of {quota} {meter}",
+    "share": "{share}%",
+    "extra": "{extra} extra · {amount} excl. VAT",
+    "stopped": "Stopped",
+    "stoppedAtCap": "Stopped at the cap · {amount} excl. VAT",
+    "stoppedOn": "Stopped on {day}. They reset on {date}.",
+    "stopReset": "They reset on {date}.",
+    "resets": "Resets on {date}",
+    "resetsExtra": "Resets on {date}. The extra is on the next invoice.",
+    "lastMonths": "Last months",
+    "month": "Period",
+    "extraColumn": "Extra",
+    "pastExtra": "{extra} · {amount} excl. VAT",
+    "pastAmount": "{amount} excl. VAT",
+    "pastUsed": "{used} {meter}",
+    "noExtra": "No extra",
+    "noPast": "Last months appear here after the first month."
   }
 }

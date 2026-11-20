@@ -918,5 +918,32 @@
     "lastPayment": "Son ödeme {date}.",
     "stripe": "Stripe",
     "openInStripe": "Stripe’da aç"
+  },
+  "usage": {
+    "tab": "Kullanım",
+    "loading": "Kullanım yükleniyor",
+    "loadError": "Kullanım yüklenemedi",
+    "period": "Bu dönem: {start} – {end}",
+    "chargeTerms": "{plan}: ayda {quota} {meter}, sonrası her {size} için {price}.",
+    "stopTerms": "{plan}: ayda {quota} {meter}, sonra durur.",
+    "capOff": "Harcama sınırı: kapalı.",
+    "capOn": "Harcama sınırı: ayda {amount}.",
+    "count": "{quota} {meter} içinden {used}",
+    "share": "%{share}",
+    "extra": "{extra} fazla · {amount} KDV hariç",
+    "stopped": "Durdu",
+    "stoppedAtCap": "Sınırda durdu · {amount} KDV hariç",
+    "stoppedOn": "{day} tarihinde durdu. {date} tarihinde sıfırlanır.",
+    "stopReset": "{date} tarihinde sıfırlanır.",
+    "resets": "{date} tarihinde sıfırlanır",
+    "resetsExtra": "{date} tarihinde sıfırlanır. Fazlası bir sonraki faturada.",
+    "lastMonths": "Son aylar",
+    "month": "Dönem",
+    "extraColumn": "Fazla",
+    "pastExtra": "{extra} · {amount} KDV hariç",
+    "pastAmount": "{amount} KDV hariç",
+    "pastUsed": "{used} {meter}",
+    "noExtra": "Fazla yok",
+    "noPast": "Son aylar ilk aydan sonra burada görünür."
   }
 }

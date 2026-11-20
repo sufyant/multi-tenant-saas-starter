@@ -4,6 +4,7 @@ import {
   ErrorCode,
   getGetTenantPlanQueryOptions,
   getGetTenantQueryOptions,
+  getGetTenantUsageQueryOptions,
   InvitationResponseState,
   problemOf,
   schemas,
@@ -47,6 +48,7 @@ import {
 } from "./organisation";
 import { usePersonName } from "./person-name";
 import { PlanSection } from "./plan-section";
+import { UsageSection } from "./usage-section";
 import { useOrganisationActions } from "./use-organisation-actions";
 
 /** The Users list, searched by the invited email: an Owner who joined as a member is made an Owner from their user page. */
@@ -55,9 +57,10 @@ const usersFoundBy = (email: string | undefined) =>
 
 /**
  * The tabs of an organisation (4.09, 4.14, 4.18). The tab lives in the URL, as every tab of the app (F9). Plan is "Plan and billing"
- * from step 40; Usage is step 40c. An organisation whose purge has begun has no plan to change (4.25, 4.26).
+ * from step 40, and Usage shows while the plan has a meter (4.37, 4.42). An organisation whose purge has begun has no plan to change
+ * (4.25, 4.26), and no usage.
  */
-const views = ["overview", "plan", "activity"] as const;
+const views = ["overview", "plan", "activity", "usage"] as const;
 const viewParser = parseAsStringLiteral(views).withDefault("overview");
 
 /**
@@ -100,7 +103,19 @@ function Organisation({
     viewParser.withOptions({ history: "push" }),
   );
   const gone = isGone(organisation);
-  const shown = gone && view === "plan" ? "overview" : view;
+  const usage = useQuery(
+    getGetTenantUsageQueryOptions(organisation.id, {
+      query: { enabled: !gone },
+    }),
+  );
+  // Usage is a tab while the plan has a meter; while GetTenantUsage loads, or after it failed, only on its own tab, so it can say why.
+  const metered = usage.isSuccess
+    ? usage.data.meters.length > 0
+    : !gone && view === "usage";
+  const shown =
+    (gone && view === "plan") || (!metered && view === "usage")
+      ? "overview"
+      : view;
   const invitation = waitingInvitation(organisation);
   const by = (
     key: "suspendedOn" | "closedOn",
@@ -208,6 +223,7 @@ function Organisation({
     { id: "overview", label: t("organisations.overview") },
     ...(gone ? [] : [{ id: "plan", label: t("organisations.planTab") }]),
     { id: "activity", label: t("organisations.activity") },
+    ...(metered ? [{ id: "usage", label: t("usage.tab") }] : []),
   ];
 
   return (
@@ -264,6 +280,7 @@ function Organisation({
       )}
       {shown === "overview" && <FeatureFlagsCard tenantId={organisation.id} />}
       {shown === "plan" && <PlanSection organisation={organisation} />}
+      {shown === "usage" && <UsageSection usage={usage} />}
       {shown === "activity" && (
         <OrganisationActivity tenantId={organisation.id} />
       )}
