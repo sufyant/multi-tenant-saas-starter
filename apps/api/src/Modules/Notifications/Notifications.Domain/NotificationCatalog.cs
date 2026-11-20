@@ -59,7 +59,7 @@ public static class NotificationCatalog
     /// <summary>A use first took a meter's count to its quota (13.23).</summary>
     public const string TenantMeterUsedUp = "tenant.meter_used_up";
 
-    /// <summary>A use first took the month's extra to 80% of the spending cap (13.40).</summary>
+    /// <summary>A use first took the month's extra to 80% of the spending cap (13.43, 13.44).</summary>
     public const string TenantSpendingCapNearlyReached = "tenant.spending_cap_nearly_reached";
 
     /// <summary>A use reached the spending cap (13.24).</summary>

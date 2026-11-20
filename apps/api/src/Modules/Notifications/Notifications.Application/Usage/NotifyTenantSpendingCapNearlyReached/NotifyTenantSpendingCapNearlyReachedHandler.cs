@@ -6,7 +6,7 @@ using Notifications.Domain;
 
 namespace Notifications.Application.Usage.NotifyTenantSpendingCapNearlyReached;
 
-// "{tenant} used 80% of its spending cap" (13.40), with the cap, the month's extra and the day it resets.
+// "{tenant} used 80% of its spending cap" (13.43), with the cap, the month's extra and the day it resets.
 public static class NotifyTenantSpendingCapNearlyReachedHandler
 {
     public const string Type = NotificationCatalog.TenantSpendingCapNearlyReached;

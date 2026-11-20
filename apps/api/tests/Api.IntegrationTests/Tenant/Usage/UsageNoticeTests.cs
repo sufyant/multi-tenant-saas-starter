@@ -7,7 +7,7 @@ using Tenancy;
 
 namespace Api.IntegrationTests.Tenant.Usage;
 
-// The four notices of a meter's use (13.22 to 13.24, 13.40; E10): 80% and all of a meter's quota, and 80% and all of the spending cap. Each
+// The four notices of a meter's use (13.22 to 13.24, 13.43; E10): 80% and all of a meter's quota, and 80% and all of the spending cap. Each
 // goes once in each month, in the tenant's bell and by email, to the members who manage billing and to the billing email. A use is a count,
 // not a person's change, so no notice names an actor. The meter here: a quota of 100, and 1 € for each unit over it.
 [FixedClock("Nothing these tests run schedules a message; the fixed date puts each use in a known month.")]

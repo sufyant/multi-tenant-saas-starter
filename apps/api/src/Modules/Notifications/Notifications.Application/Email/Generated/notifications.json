@@ -197,6 +197,10 @@
       "tenant.meter_nearly_used": {
         "title": "{{tenantName}} used 80% of its {{meter}}",
         "body": "{{used}} of {{quota}} this month. They reset on {{resetsAt}}. After {{quota}}, the extra costs {{unitPrice}} per {{unitSize}}, excl. VAT.",
+        "email": {
+          "body": "{{used}} of {{quota}} this month. They reset on {{resetsAt}}. After {{quota}}, the extra costs {{unitPrice}} per {{unitSize}}, excl. VAT.",
+          "button": "Open Billing"
+        },
         "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email.",
         "without": {
           "unitPrice": {
@@ -207,6 +211,10 @@
       "tenant.meter_used_up": {
         "title": "{{tenantName}} used all its {{meter}}",
         "body": "{{quota}} of {{quota}} this month. The extra now costs {{unitPrice}} per {{unitSize}}, excl. VAT, until they reset on {{resetsAt}}.",
+        "email": {
+          "body": "{{quota}} of {{quota}} this month. The extra now costs {{unitPrice}} per {{unitSize}}, excl. VAT, until they reset on {{resetsAt}}.",
+          "button": "Open Billing"
+        },
         "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email.",
         "without": {
           "unitPrice": {
@@ -217,11 +225,19 @@
       "tenant.spending_cap_nearly_reached": {
         "title": "{{tenantName}} used 80% of its spending cap",
         "body": "The extra this month is {{extraAmount}} of the {{cap}} cap, excl. VAT. At the cap, every use that costs extra stops until {{resetsAt}}.",
+        "email": {
+          "body": "The extra this month is {{extraAmount}} of the {{cap}} cap, excl. VAT. At the cap, every use that costs extra stops until {{resetsAt}}.",
+          "button": "Open Billing"
+        },
         "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email."
       },
       "tenant.spending_cap_reached": {
         "title": "{{meter}} stopped in {{tenantName}}",
         "body": "You reached your spending cap of {{cap}} excl. VAT. {{meter}} and every other use that costs extra start again on {{resetsAt}}, or when you raise the cap.",
+        "email": {
+          "body": "You reached your spending cap of {{cap}} excl. VAT. {{meter}} and every other use that costs extra start again on {{resetsAt}}, or when you raise the cap.",
+          "button": "Open Billing"
+        },
         "footer": "You received this because you manage billing for {{tenantName}}, or this is its billing email."
       }
     },
@@ -489,6 +505,10 @@
       "tenant.meter_nearly_used": {
         "title": "{{tenantName}}, {{meter}} kotasının %80’ini kullandı",
         "body": "Bu ay {{quota}} içinden {{used}}. {{resetsAt}} tarihinde sıfırlanır. {{quota}} sonrasında fazlası KDV hariç {{unitSize}} başına {{unitPrice}} tutar.",
+        "email": {
+          "body": "Bu ay {{quota}} içinden {{used}}. {{resetsAt}} tarihinde sıfırlanır. {{quota}} sonrasında fazlası KDV hariç {{unitSize}} başına {{unitPrice}} tutar.",
+          "button": "Faturalamayı aç"
+        },
         "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız.",
         "without": {
           "unitPrice": {
@@ -499,6 +519,10 @@
       "tenant.meter_used_up": {
         "title": "{{tenantName}}, {{meter}} kotasının tamamını kullandı",
         "body": "Bu ay {{quota}} içinden {{quota}}. Fazlası, {{resetsAt}} tarihinde sıfırlanana kadar KDV hariç {{unitSize}} başına {{unitPrice}} tutar.",
+        "email": {
+          "body": "Bu ay {{quota}} içinden {{quota}}. Fazlası, {{resetsAt}} tarihinde sıfırlanana kadar KDV hariç {{unitSize}} başına {{unitPrice}} tutar.",
+          "button": "Faturalamayı aç"
+        },
         "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız.",
         "without": {
           "unitPrice": {
@@ -509,11 +533,19 @@
       "tenant.spending_cap_nearly_reached": {
         "title": "{{tenantName}}, harcama limitinin %80’ini kullandı",
         "body": "Bu ayın fazlası, KDV hariç {{cap}} limitin {{extraAmount}} kadarı. Limite ulaşınca fazlası ücretli her kullanım {{resetsAt}} tarihine kadar durur.",
+        "email": {
+          "body": "Bu ayın fazlası, KDV hariç {{cap}} limitin {{extraAmount}} kadarı. Limite ulaşınca fazlası ücretli her kullanım {{resetsAt}} tarihine kadar durur.",
+          "button": "Faturalamayı aç"
+        },
         "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
       },
       "tenant.spending_cap_reached": {
         "title": "{{tenantName}} içinde {{meter}} durdu",
         "body": "KDV hariç {{cap}} harcama limitinize ulaştınız. {{meter}} ve fazlası ücretli diğer her kullanım {{resetsAt}} tarihinde ya da limiti yükselttiğinizde yeniden başlar.",
+        "email": {
+          "body": "KDV hariç {{cap}} harcama limitinize ulaştınız. {{meter}} ve fazlası ücretli diğer her kullanım {{resetsAt}} tarihinde ya da limiti yükselttiğinizde yeniden başlar.",
+          "button": "Faturalamayı aç"
+        },
         "footer": "Bunu, {{tenantName}} kuruluşunun faturalamasını yönettiğiniz ya da bu adres onun fatura e-postası olduğu için aldınız."
       }
     },
@@ -781,6 +813,10 @@
       "tenant.meter_nearly_used": {
         "title": "استخدمت {{tenantName}} ‏80% من {{meter}}",
         "body": "{{used}} من {{quota}} هذا الشهر. يُعاد ضبطها في {{resetsAt}}. بعد {{quota}}، تكلفة الزيادة {{unitPrice}} لكل {{unitSize}}، دون ضريبة القيمة المضافة.",
+        "email": {
+          "body": "{{used}} من {{quota}} هذا الشهر. يُعاد ضبطها في {{resetsAt}}. بعد {{quota}}، تكلفة الزيادة {{unitPrice}} لكل {{unitSize}}، دون ضريبة القيمة المضافة.",
+          "button": "فتح الفوترة"
+        },
         "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة.",
         "without": {
           "unitPrice": {
@@ -791,6 +827,10 @@
       "tenant.meter_used_up": {
         "title": "استخدمت {{tenantName}} كل {{meter}}",
         "body": "{{quota}} من {{quota}} هذا الشهر. تكلفة الزيادة الآن {{unitPrice}} لكل {{unitSize}}، دون ضريبة القيمة المضافة، حتى يُعاد ضبطها في {{resetsAt}}.",
+        "email": {
+          "body": "{{quota}} من {{quota}} هذا الشهر. تكلفة الزيادة الآن {{unitPrice}} لكل {{unitSize}}، دون ضريبة القيمة المضافة، حتى يُعاد ضبطها في {{resetsAt}}.",
+          "button": "فتح الفوترة"
+        },
         "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة.",
         "without": {
           "unitPrice": {
@@ -801,11 +841,19 @@
       "tenant.spending_cap_nearly_reached": {
         "title": "استخدمت {{tenantName}} ‏80% من حد الإنفاق",
         "body": "الزيادة هذا الشهر {{extraAmount}} من حد {{cap}}، دون ضريبة القيمة المضافة. عند بلوغ الحد، يتوقف كل استخدام بتكلفة إضافية حتى {{resetsAt}}.",
+        "email": {
+          "body": "الزيادة هذا الشهر {{extraAmount}} من حد {{cap}}، دون ضريبة القيمة المضافة. عند بلوغ الحد، يتوقف كل استخدام بتكلفة إضافية حتى {{resetsAt}}.",
+          "button": "فتح الفوترة"
+        },
         "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
       },
       "tenant.spending_cap_reached": {
         "title": "توقف {{meter}} في {{tenantName}}",
         "body": "بلغت حد الإنفاق البالغ {{cap}} دون ضريبة القيمة المضافة. يعود {{meter}} وكل استخدام آخر بتكلفة إضافية في {{resetsAt}}، أو عند رفع الحد.",
+        "email": {
+          "body": "بلغت حد الإنفاق البالغ {{cap}} دون ضريبة القيمة المضافة. يعود {{meter}} وكل استخدام آخر بتكلفة إضافية في {{resetsAt}}، أو عند رفع الحد.",
+          "button": "فتح الفوترة"
+        },
         "footer": "وصلتك هذه الرسالة لأنك تدير الفوترة لـ{{tenantName}}، أو لأن هذا هو بريدها الإلكتروني للفوترة."
       }
     },

@@ -3,7 +3,7 @@ using SharedKernel;
 namespace ControlPlane.Contracts.Usage;
 
 /// <summary>
-/// A use first took the month's extra of the tenant's charge meters to 80% of its spending cap (step 40c; 13.40; E10). Published through the
+/// A use first took the month's extra of the tenant's charge meters to 80% of its spending cap (step 40c; 13.43; E10). Published through the
 /// outbox once for each month and cap: a change of the cap decides again.
 /// </summary>
 /// <param name="EventId">Chosen by the publisher, so a subscriber that receives the event twice can tell.</param>
