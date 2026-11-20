@@ -115,7 +115,9 @@ Over a limit (E4): nothing is deleted, what exists keeps working, nothing new th
 
 `GetUsage` answers the cap, this month's extra amount and the moment the cap was reached this month, and `spendingCapOffered`, whether the tenant pays by card. The tenant's purge deletes the cap.
 
-Not in this part: the notifications at 80% and 100% of a quota and at the cap (40c, part 2b), and the extra at Stripe (40c, part 3).
+The first use of a month that takes a meter's count to 80% or to all of its quota, or the extra to 80% or to all of the cap, tells the members who manage billing and the billing email once (ARCHITECTURE.md, E10; `notifications.md`).
+
+Not in this part: the extra at Stripe (40c, part 3).
 
 ## 6. The previews
 
