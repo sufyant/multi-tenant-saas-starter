@@ -2,7 +2,7 @@
 
 import type { ElementType, ReactNode } from "react";
 import { cn } from "../../lib/utils";
-import { CheckIcon, ChevronsUpDownIcon, Icon } from "../icon";
+import { CheckIcon, ChevronsUpDownIcon, Icon, PlusIcon } from "../icon";
 import { OrgTile } from "../org-tile";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 
@@ -41,6 +42,11 @@ export type OrgSwitcherProps = {
   open?: boolean;
   /** The face names the product, not an organisation (the platform): its mark keeps the brand's gradient. */
   product?: boolean;
+  /**
+   * "Create organisation" at the menu's end (2.38), which opens the menu for one organisation too. Without `href` it is disabled and
+   * its note says why (2.39).
+   */
+  create?: { label: string; href?: string; note?: string };
 };
 
 /** The product's mark: its first letter on the brand's gradient (the Platform sidebar). */
@@ -57,7 +63,8 @@ const ProductMark = ({ name }: { name: string }) => (
  * The organisation switcher at the top of the sidebar (the Switcher screens): the organisation's mark, its name and the person's
  * role. With more than one organisation it opens "Your organisations", each with its role under its name and a status that is not
  * active, and a click opens that organisation. With one organisation it shows no chevron and opens nothing. In the sidebar's place
- * (`rail`) a tablet's icon rail shows the mark alone and the expanded sidebar from bp-desktop the whole row.
+ * (`rail`) a tablet's icon rail shows the mark alone and the expanded sidebar from bp-desktop the whole row. `create` ends the menu
+ * with "Create organisation", and then one organisation opens the menu too.
  */
 export function OrgSwitcher({
   current,
@@ -67,8 +74,9 @@ export function OrgSwitcher({
   linkComponent: Link = "a",
   open,
   product,
+  create,
 }: OrgSwitcherProps) {
-  const several = organisations.length > 1;
+  const opens = organisations.length > 1 || create !== undefined;
   const rail = variant === "rail";
   const face = (
     <>
@@ -94,13 +102,13 @@ export function OrgSwitcher({
     "flex w-full min-w-0 items-center gap-2.5 rounded-md px-1.5 py-1",
     rail && "max-desktop:size-12 max-desktop:justify-center max-desktop:p-0",
   );
-  if (!several && variant === "drawer")
+  if (!opens && variant === "drawer")
     return (
       <p className="truncate ps-2 pt-3.5 pb-1 text-status text-muted-foreground">
         <bdi>{current.name}</bdi>
       </p>
     );
-  if (!several) return <div className={box}>{face}</div>;
+  if (!opens) return <div className={box}>{face}</div>;
   return (
     <DropdownMenu defaultOpen={open}>
       <DropdownMenuTrigger
@@ -147,6 +155,30 @@ export function OrgSwitcher({
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
+        {create && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              render={create.href ? <Link href={create.href} /> : undefined}
+              disabled={!create.href}
+              className="min-h-10 gap-2.5 px-2 max-tablet:min-h-touch-target"
+            >
+              <Icon
+                icon={PlusIcon}
+                size={16}
+                className="mx-0.5 self-start mt-0.5 text-muted-foreground"
+              />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-small">{create.label}</span>
+                {create.note && (
+                  <span className="text-status text-muted-foreground">
+                    {create.note}
+                  </span>
+                )}
+              </span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
