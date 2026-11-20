@@ -705,6 +705,8 @@ The parts of 40, in their order. Each part is one pull request or more; the pull
 
 40c-frontend: the web's 11.01 to 11.09, 14.12, 14.15, 2.34 to 2.37; the platform's 4.37 and 4.42. It waits for 40-design and 40c-backend.
 
+- As built, part 1 (the web's Usage page; `docs/frontend/ARCHITECTURE.md`, F66): Settings › Usage (11.01 to 11.11, 14.12, 14.15), its place in the settings menu after Billing, and the `Meter` of `packages/ui`. The thread's choices, not the maintainer's decisions: Usage is a page only while Billing is and the plan has a meter, as the template ships none; a meter's word is the message `usage.meters.<key>`, else its key; the cap's texts name no meter, as the cap is one for all charge meters; the days read in UTC; a stop meter used up offers the cheapest plan with a larger quota of it (11.05); an empty field removes the cap. Not in part 1: the billing bar's usage notices (2.34 to 2.37) and the notices' link to Usage (part 2), and the platform's 4.37 and 4.42 (part 3).
+
 40d-backend, trial and sign-up:
 
 - 40d's points above: the trial and its end, Give trial and Extend trial, the trial's emails and bells (13.16, 13.17, 3.19, 3.20), sign-up behind its configuration switch with the identity provider's sign-up mode (`.clerk/`), Create your organisation with its limit, and the welcome email (13.25).
