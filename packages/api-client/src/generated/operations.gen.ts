@@ -1092,6 +1092,17 @@ export const operations = [
     "anonymous": false
   },
   {
+    "operationId": "SetSpendingCap",
+    "method": "PUT",
+    "path": "/v1/tenants/{tenantId}/usage/spending-cap",
+    "tag": "Tenant/Usage",
+    "requestHeaders": [],
+    "responseHeaders": [
+      "Retry-After"
+    ],
+    "anonymous": false
+  },
+  {
     "operationId": "StreamNotifications",
     "method": "GET",
     "path": "/v1/me/notifications/stream",

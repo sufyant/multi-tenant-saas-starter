@@ -20,5 +20,11 @@ public interface IMeterUsageRepository
     /// </summary>
     internal Task<MeterUsage> FindForUpdateAsync(string meterKey, DateOnly period, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// What the extra of every other meter of the tenant costs in the period, at the price of each one's last use, in minor units before
+    /// rounding (E9).
+    /// </summary>
+    internal Task<decimal> SumExtraAmountAsync(DateOnly period, string exceptMeterKey, CancellationToken cancellationToken);
+
     internal Task SaveChangesAsync(CancellationToken cancellationToken);
 }

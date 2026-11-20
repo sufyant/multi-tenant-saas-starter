@@ -40,6 +40,7 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.meter_usages: forced
             control_plane.role_permissions: forced
             control_plane.roles: forced
+            control_plane.spending_caps: forced
             control_plane.stored_files: forced
             control_plane.tenant_purge_sagas: forced
             control_plane.verification_codes: forced
@@ -84,6 +85,7 @@ public sealed class MigratedSchemaTests(Database database)
                FROM control_plane.memberships
               WHERE ((memberships.tenant_id = roles.tenant_id) AND (memberships.role_id = roles.id) AND (memberships.user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)))) WITH CHECK -
             control_plane.roles tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            control_plane.spending_caps tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.stored_files own_files: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
             control_plane.tenant_purge_sagas tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.verification_codes own_verification_codes: PERMISSIVE ALL {api_application} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid)
@@ -174,6 +176,7 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.plans: DELETE, INSERT, SELECT, UPDATE
             table control_plane.role_permissions: DELETE, INSERT, SELECT, UPDATE
             table control_plane.roles: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.spending_caps: DELETE, INSERT, SELECT, UPDATE
             table control_plane.stored_files: DELETE, INSERT, SELECT, UPDATE
             table control_plane.system_admins: DELETE, INSERT, SELECT, UPDATE
             table control_plane.tenant_purge_sagas: DELETE, INSERT, SELECT, UPDATE
@@ -266,6 +269,7 @@ public sealed class MigratedSchemaTests(Database database)
             VALUES ('{code}', '{ownerId}', 'EmailChange', '\x00', 'ada@new.example', now(), now() + interval '10 minutes', 0);
             INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra, unit_price, unit_size)
             VALUES ('{owned.Id}', 'ai.requests', '2026-11-01', 10, 2, 100, 1000);
+            INSERT INTO control_plane.spending_caps (tenant_id, amount) VALUES ('{owned.Id}', 5000);
             """,
             migrated);
 
@@ -308,7 +312,10 @@ public sealed class MigratedSchemaTests(Database database)
             $"UPDATE control_plane.meter_usages SET used = -1, extra = 0 WHERE tenant_id = '{owned.Id}'",
             $"UPDATE control_plane.meter_usages SET unit_size = 0 WHERE tenant_id = '{owned.Id}'",
             $"UPDATE control_plane.meter_usages SET unit_price = -1 WHERE tenant_id = '{owned.Id}'",
-            $"UPDATE control_plane.meter_usages SET period = '2026-11-02' WHERE tenant_id = '{owned.Id}'");
+            $"UPDATE control_plane.meter_usages SET period = '2026-11-02' WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.spending_caps SET amount = 0 WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.spending_caps SET reached_period = '2026-11-01' WHERE tenant_id = '{owned.Id}'",
+            $"UPDATE control_plane.spending_caps SET reached_period = '2026-11-02', reached_at = now() WHERE tenant_id = '{owned.Id}'");
 
         refusals.ShouldBe(
         [
@@ -349,6 +356,9 @@ public sealed class MigratedSchemaTests(Database database)
             "ck_meter_usages_counts",
             "ck_meter_usages_counts",
             "ck_meter_usages_period",
+            "ck_spending_caps_amount",
+            "ck_spending_caps_reached",
+            "ck_spending_caps_reached",
         ]);
     }
 
@@ -474,6 +484,7 @@ public sealed class MigratedSchemaTests(Database database)
             fk_plan_meters_plans_plan_id: RESTRICT
             fk_role_permissions_roles_tenant_id_role_id: CASCADE
             fk_roles_tenants_tenant_id: RESTRICT
+            fk_spending_caps_tenants_tenant_id: RESTRICT
             fk_stored_files_users_user_id: RESTRICT
             fk_system_admins_users_granted_by: RESTRICT
             fk_system_admins_users_user_id: RESTRICT

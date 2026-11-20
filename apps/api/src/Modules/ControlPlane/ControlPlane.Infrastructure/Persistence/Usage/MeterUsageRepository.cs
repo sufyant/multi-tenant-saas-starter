@@ -36,5 +36,10 @@ public sealed class MeterUsageRepository(ControlPlaneDbContext controlPlane) : I
             .SingleAsync(cancellationToken);
     }
 
+    async Task<decimal> IMeterUsageRepository.SumExtraAmountAsync(DateOnly period, string exceptMeterKey, CancellationToken cancellationToken) =>
+        await controlPlane.MeterUsages
+            .Where(use => use.Period == period && use.MeterKey != exceptMeterKey)
+            .SumAsync(use => (decimal)use.Extra * use.UnitPrice / use.UnitSize, cancellationToken);
+
     Task IMeterUsageRepository.SaveChangesAsync(CancellationToken cancellationToken) => controlPlane.SaveChangesAsync(cancellationToken);
 }

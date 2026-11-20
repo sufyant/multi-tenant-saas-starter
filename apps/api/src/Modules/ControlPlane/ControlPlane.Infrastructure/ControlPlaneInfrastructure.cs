@@ -92,6 +92,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
         services.AddScoped<IMeterUsageRepository, MeterUsageRepository>();
+        services.AddScoped<ISpendingCapRepository, SpendingCapRepository>();
         services.AddScoped<IUsageQueries, UsageQueries>();
         services.AddScoped<ITenantQueries, TenantQueries>();
         services.AddScoped<IMemberQueries, MemberQueries>();

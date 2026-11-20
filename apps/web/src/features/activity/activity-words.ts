@@ -28,6 +28,7 @@ import {
   TenantPriceChangeAnnouncedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
+  TenantSpendingCapChangedDetailsResponseOperation,
 } from "@repo/api-client";
 
 // The words of the log's sentences, for the screen (`activity-sentence.tsx`) and for the CSV file (`activity-text.ts`) alike.
@@ -111,6 +112,24 @@ export function detailValues<N>(
     case TenantBillingEmailChangedDetailsResponseOperation.TenantBillingEmailChanged:
       // The entry keeps no address (B14), only whether it was removed.
       return { removed: details.removed ? "yes" : "no" };
+    case TenantSpendingCapChangedDetailsResponseOperation.TenantSpendingCapChanged:
+      // A missing amount is no cap: before it was set, or after it was removed.
+      return {
+        change:
+          details.oldAmount === null
+            ? "set"
+            : details.newAmount === null
+              ? "removed"
+              : "changed",
+        old:
+          details.oldAmount === null
+            ? ""
+            : words.money(details.oldAmount, details.currency),
+        new:
+          details.newAmount === null
+            ? ""
+            : words.money(details.newAmount, details.currency),
+      };
     case TenantPriceChangeAnnouncedDetailsResponseOperation.TenantPriceChangeAnnounced:
       // 12.12 names the fee per person of the interval the organisation pays.
       return {

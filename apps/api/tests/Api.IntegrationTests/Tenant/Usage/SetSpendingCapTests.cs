@@ -73,7 +73,7 @@ public sealed class SetSpendingCapTests(Database database) : IAsyncLifetime
         var again = await _api.WaitingForMessagesAsync(() => client.SetSpendingCapAsync(tenant, 5_000));
 
         again.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await _testData.CountAsync($"SELECT count(*) FROM audit.entries WHERE target_id = '{tenant}'")).ShouldBe(1);
+        (await _audit.TenantDetailsAsync(tenant)).ShouldBe("""{"currency": "EUR", "newAmount": 5000, "oldAmount": null}""");
     }
 
     [Theory]
@@ -126,6 +126,9 @@ public sealed class SetSpendingCapTests(Database database) : IAsyncLifetime
         set.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
+    private static async Task<JsonElement> UsageAsync(HttpClient client, Guid tenantId) =>
+        await (await client.GetAsync($"/v1/tenants/{tenantId}/usage", Cancellation)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
+
     private ApiFactory Api(IReadOnlyDictionary<string, string?>? settings) => new(
         database.ConnectionStringFor(DatabaseRoles.Application),
         settings: settings,
@@ -146,7 +149,4 @@ public sealed class SetSpendingCapTests(Database database) : IAsyncLifetime
         await _api.PayAsync(owner, tenant, await database.ScalarAsSuperuserAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE id = '{tenant}'"));
         return (tenant, await _testData.AddMemberAsync(tenant, role: "BillingManager"));
     }
-
-    private static async Task<JsonElement> UsageAsync(HttpClient client, Guid tenantId) =>
-        await (await client.GetAsync($"/v1/tenants/{tenantId}/usage", Cancellation)).Content.ReadFromJsonAsync<JsonElement>(Cancellation);
 }

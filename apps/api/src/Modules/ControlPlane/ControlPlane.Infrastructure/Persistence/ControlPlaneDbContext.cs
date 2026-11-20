@@ -4,6 +4,7 @@ using ControlPlane.Domain.FeatureFlags;
 using ControlPlane.Domain.StoredFiles;
 using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.MeterUsages;
+using ControlPlane.Domain.SpendingCaps;
 using ControlPlane.Domain.Roles;
 using ControlPlane.Domain.SystemAdmins;
 using ControlPlane.Domain.TermsVersions;
@@ -80,6 +81,8 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
     internal DbSet<PlanMeter> PlanMeters => Set<PlanMeter>();
 
     internal DbSet<MeterUsage> MeterUsages => Set<MeterUsage>();
+
+    internal DbSet<SpendingCap> SpendingCaps => Set<SpendingCap>();
 
     internal DbSet<DefaultPlan> DefaultPlans => Set<DefaultPlan>();
 
@@ -193,6 +196,7 @@ public sealed class ControlPlaneDbContext(DbContextOptions<ControlPlaneDbContext
         modelBuilder.ApplyConfiguration(new PlanEntitlementConfiguration());
         modelBuilder.ApplyConfiguration(new PlanMeterConfiguration());
         modelBuilder.ApplyConfiguration(new MeterUsageConfiguration());
+        modelBuilder.ApplyConfiguration(new SpendingCapConfiguration());
         modelBuilder.ApplyConfiguration(new DefaultPlanConfiguration());
         modelBuilder.ApplyConfiguration(new EntitlementOverrideConfiguration());
         modelBuilder.ApplyConfiguration(new StoredFileConfiguration());

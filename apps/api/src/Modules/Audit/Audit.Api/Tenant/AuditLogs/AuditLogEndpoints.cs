@@ -4,6 +4,7 @@ using Audit.Api.Authentication;
 using Audit.Application.BillingEmails;
 using Audit.Application.AuditLogs;
 using Audit.Application.AuditLogs.ExportAuditLog;
+using Audit.Application.Usage;
 using Audit.Application.AuditLogs.GetAuditEntryNames;
 using Audit.Application.AuditLogs.GetAuditInvitationEmails;
 using Audit.Application.AuditLogs.GetAuditRetention;
@@ -75,6 +76,7 @@ public static class AuditLogEndpoints
         TenantPlanChangedDetails changed => new TenantPlanChangedDetailsResponse(PlanOf(changed.OldPlan), PlanOf(changed.NewPlan)),
         TenantPaymentFailedDetails failed => new TenantPaymentFailedDetailsResponse(failed.AmountDue, failed.Currency, failed.RetriesUntil),
         TenantBillingEmailChangedDetails email => new TenantBillingEmailChangedDetailsResponse(email.Removed),
+        TenantSpendingCapChangedDetails cap => new TenantSpendingCapChangedDetailsResponse(cap.OldAmount, cap.NewAmount, cap.Currency),
         PlanPriceChangeScheduledDetails scheduled => new PlanPriceChangeScheduledDetailsResponse(
             PricesOf(scheduled.OldPrices)!, PricesOf(scheduled.NewPrices)!, scheduled.Currency, scheduled.MovesAt),
         TenantPriceChangeAnnouncedDetails announced => new TenantPriceChangeAnnouncedDetailsResponse(

@@ -31,6 +31,7 @@ import {
   TenantPriceChangeAnnouncedDetailsResponseOperation,
   TenantPurgeWarnedDetailsResponseOperation,
   TenantRenamedDetailsResponseOperation,
+  TenantSpendingCapChangedDetailsResponseOperation,
   TenantSuspendedDetailsResponseOperation,
 } from "@repo/api-client";
 import {
@@ -184,6 +185,13 @@ export const detailsOf: Partial<Record<AuditOperation, AuditDetailsResponse>> =
       operation:
         TenantBillingEmailChangedDetailsResponseOperation.TenantBillingEmailChanged,
       removed: false,
+    },
+    [AuditOperation.TenantSpendingCapChanged]: {
+      operation:
+        TenantSpendingCapChangedDetailsResponseOperation.TenantSpendingCapChanged,
+      oldAmount: null,
+      newAmount: 5000,
+      currency: "EUR",
     },
     [AuditOperation.TenantPaymentFailed]: {
       operation:

@@ -24,6 +24,7 @@ namespace Internal.Generated.WolverineHandlers
         public override async System.Threading.Tasks.Task HandleAsync(Wolverine.Runtime.MessageContext context, System.Threading.CancellationToken cancellation)
         {
             await using var controlPlaneDbContext = new ControlPlane.Infrastructure.Persistence.ControlPlaneDbContext(_dbContextOptionsOfControlPlaneDbContext, context);
+            var spendingCapRepository = new ControlPlane.Infrastructure.Persistence.Usage.SpendingCapRepository(controlPlaneDbContext);
             var meterUsageRepository = new ControlPlane.Infrastructure.Persistence.Usage.MeterUsageRepository(controlPlaneDbContext);
             // The actual message body
             var useMeterCommand = (ControlPlane.Application.Usage.UseMeter.UseMeterCommand)context.Envelope.Message;
@@ -44,7 +45,7 @@ namespace Internal.Generated.WolverineHandlers
                 Wolverine.Runtime.WolverineTracing.MessageActivity(context.Envelope)?.SetTag("handler.type", "ControlPlane.Application.Usage.UseMeter.UseMeterHandler");
                 
                 // The actual message execution
-                var outgoing1 = await ControlPlane.Application.Usage.UseMeter.UseMeterHandler.HandleAsync(useMeterCommand, meterUsageRepository, _timeProvider, cancellation).ConfigureAwait(false);
+                var outgoing1 = await ControlPlane.Application.Usage.UseMeter.UseMeterHandler.HandleAsync(useMeterCommand, meterUsageRepository, spendingCapRepository, _timeProvider, cancellation).ConfigureAwait(false);
 
                 
                 // Outgoing, cascaded message

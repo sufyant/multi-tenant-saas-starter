@@ -38,6 +38,22 @@ export const GetUsageResponse = zod.object({
   "extra": zod.int(),
   "extraAmount": zod.int()
 }).describe('A meter\'s use in a past month, its extra and the extra\'s price at the month\'s last use, in minor units.'))
-}).describe('A month before this one, named by its first day: each meter of the plan, 0 for one without a use, and each meter it has a use of that the plan no longer sets.'))
-}).describe('The tenant\'s use of the meters of its plan (step 40c; 11.01, 4.37): this calendar month of UTC, from `periodStart` to\n`periodEnd`, its plan\'s name, the deployment\'s currency, an ISO 4217 code, each meter of the plan, and up to three months before\nthis one, from the month the tenant was created, the latest first. A plan with no meter answers none.')
+}).describe('A month before this one, named by its first day: each meter of the plan, 0 for one without a use, and each meter it has a use of that the plan no longer sets.')),
+  "spendingCap": zod.union([zod.null(),zod.object({
+  "amount": zod.int(),
+  "extraAmount": zod.int(),
+  "reachedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('The tenant\'s spending cap (11.02, 11.04): its amount and this month\'s extra so far, in minor units excl. VAT, and when this month reached\nit, null before.')]),
+  "spendingCapOffered": zod.boolean()
+}).describe('The tenant\'s use of the meters of its plan (step 40c; 11.01, 4.37): this calendar month of UTC, from `periodStart` to\n`periodEnd`, its plan\'s name, the deployment\'s currency, an ISO 4217 code, each meter of the plan, and up to three months before\nthis one, from the month the tenant was created, the latest first. A plan with no meter answers none. `spendingCap` is the\ntenant\'s cap, null without one; `spendingCapOffered` says whether the tenant may have one: only a tenant that pays by card (E9).')
+
+export const SetSpendingCapParams = zod.object({
+  "tenantId": zod.uuid()
+})
+
+export const SetSpendingCapBody = zod.object({
+  "amount": zod.int().nullable()
+}).describe('The tenant\'s spending cap (11.03): 1 to 10 000 000 000 minor units excl. VAT a month, or null to remove it.')
+
+export const SetSpendingCapResponse = zod.void()
 

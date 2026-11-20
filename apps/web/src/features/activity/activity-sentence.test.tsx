@@ -199,6 +199,35 @@ describe("ActivitySentence", () => {
     },
   );
 
+  // The entry keeps the old and the new cap; a missing one is no cap.
+  it.each([
+    [null, 5000, "Ayşe Yılmaz set a spending cap of €50 a month."],
+    [
+      5000,
+      8000,
+      "Ayşe Yılmaz changed the spending cap from €50 to €80 a month.",
+    ],
+    [5000, null, "Ayşe Yılmaz removed the spending cap of €50 a month."],
+  ])(
+    "ActivitySentence_ASpendingCapFrom%sTo%s_SaysWhatTheMemberDid",
+    (oldAmount, newAmount, sentence) => {
+      renderWithProviders(
+        <ActivitySentence
+          entry={entry({
+            operation: AuditOperation.TenantSpendingCapChanged,
+            details: {
+              ...detailsOf[AuditOperation.TenantSpendingCapChanged],
+              oldAmount,
+              newAmount,
+            } as AuditDetailsResponse,
+          })}
+        />,
+      );
+
+      expect(shown(sentence)).toBeInTheDocument();
+    },
+  );
+
   it("ActivitySentence_InvitationRevokedWithItsAddress_NamesTheAddress", () => {
     renderWithProviders(
       <ActivitySentence

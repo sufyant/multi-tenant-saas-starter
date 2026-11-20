@@ -48,7 +48,12 @@ public sealed class UsageQueries(ControlPlaneDbContext controlPlane) : IUsageQue
                     ? new PastMeterUsageView(key, use.Used, use.Extra, AmountOf(use))
                     : new PastMeterUsageView(key, 0, 0, 0))]));
 
-        return new UsageView(period, period.AddMonths(1).AddDays(-1), tenant.PlanName, [.. current], [.. past]);
+        var cap = await controlPlane.SpendingCaps.AsNoTracking().SingleOrDefaultAsync(cancellationToken);
+        var spendingCap = cap is null
+            ? null
+            : new SpendingCapView(cap.Amount, uses.Where(use => use.Period == period).Sum(AmountOf), cap.ReachedIn(period));
+
+        return new UsageView(period, period.AddMonths(1).AddDays(-1), tenant.PlanName, [.. current], [.. past], spendingCap, SpendingCapOffered: false);
     }
 
     // The extra's price in minor units, rounded half away from zero: 600 requests at 100 for each 1000 cost 60.

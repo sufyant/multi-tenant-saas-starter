@@ -45,6 +45,9 @@ internal sealed class MeterUsage : ITenantEntity
         return new DateOnly(utc.Year, utc.Month, 1);
     }
 
+    /// <summary>What an extra costs at the setting's price, in minor units before rounding.</summary>
+    public static decimal AmountOf(long extra, MeterSetting setting) => (decimal)extra * setting.UnitPrice / setting.UnitSize;
+
     /// <summary>
     /// Counts the use, unless the meter stops at the quota and the use would take the count over it: then it counts nothing and answers
     /// false. The part of a charge meter's use over the quota is extra.
@@ -57,10 +60,14 @@ internal sealed class MeterUsage : ITenantEntity
             return false;
         }
 
-        Extra += Math.Max(0, used - Math.Max(Used, setting.Quota));
+        Extra = ExtraAfter(quantity, setting);
         Used = used;
         (UnitPrice, UnitSize) = (setting.UnitPrice, setting.UnitSize);
         QuotaReachedAt ??= used >= setting.Quota ? now : null;
         return true;
     }
+
+    /// <summary>The extra after a use of this quantity: the part of the count over the quota that this use adds, and what it had.</summary>
+    public long ExtraAfter(long quantity, MeterSetting setting) => Extra + Math.Max(0, Used + quantity - Math.Max(Used, setting.Quota));
+
 }
