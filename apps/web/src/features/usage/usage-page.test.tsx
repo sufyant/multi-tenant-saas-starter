@@ -13,7 +13,12 @@ import {
   vi,
 } from "vitest";
 import { billingAnswers, billingOf, teamTenant } from "../../../test/billing";
-import { northwind, renderInTenant, tenantAnswers } from "../../../test/tenant";
+import {
+  northwind,
+  problem,
+  renderInTenant,
+  tenantAnswers,
+} from "../../../test/tenant";
 import {
   freeMeter,
   teamMeter,
@@ -162,6 +167,79 @@ describe("UsagePage", () => {
     await user.click(dialog.getByRole("button", { name: "Set cap" }));
 
     await expect.poll(() => sent).toEqual([{ amount: 5000 }]);
+  });
+
+  it("UsagePage_EmptyFieldWhileACapIsSet_RemovesTheCap", async () => {
+    const sent: unknown[] = [];
+    server.use(
+      http.put(
+        `*/v1/tenants/${northwind.id}/usage/spending-cap`,
+        async ({ request }) => {
+          sent.push(await request.json());
+          return new HttpResponse(null, { status: 204 });
+        },
+      ),
+      ...as(BuiltInRole.Owner, usageOf(capped(5000, 0))),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Change cap" }));
+    const dialog = within(
+      await screen.findByRole("alertdialog", {
+        name: "Change the spending cap",
+      }),
+    );
+    await user.clear(dialog.getByLabelText("Extra a month, excl. VAT"));
+    await user.click(dialog.getByRole("button", { name: "Remove cap" }));
+
+    await expect.poll(() => sent).toEqual([{ amount: null }]);
+  });
+
+  it("UsagePage_CapThatIsNoAmount_SaysSoAndSendsNothing", async () => {
+    const sent: unknown[] = [];
+    server.use(
+      http.put(`*/v1/tenants/${northwind.id}/usage/spending-cap`, () => {
+        sent.push(true);
+        return new HttpResponse(null, { status: 204 });
+      }),
+      ...as(BuiltInRole.Owner),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Set a cap" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await user.type(dialog.getByLabelText("Extra a month, excl. VAT"), "abc");
+    await user.click(dialog.getByRole("button", { name: "Set cap" }));
+
+    expect(
+      await dialog.findByText("Enter an amount, such as 50."),
+    ).toBeVisible();
+    expect(sent).toEqual([]);
+  });
+
+  it("UsagePage_CapRefused_SaysWhyInTheDialog", async () => {
+    server.use(
+      http.put(`*/v1/tenants/${northwind.id}/usage/spending-cap`, () =>
+        problem(409, "usage.spending_cap_unavailable"),
+      ),
+      ...as(BuiltInRole.Owner),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Set a cap" }));
+    const dialog = within(await screen.findByRole("alertdialog"));
+    await user.type(dialog.getByLabelText("Extra a month, excl. VAT"), "50");
+    await user.click(dialog.getByRole("button", { name: "Set cap" }));
+
+    expect(
+      await dialog.findByText(
+        /^A spending cap is only for an organisation that pays by card\./,
+      ),
+    ).toBeVisible();
+    expect(dialog.getByText("Couldn’t set the spending cap")).toBeVisible();
   });
 
   it("UsagePage_CapReached_SaysTheMetersStoppedUntilTheReset", async () => {
