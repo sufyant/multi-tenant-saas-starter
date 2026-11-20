@@ -811,6 +811,9 @@
     "trialNoCard": "Ödeme yapana kadar kart gerekmez. Ödeme denemeyi bitirir.",
     "trialEnded": "{price}. {plan} denemeniz {date} tarihinde bitti.",
     "trialEndedPay": "Koltuklarını ve limitlerini hemen geri almak için bir plana ödeme yapın.",
+    "trialBar": "{plan} denemeniz {date} tarihinde bitiyor.",
+    "trialBarSoon": "{plan} denemeniz {count, plural, one {# gün} other {# gün}} içinde bitiyor. Sonra {organisation} {returnsTo} planına geçiyor.",
+    "choosePlan": "Plan seçin",
     "seatsOver": "{plan} {limit, plural, one {# koltuk} other {# koltuk}} veriyor. {count} kullanıyorsunuz.",
     "manageMembers": "Üyeleri yönet"
   },

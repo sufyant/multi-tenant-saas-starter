@@ -811,6 +811,9 @@
     "trialNoCard": "No card needed until you pay. Paying ends the trial.",
     "trialEnded": "{price}. Your {plan} trial ended on {date}.",
     "trialEndedPay": "Pay for a plan to get its seats and limits back at once.",
+    "trialBar": "Your {plan} trial ends on {date}.",
+    "trialBarSoon": "Your {plan} trial ends in {count, plural, one {# day} other {# days}}. Then {organisation} moves to {returnsTo}.",
+    "choosePlan": "Choose a plan",
     "seatsOver": "{plan} gives {limit, plural, one {# seat} other {# seats}}. You use {count}.",
     "manageMembers": "Manage members"
   },

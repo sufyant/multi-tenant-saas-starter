@@ -7,6 +7,7 @@ import {
   PaymentResponseState,
   type UsageResponse,
 } from "@repo/api-client";
+import { daysLeft } from "@repo/ui/lib/days-left";
 import { formatDate } from "@repo/ui/lib/format-date-time";
 import { cn } from "@repo/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -24,7 +25,9 @@ import { useUsageText } from "./use-usage-text";
  * The billing bar, for a viewer who manages billing (the Billing bar priority pattern). Above every page but Billing's own (2.32,
  * 2.33): a failed payment while Stripe retries, with "Update card", and the last warning in billing's grace, with "Pay now"; both
  * open Stripe's portal. The connection bar comes first (F59), so this one gives way while the server does not answer. Without a
- * payment's notice it tells of the meters above every page but Usage's, Billing's too (`UsageNotice`, 2.34 to 2.37). The trial's bar (2.31) comes with step 40d.
+ * payment's notice it tells of the meters above every page but Usage's, Billing's too (`UsageNotice`, 2.34 to 2.37), and of a running trial
+ * that no payment ended above every page but Billing's (`TrialNotice`, 1.31, 2.31). The trial comes after a meter used up and before a
+ * meter at 80%, as the Billing bar's priority says.
  */
 export function BillingBar({
   onBilling,
@@ -34,7 +37,7 @@ export function BillingBar({
   onUsage: boolean;
 }) {
   const t = useTranslations();
-  const { tenant } = useTenant();
+  const { tenant, detail } = useTenant();
   const billing = useBilling();
   const { serverDown } = useServerReach();
   const portal = usePortal();
@@ -54,7 +57,20 @@ export function BillingBar({
     payment !== null &&
     payment.state !== PaymentResponseState.MovedToDefault &&
     (!grace || fallback !== undefined);
-  if (!paymentShown) return onUsage ? null : <UsageNotice />;
+  const trial =
+    !onBilling && billing.data && !billing.data.subscription
+      ? detail.trial
+      : null;
+  const trialNotice = trial?.returnsTo ? (
+    <TrialNotice
+      plan={trial.plan.name}
+      endsAt={trial.endsAt}
+      returnsTo={trial.returnsTo.name}
+      date={date}
+    />
+  ) : null;
+  if (!paymentShown)
+    return onUsage ? trialNotice : <UsageNotice trial={trialNotice} />;
   return (
     <Bar tone={grace ? "destructive" : "warning"}>
       <span role="status">
@@ -106,16 +122,64 @@ function Bar({
 }
 
 /**
- * The meters' notice, the most urgent first: the spending cap reached (2.37), a meter that stops used up (2.36), a charged meter past
- * its quota (2.35), a meter at 80% of it (2.34). It reads GetUsage, which answers only a viewer who manages billing (F66).
+ * A running trial (1.31, 2.31): its end, and 3 days before it the days left and the plan that comes after it, with Choose a plan,
+ * which opens Change plan. The days left count a part of a day as a day, as Billing does.
  */
-function UsageNotice() {
-  const usage = useUsage();
-  if (!usage.data || usage.data.meters.length === 0) return null;
-  return <UsageNoticeOf usage={usage.data} />;
+function TrialNotice({
+  plan,
+  endsAt,
+  returnsTo,
+  date,
+}: {
+  plan: string;
+  endsAt: string;
+  returnsTo: string;
+  date: (at: string) => string;
+}) {
+  const t = useTranslations();
+  const { tenant } = useTenant();
+  const days = daysLeft(endsAt);
+  return (
+    <Bar tone="info">
+      <span role="status">
+        {days <= trialSoonDays
+          ? t("billing.trialBarSoon", {
+              plan,
+              count: days,
+              organisation: tenant.name,
+              returnsTo,
+            })
+          : t("billing.trialBar", { plan, date: date(endsAt) })}
+      </span>
+      <span aria-hidden="true">·</span>
+      <Link href={`/${tenant.slug}/settings/billing/plans`} className={barLink}>
+        {t("billing.choosePlan")}
+      </Link>
+    </Bar>
+  );
 }
 
-function UsageNoticeOf({ usage }: { usage: UsageResponse }) {
+/** The days before a trial's end from which its bar says the days left, as the trial's reminder comes then (13.16). */
+const trialSoonDays = 3;
+
+/**
+ * The meters' notice, the most urgent first: the spending cap reached (2.37), a meter that stops used up (2.36), a charged meter past
+ * its quota (2.35), then the trial's notice when there is one, then a meter at 80% of it (2.34). It reads GetUsage, which answers only
+ * a viewer who manages billing (F66).
+ */
+function UsageNotice({ trial }: { trial: ReactNode }) {
+  const usage = useUsage();
+  if (!usage.data || usage.data.meters.length === 0) return trial;
+  return <UsageNoticeOf usage={usage.data} trial={trial} />;
+}
+
+function UsageNoticeOf({
+  usage,
+  trial,
+}: {
+  usage: UsageResponse;
+  trial: ReactNode;
+}) {
   const t = useTranslations();
   const { tenant } = useTenant();
   const text = useUsageText(usage);
@@ -187,6 +251,7 @@ function UsageNoticeOf({ usage }: { usage: UsageResponse }) {
         {viewUsage}
       </Bar>
     );
+  if (trial) return trial;
   const nearly = usage.meters.find(
     (meter) => meter.quota > 0 && meter.used >= meter.quota * 0.8,
   );

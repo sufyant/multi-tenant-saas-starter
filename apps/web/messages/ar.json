@@ -811,6 +811,9 @@
     "trialNoCard": "لا حاجة إلى بطاقة حتى تدفع. الدفع ينهي التجربة.",
     "trialEnded": "{price}. انتهت تجربة {plan} في {date}.",
     "trialEndedPay": "ادفع لخطة لتستعيد مقاعدها وحدودها فورًا.",
+    "trialBar": "تنتهي تجربة {plan} في {date}.",
+    "trialBarSoon": "تنتهي تجربة {plan} {count, plural, zero {اليوم} one {خلال يوم واحد} two {خلال يومين} few {خلال # أيام} many {خلال # يومًا} other {خلال # يوم}}. بعدها تنتقل {organisation} إلى {returnsTo}.",
+    "choosePlan": "اختر خطة",
     "seatsOver": "تعطي {plan} {limit, plural, zero {لا مقاعد} one {مقعدًا واحدًا} two {مقعدين} few {# مقاعد} many {# مقعدًا} other {# مقعد}}. تستخدم {count}.",
     "manageMembers": "إدارة الأعضاء"
   },
