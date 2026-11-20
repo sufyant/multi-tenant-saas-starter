@@ -1,9 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ControlPlane.Application.Tenants.EndTenantTrial;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Time.Testing;
 using Npgsql;
 using Tenancy;
+using Wolverine.Tracking;
 
 namespace Api.IntegrationTests.Me.Tenants;
 
@@ -139,6 +142,33 @@ public sealed class CreateMyTenantTests(Database database) : IAsyncLifetime
 
         (refused.StatusCode, await CodeOfAsync(refused)).ShouldBe((HttpStatusCode.Forbidden, "sign_up.disabled"));
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
+    }
+
+    // Step 40d: while billing is on, the tenant starts a 14-day trial of Business at once, keeps the default plan as the plan it returns
+    // to, and schedules the trial's end (1.28, 10.08).
+    [Fact]
+    public async Task CreateMyTenant_BillingOn_StartsATrialOfBusinessAndSchedulesItsEnd()
+    {
+        var time = new FakeTimeProvider(DateTimeOffset.FromUnixTimeSeconds(TimeProvider.System.GetUtcNow().ToUnixTimeSeconds()));
+        await using var billing = new ApiFactory(
+            database.ConnectionStringFor(DatabaseRoles.Application),
+            time: time,
+            settings: new Dictionary<string, string?>(SignUpSettings.On.Concat(BillingRequests.On)));
+        var person = await _testData.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
+        HttpResponseMessage? created = null;
+
+        var session = await billing.TrackMessagesAsync(async () => created = await CreateAsync(billing, person, NewSlug()));
+
+        var tenantId = (await created!.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+        var endsAt = time.GetUtcNow() + TimeSpan.FromDays(14);
+        (await database.ScalarAsSuperuserAsync<string>(
+            $"""
+            SELECT concat_ws('|', trial_plan_id, plan_id, plan_before_trial_id = (SELECT plan_id FROM control_plane.default_plans),
+                trial_ends_at = '{endsAt:O}'::timestamptz, trial_ends_at - trial_started_at = interval '14 days')
+            FROM control_plane.tenants WHERE id = '{tenantId}'
+            """)).ShouldBe($"{SeedPlans.Business}|{SeedPlans.Business}|t|t|t");
+        session.Scheduled.Envelopes().Select(envelope => (envelope.Message, envelope.ScheduledTime))
+            .ShouldBe([(new EndTenantTrialCommand(tenantId, endsAt), endsAt)]);
     }
 
     [Fact]

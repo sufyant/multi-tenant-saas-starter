@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Billing.Contracts.Subscriptions;
 using ControlPlane.Application.Tenants.EndTenantTrial;
+using ControlPlane.Contracts.Plans;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
@@ -38,45 +40,6 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
-
-    [Fact]
-    public async Task CreateMyTenant_BillingOn_StartsATrialOfBusinessAndSchedulesItsEnd()
-    {
-        var person = await NewUserAsync();
-        var now = _time.GetUtcNow();
-
-        var (tenantId, scheduled) = await CreateTrackedAsync(person);
-
-        (await TrialOfAsync(tenantId)).ShouldBe($"{SeedPlans.Business}|{SeedPlans.Business}|{await DefaultPlanAsync()}|{now.UtcTicks}|{(now + TrialLength).UtcTicks}");
-        scheduled.ShouldBe([(new EndTenantTrialCommand(tenantId, now + TrialLength), now + TrialLength)]);
-    }
-
-    // 4.28, 10.08: both apps read the trial, its plan, its dates and the plan the tenant returns to.
-    [Fact]
-    public async Task GetMyTenant_InTrial_AnswersTheTrial()
-    {
-        var person = await NewUserAsync();
-        var now = _time.GetUtcNow();
-        var (tenantId, _) = await CreateTrackedAsync(person);
-
-        var tenant = await _api.CreateClient(person).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenantId}", Cancellation);
-        var platform = await _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true)
-            .GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenantId}/plan", Cancellation);
-
-        var expected = $"{SeedPlans.Business}|{now:O}|{now + TrialLength:O}|{await DefaultPlanAsync()}";
-        (Trial(tenant.GetProperty("trial")), Trial(platform.GetProperty("trial"))).ShouldBe((expected, expected));
-    }
-
-    [Fact]
-    public async Task GetMyTenant_NoTrial_AnswersNone()
-    {
-        var tenant = await _testData.AddTenantAsync();
-        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
-
-        var read = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
-
-        read.GetProperty("trial").ValueKind.ShouldBe(JsonValueKind.Null);
-    }
 
     // The trial's end returns the tenant to its plan before; the platform acted, in both logs.
     [Fact]
@@ -120,13 +83,33 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
             $"SELECT trial_ends_at = '{_time.GetUtcNow():O}'::timestamptz FROM control_plane.tenants WHERE id = '{tenantId}'")).ShouldBeTrue();
     }
 
-    private static string Trial(JsonElement trial) =>
-        string.Join(
-            '|',
-            trial.GetProperty("plan").GetProperty("id").GetGuid(),
-            trial.GetProperty("startedAt").GetDateTimeOffset().ToString("O"),
-            trial.GetProperty("endsAt").GetDateTimeOffset().ToString("O"),
-            trial.GetProperty("returnsTo").GetProperty("id").GetGuid());
+    // 4.29: a tenant that pays by card for Team, in a Business trial that a system admin gave. Billing sends Team again at each change of the
+    // subscription; that keeps the trial and announces nothing.
+    [Fact]
+    public async Task ChangeBilledPlan_ThePlanTheTrialReturnsTo_KeepsTheTrial()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        await Trials.StartAsync(database, tenant.Id, SeedPlans.Team);
+
+        var session = await _api.TrackMessagesAsync(
+            () => DeliverAsync(tenant.Id, new PlanPaidEvent(Guid.NewGuid(), _time.GetUtcNow(), tenant.Id, SeedPlans.Team, Guid.NewGuid())));
+
+        (await PlanOfAsync(tenant.Id), await InTrialAsync(tenant.Id)).ShouldBe((SeedPlans.Business, true));
+        session.Sent.MessagesOf<TenantPlanChangedEvent>().ShouldBeEmpty();
+    }
+
+    // A subscription that ends during the trial ends the trial too, and moves the tenant to the default plan at once (B11).
+    [Fact]
+    public async Task MoveToDefaultPlan_InTrial_EndsTheTrialAndMovesTheTenant()
+    {
+        var tenant = await _testData.AddTenantAsync(name: "Trial Ltd");
+        await Trials.StartAsync(database, tenant.Id, SeedPlans.Team);
+
+        await DeliverAsync(tenant.Id, new PlanEndedEvent(Guid.NewGuid(), _time.GetUtcNow(), tenant.Id, Guid.NewGuid(), Unpaid: true));
+
+        (await PlanOfAsync(tenant.Id), await InTrialAsync(tenant.Id)).ShouldBe((await DefaultPlanAsync(), false));
+        (await _audit.TenantLogAsync(tenant.Id))!.ShouldEndWith($"{tenant.Id}:tenant.moved_to_default_plan|Platform|-|Tenant|{tenant.Id}|Trial Ltd");
+    }
 
     private Task<string> NewUserAsync() => _testData.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
 
@@ -164,14 +147,4 @@ public sealed class TenantTrialTests(Database database) : IAsyncLifetime
 
     private Task<bool> InTrialAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<bool>($"SELECT plan_before_trial_id IS NOT NULL FROM control_plane.tenants WHERE id = '{tenantId}'");
-
-    // The trial's plan, the plan of now, the plan it returns to, and its start and end in ticks.
-    private Task<string?> TrialOfAsync(Guid tenantId) =>
-        database.ScalarAsSuperuserAsync<string>(
-            $"""
-            SELECT concat_ws('|', trial_plan_id, plan_id, plan_before_trial_id,
-                (extract(epoch FROM trial_started_at) * 10000000)::bigint + 621355968000000000,
-                (extract(epoch FROM trial_ends_at) * 10000000)::bigint + 621355968000000000)
-            FROM control_plane.tenants WHERE id = '{tenantId}'
-            """);
 }

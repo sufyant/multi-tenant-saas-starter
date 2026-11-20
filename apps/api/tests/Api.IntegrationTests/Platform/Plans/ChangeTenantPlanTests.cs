@@ -25,6 +25,21 @@ public sealed class ChangeTenantPlanTests(Database database) : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
+    // A system admin who gives the trial's own plan ends the trial and keeps the plan: no change of plan is recorded (I1).
+    [Fact]
+    public async Task ChangeTenantPlan_TheTrialsPlan_EndsTheTrialAndRecordsNothing()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        await Trials.StartAsync(database, tenant.Id, SeedPlans.Team);
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+
+        var changed = await _api.WaitingForMessagesAsync(() => admin.ChangeTenantPlanAsync(tenant.Id, SeedPlans.Business));
+
+        changed.EnsureSuccessStatusCode();
+        (await database.ScalarAsSuperuserAsync<Guid>($"SELECT plan_id FROM control_plane.tenants WHERE id = '{tenant.Id}'"), await Trials.InTrialAsync(database, tenant.Id)).ShouldBe((SeedPlans.Business, false));
+        (await _audit.TenantLogAsync(tenant.Id)).ShouldBeNull();
+    }
+
     [Fact]
     public async Task ChangeTenantPlan_ToAShorterPeriod_StartsTheHoldAtTheChangesMoment()
     {

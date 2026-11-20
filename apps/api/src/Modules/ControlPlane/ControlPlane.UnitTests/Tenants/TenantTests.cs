@@ -2248,17 +2248,15 @@ public sealed class TenantTests
         (paid.Value, tenant.PlanId, tenant.InTrial).ShouldBe((StateChange.Changed, paidPlan, false));
     }
 
+    // E2: a closed tenant's plan is read-only, so its closure ends the trial, and the trial's message changes nothing after it.
     [Fact]
-    public void ReturnAfterTrialTo_InTrial_KeepsTheTrialAndChangesThePlanAfterIt()
+    public void Close_InTrial_EndsTheTrialAndKeepsThePlanItReturnsTo()
     {
-        var tenant = InTrial(out var trialPlan);
-        var defaultPlan = Guid.NewGuid();
+        var tenant = InTrial(out _);
 
-        tenant.ReturnAfterTrialTo(defaultPlan);
-        tenant.EndTrial(Now.AddDays(14));
+        tenant.Close(Now.AddDays(2), InviterId, []);
 
-        tenant.PlanId.ShouldBe(defaultPlan);
-        trialPlan.ShouldNotBe(defaultPlan);
+        (tenant.PlanId, tenant.InTrial, tenant.TrialEndsAt, tenant.EndTrial(Now.AddDays(14))).ShouldBe((PlanId, false, Now.AddDays(2), StateChange.Unchanged));
     }
 
     [Fact]
