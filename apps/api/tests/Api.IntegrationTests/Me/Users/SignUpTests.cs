@@ -2,15 +2,18 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using Tenancy;
 
-namespace Api.IntegrationTests.Me.SignUp;
+namespace Api.IntegrationTests.Me.Users;
 
 // Step 40d: a person who signed up at the identity provider becomes a user, while the product has sign-up on. The address is the one the
 // identity provider verified; the person gives no name (1.25 to 1.27).
 public sealed class SignUpTests(Database database) : IAsyncLifetime
 {
     private readonly TestData _testData = new(database);
+
+    private readonly AuditEntries _audit = new(database);
 
     private ApiFactory _api = null!;
 
@@ -43,6 +46,43 @@ public sealed class SignUpTests(Database database) : IAsyncLifetime
         (me.GetProperty("email").GetString(), me.GetProperty("name").ValueKind, me.GetProperty("language").GetString(), me.GetProperty("isSystemAdmin").GetBoolean())
             .ShouldBe((email, JsonValueKind.Null, "tr", false));
         me.GetProperty("id").GetGuid().ShouldBe(await _testData.UserIdOfAsync(person));
+    }
+
+    // K3: the new user acted, in the platform's log; a user belongs to no tenant.
+    [Fact]
+    public async Task SignUp_APersonWhoIsNotAUserYet_IsRecordedInThePlatformLogBySelf()
+    {
+        var (person, _) = NewAccount(_api);
+
+        await _api.WaitingForMessagesAsync(() => _api.CreateClient(person).PostAsJsonAsync("/v1/me/sign-up", new { language = "en" }, Cancellation));
+
+        var userId = await _testData.UserIdOfAsync(person);
+        (await _audit.PlatformLogAsync(userId)).ShouldBe($"user.signed_up|User|{userId}|User|{userId}|-");
+    }
+
+    // K6f: two sign-ups of one person at once. Neither finds a user row to lock, so the first to read the identity provider id makes the
+    // second wait, which then finds the first one's user. A holder adds a user with the same id and keeps it uncommitted until both wait
+    // behind it, and then rolls it back. Without the lock, the unique index of the identity provider id refuses the second with 500.
+    [Fact]
+    public async Task SignUp_TwoAtOnce_MakesOneUserAndAnswersBoth()
+    {
+        var (person, _) = NewAccount(_api);
+        await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
+        await holder.OpenAsync(Cancellation);
+        await using var holding = await holder.BeginTransactionAsync(Cancellation);
+        await using var hold = new NpgsqlCommand(
+            $"INSERT INTO control_plane.users (id, external_id, language) VALUES ('{Guid.NewGuid()}', '{person}', 'en')", holder, holding);
+        await hold.ExecuteNonQueryAsync(Cancellation);
+
+        var signingUp = _api.WaitingForMessagesAsync(() => Task.WhenAll(
+            _api.CreateClient(person).PostAsJsonAsync("/v1/me/sign-up", new { language = "en" }, Cancellation),
+            _api.CreateClient(person).PostAsJsonAsync("/v1/me/sign-up", new { language = "en" }, Cancellation)));
+        await Waiting.UntilAsync(async () => signingUp.IsCompleted || await WaitingBehindAsync(holder.ProcessID) == 2);
+        await holding.RollbackAsync(Cancellation);
+        var signedUp = await signingUp;
+
+        signedUp.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK]);
+        (await UsersOfAsync(person)).ShouldBe(1);
     }
 
     // The product has sign-up off by default: only an invitation makes a user (A7).
@@ -152,4 +192,13 @@ public sealed class SignUpTests(Database database) : IAsyncLifetime
 
     private Task<long> UsersOfAsync(string person) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.users WHERE external_id = '{person}'");
+
+    private Task<long> WaitingBehindAsync(int holder) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"""
+            WITH RECURSIVE behind (pid) AS (
+                SELECT pid FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))
+                UNION SELECT waiting.pid FROM pg_stat_activity AS waiting JOIN behind ON behind.pid = ANY(pg_blocking_pids(waiting.pid)))
+            SELECT count(*) FROM behind
+            """);
 }

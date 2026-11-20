@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 using Tenancy;
 
 namespace Api.IntegrationTests.Me.Tenants;
@@ -80,16 +81,26 @@ public sealed class CreateMyTenantTests(Database database) : IAsyncLifetime
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM control_plane.tenants WHERE slug = '{slug}'")).ShouldBe(0);
     }
 
-    // GetMe answers how many tenants the user created, so 2.39 says it before the user tries.
+    // K6f: two creations of one person at once run one after the other under the user row's lock, so the limit counts the first. A holder
+    // locks the user row until both creations wait behind it.
     [Fact]
-    public async Task GetMe_AfterTheUserCreatedATenant_CountsIt()
+    public async Task CreateMyTenant_TwoAtOnceWithRoomForOne_CreatesOneAndRefusesTheOther()
     {
         var person = await _testData.AddUserAsync(email: TestEmails.Of($"{Guid.NewGuid():N}@example.com"));
-        (await _api.WaitingForMessagesAsync(() => CreateAsync(_api, person, NewSlug()))).EnsureSuccessStatusCode();
+        await using var holder = new NpgsqlConnection(database.SuperuserConnectionString);
+        await holder.OpenAsync(Cancellation);
+        await using var holding = await holder.BeginTransactionAsync(Cancellation);
+        await using var hold = new NpgsqlCommand($"SELECT 1 FROM control_plane.users WHERE external_id = '{person}' FOR UPDATE", holder, holding);
+        await hold.ExecuteScalarAsync(Cancellation);
 
-        var me = await _api.CreateClient(person).GetFromJsonAsync<JsonElement>("/v1/me", Cancellation);
+        var creating = _api.WaitingForMessagesAsync(() => Task.WhenAll(CreateAsync(_api, person, NewSlug()), CreateAsync(_api, person, NewSlug())));
+        await Waiting.UntilAsync(async () => creating.IsCompleted || await WaitingBehindAsync(holder.ProcessID) == 2);
+        await holding.CommitAsync(Cancellation);
+        var created = await creating;
 
-        me.GetProperty("createdTenantCount").GetInt32().ShouldBe(1);
+        created.Select(response => response.StatusCode).ShouldBe([HttpStatusCode.Created, HttpStatusCode.Conflict], ignoreOrder: true);
+        (await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM control_plane.tenants WHERE created_by = (SELECT id FROM control_plane.users WHERE external_id = '{person}')")).ShouldBe(1);
     }
 
     [Fact]
@@ -155,4 +166,13 @@ public sealed class CreateMyTenantTests(Database database) : IAsyncLifetime
 
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
+
+    private Task<long> WaitingBehindAsync(int holder) =>
+        database.ScalarAsSuperuserAsync<long>(
+            $"""
+            WITH RECURSIVE behind (pid) AS (
+                SELECT pid FROM pg_stat_activity WHERE {holder} = ANY(pg_blocking_pids(pid))
+                UNION SELECT waiting.pid FROM pg_stat_activity AS waiting JOIN behind ON behind.pid = ANY(pg_blocking_pids(waiting.pid)))
+            SELECT count(*) FROM behind
+            """);
 }
