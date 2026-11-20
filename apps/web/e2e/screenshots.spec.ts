@@ -3068,6 +3068,12 @@ shellShots.push(
           },
         }),
       );
+      // A person who is not a user yet has no organisation.
+      await page.route("**/api/v1/me/tenants*", (route) =>
+        route.fulfill({
+          json: { items: [], page: 1, pageSize: 100, total: 0 },
+        }),
+      );
     },
     open: (page) =>
       page
