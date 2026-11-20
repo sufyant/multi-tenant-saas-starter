@@ -4,6 +4,7 @@ using ControlPlane.Api.Statuses;
 using ControlPlane.Api.Tenant.Members;
 using ControlPlane.Application.Tenants;
 using ControlPlane.Application.Tenants.CreateMyTenant;
+using ControlPlane.Application.Tenants.GetBillingEnabled;
 using ControlPlane.Application.Tenants.ListMyTenants;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -35,17 +36,22 @@ public static class MyTenantEndpoints
         new(tenant.Id, tenant.Name, tenant.Slug, ResponseStatus.OfMyTenant(tenant.Status), RoleEndpoints.ToResponse(tenant.Role));
 
     // Step 40d: tenant creation runs inside the tenant it creates, whose id the server chooses, as the platform's CreateTenant does. The
-    // client gives each new tenant an idempotency key (I1); the endpoint declares 201, so the host answers a new tenant with 201 (I5).
+    // client gives each new tenant an idempotency key (I1); the endpoint declares 201, so the host answers a new tenant with 201 (I5). The
+    // command learns from billing whether the deployment's billing is on, for the trial (step 40d).
     private static async Task<Result<MyTenantResponse>> CreateMyTenant(
         CreateMyTenantRequest request,
         ClaimsPrincipal user,
         IIdempotencyExecutor idempotency,
+        IMessageBus bus,
         TimeProvider time,
-        CancellationToken cancellationToken) =>
-        (await idempotency.ExecuteAsync<MyTenantView>(
-            new CreateMyTenantCommand(user.Id(), request.Name, request.Slug),
+        CancellationToken cancellationToken)
+    {
+        var billingEnabled = await bus.InvokeAsync<bool>(new GetBillingEnabledQuery(), cancellationToken);
+        return (await idempotency.ExecuteAsync<MyTenantView>(
+            new CreateMyTenantCommand(user.Id(), request.Name, request.Slug, billingEnabled),
             Guid.CreateVersion7(time.GetUtcNow()).ToString(),
             cancellationToken)).Map(ToResponse);
+    }
 
     // T4: the user's own active and suspended tenants, read without a tenant.
     private static async Task<Result<ListPage<MyTenantResponse>>> ListMyTenants(

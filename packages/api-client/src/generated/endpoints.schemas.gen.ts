@@ -795,6 +795,7 @@ export const AuditOperation = {
   TenantReopened: 'tenant.reopened',
   TenantSpendingCapChanged: 'tenant.spending_cap_changed',
   TenantSuspended: 'tenant.suspended',
+  TenantTrialEnded: 'tenant.trial_ended',
   TermsVersionCancelled: 'terms_version.cancelled',
   TermsVersionCreated: 'terms_version.created',
   TermsVersionUpdated: 'terms_version.updated',
@@ -2100,13 +2101,32 @@ export type MyTenantDetailResponseEntitlements = {[key: string]: boolean | numbe
 export type MyTenantDetailResponseUsage = {[key: string]: number};
 
 /**
+ * A plan as another resource names it: its id and its name.
+ */
+export interface PlanNameResponse {
+  id: string;
+  name: string;
+}
+
+/**
+ * The tenant's last trial (step 40d): its plan, when it started, and when it ends, or ended; while it runs, `returnsTo`, the plan the
+ * tenant returns to when it ends, and null after its end. The platform (4.28, 4.29) and the web (10.08) read it.
+ */
+export interface TrialResponse {
+  plan: PlanNameResponse;
+  startedAt: string;
+  endsAt: string;
+  returnsTo: null | PlanNameResponse;
+}
+
+/**
  * The tenant of the route, for one of its members: as an item of their tenant list, with when it was created and the names of the
  * permissions the member's role holds there, in ordinal order. The web shows an action only when the list holds its permission; every
  * endpoint still checks the permission itself. It also holds the name of the tenant's plan; `entitlements`, every key of the list
  * with its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null
  * for an unlimited limit; and `usage`, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks
  * its feature and its limit itself. `billingEnabled` says whether the deployment's billing is on (B1), for every member, as
- * GetBilling answers only a member who manages billing.
+ * GetBilling answers only a member who manages billing. `trial` is the tenant's last trial, null when it had none (step 40d, 10.08).
  */
 export interface MyTenantDetailResponse {
   id: string;
@@ -2120,6 +2140,7 @@ export interface MyTenantDetailResponse {
   entitlements: MyTenantDetailResponseEntitlements;
   usage: MyTenantDetailResponseUsage;
   billingEnabled: boolean;
+  trial: null | TrialResponse;
 }
 
 /**
@@ -2329,14 +2350,6 @@ export interface PlanChoiceResponse {
  */
 export interface PlanChoicesResponse {
   plans: PlanChoiceResponse[];
-}
-
-/**
- * A plan as another resource names it: its id and its name.
- */
-export interface PlanNameResponse {
-  id: string;
-  name: string;
 }
 
 /**
@@ -2891,12 +2904,14 @@ export interface TenantPlanChangePreviewResponse {
 }
 
 /**
- * A tenant's plan and every key of the list with its plan value, override, effective value and count.
+ * A tenant's plan and every key of the list with its plan value, override, effective value and count, and its last trial, null when it had
+ * none (step 40d).
  */
 export interface TenantPlanResponse {
   tenantId: string;
   plan: PlanNameResponse;
   entitlements: TenantEntitlementResponse[];
+  trial: null | TrialResponse;
 }
 
 /**

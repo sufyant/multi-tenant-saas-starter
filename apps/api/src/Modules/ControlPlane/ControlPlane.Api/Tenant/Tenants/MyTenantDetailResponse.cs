@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using ControlPlane.Api.Me.Tenants;
+using ControlPlane.Api.Platform.Plans;
 using ControlPlane.Api.Tenant.Roles;
 
 namespace ControlPlane.Api.Tenant.Tenants;
@@ -11,7 +12,7 @@ namespace ControlPlane.Api.Tenant.Tenants;
 /// with its effective value at the moment of the request, by key, as the permissions: a feature true or false, a limit a number, and null
 /// for an unlimited limit; and <c>usage</c>, the tenant's count of each limit, so the web adds no list up. Every endpoint still checks
 /// its feature and its limit itself. <c>billingEnabled</c> says whether the deployment's billing is on (B1), for every member, as
-/// GetBilling answers only a member who manages billing.
+/// GetBilling answers only a member who manages billing. <c>trial</c> is the tenant's last trial, null when it had none (step 40d, 10.08).
 /// </summary>
 public sealed record MyTenantDetailResponse(
     Guid Id,
@@ -24,4 +25,5 @@ public sealed record MyTenantDetailResponse(
     string PlanName,
     IReadOnlyDictionary<string, JsonNode?> Entitlements,
     IReadOnlyDictionary<string, int> Usage,
-    bool BillingEnabled);
+    bool BillingEnabled,
+    TrialResponse? Trial);

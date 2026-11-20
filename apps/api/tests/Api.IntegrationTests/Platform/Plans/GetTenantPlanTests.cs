@@ -33,6 +33,19 @@ public sealed class GetTenantPlanTests(Database database) : IAsyncLifetime
         entry.GetProperty("planValue").ValueKind.ShouldBe(System.Text.Json.JsonValueKind.Null);
     }
 
+    // Step 40d, 4.28: the platform reads the tenant's trial as the web does.
+    [Fact]
+    public async Task GetTenantPlan_InTrial_AnswersTheTrial()
+    {
+        var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
+        var tenant = await _testData.AddTenantAsync();
+        await Trials.StartAsync(database, tenant.Id, SeedPlans.Team);
+
+        var plan = await admin.TenantPlanAsync(tenant.Id);
+
+        Trials.Of(plan.GetProperty("trial")).ShouldBe($"{SeedPlans.Business}|{Trials.StartedAt:O}|{Trials.EndsAt:O}|{SeedPlans.Team}");
+    }
+
     [Fact]
     public async Task GetTenantPlan_ABusinessTenant_AnswersEveryKeyWithItsValuesAndCount()
     {

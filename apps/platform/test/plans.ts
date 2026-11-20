@@ -204,6 +204,7 @@ export const burrenPlan = (
 ): TenantPlanResponse => ({
   tenantId: burren.id,
   plan: { id: pro.id, name: pro.name },
+  trial: null,
   entitlements: [
     {
       key: FeatureKey.RolesCustom,

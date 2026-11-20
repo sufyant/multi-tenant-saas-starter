@@ -493,7 +493,9 @@ public sealed class MigratedSchemaTests(Database database)
             fk_system_admins_users_granted_by: RESTRICT
             fk_system_admins_users_user_id: RESTRICT
             fk_tenant_summaries_tenants_tenant_id: RESTRICT
+            fk_tenants_plans_plan_before_trial_id: RESTRICT
             fk_tenants_plans_plan_id: RESTRICT
+            fk_tenants_plans_trial_plan_id: RESTRICT
             fk_tenants_users_closed_by: RESTRICT
             fk_tenants_users_created_by: RESTRICT
             fk_tenants_users_suspended_by: RESTRICT

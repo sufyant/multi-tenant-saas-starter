@@ -20,11 +20,12 @@ public sealed class MigrationStepTests(Database database)
     // A row as text without the columns that a later migration adds or replaces, so a test of an earlier migration compares the columns
     // it knew: step 32's tenant plan and the summary's counts of custom roles and pending invitations, step 36's one name of a user in
     // place of the first and the last name, step 37b's who and when of a tenant's events, a user's reason and the Owner invitation's
-    // sending, and step 40's seats that take no seat.
+    // sending, step 40's seats that take no seat, and step 40d's trial of a tenant.
     private const string LaterColumnsLeftOut =
         "(to_jsonb(row) - ARRAY['plan_id', 'custom_role_count', 'pending_invitation_expiries', 'first_name', 'last_name', 'name', "
         + "'created_by', 'suspended_at', 'suspended_by', 'closed_by', 'purge_started_at', 'suspension_reason', 'owner_invitation_sent_at', "
-        + "'free_member_count', 'free_invitation_expiries'])::text";
+        + "'free_member_count', 'free_invitation_expiries', 'trial_plan_id', 'trial_started_at', 'trial_ends_at', 'plan_before_trial_id'"
+        + "])::text";
 
     // The rows a later migration adds, left out in the same way: step 40's Billing manager role of each tenant.
     private const string LaterRowsLeftOut = "NOT (to_jsonb(row) @> '{\"built_in\": \"BillingManager\"}')";

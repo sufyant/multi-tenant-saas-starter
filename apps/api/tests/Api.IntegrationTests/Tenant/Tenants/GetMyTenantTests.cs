@@ -45,8 +45,22 @@ public sealed class GetMyTenantTests(Database database) : IAsyncLifetime
             .ShouldBe((tenant.Id, "Profile Ltd", tenant.Slug, "active"));
         RoleAnswers.Of(found).ShouldBe(RoleAnswers.BuiltIn(name));
         found.GetProperty("createdAt").GetDateTimeOffset().ShouldBe(createdAt);
-        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "planName", "entitlements", "usage", "billingEnabled"], ignoreOrder: true);
+        found.EnumerateObject().Select(field => field.Name).ShouldBe(["id", "name", "slug", "status", "role", "permissions", "createdAt", "planName", "entitlements", "usage", "billingEnabled", "trial"], ignoreOrder: true);
         found.GetProperty("billingEnabled").GetBoolean().ShouldBeFalse();
+        found.GetProperty("trial").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    // Step 40d, 10.08: a tenant in a trial answers its plan, its start and end, and the plan it returns to.
+    [Fact]
+    public async Task GetMyTenant_InTrial_AnswersTheTrial()
+    {
+        var tenant = await _testData.AddTenantAsync();
+        var member = await _testData.AddMemberAsync(tenant.Id, role: "Owner");
+        await Trials.StartAsync(database, tenant.Id, SeedPlans.Team);
+
+        var found = await _api.CreateClient(member).GetFromJsonAsync<JsonElement>($"/v1/tenants/{tenant.Id}", Cancellation);
+
+        Trials.Of(found.GetProperty("trial")).ShouldBe($"{SeedPlans.Business}|{Trials.StartedAt:O}|{Trials.EndsAt:O}|{SeedPlans.Team}");
     }
 
     // The tenant web reads the plan's name and the effective value of every key, by key, as it reads the permissions: a feature is true or

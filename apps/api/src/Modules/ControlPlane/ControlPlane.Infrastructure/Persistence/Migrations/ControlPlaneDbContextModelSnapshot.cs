@@ -900,6 +900,10 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<Guid?>("PlanBeforeTrialId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_before_trial_id");
+
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uuid")
                         .HasColumnName("plan_id");
@@ -937,6 +941,18 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("suspension_reason");
 
+                    b.Property<DateTimeOffset?>("TrialEndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("trial_ends_at");
+
+                    b.Property<Guid?>("TrialPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("trial_plan_id");
+
+                    b.Property<DateTimeOffset?>("TrialStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("trial_started_at");
+
                     b.HasKey("Id")
                         .HasName("pk_tenants");
 
@@ -949,6 +965,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                     b.HasIndex("Name")
                         .HasDatabaseName("ix_tenants_name");
 
+                    b.HasIndex("PlanBeforeTrialId")
+                        .HasDatabaseName("ix_tenants_plan_before_trial_id");
+
                     b.HasIndex("PlanId")
                         .HasDatabaseName("ix_tenants_plan_id");
 
@@ -958,6 +977,9 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SuspendedBy")
                         .HasDatabaseName("ix_tenants_suspended_by");
+
+                    b.HasIndex("TrialPlanId")
+                        .HasDatabaseName("ix_tenants_trial_plan_id");
 
                     b.HasIndex(new[] { "Name" }, "ix_tenants_name_trgm")
                         .HasDatabaseName("ix_tenants_name_trgm");
@@ -982,6 +1004,8 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_tenants_status", "status IN ('Active', 'Suspended', 'Closed', 'Purging', 'Purged')");
 
                             t.HasCheckConstraint("ck_tenants_suspension", "(suspended_at IS NULL) = (suspended_by IS NULL) AND (suspended_at IS NULL OR suspension_reason IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_tenants_trial", "(trial_plan_id IS NULL) = (trial_started_at IS NULL) AND (trial_plan_id IS NULL) = (trial_ends_at IS NULL) AND (plan_before_trial_id IS NULL OR trial_plan_id IS NOT NULL)");
                         });
                 });
 
@@ -1598,6 +1622,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
 
                     b.HasOne("ControlPlane.Domain.Plans.Plan", null)
                         .WithMany()
+                        .HasForeignKey("PlanBeforeTrialId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_tenants_plans_plan_before_trial_id");
+
+                    b.HasOne("ControlPlane.Domain.Plans.Plan", null)
+                        .WithMany()
                         .HasForeignKey("PlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -1608,6 +1638,12 @@ namespace ControlPlane.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SuspendedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_tenants_users_suspended_by");
+
+                    b.HasOne("ControlPlane.Domain.Plans.Plan", null)
+                        .WithMany()
+                        .HasForeignKey("TrialPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_tenants_plans_trial_plan_id");
                 });
 
             modelBuilder.Entity("ControlPlane.Domain.Tenants.TenantSummary", b =>

@@ -22,15 +22,21 @@ import {
   Permission
 } from '../endpoints.schemas.gen';
 import type {
-  MyTenantDetailResponse
+  MyTenantDetailResponse,
+  PlanNameResponse,
+  TrialResponse
 } from '../endpoints.schemas.gen';
 
+
+export const getGetMyTenantResponsePlanNameResponseMock = (overrideResponse: Partial<PlanNameResponse> = {}): PlanNameResponse => ({...{id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse});
+
+export const getGetMyTenantResponseTrialResponseMock = (overrideResponse: Partial<TrialResponse> = {}): TrialResponse => ({...{plan: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}})}, startedAt: faker.date.past().toISOString().slice(0, 19) + 'Z', endsAt: faker.date.past().toISOString().slice(0, 19) + 'Z', returnsTo: faker.helpers.arrayElement([null,{...getGetMyTenantResponsePlanNameResponseMock()},])}, ...overrideResponse});
 
 export const getGetMyTenantResponseMock = (overrideResponse: Partial<Extract<MyTenantDetailResponse, object>> = {}): MyTenantDetailResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), status: faker.helpers.arrayElement(Object.values(MyTenantResponseStatus)), role: {id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), builtIn: faker.datatype.boolean()}, permissions: faker.helpers.arrayElements(Object.values(Permission)), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', planName: faker.string.alpha({length: {min: 10, max: 20}}), entitlements: {
         [faker.string.alphanumeric(5)]: faker.helpers.arrayElement([null,faker.datatype.boolean(),faker.number.int(),])
       }, usage: {
         [faker.string.alphanumeric(5)]: faker.number.int()
-      }, billingEnabled: faker.datatype.boolean(), ...overrideResponse})
+      }, billingEnabled: faker.datatype.boolean(), trial: faker.helpers.arrayElement([null,{...getGetMyTenantResponseTrialResponseMock()},]), ...overrideResponse})
 
 
 export const getGetMyTenantMockHandler = (overrideResponse?: MyTenantDetailResponse | ((info: Parameters<HttpResponseResolver<{ tenantId: string }>>[0]) => Promise<MyTenantDetailResponse> | MyTenantDetailResponse), options?: RequestHandlerOptions) => {

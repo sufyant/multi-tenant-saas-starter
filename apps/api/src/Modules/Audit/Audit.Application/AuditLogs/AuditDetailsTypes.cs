@@ -131,6 +131,7 @@ public static class AuditDetailsTypes
         [AuditOperations.PlanPriceChangeScheduled] = typeof(PlanPriceChangeScheduledDetails),
         [AuditOperations.TenantPriceChangeAnnounced] = typeof(TenantPriceChangeAnnouncedDetails),
         [AuditOperations.TenantMovedToDefaultPlan] = typeof(TenantMovedToDefaultPlanDetails),
+        [AuditOperations.TenantTrialEnded] = null,
         [AuditOperations.TenantPlanCancellationUndone] = typeof(TenantPlanCancellationUndoneDetails),
         [AuditOperations.TenantPlanChangeScheduled] = typeof(TenantPlanChangeScheduledDetails),
         [AuditOperations.TenantPlanChangeUndone] = typeof(TenantPlanChangeUndoneDetails),

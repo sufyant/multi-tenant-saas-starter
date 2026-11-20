@@ -31,18 +31,25 @@ public static class ChangeBilledPlanHandler
         var oldPlan = await plans.FindPlanNameAsync(tenant.PlanId, cancellationToken)
             ?? throw new InvalidOperationException("A tenant is always on a plan.");
         // A closed, purging or purged tenant's plan is read-only (E2), so its subscription changes nothing here.
-        var changed = tenant.ChangePlan(plan.Id);
+        // During a trial, the plan the tenant returns to keeps the trial; another plan ends it (Tenant.PayForPlan).
+        var now = time.GetUtcNow();
+        var changed = tenant.PayForPlan(plan.Id, now);
         if (!changed.IsSuccess || changed.Value == StateChange.Unchanged)
         {
             return [];
         }
 
-        var now = time.GetUtcNow();
         var before = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         await tenants.SaveChangesAsync(cancellationToken);
         var after = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
+        // A payment for the trial's own plan ends the trial and keeps the plan: no change of plan (step 40d).
+        if (plan.Id == oldPlan.Id)
+        {
+            return [];
+        }
+
         return [new TenantPlanChangedEvent(
             Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, paid.PaidBy, oldPlan.Id, oldPlan.Name, plan.Id, plan.Name,
             RetentionShortenings.Between(before, after, now), ByMember: true)];

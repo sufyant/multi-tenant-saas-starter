@@ -246,6 +246,7 @@ const planOf = (
   return {
     tenantId: organisation.id,
     plan: organisation.plan,
+    trial: null,
     entitlements: [
       key(
         FeatureKey.RolesCustom,

@@ -67,6 +67,9 @@ using ControlPlane.Application.Tenants.StartTenantPurge;
 using ControlPlane.Application.Tenants.SuspendTenant;
 using ControlPlane.Application.Tenants.TenantPurge;
 using ControlPlane.Application.Tenants.WarnTenantPurge;
+using ControlPlane.Application.Tenants.CreateMyTenant;
+using ControlPlane.Application.Tenants.EndTenantTrial;
+using Audit.Application.Plans.RecordTenantTrialEnded;
 using ControlPlane.Application.Users.ChangePreferences;
 using ControlPlane.Application.Users.DeleteIdentityAccount;
 using ControlPlane.Application.Users.DeleteUser;
@@ -181,6 +184,12 @@ public sealed class HostRoleTests(Database database)
     {
         ["ControlPlane:Tenants:ReopenPeriod"] = "00:00:10",
         ["ControlPlane:Tenants:PurgeWarningLead"] = "00:00:08",
+    };
+
+    // Sign-up and billing on, with a trial of two seconds, so a test sees its end.
+    private static readonly Dictionary<string, string?> ShortTrial = new(SignUpSettings.On.Concat(BillingRequests.On))
+    {
+        ["ControlPlane:Trial:Length"] = "00:00:02",
     };
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
@@ -775,6 +784,35 @@ public sealed class HostRoleTests(Database database)
         (await testData.TenantStatusOfAsync(tenant.Id)).ShouldBe("Purged");
         (await PlatformEntriesAsync(name, tenant.Id, "tenant.purged")).ShouldBe(1L);
         (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant.Id}'", name)).ShouldBe(0L);
+    }
+
+    // Step 40d: the web host creates a user's own tenant and, through the outbox, schedules the end of its trial; a worker ends the trial
+    // and records it.
+    [Fact]
+    public async Task CreateMyTenant_TheTrialEndsOnAWebAndAWorkerHost_EndsItAndRecordsItInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs, settings: ShortTrial);
+        await using var worker = Host(name, "worker", runs, settings: ShortTrial);
+        _ = worker.Services;
+        var person = await new TestData(database, name).AddUserAsync(email: "kestrel@example.com");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/v1/me/tenants")
+        {
+            Content = JsonContent.Create(new { name = "Kestrel Analytics", slug = "kestrel" }),
+        };
+        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
+
+        var created = await web.CreateClient(person).SendAsync(request, Cancellation);
+        var tenantId = (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();
+        await Waiting.UntilAsync(async () => await PlatformEntriesAsync(name, tenantId, "tenant.trial_ended") > 0);
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        runs.In("web").ShouldContain(new HandlerRun(typeof(CreateMyTenantCommand), typeof(CreateMyTenantHandler)));
+        runs.In("web").ShouldNotContain(new HandlerRun(typeof(EndTenantTrialCommand), typeof(EndTenantTrialHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(EndTenantTrialCommand), typeof(EndTenantTrialHandler)));
+        runs.In("worker").ShouldContain(new HandlerRun(typeof(TenantTrialEndedEvent), typeof(RecordTenantTrialEndedHandler)));
+        (await AuditEntriesAsync(name, tenantId, "tenant.trial_ended")).ShouldBe(1L);
     }
 
     // The web host takes the request; the worker prepares the file with every module's exporter, which it takes from the message's scope,

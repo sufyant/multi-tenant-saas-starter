@@ -1,4 +1,5 @@
 using ControlPlane.Application.Plans;
+using ControlPlane.Application.Tenants.EndTenantTrial;
 using ControlPlane.Application.Users;
 using ControlPlane.Contracts.Tenants;
 using ControlPlane.Domain;
@@ -13,12 +14,14 @@ namespace ControlPlane.Application.Tenants.CreateMyTenant;
 // One transaction writes the active tenant, its summary, its roles and its creator's Owner membership (docs/flows/tenant-creation.md,
 // section 2). The user row is locked first, so two creations of one person run one after the other and the limit counts each (K6f); the
 // tenant is new, so no other transaction waits for its row. The host saves the command result in this transaction (I4). Rejections come
-// first (W7); a taken slug is found by the insert itself, which writes nothing then.
+// first (W7); a taken slug is found by the insert itself, which writes nothing then. While billing is on, the tenant starts its trial of the
+// trial plan at once, and its end is scheduled (step 40d); while billing is off, it stays on the default plan.
 public static class CreateMyTenantHandler
 {
     public static async Task<(Result<MyTenantView>, OutgoingMessages)> HandleAsync(
         CreateMyTenantCommand command,
         SignUpOptions signUp,
+        TrialOptions trial,
         ITenantRepository tenants,
         IUserRepository users,
         IPlanRepository plans,
@@ -68,9 +71,21 @@ public static class CreateMyTenantHandler
             ?? throw new InvalidOperationException("The tenant was added in this transaction.");
         var owner = new TenantRoles(roles).BuiltIn(BuiltInRole.Owner);
         await tenants.AddMembershipAsync(tenant, user.Id, owner.Id, now, cancellationToken);
+        if (!command.BillingEnabled || await plans.FindPlanNameAsync(trial.PlanId, cancellationToken) is not { } trialPlan)
+        {
+            return (
+                MyTenantView.Of(tenant, owner),
+                [new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, plan.Id, plan.Name, ByItsOwner: true)]);
+        }
 
+        tenant.StartTrial(trialPlan.Id, now, trial.Length);
+        await tenants.SaveChangesAsync(cancellationToken);
+        var endsAt = tenant.TrialEndsAt!.Value;
         return (
             MyTenantView.Of(tenant, owner),
-            [new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, plan.Id, plan.Name, ByItsOwner: true)]);
+            [
+                new TenantCreatedEvent(Guid.CreateVersion7(now), now, tenant.Id, tenant.Name, user.Id, trialPlan.Id, trialPlan.Name, ByItsOwner: true),
+                new EndTenantTrialCommand(tenant.Id, endsAt).ScheduledAt(endsAt),
+            ]);
     }
 }

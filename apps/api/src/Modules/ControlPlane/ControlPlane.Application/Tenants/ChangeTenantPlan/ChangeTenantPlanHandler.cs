@@ -34,19 +34,20 @@ public static class ChangeTenantPlanHandler
 
         var oldPlan = await plans.FindPlanNameAsync(tenant.PlanId, cancellationToken)
             ?? throw new InvalidOperationException("A tenant is always on a plan.");
-        var changed = tenant.ChangePlan(plan.Id);
+        var now = time.GetUtcNow();
+        var changed = tenant.ChangePlan(plan.Id, now);
         if (!changed.IsSuccess)
         {
             return (changed.Error, []);
         }
 
-        var now = time.GetUtcNow();
         var before = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
         await tenants.SaveChangesAsync(cancellationToken);
         var view = await queries.FindTenantPlanAsync(now, cancellationToken)
             ?? throw new InvalidOperationException("The tenant was locked in this transaction.");
-        if (changed.Value == StateChange.Unchanged)
+        // The plan the tenant is on announces nothing (I1); the trial it ends is no change of plan (step 40d).
+        if (changed.Value == StateChange.Unchanged || plan.Id == oldPlan.Id)
         {
             return (view, []);
         }
