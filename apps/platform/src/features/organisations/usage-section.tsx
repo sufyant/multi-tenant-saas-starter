@@ -6,16 +6,16 @@ import {
   problemOf,
   type UsageResponse,
 } from "@repo/api-client";
+import { EmptyValue } from "@repo/ui/components/empty-value";
 import { ListError } from "@repo/ui/components/list-error";
 import { Meter } from "@repo/ui/components/meter";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Table, type TableColumn } from "@repo/ui/components/table";
 import {
-  formatDate,
-  formatDayMonth,
-  formatMonthYear,
-} from "@repo/ui/lib/format-date-time";
-import { formatMoney } from "@repo/ui/lib/format-money";
+  type PastMonth,
+  pastMonthsOf,
+  usageFormat,
+} from "@repo/ui/lib/usage-text";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { leaveOf } from "@/shared/problem-screen";
@@ -45,29 +45,17 @@ export function UsageSection({
   return <UsageOf usage={usage.data} />;
 }
 
-/**
- * The values as text: a meter's word, a count, an amount, and the days of the month, which the API answers as calendar days of UTC, so
- * they read in UTC (E8).
- */
+/** The values as text: `usageFormat` of `packages/ui`, as the web's Usage reads them (F29), and a meter's word. */
 function useUsageText(usage: UsageResponse) {
   const t = useTranslations("usage");
   const locale = useTranslations()("locale.format");
-  const days = { locale, timeZone: "UTC" };
-  const number = new Intl.NumberFormat(locale, { numberingSystem: "latn" });
-  const nextMonth = new Date(usage.periodEnd);
-  nextMonth.setUTCDate(nextMonth.getUTCDate() + 1);
   return {
+    ...usageFormat(usage, locale),
     // The product's own word for a meter; the template ships none, so a meter reads as its key, as in the web and the emails (E10).
     meterName: (key: string) => {
       const message = `meters.${key}` as Parameters<typeof t>[0];
       return t.has(message) ? t(message) : key;
     },
-    count: (value: number) => number.format(value),
-    money: (minor: number) => formatMoney(minor, usage.currency, locale),
-    resetsOn: formatDayMonth(nextMonth, days),
-    day: (at: string) => formatDayMonth(at, days),
-    date: (day: string) => formatDate(day, days),
-    month: (day: string) => formatMonthYear(day, days),
   };
 }
 
@@ -186,13 +174,6 @@ function MeterRow({
   );
 }
 
-type MonthRow = {
-  periodStart: string;
-  meters: Record<string, number>;
-  extra: number;
-  extraAmount: number;
-};
-
 /** The last months, the latest first (4.37): what each meter used, and the month's extra and its amount. */
 function LastMonths({
   usage,
@@ -202,34 +183,16 @@ function LastMonths({
   text: UsageText;
 }) {
   const t = useTranslations();
-  const keys = [
-    ...new Set([
-      ...usage.meters.map((meter) => meter.key),
-      ...usage.pastPeriods.flatMap((period) =>
-        period.meters.map((meter) => meter.key),
-      ),
-    ]),
-  ];
-  const rows: MonthRow[] = usage.pastPeriods.map((period) => ({
-    periodStart: period.periodStart,
-    meters: Object.fromEntries(
-      period.meters.map((meter) => [meter.key, meter.used]),
-    ),
-    extra: period.meters.reduce((sum, meter) => sum + meter.extra, 0),
-    extraAmount: period.meters.reduce(
-      (sum, meter) => sum + meter.extraAmount,
-      0,
-    ),
-  }));
+  const { keys, rows } = pastMonthsOf(usage);
   // One meter names its extra in units too; several only add their amounts.
-  const extraOf = (row: MonthRow) =>
+  const extraOf = (row: PastMonth) =>
     keys.length === 1
       ? t("usage.pastExtra", {
           extra: text.count(row.extra),
           amount: text.money(row.extraAmount),
         })
       : t("usage.pastAmount", { amount: text.money(row.extraAmount) });
-  const columns: TableColumn<MonthRow>[] = [
+  const columns: TableColumn<PastMonth>[] = [
     {
       key: "period",
       header: t("usage.month"),
@@ -237,7 +200,7 @@ function LastMonths({
       card: "title",
     },
     ...keys.map(
-      (key): TableColumn<MonthRow> => ({
+      (key): TableColumn<PastMonth> => ({
         key: `meter-${key}`,
         header: text.meterName(key),
         render: (row) => text.count(row.meters[key] ?? 0),
@@ -251,7 +214,7 @@ function LastMonths({
     {
       key: "extra",
       header: t("usage.extraColumn"),
-      render: (row) => (row.extraAmount > 0 ? extraOf(row) : "—"),
+      render: (row) => (row.extraAmount > 0 ? extraOf(row) : <EmptyValue />),
       cardRender: (row) =>
         row.extraAmount > 0 ? extraOf(row) : t("usage.noExtra"),
     },

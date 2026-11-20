@@ -2,7 +2,6 @@
 
 import {
   getGetPlanChoicesQueryOptions,
-  getGetUsageQueryOptions,
   MeterSettingResponseOverage,
   type MeterUsageResponse,
   Permission,
@@ -12,10 +11,12 @@ import {
 } from "@repo/api-client";
 import { Banner } from "@repo/ui/components/banner";
 import { Button } from "@repo/ui/components/button";
+import { EmptyValue } from "@repo/ui/components/empty-value";
 import { ListError } from "@repo/ui/components/list-error";
 import { Meter } from "@repo/ui/components/meter";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Table, type TableColumn } from "@repo/ui/components/table";
+import { type PastMonth, pastMonthsOf } from "@repo/ui/lib/usage-text";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -25,6 +26,7 @@ import { isBillingOff, useBilling, usePlanChange } from "@/shared/billing";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { useUsage } from "@/shared/usage";
 import { type UsageText, useUsageText } from "@/shared/use-usage-text";
 import { SpendingCapDialog } from "./spending-cap-dialog";
 
@@ -36,13 +38,9 @@ import { SpendingCapDialog } from "./spending-cap-dialog";
 export function UsagePage() {
   const t = useTranslations();
   const can = useCan();
-  const { tenant } = useTenant();
   const manages = can(Permission.TenantBillingManage);
   const billing = useBilling();
-  const usage = useQuery({
-    ...getGetUsageQueryOptions(tenant.id),
-    enabled: manages,
-  });
+  const usage = useUsage();
 
   if (!manages)
     return (
@@ -291,13 +289,6 @@ function morePlanOf(plans: PlanChoiceResponse[], meter: MeterUsageResponse) {
   );
 }
 
-type PastRow = {
-  periodStart: string;
-  meters: Record<string, number>;
-  extra: number;
-  extraAmount: number;
-};
-
 /** The past months, the latest first (11.01): what each meter used, and the month's extra and its amount. */
 function PastPeriods({
   usage,
@@ -307,34 +298,16 @@ function PastPeriods({
   text: UsageText;
 }) {
   const t = useTranslations();
-  const keys = [
-    ...new Set([
-      ...usage.meters.map((meter) => meter.key),
-      ...usage.pastPeriods.flatMap((period) =>
-        period.meters.map((meter) => meter.key),
-      ),
-    ]),
-  ];
-  const rows: PastRow[] = usage.pastPeriods.map((period) => ({
-    periodStart: period.periodStart,
-    meters: Object.fromEntries(
-      period.meters.map((meter) => [meter.key, meter.used]),
-    ),
-    extra: period.meters.reduce((sum, meter) => sum + meter.extra, 0),
-    extraAmount: period.meters.reduce(
-      (sum, meter) => sum + meter.extraAmount,
-      0,
-    ),
-  }));
+  const { keys, rows } = pastMonthsOf(usage);
   // One meter names its extra in units too; several only add their amounts.
-  const extraOf = (row: PastRow) =>
+  const extraOf = (row: PastMonth) =>
     keys.length === 1
       ? t("usage.pastExtra", {
           extra: text.count(row.extra),
           amount: text.money(row.extraAmount),
         })
       : t("usage.pastAmount", { amount: text.money(row.extraAmount) });
-  const columns: TableColumn<PastRow>[] = [
+  const columns: TableColumn<PastMonth>[] = [
     {
       key: "period",
       header: t("usage.period"),
@@ -342,7 +315,7 @@ function PastPeriods({
       card: "title",
     },
     ...keys.map(
-      (key): TableColumn<PastRow> => ({
+      (key): TableColumn<PastMonth> => ({
         key: `meter-${key}`,
         header: text.meterName(key),
         align: "end",
@@ -357,7 +330,7 @@ function PastPeriods({
     {
       key: "extra",
       header: t("usage.extraColumn"),
-      render: (row) => (row.extraAmount > 0 ? extraOf(row) : "—"),
+      render: (row) => (row.extraAmount > 0 ? extraOf(row) : <EmptyValue />),
       cardRender: (row) =>
         row.extraAmount > 0 ? extraOf(row) : t("usage.noExtra"),
     },
@@ -407,7 +380,7 @@ function Period({ usage }: { usage: UsageResponse }) {
     <p className="text-body text-muted-foreground">
       {t("usage.description", {
         organisation: detail.name,
-        start: text.dayMonth(usage.periodStart),
+        start: text.day(usage.periodStart),
         end: text.date(usage.periodEnd),
       })}
     </p>
