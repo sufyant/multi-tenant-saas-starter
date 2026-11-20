@@ -112,6 +112,7 @@ export function TenantShell({
         billingBar: (
           <BillingBar
             onBilling={pathname.startsWith(`/${tenant.slug}/settings/billing`)}
+            onUsage={pathname.startsWith(`/${tenant.slug}/settings/usage`)}
           />
         ),
         counts: {

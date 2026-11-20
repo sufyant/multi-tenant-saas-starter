@@ -25,8 +25,8 @@ import { isBillingOff, useBilling, usePlanChange } from "@/shared/billing";
 import { PermissionDenied } from "@/shared/permission-denied";
 import { leaveOf } from "@/shared/problem-screen";
 import { useCan, useTenant } from "@/shared/tenant-context";
+import { type UsageText, useUsageText } from "@/shared/use-usage-text";
 import { SpendingCapDialog } from "./spending-cap-dialog";
-import { type UsageText, useUsageText } from "./use-usage-text";
 
 /**
  * Settings > Usage (11.01 to 11.11, 14.12, 14.15): each meter of the plan this month against its quota, the spending cap of an organisation
