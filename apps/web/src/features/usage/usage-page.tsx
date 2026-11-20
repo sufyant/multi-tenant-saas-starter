@@ -117,7 +117,7 @@ function UsageContent({ usage }: { usage: UsageResponse }) {
       )}
       {usedUp && <UsedUpBanner meter={usedUp} text={text} />}
       <Card title={t("usage.thisPeriod")} text={text.planText}>
-        <div className="flex flex-col gap-6 px-5 pb-5">
+        <div className="flex flex-col gap-6 border-t border-border p-5">
           {usage.meters.map((meter) => (
             <MeterRow
               key={meter.key}
@@ -311,6 +311,8 @@ function PastPeriods({
     {
       key: "period",
       header: t("usage.period"),
+      // 11.01's columns: the month 222 px with the card's padding, each meter 216 px with its gap, the extra fills.
+      width: "w-55.5",
       render: (row) => text.month(row.periodStart),
       card: "title",
     },
@@ -318,7 +320,7 @@ function PastPeriods({
       (key): TableColumn<PastMonth> => ({
         key: `meter-${key}`,
         header: text.meterName(key),
-        align: "end",
+        width: "w-54",
         render: (row) => text.count(row.meters[key] ?? 0),
         cardRender: (row) =>
           t("usage.pastUsed", {
@@ -346,6 +348,7 @@ function PastPeriods({
           rows={rows}
           rowKey="periodStart"
           label={t("usage.past")}
+          inCard
           rowCount={rows.length}
           page={1}
           pageSize={Math.max(1, rows.length)}

@@ -196,6 +196,8 @@ function LastMonths({
     {
       key: "period",
       header: t("usage.month"),
+      // 4.37's columns: the month 222 px with the card's padding, each meter 216 px with its gap, the extra fills.
+      width: "w-55.5",
       render: (row) => text.month(row.periodStart),
       card: "title",
     },
@@ -203,6 +205,7 @@ function LastMonths({
       (key): TableColumn<PastMonth> => ({
         key: `meter-${key}`,
         header: text.meterName(key),
+        width: "w-54",
         render: (row) => text.count(row.meters[key] ?? 0),
         cardRender: (row) =>
           t("usage.pastUsed", {
@@ -235,6 +238,7 @@ function LastMonths({
           rows={rows}
           rowKey="periodStart"
           label={t("usage.lastMonths")}
+          inCard
           rowCount={rows.length}
           page={1}
           pageSize={Math.max(1, rows.length)}
