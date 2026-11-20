@@ -37,6 +37,7 @@ public sealed class MigratedSchemaTests(Database database)
             billing.subscriptions: forced
             control_plane.invitations: forced
             control_plane.memberships: forced
+            control_plane.meter_usages: forced
             control_plane.role_permissions: forced
             control_plane.roles: forced
             control_plane.stored_files: forced
@@ -77,6 +78,7 @@ public sealed class MigratedSchemaTests(Database database)
             control_plane.invitations tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.memberships own_memberships: PERMISSIVE SELECT {public} USING (user_id = (NULLIF(current_setting('app.user_id'::text, true), ''::text))::uuid) WITH CHECK -
             control_plane.memberships tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
+            control_plane.meter_usages tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.role_permissions tenant_isolation: PERMISSIVE ALL {public} USING (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid) WITH CHECK (tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)
             control_plane.roles own_roles: PERMISSIVE SELECT {public} USING (EXISTS ( SELECT
                FROM control_plane.memberships
@@ -166,6 +168,7 @@ public sealed class MigratedSchemaTests(Database database)
             table control_plane.feature_flags: DELETE, INSERT, SELECT, UPDATE
             table control_plane.invitations: DELETE, INSERT, SELECT, UPDATE
             table control_plane.memberships: DELETE, INSERT, SELECT, UPDATE
+            table control_plane.meter_usages: DELETE, INSERT, SELECT, UPDATE
             table control_plane.plan_entitlements: DELETE, INSERT, SELECT, UPDATE
             table control_plane.plan_meters: DELETE, INSERT, SELECT, UPDATE
             table control_plane.plans: DELETE, INSERT, SELECT, UPDATE
@@ -454,6 +457,7 @@ public sealed class MigratedSchemaTests(Database database)
             fk_memberships_roles_tenant_id_role_id: RESTRICT
             fk_memberships_tenants_tenant_id: RESTRICT
             fk_memberships_users_user_id: RESTRICT
+            fk_meter_usages_tenants_tenant_id: RESTRICT
             fk_plan_entitlements_plans_plan_id: RESTRICT
             fk_plan_meters_plans_plan_id: RESTRICT
             fk_role_permissions_roles_tenant_id_role_id: CASCADE

@@ -46,7 +46,7 @@ internal static class TenantTables
                 """),
         ["control_plane.meter_usages"] = new(
             ApplicationMayUpdate: true,
-            tenant => $"INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra) VALUES ('{tenant}', 'isolation.meter', '2026-11-01', 0, 0)",
+            tenant => $"INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra, unit_price, unit_size) VALUES ('{tenant}', 'isolation.meter', '2026-11-01', 0, 0, 0, 1)",
             OwnRows: "meter_key = 'isolation.meter'"),
         ["control_plane.roles"] = new(
             ApplicationMayUpdate: true,

@@ -4,13 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 using Tenancy;
-using Wolverine;
 
 namespace Api.IntegrationTests.Tenant.Usage;
 
-// UseMeterCommand: a product's module asks ControlPlane whether a tenant may use a meter, and counts the use (step 40c). The count is the
+// IUsageMeter.UseAsync: a product's module asks ControlPlane whether a tenant may use a meter, and counts the use (step 40c). The count is the
 // tenant's for each meter and calendar month of UTC. A stop meter stops at its quota; a charge meter goes on and counts the extra. A meter
 // the tenant's plan has no setting for is not on the plan, so its use stops.
+[FixedClock("Nothing these tests run schedules a message; the fixed date puts each use in a known month.")]
 public sealed class UseMeterTests(Database database) : IAsyncLifetime
 {
     private const string Meter = "ai.requests";
@@ -126,7 +126,7 @@ public sealed class UseMeterTests(Database database) : IAsyncLifetime
     private async Task<MeterUse> UseAsync(Guid tenantId, long quantity)
     {
         using var scope = _api.Services.CreateScope();
-        return await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync<MeterUse>(tenantId.ToString(), new UseMeterCommand(Meter, quantity), Cancellation);
+        return await scope.ServiceProvider.GetRequiredService<IUsageMeter>().UseAsync(tenantId, Meter, quantity, Cancellation);
     }
 
     private Task<string?> UsedAsync(Guid tenantId, string period) =>

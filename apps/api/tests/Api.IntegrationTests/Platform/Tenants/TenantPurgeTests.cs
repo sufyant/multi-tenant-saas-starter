@@ -413,7 +413,7 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
             INSERT INTO billing.contract_tenants (tenant_id) VALUES ('{tenant.Id}');
             INSERT INTO billing.payers (tenant_id, plan_id, yearly, base_amount, per_person_amount, ends) VALUES ('{tenant.Id}', gen_random_uuid(), false, 0, 1000, false);
             INSERT INTO billing.billing_emails (tenant_id, address, set_by, set_at) VALUES ('{tenant.Id}', 'accounts@app.test', '{admin}', '{ClosedAt:O}');
-            INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra) VALUES ('{tenant.Id}', 'ai.requests', '2026-07-01', 10, 0);
+            INSERT INTO control_plane.meter_usages (tenant_id, meter_key, period, used, extra, unit_price, unit_size) VALUES ('{tenant.Id}', 'ai.requests', '2026-07-01', 10, 0, 0, 1);
             """,
             _databaseName);
         return tenant;

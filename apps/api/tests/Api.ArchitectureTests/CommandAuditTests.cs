@@ -29,14 +29,15 @@ public sealed class CommandAuditTests : IAsyncLifetime
     // feature flags' cleanup changes no data; its weekly event only tells the system admins (docs/flows/feature-flags.md). A tenant's customer at
     // Stripe, its row in billing's map and its one open checkout are the means of a checkout, not a change of the product's data: the plan
     // that a payment changes records tenant.plan_changed (B5 to B7). A member's plan change is a call to Stripe and the lock that names
-    // the member: the state that Stripe then holds changes the plan, which records tenant.plan_changed by that member (B6, B9).
+    // the member: the state that Stripe then holds changes the plan, which records tenant.plan_changed by that member (B6, B9). A use of a
+    // meter is a count that Usage shows, not a change by a person: an entry for each use would bury the log (step 40c).
     private static readonly string[] CommandsWithoutAudit =
     [
         "CreateCustomerCommand", "KeepCustomerCommand", "ReserveCheckoutCommand", "RecordCheckoutSessionCommand", "AbandonCheckoutCommand",
         "MarkNotificationReadCommand", "MarkAllNotificationsReadCommand", "DeleteExpiredNotificationsCommand", "RequestEmailChangeCommand",
         "ConfirmAccountDeletionCommand", "ApplyAuditRetentionCommand", "AcceptTermsVersionCommand", "DismissTermsNoticeCommand",
         "CheckFeatureFlagCleanupCommand", "BeginPlanChangeCommand", "ChangePlanNowCommand", "SchedulePlanChangeCommand", "CancelAtPeriodEndCommand",
-        "UndoScheduledChangeCommand",
+        "UndoScheduledChangeCommand", "UseMeterCommand",
     ];
 
     private readonly ComposedApplication _application = new("worker");
