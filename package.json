@@ -39,10 +39,10 @@
     "skills:update": "scripts/agent-skills/update.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.6",
+    "@biomejs/biome": "^2.6.7",
     "@tanstack/intent": "0.5.6",
-    "railway": "^3.16.0",
-    "turbo": "^2.11.10",
+    "railway": "^3.17.0",
+    "turbo": "^2.11.11",
     "typescript": "^5"
   },
   "intent": {

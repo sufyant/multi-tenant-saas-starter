@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.6.0",
-    "msw": "^3.0.4",
-    "orval": "^8.47.0",
+    "msw": "^3.0.6",
+    "orval": "^8.48.0",
     "typescript": "^5",
     "vitest": "^5.1.0"
   },
