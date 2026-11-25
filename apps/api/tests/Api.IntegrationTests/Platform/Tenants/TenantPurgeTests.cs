@@ -373,14 +373,18 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", _databaseName);
 
-    // The purge's start, as the closure scheduled it, and every message it causes.
-    private Task<Guid> PurgeAsync(Guid tenantId, DateTimeOffset closedAt) =>
-        _api.WaitingForMessagesAsync(async () =>
+    // The purge's start, as the closure scheduled it, and every message it causes. The participants reply at once, so a reply may fail on
+    // the saga's version and run again on the other's result (W6): that is the one failure the purge may meet on its way.
+    private async Task<Guid> PurgeAsync(Guid tenantId, DateTimeOffset closedAt)
+    {
+        var session = await _api.TrackMessagesAsync(async () =>
         {
             using var scope = _api.Services.CreateScope();
             await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), new StartTenantPurgeCommand(tenantId, closedAt), Cancellation);
-            return tenantId;
         });
+        session.AllExceptions().ShouldAllBe(exception => exception is SagaConcurrencyException);
+        return tenantId;
+    }
 
     // A closed tenant with one of each kind of data: two members, a custom role with two permissions, a cancelled invitation, an override,
     // an entry of its own log and one of the platform's, two notifications about it, of two users in two bells (U8), and its customer and

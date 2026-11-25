@@ -1,3 +1,4 @@
+using ControlPlane.Contracts.Tenants;
 using Notifications.Application.Email;
 using Microsoft.Extensions.DependencyInjection;
 using Wolverine;
@@ -63,17 +64,19 @@ public sealed class ExistingRetryPolicyTests(Database database)
         (rule.Match.Description.Contains(nameof(EmailsPausedException), StringComparison.Ordinal), rule.First().Describe()).ShouldBe((true, "Schedule Retry in 60 seconds"));
     }
 
-    // W6, S8: of two replies the tenant purge handles at once, the second fails on the saga's version, and is tried again three times,
-    // inline.
+    // W6, S8: of two replies the tenant purge handles at once, the second fails on the saga's version, and is tried again, inline. All
+    // participants reply at once, and each reply loses at most once to each other reply, so the retries outnumber the other participants,
+    // a product's too (X8).
     [Fact]
-    public async Task ReadRetryRules_ASagaChangedByTwoMessagesAtOnce_RetriesTheSecondThreeTimesFirst()
+    public async Task ReadRetryRules_ASagaChangedByEveryParticipantAtOnce_RetriesALosingReplyOnceForEachOtherParticipant()
     {
         await using var api = new ApiFactory(database.ApplicationConnectionString);
 
         var rule = api.Services.GetRequiredService<IWolverineRuntime>().Options.Policies.Failures
             .Single(failure => failure.Match.Description.Contains(nameof(SagaConcurrencyException), StringComparison.Ordinal));
 
-        rule.Count().ShouldBe(3);
+        rule.Count().ShouldBe(ApiPipeline.SagaConcurrencyRetries);
         rule.First().Describe().ShouldContain("Retry");
+        api.Services.GetServices<TenantPurgeParticipant>().Count().ShouldBeLessThanOrEqualTo(ApiPipeline.SagaConcurrencyRetries + 1);
     }
 }

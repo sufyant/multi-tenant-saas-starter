@@ -1,15 +1,15 @@
 namespace Api.IntegrationTests.Fixtures;
 
 // R9: every tenant table of the database, with the SQL that writes one row of it for a tenant. The rows a table refers to are
-// written in the same statement, so a failed write leaves nothing behind. A new tenant table is one more line here;
-// TenantTableIsolationTests fails until it has one.
+// written in the same statement, so a failed write leaves nothing behind. A new tenant table is one more line here, or in
+// ProductTenantTables for a product's table (X8); TenantTableIsolationTests fails until it has one.
 internal static class TenantTables
 {
     // The Member role the declared tenant sees. Without a tenant, row level security hides every role, so the row names none and the
     // insert is refused by the policy all the same.
     private const string MemberRole = "(SELECT id FROM control_plane.roles WHERE built_in = 'Member')";
 
-    private static readonly Dictionary<string, TenantTable> All = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, TenantTable> All = new(ProductTenantTables.All, StringComparer.Ordinal)
     {
         ["audit.entries"] = new(
             ApplicationMayUpdate: false,
@@ -103,5 +103,5 @@ internal static class TenantTables
         SELECT '{tenant}', member.id, {role}, now() FROM member
         """;
 
-    private sealed record TenantTable(bool ApplicationMayUpdate, Func<Guid, string> InsertRow, string OwnRows = "true");
+    internal sealed record TenantTable(bool ApplicationMayUpdate, Func<Guid, string> InsertRow, string OwnRows = "true");
 }
