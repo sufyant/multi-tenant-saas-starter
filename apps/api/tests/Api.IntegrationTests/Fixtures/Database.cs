@@ -1,3 +1,4 @@
+using Api.Hosting;
 using Api.Idempotency;
 using Api.Persistence;
 using Audit.Infrastructure;
@@ -496,6 +497,7 @@ public sealed class Database : IAsyncLifetime
             .AddNotificationsInfrastructure()
             .AddAuditInfrastructure()
             .AddBillingInfrastructure()
+            .AddProductModules()
             .BuildServiceProvider();
 
         await MigrationStep.RunAsync(services, ConnectionStringFor(DatabaseRoles.Owner, database), CancellationToken.None);

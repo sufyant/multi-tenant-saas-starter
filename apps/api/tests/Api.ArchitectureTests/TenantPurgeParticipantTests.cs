@@ -10,6 +10,8 @@ namespace Api.ArchitectureTests;
 // composed as a worker, and from its services.
 public sealed class TenantPurgeParticipantTests : IAsyncLifetime
 {
+    private static readonly string[] TemplateParticipants = ["Audit", "Notifications", "Billing", "Api"];
+
     private readonly ComposedApplication _application = new("worker");
 
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
@@ -30,6 +32,8 @@ public sealed class TenantPurgeParticipantTests : IAsyncLifetime
         var named = _application.Services.GetServices<TenantPurgeParticipant>().Select(participant => participant.Module).ToList();
 
         named.ShouldBe(handling, ignoreOrder: true);
-        named.ShouldBe(["Audit", "Notifications", "Billing", "Api"], ignoreOrder: true);
+
+        // The template's participants are among them; a product's module that purges a tenant's data adds its own (X8).
+        TemplateParticipants.ShouldBeSubsetOf(named);
     }
 }

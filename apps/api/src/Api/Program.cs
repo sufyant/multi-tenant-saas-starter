@@ -60,6 +60,7 @@ try
         NotificationsModule.MapEndpoints(platform, me, tenant);
         AuditModule.MapEndpoints(platform, tenant);
         BillingModule.MapEndpoints(platform, tenant, publicRoutes);
+        ProductModules.MapEndpoints(platform, me, tenant, publicRoutes);
         app.MapApiDocuments();
     }
 }

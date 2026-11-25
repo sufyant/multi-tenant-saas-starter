@@ -10,8 +10,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3
 WORKDIR /src
 
 # What restore needs comes first, so a change to the source alone reuses the restore layer.
-# COPY --parents keeps each project file in its own directory. .dockerignore leaves the test projects out.
-COPY --parents global.json Directory.Build.props Directory.Packages.props .editorconfig src/**/*.csproj ./
+# COPY --parents keeps each project file in its own directory. .dockerignore leaves the test projects out. Api.csproj imports
+# the product's ProductModules.props (X8).
+COPY --parents global.json Directory.Build.props Directory.Packages.props .editorconfig src/**/*.csproj src/Api/ProductModules.props ./
 RUN dotnet restore src/Api/Api.csproj
 
 COPY src/ src/

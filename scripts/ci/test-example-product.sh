@@ -2,7 +2,8 @@
 # Builds the example product "Projects" on the template and runs its tests with the template's (X4 of
 # apps/api/docs/ARCHITECTURE.md). The template ships its product lists empty (X1). This script copies
 # apps/api/tests/ExampleProduct/files over the checkout, so the example fills each list, as a product would.
-# Then it writes every generated file and runs the API's unit and architecture tests: the example's own tests
+# Then it writes every generated file and runs the API's unit and architecture tests, and Audit's integration tests
+# (which need Docker): the example's own tests
 # prove each extension point, and the template's tests prove that a product's additions break none of them.
 #
 # Inputs: none; run it from the root of a checkout that you can throw away, because it changes the files.
@@ -37,6 +38,7 @@ for project in \
   src/Shared/SharedKernel.UnitTests \
   src/Shared/Tenancy.UnitTests \
   tests/Api.UnitTests \
+  src/Modules/Audit/Audit.IntegrationTests \
   tests/Api.ArchitectureTests; do
   dotnet test --no-build --project "$project"
 done

@@ -1,0 +1,8 @@
+<Project>
+
+  <!-- The product's modules (X8): the template ships this file empty and never changes it. A product adds the ProjectReference of each
+       module's Api and Infrastructure project here, as Api.csproj names the template's. -->
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>
