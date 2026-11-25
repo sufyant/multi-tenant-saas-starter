@@ -45,6 +45,8 @@ internal static partial class OpenApiContract
 
     private const string AuditOperationsClass = "AuditOperations";
 
+    private const string ProductAuditOperationsClass = "ProductAuditOperations";
+
     private const string OperationMember = "operation";
 
     private const string NotificationTypeSchema = "NotificationType";
@@ -102,12 +104,13 @@ internal static partial class OpenApiContract
             .Order(StringComparer.Ordinal),
     ];
 
-    // K3: Audit declares the operation of every audit entry once, in Audit.Domain's AuditOperations. The host does not reference a
-    // Domain project (section 2), so it finds the class by its name, as it finds the error codes. OpenApiContractTests checks the enum.
+    // K3: Audit declares the operation of every audit entry once, in Audit.Domain's AuditOperations, and a product's in
+    // ProductAuditOperations (X6). The host does not reference a Domain project (section 2), so it finds the classes by their names, as
+    // it finds the error codes. OpenApiContractTests checks the enum.
     private static IReadOnlyList<string> DeclaredAuditOperations { get; } =
     [
         .. AssembliesThatReachSharedKernel.SelectMany(assembly => assembly.GetTypes())
-            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: AuditOperationsClass })
+            .Where(type => type is { IsAbstract: true, IsSealed: true, Name: AuditOperationsClass or ProductAuditOperationsClass })
             .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)

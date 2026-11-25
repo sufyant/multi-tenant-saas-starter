@@ -24,11 +24,13 @@ public sealed partial class AuditOperationTests
     {
         var operations = OperationArgumentsOfEveryRecord();
 
-        var undeclared = operations.Where(operation => !operation.Argument.StartsWith($"{nameof(AuditOperations)}.", StringComparison.Ordinal));
+        var undeclared = operations.Where(operation =>
+            !operation.Argument.StartsWith($"{nameof(AuditOperations)}.", StringComparison.Ordinal)
+            && !operation.Argument.StartsWith($"{nameof(ProductAuditOperations)}.", StringComparison.Ordinal));
 
         operations.ShouldNotBeEmpty();
         undeclared.Select(operation => $"{operation.File}: {operation.Argument}").ShouldBeEmpty(
-            "An audit handler names its operation as a constant of AuditOperations (K3).");
+            "An audit handler names its operation as a constant of AuditOperations or ProductAuditOperations (K3, X6).");
     }
 
     [Fact]
@@ -36,7 +38,7 @@ public sealed partial class AuditOperationTests
     {
         var documented = OperationsInTheList();
 
-        documented.ShouldBe(DeclaredOperations());
+        documented.ShouldBe(ConstantsOf(typeof(AuditOperations)));
     }
 
     // K3: every operation has a decision about its details: the one type of its details, or none. A new operation without a decision
@@ -62,6 +64,15 @@ public sealed partial class AuditOperationTests
 
         types.ShouldNotBeEmpty();
         mapped.ShouldBe(types);
+    }
+
+    // X6: a product's operation keeps no details in step 41, so its entry names only its target.
+    [Fact]
+    public void DeclareAuditDetails_AProductsOperation_HasNoDetails()
+    {
+        var withDetails = ConstantsOf(typeof(ProductAuditOperations)).Where(operation => AuditDetailsTypes.OfOperation[operation] is not null);
+
+        withDetails.ShouldBeEmpty();
     }
 
     // N8: a type of details is named after the constant of its operation in AuditOperations: {Operation}Details.
@@ -93,9 +104,13 @@ public sealed partial class AuditOperationTests
         answered.ShouldBe(expected, ignoreOrder: true);
     }
 
+    // The template's operations and the product's (X6).
     private static List<string> DeclaredOperations() =>
+        [.. ConstantsOf(typeof(AuditOperations)).Concat(ConstantsOf(typeof(ProductAuditOperations))).Order(StringComparer.Ordinal)];
+
+    private static List<string> ConstantsOf(Type type) =>
     [
-        .. typeof(AuditOperations).GetFields(BindingFlags.Public | BindingFlags.Static)
+        .. type.GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)
             .Order(StringComparer.Ordinal),
