@@ -56,6 +56,31 @@ public sealed class EntitlementDirectoryTests(Database database)
         feature.Error.Entitlement.ShouldBe("roles.custom");
     }
 
+    // X3, E6: a module checks its limit with the effective value that the database holds: here the override's, over the plan's.
+    [Fact]
+    public async Task ReadLimit_AnOverride_IsTheOverridesNumber()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        await AddOverrideAsync(tenant, "members.max", EntitlementValue.Limit(9), expiresAt: null);
+        await using var scope = database.Services.CreateAsyncScope();
+
+        var read = await scope.ServiceProvider.GetRequiredService<IEntitlementDirectory>().ReadLimitAsync(tenant.Id, Limits.MembersMax, Cancellation);
+
+        read.ShouldBe(9);
+    }
+
+    [Fact]
+    public async Task ReadLimit_AnUnlimitedOverride_IsNull()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        await AddOverrideAsync(tenant, "members.max", EntitlementValue.Unlimited, expiresAt: null);
+        await using var scope = database.Services.CreateAsyncScope();
+
+        var read = await scope.ServiceProvider.GetRequiredService<IEntitlementDirectory>().ReadLimitAsync(tenant.Id, Limits.MembersMax, Cancellation);
+
+        read.ShouldBeNull();
+    }
+
     private async Task<TenantEntitlements> FindAsync(Tenant tenant)
     {
         await using var scope = database.Services.CreateAsyncScope();
