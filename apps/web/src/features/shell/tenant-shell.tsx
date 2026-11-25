@@ -48,6 +48,7 @@ import { TenantProvider, useTenant } from "@/shared/tenant-context";
 import { useUsageShown } from "@/shared/usage";
 import { useTenantRoles } from "@/shared/use-can-act-on";
 import { useRoleName } from "@/shared/use-role-name";
+import { productSections } from "./product-sections";
 
 /**
  * The tenant web's shell (F28, F30, the Shell screens): the organisation switcher, search, the organisation's bell, Home and the
@@ -186,12 +187,6 @@ export function PendingTenantShell({ slug }: { slug: string }) {
   );
 }
 
-/**
- * The product's own sections, after Home (the Sidebar's description). The template has none; a product adds its items here, each
- * with its permission, and the command menu lists them under Go to.
- */
-export const productSections = (_base: string): NavItem[] => [];
-
 type Known = {
   tenant: MyTenantResponse;
   role: string;
@@ -264,10 +259,29 @@ function TenantFrame({
     icon: HomeIcon,
     href: base,
   };
-  const main = [home, ...productSections(base)];
+  // A product's section reads as its id until the product names it in messages/product (X1).
+  const product: NavItem[] = productSections
+    .filter((section) => can(section.permission))
+    .map((section) => {
+      const key = `shell.${section.id}` as "shell.home";
+      return {
+        id: section.id,
+        label: t.has(key) ? t(key) : section.id,
+        icon: section.icon,
+        href: `${base}/${section.id}`,
+      };
+    });
+  const main = [home, ...product];
   const inSettings = pathname.startsWith(settings);
   const page = pathname.slice(settings.length + 1).split("/")[0] ?? "";
-  const current = notFound ? "" : inSettings ? page : home.id;
+  const inProduct = product.find(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
+  const current = notFound
+    ? ""
+    : inSettings
+      ? page
+      : (inProduct?.id ?? home.id);
   const currentItem = [...main, ...myAccount, ...organisation].find(
     (item) => item.id === current,
   );

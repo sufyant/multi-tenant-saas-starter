@@ -587,8 +587,7 @@
     "meterOverage": "Kotada",
     "meterUnitPrice": "{meter}: fazlanın fiyatı",
     "meterNotOnPlan": "Bu planda yok, bu yüzden kullanımı durur.",
-    "meterAdd": "Plana ekle",
-    "meters": {}
+    "meterAdd": "Plana ekle"
   },
   "planSection": {
     "title": "Plan",

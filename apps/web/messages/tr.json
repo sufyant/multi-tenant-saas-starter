@@ -873,7 +873,6 @@
       "failed": "Harcama limiti belirlenemedi",
       "invalid": "Bir tutar girin, örneğin 50."
     },
-    "meters": {},
     "barNearly": "Bu ayın {meter} kotasının %80’ini kullandınız: {quota} içinden {used}.",
     "barCharging": "{quota} {meter} kotasının tamamını kullandınız. Fazlası her {size} için {price}, KDV hariç.",
     "barCapReached": "{meter} durdu: {amount} (KDV hariç) harcama sınırınıza ulaştınız. {date} tarihinde sıfırlanır.",

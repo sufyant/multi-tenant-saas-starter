@@ -1,10 +1,15 @@
 import { Permission } from "@repo/api-client";
+import {
+  type PermissionGroup,
+  productPermissionGroups,
+} from "./product-permissions";
 
 /**
- * The tenant pool in the groups and the order of the roles screen (the RoleCreate board): Organisation, Members, Invitations,
- * Roles, Activity, Billing (14.01). Manage Owners closes the Members group; only the Owner holds it (K1), so only the Owner's page shows it.
+ * The template's tenant pool in the groups and the order of the roles screen (the RoleCreate board): Organisation, Members,
+ * Invitations, Roles, Activity, Billing (14.01). Manage Owners closes the Members group; only the Owner holds it (K1), so only the
+ * Owner's page shows it.
  */
-export const permissionGroups = [
+const templateGroups = [
   { id: "organisation", permissions: [Permission.TenantProfileRead] },
   {
     id: "members",
@@ -34,10 +39,13 @@ export const permissionGroups = [
   },
   { id: "activity", permissions: [Permission.TenantAuditRead] },
   { id: "billing", permissions: [Permission.TenantBillingManage] },
-] as const satisfies readonly {
-  id: string;
-  permissions: readonly Permission[];
-}[];
+] as const satisfies readonly PermissionGroup[];
+
+/** The groups of the roles screen: the template's, then the product's (`product-permissions.ts`, the API's X1). */
+export const permissionGroups: readonly PermissionGroup[] = [
+  ...templateGroups,
+  ...productPermissionGroups,
+];
 
 /** The permissions that need See roles: a role that gives, changes or takes a role reads the roles (the API's r12). */
 export const needRolesRead: readonly Permission[] = [

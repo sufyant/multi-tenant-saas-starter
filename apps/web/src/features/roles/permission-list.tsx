@@ -59,7 +59,9 @@ export function PermissionList({
   return (
     <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
       {groups.map((group) => {
-        const area = t(`roles.groups.${group.id}`);
+        const area = t(
+          `roles.groups.${group.id}` as "roles.groups.organisation",
+        );
         const count = group.permissions.filter((permission) =>
           held.includes(permission),
         ).length;
