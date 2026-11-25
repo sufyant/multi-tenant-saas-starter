@@ -12,17 +12,20 @@ using Notifications.Infrastructure;
 namespace Api.Hosting;
 
 // The one composition of the host's pipeline with the modules: their handlers and their services. Program calls it, and so does a
-// test host that loads the committed handler code (PipelineHost), so a module added here reaches both (section 9, rule 11).
+// test host that loads the committed handler code (PipelineHost), so a module added here reaches both (section 9, rule 11). The
+// product's modules come from ProductModules (X8).
 internal static class ModuleComposition
 {
     // Returns the role the host runs as, or null when the setting is wrong and the host will not start (AddApiPipeline).
     public static HostRole? AddApiWithModules(this WebApplicationBuilder builder)
     {
-        var role = builder.AddApiPipeline(ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly, BillingModule.HandlerAssembly);
+        var role = builder.AddApiPipeline(
+            [ControlPlaneModule.HandlerAssembly, NotificationsModule.HandlerAssembly, AuditModule.HandlerAssembly, BillingModule.HandlerAssembly, .. ProductModules.HandlerAssemblies]);
         builder.Services.AddControlPlaneInfrastructure();
         builder.Services.AddNotificationsInfrastructure();
         builder.Services.AddAuditInfrastructure();
         builder.Services.AddBillingInfrastructure();
+        builder.Services.AddProductModules();
 
         // The hourly retention of the notifications, the daily retention of the audit logs, and the sync and the cleanup of the feature
         // flags run where the background work runs (W5), as the idempotency cleanup does (I7).

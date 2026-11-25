@@ -49,4 +49,6 @@
     <ProjectReference Include="..\Shared\Tenancy\Tenancy.csproj" />
   </ItemGroup>
 
+  <Import Project="ProductModules.props" />
+
 </Project>
