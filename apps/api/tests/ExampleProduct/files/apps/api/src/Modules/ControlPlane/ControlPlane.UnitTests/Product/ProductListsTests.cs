@@ -21,11 +21,11 @@ public sealed class ProductListsTests
             .ShouldBe((true, true));
 
     [Theory]
-    [InlineData("tenant.projects.read", new[] { BuiltInRole.Owner, BuiltInRole.Admin, BuiltInRole.Member })]
-    [InlineData("tenant.projects.create", new[] { BuiltInRole.Owner, BuiltInRole.Admin, BuiltInRole.Member })]
-    [InlineData("tenant.projects.delete", new[] { BuiltInRole.Owner, BuiltInRole.Admin })]
-    public void GrantBuiltInRoles_AProductPermission_GoesToTheRolesTheProductNames(string permission, BuiltInRole[] holders) =>
-        BuiltInRoles.Holding(permission).ShouldBe(holders);
+    [InlineData("tenant.projects.read", new[] { "Owner", "Admin", "Member" })]
+    [InlineData("tenant.projects.create", new[] { "Owner", "Admin", "Member" })]
+    [InlineData("tenant.projects.delete", new[] { "Owner", "Admin" })]
+    public void GrantBuiltInRoles_AProductPermission_GoesToTheRolesTheProductNames(string permission, string[] holders) =>
+        BuiltInRoles.Holding(permission).Select(role => role.ToString()).ShouldBe(holders);
 
     [Fact]
     public void GenerateEntitlements_TheProductsKeys_AreOnTheEntitlementList() =>
