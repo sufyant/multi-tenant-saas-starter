@@ -1589,6 +1589,8 @@ const shellShots: {
       await page
         .getByRole("textbox", { name: "storage: quota a month" })
         .waitFor();
+      // The new select sits where the button was: move the pointer off it, so the shot shows no hover.
+      await page.mouse.move(0, 0);
     },
   },
   // The price change (6.14 to 6.16, 40b): five organisations pay for Team, two of them yearly.
