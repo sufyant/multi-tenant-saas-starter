@@ -7,8 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Audit.IntegrationTests.AuditLogs;
 
 // A product module records its own entry through this command, because Audit references no product contracts (X8). The command takes
-// only an operation of the product: a template's operation comes from the template's own events (K3). The example job proves the entry
-// of a product's operation (X4).
+// only an operation of the product: a template's operation comes from the template's own events (K3). The example's ProductAuditEntryTests
+// prove the entry of a product's operation (X4).
 public sealed class RecordAuditEntryTests(Database database)
 {
     private static readonly DateTimeOffset OccurredAt = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);

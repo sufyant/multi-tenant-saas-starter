@@ -11,7 +11,7 @@ using Solution = Api.ArchitectureTests.Fixtures.Solution;
 
 namespace Api.ArchitectureTests;
 
-// K3: every command publishes, through the outbox, an event that Audit handles. A command is a message that an endpoint sends: a message type with a handler that a module's Api or Infrastructure project creates, other than a query (List..., Get...).
+// K3: every command publishes, through the outbox, an event that Audit handles, or a product's RecordAuditEntryCommand (X8). A command is a message that an endpoint sends: a message type with a handler that a module's Api or Infrastructure project creates, other than a query (List..., Get...).
 // A handler publishes the messages it returns, so the test follows the types each handler returns, through the handlers of those
 // types (the first step of a saga, for one), until it reaches a message that an Audit handler handles. A handler that returns
 // OutgoingMessages adds its messages to that list in its source: the test reads what it adds there, and nothing it only builds. Read from Wolverine's own
@@ -56,7 +56,7 @@ public sealed class CommandAuditTests : IAsyncLifetime
 
         commands.ShouldContain(typeof(CreateTenantCommand));
         commands.ShouldContain(typeof(DeleteUserCommand));
-        unaudited.ShouldBeEmpty("A command publishes, through the outbox, one event that Audit handles (K3).");
+        unaudited.ShouldBeEmpty("A command publishes, through the outbox, one event that Audit handles, or RecordAuditEntryCommand (K3, X8).");
     }
 
     private static List<Type> CommandsOf(Dictionary<Type, MethodInfo[]> handlers)
