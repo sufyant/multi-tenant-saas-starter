@@ -5,7 +5,7 @@ namespace ControlPlane.Domain.Plans;
 /// feature of <see cref="FeatureKeys"/> or <see cref="ProductFeatureKeys"/>. The template ships this class empty and never changes it: a
 /// product declares its limits here, and <c>apps/api/scripts/generate-entitlements.mjs</c> writes them into
 /// <c>ControlPlane.Contracts/Plans/Limits.g.cs</c>. The product's module checks its limit in its own method, under its own lock, with
-/// the value that <c>IEntitlementDirectory</c> reads from the database (E6, X3).
+/// the tenant's effective value that <c>IEntitlementDirectory</c> reads through the cache (C2, X3).
 /// </summary>
 internal static class ProductLimitKeys
 {
