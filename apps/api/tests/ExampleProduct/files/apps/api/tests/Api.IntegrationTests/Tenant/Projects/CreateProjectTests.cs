@@ -55,7 +55,7 @@ public sealed class CreateProjectTests(Database database) : IAsyncLifetime
         second.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         var problem = await second.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (problem.GetProperty("code").GetString(), problem.GetProperty("entitlement").GetString()).ShouldBe(("plan.limit_reached", "projects.max"));
-        (await ProjectsOfAsync(tenant)).ShouldBe(1L);
+        (await ProjectsOfAsync(tenant)).ShouldBe(1);
     }
 
     // X1, E5: a product feature gates a product endpoint as a template feature does.
@@ -71,7 +71,7 @@ public sealed class CreateProjectTests(Database database) : IAsyncLifetime
         created.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         var problem = await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation);
         (problem.GetProperty("code").GetString(), problem.GetProperty("entitlement").GetString()).ShouldBe(("plan.feature_unavailable", "projects.access"));
-        (await ProjectsOfAsync(tenant)).ShouldBe(0L);
+        (await ProjectsOfAsync(tenant)).ShouldBe(0);
     }
 
     private static async Task<HttpResponseMessage> CreateAsync(HttpClient client, Guid tenantId, string name)
@@ -87,6 +87,6 @@ public sealed class CreateProjectTests(Database database) : IAsyncLifetime
         return (await _testData.AddTenantAsync(planId: plan)).Id;
     }
 
-    private Task<long?> ProjectsOfAsync(Guid tenantId) =>
+    private Task<long> ProjectsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM projects.projects WHERE tenant_id = '{tenantId}'");
 }

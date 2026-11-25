@@ -1,4 +1,4 @@
 namespace Projects.Api.Tenant.Projects;
 
-/// <param name="CreatedBy">The user id of the member who created the project.</param>
+/// <summary>A project of the tenant. <c>createdBy</c> is the user id of the member who created it.</summary>
 public sealed record ProjectResponse(Guid Id, string Name, Guid CreatedBy, DateTimeOffset CreatedAt);

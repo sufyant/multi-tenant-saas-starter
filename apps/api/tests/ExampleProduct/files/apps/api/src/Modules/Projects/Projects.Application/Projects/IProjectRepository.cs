@@ -1,3 +1,4 @@
+using Projects.Application.Projects.ListProjects;
 using Projects.Domain.Projects;
 using SharedKernel;
 
@@ -7,8 +8,8 @@ namespace Projects.Application.Projects;
 /// <remarks>Public because a public handler takes it (W9); its members speak domain types, so they are internal to the module.</remarks>
 public interface IProjectRepository
 {
-    /// <summary>One page of the tenant's projects, the newest first.</summary>
-    Task<ListPage<ProjectView>> ListAsync(PageRequest page, CancellationToken cancellationToken);
+    /// <summary>One page of the tenant's projects, in the list's sort, with the projects whose name holds the search.</summary>
+    Task<ListPage<ProjectView>> ListAsync(ListRequest<ListProjectsSort> list, CancellationToken cancellationToken);
 
     /// <summary>
     /// The number of the tenant's projects, under a lock of the tenant's projects for the rest of the transaction, so two creations count

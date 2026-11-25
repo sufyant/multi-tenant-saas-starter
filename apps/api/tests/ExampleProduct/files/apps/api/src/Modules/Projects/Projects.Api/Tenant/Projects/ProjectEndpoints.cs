@@ -32,15 +32,21 @@ public static class ProjectEndpoints
     }
 
     // The tenant comes from the route: the host has declared it, and row level security keeps the list to it.
-    private static async Task<Result<ListPage<ProjectResponse>>> ListProjects(int? page, int? pageSize, IMessageBus bus, CancellationToken cancellationToken)
+    private static async Task<Result<ListPage<ProjectResponse>>> ListProjects(
+        int? page,
+        int? pageSize,
+        ListSort<ListProjectsSort>? sort,
+        string? q,
+        IMessageBus bus,
+        CancellationToken cancellationToken)
     {
-        var paging = PageRequest.Create(page, pageSize);
-        if (!paging.IsSuccess)
+        var list = ListRequest.Create(page, pageSize, sort, q);
+        if (!list.IsSuccess)
         {
-            return paging.Error;
+            return list.Error;
         }
 
-        var projects = await bus.InvokeAsync<ListPage<ProjectView>>(new ListProjectsQuery(paging.Value), cancellationToken);
+        var projects = await bus.InvokeAsync<ListPage<ProjectView>>(new ListProjectsQuery(list.Value), cancellationToken);
         return projects.Map(ToResponse);
     }
 
