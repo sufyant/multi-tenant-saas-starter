@@ -3,6 +3,15 @@
     "entitlementKey": {
       "projects.access": "Projeler",
       "projects.max": "Proje sınırı"
+    },
+    "area": {
+      "projects": "Projeler"
+    }
+  },
+  "notifications": {
+    "project.created": {
+      "title": "{actorName}, {projectName} projesini oluşturdu",
+      "body": "{actorName}, {tenantName} içinde {projectName} projesini oluşturdu."
     }
   }
 }

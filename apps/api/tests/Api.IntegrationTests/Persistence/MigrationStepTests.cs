@@ -248,9 +248,9 @@ public sealed class MigrationStepTests(Database database)
     }
 
     // Step 33-backend-2: one type for each event, and a person kept by user id. The migration deletes every notification, of any user, as
-    // the maintainer decided: no production holds one. A row of an old type is then refused.
+    // the maintainer decided: no production holds one. Since step 41 no constraint lists the types (X7).
     [Fact]
-    public async Task Migrate_OneNotificationTypePerEvent_DeletesEveryNotificationAndRefusesAnOldType()
+    public async Task Migrate_OneNotificationTypePerEvent_DeletesEveryNotification()
     {
         var before = await database.CreateDatabaseBeforeNotificationsMigrationAsync("OneNotificationTypePerEvent");
         await database.ScalarAsSuperuserAsync<object>(
@@ -266,13 +266,32 @@ public sealed class MigrationStepTests(Database database)
 
         exitCode.ShouldBe(0, output);
         (await database.ScalarAsSuperuserAsync<long>("SELECT count(*) FROM notifications.notifications", before)).ShouldBe(0);
-        var refused = await Should.ThrowAsync<PostgresException>(() => database.ScalarAsSuperuserAsync<object>(
+    }
+
+    // Step 41: no constraint lists the notification types any more, so a product's type needs no migration of the template's table (X7).
+    // The migration keeps every notification.
+    [Fact]
+    public async Task Migrate_DropNotificationTypeCheck_KeepsEveryNotificationAndStoresAProductsType()
+    {
+        var before = await database.CreateDatabaseBeforeNotificationsMigrationAsync("DropNotificationTypeCheck");
+        await database.ScalarAsSuperuserAsync<object>(
             $$"""
             INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
-            VALUES ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', 'tenant.status_changed', 'Platform', '{}', now())
+            VALUES ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', 'member.joined', 'Tenant', '{"tenantName": "Acme"}', now())
             """,
-            before));
-        (refused.SqlState, refused.ConstraintName).ShouldBe((PostgresErrorCodes.CheckViolation, "ck_notifications_type"));
+            before);
+
+        var (exitCode, output) = await MigrateCommand.RunAsync(database.ConnectionStringFor(DatabaseRoles.Owner, before));
+        await database.ScalarAsSuperuserAsync<object>(
+            $$"""
+            INSERT INTO notifications.notifications (id, user_id, tenant_id, type, bell, "values", created_at)
+            VALUES ('{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', '{{Guid.NewGuid()}}', 'project.created', 'Tenant', '{"tenantName": "Acme"}', now())
+            """,
+            before);
+
+        exitCode.ShouldBe(0, output);
+        (await database.ScalarAsSuperuserAsync<string>("SELECT string_agg(type, ',' ORDER BY type) FROM notifications.notifications", before))
+            .ShouldBe("member.joined,project.created");
     }
 
     // Step 35: every notification type is about the person's account or access, so nobody chooses its channels (U4). The migration drops

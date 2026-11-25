@@ -16,7 +16,8 @@ set -euo pipefail
 lists=(apps/api/src/Modules/ControlPlane/ControlPlane.Domain/ProductPermissions.cs
   apps/api/src/Modules/ControlPlane/ControlPlane.Domain/Plans/ProductFeatureKeys.cs
   apps/api/src/Modules/ControlPlane/ControlPlane.Domain/Plans/ProductLimitKeys.cs
-  apps/api/src/Modules/Audit/Audit.Domain/ProductAuditOperations.cs)
+  apps/api/src/Modules/Audit/Audit.Domain/ProductAuditOperations.cs
+  apps/api/src/Modules/Notifications/Notifications.Domain/ProductNotifications.cs)
 if grep -q "const string" "${lists[@]}"; then
   echo "The product's lists are not empty, so this is a product, not the template: the example product does not run."
   exit 0

@@ -3,6 +3,15 @@
     "entitlementKey": {
       "projects.access": "المشاريع",
       "projects.max": "حد المشاريع"
+    },
+    "area": {
+      "projects": "المشاريع"
+    }
+  },
+  "notifications": {
+    "project.created": {
+      "title": "أنشأ {actorName} المشروع {projectName}",
+      "body": "أنشأ {actorName} المشروع {projectName} في {tenantName}."
     }
   }
 }

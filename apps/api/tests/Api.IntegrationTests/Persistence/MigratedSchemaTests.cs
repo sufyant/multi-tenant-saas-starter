@@ -403,8 +403,9 @@ public sealed class MigratedSchemaTests(Database database)
         ]);
     }
 
-    // R15, U1: the same for Notifications. A notification of each bell is stored, and the database refuses a type or a bell the catalog does
-    // not know, a tenant notification about no tenant, and a personal one about a tenant.
+    // R15, U1: the same for Notifications. A notification of each bell is stored, and the database refuses a bell the catalog does not
+    // know, a tenant notification about no tenant, and a personal one about a tenant. No constraint lists the types: the code checks them,
+    // so a product's type is stored without a migration (X7).
     [Fact]
     public async Task WriteRow_BreakingANotificationsCheck_IsRefusedByThatCheck()
     {
@@ -421,15 +422,15 @@ public sealed class MigratedSchemaTests(Database database)
         var refusals = await RefusingAsync(
             migrated,
             PostgresErrorCodes.CheckViolation,
-            $"UPDATE notifications.notifications SET type = 'tenant.renamed' WHERE id = '{tenantNotification}'",
             $"UPDATE notifications.notifications SET bell = 'Email' WHERE id = '{tenantNotification}'",
             $"UPDATE notifications.notifications SET tenant_id = NULL WHERE id = '{tenantNotification}'",
             $"UPDATE notifications.notifications SET tenant_id = gen_random_uuid() WHERE id = '{personalNotification}'",
             $"UPDATE notifications.notifications SET \"values\" = '[]' WHERE id = '{tenantNotification}'");
 
+        await database.ScalarAsSuperuserAsync<object>($"UPDATE notifications.notifications SET type = 'project.created' WHERE id = '{tenantNotification}'", migrated);
+
         refusals.ShouldBe(
         [
-            "ck_notifications_type",
             "ck_notifications_bell",
             "ck_notifications_tenant",
             "ck_notifications_tenant",
