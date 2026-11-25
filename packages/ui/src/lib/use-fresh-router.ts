@@ -23,9 +23,9 @@ const settled = (clerk: Clerk) =>
   });
 
 /**
- * The router for a navigation after a change, whose toast must reach the next page (F63). It first asks clerk-js for the session
- * token, after clerk-js has loaded: clerk-js answers the token it holds, or a new one when that one has expired or is about to, and
- * writes it to the session cookie. So the navigation carries a token the proxy accepts and stays a client-side navigation, which
+ * The router for a navigation after a change, whose toast must reach the next page (F63). It first asks clerk-js for a new session
+ * token, after clerk-js has loaded, past clerk-js's cache: the cache can answer a token that has just expired while its own refresh
+ * is pending. clerk-js writes the new token to the session cookie. So the navigation carries a token the proxy accepts and stays a client-side navigation, which
  * keeps the toast. With an expired token the proxy answers 401, the page loads as a document, and the toast, which lives only in
  * memory, is lost. When clerk-js cannot load or the token cannot be read, the navigation still happens, as a document load. The
  * app passes its own router, Next.js's `useRouter`, as the shells pass their navigation, so this package does not depend on Next.js.
@@ -36,7 +36,7 @@ export function useFreshRouter(router: Router) {
     const fresh = async () => {
       await settled(clerk);
       try {
-        await clerk.session?.getToken();
+        await clerk.session?.getToken({ skipCache: true });
       } catch {
         // The proxy answers 401, and the page loads as a document (F63).
       }
