@@ -10,8 +10,9 @@ namespace ControlPlane.Infrastructure.Persistence.Plans;
 // so a plan edit removes only the plan's entry and every tenant on it sees the edit at once, while a tenant on another plan keeps its
 // entries (C5). A limit's value for a module's check reads the same rows from the database, past the cache (X3). The effective value is
 // computed here with the moment of the call, so an override stops at its expiry without a removal. Plans, their values, overrides and
-// tenants belong to no tenant (R6), so no transaction declares one.
-internal sealed class EntitlementDirectory(ControlPlaneDbContext controlPlane, ReadCache cache, TimeProvider time) : IEntitlementDirectory
+// tenants belong to no tenant (R6), so no transaction declares one. Public because Wolverine's generated code builds it for a product
+// module's handler that reads a limit (W9, X3).
+public sealed class EntitlementDirectory(ControlPlaneDbContext controlPlane, ReadCache cache, TimeProvider time) : IEntitlementDirectory
 {
     public async Task<TenantEntitlements> FindAsync(Guid tenantId, CancellationToken cancellationToken)
     {

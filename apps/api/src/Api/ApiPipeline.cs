@@ -34,6 +34,10 @@ internal static class ApiPipeline
     // The tag of the checks that decide whether a host is ready: the readiness endpoint and the worker's heartbeat run them.
     public const string ReadyTag = "ready";
 
+    // W6: the inline retries of a saga's message that lost on the saga's version. The tenant purge's replies arrive at once, and each
+    // loses at most once to each other reply, so the retries outnumber the other participants; a product adds participants (X8).
+    public const int SagaConcurrencyRetries = 9;
+
     private const string HealthPath = "/health";
 
     // FluentValidation validators are found only in the handler assemblies known when validation is switched on, so they are
@@ -205,7 +209,7 @@ internal static class ApiPipeline
 
             // Of two messages the tenant purge handles at once, the second fails on the saga's version and is tried again on the first
             // one's result (W6, S8). Wolverine does not retry this by itself.
-            options.OnException<SagaConcurrencyException>().RetryTimes(3);
+            options.OnException<SagaConcurrencyException>().RetryTimes(SagaConcurrencyRetries);
             options.OnAnyException().ContinueWith(new QueuedRetries());
 
             // A dead letter expires after its retention (W13).
