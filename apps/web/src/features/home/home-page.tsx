@@ -21,7 +21,7 @@ const cards = [
 
 /**
  * An organisation's Home (the Home screens): "Welcome" with the person's whole name (the API's A7), the organisation's name, and a card for each
- * page the person can open (F5), under the terms notice when there is one. The product's own work comes after it in the menu (`productSections`).
+ * page the person can open (F5), under the terms notice when there is one. The product's own work comes after it in the menu (`productSections` of `features/shell/product-sections.ts`).
  */
 export function HomePage() {
   const t = useTranslations();

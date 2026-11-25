@@ -6,6 +6,7 @@ import {
   createPlan,
   ErrorCode,
   FieldErrorCode,
+  getGetMetersQueryOptions,
   getGetPlanQueryKey,
   getGetPlanQueryOptions,
   getGetPriceChangeQueryOptions,
@@ -65,10 +66,12 @@ import { ValueField } from "@/shared/value-field";
 import { ImpactDialog } from "./impact-dialog";
 import { OldPriceBanner } from "./old-price-banner";
 import {
+  addedMeter,
   freePrices,
   type MeterDraft,
   MetersArea,
   meterDraftsOf,
+  meterKeysOf,
   PricesArea,
   type PriceTexts,
   priceKeys,
@@ -465,6 +468,8 @@ function Form({ plan }: { plan: PlanResponse | null }) {
   const drafts = form.watch("drafts");
   const prices = form.watch("prices");
   const meters = form.watch("meters");
+  // Every meter of the code (X5): a meter the plan does not set yet gets a row too (6.26).
+  const code = useQuery(getGetMetersQueryOptions());
   const [wrongMoney, setWrongMoney] = useState<MoneyErrors>(noMoneyErrors);
   const isDefault = form.watch("isDefault");
   const locked = plan?.isDefault === true;
@@ -742,11 +747,20 @@ function Form({ plan }: { plan: PlanResponse | null }) {
             }
           />
           <MetersArea
+            keys={meterKeysOf(
+              code.data?.meters.map((meter) => meter.key) ?? [],
+              meters,
+            )}
             drafts={meters}
             currency={currency}
             errors={wrongMoney.meters}
             onChange={(index, meter) =>
               form.setValue(`meters.${index}`, meter, { shouldDirty: true })
+            }
+            onAdd={(key) =>
+              form.setValue("meters", [...meters, addedMeter(key, currency)], {
+                shouldDirty: true,
+              })
             }
           />
         </>

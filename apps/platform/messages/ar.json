@@ -586,7 +586,8 @@
     "meterQuota": "{meter}: الحصة الشهرية",
     "meterOverage": "عند بلوغ الحصة",
     "meterUnitPrice": "{meter}: سعر الإضافي",
-    "meters": {}
+    "meterNotOnPlan": "ليس في هذه الخطة، لذا يتوقف استخدامه.",
+    "meterAdd": "إضافة إلى الخطة"
   },
   "planSection": {
     "title": "الخطة",

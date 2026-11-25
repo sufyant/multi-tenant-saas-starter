@@ -47,14 +47,15 @@ export function UsageSection({
 
 /** The values as text: `usageFormat` of `packages/ui`, as the web's Usage reads them (F29), and a meter's word. */
 function useUsageText(usage: UsageResponse) {
-  const t = useTranslations("usage");
+  const plans = useTranslations("plans");
   const locale = useTranslations()("locale.format");
   return {
     ...usageFormat(usage, locale),
-    // The product's own word for a meter; the template ships none, so a meter reads as its key, as in the web and the emails (E10).
+    // The product's own word for a meter, the one the plan editor shows (`plans.meters` of `messages/product`); the template ships
+    // none, so a meter reads as its key, as in the web and the emails (E10).
     meterName: (key: string) => {
-      const message = `meters.${key}` as Parameters<typeof t>[0];
-      return t.has(message) ? t(message) : key;
+      const message = `meters.${key}` as Parameters<typeof plans>[0];
+      return plans.has(message) ? plans(message) : key;
     },
   };
 }

@@ -873,7 +873,6 @@
       "failed": "Couldn’t set the spending cap",
       "invalid": "Enter an amount, such as 50."
     },
-    "meters": {},
     "barNearly": "You’ve used 80% of this month’s {meter}: {used} of {quota}.",
     "barCharging": "You’ve used all {quota} {meter}. The extra costs {price} per {size}, excl. VAT.",
     "barCapReached": "{meter} stopped: you reached your spending cap of {amount} excl. VAT. They reset on {date}.",

@@ -896,6 +896,51 @@ const removeHannah = async (page: Page) => {
 };
 
 /** Team at €10 per person a month (6.13 to 6.16). */
+/**
+ * Team at €10 per person a month and €100 a year, with a meter of the tests' own (6.13; the template ships none, and "AI requests"
+ * is the frame's sample data). The code's meters are the plan's, and "storage" beside it for the meter that the plan does not set
+ * (6.26, 6.27).
+ */
+const teamPricedAndMetered = async (page: Page, code = ["ai.requests"]) => {
+  await mockFramePlans(page);
+  await page.route("**/api/v1/platform/meters", (route) =>
+    route.fulfill({
+      json: { meters: code.map((key) => ({ key, description: key })) },
+    }),
+  );
+  await page.route(`**/api/v1/platform/plans/${framePlans.team.id}`, (route) =>
+    route.request().method() === "GET"
+      ? route.fulfill({
+          json: {
+            ...framePlans.team,
+            prices: {
+              baseMonthly: 0,
+              baseYearly: 0,
+              perPersonMonthly: 1000,
+              perPersonYearly: 10000,
+            },
+            meters: [
+              {
+                key: "ai.requests",
+                quota: 10000,
+                overage: "charge",
+                unitPrice: 100,
+                unitSize: 1000,
+              },
+            ],
+          },
+        })
+      : route.fallback(),
+  );
+};
+
+/** The monthly fee per person edited to €12, as 6.13 draws it. */
+const editPerPersonMonthly = async (page: Page) => {
+  const field = page.getByRole("textbox", { name: "Per person, monthly" });
+  await field.fill("12");
+  await page.getByText("Today €10. Changed.", { exact: false }).waitFor();
+};
+
 const teamAtTen = async (page: Page) => {
   await mockFramePlans(page);
   await page.route(`**/api/v1/platform/plans/${framePlans.team.id}`, (route) =>
@@ -1511,46 +1556,41 @@ const shellShots: {
     open: turnCustomRolesOff,
     fullPage: true,
   })),
-  // Prices and meters (6.13, 40a): Team at €10 per person a month and €100 a year, with a meter of the tests' own (the template
-  // ships none; "AI requests" is the frame's sample data), and the monthly fee per person edited to €12.
+  // Prices and meters (6.13, 40a): Team priced and metered (teamPricedAndMetered), and the monthly fee per person edited to €12.
   {
     file: "6.13-plan-team-prices-and-meters-en-light-desktop",
     size: "desktop",
     path: teamPath,
     fullPage: true,
-    mock: async (page) => {
-      await mockFramePlans(page);
-      await page.route(
-        `**/api/v1/platform/plans/${framePlans.team.id}`,
-        (route) =>
-          route.request().method() === "GET"
-            ? route.fulfill({
-                json: {
-                  ...framePlans.team,
-                  prices: {
-                    baseMonthly: 0,
-                    baseYearly: 0,
-                    perPersonMonthly: 1000,
-                    perPersonYearly: 10000,
-                  },
-                  meters: [
-                    {
-                      key: "ai.requests",
-                      quota: 10000,
-                      overage: "charge",
-                      unitPrice: 100,
-                      unitSize: 1000,
-                    },
-                  ],
-                },
-              })
-            : route.fallback(),
-      );
-    },
+    mock: teamPricedAndMetered,
+    open: editPerPersonMonthly,
+  },
+  // A meter that the plan does not set (6.26), and the same meter added to the plan (6.27): 41b.
+  {
+    file: "6.26-plan-meter-not-on-the-plan-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    fullPage: true,
+    mock: (page) => teamPricedAndMetered(page, ["ai.requests", "storage"]),
     open: async (page) => {
-      const field = page.getByRole("textbox", { name: "Per person, monthly" });
-      await field.fill("12");
-      await page.getByText("Today €10. Changed.", { exact: false }).waitFor();
+      await editPerPersonMonthly(page);
+      await page.getByRole("button", { name: "Add to plan" }).waitFor();
+    },
+  },
+  {
+    file: "6.27-plan-meter-added-to-the-plan-en-light-desktop",
+    size: "desktop",
+    path: teamPath,
+    fullPage: true,
+    mock: (page) => teamPricedAndMetered(page, ["ai.requests", "storage"]),
+    open: async (page) => {
+      await editPerPersonMonthly(page);
+      await page.getByRole("button", { name: "Add to plan" }).click();
+      await page
+        .getByRole("textbox", { name: "storage: quota a month" })
+        .waitFor();
+      // The new select sits where the button was: move the pointer off it, so the shot shows no hover.
+      await page.mouse.move(0, 0);
     },
   },
   // The price change (6.14 to 6.16, 40b): five organisations pay for Team, two of them yearly.
