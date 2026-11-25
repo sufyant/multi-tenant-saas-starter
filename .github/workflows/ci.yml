@@ -164,7 +164,7 @@ jobs:
         run: scripts/ci/check-generated.sh
 
   # The example product "Projects" fills the template's empty product lists, as a product would, and the API's unit and architecture
-  # tests run on it (X4 in apps/api/docs/ARCHITECTURE.md). It writes the generated files first, so it needs Node and .NET.
+  # tests run on it, with the integration tests that a product module reaches (X4 in apps/api/docs/ARCHITECTURE.md). It writes the generated files first, so it needs Node and .NET.
   example-product:
     name: "Example product: build and test"
     runs-on: ubuntu-latest

@@ -44,7 +44,7 @@ internal sealed class EffectiveEntitlements
     public Result CheckLimit(string limit, int count) =>
         ValueOf(limit).Allows(count)
             ? Result.Success()
-            : Error.Conflict(ControlPlaneErrorCodes.PlanLimitReached, "The tenant has as many as its plan allows.") with { Entitlement = limit };
+            : Error.Conflict(PlanErrorCodes.LimitReached, "The tenant has as many as its plan allows.") with { Entitlement = limit };
 
     // A key without a value is closed, but a missing Activity log period keeps every entry, as unlimited does: a period of 0 would delete
     // the whole log, and a missing value never deletes (E3).

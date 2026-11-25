@@ -59,8 +59,6 @@ public static class ControlPlaneErrorCodes
 
     public static readonly ErrorCode PlanFeatureUnavailable = ErrorCode.Declare("plan.feature_unavailable");
 
-    public static readonly ErrorCode PlanLimitReached = ErrorCode.Declare("plan.limit_reached");
-
     public static readonly ErrorCode PlanMeterInvalid = ErrorCode.Declare("plan.meter_invalid");
 
     public static readonly ErrorCode PlanNameInvalid = ErrorCode.Declare("plan.name_invalid");

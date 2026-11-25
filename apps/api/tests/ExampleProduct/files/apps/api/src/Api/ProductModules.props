@@ -1,0 +1,9 @@
+<Project>
+
+  <!-- The product's modules (X8): the example product's module Projects. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Projects\Projects.Api\Projects.Api.csproj" />
+    <ProjectReference Include="..\Modules\Projects\Projects.Infrastructure\Projects.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

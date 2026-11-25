@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json;
+using Api.Hosting;
 using Audit.Application.AuditLogs.ApplyAuditRetention;
 using Audit.Application.AuditLogs.ApplyTenantAuditRetention;
 using Audit.Application.AuditLogs.DeleteExpiredEntries;
@@ -177,6 +178,7 @@ public sealed class HostRoleTests(Database database)
         new(typeof(UserDeletedEvent), typeof(RecordUserDeletedHandler)),
         new(typeof(DeleteIdentityAccountCommand), typeof(DeleteIdentityAccountHandler)),
         new(typeof(DeleteUserFilesCommand), typeof(DeleteUserFilesHandler)),
+        .. ProductPurgeHandlers(),
     ];
 
     // The handlers of every message a person's data export sends after its request, as docs/flows/personal-data-export.md lists them,
@@ -1542,6 +1544,14 @@ public sealed class HostRoleTests(Database database)
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
+
+    // X8: each product module that takes part in the purge handles its command in its own handler assembly.
+    private static IEnumerable<HandlerRun> ProductPurgeHandlers() =>
+        ProductModules.HandlerAssemblies
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type.GetMethods().Any(method => method.Name is "Handle" or "HandleAsync"
+                && method.GetParameters().FirstOrDefault()?.ParameterType == typeof(PurgeTenantDataCommand)))
+            .Select(handler => new HandlerRun(typeof(PurgeTenantDataCommand), handler));
 
     private static async Task<Guid> IdOfAsync(HttpResponseMessage created) =>
         (await created.Content.ReadFromJsonAsync<JsonElement>(Cancellation)).GetProperty("id").GetGuid();

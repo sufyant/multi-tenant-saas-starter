@@ -77,6 +77,23 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
     }
 
+    // X8: each product module that takes part in the purge deletes the tenant's rows of its tenant tables and keeps another tenant's. The
+    // template has no product table, so here the list is empty; the example product's copy of ProductTenantTables fills it (X4).
+    [Fact]
+    public async Task PurgeTenant_AProductsTenantTables_DeletesTheTenantsRowsAndKeepsAnotherTenants()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var kept = await ClosedTenantWithDataAsync("Kept Ltd");
+        await AddProductRowsAsync(tenant.Id);
+        await AddProductRowsAsync(kept.Id);
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await ProductRowsOfAsync(tenant.Id)).ShouldAllBe(rows => rows.Value == 0);
+        (await ProductRowsOfAsync(kept.Id)).ShouldAllBe(rows => rows.Value == 1);
+        (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
+    }
+
     // B8: a subscription that has not ended ends at Stripe at once with the purge; the tenant's rows go with its other data.
     [Fact]
     public async Task PurgeTenant_ASubscriptionThatHasNotEnded_EndsItAtStripe()
@@ -373,14 +390,18 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         database.ScalarAsSuperuserAsync<long>(
             $"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenantId}' AND operation = '{operation}'", _databaseName);
 
-    // The purge's start, as the closure scheduled it, and every message it causes.
-    private Task<Guid> PurgeAsync(Guid tenantId, DateTimeOffset closedAt) =>
-        _api.WaitingForMessagesAsync(async () =>
+    // The purge's start, as the closure scheduled it, and every message it causes. The participants reply at once, so a reply may fail on
+    // the saga's version and run again on the other's result (W6): that is the one failure the purge may meet on its way.
+    private async Task<Guid> PurgeAsync(Guid tenantId, DateTimeOffset closedAt)
+    {
+        var session = await _api.TrackMessagesAsync(async () =>
         {
             using var scope = _api.Services.CreateScope();
             await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeForTenantAsync(tenantId.ToString(), new StartTenantPurgeCommand(tenantId, closedAt), Cancellation);
-            return tenantId;
         });
+        session.AllExceptions().ShouldAllBe(exception => exception is SagaConcurrencyException);
+        return tenantId;
+    }
 
     // A closed tenant with one of each kind of data: two members, a custom role with two permissions, a cancelled invitation, an override,
     // an entry of its own log and one of the platform's, two notifications about it, of two users in two bells (U8), and its customer and
@@ -421,6 +442,26 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     }
 
     // Every row of the tenant in each table that holds its data, as the superuser sees them: no policy binds it.
+    // One row in each product tenant table (TenantTables, R9).
+    private async Task AddProductRowsAsync(Guid tenantId)
+    {
+        foreach (var table in ProductTenantTables.All.Keys)
+        {
+            await database.ExecuteInTenantAsync(tenantId, TenantTables.InsertRow(table, tenantId), database: _databaseName);
+        }
+    }
+
+    private async Task<Dictionary<string, long>> ProductRowsOfAsync(Guid tenantId)
+    {
+        var rows = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var table in ProductTenantTables.All.Keys)
+        {
+            rows[table] = await database.ScalarAsSuperuserAsync<long>(TenantTables.CountRowsOf(table, tenantId), _databaseName);
+        }
+
+        return rows;
+    }
+
     private Task<string?> RowsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(
             $"""
