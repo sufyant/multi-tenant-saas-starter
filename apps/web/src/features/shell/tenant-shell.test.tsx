@@ -10,6 +10,7 @@ import {
   getGetMyTenantMockHandler,
   getGetMyTenantResponseMock,
 } from "@repo/api-client/msw";
+import { HomeIcon } from "@repo/ui/components/icon";
 import { useQueryClient } from "@tanstack/react-query";
 import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -50,6 +51,15 @@ vi.mock("@clerk/nextjs", () => ({
   }),
 }));
 vi.mock("@/i18n/set-locale", () => ({ setLocale: vi.fn(async () => {}) }));
+// The product's sections, which the template ships empty: a test gives one (X1).
+const product = vi.hoisted(() => ({
+  sections: [] as import("./product-sections").ProductSection[],
+}));
+vi.mock("./product-sections", () => ({
+  get productSections() {
+    return product.sections;
+  },
+}));
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
@@ -57,6 +67,7 @@ afterEach(() => {
   server.resetHandlers();
   route.pathname = "/northwind";
   clerk.loaded = true;
+  product.sections = [];
 });
 afterAll(() => server.close());
 
@@ -181,6 +192,44 @@ describe("TenantShell", () => {
         .getAllByRole("link")
         .map((link) => link.textContent),
     ).toEqual(["Home", "Settings"]);
+  });
+
+  // A product's section follows Home for a role that holds its permission, and is the current row on its own pages (F59, X1). The
+  // template ships no word for it, so it reads as its id until the product names it in messages/product.
+  it("TenantShell_AProductSection_FollowsHomeByItsPermissionAndIsCurrentOnItsPages", async () => {
+    product.sections = [
+      {
+        id: "projects",
+        icon: HomeIcon,
+        permission: Permission.TenantMembersRead,
+      },
+      {
+        id: "reports",
+        icon: HomeIcon,
+        permission: Permission.TenantAuditRead,
+      },
+    ];
+    route.pathname = "/northwind/projects/42";
+    server.use(...answers(1));
+
+    renderWithProviders(shell());
+
+    await screen.findByText("Content");
+    const menu = screen.getByRole("navigation", { name: "Main menu" });
+    expect(
+      within(menu)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Home", "projects", "Settings"]);
+    expect(
+      within(menu).getByRole("link", { name: "projects" }),
+    ).toHaveAttribute("href", "/northwind/projects");
+    expect(
+      within(menu).getByRole("link", { name: "projects" }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(
+      within(menu).getByRole("link", { name: "Home" }),
+    ).not.toHaveAttribute("aria-current");
   });
 
   // Profile opens without an organisation now, so Settings opens General, the organisation's page that every role can open
