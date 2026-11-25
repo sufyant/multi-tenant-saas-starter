@@ -6,13 +6,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Audit.IntegrationTests.AuditLogs;
 
-// The example product records project.created through RecordAuditEntryCommand (X8): the tenant's own log keeps one entry by the member,
-// with the tenant as its target and no details (X6).
-public sealed class ProductAuditEntryTests(Database database)
+// A product module records its own entry through this command, because Audit references no product contracts (X8). The command takes
+// only an operation of the product: a template's operation comes from the template's own events (K3). The example product's copy of
+// this file keeps the template's test and adds the entry of its operation project.created (X4).
+public sealed class RecordAuditEntryTests(Database database)
 {
     private static readonly DateTimeOffset OccurredAt = new(2026, 11, 25, 9, 0, 0, TimeSpan.Zero);
 
     private static CancellationToken Cancellation => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task RecordAuditEntry_ATemplatesOperation_IsRefusedAndWritesNoEntry()
+    {
+        var command = new RecordAuditEntryCommand(Guid.CreateVersion7(), OccurredAt, Guid.CreateVersion7(), Guid.CreateVersion7(), AuditOperations.TenantRenamed);
+
+        var record = () => InTenant.RunAsync(database.Services, command.TenantId, scope =>
+            RecordAuditEntryHandler.HandleAsync(command, scope.GetRequiredService<IAuditLog>(), Cancellation));
+
+        (await record.ShouldThrowAsync<ArgumentException>()).ParamName.ShouldBe("command");
+        (await Logs.CountAsync(database.Services, Logs.Tenant, command.TenantId, command.EventId)).ShouldBe(0);
+    }
 
     [Fact]
     public async Task RecordAuditEntry_AProductsOperation_WritesTheTenantEntryByTheMember()
