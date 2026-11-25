@@ -2098,6 +2098,14 @@ export interface MeResponse {
 }
 
 /**
+ * A meter the code defines: its key, lowercase and dotted, and what it counts (X5).
+ */
+export interface MeterResponse {
+  key: string;
+  description: string;
+}
+
+/**
  * What happens when a tenant's use of a meter reaches the plan's quota in a period: the use stops, or the extra is charged.
  */
 export type MeterSettingResponseOverage = typeof MeterSettingResponseOverage[keyof typeof MeterSettingResponseOverage];
@@ -2118,6 +2126,13 @@ export interface MeterSettingResponse {
   overage: MeterSettingResponseOverage;
   unitPrice: number;
   unitSize: number;
+}
+
+/**
+ * Every meter the code defines, the template's and the product's, by key (X5).
+ */
+export interface MetersResponse {
+  meters: MeterResponse[];
 }
 
 /**

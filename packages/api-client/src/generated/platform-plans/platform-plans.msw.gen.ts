@@ -31,6 +31,7 @@ import type {
   GetPlanUpdatePreviewRequest,
   GiveTenantTrialRequest,
   ListPageOfPlanListItemResponse,
+  MetersResponse,
   PlanNameResponse,
   PlanResponse,
   PlanRetentionShortenedResponse,
@@ -57,6 +58,8 @@ export const getGetPlanResponseMock = (overrideResponse: Partial<Extract<PlanRes
 export const getUpdatePlanResponseMock = (overrideResponse: Partial<Extract<PlanResponse, object>> = {}): PlanResponse => ({id: faker.string.uuid(), name: faker.string.alpha({length: {min: 10, max: 20}}), isDefault: faker.datatype.boolean(), tenantCount: faker.number.int(), entitlements: {
         [faker.string.alphanumeric(5)]: {enabled: faker.helpers.arrayElement([faker.datatype.boolean(), null]), maximum: faker.helpers.arrayElement([faker.number.int(), null]), unlimited: faker.datatype.boolean()}
       }, currency: faker.string.alpha({length: {min: 10, max: 20}}), prices: {baseMonthly: faker.number.int(), perPersonMonthly: faker.number.int(), baseYearly: faker.number.int(), perPersonYearly: faker.number.int()}, meters: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), quota: faker.number.int(), overage: faker.helpers.arrayElement(Object.values(MeterSettingResponseOverage)), unitPrice: faker.number.int(), unitSize: faker.number.int()})), createdAt: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getGetMetersResponseMock = (overrideResponse: Partial<Extract<MetersResponse, object>> = {}): MetersResponse => ({meters: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({key: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
 export const getGetPlanUpdatePreviewResponsePlanRetentionShortenedResponseMock = (overrideResponse: Partial<PlanRetentionShortenedResponse> = {}): PlanRetentionShortenedResponse => ({...{count: faker.number.int(), fromDays: faker.helpers.arrayElement([faker.number.int(), null]), toDays: faker.number.int()}, ...overrideResponse});
 
@@ -165,6 +168,18 @@ export const getUpdatePlanMockHandler = (overrideResponse?: PlanResponse | ((inf
   }, options)
 }
 
+export const getGetMetersMockHandler = (overrideResponse?: MetersResponse | ((info: Parameters<HttpResponseResolver>[0]) => Promise<MetersResponse> | MetersResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/v1/platform/meters', async (info: Parameters<HttpResponseResolver>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetMetersResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getGetPlanUpdatePreviewMockHandler = (overrideResponse?: PlanUpdatePreviewPageResponse | ((info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => Promise<PlanUpdatePreviewPageResponse> | PlanUpdatePreviewPageResponse), options?: RequestHandlerOptions) => {
   return http.post<{ planId: string }, GetPlanUpdatePreviewRequest>('*/v1/platform/plans/:planId/preview', async (info: Parameters<HttpResponseResolver<{ planId: string }, GetPlanUpdatePreviewRequest>>[0]) => {
 
@@ -263,6 +278,7 @@ export const getPlatformPlansMock = () => [
   getCreatePlanMockHandler(),
   getGetPlanMockHandler(),
   getUpdatePlanMockHandler(),
+  getGetMetersMockHandler(),
   getGetPlanUpdatePreviewMockHandler(),
   getGetTenantPlanMockHandler(),
   getChangeTenantPlanMockHandler(),
