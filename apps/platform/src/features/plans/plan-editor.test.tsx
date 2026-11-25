@@ -24,6 +24,7 @@ import { meAnswer, problem } from "../../../test/organisations";
 import {
   excess,
   free,
+  metersAnswer,
   partner,
   planAnswer,
   plansAnswer,
@@ -54,7 +55,7 @@ afterEach(() => getToken.mockClear());
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
-beforeEach(() => server.use(meAnswer(), plansAnswer()));
+beforeEach(() => server.use(meAnswer(), plansAnswer(), metersAnswer()));
 afterEach(() => {
   server.resetHandlers();
   router.push.mockReset();
@@ -654,6 +655,65 @@ describe("PlanEditor", () => {
           overage: MeterSettingResponseOverage.Charge,
           unitPrice: 100,
           unitSize: 1000,
+        },
+      ],
+    });
+  });
+
+  // 6.26, 6.27: the editor lists every meter of the code. A meter the plan does not set says its use stops, and Add to plan gives it
+  // a quota of 0 that stops, which the save sends beside the plan's other meters.
+  it("Save_AMeterNotOnThePlan_AddsItWithAQuotaOf0ThatStops", async () => {
+    const updates: Call[] = [];
+    const metered = {
+      ...pro,
+      meters: [
+        {
+          key: "test.requests",
+          quota: 10000,
+          overage: MeterSettingResponseOverage.Charge,
+          unitPrice: 100,
+          unitSize: 1000,
+        },
+      ],
+    };
+    server.use(
+      metersAnswer(["test.requests", "test.storage"]),
+      planAnswer(metered),
+      plansCommand("patch", `plans/${pro.id}`, [updated], updates),
+    );
+    renderWithProviders(<PlanEditor planId={pro.id} />);
+    const storage = within(
+      await screen.findByRole("group", { name: "test.storage" }),
+    );
+    expect(
+      storage.getByText("Not on this plan, so its use stops."),
+    ).toBeVisible();
+    expect(storage.queryByRole("textbox")).toBeNull();
+
+    await userEvent.click(storage.getByRole("button", { name: "Add to plan" }));
+
+    expect(
+      storage.getByRole("textbox", { name: "test.storage: quota a month" }),
+    ).toHaveValue("0");
+    expect(storage.getByRole("combobox")).toHaveTextContent("Stop");
+    expect(storage.queryByRole("button", { name: "Add to plan" })).toBeNull();
+    await save();
+    await waitFor(() => expect(updates).toHaveLength(1));
+    expect(updates[0]?.body).toMatchObject({
+      meters: [
+        {
+          key: "test.requests",
+          quota: 10000,
+          overage: MeterSettingResponseOverage.Charge,
+          unitPrice: 100,
+          unitSize: 1000,
+        },
+        {
+          key: "test.storage",
+          quota: 0,
+          overage: MeterSettingResponseOverage.Stop,
+          unitPrice: 0,
+          unitSize: 1,
         },
       ],
     });

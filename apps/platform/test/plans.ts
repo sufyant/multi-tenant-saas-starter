@@ -115,6 +115,14 @@ export const plansAnswer = (
     return HttpResponse.json(page);
   });
 
+/** GetMeters: every meter of the code, by key; the template defines none (the API's X5). */
+export const metersAnswer = (keys: readonly string[] = []) =>
+  http.get("*/v1/platform/meters", () =>
+    HttpResponse.json({
+      meters: keys.map((key) => ({ key, description: `Counts ${key}.` })),
+    }),
+  );
+
 /** GetPlan: it counts the reads and answers the plan. */
 export const planAnswer = (
   value: PlanResponse,
