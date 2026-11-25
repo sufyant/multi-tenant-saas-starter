@@ -63,7 +63,7 @@ public sealed class RevokeInvitationTests(Database database) : IAsyncLifetime
         var invited = PlatformTenants.Email();
         _api.Email.Refuses = invited;
         var messages = await _api.TrackMessagesAsync(() => _api.CreateClient(owner).InviteMemberAsync(tenant.Id, invited));
-        var ready = messages.Sent.SingleMessage<InvitationReadyEvent>();
+        var ready = messages.Sent.MessagesOf<InvitationReadyEvent>().Where(ready => ready.Email == invited).ShouldHaveSingleItem();
         await _api.WaitingForMessagesAsync(() => RevokeAsync(owner, tenant.Id, ready.InvitationId));
         _api.Email.Refuses = null;
 
