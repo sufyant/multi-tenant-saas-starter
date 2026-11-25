@@ -19,16 +19,17 @@ internal static class BuiltInRoles
         PermissionPools.TenantRolesDelete);
 
     // Admins hold what owners hold, but the permissions that are the owners' alone (K1), the management of roles and billing. They read
-    // the roles, because they give them. Billing is the Owner's and the Billing manager's (step 40, frame 14.01).
+    // the roles, because they give them. Billing is the Owner's and the Billing manager's (step 40, frame 14.01). Of the product's
+    // permissions, they hold those that the product gives the Admin or the Member role (X2).
     private static readonly FrozenSet<string> AdminPermissions =
         PermissionPools.TenantPool.Except(PermissionPools.OwnerOnly).Except(RoleManagement).Except([PermissionPools.TenantBillingManage])
+            .Except(ProductPermissions.Tenant.Except(ProductPermissions.Admin).Except(ProductPermissions.Member))
             .ToFrozenSet(StringComparer.Ordinal);
 
-    // Members get the permissions of the capabilities that modules add for them.
-    private static readonly FrozenSet<string> MemberPermissions = FrozenSet.Create(
+    // Members get the permissions of the capabilities that modules add for them: the product gives them in ProductPermissions.Member (X2).
+    private static readonly FrozenSet<string> MemberPermissions = FrozenSet.Create<string>(
         StringComparer.Ordinal,
-        PermissionPools.TenantMembersRead,
-        PermissionPools.TenantProfileRead);
+        [PermissionPools.TenantMembersRead, PermissionPools.TenantProfileRead, .. ProductPermissions.Member]);
 
     // A Billing manager reads the tenant and its members, and manages billing. A product module never adds a permission to it, so it
     // never uses the product: it is free and takes no seat (Role.TakesSeat).
