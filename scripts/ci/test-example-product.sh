@@ -8,14 +8,26 @@
 # Inputs: none; run it from the root of a checkout that you can throw away, because it changes the files.
 # Exit codes: the exit code of the first command that fails.
 #
-# Run it locally: git stash -u, then scripts/ci/test-example-product.sh, then git checkout . && git clean -fd.
+# Run it locally: git stash -u, then scripts/ci/test-example-product.sh, then git reset --hard && git clean -fd.
+# In a product, whose lists are not empty, the script stops with exit code 0 and changes nothing: the example
+# would overwrite the product's own lists, and the product's own tests prove them.
 set -euo pipefail
+
+lists=(apps/api/src/Modules/ControlPlane/ControlPlane.Domain/ProductPermissions.cs
+  apps/api/src/Modules/ControlPlane/ControlPlane.Domain/Plans/ProductFeatureKeys.cs
+  apps/api/src/Modules/ControlPlane/ControlPlane.Domain/Plans/ProductLimitKeys.cs)
+if grep -q "const string" "${lists[@]}"; then
+  echo "The product's lists are not empty, so this is a product, not the template: the example product does not run."
+  exit 0
+fi
 
 cp -R apps/api/tests/ExampleProduct/files/. .
 pnpm generate
 
 cd apps/api
 dotnet build Api.slnx
+# A product commits what the build writes, such as openapi/v1.json, so the tests compare with these files.
+git add --all
 for project in \
   src/Modules/ControlPlane/ControlPlane.UnitTests \
   src/Modules/Notifications/Notifications.UnitTests \
