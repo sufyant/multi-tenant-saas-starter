@@ -163,6 +163,32 @@ jobs:
       - name: Check that every generated file is current
         run: scripts/ci/check-generated.sh
 
+  # The example product "Projects" fills the template's empty product lists, as a product would, and the API's unit and architecture
+  # tests run on it (X4 in apps/api/docs/ARCHITECTURE.md). It writes the generated files first, so it needs Node and .NET.
+  example-product:
+    name: "Example product: build and test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - run: corepack enable
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: apps/api/global.json
+
+      - name: Copy the example product over the template, then build and test it
+        run: scripts/ci/test-example-product.sh
+
   # The image jobs test the images, not the business logic. The api job runs the test suite.
   # Grype is pinned by digest here. PostgreSQL is pinned by digest in apps/api/db/postgres-image,
   # which the test fixtures and scripts/ci/run-api-image.sh read. Dependabot updates neither
@@ -481,7 +507,7 @@ jobs:
   # in the diff, not in the repository settings.
   ci:
     name: CI
-    needs: [node, api, generated, api-image, web-image, platform-image, e2e, dependency-review]
+    needs: [node, api, generated, example-product, api-image, web-image, platform-image, e2e, dependency-review]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 1

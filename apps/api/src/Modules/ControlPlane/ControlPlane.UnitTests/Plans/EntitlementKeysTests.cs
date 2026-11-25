@@ -4,19 +4,20 @@ namespace ControlPlane.UnitTests.Plans;
 
 public sealed class EntitlementKeysTests
 {
-    // D1: the keys are declared once, each with its kind, in FeatureKeys and LimitKeys.
+    // D1: the keys are declared once, each with its kind, in FeatureKeys and LimitKeys. A product adds its own beside them (X1), so the
+    // test names the template's keys only (X4).
     [Fact]
-    public void ListKeys_TheCodesList_HoldsEachKeyWithItsKind()
+    public void ListKeys_TheCodesList_HoldsEachTemplateKeyWithItsKind()
     {
-        EntitlementKeys.All.ShouldBe(
-            new Dictionary<string, EntitlementKind>
-            {
-                ["roles.custom"] = EntitlementKind.Feature,
-                ["roles.custom.max"] = EntitlementKind.Limit,
-                ["members.max"] = EntitlementKind.Limit,
-                ["audit.retention.days"] = EntitlementKind.Limit,
-            },
-            ignoreOrder: true);
+        var templateKeys = new Dictionary<string, EntitlementKind>
+        {
+            ["roles.custom"] = EntitlementKind.Feature,
+            ["roles.custom.max"] = EntitlementKind.Limit,
+            ["members.max"] = EntitlementKind.Limit,
+            ["audit.retention.days"] = EntitlementKind.Limit,
+        };
+
+        templateKeys.ShouldBeSubsetOf(EntitlementKeys.All);
     }
 
     // A key is lowercase and dotted, its area first, like a permission name.
