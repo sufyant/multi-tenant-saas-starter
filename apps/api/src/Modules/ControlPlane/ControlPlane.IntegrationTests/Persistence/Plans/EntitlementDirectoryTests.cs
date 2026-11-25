@@ -1,8 +1,14 @@
+using System.Diagnostics.Metrics;
 using ControlPlane.Contracts.Plans;
 using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Tenants;
 using ControlPlane.Infrastructure.Persistence;
+using ControlPlane.Infrastructure.Persistence.Plans;
+using ControlPlane.IntegrationTests.Fixtures;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Tenancy.Caching;
 
 namespace ControlPlane.IntegrationTests.Persistence.Plans;
 
@@ -67,6 +73,28 @@ public sealed class EntitlementDirectoryTests(Database database)
         var read = await scope.ServiceProvider.GetRequiredService<IEntitlementDirectory>().ReadLimitAsync(tenant.Id, Limits.MembersMax, Cancellation);
 
         read.ShouldBe(9);
+    }
+
+    // X3, E6: FindAsync answers from the cache, so a write that the cache has not seen yet shows only in ReadLimitAsync.
+    [Fact]
+    public async Task ReadLimit_AChangeTheCacheHasNotSeen_IsTheDatabasesValue()
+    {
+        var tenant = await TestData.AddTenantAsync(database.Services);
+        await AddOverrideAsync(tenant, "members.max", EntitlementValue.Unlimited, expiresAt: null);
+        await using var scope = database.Services.CreateAsyncScope();
+        var controlPlane = scope.ServiceProvider.GetRequiredService<ControlPlaneDbContext>();
+        var directory = new EntitlementDirectory(
+            controlPlane,
+            new ReadCache(new FakeHybridCache(), NullLogger<ReadCache>.Instance, scope.ServiceProvider.GetRequiredService<IMeterFactory>()),
+            TimeProvider.System);
+        await directory.FindAsync(tenant.Id, Cancellation);
+        await controlPlane.Database.ExecuteSqlAsync(
+            $"UPDATE control_plane.entitlement_overrides SET maximum = 9, unlimited = false WHERE tenant_id = {tenant.Id} AND key = 'members.max'",
+            Cancellation);
+
+        var read = await directory.ReadLimitAsync(tenant.Id, Limits.MembersMax, Cancellation);
+
+        (read, (await directory.FindAsync(tenant.Id, Cancellation)).Limits["members.max"]).ShouldBe(((int?)9, (int?)null));
     }
 
     [Fact]

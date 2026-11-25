@@ -22,14 +22,14 @@ public sealed class GetMetersTests(Database database) : IAsyncLifetime
         // The template defines no meter (step 40), so the host defines its own.
         _api = new ApiFactory(
             database.ConnectionStringFor(DatabaseRoles.Application),
-            configureServices: services => services.Replace(ServiceDescriptor.Singleton(MeterCode.Of(("ai.requests", "AI requests the members make."), ("storage.gigabytes", "Gigabytes of files the organisation stores.")))));
+            configureServices: services => services.Replace(ServiceDescriptor.Singleton(MeterCode.Of(("storage.gigabytes", "Gigabytes of files the organisation stores."), ("ai.requests", "AI requests the members make.")))));
         return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync() => await _api.DisposeAsync();
 
     [Fact]
-    public async Task GetMeters_TheCodesMeters_AnswersEachWithWhatItCounts()
+    public async Task GetMeters_TheCodesMeters_AnswersEachByKeyWithWhatItCounts()
     {
         var admin = _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
