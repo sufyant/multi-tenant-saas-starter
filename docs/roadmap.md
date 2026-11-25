@@ -757,6 +757,9 @@ Parts:
 
 41b-frontend: the product's lists of both apps: the menu sections (`productSections`), the permissions' names in the role editor, and the product's messages in three languages. The platform's plan editor (6.13) lists every meter of the catalog, with a row for a meter that the plan does not set. The frames of that row come first (the Figma rule, `docs/decisions.md`, section 2, 2026-11-14). It waits for 41a-backend.
 
+- As built: the product's sections in `apps/web/src/features/shell/product-sections.ts`, the product's permission groups in `apps/web/src/features/roles/product-permissions.ts`, and the product's texts in `apps/{web,platform}/messages/product/{en,tr,ar}.json`, all shipped empty. `withProduct` of `packages/ui` merges the texts over the template's, in both apps and in `packages/emails` (F14). The plan editor reads `GET /v1/platform/meters` and shows each meter of the code that the plan does not set: "Not on this plan, so its use stops." and "Add to plan" (6.26), which adds it with a quota of 0 and Stop (6.27). The platform's Usage names a meter from `plans.meters`, the one place of a meter's name in the platform.
+- The thread's choices, not the maintainer's decisions: "Add to plan" adds a meter that stops at 0, because a meter that the plan does not set stops already (`apps/api/docs/flows/plans-and-entitlements.md`), so adding it allows no use until the operator sets a quota (section 5b, step 2). A meter's row has no "Remove" in step 41; a meter that the plan sets stays on it. A product's section, permission or meter without its word shows its key, so a product sees the missing word on the screen and no screen breaks.
+
 41c-docs: the guide `docs/starting-a-product.md`: start a product with the template as its upstream, add each extension point with the "Projects" example, bring the template's changes in, and move a feature into the template.
 
 ## 10. Step 42: Observability
