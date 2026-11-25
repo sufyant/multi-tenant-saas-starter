@@ -16,7 +16,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 38 | Terms of use | done |
 | 39 | Feature flags | done |
 | 40 | Billing | done |
-| 41 | Extension points | todo |
+| 41 | Extension points | in progress |
 | 42 | Observability | todo |
 | 43 | Accessibility and end-to-end tests | todo |
 | 44 | Marketing site | todo |
@@ -731,11 +731,27 @@ Which parts run at the same time: 40-design runs beside any backend part. A fron
 
 ## 9. Step 41: Extension points
 
-Status: todo.
+Status: in progress.
 
 - How a product adds modules, permissions, entitlement keys, meters, notification types and menu sections without editing template files.
 - An example business module, end to end.
 - A guide to start a product from the template, with the template as its git upstream.
+
+Decided points:
+
+- Each extension point has two lists: the template's list and the product's list. The template ships the product's list empty and never changes it after this step. A product changes only its own lists and its own folders, so `git merge upstream/main` brings the template's changes without a conflict (the maintainer's decision of 2026-11-25, option A of three).
+- A feature can move both ways. The template's changes reach a product through the merge. A general feature that a product built first moves into the template: its folder is copied, its lines move from the product's list to the template's list, and the template's pull request takes it; at the next merge the product deletes its copy. A test keeps the template's code free of any reference to a product's list (the maintainer's requirement of 2026-11-25).
+- The example business module, "Projects", is in the test projects only: a list of projects, a permission, a limit, a meter, a notification type and a menu item. CI proves each extension point with it on every run; a product gets nothing to delete. It shows no screen in the apps, so the step has no frame. Why: the template already defines its test meter this way (step 40, the maintainer's decision of 2026-11-14), and fixed rule 7 keeps a part without a use out. The maintainer's decision of 2026-11-25, option B of three.
+- A product brings the template's changes in with `git merge upstream/main`, never a rebase: a rebase rewrites the product's published history (Git documentation, "The Perils of Rebasing"). Technical; decided in the thread on 2026-11-25.
+- A product's permission names the built-in roles that hold it in the product's list. The Owner holds every tenant permission (A2). The Billing manager holds none of a product's (step 40, decided). Technical; decided in the thread on 2026-11-25.
+
+Parts:
+
+41a-backend: the product's lists of the API: modules (`ModuleComposition`), permissions with their built-in roles, feature and limit keys (the generators read both lists), meters (`MeterCatalog`), notification types (`NotificationCatalog`) and audit operations. The platform's plan read answers the catalog's meters (`MeterCatalog`, the open item of step 40). The "Projects" example module in the test projects, and the test that the template does not reference a product's list.
+
+41b-frontend: the product's lists of both apps: the menu sections (`productSections`), the permissions' names in the role editor, and the product's messages in three languages. The platform's plan editor (6.13) lists every meter of the catalog, with a row for a meter that the plan does not set. The frames of that row come first (the Figma rule, `docs/decisions.md`, section 2, 2026-11-14). It waits for 41a-backend.
+
+41c-docs: the guide `docs/starting-a-product.md`: start a product with the template as its upstream, add each extension point with the "Projects" example, bring the template's changes in, and move a feature into the template.
 
 ## 10. Step 42: Observability
 
@@ -807,7 +823,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Step 40 is done, in the parts of section 8: 40a (#299, #300, #304), 40b (#305 to #316, #318 to #320, #322 to #324), 40c (#325, #326) and 40d (#327 to #333 and the pull request of 40d-frontend's part 4). Then steps 41 to 47, in the order of section 1.
+5. Step 40 is done, in the parts of section 8: 40a (#299, #300, #304), 40b (#305 to #316, #318 to #320, #322 to #324), 40c (#325, #326) and 40d (#327 to #334). Step 41 is in progress, in the parts of section 9: 41a-backend, then 41b-frontend, then 41c-docs. Then steps 42 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:
