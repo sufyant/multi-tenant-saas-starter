@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using Audit.Application.BillingEmails;
 using Audit.Application.Invitations;
@@ -95,7 +96,7 @@ public static class AuditDetailsTypes
     public const string TermsVersionUpdated = AuditOperations.TermsVersionUpdated;
 
     /// <summary>Every operation, with the type of its details, or null for an operation without details.</summary>
-    public static IReadOnlyDictionary<string, Type?> OfOperation { get; } = new Dictionary<string, Type?>(StringComparer.Ordinal)
+    public static IReadOnlyDictionary<string, Type?> OfOperation { get; } = WithTheProductsOperations(new Dictionary<string, Type?>(StringComparer.Ordinal)
     {
         [AuditOperations.ActivityLogExported] = null,
         [AuditOperations.FeatureFlagAddedToCode] = typeof(FeatureFlagAddedToCodeDetails),
@@ -161,7 +162,7 @@ public static class AuditDetailsTypes
         [AuditOperations.UserRenamed] = null,
         [AuditOperations.UserSignedUp] = null,
         [AuditOperations.UserSuspended] = null,
-    };
+    });
 
     /// <summary>
     /// The stored details of an entry as the type of its operation, or null when the entry has none. A stored object that its operation
@@ -171,4 +172,15 @@ public static class AuditDetailsTypes
         details is null ? null
         : OfOperation[operation] is { } type ? (AuditDetails)JsonSerializer.Deserialize(details, type, JsonSerializerOptions.Web)!
         : throw new InvalidOperationException($"The operation {operation} keeps no details.");
+
+    // X6: a product's operation keeps no details in step 41.
+    private static Dictionary<string, Type?> WithTheProductsOperations(Dictionary<string, Type?> template)
+    {
+        foreach (var field in typeof(ProductAuditOperations).GetFields(BindingFlags.Public | BindingFlags.Static).Where(field => field.IsLiteral))
+        {
+            template.Add((string)field.GetRawConstantValue()!, null);
+        }
+
+        return template;
+    }
 }
