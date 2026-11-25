@@ -21,8 +21,12 @@ public sealed class EntitlementUsageTests
     [Fact]
     public void Count_AuditRetentionDays_IsZero() => Usage.CountOf("audit.retention.days").ShouldBe(0);
 
-    // Every key of the list has its count, so a new key cannot be forgotten here.
+    // Every key of the list has its count, so a new key of the template cannot be forgotten here. A product's key counts 0, because its
+    // module owns what it counts (X3).
     [Fact]
     public void Count_EveryKeyOfTheList_HasACount() =>
         EntitlementKeys.All.Keys.Select(key => Usage.CountOf(key)).ShouldAllBe(count => count >= 0);
+
+    [Fact]
+    public void Count_AKeyNotOnTheList_Throws() => Should.Throw<ArgumentException>(() => Usage.CountOf("unknown.items.max"));
 }

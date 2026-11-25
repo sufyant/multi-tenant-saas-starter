@@ -22,6 +22,10 @@ internal static class EntitlementKeys
 
     public static IReadOnlyList<string> Limits { get; } = [.. ConstantsOf(LimitTypes)];
 
+    /// <summary>The product's keys, of <see cref="ProductFeatureKeys"/> and <see cref="ProductLimitKeys"/>.</summary>
+    public static IReadOnlySet<string> Product { get; } =
+        ConstantsOf([typeof(ProductFeatureKeys), typeof(ProductLimitKeys)]).ToFrozenSet(StringComparer.Ordinal);
+
     /// <summary>Each limit that depends on a feature, with that feature, read from the limit's <see cref="DependsOnAttribute"/>.</summary>
     public static IReadOnlyDictionary<string, string> Dependencies { get; } =
         LimitTypes.SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))

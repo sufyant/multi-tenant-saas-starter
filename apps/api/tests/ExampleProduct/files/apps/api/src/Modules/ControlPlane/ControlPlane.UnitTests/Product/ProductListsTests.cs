@@ -29,10 +29,10 @@ public sealed class ProductListsTests
 
     [Fact]
     public void GenerateEntitlements_TheProductsKeys_AreOnTheEntitlementList() =>
-        (Features.Projects, Limits.ProjectsMax).ShouldBe(("projects", "projects.max"));
+        (Features.ProjectsAccess, Limits.ProjectsMax).ShouldBe(("projects.access", "projects.max"));
 
     [Fact]
     public void ListKeys_TheProductsKeys_HaveTheirKindsAndTheirFeature() =>
-        (EntitlementKeys.KindOf("projects"), EntitlementKeys.KindOf("projects.max"), EntitlementKeys.FeatureOf("projects.max"))
-            .ShouldBe(((EntitlementKind?)EntitlementKind.Feature, (EntitlementKind?)EntitlementKind.Limit, (string?)"projects"));
+        (EntitlementKeys.KindOf("projects.access"), EntitlementKeys.KindOf("projects.max"), EntitlementKeys.FeatureOf("projects.max"))
+            .ShouldBe(((EntitlementKind?)EntitlementKind.Feature, (EntitlementKind?)EntitlementKind.Limit, (string?)"projects.access"));
 }

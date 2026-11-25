@@ -10,6 +10,6 @@ namespace ControlPlane.Domain.Plans;
 internal static class ProductLimitKeys
 {
     /// <summary>How many projects the tenant may have.</summary>
-    [DependsOn(ProductFeatureKeys.Projects)]
+    [DependsOn(ProductFeatureKeys.ProjectsAccess)]
     public const string ProjectsMax = "projects.max";
 }

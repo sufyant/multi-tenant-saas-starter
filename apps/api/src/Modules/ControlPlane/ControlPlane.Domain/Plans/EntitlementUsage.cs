@@ -9,13 +9,15 @@ internal sealed record EntitlementUsage(int CustomRoles, int SeatedMembers, int 
 {
     /// <summary>
     /// The count of the key: what a limit counts, and, for a feature, what the tenant has that uses it. A feature is in use while the
-    /// count is more than 0. The Activity log period counts nothing, so it is never over (E4).
+    /// count is more than 0. The Activity log period counts nothing, so it is never over (E4). A product's key counts 0 here, because the
+    /// product's module owns what it counts and checks its limit itself (X3).
     /// </summary>
     public int CountOf(string key) => key switch
     {
         FeatureKeys.RolesCustom or LimitKeys.RolesCustomMax => CustomRoles,
         LimitKeys.MembersMax => SeatedMembers + SeatedInvitations,
         LimitKeys.AuditRetentionDays => 0,
+        _ when EntitlementKeys.Product.Contains(key) => 0,
         _ => throw new ArgumentException("The key is not on the code's list.", nameof(key)),
     };
 }

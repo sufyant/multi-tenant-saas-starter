@@ -8,5 +8,5 @@ namespace ControlPlane.Domain.Plans;
 internal static class ProductFeatureKeys
 {
     /// <summary>The tenant keeps projects.</summary>
-    public const string Projects = "projects";
+    public const string ProjectsAccess = "projects.access";
 }

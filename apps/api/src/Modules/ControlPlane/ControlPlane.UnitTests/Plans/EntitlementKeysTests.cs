@@ -38,12 +38,17 @@ public sealed class EntitlementKeysTests
     [Fact]
     public void KindOf_AKeyNotOnTheList_IsNone() => EntitlementKeys.KindOf("roles.unknown").ShouldBeNull();
 
-    // E1: a limit names the feature it depends on, once, in its declaration in LimitKeys.
+    // E1: a limit names the feature it depends on, once, in its declaration in LimitKeys. The test names the template's limits only (X4).
     [Fact]
     public void ListDependencies_TheCodesList_HoldsEachDependentLimitWithItsFeature()
     {
-        EntitlementKeys.Dependencies.ShouldBe(new Dictionary<string, string> { ["roles.custom.max"] = "roles.custom" }, ignoreOrder: true);
+        new Dictionary<string, string> { ["roles.custom.max"] = "roles.custom" }.ShouldBeSubsetOf(EntitlementKeys.Dependencies);
     }
+
+    // X1: the product's keys are the keys of ProductFeatureKeys and ProductLimitKeys, none of the template's.
+    [Fact]
+    public void ListProductKeys_TheTemplatesKeys_AreNotTheProducts() =>
+        EntitlementKeys.Product.Intersect(["roles.custom", "roles.custom.max", "members.max", "audit.retention.days"]).ShouldBeEmpty();
 
     [Fact]
     public void ListDependencies_EveryDependentLimit_NamesAFeatureOfTheList()
