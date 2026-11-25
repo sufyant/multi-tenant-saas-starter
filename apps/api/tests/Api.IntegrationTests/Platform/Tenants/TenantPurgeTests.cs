@@ -84,11 +84,8 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     {
         var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
         var kept = await ClosedTenantWithDataAsync("Kept Ltd");
-        foreach (var table in ProductTenantTables.All.Keys)
-        {
-            await database.ExecuteInTenantAsync(tenant.Id, TenantTables.InsertRow(table, tenant.Id), database: _databaseName);
-            await database.ExecuteInTenantAsync(kept.Id, TenantTables.InsertRow(table, kept.Id), database: _databaseName);
-        }
+        await AddProductRowsAsync(tenant.Id);
+        await AddProductRowsAsync(kept.Id);
 
         await PurgeAsync(tenant.Id, ClosedAt);
 
@@ -445,6 +442,15 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     }
 
     // Every row of the tenant in each table that holds its data, as the superuser sees them: no policy binds it.
+    // One row in each product tenant table (TenantTables, R9).
+    private async Task AddProductRowsAsync(Guid tenantId)
+    {
+        foreach (var table in ProductTenantTables.All.Keys)
+        {
+            await database.ExecuteInTenantAsync(tenantId, TenantTables.InsertRow(table, tenantId), database: _databaseName);
+        }
+    }
+
     private async Task<Dictionary<string, long>> ProductRowsOfAsync(Guid tenantId)
     {
         var rows = new Dictionary<string, long>(StringComparer.Ordinal);
