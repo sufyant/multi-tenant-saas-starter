@@ -63,7 +63,7 @@ public static class ProjectEndpoints
         var member = await bus.InvokeAsync<Guid>(new GetMemberQuery(user.Id()), cancellationToken);
         var limit = await bus.InvokeAsync<int?>(new GetProjectLimitQuery(tenantId), cancellationToken);
         var created = await idempotency.ExecuteAsync<ProjectView>(
-            new CreateProjectCommand(tenantId, request.Name?.Trim() ?? string.Empty, member, limit), tenantId.ToString(), cancellationToken);
+            new CreateProjectCommand(user.Id(), tenantId, member, request.Name?.Trim() ?? string.Empty, limit), tenantId.ToString(), cancellationToken);
         return created.Map(ToResponse);
     }
 

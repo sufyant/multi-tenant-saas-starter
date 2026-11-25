@@ -17,8 +17,9 @@ public static class ProjectsInfrastructure
             TenancyServiceCollectionExtensions.MessageSchema);
         services.AddModuleMigrations<ProjectsDbContext>(ProjectsDbContext.Schema);
 
-        // Registered by type, so Wolverine builds it in its generated code on the handler's own DbContext (W1).
+        // Registered by type, so Wolverine builds them in its generated code on the handler's own DbContext (W1).
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectQueries, ProjectQueries>();
         return services;
     }
 }

@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Audit.Contracts.AuditLogs;
+using Notifications.Contracts.Notifications;
+using Projects.Application.Projects.NotifyProjectCreated;
 using Tenancy;
 
 namespace Api.IntegrationTests.Tenant.Projects;
@@ -42,6 +45,35 @@ public sealed class CreateProjectTests(Database database) : IAsyncLifetime
         (await _notifications.ValueListOfAsync(owner, "project.created")).ShouldBe($"actorName={memberId}, projectName=Apollo, tenantName=Acme Ltd");
     }
 
+    // The production layout (AGENTS.md, HostRoleTests): the web host creates the project and, through the outbox, sends its audit entry and
+    // its notification; a worker records the entry, finds the Owners and writes their bell, each once.
+    [Fact]
+    public async Task CreateProject_OnAWebAndAWorkerHost_RecordsItAndTellsTheOwnersInTheWorker()
+    {
+        var name = await database.CreateMigratedDatabaseAsync();
+        var runs = new HandlerRuns();
+        await using var web = Host(name, "web", runs);
+        await using var worker = Host(name, "worker", runs);
+        _ = worker.Services;
+        var testData = new TestData(database, name);
+        var plan = await testData.AddPlanAsync(new() { ["projects.access"] = true, ["projects.max"] = TestData.Unlimited, ["members.max"] = TestData.Unlimited });
+        var (tenant, _) = await testData.AddTenantAsync(planId: plan);
+        await testData.AddMemberAsync(tenant, role: "Owner");
+        var member = web.CreateClient(await testData.AddMemberAsync(tenant));
+
+        var created = await CreateAsync(member, tenant, "Apollo");
+        await Waiting.UntilAsync(async () => await database.ScalarAsSuperuserAsync<long>(
+            $"SELECT count(*) FROM notifications.notifications WHERE tenant_id = '{tenant}' AND type = 'project.created'", name) > 0);
+
+        created.StatusCode.ShouldBe(HttpStatusCode.Created);
+        Type[] sent = [typeof(RecordAuditEntryCommand), typeof(NotifyProjectCreatedCommand), typeof(SendNotificationCommand)];
+        runs.In("web").Where(run => sent.Contains(run.Message)).ShouldBeEmpty();
+        runs.In("worker").Where(run => sent.Contains(run.Message)).Select(run => run.Message.Name)
+            .ShouldBe(["RecordAuditEntryCommand", "NotifyProjectCreatedCommand", "SendNotificationCommand"], ignoreOrder: true);
+        (await database.ScalarAsSuperuserAsync<long>($"SELECT count(*) FROM audit.entries WHERE tenant_id = '{tenant}' AND operation = 'project.created'", name))
+            .ShouldBe(1L);
+    }
+
     // X3: the module counts its rows under its own lock, against the limit read from the database.
     [Fact]
     public async Task CreateProject_AtTheLimit_IsAConflictAndCreatesNothing()
@@ -80,6 +112,16 @@ public sealed class CreateProjectTests(Database database) : IAsyncLifetime
         request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         return await client.SendAsync(request, Cancellation);
     }
+
+    private ApiFactory Host(string databaseName, string role, HandlerRuns runs) => new(
+        database.ConnectionStringFor(DatabaseRoles.Application, databaseName),
+        settings: new Dictionary<string, string?> { ["Host:Role"] = role },
+        configureServices: services =>
+        {
+            HandlerRunsOfHost.Register(role, runs)(services);
+            ApiFactory.RemoveFeatureFlagJob(services);
+            ApiFactory.RemoveAuditRetention(services);
+        });
 
     private async Task<Guid> TenantOnAPlanAsync(int limit)
     {
