@@ -1,0 +1,8 @@
+{
+  "notificationWords": {
+    "entitlementKey": {
+      "projects.access": "Projects",
+      "projects.max": "Projects limit"
+    }
+  }
+}
