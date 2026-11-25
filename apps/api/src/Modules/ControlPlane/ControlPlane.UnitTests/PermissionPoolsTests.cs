@@ -5,6 +5,12 @@ namespace ControlPlane.UnitTests;
 
 public sealed class PermissionPoolsTests
 {
+    // X2: a product permission that the Admin or the Member holds is a tenant permission of the product, so no role holds one that
+    // the tenant pool does not.
+    [Fact]
+    public void ListProductPermissions_TheSetsOfTheRoles_ArePartOfTheTenantSet() =>
+        ProductPermissions.Admin.Union(ProductPermissions.Member).ShouldBeSubsetOf(ProductPermissions.Tenant);
+
     // A tenant's custom roles choose from the tenant pool, so a platform permission must never be part of it.
     [Fact]
     public void ComparePools_TenantAndSystem_ShareNoPermission()
