@@ -3,6 +3,15 @@
     "entitlementKey": {
       "projects.access": "Projects",
       "projects.max": "Projects limit"
+    },
+    "area": {
+      "projects": "Projects"
+    }
+  },
+  "notifications": {
+    "project.created": {
+      "title": "{actorName} created {projectName}",
+      "body": "{actorName} created the project {projectName} in {tenantName}."
     }
   }
 }

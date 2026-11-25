@@ -117,8 +117,8 @@ public static class NotificationCatalog
     public static readonly IReadOnlyList<string> CardBrands =
         ["amex", "cartes_bancaires", "diners", "discover", "eftpos_au", "interac", "jcb", "link", "mastercard", "unionpay", "visa", UnknownCard];
 
-    /// <summary>The types whose name is no audit operation, each with its reason (U9).</summary>
-    public static readonly IReadOnlyDictionary<string, string> NamedApart = new Dictionary<string, string>(StringComparer.Ordinal)
+    /// <summary>The template's types whose name is no audit operation, each with its reason (U9).</summary>
+    public static readonly IReadOnlyDictionary<string, string> TemplateNamedApart = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         [TenantOwnerJoined] = "member.joined tells the inviter; the platform's Owner invitation tells the system admins instead.",
         [UserDataExportReady] = "The worker completes an export; no command does, so no audit operation records it.",
@@ -137,8 +137,12 @@ public static class NotificationCatalog
         [TenantSpendingCapReached] = UsageApart,
     };
 
-    /// <summary>Every type, by its name.</summary>
-    public static readonly IReadOnlyDictionary<string, NotificationKind> Kinds = new NotificationKind[]
+    /// <summary>The types whose name is no audit operation, the template's and the product's, each with its reason (U9, X7).</summary>
+    public static readonly IReadOnlyDictionary<string, string> NamedApart =
+        TemplateNamedApart.Concat(ProductNotifications.NamedApart).ToDictionary(StringComparer.Ordinal);
+
+    /// <summary>The template's types, in the order of the catalog.</summary>
+    public static readonly IReadOnlyList<NotificationKind> Template = new NotificationKind[]
     {
         // The platform's Make Owner names no person, as the tenant's Activity says "the platform": the actor is missing then. It leads to
         // the general settings, which show "Your role" to every role. A role is the member's access, so the email tells them too (U5).
@@ -407,7 +411,11 @@ public static class NotificationCatalog
         // platform's Feature flags.
         FeatureFlagCleanup(FeatureFlagsReadyToRemove),
         FeatureFlagCleanup(FeatureFlagsUnused),
-    }.ToDictionary(kind => kind.Type, StringComparer.Ordinal);
+    };
+
+    /// <summary>Every type, the template's and the product's (X7), by its name. A name that both lists declare is a mistake of ours.</summary>
+    public static readonly IReadOnlyDictionary<string, NotificationKind> Kinds =
+        Template.Concat(ProductNotifications.Kinds).ToDictionary(kind => kind.Type, StringComparer.Ordinal);
 
     // The areas of the list, each a word of notificationWords.area: a member's news, a change of the reader's own role or membership, the
     // plan and its values, the platform's news of an organisation, and the reader's own account.
@@ -434,6 +442,14 @@ public static class NotificationCatalog
     /// <summary>The entry of a stored or a sent type. A type the catalog does not know is a mistake of ours.</summary>
     public static NotificationKind Of(string type) =>
         Kinds.TryGetValue(type, out var kind) ? kind : throw new InvalidOperationException($"The notification catalog has no type {type}.");
+
+    /// <summary>
+    /// The entry of a product's type that a product module sends (X7). A template type has its own handler, so a product module that sends
+    /// one, or a type the catalog does not know, is a mistake of ours.
+    /// </summary>
+    public static NotificationKind OfProduct(string type) =>
+        ProductNotifications.Kinds.SingleOrDefault(kind => kind.Type == type)
+            ?? throw new InvalidOperationException($"The product's notification types have no type {type}.");
 
     // A change of a tenant's status, to every system admin but the one who did it, in the platform's bell and by email (U5).
     private static NotificationKind Status(string type, params NotificationValue[] more) => new(
