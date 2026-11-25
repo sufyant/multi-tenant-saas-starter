@@ -36,7 +36,8 @@ public static class SendNotificationHandler
             notification.Type,
             notification.EventId,
             notification.OccurredAt,
-            notification.TenantId,
+            // A product's personal type leads into no tenant, so it keeps none, as the Owners' status types of the template keep none (X7).
+            kind.Bell == NotificationBell.Personal ? null : notification.TenantId,
             values,
             await users.FindContactsAsync(notification.RecipientIds, cancellationToken),
             notification.ActorId,
