@@ -6,7 +6,7 @@ namespace ControlPlane.Domain;
 /// The permissions of the permission list in their two pools. Tenant roles choose from the tenant pool only; system admins hold the
 /// platform pool (A4). The names are declared once, here. Contracts does not reference Domain (section 2), so
 /// <c>apps/api/scripts/generate-permissions.mjs</c> writes the permission list, <c>ControlPlane.Contracts/Permissions.g.cs</c>, from these
-/// constants (D1).
+/// constants (D1). The pools also hold the product's permissions, which <see cref="ProductPermissions"/> declares (X1).
 /// </summary>
 internal static class PermissionPools
 {
@@ -94,22 +94,25 @@ internal static class PermissionPools
 
     public const string TenantBillingManage = "tenant.billing.manage";
 
-    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create(
+    public static IReadOnlySet<string> TenantPool { get; } = FrozenSet.Create<string>(
         StringComparer.Ordinal,
-        TenantMembersRead,
-        TenantMembersUpdate,
-        TenantMembersDelete,
-        TenantOwnersManage,
-        TenantProfileRead,
-        TenantInvitationsCreate,
-        TenantInvitationsRead,
-        TenantInvitationsDelete,
-        TenantAuditRead,
-        TenantRolesRead,
-        TenantRolesCreate,
-        TenantRolesUpdate,
-        TenantRolesDelete,
-        TenantBillingManage);
+        [
+            TenantMembersRead,
+            TenantMembersUpdate,
+            TenantMembersDelete,
+            TenantOwnersManage,
+            TenantProfileRead,
+            TenantInvitationsCreate,
+            TenantInvitationsRead,
+            TenantInvitationsDelete,
+            TenantAuditRead,
+            TenantRolesRead,
+            TenantRolesCreate,
+            TenantRolesUpdate,
+            TenantRolesDelete,
+            TenantBillingManage,
+            .. ProductPermissions.Tenant,
+        ]);
 
     /// <summary>
     /// The permissions of the tenant pool that only the Owner role holds (K1): giving the Owner role, changing or removing an Owner, and
@@ -117,34 +120,37 @@ internal static class PermissionPools
     /// </summary>
     public static IReadOnlySet<string> OwnerOnly { get; } = FrozenSet.Create(StringComparer.Ordinal, TenantOwnersManage);
 
-    public static IReadOnlySet<string> PlatformPool { get; } = FrozenSet.Create(
+    public static IReadOnlySet<string> PlatformPool { get; } = FrozenSet.Create<string>(
         StringComparer.Ordinal,
-        PlatformTenantsCreate,
-        PlatformTenantsRead,
-        PlatformTenantsSuspend,
-        PlatformTenantsReactivate,
-        PlatformTenantsUpdate,
-        PlatformTenantsClose,
-        PlatformTenantsReopen,
-        PlatformTenantsInviteOwner,
-        PlatformTenantsMakeOwner,
-        PlatformTenantsChangePlan,
-        PlatformTenantsOverrideEntitlements,
-        PlatformPlansRead,
-        PlatformPlansCreate,
-        PlatformPlansUpdate,
-        PlatformFlagsRead,
-        PlatformFlagsUpdate,
-        PlatformTermsRead,
-        PlatformTermsCreate,
-        PlatformTermsUpdate,
-        PlatformTermsCancel,
-        PlatformUsersRead,
-        PlatformUsersSuspend,
-        PlatformUsersReactivate,
-        PlatformUsersUpdate,
-        PlatformUsersDelete,
-        PlatformSystemAdminsCreate,
-        PlatformSystemAdminsDelete,
-        PlatformAuditRead);
+        [
+            PlatformTenantsCreate,
+            PlatformTenantsRead,
+            PlatformTenantsSuspend,
+            PlatformTenantsReactivate,
+            PlatformTenantsUpdate,
+            PlatformTenantsClose,
+            PlatformTenantsReopen,
+            PlatformTenantsInviteOwner,
+            PlatformTenantsMakeOwner,
+            PlatformTenantsChangePlan,
+            PlatformTenantsOverrideEntitlements,
+            PlatformPlansRead,
+            PlatformPlansCreate,
+            PlatformPlansUpdate,
+            PlatformFlagsRead,
+            PlatformFlagsUpdate,
+            PlatformTermsRead,
+            PlatformTermsCreate,
+            PlatformTermsUpdate,
+            PlatformTermsCancel,
+            PlatformUsersRead,
+            PlatformUsersSuspend,
+            PlatformUsersReactivate,
+            PlatformUsersUpdate,
+            PlatformUsersDelete,
+            PlatformSystemAdminsCreate,
+            PlatformSystemAdminsDelete,
+            PlatformAuditRead,
+            .. ProductPermissions.Platform,
+        ]);
 }

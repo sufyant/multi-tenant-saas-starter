@@ -163,4 +163,4 @@ Every feature step starts with the plan questions (E7):
 3. What is each plan's value of each key?
 4. What does each limit count, written in `EntitlementUsage`?
 
-A new key is added to `FeatureKeys` or `LimitKeys`, with a migration for the CHECK constraints. It is closed until a system admin gives a plan a value for it. A new tenant endpoint names its feature or carries `NotPlanGated`. Step 41 decides how a module other than ControlPlane adds its own keys.
+A new key is added to `FeatureKeys` or `LimitKeys`. It needs no migration, because no CHECK constraint lists the keys (R15, E1). It is closed until a system admin gives a plan a value for it. A new tenant endpoint names its feature or carries `NotPlanGated`. A product adds its own keys to `ProductFeatureKeys` or `ProductLimitKeys` (X1).

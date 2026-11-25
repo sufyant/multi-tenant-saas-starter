@@ -5,6 +5,12 @@ namespace ControlPlane.UnitTests;
 
 public sealed class PermissionPoolsTests
 {
+    // X2: a product permission that the Admin or the Member holds is a tenant permission of the product, so no role holds one that
+    // the tenant pool does not.
+    [Fact]
+    public void ListProductPermissions_TheSetsOfTheRoles_ArePartOfTheTenantSet() =>
+        ProductPermissions.Admin.Union(ProductPermissions.Member).ShouldBeSubsetOf(ProductPermissions.Tenant);
+
     // A tenant's custom roles choose from the tenant pool, so a platform permission must never be part of it.
     [Fact]
     public void ComparePools_TenantAndSystem_ShareNoPermission()
@@ -22,12 +28,14 @@ public sealed class PermissionPoolsTests
         misnamed.ShouldBeEmpty();
     }
 
-    // D1: PermissionPools is the one source of the permission names. The permission list in Contracts is generated from its constants, and CI
-    // fails when the generated file differs, so this test checks only that each constant is in a pool.
+    // D1: PermissionPools, with the product's ProductPermissions (X1), is the one source of the permission names. The permission list in
+    // Contracts is generated from their constants, and CI fails when the generated file differs, so this test checks only that each
+    // constant is in a pool.
     [Fact]
     public void DeclarePermissions_EveryName_IsInExactlyTheDomainPools()
     {
-        var names = typeof(PermissionPools).GetFields(BindingFlags.Public | BindingFlags.Static)
+        var names = new[] { typeof(PermissionPools), typeof(ProductPermissions) }
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!);
 

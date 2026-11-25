@@ -748,6 +748,7 @@ Decided points:
 Parts:
 
 41a-backend: the product's lists of the API: modules (`ModuleComposition`), permissions with their built-in roles, feature and limit keys (the generators read both lists), meters (`MeterCatalog`), notification types (`NotificationCatalog`) and audit operations. The platform's plan read answers the catalog's meters (`MeterCatalog`, the open item of step 40). The "Projects" example module in the test projects, and the test that the template does not reference a product's list.
+- As built, part 1 (#346): the product's lists of permissions (`ProductPermissions`, with the sets of the Admin and the Member) and of entitlement keys (`ProductFeatureKeys`, `ProductLimitKeys`), and the product's email texts (`packages/emails/messages/product/`). The CI job "Example product: build and test" builds the example's lists on the template and runs the unit and architecture tests. No CHECK constraint lists the entitlement keys any more (migration `DropEntitlementKeyChecks`), so a product's key needs no migration of the template's tables. The plan preview counts a product's key as 0 (X3).
 
 41b-frontend: the product's lists of both apps: the menu sections (`productSections`), the permissions' names in the role editor, and the product's messages in three languages. The platform's plan editor (6.13) lists every meter of the catalog, with a row for a meter that the plan does not set. The frames of that row come first (the Figma rule, `docs/decisions.md`, section 2, 2026-11-14). It waits for 41a-backend.
 

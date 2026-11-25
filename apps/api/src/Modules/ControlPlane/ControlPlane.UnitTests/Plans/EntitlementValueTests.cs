@@ -66,7 +66,7 @@ public sealed class EntitlementValueTests
 
     [Fact]
     public void CheckValue_AKeyNotOnTheList_IsInvalid() =>
-        EntitlementValue.For("projects.max", EntitlementValue.Limit(1)).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanEntitlementInvalid);
+        EntitlementValue.For("unknown.items.max", EntitlementValue.Limit(1)).Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanEntitlementInvalid);
 
     [Fact]
     public void CheckValue_UnlimitedOfALimitKey_IsTheValue() =>

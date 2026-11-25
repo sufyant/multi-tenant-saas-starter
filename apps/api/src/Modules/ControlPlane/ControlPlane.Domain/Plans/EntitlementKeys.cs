@@ -3,21 +3,32 @@ using System.Reflection;
 
 namespace ControlPlane.Domain.Plans;
 
-/// <summary>The code's list of entitlement keys, each with its kind, read from <see cref="FeatureKeys"/> and <see cref="LimitKeys"/>.</summary>
+/// <summary>
+/// The code's list of entitlement keys, each with its kind, read from <see cref="FeatureKeys"/> and <see cref="LimitKeys"/>, and from the
+/// product's <see cref="ProductFeatureKeys"/> and <see cref="ProductLimitKeys"/> (X1).
+/// </summary>
 internal static class EntitlementKeys
 {
+    private static readonly Type[] FeatureTypes = [typeof(FeatureKeys), typeof(ProductFeatureKeys)];
+
+    private static readonly Type[] LimitTypes = [typeof(LimitKeys), typeof(ProductLimitKeys)];
+
     public static IReadOnlyDictionary<string, EntitlementKind> All { get; } =
-        ConstantsOf(typeof(FeatureKeys)).Select(key => KeyValuePair.Create(key, EntitlementKind.Feature))
-            .Concat(ConstantsOf(typeof(LimitKeys)).Select(key => KeyValuePair.Create(key, EntitlementKind.Limit)))
+        ConstantsOf(FeatureTypes).Select(key => KeyValuePair.Create(key, EntitlementKind.Feature))
+            .Concat(ConstantsOf(LimitTypes).Select(key => KeyValuePair.Create(key, EntitlementKind.Limit)))
             .ToFrozenDictionary(StringComparer.Ordinal);
 
-    public static IReadOnlyList<string> Features { get; } = [.. ConstantsOf(typeof(FeatureKeys))];
+    public static IReadOnlyList<string> Features { get; } = [.. ConstantsOf(FeatureTypes)];
 
-    public static IReadOnlyList<string> Limits { get; } = [.. ConstantsOf(typeof(LimitKeys))];
+    public static IReadOnlyList<string> Limits { get; } = [.. ConstantsOf(LimitTypes)];
+
+    /// <summary>The product's keys, of <see cref="ProductFeatureKeys"/> and <see cref="ProductLimitKeys"/>.</summary>
+    public static IReadOnlySet<string> Product { get; } =
+        ConstantsOf([typeof(ProductFeatureKeys), typeof(ProductLimitKeys)]).ToFrozenSet(StringComparer.Ordinal);
 
     /// <summary>Each limit that depends on a feature, with that feature, read from the limit's <see cref="DependsOnAttribute"/>.</summary>
     public static IReadOnlyDictionary<string, string> Dependencies { get; } =
-        typeof(LimitKeys).GetFields(BindingFlags.Public | BindingFlags.Static)
+        LimitTypes.SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsLiteral && field.GetCustomAttribute<DependsOnAttribute>() is not null)
             .ToFrozenDictionary(field => (string)field.GetRawConstantValue()!, field => field.GetCustomAttribute<DependsOnAttribute>()!.Feature, StringComparer.Ordinal);
 
@@ -27,8 +38,8 @@ internal static class EntitlementKeys
     /// <summary>The kind of a key of the list; none for any other text.</summary>
     public static EntitlementKind? KindOf(string key) => All.TryGetValue(key, out var kind) ? kind : null;
 
-    private static IEnumerable<string> ConstantsOf(Type keys) =>
-        keys.GetFields(BindingFlags.Public | BindingFlags.Static)
+    private static IEnumerable<string> ConstantsOf(IEnumerable<Type> types) =>
+        types.SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)
             .Order(StringComparer.Ordinal);
