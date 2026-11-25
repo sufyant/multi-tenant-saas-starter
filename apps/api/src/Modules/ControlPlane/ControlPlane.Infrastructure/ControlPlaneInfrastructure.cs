@@ -111,7 +111,7 @@ public static class ControlPlaneInfrastructure
         services.AddScoped<IFeatureFlags, FeatureFlagEvaluation>();
         services.ConfigureWolverine(options => options.CodeGeneration.AlwaysUseServiceLocationFor<IFeatureFlags>());
         services.AddSingleton(FeatureFlagCode.Template);
-        services.AddSingleton(MeterCode.Template);
+        services.AddSingleton(MeterCode.Code);
         services.AddOptions<BillingOptions>()
             .BindConfiguration(BillingOptions.Section)
             .Validate(

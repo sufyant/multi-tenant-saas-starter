@@ -35,6 +35,7 @@ import type {
   GiveTenantTrialRequest,
   ListPageOfPlanListItemResponse,
   ListPlansParams,
+  MetersResponse,
   PlanResponse,
   PlanUpdatePreviewPageResponse,
   ProblemDetails,
@@ -398,6 +399,99 @@ return apiFetch<PlanResponse>(getUpdatePlanUrl(planId),
     body: JSON.stringify(updatePlanRequest)
   }
 );}
+
+
+
+export const getGetMetersUrl = () => {
+
+
+
+
+  return `/v1/platform/meters`
+}
+
+export const getMeters = async ( options?: Parameters<typeof apiFetch>[1]): Promise<MetersResponse> => {
+
+  return apiFetch<MetersResponse>(getGetMetersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetersQueryKey = () => {
+    return [
+    "getMeters"
+    ] as const;
+    }
+
+
+export const getGetMetersQueryOptions = <TData = Awaited<ReturnType<typeof getMeters>>, TError = ErrorType<ProblemDetails>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeters>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeters>>> = ({ signal }) => getMeters({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeters>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMetersQueryResult = NonNullable<Awaited<ReturnType<typeof getMeters>>>
+export type GetMetersQueryError = ErrorType<ProblemDetails>
+
+
+export function useGetMeters<TData = Awaited<ReturnType<typeof getMeters>>, TError = ErrorType<ProblemDetails>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeters>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeters>>,
+          TError,
+          Awaited<ReturnType<typeof getMeters>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeters<TData = Awaited<ReturnType<typeof getMeters>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeters>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeters>>,
+          TError,
+          Awaited<ReturnType<typeof getMeters>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeters<TData = Awaited<ReturnType<typeof getMeters>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeters>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeters<TData = Awaited<ReturnType<typeof getMeters>>, TError = ErrorType<ProblemDetails>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeters>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMetersQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
 
 
 

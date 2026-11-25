@@ -4,13 +4,16 @@ namespace ControlPlane.Domain.Plans;
 
 /// <summary>
 /// Every usage meter the code defines. A plan sets a quota for some of them (<see cref="PlanMeter"/>); a plan without a meter shows no
-/// Usage. The template defines none, because it has nothing a customer would pay for by use: a product adds its first meter here (step
-/// 41), and the tests define one of their own (the maintainer's decision of 2026-11-14).
+/// Usage. The template defines none, because it has nothing a customer would pay for by use: a product adds its first meter to
+/// <see cref="ProductMeters"/> (step 41), and the tests define one of their own (the maintainer's decision of 2026-11-14).
 /// </summary>
 internal sealed partial class MeterCatalog(IReadOnlyList<MeterDefinition> meters)
 {
     /// <summary>The template's meters: none.</summary>
     public static MeterCatalog Template { get; } = new([]);
+
+    /// <summary>Every meter the code defines: the template's and the product's (<see cref="ProductMeters"/>, X5).</summary>
+    public static MeterCatalog Code { get; } = new([.. Template.Meters, .. ProductMeters.All]);
 
     public IReadOnlyList<MeterDefinition> Meters { get; } = meters;
 

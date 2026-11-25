@@ -53,3 +53,54 @@ public sealed class FakeIdentityProvider : IIdentityProvider
 
     public Task DeleteUserAsync(string externalUserId, CancellationToken cancellationToken) => Task.CompletedTask;
 }
+
+// A cache as one process's memory: it keeps each entry until a removal by its key or one of its tags, and never expires one.
+public sealed class FakeHybridCache : Microsoft.Extensions.Caching.Hybrid.HybridCache
+{
+    private readonly ConcurrentDictionary<string, (object? Value, string[] Tags)> _entries = new();
+
+    public override async ValueTask<T> GetOrCreateAsync<TState, T>(
+        string key,
+        TState state,
+        Func<TState, CancellationToken, ValueTask<T>> factory,
+        Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (_entries.TryGetValue(key, out var entry))
+        {
+            return (T)entry.Value!;
+        }
+
+        var value = await factory(state, cancellationToken);
+        _entries[key] = (value, [.. tags ?? []]);
+        return value;
+    }
+
+    public override ValueTask SetAsync<T>(
+        string key,
+        T value,
+        Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+    {
+        _entries[key] = (value, [.. tags ?? []]);
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        _entries.TryRemove(key, out _);
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask RemoveByTagAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        foreach (var key in _entries.Where(entry => entry.Value.Tags.Contains(tag)).Select(entry => entry.Key).ToList())
+        {
+            _entries.TryRemove(key, out _);
+        }
+
+        return ValueTask.CompletedTask;
+    }
+}

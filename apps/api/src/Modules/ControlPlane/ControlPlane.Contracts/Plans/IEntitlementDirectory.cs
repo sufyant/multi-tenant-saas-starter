@@ -12,6 +12,12 @@ public interface IEntitlementDirectory
     Task<TenantEntitlements> FindAsync(Guid tenantId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// The effective number of the limit for the tenant with this id, which exists, or null for unlimited. It reads the database, not the
+    /// cache, so a module that checks its limit under its own lock sees a plan change that just committed (E6, X3).
+    /// </summary>
+    Task<int?> ReadLimitAsync(Guid tenantId, string limit, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Whether the feature is on for the tenant with this id; when it is off, 403 <c>plan.feature_unavailable</c>, with the key in
     /// <see cref="Error.Entitlement"/>.
     /// </summary>

@@ -5,6 +5,7 @@ using ControlPlane.Api.Statuses;
 using ControlPlane.Application;
 using ControlPlane.Application.Plans;
 using ControlPlane.Application.Plans.CreatePlan;
+using ControlPlane.Application.Plans.GetMeters;
 using ControlPlane.Application.Plans.GetPlan;
 using ControlPlane.Application.Tenants.GetPaysByCard;
 using ControlPlane.Application.Plans.ListPlans;
@@ -37,6 +38,7 @@ public static class PlanEndpoints
     {
         platform.MapGet("/plans", ListPlans).RequireAuthorization(Permissions.PlatformPlansRead);
         platform.MapGet("/plans/{planId:guid}", GetPlan).WithName(nameof(GetPlan)).RequireAuthorization(Permissions.PlatformPlansRead);
+        platform.MapGet("/meters", GetMeters).RequireAuthorization(Permissions.PlatformPlansRead);
         platform.MapPost("/plans", CreatePlan)
             .WithMetadata(new IdempotencyKeyRequired(), CreatedLocation.Of<PlanResponse>(nameof(GetPlan), plan => new { planId = plan.Id }))
             .RequireAuthorization(Permissions.PlatformPlansCreate)
@@ -78,6 +80,9 @@ public static class PlanEndpoints
 
     private static async Task<Result<PlanResponse>> GetPlan(Guid planId, IMessageBus bus, BillingOptions billing, CancellationToken cancellationToken) =>
         (await bus.InvokeAsync<Result<PlanView>>(new GetPlanQuery(planId), cancellationToken)).Map(plan => ToResponse(plan, billing));
+
+    private static async Task<Result<MetersResponse>> GetMeters(IMessageBus bus, CancellationToken cancellationToken) =>
+        new MetersResponse([.. (await bus.InvokeAsync<IReadOnlyList<MeterView>>(new GetMetersQuery(), cancellationToken)).Select(meter => new MeterResponse(meter.Key, meter.Description))]);
 
     // The client gives each new plan an idempotency key (I1); the endpoint declares 201, with the plan's address, where GetPlan reads it.
     private static async Task<Result<PlanResponse>> CreatePlan(

@@ -213,6 +213,13 @@ export const UpdatePlanResponse = zod.object({
   "createdAt": zod.iso.datetime({"offset":true})
 }).describe('A plan: its name, whether it is the default plan, how many tenants are on it, its value of each key it has one for, its prices in the\ndeployment\'s one currency, an ISO 4217 code, its setting of each meter it sets, by key, and when it was created. A key the plan has no\nvalue for is closed; a plan without a meter shows no Usage (step 40).')
 
+export const GetMetersResponse = zod.object({
+  "meters": zod.array(zod.object({
+  "key": zod.string(),
+  "description": zod.string()
+}).describe('A meter the code defines: its key, lowercase and dotted, and what it counts (X5).'))
+}).describe('Every meter the code defines, the template\'s and the product\'s, by key (X5).')
+
 export const GetPlanUpdatePreviewParams = zod.object({
   "planId": zod.uuid()
 })
