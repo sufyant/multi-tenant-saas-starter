@@ -1,5 +1,6 @@
 using ControlPlane.Domain;
 using ControlPlane.Domain.Plans;
+using SharedKernel;
 
 namespace ControlPlane.UnitTests.Plans;
 
@@ -93,7 +94,7 @@ public sealed class EffectiveEntitlementsTests
     {
         var limit = EffectiveEntitlements.Of(Pro, [], Now).CheckLimit("roles.custom.max", 20);
 
-        limit.Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanLimitReached);
+        limit.Error.Code.ShouldBe(PlanErrorCodes.LimitReached);
         limit.Error.Entitlement.ShouldBe("roles.custom.max");
     }
 

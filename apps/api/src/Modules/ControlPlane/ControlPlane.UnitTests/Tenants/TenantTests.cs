@@ -1599,7 +1599,7 @@ public sealed class TenantTests
     {
         var created = Active().CreateRole(RoleOf("Owner"), NewRole("Billing", ProfileRead, MembersRead), RoleFacts(customRoles: RoleLimit), Entitled);
 
-        created.Error.Code.ShouldBe(ControlPlaneErrorCodes.PlanLimitReached);
+        created.Error.Code.ShouldBe(PlanErrorCodes.LimitReached);
         created.Error.Entitlement.ShouldBe(LimitKeys.RolesCustomMax);
         created.Error.Type.ShouldBe(ErrorType.Conflict);
     }
@@ -2036,7 +2036,7 @@ public sealed class TenantTests
 
         var invited = Active().Invite(MemberOf("Owner"), Request("ada@example.com", RoleOf("Member")), Facts(owners: 1, pending: pending, members: 3), DailyLimit, limited);
 
-        (invited.Error.Code, invited.Error.Entitlement).ShouldBe((ControlPlaneErrorCodes.PlanLimitReached, LimitKeys.MembersMax));
+        (invited.Error.Code, invited.Error.Entitlement).ShouldBe((PlanErrorCodes.LimitReached, LimitKeys.MembersMax));
         pending.Select(invitation => invitation.Status).ShouldAllBe(status => status == InvitationStatus.Pending);
     }
 
@@ -2085,7 +2085,7 @@ public sealed class TenantTests
 
         var result = Active().ChangeRole(Membership("Owner"), RoleOf("Member"), new MemberFacts(Membership("BillingManager"), 1, Roles), limited, seats: 3);
 
-        (result.Error.Code, result.Error.Entitlement).ShouldBe((ControlPlaneErrorCodes.PlanLimitReached, LimitKeys.MembersMax));
+        (result.Error.Code, result.Error.Entitlement).ShouldBe((PlanErrorCodes.LimitReached, LimitKeys.MembersMax));
     }
 
     [Fact]
