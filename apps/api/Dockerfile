@@ -6,7 +6,7 @@
 #   docker build -t api --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" apps/api
 
 # 10.0.402 when pinned. Dependabot updates the digest, not this note.
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8c6edfb26c85153f236d26efebd9ad349aec403583f343f201ee67838b23658d AS build
 WORKDIR /src
 
 # What restore needs comes first, so a change to the source alone reuses the restore layer.
