@@ -5,6 +5,7 @@ import {
   type MeterSettingResponse,
   type PlanPricesResponse,
 } from "@repo/api-client";
+import { Button } from "@repo/ui/components/button";
 import { Combobox } from "@repo/ui/components/combobox";
 import { Input as InputBase } from "@repo/ui/components/ui/input";
 import {
@@ -60,6 +61,24 @@ export const priceTextsOf = (
   perPersonMonthly: moneyText(prices.perPersonMonthly, currency),
   perPersonYearly: moneyText(prices.perPersonYearly, currency),
 });
+
+/** A meter that a plan adds (6.27): a quota of 0 that stops, so nothing is used or charged until the person sets more. */
+export const addedMeter = (key: string, currency: string): MeterDraft => ({
+  key,
+  quota: "0",
+  overage: MeterSettingRequestOverage.Stop,
+  unitPrice: moneyText(0, currency),
+  unitSize: 1,
+});
+
+/** The meters of the editor: every meter of the code, in its order, then a meter the plan still sets that the code no longer has. */
+export const meterKeysOf = (
+  code: readonly string[],
+  drafts: readonly MeterDraft[],
+) => [
+  ...code,
+  ...drafts.map((draft) => draft.key).filter((key) => !code.includes(key)),
+];
 
 export const meterDraftsOf = (
   meters: readonly MeterSettingResponse[],
@@ -213,25 +232,31 @@ export function PricesArea({
 }
 
 /**
- * Meters (6.13): the plan's setting of each meter of the product's code, a row each: the quota of a month, then Charge the extra
- * at a unit price for each unit size, or Stop. The template defines no meter, so a plan shows none; a meter's name is the
- * product's message `plans.meters.<key>`, else its key.
+ * Meters (6.13, 6.26, 6.27): a row for each meter of the product's code (`GetMeters`). A meter the plan sets shows its setting:
+ * the quota of a month, then Charge the extra at a unit price for each unit size, or Stop. A meter the plan does not set says that
+ * its use stops, and Add to plan gives it a quota of 0 that stops. The template defines no meter, so a plan shows none; a meter's
+ * name is the product's message `plans.meters.<key>` (`messages/product`), else its key.
  */
 export function MetersArea({
+  keys,
   drafts,
   currency,
   errors,
   onChange,
+  onAdd,
 }: {
+  /** Every meter of the editor, in its order (`meterKeysOf`). */
+  keys: readonly string[];
   drafts: readonly MeterDraft[];
   currency: string;
   errors: Partial<Record<number, { quota?: boolean; unitPrice?: boolean }>>;
   onChange: (index: number, draft: MeterDraft) => void;
+  onAdd: (key: string) => void;
 }) {
   const t = useTranslations("plans");
   const locale = useLocale();
   const id = useId();
-  if (drafts.length === 0) return null;
+  if (keys.length === 0) return null;
   const nameOf = (key: string) => {
     // The product's own message, which the template's empty catalog never has.
     const message = `meters.${key}` as Parameters<typeof t>[0];
@@ -250,19 +275,48 @@ export function MetersArea({
         </h2>
         <p className="text-small text-muted-foreground">{t("metersText")}</p>
       </div>
-      {drafts.map((draft, index) => {
-        const name = nameOf(draft.key);
+      {keys.map((key, row) => {
+        const name = nameOf(key);
+        const index = drafts.findIndex((draft) => draft.key === key);
+        const draft = drafts[index];
+        if (!draft)
+          return (
+            // biome-ignore lint/a11y/useSemanticElements: a fieldset's legend would draw a frame the card does not have; the group names the row.
+            <div
+              key={key}
+              role="group"
+              aria-labelledby={`${id}-${row}`}
+              className="flex flex-col gap-2 px-5 py-3 tablet:flex-row tablet:items-center tablet:gap-3"
+            >
+              <span
+                id={`${id}-${row}`}
+                className="text-body text-muted-foreground tablet:w-50 tablet:shrink-0"
+              >
+                {name}
+              </span>
+              <p className="text-small text-muted-foreground">
+                {t("meterNotOnPlan")}
+              </p>
+              <Button
+                variant="secondary"
+                className="self-start tablet:self-auto"
+                onClick={() => onAdd(key)}
+              >
+                {t("meterAdd")}
+              </Button>
+            </div>
+          );
         const error = errors[index];
         return (
           // biome-ignore lint/a11y/useSemanticElements: a fieldset's legend would draw a frame the card does not have; the group names the row.
           <div
-            key={draft.key}
+            key={key}
             role="group"
-            aria-labelledby={`${id}-${index}`}
+            aria-labelledby={`${id}-${row}`}
             className="flex flex-col gap-2 px-5 py-3 tablet:flex-row tablet:flex-wrap tablet:items-center tablet:gap-3"
           >
             <span
-              id={`${id}-${index}`}
+              id={`${id}-${row}`}
               className="text-body text-muted-foreground tablet:w-50 tablet:shrink-0"
             >
               {name}

@@ -586,6 +586,8 @@
     "meterQuota": "{meter}: quota a month",
     "meterOverage": "At the quota",
     "meterUnitPrice": "{meter}: price of the extra",
+    "meterNotOnPlan": "Not on this plan, so its use stops.",
+    "meterAdd": "Add to plan",
     "meters": {}
   },
   "planSection": {

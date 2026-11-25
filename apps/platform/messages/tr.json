@@ -586,6 +586,8 @@
     "meterQuota": "{meter}: aylık kota",
     "meterOverage": "Kotada",
     "meterUnitPrice": "{meter}: fazlanın fiyatı",
+    "meterNotOnPlan": "Bu planda yok, bu yüzden kullanımı durur.",
+    "meterAdd": "Plana ekle",
     "meters": {}
   },
   "planSection": {

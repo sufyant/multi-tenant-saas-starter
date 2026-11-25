@@ -727,9 +727,12 @@ export const tenantPlan = (tenantId: string): TenantPlanResponse => ({
   ],
 });
 
-/** What the plan pages read: ListPlans, GetPlan and each organisation's GetTenantPlan. */
+/** What the plan pages read: ListPlans, GetPlan, GetMeters (the template defines no meter) and each organisation's GetTenantPlan. */
 async function mockPlans(page: Page): Promise<void> {
   const all = Object.values(plans);
+  await page.route("**/api/v1/platform/meters", (route) =>
+    route.fulfill({ json: { meters: [] } }),
+  );
   await page.route("**/api/v1/platform/plans*", (route) =>
     route.fulfill({
       json: {
