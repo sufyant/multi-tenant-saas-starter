@@ -296,11 +296,13 @@ public sealed partial class OpenApiContractTests : IAsyncLifetime
         IsNullable(auditRole.GetProperty("properties").GetProperty("id")).ShouldBeFalse();
     }
 
-    // N11j and K3: the operations of the audit entries are one enum in the document, so a client knows each one and hears of a new one.
+    // N11j, K3 and X6: the operations of the audit entries, the template's and the product's, are one enum in the document, so a
+    // client knows each one and hears of a new one.
     [Fact]
     public void BuildOpenApiDocument_AuditOperation_ListsEveryOperationOfAuditOperations()
     {
-        var declared = typeof(AuditOperations).GetFields(BindingFlags.Public | BindingFlags.Static)
+        var declared = new[] { typeof(AuditOperations), typeof(ProductAuditOperations) }
+            .SelectMany(type => type.GetFields(BindingFlags.Public | BindingFlags.Static))
             .Where(field => field.IsLiteral)
             .Select(field => (string)field.GetRawConstantValue()!)
             .Order(StringComparer.Ordinal);
