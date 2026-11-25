@@ -16,7 +16,7 @@ This document is the plan of the template's steps. Linear no longer tracks them.
 | 38 | Terms of use | done |
 | 39 | Feature flags | done |
 | 40 | Billing | done |
-| 41 | Extension points | in progress |
+| 41 | Extension points | done |
 | 42 | Observability | todo |
 | 43 | Accessibility and end-to-end tests | todo |
 | 44 | Marketing site | todo |
@@ -731,7 +731,7 @@ Which parts run at the same time: 40-design runs beside any backend part. A fron
 
 ## 9. Step 41: Extension points
 
-Status: in progress.
+Status: done.
 
 - How a product adds modules, permissions, entitlement keys, meters, notification types and menu sections without editing template files.
 - An example business module, end to end.
@@ -761,6 +761,8 @@ Parts:
 - The thread's choices, not the maintainer's decisions: "Add to plan" adds a meter that stops at 0, because a meter that the plan does not set stops already (`apps/api/docs/flows/plans-and-entitlements.md`), so adding it allows no use until the operator sets a quota (section 5b, step 2). A meter's row has no "Remove" in step 41; a meter that the plan sets stays on it. A product's section, permission or meter without its word shows its key, so a product sees the missing word on the screen and no screen breaks.
 
 41c-docs: the guide `docs/starting-a-product.md`: start a product with the template as its upstream, add each extension point with the "Projects" example, bring the template's changes in, and move a feature into the template.
+
+- As built: the guide, and `docs/deployment.md`, section 12, points to it. The thread's choice, not the maintainer's decision: a product starts from a clone of the template with the remote `upstream`, pushed to an empty repository, not from GitHub's "Use this template", which starts a history without the template's commits, so each merge would need `--allow-unrelated-histories` and conflict on every file; and not from a fork, which cannot be private (GitHub Docs, "Creating a repository from a template" and "About forks").
 
 ## 10. Step 42: Observability
 
@@ -832,7 +834,7 @@ The work comes in this order. A thread that finishes an item updates this sectio
 3. Step 39 is done (#289 to #295), in the parts of section 7. Step 38 is done (#283 to #288). Support access's shape is decided (`docs/decisions.md`, section 2, 2026-11-14); it is settled before a product writes the terms' text.
 4. Small findings that no pull request fixes yet:
    - The Figma follow-ups of `docs/design/followups.md`.
-5. Step 40 is done, in the parts of section 8: 40a (#299, #300, #304), 40b (#305 to #316, #318 to #320, #322 to #324), 40c (#325, #326) and 40d (#327 to #334). Step 41 is in progress, in the parts of section 9: 41a-backend, then 41b-frontend, then 41c-docs. Then steps 42 to 47, in the order of section 1.
+5. Step 40 is done, in the parts of section 8: 40a (#299, #300, #304), 40b (#305 to #316, #318 to #320, #322 to #324), 40c (#325, #326) and 40d (#327 to #334). Step 41 is done, in the parts of section 9: 41a-backend (#345 to #350, #352), 41b-frontend (#353) and 41c-docs. Next: steps 42 to 47, in the order of section 1.
 6. Wolverine 6.63 or later, when Dependabot brings it (`docs/decisions.md`, section 2).
 
 Which threads may run at the same time:
