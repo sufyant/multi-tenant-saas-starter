@@ -65,8 +65,8 @@ public sealed class ExistingRetryPolicyTests(Database database)
     }
 
     // W6, S8: of two replies the tenant purge handles at once, the second fails on the saga's version, and is tried again, inline. All
-    // participants reply at once, and each reply loses at most once to each other reply, so the retries outnumber the other participants,
-    // a product's too (X8).
+    // participants reply at once, and each reply loses at most once to each other reply, so the retries are at least as many as the
+    // other participants, a product's too (X8).
     [Fact]
     public async Task ReadRetryRules_ASagaChangedByEveryParticipantAtOnce_RetriesALosingReplyOnceForEachOtherParticipant()
     {
@@ -75,8 +75,8 @@ public sealed class ExistingRetryPolicyTests(Database database)
         var rule = api.Services.GetRequiredService<IWolverineRuntime>().Options.Policies.Failures
             .Single(failure => failure.Match.Description.Contains(nameof(SagaConcurrencyException), StringComparison.Ordinal));
 
-        rule.Count().ShouldBe(ApiPipeline.SagaConcurrencyRetries);
+        rule.Count().ShouldBe(9);
         rule.First().Describe().ShouldContain("Retry");
-        api.Services.GetServices<TenantPurgeParticipant>().Count().ShouldBeLessThanOrEqualTo(ApiPipeline.SagaConcurrencyRetries + 1);
+        api.Services.GetServices<TenantPurgeParticipant>().Count().ShouldBeLessThanOrEqualTo(10);
     }
 }

@@ -77,6 +77,26 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
         (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
     }
 
+    // X8: each product module that takes part in the purge deletes the tenant's rows of its tenant tables and keeps another tenant's. The
+    // template has no product table, so here the list is empty; the example product's copy of ProductTenantTables fills it (X4).
+    [Fact]
+    public async Task PurgeTenant_AProductsTenantTables_DeletesTheTenantsRowsAndKeepsAnotherTenants()
+    {
+        var tenant = await ClosedTenantWithDataAsync("Gone Ltd");
+        var kept = await ClosedTenantWithDataAsync("Kept Ltd");
+        foreach (var table in ProductTenantTables.All.Keys)
+        {
+            await database.ExecuteInTenantAsync(tenant.Id, TenantTables.InsertRow(table, tenant.Id), database: _databaseName);
+            await database.ExecuteInTenantAsync(kept.Id, TenantTables.InsertRow(table, kept.Id), database: _databaseName);
+        }
+
+        await PurgeAsync(tenant.Id, ClosedAt);
+
+        (await ProductRowsOfAsync(tenant.Id)).ShouldAllBe(rows => rows.Value == 0);
+        (await ProductRowsOfAsync(kept.Id)).ShouldAllBe(rows => rows.Value == 1);
+        (await SagaOfAsync(tenant.Id)).ShouldBe("Completed|");
+    }
+
     // B8: a subscription that has not ended ends at Stripe at once with the purge; the tenant's rows go with its other data.
     [Fact]
     public async Task PurgeTenant_ASubscriptionThatHasNotEnded_EndsItAtStripe()
@@ -425,6 +445,17 @@ public sealed class TenantPurgeTests(Database database) : IAsyncLifetime
     }
 
     // Every row of the tenant in each table that holds its data, as the superuser sees them: no policy binds it.
+    private async Task<Dictionary<string, long>> ProductRowsOfAsync(Guid tenantId)
+    {
+        var rows = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var table in ProductTenantTables.All.Keys)
+        {
+            rows[table] = await database.ScalarAsSuperuserAsync<long>(TenantTables.CountRowsOf(table, tenantId), _databaseName);
+        }
+
+        return rows;
+    }
+
     private Task<string?> RowsOfAsync(Guid tenantId) =>
         database.ScalarAsSuperuserAsync<string>(
             $"""
