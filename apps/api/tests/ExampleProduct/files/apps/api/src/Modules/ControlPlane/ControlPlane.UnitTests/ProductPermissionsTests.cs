@@ -1,14 +1,12 @@
 using ControlPlane.Contracts;
-using ControlPlane.Contracts.Plans;
 using ControlPlane.Domain;
-using ControlPlane.Domain.Plans;
 using ControlPlane.Domain.Roles;
 
-namespace ControlPlane.UnitTests.Product;
+namespace ControlPlane.UnitTests;
 
-// The example product "Projects" fills the product's lists (X1); these tests run only in the job "Example product: build and test",
+// The example product "Projects" fills the product's lists (X1). These tests run only in the job "Example product: build and test",
 // which copies tests/ExampleProduct/files over the template (X4).
-public sealed class ProductListsTests
+public sealed class ProductPermissionsTests
 {
     [Fact]
     public void GeneratePermissions_TheProductsPermissions_AreOnThePermissionList() =>
@@ -26,13 +24,4 @@ public sealed class ProductListsTests
     [InlineData("tenant.projects.delete", new[] { "Owner", "Admin" })]
     public void GrantBuiltInRoles_AProductPermission_GoesToTheRolesTheProductNames(string permission, string[] holders) =>
         BuiltInRoles.Holding(permission).Select(role => role.ToString()).ShouldBe(holders);
-
-    [Fact]
-    public void GenerateEntitlements_TheProductsKeys_AreOnTheEntitlementList() =>
-        (Features.ProjectsAccess, Limits.ProjectsMax).ShouldBe(("projects.access", "projects.max"));
-
-    [Fact]
-    public void ListKeys_TheProductsKeys_HaveTheirKindsAndTheirFeature() =>
-        (EntitlementKeys.KindOf("projects.access"), EntitlementKeys.KindOf("projects.max"), EntitlementKeys.FeatureOf("projects.max"))
-            .ShouldBe(((EntitlementKind?)EntitlementKind.Feature, (EntitlementKind?)EntitlementKind.Limit, (string?)"projects.access"));
 }

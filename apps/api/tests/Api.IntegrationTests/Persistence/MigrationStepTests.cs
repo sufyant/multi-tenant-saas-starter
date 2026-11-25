@@ -513,7 +513,7 @@ public sealed class MigrationStepTests(Database database)
     }
 
     // A tenant always has a plan, and a plan a tenant is on, or the default plan, cannot be deleted (R16). The database holds exactly one
-    // default mark (R15).
+    // default mark, and a row of a value holds one value: a state or a number or unlimited (R15). The key and its kind are the code's.
     [Fact]
     public async Task WritePlans_ARowTheRulesRefuse_IsRefused()
     {
@@ -523,21 +523,17 @@ public sealed class MigrationStepTests(Database database)
             database.ScalarAsSuperuserAsync<object>($"DELETE FROM control_plane.plans WHERE id = '{SeedPlans.Free}'", name));
         var secondMark = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>($"INSERT INTO control_plane.default_plans (id, plan_id) VALUES (false, '{SeedPlans.Business}')", name));
-        var limitOfAFeature = await Should.ThrowAsync<PostgresException>(() =>
+        var stateAndNumber = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>(
-                $"INSERT INTO control_plane.plan_entitlements (plan_id, key, maximum, unlimited) VALUES ('{SeedPlans.Business}', 'roles.custom', 3, false)", name));
-        var unknownKey = await Should.ThrowAsync<PostgresException>(() =>
-            database.ScalarAsSuperuserAsync<object>(
-                $"UPDATE control_plane.plan_entitlements SET key = 'projects.max' WHERE plan_id = '{SeedPlans.Business}' AND key = 'members.max'", name));
+                $"INSERT INTO control_plane.plan_entitlements (plan_id, key, enabled, maximum, unlimited) VALUES ('{SeedPlans.Business}', 'projects.max', true, 3, false)", name));
         var numberAndUnlimited = await Should.ThrowAsync<PostgresException>(() =>
             database.ScalarAsSuperuserAsync<object>(
                 $"UPDATE control_plane.plan_entitlements SET unlimited = true WHERE plan_id = '{SeedPlans.Business}' AND key = 'members.max'", name));
 
         deletePlan.SqlState.ShouldBe(PostgresErrorCodes.RestrictViolation);
         secondMark.ConstraintName.ShouldBe("ck_default_plans_one_row");
-        limitOfAFeature.ConstraintName.ShouldBe("ck_plan_entitlements_value_of_its_kind");
-        unknownKey.ConstraintName.ShouldBe("ck_plan_entitlements_key");
-        numberAndUnlimited.ConstraintName.ShouldBe("ck_plan_entitlements_value_of_its_kind");
+        stateAndNumber.ConstraintName.ShouldBe("ck_plan_entitlements_one_value");
+        numberAndUnlimited.ConstraintName.ShouldBe("ck_plan_entitlements_one_value");
     }
 
     // Every row of ControlPlane's tables, as the superuser reads them, as one hash for each table: equal hashes, equal rows.
