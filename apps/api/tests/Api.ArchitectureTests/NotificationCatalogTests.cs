@@ -10,7 +10,7 @@ namespace Api.ArchitectureTests;
 
 // U1, U2: a notification type is a template. A type of the catalog has its channels, a footer in every language when it goes by email
 // (U5), its texts in every language with exactly the values it declares, a text without each optional value (one for a pair that goes
-// together), every word of a closed list in every language, the form of a number of days for each plural category of the language, and one handler that names it (its const Type). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
+// together), every word of a closed list in every language, the form of a number of days for each plural category of the language, and one handler that names it (its const Type), or none for a product's type (X7). So a new type needs only its entry, its texts and its handler, and a type that misses one fails here. A planted catalog
 // shows that each gap is found; a new entitlement key of ControlPlane fails here until the texts name it. A type's area has its word in every
 // language, and its actor is a person of its values. U9: a type has the name of its event's audit operation, or is named apart with its reason.
 public sealed class NotificationCatalogTests
@@ -22,6 +22,35 @@ public sealed class NotificationCatalogTests
 
         NotificationCatalog.Kinds.ShouldNotBeEmpty();
         gaps.ShouldBeEmpty();
+    }
+
+    // X7: the catalog holds the template's types and the product's, and a type of the product needs no handler of its own: a product
+    // module sends it with SendNotificationCommand.
+    [Fact]
+    public void DeclareNotificationTypes_TheCatalog_HoldsTheTemplatesTypesAndTheProducts()
+    {
+        var declared = NotificationCatalog.Template.Concat(ProductNotifications.Kinds).Select(kind => kind.Type).Order(StringComparer.Ordinal);
+
+        NotificationCatalog.Kinds.Keys.Order(StringComparer.Ordinal).ShouldBe(declared);
+    }
+
+    // X7: no constraint lists a product's types, and the constraint of the tenant names only the template's personal types that lead into
+    // a tenant, so a product's personal type leads into none.
+    [Fact]
+    public void DeclareNotificationTypes_AProductsPersonalType_LeadsIntoNoTenant()
+    {
+        var intoATenant = ProductNotifications.Kinds.Where(kind => kind.Bell == NotificationBell.Personal && kind.LeadsIntoATenant);
+
+        intoATenant.ShouldBeEmpty();
+    }
+
+    // X7: SendNotificationCommand carries only a product's type; a template type has its own handler.
+    [Fact]
+    public void SendNotification_ATemplateType_IsAMistake()
+    {
+        var sent = () => NotificationCatalog.OfProduct(NotificationCatalog.MemberJoined);
+
+        sent.ShouldThrow<InvalidOperationException>();
     }
 
     [Fact]
@@ -143,7 +172,7 @@ public sealed class NotificationCatalogTests
     [Fact]
     public void DeclareNotificationTypes_TheAreasAndActors_FollowWhatEachTypeTellsOf()
     {
-        var areas = NotificationCatalog.Kinds.Values.Select(kind => $"{kind.Type} {kind.Area} {kind.Actor}".TrimEnd());
+        var areas = NotificationCatalog.Template.Select(kind => $"{kind.Type} {kind.Area} {kind.Actor}".TrimEnd());
 
         areas.ShouldBe(
         [
@@ -220,7 +249,7 @@ public sealed class NotificationCatalogTests
     [Fact]
     public void DeclareNotificationTypes_TheChannels_AreTheEmailForAChangeOfAccessOrStatusAndTheWebOnlyForTeamNews()
     {
-        var channels = NotificationCatalog.Kinds.Values.Select(kind => $"{kind.Type} {string.Join(" ", kind.Channels)}");
+        var channels = NotificationCatalog.Template.Select(kind => $"{kind.Type} {string.Join(" ", kind.Channels)}");
 
         channels.ShouldBe(
         [
@@ -259,11 +288,12 @@ public sealed class NotificationCatalogTests
         ]);
     }
 
-    // U9: the same event writes an audit entry and a notification, with one label. A type of another name says why.
+    // U9: the same event writes an audit entry and a notification, with one label. A type of another name says why. A product's type takes
+    // the name of a product's operation (X6, X7).
     [Fact]
     public void NameNotificationTypes_EveryType_HasTheNameOfAnAuditOperationOrIsNamedApart()
     {
-        var operations = OperationsOf(typeof(AuditOperations));
+        var operations = OperationsOf(typeof(AuditOperations)).Union(OperationsOf(typeof(ProductAuditOperations))).ToHashSet(StringComparer.Ordinal);
 
         var unnamed = NotificationCatalog.Kinds.Keys
             .Where(type => !operations.Contains(type) && !NotificationCatalog.NamedApart.ContainsKey(type))
@@ -323,8 +353,10 @@ public sealed class NotificationCatalogTests
                 .Where(value => value.With is { } with && (!value.Optional || !kind.Values.Any(other => other.Name == with && other.Optional && other.With is null)))
                 .Select(value => $"{kind.Type}: {value.Name} goes with {value.With}, which is no optional value of its own"));
 
+            // A product's type has no handler of its own: SendNotificationHandler serves it (X7).
             var named = handlers.Count(handler => handler.Type == kind.Type);
-            if (named != 1)
+            var expected = ProductNotifications.Kinds.Any(product => product.Type == kind.Type) ? 0 : 1;
+            if (named != expected)
             {
                 gaps.Add($"{kind.Type}: {named} handlers name it");
             }

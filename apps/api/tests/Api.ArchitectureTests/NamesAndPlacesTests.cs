@@ -196,9 +196,10 @@ public sealed partial class NamesAndPlacesTests
         misnamed.ShouldBeEmpty();
     }
 
-    // N8, rule 2: a message names its role. An integration event in Contracts is {PastTense}Event, a saga's reply {Work}Reply (N3), and
-    // a saga's step that other modules handle {Work}Command, beside its reply (N3); in Application a command is {Action}Command, a query
-    // {Action}Query, and a saga's timeout {Wait}TimedOut (N3).
+    // N8, rule 2: a message names its role. An integration event in Contracts is {PastTense}Event, a saga's reply {Work}Reply (N3), a
+    // saga's step that other modules handle {Work}Command, beside its reply (N3), and a command that other modules send to the module that
+    // owns the Contracts and handles it {Action}Command (X7); in Application a command is {Action}Command, a query {Action}Query, and a
+    // saga's timeout {Wait}TimedOut (N3).
     [Fact]
     public void NameMessages_EveryHandledMessage_EndsWithItsRole()
     {
@@ -390,11 +391,17 @@ public sealed partial class NamesAndPlacesTests
 
     private static bool NamesItsRole(Type message) =>
         message.Assembly.GetName().Name!.EndsWith(".Contracts", StringComparison.Ordinal)
-            ? EndsWithAny(message.Name, "Event", "Reply") || IsAStepWithItsReply(message)
+            ? EndsWithAny(message.Name, "Event", "Reply") || IsAStepWithItsReply(message) || IsServedByItsOwner(message)
             : EndsWithAny(message.Name, "Command", "Query", "Reply", "TimedOut");
 
     private static bool IsAStepWithItsReply(Type message) =>
         message.Name.EndsWith("Command", StringComparison.Ordinal) && message.Assembly.GetType($"{message.Namespace}.{ActionOf(message)}Reply") is not null;
+
+    // A command in a module's Contracts that the same module's Application handles.
+    private static bool IsServedByItsOwner(Type message) =>
+        message.Name.EndsWith("Command", StringComparison.Ordinal)
+        && Handlers().Any(handler => handler.Message == message
+            && handler.Type.Assembly.GetName().Name == message.Assembly.GetName().Name![..^".Contracts".Length] + ".Application");
 
     private static bool EndsWithAny(string name, params string[] suffixes) => suffixes.Any(suffix => name.EndsWith(suffix, StringComparison.Ordinal));
 
@@ -468,6 +475,6 @@ public sealed partial class NamesAndPlacesTests
     [GeneratedRegex(@"^(public|internal)( (sealed|static|abstract|partial))* (class|record|struct|interface|enum) (?<name>\w+)", RegexOptions.Multiline)]
     private static partial Regex TopLevelType();
 
-    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|ProductPermissions|Permissions\.g|AuditOperations|ProductAuditOperations|NotificationCatalog|\w+Module|\w+Infrastructure)\.cs$")]
+    [GeneratedRegex(@"^(Errors|\w+ErrorCodes|PermissionPools|ProductPermissions|Permissions\.g|AuditOperations|ProductAuditOperations|NotificationCatalog|ProductNotifications|\w+Module|\w+Infrastructure)\.cs$")]
     private static partial Regex SharedByTheModule();
 }
