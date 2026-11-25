@@ -40,7 +40,7 @@ Do not use GitHub's "Use this template". It makes a new history without the temp
 4. Set the product's identity in `packages/brand/brand.json`: the name, the support address, the privacy policy and the status page (`packages/brand/README.md`).
 5. Set up the services and the environments: `docs/deployment.md`, section 4. A private repository needs a paid GitHub plan for some steps: `docs/deployment.md`, section 12.
 
-The CI job "Example product: build and test" runs in the product too. Once a product list is not empty, the job stops at its first step and passes (`scripts/ci/test-example-product.sh`).
+The CI job "Example product: build and test" runs in the product too. Once the product declares a permission, a key, an audit operation or a notification type, the job's script ends at once and the job passes (`scripts/ci/test-example-product.sh`).
 
 ## 2. Add the product's parts
 
@@ -61,7 +61,7 @@ After a change to a list of the API, run `pnpm generate` and commit what it writ
 | Usage meters | `ControlPlane.Domain/Plans/ProductMeters.cs` | `ProductMeters.cs` | X5 |
 | Audit operations | `Audit.Domain/ProductAuditOperations.cs`. The module records its entry with `RecordAuditEntryCommand` | `ProductAuditOperations.cs`; `CreateProjectHandler.cs` | X6; X8 |
 | Notification types | `Notifications.Domain/ProductNotifications.cs`. The module sends `SendNotificationCommand` | `ProductNotifications.cs`; `NotifyProjectCreatedHandler.cs` | X7 |
-| The texts of the emails and the notifications | `packages/emails/messages/product/{en,tr,ar}.json`: a word for each feature and limit key, and the title and the body of each notification type | `packages/emails/messages/product/` | X1; F54 |
+| The texts of the emails and the notifications | `packages/emails/messages/product/{en,tr,ar}.json`: a word for each feature and limit key, a word for each notification area (`notificationWords.area`), and the title and the body of each notification type, with the other texts of U1 to U5 | `packages/emails/messages/product/` | X1; F54 |
 
 A product's permission, key, meter, operation or notification type needs no migration of the template's tables: no constraint lists them.
 
@@ -97,12 +97,15 @@ git switch -c template-update origin/main
 git merge upstream/main
 pnpm install
 pnpm generate
-git add --all
-git commit -m "chore: the generated files after the template's changes"
+git status --short
 git push -u origin template-update
 ```
 
+When `git status` shows changed files, commit them before the push.
+
 Open a pull request of `template-update` in the product's repository. Merge it when CI is green.
+
+If `template-update` falls behind `origin/main`, do not use GitHub's "Update with rebase": the rebase drops the merge commit and copies the template's commits as new commits. Merge `origin/main` into the branch, or make the branch again from `origin/main` and merge `upstream/main` again. The template's rule "never merge `main` into a branch" does not apply to this branch.
 
 - Read the template's `docs/roadmap.md` and `docs/decisions.md` in the merge's diff. A new rule can ask the product for a change.
 - A migration of the template comes with the merge. It runs at the next deploy, as the product's own migrations do (`docs/deployment.md`, section 8).
@@ -112,16 +115,16 @@ Open a pull request of `template-update` in the product's repository. Merge it w
 
 A feature that the product built first can be useful for every product. It moves into the template in a pull request of the template. The product then gives up its copy.
 
-1. In the template, copy the module's folder `apps/api/src/Modules/<Name>/` unchanged, with its migrations.
+1. In the template, copy the module's folder `apps/api/src/Modules/<Name>/` unchanged, with its migrations, and its tests outside the folder, such as `apps/api/tests/Api.IntegrationTests/Tenant/<Name>/`.
 2. Move each line from the product's lists to the template's lists: `ProductPermissions` to `PermissionPools`, `ProductFeatureKeys` to `FeatureKeys`, `ProductLimitKeys` to `LimitKeys`, `ProductMeters` to `MeterCatalog.Template`, `ProductAuditOperations` to `AuditOperations`, `ProductNotifications` to `NotificationCatalog.Template`, and the words from `messages/product/` to the template's messages.
-3. Register the module where the template registers its own: `Api.csproj` and `ModuleComposition` in place of `ProductModules.props` and `ProductModules.cs`, and `TenantTables` in place of `ProductTenantTables`. Add the projects to the solution.
+3. Register the module where the template registers its own: `Api.csproj`, `ModuleComposition` and `Program` in place of `ProductModules.props` and `ProductModules.cs`, its infrastructure in the tests' fixture `Database.cs`, and `TenantTables` in place of `ProductTenantTables`. Add the projects to the solution.
 4. Move the screens the same way: the section into the template's menu, the group into `permissions.ts`.
 5. Keep every stored name: the schema, the tables, the migrations' ids, the permissions, the keys, the meters, the audit operations and the notification types. The product's database already holds them, so a new name would lose its data.
 6. Run `pnpm generate`, the tests and the example job, and open the template's pull request.
 
 At the next merge in the product (section 3):
 
-1. Delete the product's copy of the module folder. The template's copy has the same path, so the merge already shows the files as the template's.
+1. Keep the module's folder and its tests: after the merge they are the template's, at the same paths. `git diff upstream/main -- apps/api/src/Modules/<Name>` must show no difference.
 2. Delete the moved lines from the product's lists, the registration lines from `ProductModules.props` and `ProductModules.cs`, and the moved words from `messages/product/`.
 3. Search the product for each moved name, such as `tenant.projects.read`: it must be only in the template's files. Then run `pnpm generate` and the tests.
 
@@ -133,6 +136,7 @@ A merge does not conflict in the product's lists or in the product's folders. On
 | --- | --- | --- |
 | `packages/brand/brand.json` | The product sets its identity; the template rarely adds a field | Keep the product's values and add the template's new field |
 | `.railway/`, `.clerk/`, `.stripe/`, `.betterstack/`, `.cloudflare/` | The product sets its own services; the template adds settings | Keep the product's values and add the template's new settings |
+| `apps/api/Api.slnx` | The product adds its module's projects; the template adds its own | Keep the projects of both sides |
 | Generated files, such as `apps/api/openapi/v1.json` | Both repositories generate them | Take either side, then run `pnpm generate` and commit what it writes |
 
 Any other conflict means that the product changed a file of the template. Move that change into a product file, or into the template (section 4).
