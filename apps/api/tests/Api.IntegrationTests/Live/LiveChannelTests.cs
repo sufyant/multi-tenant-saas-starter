@@ -47,7 +47,8 @@ public sealed class LiveChannelTests : IAsyncLifetime
     }
 
     // A publish never waits for Valkey: the commit that signals takes no time of a stopped Valkey. The queued events fail once each, and
-    // the warning comes once, until a send succeeds again.
+    // the warning comes once, until a send succeeds again. The budget is a quarter of the shortest wait for Valkey (AsyncTimeout), so a
+    // publish that waited fails, and a slow runner does not.
     [Fact]
     public async Task Publish_ValkeyStopped_ReturnsAtOnceLogsOneWarningAndFailsNobody()
     {
@@ -62,7 +63,7 @@ public sealed class LiveChannelTests : IAsyncLifetime
         await Waiting.UntilAsync(() => logger.Collector.Count > 0);
         await Task.Delay(TimeSpan.FromSeconds(2), TestContext.Current.CancellationToken);
 
-        took.ShouldBeLessThan(TimeSpan.FromMilliseconds(100));
+        took.ShouldBeLessThan(TimeSpan.FromMilliseconds(250));
         logger.Collector.GetSnapshot().Select(log => (log.Level, log.Message)).ShouldBe(
             [(LogLevel.Warning, "A live event notifications was not published, and is lost; the events after it are lost too until Valkey answers again.")]);
     }
@@ -94,7 +95,7 @@ public sealed class LiveChannelTests : IAsyncLifetime
         var options = ConfigurationOptions.Parse(_valkey.ConnectionString);
         options.AbortOnConnectFail = false;
         options.ConnectTimeout = 1000;
-        options.AsyncTimeout = 250;
+        options.AsyncTimeout = 1000;
         var connecting = new Lazy<Task<IConnectionMultiplexer>>(async () => await ConnectionMultiplexer.ConnectAsync(options));
         return new LiveChannel(logger, new ValkeyConnection(connecting));
     }
