@@ -357,19 +357,22 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     }
 
     // The Closed banner says who closed it. A closure after a suspension keeps the suspension, as it keeps the reason; a reopening forgets
-    // both.
+    // both. The test runs on a database of its own: a suspension and a closure tell every system admin of the database, and on the shared
+    // database those are the admins of every earlier test, too many for the session's 30 s in CI (ARCHITECTURE.md, section 9, rule 10).
     [Fact]
     public async Task GetTenant_SuspendedClosedThenReopened_AnswersWhoClosedItThenNoClosureAndNoSuspension()
     {
-        var (admin, _) = await NamedSystemAdminAsync("Deniz Kaya");
-        var (closer, _) = await NamedSystemAdminAsync("Selin Arslan");
-        var tenant = await _tenants.CreateAsync(admin, PlatformTenants.Email());
-        await _api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant));
+        var own = await database.CreateMigratedDatabaseAsync();
+        await using var api = new ApiFactory(database.ConnectionStringFor(DatabaseRoles.Application, own), time: _time);
+        var admin = await NamedSystemAdminAsync(api, own, "Deniz Kaya");
+        var closer = await NamedSystemAdminAsync(api, own, "Selin Arslan");
+        var tenant = await new PlatformTenants(database, api).CreateAsync(admin, PlatformTenants.Email());
+        await api.WaitingForMessagesAsync(() => admin.SuspendTenantAsync(tenant));
         var suspendedAt = _time.GetUtcNow();
-        await _api.WaitingForMessagesAsync(() => closer.CloseTenantAsync(tenant));
+        await api.WaitingForMessagesAsync(() => closer.CloseTenantAsync(tenant));
 
         var closed = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
-        await _api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant));
+        await api.WaitingForMessagesAsync(() => admin.ReopenTenantAsync(tenant));
         var reopened = await admin.GetFromJsonAsync<JsonElement>($"/v1/platform/tenants/{tenant}", Cancellation);
 
         Moments(closed).ShouldBe($"Deniz Kaya|{suspendedAt:O}|Deniz Kaya|Selin Arslan|-");
@@ -462,6 +465,15 @@ public sealed class GetTenantTests(Database database) : IAsyncLifetime
     private async Task<HttpClient> SystemAdminAsync() => _api.CreateClient(await _testData.AddSystemAdminAsync(), secondFactor: true);
 
     // A system admin with a name, as the screens name them.
+    private async Task<HttpClient> NamedSystemAdminAsync(ApiFactory api, string databaseName, string name)
+    {
+        var admin = await new TestData(database, databaseName).AddUserAsync(name: name);
+        await database.ScalarAsync<object>(
+            $"INSERT INTO control_plane.system_admins (user_id, granted_at) SELECT id, now() FROM control_plane.users WHERE external_id = '{admin}'",
+            database: databaseName);
+        return api.CreateClient(admin, secondFactor: true);
+    }
+
     private async Task<(HttpClient Client, string ExternalId)> NamedSystemAdminAsync(string name)
     {
         var admin = await _testData.AddUserAsync(name: name);

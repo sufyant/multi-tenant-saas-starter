@@ -132,7 +132,7 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
         await _api.TrackMessagesAsync(() => PublishAsync(ready));
         await _api.TrackMessagesAsync(() => PublishAsync(ready));
 
-        _api.Email.Sent.ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{ready.InvitationId}");
+        _api.Email.Sent.Where(sent => sent.To == owner).ShouldHaveSingleItem().IdempotencyKey.ShouldBe($"invite/{ready.InvitationId}");
     }
 
     [Fact]
@@ -364,13 +364,15 @@ public sealed class InviteOwnerTests(Database database) : IAsyncLifetime
     private static async Task<string?> CodeOfAsync(HttpResponseMessage response) =>
         (await response.Content.ReadFromJsonAsync<ProblemDetails>(Cancellation))!.Extensions["code"]?.ToString();
 
-    // A new tenant whose first Owner's email the email service refuses until its retries are spent, and the event of that email.
+    // A new tenant whose first Owner's email the email service refuses until its retries are spent, and the event of that email. The
+    // session records every message of the host, and on the shared database the host also runs messages of other tests (ARCHITECTURE.md,
+    // section 9, rule 10), so the event is the one to this owner.
     private async Task<InvitationReadyEvent> ReadyRefusedAsync(HttpClient admin, string owner)
     {
         _api.Email.Refuses = owner;
         var messages = await _api.TrackMessagesAsync(() =>
             admin.CreateTenantAsync(new { name = "Acme Ltd", slug = $"tenant-{Guid.NewGuid():N}"[..20], ownerEmail = owner }));
-        return messages.Sent.SingleMessage<InvitationReadyEvent>();
+        return messages.Sent.MessagesOf<InvitationReadyEvent>().Where(ready => ready.Email == owner).ShouldHaveSingleItem();
     }
 
     private async Task PublishAsync(InvitationReadyEvent ready)

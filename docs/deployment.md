@@ -539,7 +539,7 @@ After a restore, the private host, the proxy and the root certificate are new. U
 
 ## 12. A product in a private repository
 
-A product starts from this template with "Use this template". Its repository is often private. Some features of this pipeline then work only on some GitHub plans. This section lists what changes. It designs nothing: a later step does that. The facts were checked on 2026-10-12.
+A product starts from a clone of this template, with the template as its upstream (`docs/starting-a-product.md`, section 1). Its repository is often private. Some features of this pipeline then work only on some GitHub plans. This section lists what changes. It designs nothing: a later step does that. The facts were checked on 2026-10-12.
 
 ### What each GitHub plan gives a private repository
 

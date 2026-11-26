@@ -51,6 +51,14 @@ describe("useFreshRouter", () => {
     expect(clerk.steps).toEqual(["token", "push /northwind/settings/roles"]);
   });
 
+  // clerk-js's cache can answer a token that has just expired while its own refresh is pending, so the navigation would carry it
+  // and lose the toast (F63). A token from the network is fresh.
+  it("Push_ClerkLoaded_AsksForANewTokenNotTheCachedOne", async () => {
+    await fresh().push("/plans/pro");
+
+    expect(clerk.session.getToken).toHaveBeenCalledWith({ skipCache: true });
+  });
+
   it("Replace_ClerkLoaded_AsksForTheTokenFirst", async () => {
     await fresh().replace("/");
 
